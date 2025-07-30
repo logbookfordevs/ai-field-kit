@@ -7,11 +7,7 @@ Before starting, identify the two branches involved in the Pull Request:
 
 ---
 
-This guide outlines a method for reviewing Pull Requests (PRs) or sets of changes in a structured manner, following the developer's line of reasoning. The goal is to build context incrementally, making the review more efficient, insightful, and focused on the "story" of the implementation, not just the final code.
-
-## Philosophy
-
-A code review should not be just a bug hunt. It's an opportunity for learning, ensuring maintainability, and improving the experience for future developers who will work with the code (Developer Experience - DX). Following a logical order helps in understanding the "why" behind the changes, making it easier to identify design and architectural issues.
+This guide outlines a method for reviewing Pull Requests (PRs) or sets of changes in a structured manner, following the developer's line of reasoning. The goal is to build context incrementally, making the review more efficient, insightful, and focused on the "story" of the implementation, not just the final code. It's like trying to repeat the developer steps.
 
 ## The Process
 
