@@ -1,31 +1,33 @@
-# Guide to Generating Effective Pull Request Descriptions
+# AI-Assisted Guide to Generating Effective Pull Request Descriptions
 
 This guide outlines a structured process for generating a comprehensive and clear Pull Request (PR) description by analyzing the changes between two branches. A well-written PR description is crucial for efficient code reviews, better team collaboration, and creating a clear historical record.
 
 ## The Process
 
-The process involves having the AI analyze the code changes and then structure them into a standardized template.
+The process involves the AI gathering context from you, analyzing the code changes, and then structuring them into a standardized template.
 
-### Step 1: Identify the Branches
+### Step 1: Identify the Branches and Gather User Context
 
-First, specify the two branches involved:
+First, the AI will ask you for three key pieces of information:
 
-- **Base Branch (Target):** `_________________________` (e.g., `development`, `main`)
-- **Feature Branch (Source):** `_________________________` (e.g., `feat/new-feature`, `fix/bug-123`)
+- **Base Branch (Target):** (e.g., `development`, `main`)
+- **Feature Branch (Source):** (e.g., `feat/new-feature`, `fix/bug-123`)
+- **Your High-Level Summary:** A brief description of what you accomplished with these changes. What was the goal? This provides crucial context before the AI analyzes the code.
 
 ### Step 2: Identify the Scope of Change
 
-The AI will get a list of all changed files to understand the scope of the PR.
+With the branch names provided, the AI **must run the `git diff` command on its own** to get a list of all changed files. It should not ask you to provide the diff.
 
+The command to be used is:
 ```bash
 git diff --name-only <base_branch>...<feature_branch>
 ```
 
 ### Step 3: Analyze the Changes
 
-The AI will then read the content of the changed files to understand the "what" and "why" of the modifications. It will analyze the diffs to synthesize a summary of changes, focusing on:
+Armed with your summary and the list of changed files, the AI will then read the content of those files and analyze the diffs to understand the "what" and "how" of the modifications. It will focus on:
 
-- The core purpose of the changes.
+- The core purpose of the changes (cross-referencing your summary).
 - New features added.
 - Bugs fixed.
 - Refactoring performed.
@@ -33,7 +35,7 @@ The AI will then read the content of the changed files to understand the "what" 
 
 ### Step 4: Generate the PR Description
 
-Based on the analysis, the AI will generate a complete PR description using the template below. The goal is to provide a clear, concise, and context-rich summary that helps reviewers understand the changes quickly.
+Based on all the gathered information, the AI will generate a complete PR description using the template below. The goal is to provide a clear, concise, and context-rich summary that helps reviewers understand the changes quickly.
 
 ---
 
@@ -120,5 +122,35 @@ This is the template that will be filled out.
 
 **After:**
 [image or gif]
+---
 
+### Review Flow Diagram
 
+Map out the "story" of the changes by visualizing how the components are built or assembled, from foundational elements to dependent parts. This diagram illustrates the **dependency hierarchy** and the logical order in which the system's pieces fit together. It makes the abstract concept of a "logical flow" concrete and easy to follow for the **USER** to understand the proposed review flow and agree to it.
+
+**Example Review Flow Diagram (Illustrating Build/Assembly Order):**
+
+```
+      [ config/setup/e2e-setup.ts ]
+                 |
+      (Foundation & Environment - the base layer)
+                 v
+        [ core_module.ts ]
+                 |
+      (Core Module - built upon the foundation)
+                 v
++----------------+-----------------+
+|                                  |
+v                                  v
+[ dependent_module_A.ts ]      [ dependent_module_B.ts ]
+|                                  |
+(Dependent Feature A - integrates with core) (Dependent Feature B - integrates with core)
+```
+
+A good order is often:
+
+1.  **Configuration and Setup:** Start with foundational files that set up the environment or global configurations (e.g., `e2e-setup.ts`, `docker-compose.yml`, `.env.example`). These are the building blocks upon which everything else rests.
+2.  **Low-Level Utilities/Shared Components:** Any new or modified utility functions, helper libraries, or reusable components that are consumed by many other parts of the system. These are often the first pieces built.
+3.  **Core Entities and Business Logic:** Move to the central data models, services, and core business logic that define the application's primary functionality (e.g., `referrals.model.ts`, `referrals.service.ts`, `referrals.test.ts`). These depend on the foundational setup and utilities.
+4.  **Feature-Specific Modules/Controllers:** Next, modules or controllers that implement specific features, often interacting with the core entities (e.g., `referral-invitations.ts`, `referral-updates.ts`).
+5.  **User Interface (UI) - Pages/Views:** Finally, the top-level UI components, pages, or views. These are the "end products" that integrate all the underlying logic and components.
