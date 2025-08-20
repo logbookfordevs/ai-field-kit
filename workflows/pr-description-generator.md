@@ -105,10 +105,6 @@ This is the template that will be filled out.
 
 *Explain the overall goal and objectives of this PR. What problem does it solve, or what new capability does it introduce?*
 
-### Potential Issues
-
-*Highlight any known issues, potential side effects, or areas of concern that reviewers should be aware of.*
-
 ### Additional Notes
 
 *Any other relevant information, context, or considerations for the reviewer. This could include design decisions, future work, or acknowledgments.*
@@ -126,7 +122,8 @@ This is the template that will be filled out.
 
 ### Review Flow Diagram
 
-Map out the "story" of the changes by visualizing how the components are built or assembled, from foundational elements to dependent parts. This diagram illustrates the **dependency hierarchy** and the logical order in which the system's pieces fit together. It makes the abstract concept of a "logical flow" concrete and easy to follow for the **USER** to understand the proposed review flow and agree to it.
+Map out the "story" of the changes by visualizing how the components are built or assembled, from foundational elements to dependent parts. This diagram illustrates the **dependency hierarchy** and the logical order in which the system's pieces fit together.
+In addition, generate a **mermaid flow diagram** that not only shows the dependencies but also instructs the **USER** on the **best order to read the files**. The flow should make it clear where to start, how each file connects, and the most effective path for reviewing the system step by step.
 
 **Example Review Flow Diagram (Illustrating Build/Assembly Order):**
 
