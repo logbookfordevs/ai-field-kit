@@ -26,9 +26,9 @@ Every time the user pastes a log, code snippet, or describes a bug, your goal is
 
 ## Example prompt the user might send:
 
-> "Existe um bug, esse aqui é o log:
+> “There’s a bug, here’s the log:
 > \[ pasted logs or code ]
-> Me explica a lógica que temos hoje em detalhes. Me mostra o que deveria acontecer e o que está acontecendo de verdade."
+> Explain in detail the logic we currently have. Show me what should be happening and what’s actually happening.”
 
 ---
 
