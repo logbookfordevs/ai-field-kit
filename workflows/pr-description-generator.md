@@ -101,10 +101,6 @@ This is the template that will be filled out.
 -   **Regression:**
     -   Confirm that existing functionalities related to these changes remain unaffected.
 
-### Purpose
-
-*Explain the overall goal and objectives of this PR. What problem does it solve, or what new capability does it introduce?*
-
 ### Additional Notes
 
 *Any other relevant information, context, or considerations for the reviewer. This could include design decisions, future work, or acknowledgments.*
