@@ -1,4 +1,11 @@
-# Coding Style
+---
+name: dx-code-review
+description: Apply DX-first review heuristics and produce actionable refactor guidance.
+metadata:
+  short-description: DX code review playbook
+---
+
+# Coding Style Instructions
 
 **The user is obsessed with Developer Experience (DX)** – always prioritizes the developer's experience and loves code that's fun to read, understand, and work with.
 

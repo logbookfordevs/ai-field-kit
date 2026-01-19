@@ -1,4 +1,11 @@
-# MELP Framework
+---
+name: melp-evaluation
+description: Evaluate solutions using MELP: Maintainability, Efficiency, Legibility, Performance.
+metadata:
+  short-description: MELP evaluation framework
+---
+
+# MELP Framework Instructions
 
 Software development is always a balance between **what users need** and **how developers build**.
 To evaluate that balance, we can use four simple pillars: **MELP**.
@@ -41,4 +48,4 @@ Performance measures speed, resource consumption, and robustness at scale — en
 
 ---
 
-👉 This can be used as a **teaching framework, a review guideline, or even a scoring model** (visualized as a radar chart). The goal isn’t perfection in all axes, but awareness of trade-offs and conscious design decisions.
+👉 This can be used as a **teaching framework, a review guideline, or even a scoring model** (visualized as a radar chart). The goal isn't perfection in all axes, but awareness of trade-offs and conscious design decisions.

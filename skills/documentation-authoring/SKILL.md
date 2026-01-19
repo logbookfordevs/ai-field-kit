@@ -1,4 +1,11 @@
-# Rules for Creating Documentation
+---
+name: documentation-authoring
+description: Write documentation using the full DocX playbook (journeys, progressive disclosure, validation).
+metadata:
+  short-description: DocX documentation playbook
+---
+
+# Documentation Instructions
 
 ## Core Philosophy: Documentation Experience (DocX)
 
@@ -138,4 +145,4 @@ Before publishing, ask:
 
 ---
 
-**Remember: Bad documentation is worse than no documentation. If you’re not going to invest in doing it well, it’s better not to do it at all.**
+**Remember: Bad documentation is worse than no documentation. If you're not going to invest in doing it well, it's better not to do it at all.**

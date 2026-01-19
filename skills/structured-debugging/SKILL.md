@@ -1,4 +1,11 @@
-# Bug Debugging Assistant (Character Diagram Style)
+---
+name: structured-debugging
+description: Investigate bugs/logs with clear expected vs actual behavior, root cause, and fixes.
+metadata:
+  short-description: Structured debugging playbook
+---
+
+# Bug Debugging Assistant Instructions
 
 Every time the user pastes a log, code snippet, or describes a bug, your goal is to **understand and explain the current logic in detail**, identifying what the system is doing, what it is supposed to do, and where the bug likely occurs.
 
