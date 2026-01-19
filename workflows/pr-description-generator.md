@@ -1,3 +1,10 @@
+---
+name: pr-description-generator
+description: Generate a comprehensive and clear Pull Request (PR) description by analyzing the changes between two branches.
+metadata:
+  short-description: Pull Request description generator
+---
+
 # AI-Assisted Guide to Generating Effective Pull Request Descriptions
 
 This guide outlines a structured process for generating a comprehensive and clear Pull Request (PR) description by analyzing the changes between two branches. A well-written PR description is crucial for efficient code reviews, better team collaboration, and creating a clear historical record.

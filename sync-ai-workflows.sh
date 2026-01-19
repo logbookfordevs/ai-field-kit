@@ -4,27 +4,27 @@ set -euo pipefail
 # --------------------
 # CONFIG
 # --------------------
+HOME_DIR="${HOME}"
 REPO_URL="https://github.com/leoreisdias/ai-rules-workflows.git"
-REPO_DIR="${AI_RULES_REPO:-$HOME/codes/ai-rules-workflows}"
+REPO_DIR="${AI_RULES_REPO:-$HOME_DIR/codes/ai-rules-workflows}"
 
-SRC_WORKFLOWS_DIR="$REPO_DIR/workflows"
+SRC_DIR="$REPO_DIR/workflows"
 
 # Destinations (user-scoped)
-DEST_KILO="$HOME/.kilocode/workflows"
-DEST_CURSOR="$HOME/.cursor/commands"
-DEST_GEMINI="$HOME/.gemini/commands"
-DEST_CODEX="$HOME/.codex/skills"
+DEST_KILO="$HOME_DIR/.kilocode/workflows"
+DEST_CURSOR="$HOME_DIR/.cursor/commands"
+DEST_ANTIGRAVITY="$HOME_DIR/.gemini/antigravity/global_workflows"
+DEST_GEMINI="$HOME_DIR/.gemini/commands"
+DEST_CODEX="$HOME_DIR/.codex/prompts"
 
-DELETE_MODE="false"
 DRY_RUN="false"
 
 for arg in "$@"; do
   case "$arg" in
-    --delete) DELETE_MODE="true" ;;   # remove generated outputs not present anymore
     --dry-run) DRY_RUN="true" ;;      # show actions without writing
     *)
       echo "Unknown arg: $arg"
-      echo "Usage: $0 [--dry-run] [--delete]"
+      echo "Usage: $0 [--dry-run]"
       exit 2
       ;;
   esac
@@ -41,78 +41,63 @@ run() {
 ensure_repo() {
   if [ ! -d "$REPO_DIR/.git" ]; then
     echo "▶ Repo not found. Cloning to $REPO_DIR"
-    run "mkdir -p \"$(dirname "$REPO_DIR")\""
-    run "git clone \"$REPO_URL\" \"$REPO_DIR\""
+    mkdir -p "$REPO_DIR"
+    git clone "$REPO_URL" "$REPO_DIR"
   else
     echo "▶ Repo found. Pulling latest..."
-    run "git -C \"$REPO_DIR\" pull --ff-only"
+    git -C "$REPO_DIR" pull --ff-only
   fi
 }
 
-# Normalize a filename to a safe skill/command name:
-# - lowercase
-# - spaces to hyphen
-# - keep a-z0-9-_ only
-normalize_name() {
-  local s="$1"
-  s="$(echo "$s" | tr '[:upper:]' '[:lower:]')"
-  s="$(echo "$s" | sed -E 's/[[:space:]]+/-/g')"
-  s="$(echo "$s" | sed -E 's/[^a-z0-9_-]+/-/g; s/-+/-/g; s/^-|-$//g')"
-  echo "$s"
-}
+copy_matches() {
+  local pattern="$1"
+  local dest="$2"
 
-# Extract a best-effort description:
-# - first non-empty line that is not a markdown heading marker only
-# - strip leading markdown tokens (#, -, *)
-extract_description() {
-  local file="$1"
-  local line
-  line="$(grep -m 1 -E '^[[:space:]]*[^[:space:]].*' "$file" || true)"
-  line="$(echo "$line" | sed -E 's/^[[:space:]]*(#+|\-|\*)[[:space:]]*//')"
-  line="$(echo "$line" | tr -d '\r')"
-  if [ -z "${line:-}" ]; then
-    echo "Generated workflow"
-  else
-    # cap length to avoid stupidly long descriptions
-    echo "$line" | cut -c1-140
+  run "mkdir -p \"$dest\""
+
+  # If no files match, do nothing (avoid cp errors)
+  if ! find "$SRC_DIR" -maxdepth 1 -type f -name "$pattern" -print -quit | grep -q .; then
+    echo "ℹ️  No '$pattern' found in $SRC_DIR (skipping $dest)"
+    return 0
   fi
+
+  # Copy as-is, keep original filenames
+  while IFS= read -r -d '' f; do
+    base="$(basename "$f")"
+    run "cp \"$f\" \"$dest/$base\""
+  done < <(find "$SRC_DIR" -maxdepth 1 -type f -name "$pattern" -print0)
 }
 
 escape_toml_string() {
-  # Escape double quotes and backslashes for TOML basic strings
+  # Escape backslashes and double quotes for TOML basic strings
   echo "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
 }
 
-sync_kilo_and_cursor() {
-  run "mkdir -p \"$DEST_KILO\" \"$DEST_CURSOR\""
-
-  # copy md as-is
-  while IFS= read -r -d '' f; do
-    base="$(basename "$f")"
-    run "cp \"$f\" \"$DEST_KILO/$base\""
-    run "cp \"$f\" \"$DEST_CURSOR/$base\""
-  done < <(find "$SRC_WORKFLOWS_DIR" -maxdepth 1 -type f -name "*.md" -print0)
-}
-
-generate_gemini_commands() {
+generate_gemini_from_md() {
   run "mkdir -p \"$DEST_GEMINI\""
 
-  # Each workflow.md -> ~/.gemini/commands/<name>.toml
-  while IFS= read -r -d '' f; do
-    filename="$(basename "$f")"
-    stem="${filename%.md}"
-    name="$(normalize_name "$stem")"
-    desc="$(extract_description "$f")"
-    desc_escaped="$(escape_toml_string "$desc")"
+  # If no .md files exist, skip.
+  if ! find "$SRC_DIR" -maxdepth 1 -type f -name "*.md" -print -quit | grep -q .; then
+    echo "ℹ️  No '*.md' found in $SRC_DIR (skipping Gemini)"
+    return 0
+  fi
 
-    out="$DEST_GEMINI/$name.toml"
+  # Each <workflow>.md -> ~/.gemini/commands/<workflow>.toml
+  while IFS= read -r -d '' f; do
+    base="$(basename "$f")"
+    stem="${base%.md}"
+    out="$DEST_GEMINI/$stem.toml"
+
+    # Best-effort description: first non-empty line, stripped from markdown heading tokens
+    desc="$(grep -m 1 -E '^[[:space:]]*[^[:space:]].*' "$f" | sed -E 's/^[[:space:]]*(#+|\*|\-)[[:space:]]*//' | tr -d '\r' || true)"
+    if [ -z "${desc:-}" ]; then
+      desc="Workflow: $stem"
+    fi
+    desc_escaped="$(escape_toml_string "$desc")"
 
     if [ "$DRY_RUN" = "true" ]; then
       echo "[dry-run] write $out"
     else
-      # Build TOML:
-      # description="..."
-      # prompt = """..."""
       {
         echo "description=\"$desc_escaped\""
         echo "prompt = \"\"\""
@@ -121,128 +106,34 @@ generate_gemini_commands() {
         echo "\"\"\""
       } > "$out"
     fi
-  done < <(find "$SRC_WORKFLOWS_DIR" -maxdepth 1 -type f -name "*.md" -print0)
-}
-
-generate_codex_skills() {
-  run "mkdir -p \"$DEST_CODEX\""
-
-  # Each workflow.md -> ~/.codex/skills/<skill-name>/SKILL.md
-  while IFS= read -r -d '' f; do
-    filename="$(basename "$f")"
-    stem="${filename%.md}"
-    skill="$(normalize_name "$stem")"
-    desc="$(extract_description "$f")"
-
-    skill_dir="$DEST_CODEX/$skill"
-    out="$skill_dir/SKILL.md"
-
-    run "mkdir -p \"$skill_dir\""
-
-    if [ "$DRY_RUN" = "true" ]; then
-      echo "[dry-run] write $out"
-    else
-      {
-        echo "---"
-        echo "name: $skill"
-        echo "description: $desc"
-        echo "metadata:"
-        echo "  short-description: $desc"
-        echo "---"
-        echo ""
-        cat "$f"
-        echo ""
-      } > "$out"
-    fi
-  done < <(find "$SRC_WORKFLOWS_DIR" -maxdepth 1 -type f -name "*.md" -print0)
-}
-
-delete_extras() {
-  # Removes files generated previously that no longer have a matching source .md.
-  # Only deletes what this script generates (gemini *.toml, codex skill folders, kilo/cursor *.md copies).
-
-  # Build set of current names
-  mapfile -t stems < <(find "$SRC_WORKFLOWS_DIR" -maxdepth 1 -type f -name "*.md" -printf "%f\n" | sed 's/\.md$//' | sort)
-
-  # Helper: check membership
-  has_stem() {
-    local s="$1"
-    for x in "${stems[@]}"; do
-      if [ "$x" = "$s" ]; then return 0; fi
-    done
-    return 1
-  }
-
-  # Kilo/Cursor: remove orphan *.md that match former sources
-  for d in "$DEST_KILO" "$DEST_CURSOR"; do
-    [ -d "$d" ] || continue
-    while IFS= read -r -d '' p; do
-      base="$(basename "$p")"
-      stem="${base%.md}"
-      # only delete if stem isn't in source set and file exists
-      if ! has_stem "$stem"; then
-        run "rm -f \"$p\""
-      fi
-    done < <(find "$d" -maxdepth 1 -type f -name "*.md" -print0)
-  done
-
-  # Gemini: delete orphan *.toml based on normalized names
-  if [ -d "$DEST_GEMINI" ]; then
-    while IFS= read -r -d '' p; do
-      base="$(basename "$p")"
-      name="${base%.toml}"
-      # if no source normalizes to this, delete
-      keep="false"
-      for s in "${stems[@]}"; do
-        if [ "$(normalize_name "$s")" = "$name" ]; then
-          keep="true"; break
-        fi
-      done
-      if [ "$keep" = "false" ]; then
-        run "rm -f \"$p\""
-      fi
-    done < <(find "$DEST_GEMINI" -maxdepth 1 -type f -name "*.toml" -print0)
-  fi
-
-  # Codex: delete skill folders whose name doesn't match any normalized source stem
-  if [ -d "$DEST_CODEX" ]; then
-    while IFS= read -r -d '' p; do
-      skill="$(basename "$p")"
-      keep="false"
-      for s in "${stems[@]}"; do
-        if [ "$(normalize_name "$s")" = "$skill" ]; then
-          keep="true"; break
-        fi
-      done
-      if [ "$keep" = "false" ]; then
-        run "rm -rf \"$p\""
-      fi
-    done < <(find "$DEST_CODEX" -mindepth 1 -maxdepth 1 -type d -print0)
-  fi
+  done < <(find "$SRC_DIR" -maxdepth 1 -type f -name "*.md" -print0)
 }
 
 main() {
   ensure_repo
 
-  if [ ! -d "$SRC_WORKFLOWS_DIR" ]; then
-    echo "❌ Source workflows dir not found: $SRC_WORKFLOWS_DIR"
+  if [ ! -d "$SRC_DIR" ]; then
+    echo "❌ Source workflows dir not found: $SRC_DIR"
     exit 1
   fi
 
-  echo "▶ Syncing from: $SRC_WORKFLOWS_DIR"
-  echo "   Kilo ->   $DEST_KILO"
-  echo "   Cursor -> $DEST_CURSOR"
-  echo "   Gemini -> $DEST_GEMINI (generated .toml)"
-  echo "   Codex ->  $DEST_CODEX (generated skills)"
+  echo "▶ Syncing from: $SRC_DIR"
+  echo "   Kilo ->        $DEST_KILO        (copies *.md)"
+  echo "   Cursor ->      $DEST_CURSOR      (copies *.md)"
+  echo "   Antigravity -> $DEST_ANTIGRAVITY (copies *.md)"
+  echo "   Gemini ->      $DEST_GEMINI      (generates *.toml from *.md)"
+  echo "   Codex ->       $DEST_CODEX       (copies *.md)"
 
-  sync_kilo_and_cursor
-  generate_gemini_commands
-  generate_codex_skills
+  # Workflows are Markdown
+  copy_matches "*.md" "$DEST_KILO"
+  copy_matches "*.md" "$DEST_CURSOR"
+  copy_matches "*.md" "$DEST_ANTIGRAVITY"
 
-  if [ "$DELETE_MODE" = "true" ]; then
-    echo "▶ Deleting extras not present in source..."
-    delete_extras
-  fi
+  # Gemini commands must be TOML, generated from the repo's .md workflows
+  generate_gemini_from_md
+
+  # Codex prompts are Markdown
+  copy_matches "*.md" "$DEST_CODEX"
 
   echo "✔ Done."
   if [ "$DRY_RUN" = "true" ]; then

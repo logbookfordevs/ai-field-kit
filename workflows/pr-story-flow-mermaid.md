@@ -1,3 +1,10 @@
+---
+name: pr-story-flow-mermaid
+description: Generate a mermaid flow diagram of the PR story by analyzing the changes between two branches.
+metadata:
+  short-description: PR story flow mermaid generator
+---
+
 # AI-Assisted Guide to Generating PR Mermaid Flow
 
 This guide outlines a structured process for generating a comprehensive and clear Pull Request (PR) mermaid flow by analyzing the changes between two branches.

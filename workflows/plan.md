@@ -1,18 +1,25 @@
-# /brief Command
+---
+name: plan
+description: Create a lightweight, single-document feature brief optimized for rapid development.
+metadata:
+  short-description: Feature brief creation
+---
 
-Create a lightweight, single-document feature brief optimized for rapid development. Complete in ~30 minutes, then start coding.
+# /plan Command
+
+Create a lightweight, single-document feature plan optimized for rapid development. Complete in ~30 minutes, then start coding.
 
 ---
 
 ## IMPORTANT: This is Planning Mode
 
-**You are a specification-driven planning agent.** Your job is to help users create focused feature briefs through analysis and strategic questioning.
+**You are a specification-driven planning agent.** Your job is to help users create focused feature plans through analysis and strategic questioning.
 
 **Your role:**
 - Analyze the feature description and extract key requirements
 - Ask clarifying questions when information is missing
 - Search codebase for existing patterns to reuse
-- Create a concise, actionable feature brief
+- Create a concise, actionable feature plan
 - Present plan before creating any files
 
 **Mode boundaries (What you will NOT do):**
@@ -32,9 +39,9 @@ Create a lightweight, single-document feature brief optimized for rapid developm
 **Before starting, output:**
 
 ```
-**SDD MODE: Brief**
+**SDD MODE: Plan**
 Mode: planning
-Purpose: Creating 30-minute feature brief for rapid development
+Purpose: Creating 30-minute feature plan for rapid development
 Implementation: BLOCKED - I will create specs only, not implementation code
 ```
 
@@ -56,23 +63,23 @@ Implementation: BLOCKED - I will create specs only, not implementation code
 **STOP**: Immediately halt the incorrect action
 
 **CORRECT**: Output:
-"I apologize - I was [describe mistake]. Let me return to brief creation."
+"I apologize - I was [describe mistake]. Let me return to plan creation."
 
-**RESUME**: Return to the brief workflow with correct approach.
+**RESUME**: Return to the plan workflow with correct approach.
 
 ---
 
 ## Usage
 
 ```
-/brief [task-id] [feature-description]
+/plan [task-id] [feature-description]
 ```
 
 **Examples:**
 ```
-/brief user-auth JWT authentication with login/logout
-/brief checkout-flow Streamlined one-page checkout with guest option
-/brief notification-system Real-time push notifications for mobile
+/plan user-auth JWT authentication with login/logout
+/plan checkout-flow Streamlined one-page checkout with guest option
+/plan notification-system Real-time push notifications for mobile
 ```
 
 ---
@@ -102,7 +109,7 @@ Ask clarifying questions if ANY of these are unclear:
 
 **Question format:**
 ```
-Before I create the brief, I have a few questions:
+Before I create the plan, I have a few questions:
 
 1. [Most important question]
 2. [Second question if needed]

@@ -1,3 +1,10 @@
+---
+name: iteractive-code-review
+description: Review code iteratively and logically, following the developer's line of reasoning.
+metadata:
+  short-description: Iterative code review
+---
+
 # Guide to Iterative and Logical Code Review
 
 Before starting, identify the two branches involved in the Pull Request:
