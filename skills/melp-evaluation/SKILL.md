@@ -1,6 +1,6 @@
 ---
 name: melp-evaluation
-description: Evaluate solutions using MELP: Maintainability, Efficiency, Legibility, Performance.
+description: Evaluate solutions using MELP - Maintainability, Efficiency, Legibility, Performance.
 metadata:
   short-description: MELP evaluation framework
 ---
