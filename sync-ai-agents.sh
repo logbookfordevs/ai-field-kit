@@ -71,5 +71,6 @@ sync_dir "$SKILLS_SRC" "$HOME_DIR/.gemini/antigravity/skills"
 sync_dir "$SKILLS_SRC" "$HOME_DIR/.codex/skills"
 sync_dir "$SKILLS_SRC" "$HOME_DIR/.kilocode/skills"
 sync_dir "$SKILLS_SRC" "$HOME_DIR/.kiro/skills"
+sync_dir "$SKILLS_SRC" "$HOME_DIR/.cursor/skills"
 
 echo "✔ All agents rules and skills updated from $REPO_DIR"
