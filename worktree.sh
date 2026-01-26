@@ -72,3 +72,10 @@ if command -v open >/dev/null 2>&1; then
     open -a Terminal "$wt_dir"
   fi
 fi
+
+echo ""
+echo "✅ Worktree ready at:"
+echo "👉 $WT_PATH"
+echo ""
+
+cd "$WT_PATH"
