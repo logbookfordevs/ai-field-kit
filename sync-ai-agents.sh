@@ -84,6 +84,9 @@ main() {
   # KiloCode
   link_rule "$HOME_DIR/.kilocode/rules/AGENTS.md"
 
+  # Claude
+  link_rule "$HOME_DIR/.claude/CLAUDE.md"
+
   echo "✔ Done. Rules are now single-source via symlink."
   echo "ℹ️  Skills sync removed: you’re handling skills via npx skills + ~/.agents/skills."
 }
