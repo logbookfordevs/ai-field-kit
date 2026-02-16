@@ -31,7 +31,7 @@ Always prioritize DX (developer experience). Keep code:
 - Debuggable
 - Easy to onboard into
 
-When the task is a review/refactor guidance, use the **`dx-code-review` skill**.
+When the task involves writing, changing, reviewing, or refactoring code, use the **`dx-code-review` skill**.
 <!-- #endregion -->
 
 <!-- #region Coding Style Instructions -->

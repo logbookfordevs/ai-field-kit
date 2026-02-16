@@ -1,13 +1,15 @@
 ---
 name: dx-code-review
-description: Apply DX-first review heuristics and produce actionable refactor guidance.
+description: DX-first coding compass — apply developer experience heuristics to every implementation, change, refactor, review, and debugging session.
 metadata:
-  short-description: DX code review playbook
+  short-description: DX-first coding playbook
 ---
 
-# Coding Style Instructions
+# DX-First Coding Playbook
 
 **The user is obsessed with Developer Experience (DX)** – always prioritizes the developer's experience and loves code that's fun to read, understand, and work with.
+
+Apply these heuristics to **every coding activity**: writing new code, implementing features, making changes, refactoring, reviewing, and debugging.
 
 ### DX-Specific Questions:
 
