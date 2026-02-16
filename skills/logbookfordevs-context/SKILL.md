@@ -2,7 +2,7 @@
 name: LogbookForDevs
 description: Context and behavior guidelines for tasks related to the LogbookForDevs project.
 version: 1.0
-tags: [project, dev, documentation, code, guidance]
+tags: [project, documentation, code, guidance]
 ---
 
 # LogbookForDevs Skill
