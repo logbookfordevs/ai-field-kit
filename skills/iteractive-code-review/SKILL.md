@@ -31,6 +31,43 @@ git diff --name-only <base_branch>...<feature_branch>
 - `<base_branch>`: The target branch (e.g., `development`, `main`).
 - `<feature_branch>`: The branch containing the changes to be reviewed.
 
+### Step 1.5: Expand Impact Beyond the Diff (Mandatory)
+
+When a PR changes shared contracts, you **MUST** review impacted files outside the diff.
+
+Treat the PR as "contract-touching" when it changes at least one of the following:
+
+- Request/response fields (added, removed, renamed, required, optional)
+- Endpoint paths or HTTP methods
+- Validation rules (required fields, limits, conditional requirements)
+- Shared constants/enums used for persistence, analytics, or branching
+- Lifecycle/status transitions that affect behavior in multiple entrypoints
+
+For contract-touching PRs, execute this mandatory flow:
+
+1. Extract contract tokens from the diff (field names, endpoint fragments, constants, statuses).
+2. Search the branch for every token and identify all callers/consumers.
+3. Build an **Impact Map** that includes:
+   - Changed files
+   - Unchanged but impacted files
+   - Any uncertain paths requiring follow-up
+4. Add impacted unchanged files to the review TODO list before Step 3.
+5. Do not finalize the review until each discovered caller is reviewed or explicitly marked out-of-scope with a concrete reason.
+
+Use commands such as:
+
+```bash
+git diff --name-only <base_branch>...<feature_branch>
+git diff <base_branch>...<feature_branch>
+git grep -n "<tokenA>\\|<tokenB>" <feature_branch> -- '*.js' '*.jsx' '*.ts' '*.tsx'
+```
+
+Before starting file-by-file analysis, always show:
+
+- **Impact Map**
+- **Unchanged files added to review scope**
+- **Potential blind spots** (if any)
+
 ### Step 2: Define and Display the Logical Review Order
 
 Before diving into the files, map out the "story" of the changes by visualizing how the components are built or assembled, from foundational elements to dependent parts. This diagram illustrates the **dependency hierarchy** and the logical order in which the system's pieces fit together. It makes the abstract concept of a "logical flow" concrete and easy to follow for the **USER** to understand the proposed review flow and agree to it.
@@ -166,9 +203,9 @@ A code change is never isolated. To perform a truly insightful review, you must 
 
 **The Core Rule: Proactively Seek Context**
 
-You **MUST** feel empowered to read and analyze files that are **NOT** part of the Pull Request to understand the full impact of the changes.
+You **MUST** read and analyze files that are **NOT** part of the Pull Request when Step 1.5 identifies cross-file impact.
 
-If you identify that a change in `file_A.ts` might affect logic in `file_B.ts` (which is not in the PR), you **SHOULD** proactively state your intention to read `file_B.ts` to provide a complete analysis.
+If you identify that a change in `file_A.ts` might affect logic in `file_B.ts` (which is not in the PR), you **MUST** explicitly state that `file_B.ts` is being added to the review scope and why.
 
 **Example Interaction:**
 
