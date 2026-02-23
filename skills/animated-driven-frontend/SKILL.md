@@ -1,0 +1,82 @@
+---
+name: animated-driven-frontend
+description: Design and implement animated UIs as cinematic, interactive, and immersive experiences. Use when the user asks for motion direction or choreography (timing, easing, sequencing), microinteractions (hover, press, drag, toggle), route or layout transitions (shared elements), motion systems (tokens, primitives, patterns), creative coding, immersive place metaphors (OS-like UI), or optional sound and 3D.
+---
+
+# Animated-Driven Frontend
+
+Use this skill to turn UIs into directed experiences: clear narrative flow, responsive interactivity, and optional worldbuilding. Motion is not decoration by default. It is a communication layer.
+
+## When to use
+Use this skill when the user requests animated UI direction, interaction choreography, motion systems, playful/creative coding interactions, or immersive UI metaphors.
+
+## Default preference (with escalation)
+
+* Default motion library: **`motion` / `motion/react`** (Framer Motion successor) for UI choreography.
+* Never use `framer-motion` in this codebase.
+* Escalate to **GSAP** for scrolltelling or timeline-heavy sequences.
+* Use **react-spring** when nuanced physics control is central.
+* Use **3D** (Three.js / react-three-fiber) only when depth or spatial metaphor strengthens the narrative.
+* Sound is optional; if used, it must be user-controllable and accessible.
+
+For full stack selection rules and dependency checks, see: `references/STACK-PREFERENCES.md`.
+
+## Core principles
+
+* Motion communicates state, intent, and hierarchy. Avoid “movement for movement’s sake”.
+* Clarity first, delight second.
+* Performance is part of aesthetics.
+* Interactivity is gameplay: the user should feel they can “touch” the UI.
+* Surprise is allowed, but never at the cost of comprehension.
+* Respect accessibility: `prefers-reduced-motion`, focus continuity, and readable states.
+
+## Modes
+
+Choose a mode before designing motion. For full definitions and examples, see: `references/MODES.md`.
+
+* **cinematic-clarity**: guided flow, subtle direction, editorial polish.
+* **playful-showcase**: interactive delight, reactive elements, “creative coding” energy.
+* **immersive-worldbuilding**: environment-first UI (place/OS metaphor), deep immersion.
+* **full-spectrum**: author mode; combine all, with guardrails.
+
+## Design dials
+
+Use dials to calibrate outputs without changing the mode.
+
+* **motion-intensity**: static → fluid → cinematic
+* **spatial-variance**: symmetric → offset → asymmetric
+* **visual-density**: gallery → standard app → data-dense
+
+Dial definitions and defaults live here: `references/DIALS.md`.
+
+## Execution workflow
+
+1. Clarify intent: what changes, why, and what the user should perceive/feel.
+2. Pick a mode + set dials.
+3. Define motion roles: entrance, emphasis, feedback, transition, exit.
+4. Assign tokens: duration, easing/spring, delay, stagger.
+5. Prototype the smallest viable motion. Validate performance early.
+6. Add interactive “gameplay” where it strengthens memorability.
+7. Validate accessibility and state continuity.
+8. Ship with maintainable primitives and names.
+
+If you need a grab-bag of building blocks, see: `references/PATTERNS.md`.
+
+## Engineering guardrails
+
+Use these as non-negotiables. Details and recipes: `references/GUARDRAILS.md`.
+
+* Prefer `transform` + `opacity` animations.
+* Avoid layout thrashing and heavy re-renders.
+* Isolate continuous/CPU-heavy effects.
+* Sound is opt-in and must be easy to mute.
+
+## What to produce
+
+Depending on the request, produce one or more of:
+
+* a short motion spec (states, roles, tokens, constraints)
+* recommended component primitives (e.g., `MotionProvider`, token maps)
+* implementation guidance or code snippets aligned to the project stack
+
+Templates live in: `references/TEMPLATES.md`.
