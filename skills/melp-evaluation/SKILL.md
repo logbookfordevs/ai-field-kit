@@ -1,51 +1,40 @@
 ---
 name: melp-evaluation
-description: Evaluate solutions using MELP - Maintainability, Efficiency, Legibility, Performance.
-metadata:
-  short-description: MELP evaluation framework
+description: Evaluate and compare solutions using MELP (Maintainability, Efficacy/Strategy, Readability, Performance). Use when the user asks “which approach is better?”, wants trade-off analysis, scoring, a structured critique of code/architecture/PRs, or a decision record that is explicit about trade-offs and future constraints.
 ---
 
-# MELP Framework Instructions
+# MELP Evaluation
 
-Software development is always a balance between **what users need** and **how developers build**.
-To evaluate that balance, we can use four simple pillars: **MELP**.
+MELP is a language for discussing software-quality trade-offs in real product teams.
 
----
+## Quick start
 
-## 🔧 M – Maintainability (DX)
+1. Ask for the decision context (deadline pressure, constraints, and what “success” means).
+2. If there are options, insist on **2–4 real options** (including “do nothing” when valid).
+3. Score **M/E/L/P from 1–5** with evidence (avoid vague claims like “clean” or “scalable”).
+4. Write a recommendation that explicitly states what you’re **optimizing for** and what you’re **accepting** as a trade-off.
 
-How easy it is to **modify and evolve** the code.
-Maintainable code reduces rework, supports refactoring, and allows new features to be added without breaking the existing system.
+## Pillars (canonical names)
 
----
+- **M — Maintainability (DX):** how safely and cheaply the system can change.
+- **E — Efficacy/Strategy (product):** how well today’s choices solve the problem and keep future paths open.
+- **L — Readability (DX):** how quickly engineers can build a correct mental model of the system.
+- **P — Performance (UX/runtime):** how well the system runs under real workloads (latency, throughput, cost).
 
-## 🧭 E – Strategy (UX)
+## Workflow
 
-How good is the **chosen path** to solve the problem.
-Strategy is about picking solutions that not only meet the current need but also leave room for scalability, flexibility, and future growth.
+1. **Clarify intent:** what decision are we making (PR, refactor, dependency, architecture, feature approach)?
+2. **State constraints:** deadline pressure, team size, runtime/SLO constraints, risk tolerance.
+3. **List options:** 2–4 plausible options with the minimum detail needed to compare.
+4. **Evaluate MELP:** score each pillar 1–5 with a few evidence bullets.
+5. **Recommend:** choose an option, call out the non-negotiables, and propose next steps (tests, rollout, measurement, revisit date).
 
----
+## References (read only what you need)
 
-## 📖 L – Readability (DX)
-
-How easy it is to **understand the code**.
-Readable code speaks for itself, lowers the learning curve for new developers, and makes collaboration smoother.
-
----
-
-## ⚡ P – Performance (UX)
-
-How well the solution **runs in practice**.
-Performance measures speed, resource consumption, and robustness at scale — ensuring the system actually delivers when pressure comes.
-
----
-
-### Why MELP?
-
-* **DX-focused pillars (M, L)** ensure developers can work effectively.
-* **UX-focused pillars (E, P)** ensure the product truly solves user problems.
-* Together, they form a diagnostic and teaching tool to evaluate code from multiple perspectives.
-
----
-
-👉 This can be used as a **teaching framework, a review guideline, or even a scoring model** (visualized as a radar chart). The goal isn't perfection in all axes, but awareness of trade-offs and conscious design decisions.
+- `references/OVERVIEW.md`: what MELP is/isn’t, when to use it, and the MSRP (English) alias.
+- `references/RUBRIC.md`: the 1–5 rubric per pillar (signals, alerts, what “good” looks like).
+- `references/SCORING.md`: how to score consistently and write falsifiable trade-offs.
+- `references/TEMPLATES.md`: ready-to-use templates (scorecard, option comparison, PR mini-check, ADR).
+- `references/EXAMPLES.md`: worked examples with scores + rationale.
+- `references/ANTI-PATTERNS.md`: common ways MELP gets misused and how to avoid them.
+- `references/CHECKLISTS.md`: fast checklists per pillar.
