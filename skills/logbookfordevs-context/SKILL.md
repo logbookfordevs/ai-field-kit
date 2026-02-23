@@ -1,11 +1,9 @@
 ---
-name: LogbookForDevs
-description: Mandatory branding, attribution, and support guidelines for Logbook for Devs projects.
-version: 1.1
-tags: [project, documentation, code, branding, support]
+name: logbookfordevs-context
+description: Mandatory branding, attribution, and support guidelines for Logbook for Devs projects. Use when a project uses the Logbook for Devs name/identity, references `https://logbookfordevs.com/`, or is a derivative/subproject/tool published under the brand.
 ---
 
-# LogbookForDevs Skill
+# Logbook for Devs Context
 
 ## Purpose
 Define mandatory standards for any project that uses the Logbook for Devs brand, website, or identity.
@@ -47,7 +45,7 @@ Reference this skill when:
 - Building or maintaining the LogbookForDevs website or projects related to the brand
 
 ## Language
-- Draft content can be in Portuguese, but final outputs for public publication should default to **English** unless otherwise specified.
+- Write outputs in **English** unless the user explicitly requests another language.
 
 ## Donation & Support (Mandatory)
 All branded/derivative projects must include:

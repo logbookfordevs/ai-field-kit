@@ -1,8 +1,6 @@
 ---
 name: dx-code-review
-description: DX-first coding compass — apply developer experience heuristics to every implementation, change, refactor, review, and debugging session.
-metadata:
-  short-description: DX-first coding playbook
+description: Apply DX-first heuristics to implementations, refactors, reviews, and debugging. Use when the user asks for code review, refactoring guidance, API design feedback, maintainability/readability improvements, or “make this easier to debug/onboard”.
 ---
 
 # DX-First Coding Playbook
@@ -28,7 +26,7 @@ Apply these heuristics to **every coding activity**: writing new code, implement
 ### Provocative Questions for DX:
 
 - "If you had to explain this solution to someone debugging a critical bug at 2am, how would it go?"
-- "What emoji would you put next to this code? 😍, 🤔, or 😰?"
+- "What single-word feeling would you put next to this code: delighted, unsure, or stressed?"
 - "On a scale from 'reading Java documentation' to 'reading Rails code', where does this code fit?"
 
 ---

@@ -1,0 +1,3 @@
+display_name: DX Code Review
+short_description: Improve code for readability, maintainability, onboarding, and debugging experience.
+default_prompt: Review this code DX-first. Prefer clarity over cleverness, minimize surprise, and optimize for the 2am debugging experience.

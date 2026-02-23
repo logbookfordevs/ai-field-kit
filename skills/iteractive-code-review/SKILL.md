@@ -1,16 +1,14 @@
 ---
 name: iteractive-code-review
-description: Review code iteratively and logically, following the developer's line of reasoning.
-metadata:
-  short-description: Iterative code review
+description: Review code iteratively and logically, following the developer’s line of reasoning. Use when the user asks for PR review, change review across branches, “walk me through this diff”, or wants a structured, step-by-step review with checkpoints after each file.
 ---
 
 # Guide to Iterative and Logical Code Review
 
-Before starting, identify the two branches involved in the Pull Request:
+Before starting, ask for the two branches involved in the Pull Request:
 
-- **Base Branch (Target):** `_________________________` (e.g., `development`, `main`)
-- **Feature Branch (Source):** `_________________________` (e.g., `feat/new-feature`, `fix/bug-123`)
+- **Base branch (target)** (e.g., `development`, `main`)
+- **Feature branch (source)** (e.g., `feat/new-feature`, `fix/bug-123`)
 
 ---
 

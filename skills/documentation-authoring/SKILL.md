@@ -1,8 +1,6 @@
 ---
 name: documentation-authoring
-description: Write documentation using the full DocX playbook (journeys, progressive disclosure, validation).
-metadata:
-  short-description: DocX documentation playbook
+description: Write documentation using the DocX playbook (journeys, progressive disclosure, validation). Use when the user asks to write, rewrite, structure, or audit docs (READMEs, guides, API docs, onboarding, troubleshooting, runbooks) and wants a reader-first approach with quick wins first.
 ---
 
 # Documentation Instructions
@@ -115,7 +113,7 @@ const user = await api.getUser({
 - Time until first implementation works
 - Drop-off rate in the documentation
 - Number of support tickets avoided
-- **"Emoji test"**: what emoji would someone use after your doc? 😍, 😐, or 😤?
+- **“Reaction test”**: would a reader feel delighted, neutral, or frustrated after following your doc?
 
 ## Rule 11: Keep It Alive
 
