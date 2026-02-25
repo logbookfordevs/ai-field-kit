@@ -15,6 +15,7 @@ Use these when you need a quick pass (e.g., PR review). For anything sticky, swi
 - What future path does this open (or close)?
 - Is there an extension/migration story?
 - What’s plan B if the choice fails (rollback, adapter, fallback)?
+- Are regulatory/security risks explicit and accepted (or mitigated) before scoring?
 
 ## C — Clarity
 
@@ -29,3 +30,9 @@ Use these when you need a quick pass (e.g., PR review). For anything sticky, swi
 - Are timeouts/retries/limits explicit for external calls?
 - Do we have graceful degradation paths?
 - Are performance claims backed by measurement (baseline + target)?
+- Is the runtime cost of protections (encryption, verification, scanning) measured and budgeted?
+
+## Boundary constraints (gate before scoring)
+
+- Does the option meet the non-negotiable security baseline (for example, OWASP requirements and no PII exposure)?
+- If baseline security fails, did we stop and fix compliance before M/S/C/P scoring?

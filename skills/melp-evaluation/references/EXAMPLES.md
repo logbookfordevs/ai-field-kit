@@ -53,3 +53,20 @@ These examples are intentionally small. The point is to show how to write **evid
 - **P:** 4 — direct code is often faster; indirection can add overhead (small but real).
 
 **Recommendation:** Prefer (B) or (C) until repetition is proven; avoid abstraction-by-fear.
+
+## Example 5: Feature blocked by Security baseline
+
+**Decision:** Ship a customer analytics feature using event payloads from multiple services.
+**Options:** (A) Ship quickly with raw payload forwarding, (B) Add server-side PII redaction + policy checks, (C) Delay release.
+
+**Boundary check first**
+- Current option (A) fails baseline security (PII exposure risk and incomplete OWASP controls).
+- Result: option (A) is **not score-eligible** until remediation is in place.
+
+**Scores (1–5) after baseline-compliant options only**
+- **M:** 3 — policy and redaction layer adds maintenance overhead, but changes stay localized.
+- **S:** 4 — option (B) preserves launch intent while reducing regulatory exposure.
+- **C:** 4 — explicit redaction boundaries improve decision-scope comprehension.
+- **P:** 3 — runtime overhead from protection steps is measurable and acceptable.
+
+**Recommendation:** Choose (B), enforce baseline controls first, then optimize performance. Do not let runtime concerns override the declared objective or security boundary.

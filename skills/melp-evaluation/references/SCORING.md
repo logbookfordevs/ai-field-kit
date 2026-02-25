@@ -24,6 +24,14 @@ Avoid:
 - If you can’t justify a number, write the trade-off first, then infer the score.
 - When uncertain, prefer **3** and list what you’d need to learn to move it up/down.
 
+## Boundary constraints before scoring
+
+Check non-negotiable baselines before any M/S/C/P scoring. Security is a transversal boundary constraint, not a fifth pillar.
+
+- If the option fails the agreed security baseline (for example, OWASP requirements or no PII exposure), it is **not score-eligible** yet.
+- Fix baseline compliance first, then score trade-offs across the four pillars.
+- In rationale, record where security pressure appears most directly: **Strategy** (risk/regulatory exposure) and **Performance** (runtime cost of protections).
+
 ## The MSCP brief (one-page decision record)
 
 For non-trivial decisions (dependency, refactor, architecture, feature approach), write a short MSCP brief near the code (ADR-style).

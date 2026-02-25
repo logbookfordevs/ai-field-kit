@@ -4,6 +4,8 @@
 
 **Decision:** <what are we deciding?>
 **Context:** <deadline pressure + constraints + definition of success>
+**Boundary constraints (must hold before scoring):**
+- Security baseline: <OWASP/compliance/PII constraints that are non-negotiable>
 
 **Options**
 - A: <…>
@@ -65,3 +67,4 @@ Write as if the reader can see the diff already (do not include file paths, line
 - **Strategy:** <risk + extension/migration story>
 - **Clarity:** <improve speed and accuracy of understanding the decision scope (naming, structure, flow, and reduced indirection)>
 - **Performance:** <measurement/guardrail request>
+- **Boundary constraints:** <confirm security baseline is met; if not, request remediation before trade-off scoring>

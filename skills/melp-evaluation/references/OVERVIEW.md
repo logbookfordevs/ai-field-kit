@@ -23,6 +23,10 @@ Use **MSCP** as the canonical acronym in this repo.
 - **C — Clarity (DX):** the speed and accuracy with which an engineer can construct a correct mental model of the decision scope (a function, module, PR, or system).
 - **P — Performance (UX/runtime):** how well the system runs under real workloads (latency, throughput, cost).
 
+## Security as a transversal boundary constraint
+
+Security is intentionally not a fifth pillar. In practice, it behaves less like a tradeable axis and more like a boundary constraint: a non-negotiable baseline (for example, OWASP requirements and no PII exposure) that must hold regardless of optimization. Security concerns typically surface through Strategy (risk posture, regulatory exposure) and Performance (runtime cost of protections). Treating Security as transversal preserves MSCP's conceptual clarity and avoids overlap.
+
 ## Tension is the point
 
 The pillars are intentionally in tension. Examples:
