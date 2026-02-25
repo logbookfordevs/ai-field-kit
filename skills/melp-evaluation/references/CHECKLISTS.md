@@ -1,6 +1,6 @@
-# MELP Checklists (fast)
+# MSCP Checklists (fast)
 
-Use these when you need a quick pass (e.g., PR review). For anything sticky, switch to the MELP brief.
+Use these when you need a quick pass (e.g., PR review). For anything sticky, switch to the MSCP brief.
 
 ## M — Maintainability
 
@@ -9,16 +9,16 @@ Use these when you need a quick pass (e.g., PR review). For anything sticky, swi
 - Are boundaries/cohesion improving or getting blurrier?
 - Is the change easy to revert or isolate?
 
-## E — Efficacy/Strategy
+## S — Strategy
 
 - Does this solve the real problem under current constraints?
 - What future path does this open (or close)?
 - Is there an extension/migration story?
 - What’s plan B if the choice fails (rollback, adapter, fallback)?
 
-## L — Readability
+## C — Clarity
 
-- Can a reviewer follow the main flow without opening 5+ files?
+- Can a reviewer construct a correct mental model of the decision scope quickly?
 - Do names express the domain (verbs + nouns that tell the story)?
 - Is indirection minimized and justified?
 - Is complexity surfaced (explicit types/contracts/config) rather than hidden?

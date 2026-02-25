@@ -1,6 +1,6 @@
-# MELP Anti-patterns
+# MSCP Anti-patterns
 
-## Turning MELP into a checklist
+## Turning MSCP into a checklist
 
 **Symptom:** “We checked the boxes” replaces a real trade-off discussion.
 

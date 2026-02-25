@@ -1,6 +1,6 @@
-# Scoring MELP Consistently
+# Scoring MSCP Consistently
 
-MELP works when it replaces adjectives with **evidence** and **falsifiable statements**.
+MSCP works when it replaces adjectives with **evidence** and **falsifiable statements**.
 
 ## Evidence standards (what “counts”)
 
@@ -24,9 +24,9 @@ Avoid:
 - If you can’t justify a number, write the trade-off first, then infer the score.
 - When uncertain, prefer **3** and list what you’d need to learn to move it up/down.
 
-## The MELP brief (one-page decision record)
+## The MSCP brief (one-page decision record)
 
-For non-trivial decisions (dependency, refactor, architecture, feature approach), write a short MELP brief near the code (ADR-style).
+For non-trivial decisions (dependency, refactor, architecture, feature approach), write a short MSCP brief near the code (ADR-style).
 
 Minimal template:
 

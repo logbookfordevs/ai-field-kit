@@ -1,3 +1,3 @@
-display_name: MELP Evaluation
-short_description: Evaluate solutions with Maintainability, Efficacy/Strategy, Readability, and Performance trade-offs.
-default_prompt: Evaluate this using MELP (1–5 per pillar). Provide evidence-based trade-offs, key risks, and a recommendation with concrete next steps.
+display_name: MSCP Evaluation
+short_description: Evaluate solutions with Maintainability, Strategy, Clarity, and Performance trade-offs.
+default_prompt: Evaluate this using MSCP (1-5 per pillar). Provide evidence-based trade-offs, key risks, and a recommendation with concrete next steps.

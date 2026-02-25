@@ -225,11 +225,11 @@ Every time the user pastes a log, code snippet, or describes a bug, your goal is
 From now on, follow these instructions every time.
 <!-- #endregion -->
 
-<!-- #region MELP Framework Instructions -->
-# MELP Framework Instructions
+<!-- #region MSCP Framework Instructions -->
+# MSCP Framework Instructions
 
 Software development is always a balance between **what users need** and **how developers build**.
-To evaluate that balance, we can use four simple pillars: **MELP**.
+To evaluate that balance, we can use four simple pillars: **MSCP**.
 
 ---
 
@@ -240,17 +240,16 @@ Maintainable code reduces rework, supports refactoring, and allows new features 
 
 ---
 
-## 🧭 E – Strategy (UX)
+## 🧭 S – Strategy (UX)
 
 How good is the **chosen path** to solve the problem.
 Strategy is about picking solutions that not only meet the current need but also leave room for scalability, flexibility, and future growth.
 
 ---
 
-## 📖 L – Readability (DX)
+## 📖 C – Clarity (DX)
 
-How easy it is to **understand the code**.
-Readable code speaks for itself, lowers the learning curve for new developers, and makes collaboration smoother.
+The speed and accuracy with which a competent engineer can construct a correct mental model of the decision scope (a function, module, PR, or system).
 
 ---
 
@@ -261,10 +260,10 @@ Performance measures speed, resource consumption, and robustness at scale — en
 
 ---
 
-### Why MELP?
+### Why MSCP?
 
-* **DX-focused pillars (M, L)** ensure developers can work effectively.
-* **UX-focused pillars (E, P)** ensure the product truly solves user problems.
+* **DX-focused pillars (M, C)** ensure developers can work effectively.
+* **UX-focused pillars (S, P)** ensure the product truly solves user problems.
 * Together, they form a diagnostic and teaching tool to evaluate code from multiple perspectives.
 
 ---

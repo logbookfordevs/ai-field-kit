@@ -1,4 +1,4 @@
-# MELP Rubric (1–5)
+# MSCP Rubric (1-5)
 
 Use this rubric to score each pillar from **1 (weak)** to **5 (excellent)**. The goal is consistency and evidence, not perfection.
 
@@ -21,7 +21,7 @@ Use this rubric to score each pillar from **1 (weak)** to **5 (excellent)**. The
 - **3:** Most changes are manageable; some hotspots are risky or poorly covered.
 - **5:** Changes are predictable and cheap; tests + boundaries make refactors safe.
 
-## E — Efficacy/Strategy (product)
+## S — Strategy (product)
 
 **Definition:** choosing a path that works today without trapping you tomorrow.
 
@@ -40,9 +40,9 @@ Use this rubric to score each pillar from **1 (weak)** to **5 (excellent)**. The
 - **3:** Reasonable path with some extension story; a few risks remain unmitigated.
 - **5:** Clear rationale + future-proofing where it matters; explicit revisit points.
 
-## L — Readability (DX)
+## C — Clarity (DX)
 
-**Definition:** how quickly a competent engineer can build a correct mental model and answer “what happens if I change this?”
+**Definition:** the speed and accuracy with which a competent engineer can construct a correct mental model of the decision scope (a function, module, PR, or system).
 
 **Signals**
 - Names tell the story of the domain (semantic naming).

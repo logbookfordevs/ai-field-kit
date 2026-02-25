@@ -1,4 +1,4 @@
-# MELP Worked Examples
+# MSCP Worked Examples
 
 These examples are intentionally small. The point is to show how to write **evidence-based trade-offs**, not to “win” on every pillar.
 
@@ -9,8 +9,8 @@ These examples are intentionally small. The point is to show how to write **evid
 
 **Scores (1–5)**
 - **M:** 3 — cache adds invalidation paths and more moving parts.
-- **E:** 4 — combines quick win (TTL) with a plan to move to a more durable fix.
-- **L:** 3 — more branches; needs strong naming + docs around cache policy.
+- **S:** 4 — combines quick win (TTL) with a plan to move to a more durable fix.
+- **C:** 3 — more branches; the mental model is slower to construct without stronger structure notes.
 - **P:** 5 — direct improvement on tail latency with guardrails.
 
 **Recommendation:** Start with (B) if feasible quickly; otherwise (A) with explicit invalidation + monitoring, and a revisit date.
@@ -22,8 +22,8 @@ These examples are intentionally small. The point is to show how to write **evid
 
 **Scores (1–5)**
 - **M:** 4 — adapter pattern localizes changes.
-- **E:** 5 — hybrid keeps paths open and reduces lock-in risk.
-- **L:** 4 — clear boundary (`VendorClient`, `DomainService`) keeps code navigable.
+- **S:** 5 — hybrid keeps paths open and reduces lock-in risk.
+- **C:** 4 — clear boundary (`VendorClient`, `DomainService`) keeps the decision scope understandable and code navigable.
 - **P:** 3 — adds network dependency; requires timeouts + fallback.
 
 **Recommendation:** Prefer (C) with explicit timeouts, retry policy, and a documented exit story.
@@ -35,8 +35,8 @@ These examples are intentionally small. The point is to show how to write **evid
 
 **Scores (1–5)**
 - **M:** 5 — incremental boundaries reduce future surgery.
-- **E:** 4 — preserves shipping while improving architecture; set checkpoints.
-- **L:** 4 — module naming + file focus improves mental model.
+- **S:** 4 — preserves shipping while improving architecture; set checkpoints.
+- **C:** 4 — module naming + file focus improves mental-model accuracy and speed.
 - **P:** 3 — refactors can regress perf; require baseline + measurement.
 
 **Recommendation:** (A) with a small ADR per extraction and perf baselines to prevent regressions.
@@ -48,8 +48,8 @@ These examples are intentionally small. The point is to show how to write **evid
 
 **Scores (1–5)**
 - **M:** 3 — abstraction can help later, but adds surface area now.
-- **E:** 2 — unclear future need; risks locking design too early.
-- **L:** 2 — extra indirection makes the main flow harder to follow.
+- **S:** 2 — unclear future need; risks locking design too early.
+- **C:** 2 — extra indirection makes the decision scope harder to model correctly.
 - **P:** 4 — direct code is often faster; indirection can add overhead (small but real).
 
 **Recommendation:** Prefer (B) or (C) until repetition is proven; avoid abstraction-by-fear.
