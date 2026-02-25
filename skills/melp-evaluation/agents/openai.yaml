@@ -1,3 +1,0 @@
-display_name: MSCP Evaluation
-short_description: Evaluate solutions with Maintainability, Strategy, Clarity, and Performance trade-offs.
-default_prompt: Evaluate this using MSCP (1-5 per pillar). Provide evidence-based trade-offs, key risks, and a recommendation with concrete next steps.
