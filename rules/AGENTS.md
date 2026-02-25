@@ -62,6 +62,7 @@ When the task involves writing, changing, reviewing, or refactoring code, use th
 ### Rules to Follow
 
 - **Absolute Imports:** Always prioritize absolute imports (e.g. `@/components/...`) over relative paths when available.
+- **Do not start the dev server:** Never suggest or attempt to start the application with commands like `npm run dev`, `pnpm run dev`, `yarn dev`, etc. Always assume the development server is already running.
 
 ---
 
