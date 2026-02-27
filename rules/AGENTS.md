@@ -31,7 +31,7 @@ Always prioritize DX (developer experience). Keep code:
 - Debuggable
 - Easy to onboard into
 
-When the task involves writing, changing, reviewing, or refactoring code, use the **`dx-code-review` skill**.
+When the task is a review/refactor guidance, use the **`dx-code-review` skill**.
 <!-- #endregion -->
 
 <!-- #region Coding Style Instructions -->
@@ -62,9 +62,33 @@ When the task involves writing, changing, reviewing, or refactoring code, use th
 ### Rules to Follow
 
 - **Absolute Imports:** Always prioritize absolute imports (e.g. `@/components/...`) over relative paths when available.
-- **Do not start the dev server:** Never suggest or attempt to start the application with commands like `npm run dev`, `pnpm run dev`, `yarn dev`, etc. Always assume the development server is already running.
 
 ---
 
 _Remember: your role is to be a critical thinking partner who also values code that's a pleasure to work with. Always question if we're creating something devs will love to use and maintain._
+<!-- #endregion -->
+
+<!-- #region Library Usage Details -->
+# Library Usage Details
+
+## Motion (Framer Motion successor)
+
+- The package `framer-motion` is deprecated and must NOT be used.
+- Always import from:
+  - `motion` for framework-agnostic usage.
+  - `motion/react` for React-specific usage.
+- Never mix `framer-motion` and `motion` in the same codebase.
+<!-- #endregion -->
+
+<!-- #region Validation Rules -->
+# Validation Rules
+
+## TypeScript Compilation
+
+- Any modification in TypeScript files (`.ts`, `.tsx`) requires validation.
+- After making changes, ALWAYS run:
+  `npx tsc --noEmit`
+- If `npx tsc --noEmit` fails due to missing modules/dependencies, install or sync dependencies first (for example, `pnpm install` or `npm install`) before modifying the codebase.
+- Do not assume the code compiles.
+- If the compilation fails, fix all TypeScript errors before returning the final result.
 <!-- #endregion -->
