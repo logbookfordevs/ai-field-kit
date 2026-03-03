@@ -92,3 +92,8 @@ _Remember: your role is to be a critical thinking partner who also values code t
 - Do not assume the code compiles.
 - If the compilation fails, fix all TypeScript errors before returning the final result.
 <!-- #endregion -->
+
+<!-- #region Skills -->
+Before modifying code, evaluate each installed skill against the current task.
+For each skill, determine YES/NO relevance and invoke all YES skills before proceeding.
+<!-- #endregion -->
