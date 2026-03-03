@@ -38,6 +38,26 @@ copy_to_canonical() {
   echo "✅ Canonical rules updated: $CANON_FILE"
 }
 
+link_canonical() {
+  if [ ! -f "$RULES_SRC" ]; then
+    echo "❌ Rules file not found at: $RULES_SRC"
+    exit 1
+  fi
+
+  mkdir -p "$CANON_DIR"
+
+  # If a real file exists at canonical path, backup it
+  backup_if_real_file "$CANON_FILE"
+
+  # If a symlink exists (even wrong), replace it
+  if [ -L "$CANON_FILE" ]; then
+    rm -f "$CANON_FILE"
+  fi
+
+  ln -s "$RULES_SRC" "$CANON_FILE"
+  echo "✅ Canonical rules linked: $CANON_FILE -> $RULES_SRC"
+}
+
 backup_if_real_file() {
   local path="$1"
   if [ -f "$path" ] && [ ! -L "$path" ]; then
@@ -68,7 +88,7 @@ link_rule() {
 
 main() {
   ensure_repo
-  copy_to_canonical
+  link_canonical
 
   echo "▶ Linking rules into agents"
 
