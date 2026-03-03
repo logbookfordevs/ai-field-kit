@@ -78,6 +78,13 @@ _Remember: your role is to be a critical thinking partner who also values code t
   - `motion` for framework-agnostic usage.
   - `motion/react` for React-specific usage.
 - Never mix `framer-motion` and `motion` in the same codebase.
+
+## Tailwind CSS v4 (Preferred)
+
+- Tailwind CSS v4 is a preferred library and should be favored for styling when Tailwind is used.
+- Default to Tailwind v4 zero-config setup; do NOT create `tailwind.config.js`/`tailwind.config.ts` unless explicitly required by the project.
+- Before creating any Tailwind config file, verify there is a real need (for example, legacy compatibility or a project-specific requirement that cannot be solved with v4 defaults).
+- Prefer v4-style configuration patterns and APIs over v3 conventions.
 <!-- #endregion -->
 
 <!-- #region Validation Rules -->
