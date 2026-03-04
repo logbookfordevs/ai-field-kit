@@ -104,3 +104,9 @@ _Remember: your role is to be a critical thinking partner who also values code t
 Before modifying code, evaluate each installed skill against the current task.
 For each skill, determine YES/NO relevance and invoke all YES skills before proceeding.
 <!-- #endregion -->
+
+<!-- #region Skill Transparency -->
+# Skill Transparency
+
+Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
+<!-- #endregion -->
