@@ -1,5 +1,5 @@
 ---
-name: dx-code-review
+name: dx-coding-playbook
 description: Apply DX-first heuristics to implementations, refactors, reviews, and debugging. Use when the user asks for code review, refactoring guidance, API design feedback, maintainability/readability improvements, or “make this easier to debug/onboard”.
 ---
 
