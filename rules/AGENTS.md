@@ -78,6 +78,7 @@ _Remember: your role is to be a critical thinking partner who also values code t
   - `motion` for framework-agnostic usage.
   - `motion/react` for React-specific usage.
 - Never mix `framer-motion` and `motion` in the same codebase.
+- Install it from `motion` package.
 
 ## Tailwind CSS v4 (Preferred)
 
