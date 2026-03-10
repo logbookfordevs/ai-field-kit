@@ -86,6 +86,11 @@ _Remember: your role is to be a critical thinking partner who also values code t
 - Default to Tailwind v4 zero-config setup; do NOT create `tailwind.config.js`/`tailwind.config.ts` unless explicitly required by the project.
 - Before creating any Tailwind config file, verify there is a real need (for example, legacy compatibility or a project-specific requirement that cannot be solved with v4 defaults).
 - Prefer v4-style configuration patterns and APIs over v3 conventions.
+- Check the official documentation for the latest installation instructions for the specific project framework:
+  - Vite: `https://tailwindcss.com/docs/installation/using-vite`
+  - PostCSS: `https://tailwindcss.com/docs/installation/using-postcss`
+  - Next.js: `https://tailwindcss.com/docs/installation/framework-guides/nextjs`
+  - TanStack Start: `https://tailwindcss.com/docs/installation/framework-guides/tanstack-start`
 <!-- #endregion -->
 
 <!-- #region Validation Rules -->
