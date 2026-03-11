@@ -1,0 +1,75 @@
+{
+  "servers": {
+    "stitch": {
+      "config": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "mcp-remote",
+          "https://stitch.googleapis.com/mcp",
+          "--header",
+          "X-Goog-Api-Key: KEY_STITCH"
+        ]
+      },
+      "targets": {
+        "codex": {
+          "name": "stitchmcp",
+          "enabled": true
+        },
+        "gemini": {
+          "name": "StitchMCP"
+        },
+        "antigravity": {
+          "name": "StitchMCP"
+        },
+        "claude": {
+          "name": "StitchMCP"
+        }
+      }
+    },
+    "notebooklm": {
+      "config": {
+        "command": "/Users/leonardo/.local/bin/notebooklm-mcp"
+      },
+      "targets": {
+        "codex": {
+          "name": "notebooklm",
+          "enabled": true
+        },
+        "gemini": {
+          "name": "notebooklm-mcp"
+        },
+        "antigravity": {
+          "name": "notebooklm-mcp"
+        },
+        "claude": {
+          "name": "notebooklm-mcp"
+        }
+      }
+    },
+    "shadcn": {
+      "config": {
+        "command": "npx",
+        "args": [
+          "shadcn@latest",
+          "mcp"
+        ]
+      },
+      "targets": {
+        "codex": {
+          "name": "shadcn",
+          "enabled": true
+        },
+        "gemini": {
+          "name": "shadcn"
+        },
+        "antigravity": {
+          "name": "shadcn"
+        },
+        "claude": {
+          "name": "shadcn"
+        }
+      }
+    }
+  }
+}

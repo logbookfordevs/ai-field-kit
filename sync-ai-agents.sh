@@ -98,9 +98,6 @@ main() {
   # Codex
   link_rule "$HOME_DIR/.codex/AGENTS.md"
 
-  # Kiro
-  link_rule "$HOME_DIR/.kiro/steering/AGENTS.md"
-
   # KiloCode
   link_rule "$HOME_DIR/.kilocode/rules/AGENTS.md"
 
