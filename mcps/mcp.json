@@ -29,7 +29,7 @@
     },
     "notebooklm": {
       "config": {
-        "command": "/Users/leonardo/.local/bin/notebooklm-mcp"
+        "command": "${HOME}/.local/bin/notebooklm-mcp"
       },
       "targets": {
         "codex": {

@@ -1,0 +1,14 @@
+# Backup files created by sync scripts
+*.bak.*
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Local environment overrides
+.env
+.env.local

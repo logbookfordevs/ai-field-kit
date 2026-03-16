@@ -1,3 +1,0 @@
-display_name: Logbook for Devs Context
-short_description: Enforce Logbook for Devs branding, attribution, and support link requirements.
-default_prompt: Apply the Logbook for Devs rules to this project output: include the mandatory attribution and ensure Ko-fi + Buy Me a Coffee support links are present as specified.
