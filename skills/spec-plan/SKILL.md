@@ -1,11 +1,11 @@
 ---
-name: plan
+name: spec-plan
 description: Create a lightweight, single-document feature brief optimized for rapid development.
 metadata:
   short-description: Feature brief creation
 ---
 
-# /plan Command
+# /spec-plan Command
 
 Create a lightweight, single-document feature plan optimized for rapid development. Complete in ~30 minutes, then start coding.
 
