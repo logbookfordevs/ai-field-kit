@@ -122,12 +122,12 @@ Workflows are markdown slash commands for named, repeatable user journeys. Use t
 
 ### Workflow Sync Targets
 
-Different agents expose the same idea under different names and file formats, so the sync script keeps AI Field Kit workflows in a dedicated `afk/` subfolder per agent and renders agent-compatible variants when needed.
+Different agents expose the same idea under different names and file formats, so the sync script keeps AI Field Kit workflows namespaced per agent and renders agent-compatible variants when needed.
 
 | Agent | What the agent calls them | Global path used by this repo | Sync strategy |
 |---|---|---|---|
 | Antigravity | Workflows | `~/.gemini/antigravity/global_workflows/` | Root-level `afk-*.md` copies with generated YAML frontmatter |
-| Codex CLI | Prompts | `~/.codex/prompts/afk/` | Managed per-file symlinks |
+| Codex CLI | Prompts | `~/.codex/prompts/` | Root-level `afk-*.md` symlinks |
 | Gemini CLI | Custom commands | `~/.gemini/commands/afk/` | Rendered TOML files |
 | Claude Code | Custom slash commands | `~/.claude/commands/afk/` | Managed per-file symlinks |
 | Cursor | Commands | `~/.cursor/commands/afk/` | Managed per-file symlinks |
@@ -137,6 +137,7 @@ Different agents expose the same idea under different names and file formats, so
 
 - Gemini CLI expects `.toml` command files, so `sync-ai-workflows.sh` converts repo workflows into TOML before syncing.
 - Antigravity currently receives root-level copied files with an `afk-` filename prefix because nested folders and symlinked entries may not be indexed reliably there.
+- Codex CLI currently receives root-level symlinked files with an `afk-` filename prefix because subfoldered prompts may not be discovered reliably there.
 - Antigravity workflow files are exported with generated YAML frontmatter containing `description`, because that format appears to be required for manual workflow discovery there.
 - Other supported Markdown workflow consumers currently receive managed per-file symlinks inside the repo-owned `afk/` subfolder.
 - This keeps AI Field Kit commands isolated from your personal or third-party commands in the same agent.

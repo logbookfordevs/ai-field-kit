@@ -6,6 +6,7 @@ REPO_URL="https://github.com/leoreisdias/ai-rules-workflows.git"
 REPO_DIR="${AI_RULES_REPO:-$HOME_DIR/codes/ai-rules-workflows}"
 NAMESPACE_DIR="afk"
 ANTIGRAVITY_PREFIX="afk-"
+CODEX_PREFIX="afk-"
 
 # Source in repo
 SRC_DIR="$REPO_DIR/workflows"
@@ -130,13 +131,13 @@ clear_legacy_root_managed_files() {
   fi
 }
 
-clear_antigravity_prefixed_files() {
+clear_prefixed_entries() {
   local root="$1"
   local prefix="$2"
 
   normalize_root_dir "$root"
 
-  find "$root" -maxdepth 1 -type f -name "${prefix}*.md" -print0 | while IFS= read -r -d '' path; do
+  find "$root" -maxdepth 1 \( -type f -o -type l \) -name "${prefix}*.md" -print0 | while IFS= read -r -d '' path; do
     rm -f "$path"
   done
 }
@@ -199,7 +200,7 @@ sync_antigravity_workflows() {
   local dest="$1"
 
   normalize_root_dir "$dest"
-  clear_antigravity_prefixed_files "$dest" "$ANTIGRAVITY_PREFIX"
+  clear_prefixed_entries "$dest" "$ANTIGRAVITY_PREFIX"
 
   while IFS= read -r src; do
     local filename target description escaped_description
@@ -217,6 +218,45 @@ sync_antigravity_workflows() {
   done < <(list_workflow_files)
 
   echo "✅ Synced Antigravity workflows with required frontmatter and afk- prefix: $dest"
+}
+
+sync_codex_prompts() {
+  local dest="$1"
+  local legacy_dir="$DEST_CODEX"
+  local legacy_manifest="$legacy_dir/$MANAGED_MARKER"
+
+  normalize_root_dir "$dest"
+
+  if [ -L "$legacy_dir" ]; then
+    rm -f "$legacy_dir"
+  elif [ -d "$legacy_dir" ]; then
+    if [ -f "$legacy_manifest" ]; then
+      while IFS= read -r rel_path; do
+        [ -n "$rel_path" ] || continue
+        rm -f "$legacy_dir/$rel_path"
+      done < "$legacy_manifest"
+      rm -f "$legacy_manifest"
+    fi
+
+    rmdir "$legacy_dir" 2>/dev/null || true
+  fi
+
+  clear_prefixed_entries "$dest" "$CODEX_PREFIX"
+
+  while IFS= read -r src; do
+    local filename target
+    filename="${CODEX_PREFIX}$(basename "$src")"
+    target="$dest/$filename"
+
+    if [ -e "$target" ] || [ -L "$target" ]; then
+      echo "⚠️ Skipping existing unmanaged file: $target"
+      continue
+    fi
+
+    ln -s "$src" "$target"
+  done < <(list_workflow_files)
+
+  echo "✅ Synced Codex CLI prompts with afk- prefix: $dest"
 }
 
 escape_double_quotes() {
@@ -320,13 +360,13 @@ main() {
   sync_symlinked_markdown_dir "$DEST_KILO" "KiloCode workflows"
   sync_symlinked_markdown_dir "$DEST_CURSOR" "Cursor commands"
   sync_symlinked_markdown_dir "$DEST_CLAUDE" "Claude Code commands"
-  sync_symlinked_markdown_dir "$DEST_CODEX" "Codex CLI prompts"
 
   echo "▶ Syncing agent-specific command formats"
   sync_antigravity_workflows "$ROOT_ANTIGRAVITY"
+  sync_codex_prompts "$ROOT_CODEX"
   sync_gemini_commands "$DEST_GEMINI"
 
-  echo "✔ Done. AI Field Kit workflows now live in namespaced subfolders for most agents. Gemini CLI is rendered as TOML, Antigravity gets root-level afk-prefixed Markdown copies, and other supported agents use managed per-file symlinks."
+  echo "✔ Done. AI Field Kit workflows now live in namespaced subfolders for most agents. Gemini CLI is rendered as TOML, Antigravity gets root-level afk-prefixed Markdown copies, Codex gets root-level afk-prefixed symlinks, and other supported agents use managed per-file symlinks."
 }
 
 main
