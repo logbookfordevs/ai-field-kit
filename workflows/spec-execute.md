@@ -1,10 +1,3 @@
----
-name: spec-execute
-description: Execute specific tasks from the approved task list.
-metadata:
-  short-description: Spec execute workflow
----
-
 # Spec Execute Command
 
 Execute specific tasks from the approved task list.

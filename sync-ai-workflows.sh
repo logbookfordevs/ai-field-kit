@@ -4,18 +4,33 @@ set -euo pipefail
 HOME_DIR="${HOME}"
 REPO_URL="https://github.com/leoreisdias/ai-rules-workflows.git"
 REPO_DIR="${AI_RULES_REPO:-$HOME_DIR/codes/ai-rules-workflows}"
+NAMESPACE_DIR="afk"
+ANTIGRAVITY_PREFIX="afk-"
 
 # Source in repo
 SRC_DIR="$REPO_DIR/workflows"
 
-# Canonical commands store
-CANON_DIR="$HOME_DIR/.agents/commands"
+# Canonical store of raw markdown workflows
+CANON_ROOT="$HOME_DIR/.agents/commands"
+CANON_DIR="$CANON_ROOT/$NAMESPACE_DIR"
+
+# Agent destination roots
+ROOT_KILO="$HOME_DIR/.kilocode/workflows"
+ROOT_CURSOR="$HOME_DIR/.cursor/commands"
+ROOT_ANTIGRAVITY="$HOME_DIR/.gemini/antigravity/global_workflows"
+ROOT_CLAUDE="$HOME_DIR/.claude/commands"
+ROOT_GEMINI="$HOME_DIR/.gemini/commands"
+ROOT_CODEX="$HOME_DIR/.codex/prompts"
 
 # Agent destinations
-DEST_KILO="$HOME_DIR/.kilocode/workflows"
-DEST_CURSOR="$HOME_DIR/.cursor/commands"
-DEST_CODEX="$HOME_DIR/.codex/prompts"
-DEST_ANTIGRAVITY="$HOME_DIR/.gemini/antigravity/global_workflows"
+DEST_KILO="$ROOT_KILO/$NAMESPACE_DIR"
+DEST_CURSOR="$ROOT_CURSOR/$NAMESPACE_DIR"
+DEST_ANTIGRAVITY="$ROOT_ANTIGRAVITY/$NAMESPACE_DIR"
+DEST_CLAUDE="$ROOT_CLAUDE/$NAMESPACE_DIR"
+DEST_GEMINI="$ROOT_GEMINI/$NAMESPACE_DIR"
+DEST_CODEX="$ROOT_CODEX/$NAMESPACE_DIR"
+
+MANAGED_MARKER=".ai-field-kit-managed"
 
 ensure_repo() {
   echo "▶ Using repo dir: $REPO_DIR"
@@ -29,48 +44,289 @@ ensure_repo() {
   fi
 }
 
-link_dir() {
-  local src="$1"
-  local dest="$2"
+list_workflow_files() {
+  find "$SRC_DIR" -maxdepth 1 -type f -name "*.md" | sort
+}
 
-  if [ ! -d "$src" ]; then
-    echo "❌ Source directory not found: $src"
+normalize_root_dir() {
+  local root="$1"
+
+  mkdir -p "$(dirname "$root")"
+
+  if [ -L "$root" ]; then
+    rm -f "$root"
+    mkdir -p "$root"
+    echo "⚠️ Replaced legacy symlinked command directory with a real directory: $root"
+    return
+  fi
+
+  if [ -e "$root" ] && [ ! -d "$root" ]; then
+    echo "❌ Destination root exists and is not a directory: $root"
     exit 1
   fi
 
-  mkdir -p "$(dirname "$dest")"
-
-  # Remove existing dir/symlink/file
-  if [ -e "$dest" ] || [ -L "$dest" ]; then
-    rm -rf "$dest"
-  fi
-
-  ln -s "$src" "$dest"
-  echo "✅ Linked: $dest -> $src"
+  mkdir -p "$root"
 }
 
-main() {
-  ensure_repo
+ensure_real_dir() {
+  local dest="$1"
+  local root
+  root="$(dirname "$dest")"
 
+  normalize_root_dir "$root"
+
+  if [ -L "$dest" ]; then
+    rm -f "$dest"
+  fi
+
+  if [ -e "$dest" ] && [ ! -d "$dest" ]; then
+    echo "❌ Destination exists and is not a directory: $dest"
+    exit 1
+  fi
+
+  mkdir -p "$dest"
+}
+
+ensure_workflows_exist() {
   if [ ! -d "$SRC_DIR" ]; then
     echo "❌ Workflows dir not found in repo: $SRC_DIR"
     exit 1
   fi
 
-  echo "▶ Linking repo workflows to canonical commands"
-  mkdir -p "$(dirname "$CANON_DIR")"
+  if ! list_workflow_files | grep -q .; then
+    echo "❌ No workflow markdown files found in: $SRC_DIR"
+    exit 1
+  fi
+}
 
-  # Canonical store points to repo
-  link_dir "$SRC_DIR" "$CANON_DIR"
+clear_managed_files() {
+  local dest="$1"
+  local manifest="$dest/$MANAGED_MARKER"
 
-  echo "▶ Linking canonical commands into agents"
+  ensure_real_dir "$dest"
 
-  link_dir "$CANON_DIR" "$DEST_KILO"
-  link_dir "$CANON_DIR" "$DEST_CURSOR"
-  link_dir "$CANON_DIR" "$DEST_CODEX"
-  link_dir "$CANON_DIR" "$DEST_ANTIGRAVITY"
+  if [ -f "$manifest" ]; then
+    while IFS= read -r rel_path; do
+      [ -n "$rel_path" ] || continue
+      rm -f "$dest/$rel_path"
+    done < "$manifest"
+    rm -f "$manifest"
+  fi
+}
 
-  echo "✔ Done. Commands are symlinked end-to-end."
+clear_legacy_root_managed_files() {
+  local root="$1"
+  local manifest="$root/$MANAGED_MARKER"
+
+  normalize_root_dir "$root"
+
+  if [ -f "$manifest" ]; then
+    while IFS= read -r rel_path; do
+      [ -n "$rel_path" ] || continue
+      rm -f "$root/$rel_path"
+    done < "$manifest"
+    rm -f "$manifest"
+    echo "✅ Removed legacy root-level managed entries from: $root"
+  fi
+}
+
+clear_antigravity_prefixed_files() {
+  local root="$1"
+  local prefix="$2"
+
+  normalize_root_dir "$root"
+
+  find "$root" -maxdepth 1 -type f -name "${prefix}*.md" -print0 | while IFS= read -r -d '' path; do
+    rm -f "$path"
+  done
+}
+
+append_managed_file() {
+  local dest="$1"
+  local rel_path="$2"
+  echo "$rel_path" >> "$dest/$MANAGED_MARKER"
+}
+
+sync_symlinked_markdown_dir() {
+  local dest="$1"
+  local label="$2"
+
+  clear_managed_files "$dest"
+  : > "$dest/$MANAGED_MARKER"
+
+  while IFS= read -r src; do
+    local filename target
+    filename="$(basename "$src")"
+    target="$dest/$filename"
+
+    if [ -e "$target" ] || [ -L "$target" ]; then
+      echo "⚠️ Skipping existing unmanaged file: $target"
+      continue
+    fi
+
+    ln -s "$src" "$target"
+    append_managed_file "$dest" "$filename"
+  done < <(list_workflow_files)
+
+  echo "✅ Synced managed symlinks to $label: $dest"
+}
+
+sync_copied_markdown_dir() {
+  local dest="$1"
+  local label="$2"
+
+  clear_managed_files "$dest"
+  : > "$dest/$MANAGED_MARKER"
+
+  while IFS= read -r src; do
+    local filename target
+    filename="$(basename "$src")"
+    target="$dest/$filename"
+
+    if [ -e "$target" ] || [ -L "$target" ]; then
+      echo "⚠️ Skipping existing unmanaged file: $target"
+      continue
+    fi
+
+    cp "$src" "$target"
+    append_managed_file "$dest" "$filename"
+  done < <(list_workflow_files)
+
+  echo "✅ Synced managed copies to $label: $dest"
+}
+
+sync_antigravity_workflows() {
+  local dest="$1"
+
+  normalize_root_dir "$dest"
+  clear_antigravity_prefixed_files "$dest" "$ANTIGRAVITY_PREFIX"
+
+  while IFS= read -r src; do
+    local filename target description escaped_description
+    filename="${ANTIGRAVITY_PREFIX}$(basename "$src")"
+    target="$dest/$filename"
+    description="$(extract_description "$src")"
+    escaped_description="$(escape_double_quotes "${description:-$(basename "$src" .md)}")"
+
+    {
+      printf -- '---\n'
+      printf 'description: "%s"\n' "$escaped_description"
+      printf -- '---\n\n'
+      cat "$src"
+    } > "$target"
+  done < <(list_workflow_files)
+
+  echo "✅ Synced Antigravity workflows with required frontmatter and afk- prefix: $dest"
+}
+
+escape_double_quotes() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+escape_toml_multiline() {
+  sed 's/\\/\\\\/g; s/"/\\"/g' "$1"
+}
+
+extract_description() {
+  awk '
+    BEGIN {
+      seen_heading = 0
+      collecting = 0
+      description = ""
+      printed = 0
+    }
+    /^# / {
+      seen_heading = 1
+      next
+    }
+    seen_heading && /^## / {
+      if (description != "") {
+        print description
+        printed = 1
+        exit
+      }
+      next
+    }
+    seen_heading && /^```/ {
+      next
+    }
+    seen_heading && /^$/ {
+      if (collecting && description != "") {
+        print description
+        printed = 1
+        exit
+      }
+      next
+    }
+    seen_heading && !collecting && $0 !~ /^#/ {
+      collecting = 1
+      description = $0
+      next
+    }
+    collecting {
+      description = description " " $0
+    }
+    END {
+      if (!printed && description != "") {
+        print description
+      }
+    }
+  ' "$1" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//'
+}
+
+sync_gemini_commands() {
+  local dest="$1"
+
+  clear_managed_files "$dest"
+  : > "$dest/$MANAGED_MARKER"
+
+  while IFS= read -r src; do
+    local stem outfile description escaped_description
+    stem="$(basename "$src" .md)"
+    outfile="$dest/$stem.toml"
+    description="$(extract_description "$src")"
+    escaped_description="$(escape_double_quotes "${description:-$stem}")"
+
+    {
+      printf 'description = "%s"\n' "$escaped_description"
+      printf 'prompt = """\n'
+      escape_toml_multiline "$src"
+      printf '\n"""\n'
+    } > "$outfile"
+
+    append_managed_file "$dest" "$(basename "$outfile")"
+  done < <(list_workflow_files)
+
+  echo "✅ Synced Gemini CLI commands: $dest"
+}
+
+main() {
+  ensure_repo
+  ensure_workflows_exist
+
+  echo "▶ Normalizing command roots and cleaning legacy flat installs"
+  clear_legacy_root_managed_files "$CANON_ROOT"
+  clear_legacy_root_managed_files "$ROOT_KILO"
+  clear_legacy_root_managed_files "$ROOT_CURSOR"
+  clear_legacy_root_managed_files "$ROOT_ANTIGRAVITY"
+  clear_legacy_root_managed_files "$ROOT_CLAUDE"
+  clear_legacy_root_managed_files "$ROOT_GEMINI"
+  clear_legacy_root_managed_files "$ROOT_CODEX"
+
+  echo "▶ Linking canonical markdown workflows"
+  sync_symlinked_markdown_dir "$CANON_DIR" "canonical store"
+
+  echo "▶ Linking raw markdown workflow consumers"
+  sync_symlinked_markdown_dir "$DEST_KILO" "KiloCode workflows"
+  sync_symlinked_markdown_dir "$DEST_CURSOR" "Cursor commands"
+  sync_symlinked_markdown_dir "$DEST_CLAUDE" "Claude Code commands"
+  sync_symlinked_markdown_dir "$DEST_CODEX" "Codex CLI prompts"
+
+  echo "▶ Syncing agent-specific command formats"
+  sync_antigravity_workflows "$ROOT_ANTIGRAVITY"
+  sync_gemini_commands "$DEST_GEMINI"
+
+  echo "✔ Done. AI Field Kit workflows now live in namespaced subfolders for most agents. Gemini CLI is rendered as TOML, Antigravity gets root-level afk-prefixed Markdown copies, and other supported agents use managed per-file symlinks."
 }
 
 main

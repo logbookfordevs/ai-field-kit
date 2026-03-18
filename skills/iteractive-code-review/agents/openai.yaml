@@ -1,3 +1,0 @@
-display_name: Iterative Code Review
-short_description: Review PRs step-by-step following the developer’s reasoning, with checkpoints after each file.
-default_prompt: Review this change iteratively: map scope and cross-file impact first, choose a logical file order, analyze one file at a time, and pause for confirmation before continuing.

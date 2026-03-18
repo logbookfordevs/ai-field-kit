@@ -1,10 +1,3 @@
----
-name: spec-create
-description: Create a new feature specification following the complete spec-driven workflow.
-metadata:
-  short-description: Spec create workflow
----
-
 # Spec Create Command
 
 Create a new feature specification following the complete spec-driven workflow.

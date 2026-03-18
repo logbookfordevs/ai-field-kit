@@ -1,10 +1,3 @@
----
-name: spec-plan
-description: Create a lightweight, single-document feature brief optimized for rapid development.
-metadata:
-  short-description: Feature brief creation
----
-
 # /spec-plan Command
 
 Create a lightweight, single-document feature plan optimized for rapid development. Complete in ~30 minutes, then start coding.
@@ -72,14 +65,14 @@ Implementation: BLOCKED - I will create specs only, not implementation code
 ## Usage
 
 ```
-/plan [task-id] [feature-description]
+/spec-plan [task-id] [feature-description]
 ```
 
 **Examples:**
 ```
-/plan user-auth JWT authentication with login/logout
-/plan checkout-flow Streamlined one-page checkout with guest option
-/plan notification-system Real-time push notifications for mobile
+/spec-plan user-auth JWT authentication with login/logout
+/spec-plan checkout-flow Streamlined one-page checkout with guest option
+/spec-plan notification-system Real-time push notifications for mobile
 ```
 
 ---
@@ -128,7 +121,7 @@ Before I create the plan, I have a few questions:
 | Dependencies | Few/none | Multiple external |
 
 If complexity suggests Full SDD, mention:
-> "This looks like it might benefit from full SDD 2.0 planning. Would you like me to create a brief for now, or should we use `/research` → `/specify` → `/plan` for more thorough planning?"
+> "This looks like it might benefit from full SDD 2.0 planning. Would you like me to create a brief for now, or should we use `/research` → `/specify` → `/spec-plan` for more thorough planning?"
 
 ### Phase 2: Planning (Create Plan)
 
@@ -288,7 +281,7 @@ Before final output, verify:
 ### Issue: Feature is too complex for brief
 **Cause**: Multi-team, high-risk, or architecturally significant feature
 **Solution**: Suggest Full SDD 2.0:
-- "This looks complex. Would you prefer full planning with `/research` → `/specify` → `/plan`?"
+- "This looks complex. Would you prefer full planning with `/research` → `/specify` → `/spec-plan`?"
 
 ### Issue: Can't find existing patterns
 **Cause**: New project or greenfield feature

@@ -11,11 +11,11 @@ A curated, version-controlled collection of everything you need to make AI codin
 | Piece | What it does |
 |---|---|
 | `rules/` | Global agent instructions (AGENTS.md) shared across all AI tools |
-| `skills/` | Modular skill files that extend agent behavior for specific tasks |
-| `workflows/` | Slash-command workflows for Gemini, Cursor, KiloCode, and Codex |
+| `skills/` | Reusable capabilities and quality lenses that shape how agents work |
+| `workflows/` | Slash-command workflows for explicit multi-step tasks |
 | `mcps/` | MCP server registry + sync script to configure them everywhere |
 | `sync-ai-agents.sh` | One-command sync: pulls repo and symlinks rules into all agents |
-| `sync-ai-workflows.sh` | One-command sync: symlinks workflow files into all agent directories |
+| `sync-ai-workflows.sh` | One-command sync: manages per-workflow symlinks where possible and renders Gemini CLI commands as TOML |
 | `sync-ai-mcps.py` | Smart MCP sync: resolves API key placeholders, writes to each agent config |
 
 ---
@@ -47,7 +47,7 @@ Then run the sync scripts in order:
 # 1. Symlink global agent rules (AGENTS.md → Gemini, Codex, KiloCode, Claude)
 bash sync-ai-agents.sh
 
-# 2. Symlink workflows into every agent that supports slash commands
+# 2. Sync workflows into each agent's command or prompt directory
 bash sync-ai-workflows.sh
 
 # 3. Inject MCP server configs (prompts for API keys as needed)
@@ -60,7 +60,7 @@ python3 sync-ai-mcps.py
 
 ## The Skills
 
-Skills are modular instruction files that teach agents *how* to approach specific tasks — code reviews, motion design, debugging, spec writing, and more.
+Skills are modular instruction files that teach agents *how* to think and work across many requests: debugging lenses, DX heuristics, motion direction, and specialized integrations.
 
 ### Installing skills with the CLI
 
@@ -81,7 +81,7 @@ npx skills add https://github.com/logbookfordevs/ai-field-kit --all --global
 
 # Install only to a specific agent
 npx skills add https://github.com/logbookfordevs/ai-field-kit --agent cursor
-npx skills add https://github.com/logbookfordevs/ai-field-kit --skill spec-create --agent gemini
+npx skills add https://github.com/logbookfordevs/ai-field-kit --skill dx-coding-playbook --agent gemini
 
 # Preview what's available without installing
 npx skills add https://github.com/logbookfordevs/ai-field-kit --list
@@ -98,17 +98,9 @@ The CLI symlinks skill files into the right agent directories — no manual path
 | Skill | What it unlocks |
 |---|---|
 | `animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
-| `cinematic-landing-page-builder` | Art-directed landing pages with GSAP + Tailwind |
 | `codex-uncodexfy` | Breaks out of generic AI UI aesthetics |
 | `documentation-authoring` | DocX playbook: journeys, progressive disclosure, real empathy |
 | `dx-coding-playbook` | DX-first heuristics for reviews, refactors, and API design |
-| `iteractive-code-review` | Step-by-step PR review that follows the developer's reasoning |
-| `logbookfordevs-context` | Brand + attribution rules for all Logbook for Devs projects |
-| `pr-description-generator` | Generates comprehensive, structured PR descriptions |
-| `pr-story-flow-mermaid` | Generates Mermaid flow diagrams from PR diffs |
-| `spec-create` | Full spec-driven workflow from problem → tasks |
-| `spec-execute` | Executes individual tasks from an approved spec |
-| `spec-plan` | Lightweight feature brief for rapid development |
 | `spline` | Spline 3D integration guides for React and vanilla JS |
 | `structured-debugging` | Root cause analysis with expected vs. actual timelines |
 
@@ -116,14 +108,103 @@ The CLI symlinks skill files into the right agent directories — no manual path
 
 ## The Workflows
 
-Workflows are markdown slash commands that agents can invoke directly.
+Workflows are markdown slash commands for named, repeatable user journeys. Use them when the task has a clear intake, flow, checkpoints, and output.
 
 | Command | What it does |
 |---|---|
+| `/cinematic-landing-page-builder` | Builds a premium landing page from a fixed creative intake |
+| `/interactive-code-review` | Reviews a PR step by step with pauses after each file |
+| `/pr-description-generator` | Generates a structured PR description from branch diffs |
+| `/pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
 | `/spec-plan` | Creates a lightweight feature brief optimized for rapid development |
 | `/spec-create` | Runs the complete spec-driven workflow |
 | `/spec-execute` | Executes tasks from an approved task list |
-| `/pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
+
+### Workflow Sync Targets
+
+Different agents expose the same idea under different names and file formats, so the sync script keeps AI Field Kit workflows in a dedicated `afk/` subfolder per agent and renders agent-compatible variants when needed.
+
+| Agent | What the agent calls them | Global path used by this repo | Sync strategy |
+|---|---|---|---|
+| Antigravity | Workflows | `~/.gemini/antigravity/global_workflows/` | Root-level `afk-*.md` copies with generated YAML frontmatter |
+| Codex CLI | Prompts | `~/.codex/prompts/afk/` | Managed per-file symlinks |
+| Gemini CLI | Custom commands | `~/.gemini/commands/afk/` | Rendered TOML files |
+| Claude Code | Custom slash commands | `~/.claude/commands/afk/` | Managed per-file symlinks |
+| Cursor | Commands | `~/.cursor/commands/afk/` | Managed per-file symlinks |
+| KiloCode | Workflows | `~/.kilocode/workflows/afk/` | Managed per-file symlinks |
+
+### Compatibility Notes
+
+- Gemini CLI expects `.toml` command files, so `sync-ai-workflows.sh` converts repo workflows into TOML before syncing.
+- Antigravity currently receives root-level copied files with an `afk-` filename prefix because nested folders and symlinked entries may not be indexed reliably there.
+- Antigravity workflow files are exported with generated YAML frontmatter containing `description`, because that format appears to be required for manual workflow discovery there.
+- Other supported Markdown workflow consumers currently receive managed per-file symlinks inside the repo-owned `afk/` subfolder.
+- This keeps AI Field Kit commands isolated from your personal or third-party commands in the same agent.
+- The script only refreshes files managed by this repo; it does not intentionally wipe unrelated commands in the parent command folders.
+- This is intentionally symlink-first for better DX: one source of truth, easier debugging, and no copy drift.
+
+---
+
+## Skill vs Workflow Rubric
+
+If you're deciding where a new prompt belongs, use this rule first:
+
+- A **skill** is reusable expertise.
+- A **workflow** is a named operating procedure.
+
+### Choose a skill when
+
+- The guidance should improve many different kinds of requests.
+- The agent needs a reusable lens, not a fixed script.
+- Multiple valid outputs are acceptable.
+- The task is broad, adaptive, or composable with other skills.
+- You want the behavior to activate naturally from plain-English requests.
+
+**Good skill examples in this repo:**
+
+- `dx-coding-playbook`: a maintainability and readability lens that applies across reviews, refactors, and implementation work.
+- `structured-debugging`: a debugging approach that works across many bug reports and log investigations.
+- `animated-driven-frontend`: motion strategy and interaction direction that can shape many different UI tasks.
+
+### Choose a workflow when
+
+- The task has a clear beginning, middle, and end.
+- The agent should follow a fixed sequence of steps.
+- The input format is predictable.
+- The output is a specific artifact or deliverable.
+- You want the user to invoke it intentionally as a slash command.
+
+**Good workflow examples in this repo:**
+
+- `/spec-create`: a multi-phase spec process with approvals at each stage.
+- `/interactive-code-review`: a step-by-step review flow with pauses after each file.
+- `/pr-description-generator`: a repeatable artifact generator for PR descriptions.
+- `/cinematic-landing-page-builder`: a fixed creative intake followed by a specific landing-page build process.
+
+### Quick test
+
+Ask these two questions:
+
+1. "Is this teaching the agent how to think across many situations?"
+2. "Or is this telling the agent exactly how to run one repeatable process?"
+
+If the answer is mostly **1**, make it a skill. If it's mostly **2**, make it a workflow.
+
+### A helpful anti-pattern
+
+If the exact same prompt content works well as both a skill and a workflow, that usually means the boundary is still too blurry.
+
+In practice:
+
+- Put the canonical version in **one place**.
+- Prefer **skills** for reusable judgment.
+- Prefer **workflows** for explicit rituals.
+- Avoid keeping the same long instructions in both folders, because they will drift.
+
+### A simple rule of thumb
+
+- "Help me do this well" usually wants a **skill**.
+- "Run this exact playbook" usually wants a **workflow**.
 
 ---
 
@@ -198,7 +279,7 @@ This kit grows with real-world use. If you've built a skill, workflow, or MCP co
 
 **Adding a workflow:**
 
-1. Add a `.md` file to `workflows/` with the standard YAML frontmatter + instruction format
+1. Add a `.md` file to `workflows/` with the standard instruction format
 2. Open a PR
 
 **Adding an MCP server:**
