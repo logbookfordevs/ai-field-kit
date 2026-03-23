@@ -6,7 +6,6 @@ REPO_URL="https://github.com/leoreisdias/ai-rules-workflows.git"
 REPO_DIR="${AI_RULES_REPO:-$HOME_DIR/codes/ai-rules-workflows}"
 NAMESPACE_DIR="afk"
 ANTIGRAVITY_PREFIX="afk-"
-CODEX_PREFIX="afk-"
 
 # Source in repo
 SRC_DIR="$REPO_DIR/workflows"
@@ -21,7 +20,7 @@ ROOT_CURSOR="$HOME_DIR/.cursor/commands"
 ROOT_ANTIGRAVITY="$HOME_DIR/.gemini/antigravity/global_workflows"
 ROOT_CLAUDE="$HOME_DIR/.claude/commands"
 ROOT_GEMINI="$HOME_DIR/.gemini/commands"
-ROOT_CODEX="$HOME_DIR/.codex/prompts"
+ROOT_CODEX="$HOME_DIR/.codex/skills"
 
 # Agent destinations
 DEST_KILO="$ROOT_KILO/$NAMESPACE_DIR"
@@ -109,7 +108,7 @@ clear_managed_files() {
   if [ -f "$manifest" ]; then
     while IFS= read -r rel_path; do
       [ -n "$rel_path" ] || continue
-      rm -f "$dest/$rel_path"
+      rm -rf "$dest/$rel_path"
     done < "$manifest"
     rm -f "$manifest"
   fi
@@ -140,6 +139,17 @@ clear_prefixed_entries() {
   find "$root" -maxdepth 1 \( -type f -o -type l \) -name "${prefix}*.md" -print0 | while IFS= read -r -d '' path; do
     rm -f "$path"
   done
+}
+
+to_title_case() {
+  printf '%s' "$1" | sed 's/[-_]/ /g' | awk '
+    {
+      for (i = 1; i <= NF; i++) {
+        $i = toupper(substr($i, 1, 1)) tolower(substr($i, 2))
+      }
+      print
+    }
+  '
 }
 
 append_managed_file() {
@@ -220,12 +230,14 @@ sync_antigravity_workflows() {
   echo "✅ Synced Antigravity workflows with required frontmatter and afk- prefix: $dest"
 }
 
-sync_codex_prompts() {
+sync_codex_skills() {
   local dest="$1"
-  local legacy_dir="$DEST_CODEX"
+  local legacy_root="$HOME_DIR/.codex/prompts"
+  local legacy_dir="$legacy_root/$NAMESPACE_DIR"
   local legacy_manifest="$legacy_dir/$MANAGED_MARKER"
 
-  normalize_root_dir "$dest"
+  clear_managed_files "$dest"
+  : > "$dest/$MANAGED_MARKER"
 
   if [ -L "$legacy_dir" ]; then
     rm -f "$legacy_dir"
@@ -241,22 +253,46 @@ sync_codex_prompts() {
     rmdir "$legacy_dir" 2>/dev/null || true
   fi
 
-  clear_prefixed_entries "$dest" "$CODEX_PREFIX"
+  clear_prefixed_entries "$legacy_root" "afk-"
 
   while IFS= read -r src; do
-    local filename target
-    filename="${CODEX_PREFIX}$(basename "$src")"
-    target="$dest/$filename"
+    local stem skill_dir skill_md agents_dir openai_yaml title description short_description
+    stem="$(basename "$src" .md)"
+    skill_dir="$dest/$stem"
+    skill_md="$skill_dir/SKILL.md"
+    agents_dir="$skill_dir/agents"
+    openai_yaml="$agents_dir/openai.yaml"
+    title="$(to_title_case "$stem")"
+    description="$(extract_description "$src")"
+    short_description="${description:-Workflow skill generated from /$stem.}"
 
-    if [ -e "$target" ] || [ -L "$target" ]; then
-      echo "⚠️ Skipping existing unmanaged file: $target"
-      continue
-    fi
+    mkdir -p "$agents_dir"
 
-    ln -s "$src" "$target"
+    cat > "$skill_md" <<EOF
+---
+name: afk-$stem
+description: $short_description
+---
+
+# AFK $title
+
+This skill is generated from the AI Field Kit workflow \`/$stem\`.
+
+Use it when the user wants this exact named operating procedure executed with the same checkpoints, guardrails, and output expectations defined below.
+
+$(cat "$src")
+EOF
+
+    cat > "$openai_yaml" <<EOF
+display_name: AFK $title
+short_description: $short_description
+default_prompt: Follow the AI Field Kit /$stem workflow for this project.
+EOF
+
+    append_managed_file "$dest" "$stem"
   done < <(list_workflow_files)
 
-  echo "✅ Synced Codex CLI prompts with afk- prefix: $dest"
+  echo "✅ Synced Codex skills generated from workflows: $dest"
 }
 
 escape_double_quotes() {
@@ -363,10 +399,10 @@ main() {
 
   echo "▶ Syncing agent-specific command formats"
   sync_antigravity_workflows "$ROOT_ANTIGRAVITY"
-  sync_codex_prompts "$ROOT_CODEX"
+  sync_codex_skills "$DEST_CODEX"
   sync_gemini_commands "$DEST_GEMINI"
 
-  echo "✔ Done. AI Field Kit workflows now live in namespaced subfolders for most agents. Gemini CLI is rendered as TOML, Antigravity gets root-level afk-prefixed Markdown copies, Codex gets root-level afk-prefixed symlinks, and other supported agents use managed per-file symlinks."
+  echo "✔ Done. AI Field Kit workflows now live in namespaced subfolders for most agents. Gemini CLI is rendered as TOML, Antigravity gets root-level afk-prefixed Markdown copies, Codex gets generated skills under ~/.codex/skills/afk/, and other supported agents use managed per-file symlinks."
 }
 
 main

@@ -128,7 +128,7 @@ Different agents expose the same idea under different names and file formats, so
 | Agent | What the agent calls them | Global path used by this repo | Sync strategy |
 |---|---|---|---|
 | Antigravity | Workflows | `~/.gemini/antigravity/global_workflows/` | Root-level `afk-*.md` copies with generated YAML frontmatter |
-| Codex CLI | Prompts | `~/.codex/prompts/` | Root-level `afk-*.md` symlinks |
+| Codex | Skills | `~/.codex/skills/afk/` | Generated skill folders built from each workflow |
 | Gemini CLI | Custom commands | `~/.gemini/commands/afk/` | Rendered TOML files |
 | Claude Code | Custom slash commands | `~/.claude/commands/afk/` | Managed per-file symlinks |
 | Cursor | Commands | `~/.cursor/commands/afk/` | Managed per-file symlinks |
@@ -138,10 +138,10 @@ Different agents expose the same idea under different names and file formats, so
 
 - Gemini CLI expects `.toml` command files, so `sync-ai-workflows.sh` converts repo workflows into TOML before syncing.
 - Antigravity currently receives root-level copied files with an `afk-` filename prefix because nested folders and symlinked entries may not be indexed reliably there.
-- Codex CLI currently receives root-level symlinked files with an `afk-` filename prefix because subfoldered prompts may not be discovered reliably there.
+- Codex now receives generated AFK skills under `~/.codex/skills/afk/`, built from the workflow markdown files during sync.
 - Antigravity workflow files are exported with generated YAML frontmatter containing `description`, because that format appears to be required for manual workflow discovery there.
 - Other supported Markdown workflow consumers currently receive managed per-file symlinks inside the repo-owned `afk/` subfolder.
-- This keeps AI Field Kit commands isolated from your personal or third-party commands in the same agent.
+- This keeps AI Field Kit commands and Codex skills isolated from your personal or third-party entries in the same agent.
 - The script only refreshes files managed by this repo; it does not intentionally wipe unrelated commands in the parent command folders.
 - This is intentionally symlink-first for better DX: one source of truth, easier debugging, and no copy drift.
 
