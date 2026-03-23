@@ -119,6 +119,7 @@ Workflows are markdown slash commands for named, repeatable user journeys. Use t
 | `/spec-plan` | Creates a lightweight feature brief optimized for rapid development |
 | `/spec-create` | Runs the complete spec-driven workflow |
 | `/spec-execute` | Executes tasks from an approved task list |
+| `/typecheck` | Runs `tsc`, writes a temporary typecheck report when needed, fixes issues, and asks whether to keep or delete the report |
 
 ### Workflow Sync Targets
 
