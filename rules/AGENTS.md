@@ -93,19 +93,6 @@ _Remember: your role is to be a critical thinking partner who also values code t
   - TanStack Start: `https://tailwindcss.com/docs/installation/framework-guides/tanstack-start`
 <!-- #endregion -->
 
-<!-- #region Validation Rules -->
-# Validation Rules
-
-## TypeScript Compilation
-
-- Any modification in TypeScript files (`.ts`, `.tsx`) requires validation.
-- After making changes, ALWAYS run:
-  `npx tsc --noEmit`
-- If `npx tsc --noEmit` fails due to missing modules/dependencies, install or sync dependencies first (for example, `pnpm install` or `npm install`) before modifying the codebase.
-- Do not assume the code compiles.
-- If the compilation fails, fix all TypeScript errors before returning the final result.
-<!-- #endregion -->
-
 <!-- #region Skills -->
 Before modifying code, evaluate each installed skill against the current task.
 For each skill, determine YES/NO relevance and invoke all YES skills before proceeding.
@@ -115,4 +102,15 @@ For each skill, determine YES/NO relevance and invoke all YES skills before proc
 # Skill Transparency
 
 Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
+<!-- #endregion -->
+
+<!-- #region Validation Rules -->
+# Validation Rules
+
+## TypeScript Compilation
+
+- Do NOT automatically run type-checking after modifying TypeScript files.
+- When a task that modified `.ts` or `.tsx` files is complete, **ask the user** if they would like to run a compilation check (`npx tsc --noEmit`).
+- Only run the check if the user confirms.
+- If the user accepts and the compilation fails, fix all TypeScript errors before returning the final result.
 <!-- #endregion -->
