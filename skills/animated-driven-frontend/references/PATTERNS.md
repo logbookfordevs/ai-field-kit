@@ -29,7 +29,23 @@ Use these patterns as building blocks. Pick a few. Don’t stack everything ever
 - Toggle on/off feedback
 Rules: user-controllable, no autoplay, no critical info conveyed only by sound.
 
+### Haptic patterns (optional)
+- Tap confirmation for committed actions
+- Soft snap when a draggable or slider reaches a meaningful threshold
+- Toggle pulse for mode changes
+- Error bump for invalid or blocked actions
+Rules: brief, meaningful, never continuous, never the only cue.
+
+### Keyboard and shortcut patterns
+- Command palette open/focus
+- Mode toggle shortcuts (preview/edit, dock open/close, panel expand/collapse)
+- Spatial navigation for OS-like or cockpit-like interfaces
+- Shortcut hints revealed on hover, focus, or help overlays
+Rules: discoverable, scoped, and aligned with the mental model of the UI.
+
 ### When to avoid these
 - Complex cursor tracking on low-power mobile contexts
 - Infinite loops on dense pages
 - Scroll hijacks (unless intentionally in a storytelling section and accessible)
+- Shortcut-heavy interaction models on low-complexity pages
+- Haptic or sound spam for every hover or passive state

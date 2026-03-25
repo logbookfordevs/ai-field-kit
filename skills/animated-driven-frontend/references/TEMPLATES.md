@@ -30,6 +30,12 @@ Motion roles:
 - transition:
 - exit:
 
+Feedback channels:
+- visual:
+- sound:
+- haptics:
+- keyboard/hotkeys:
+
 Tokens:
 - duration:
 - easing/spring:
@@ -38,6 +44,9 @@ Tokens:
 
 Constraints:
 - reduced-motion behavior:
+- muted / sound-off behavior:
+- haptics fallback when unsupported:
+- keyboard discoverability notes:
 - performance notes:
 - accessibility notes:
 

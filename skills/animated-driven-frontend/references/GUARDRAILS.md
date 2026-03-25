@@ -17,7 +17,15 @@
 - Maintain focus continuity across transitions.
 - Never hide critical information behind animation timing.
 - Sound must be opt-in and easy to toggle.
+- Haptics must be supplemental and never the sole confirmation path.
+- Hotkeys must preserve keyboard accessibility and not trap focus.
 - Avoid motion patterns that can cause discomfort (fast parallax, large oscillations).
+
+### Interaction channels
+- Treat sound, haptics, and hotkeys as feedback channels, not gimmicks.
+- Each non-visual cue should correspond to a meaningful state change, confirmation, or shortcut-worthy action.
+- Provide fallbacks when a channel is unavailable, unsupported, muted, or reduced by user preference.
+- Prefer one strong confirmation cue over stacking sound + haptics + animation on every action.
 
 ### “Delight without chaos”
 - Clarity first, delight second.

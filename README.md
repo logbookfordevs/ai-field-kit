@@ -4,6 +4,8 @@
 
 A curated, version-controlled collection of everything you need to make AI coding agents actually useful in a real development environment. No fluff — just the configuration, prompts, and automation that ship every day.
 
+Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated entries instead of release versions.
+
 ---
 
 ## What's in the Kit

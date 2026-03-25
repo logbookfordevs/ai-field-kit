@@ -1,6 +1,6 @@
 ---
 name: animated-driven-frontend
-description: Design and implement animated UIs as cinematic, interactive, and immersive experiences. Use when the user asks for motion direction or choreography (timing, easing, sequencing), microinteractions (hover, press, drag, toggle), route or layout transitions (shared elements), motion systems (tokens, primitives, patterns), creative coding, immersive place metaphors (OS-like UI), or optional sound and 3D.
+description: Design and implement animated UIs as cinematic, interactive, and immersive experiences. Use when the user asks for motion direction or choreography (timing, easing, sequencing), microinteractions (hover, press, drag, toggle), route or layout transitions (shared elements), motion systems (tokens, primitives, patterns), creative coding, immersive place metaphors (OS-like UI), tactile or sonic feedback, keyboard-driven interactions, or optional sound and 3D.
 ---
 
 # Animated-Driven Frontend
@@ -18,6 +18,8 @@ Use this skill when the user requests animated UI direction, interaction choreog
 * Use **react-spring** when nuanced physics control is central.
 * Use **3D** (Three.js / react-three-fiber) only when depth or spatial metaphor strengthens the narrative.
 * Sound is optional; if used, it must be user-controllable and accessible.
+* Haptics are optional; use them when tactile confirmation strengthens the experience, especially on mobile or app-like surfaces.
+* Keyboard interactions and shortcuts are part of the interaction language when they improve flow, responsiveness, or OS-like immersion.
 
 For full stack selection rules and dependency checks, see: `references/STACK-PREFERENCES.md`.
 
@@ -27,6 +29,7 @@ For full stack selection rules and dependency checks, see: `references/STACK-PRE
 * Clarity first, delight second.
 * Performance is part of aesthetics.
 * Interactivity is gameplay: the user should feel they can “touch” the UI.
+* Feedback can be visual, sonic, tactile, or keyboard-mediated. Choose the channels that reinforce the intended feeling without overwhelming the UI.
 * Surprise is allowed, but never at the cost of comprehension.
 * Respect accessibility: `prefers-reduced-motion`, focus continuity, and readable states.
 
@@ -53,12 +56,13 @@ Dial definitions and defaults live here: `references/DIALS.md`.
 
 1. Clarify intent: what changes, why, and what the user should perceive/feel.
 2. Pick a mode + set dials.
-3. Define motion roles: entrance, emphasis, feedback, transition, exit.
-4. Assign tokens: duration, easing/spring, delay, stagger.
-5. Prototype the smallest viable motion. Validate performance early.
-6. Add interactive “gameplay” where it strengthens memorability.
-7. Validate accessibility and state continuity.
-8. Ship with maintainable primitives and names.
+3. Choose feedback channels: visual motion, sound, haptics, keyboard interactions.
+4. Define motion roles: entrance, emphasis, feedback, transition, exit.
+5. Assign tokens: duration, easing/spring, delay, stagger.
+6. Prototype the smallest viable motion. Validate performance early.
+7. Add interactive "gameplay" where it strengthens memorability.
+8. Validate accessibility, fallback behavior, and state continuity.
+9. Ship with maintainable primitives and names.
 
 If you need a grab-bag of building blocks, see: `references/PATTERNS.md`.
 
@@ -70,6 +74,8 @@ Use these as non-negotiables. Details and recipes: `references/GUARDRAILS.md`.
 * Avoid layout thrashing and heavy re-renders.
 * Isolate continuous/CPU-heavy effects.
 * Sound is opt-in and must be easy to mute.
+* Haptics must be additive, never the only cue, and degrade gracefully when unsupported.
+* Hotkeys should feel intentional, discoverable, and aligned with the product's interaction model.
 
 ## What to produce
 
