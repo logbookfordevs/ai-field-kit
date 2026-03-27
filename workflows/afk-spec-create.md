@@ -1,10 +1,10 @@
-# Spec Create Command
+# /afk-spec-create Command
 
 Create a new feature specification following the complete spec-driven workflow.
 
 ## Usage
 ```
-/spec-create <feature-name> [description]
+/afk-spec-create <feature-name> [description]
 ```
 
 ## Workflow Philosophy
@@ -299,12 +299,12 @@ A successful spec workflow completion includes:
 
 ## Example Usage
 ```
-/spec-create user-authentication "Allow users to sign up and log in securely"
+/afk-spec-create user-authentication "Allow users to sign up and log in securely"
 ```
 
 ## Implementation Phase
 After completing all phases and generating task commands, Display the following information to the user:
 0. **RESTART Claude Code** for new commands to be visible
 1. **Use individual task commands**: `/user-authentication-task-1`, `/user-authentication-task-2`, etc.
-2. **Or use spec-execute**: Execute tasks individually as needed
+2. **Or use afk-spec-execute**: Execute tasks individually as needed
 3. **Track progress**: Use `/spec-status user-authentication` to monitor progress

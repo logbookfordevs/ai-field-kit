@@ -1,10 +1,10 @@
-# /interactive-code-review Command
+# /afk-interactive-code-review Command
 
 Review Pull Requests or branch diffs step by step, following the developer's reasoning instead of reading files in arbitrary order.
 
 ## Usage
 ```
-/interactive-code-review <base-branch> <feature-branch>
+/afk-interactive-code-review <base-branch> <feature-branch>
 ```
 
 ## Workflow

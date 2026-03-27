@@ -76,14 +76,14 @@ The interactive mode lets you pick which skills to install and which agents to t
 
 ```bash
 # Install a specific skill globally (available to all agents on your machine)
-npx skills add https://github.com/logbookfordevs/ai-field-kit --skill dx-coding-playbook --global
+npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-dx-coding-playbook --global
 
 # Install all skills globally, skip confirmation
 npx skills add https://github.com/logbookfordevs/ai-field-kit --all --global
 
 # Install only to a specific agent
 npx skills add https://github.com/logbookfordevs/ai-field-kit --agent cursor
-npx skills add https://github.com/logbookfordevs/ai-field-kit --skill dx-coding-playbook --agent gemini
+npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-dx-coding-playbook --agent gemini
 
 # Preview what's available without installing
 npx skills add https://github.com/logbookfordevs/ai-field-kit --list
@@ -99,12 +99,12 @@ The CLI symlinks skill files into the right agent directories — no manual path
 
 | Skill | What it unlocks |
 |---|---|
-| `animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
-| `codex-uncodexfy` | Breaks out of generic AI UI aesthetics |
-| `documentation-authoring` | DocX playbook: journeys, progressive disclosure, real empathy |
-| `dx-coding-playbook` | DX-first heuristics for reviews, refactors, and API design |
-| `spline` | Spline 3D integration guides for React and vanilla JS |
-| `structured-debugging` | Root cause analysis with expected vs. actual timelines |
+| `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
+| `afk-codex-uncodexfy` | Breaks out of generic AI UI aesthetics |
+| `afk-documentation-authoring` | DocX playbook: journeys, progressive disclosure, real empathy |
+| `afk-dx-coding-playbook` | DX-first heuristics for reviews, refactors, and API design |
+| `afk-spline-3d-integration` | Spline 3D integration guides for React and vanilla JS |
+| `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 
 ---
 
@@ -114,14 +114,14 @@ Workflows are markdown slash commands for named, repeatable user journeys. Use t
 
 | Command | What it does |
 |---|---|
-| `/cinematic-landing-page-builder` | Builds a premium landing page from a fixed creative intake |
-| `/interactive-code-review` | Reviews a PR step by step with pauses after each file |
-| `/pr-description-generator` | Generates a structured PR description from branch diffs |
-| `/pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
-| `/spec-plan` | Creates a lightweight feature brief optimized for rapid development |
-| `/spec-create` | Runs the complete spec-driven workflow |
-| `/spec-execute` | Executes tasks from an approved task list |
-| `/typecheck` | Runs `tsc`, writes a temporary typecheck report when needed, fixes issues, and asks whether to keep or delete the report |
+| `/afk-cinematic-landing-page-builder` | Builds a premium landing page from a fixed creative intake |
+| `/afk-interactive-code-review` | Reviews a PR step by step with pauses after each file |
+| `/afk-pr-description-generator` | Generates a structured PR description from branch diffs |
+| `/afk-pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
+| `/afk-spec-plan` | Creates a lightweight feature brief optimized for rapid development |
+| `/afk-spec-create` | Runs the complete spec-driven workflow |
+| `/afk-spec-execute` | Executes tasks from an approved task list |
+| `/afk-typecheck` | Runs `tsc`, writes a temporary typecheck report when needed, fixes issues, and asks whether to keep or delete the report |
 
 ### Workflow Sync Targets
 
@@ -129,7 +129,7 @@ Different agents expose the same idea under different names and file formats, so
 
 | Agent | What the agent calls them | Global path used by this repo | Sync strategy |
 |---|---|---|---|
-| Antigravity | Workflows | `~/.gemini/antigravity/global_workflows/` | Root-level `afk-*.md` copies with generated YAML frontmatter |
+| Antigravity | Workflows | `~/.gemini/antigravity/global_workflows/` | Root-level workflow copies with generated YAML frontmatter |
 | Codex | Skills | `~/.codex/skills/afk/` | Generated skill folders built from each workflow |
 | Gemini CLI | Custom commands | `~/.gemini/commands/afk/` | Rendered TOML files |
 | Claude Code | Custom slash commands | `~/.claude/commands/afk/` | Managed per-file symlinks |
@@ -139,7 +139,7 @@ Different agents expose the same idea under different names and file formats, so
 ### Compatibility Notes
 
 - Gemini CLI expects `.toml` command files, so `sync-ai-workflows.sh` converts repo workflows into TOML before syncing.
-- Antigravity currently receives root-level copied files with an `afk-` filename prefix because nested folders and symlinked entries may not be indexed reliably there.
+- Antigravity currently receives root-level copied files because nested folders and symlinked entries may not be indexed reliably there.
 - Codex now receives generated AFK skills under `~/.codex/skills/afk/`, built from the workflow markdown files during sync.
 - Antigravity workflow files are exported with generated YAML frontmatter containing `description`, because that format appears to be required for manual workflow discovery there.
 - Other supported Markdown workflow consumers currently receive managed per-file symlinks inside the repo-owned `afk/` subfolder.
@@ -166,9 +166,9 @@ If you're deciding where a new prompt belongs, use this rule first:
 
 **Good skill examples in this repo:**
 
-- `dx-coding-playbook`: a maintainability and readability lens that applies across reviews, refactors, and implementation work.
-- `structured-debugging`: a debugging approach that works across many bug reports and log investigations.
-- `animated-driven-frontend`: motion strategy and interaction direction that can shape many different UI tasks.
+- `afk-dx-coding-playbook`: a maintainability and readability lens that applies across reviews, refactors, and implementation work.
+- `afk-structured-debugging`: a debugging approach that works across many bug reports and log investigations.
+- `afk-animated-driven-frontend`: motion strategy and interaction direction that can shape many different UI tasks.
 
 ### Choose a workflow when
 
@@ -180,10 +180,10 @@ If you're deciding where a new prompt belongs, use this rule first:
 
 **Good workflow examples in this repo:**
 
-- `/spec-create`: a multi-phase spec process with approvals at each stage.
-- `/interactive-code-review`: a step-by-step review flow with pauses after each file.
-- `/pr-description-generator`: a repeatable artifact generator for PR descriptions.
-- `/cinematic-landing-page-builder`: a fixed creative intake followed by a specific landing-page build process.
+- `/afk-spec-create`: a multi-phase spec process with approvals at each stage.
+- `/afk-interactive-code-review`: a step-by-step review flow with pauses after each file.
+- `/afk-pr-description-generator`: a repeatable artifact generator for PR descriptions.
+- `/afk-cinematic-landing-page-builder`: a fixed creative intake followed by a specific landing-page build process.
 
 ### Quick test
 

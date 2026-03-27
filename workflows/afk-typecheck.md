@@ -1,10 +1,10 @@
-# /typecheck Command
+# /afk-typecheck Command
 
 Run TypeScript type checking, document failures in a temporary `typecheck.md`, fix the issues, and close the loop with the user before optionally deleting the report.
 
 ## Usage
 ```bash
-/typecheck
+/afk-typecheck
 ```
 
 ## Goal
@@ -156,4 +156,3 @@ Repeat this loop until the user is satisfied or explicitly stops the workflow.
 - Do not silently delete `typecheck.md`.
 - After every revision round, ask for user validation again before removing the file.
 - If dependency issues block `npx tsc --noEmit`, install or sync dependencies first, then continue.
-

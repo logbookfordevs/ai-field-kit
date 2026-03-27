@@ -1,10 +1,10 @@
-# /pr-description-generator Command
+# /afk-pr-description-generator Command
 
 Generate a structured Pull Request description by combining branch diffs with a short user-provided summary.
 
 ## Usage
 ```
-/pr-description-generator <base-branch> <feature-branch>
+/afk-pr-description-generator <base-branch> <feature-branch>
 ```
 
 ## Workflow

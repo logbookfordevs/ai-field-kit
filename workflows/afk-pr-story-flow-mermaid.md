@@ -1,4 +1,4 @@
-# AI-Assisted Guide to Generating PR Mermaid Flow
+# /afk-pr-story-flow-mermaid Command
 
 This guide outlines a structured process for generating a comprehensive and clear Pull Request (PR) mermaid flow by analyzing the changes between two branches.
 

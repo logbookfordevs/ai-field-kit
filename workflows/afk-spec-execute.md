@@ -1,10 +1,10 @@
-# Spec Execute Command
+# /afk-spec-execute Command
 
 Execute specific tasks from the approved task list.
 
 ## Usage
 ```
-/spec-execute [task-id] [feature-name]
+/afk-spec-execute [task-id] [feature-name]
 ```
 
 ## Phase Overview
@@ -84,7 +84,7 @@ Task to implement: {task-id}
    - Ensure integration with existing code
 
 6. **Task Completion Protocol**
-When completing any task during `/spec-execute`:
+When completing any task during `/afk-spec-execute`:
    1. **Update tasks.md**: Change task status from `- [ ]` to `- [x]`
    2. **Confirm to user**: State clearly "Task X has been marked as complete"
    3. **Stop execution**: Do not proceed to next task automatically
@@ -175,8 +175,8 @@ If no feature-name specified:
 
 ## Examples
 ```
-/spec-execute 1 user-authentication
-/spec-execute 2.1 user-authentication
+/afk-spec-execute 1 user-authentication
+/afk-spec-execute 2.1 user-authentication
 ```
 
 ## Important Rules
@@ -192,5 +192,5 @@ After task completion, you can:
 - Review the implementation (automated if spec-task-implementation-reviewer agent is available)
 - Address any issues identified in the review
 - Run tests if applicable
-- Execute the next task using `/spec-execute [next-task-id]`
+- Execute the next task using `/afk-spec-execute [next-task-id]`
 - Check overall progress with `/spec-status {feature-name}`

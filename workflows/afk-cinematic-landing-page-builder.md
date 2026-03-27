@@ -1,4 +1,4 @@
-# /cinematic-landing-page-builder Command
+# /afk-cinematic-landing-page-builder Command
 
 Build a premium cinematic landing page from a fixed creative intake.
 

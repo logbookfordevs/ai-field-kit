@@ -1,4 +1,4 @@
-# /spec-plan Command
+# /afk-spec-plan Command
 
 Create a lightweight, single-document feature plan optimized for rapid development. Complete in ~30 minutes, then start coding.
 
@@ -65,14 +65,14 @@ Implementation: BLOCKED - I will create specs only, not implementation code
 ## Usage
 
 ```
-/spec-plan [task-id] [feature-description]
+/afk-spec-plan [task-id] [feature-description]
 ```
 
 **Examples:**
 ```
-/spec-plan user-auth JWT authentication with login/logout
-/spec-plan checkout-flow Streamlined one-page checkout with guest option
-/spec-plan notification-system Real-time push notifications for mobile
+/afk-spec-plan user-auth JWT authentication with login/logout
+/afk-spec-plan checkout-flow Streamlined one-page checkout with guest option
+/afk-spec-plan notification-system Real-time push notifications for mobile
 ```
 
 ---
@@ -121,7 +121,7 @@ Before I create the plan, I have a few questions:
 | Dependencies | Few/none | Multiple external |
 
 If complexity suggests Full SDD, mention:
-> "This looks like it might benefit from full SDD 2.0 planning. Would you like me to create a brief for now, or should we use `/research` → `/specify` → `/spec-plan` for more thorough planning?"
+> "This looks like it might benefit from full SDD 2.0 planning. Would you like me to create a brief for now, or should we use `/research` → `/specify` → `/afk-spec-plan` for more thorough planning?"
 
 ### Phase 2: Planning (Create Plan)
 
@@ -281,7 +281,7 @@ Before final output, verify:
 ### Issue: Feature is too complex for brief
 **Cause**: Multi-team, high-risk, or architecturally significant feature
 **Solution**: Suggest Full SDD 2.0:
-- "This looks complex. Would you prefer full planning with `/research` → `/specify` → `/spec-plan`?"
+- "This looks complex. Would you prefer full planning with `/research` → `/specify` → `/afk-spec-plan`?"
 
 ### Issue: Can't find existing patterns
 **Cause**: New project or greenfield feature

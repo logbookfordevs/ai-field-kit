@@ -5,8 +5,6 @@ HOME_DIR="${HOME}"
 REPO_URL="https://github.com/leoreisdias/ai-rules-workflows.git"
 REPO_DIR="${AI_RULES_REPO:-$HOME_DIR/codes/ai-rules-workflows}"
 NAMESPACE_DIR="afk"
-ANTIGRAVITY_PREFIX="afk-"
-
 # Source in repo
 SRC_DIR="$REPO_DIR/workflows"
 
@@ -210,11 +208,11 @@ sync_antigravity_workflows() {
   local dest="$1"
 
   normalize_root_dir "$dest"
-  clear_prefixed_entries "$dest" "$ANTIGRAVITY_PREFIX"
+  clear_prefixed_entries "$dest" "afk-"
 
   while IFS= read -r src; do
     local filename target description escaped_description
-    filename="${ANTIGRAVITY_PREFIX}$(basename "$src")"
+    filename="$(basename "$src")"
     target="$dest/$filename"
     description="$(extract_description "$src")"
     escaped_description="$(escape_double_quotes "${description:-$(basename "$src" .md)}")"
@@ -227,7 +225,7 @@ sync_antigravity_workflows() {
     } > "$target"
   done < <(list_workflow_files)
 
-  echo "✅ Synced Antigravity workflows with required frontmatter and afk- prefix: $dest"
+  echo "✅ Synced Antigravity workflows with required frontmatter: $dest"
 }
 
 sync_codex_skills() {
@@ -256,13 +254,14 @@ sync_codex_skills() {
   clear_prefixed_entries "$legacy_root" "afk-"
 
   while IFS= read -r src; do
-    local stem skill_dir skill_md agents_dir openai_yaml title description short_description
+    local stem title_stem skill_dir skill_md agents_dir openai_yaml title description short_description
     stem="$(basename "$src" .md)"
+    title_stem="${stem#afk-}"
     skill_dir="$dest/$stem"
     skill_md="$skill_dir/SKILL.md"
     agents_dir="$skill_dir/agents"
     openai_yaml="$agents_dir/openai.yaml"
-    title="$(to_title_case "$stem")"
+    title="$(to_title_case "$title_stem")"
     description="$(extract_description "$src")"
     short_description="${description:-Workflow skill generated from /$stem.}"
 
@@ -270,7 +269,7 @@ sync_codex_skills() {
 
     cat > "$skill_md" <<EOF
 ---
-name: afk-$stem
+name: $stem
 description: $short_description
 ---
 
@@ -402,7 +401,7 @@ main() {
   sync_codex_skills "$DEST_CODEX"
   sync_gemini_commands "$DEST_GEMINI"
 
-  echo "✔ Done. AI Field Kit workflows now live in namespaced subfolders for most agents. Gemini CLI is rendered as TOML, Antigravity gets root-level afk-prefixed Markdown copies, Codex gets generated skills under ~/.codex/skills/afk/, and other supported agents use managed per-file symlinks."
+  echo "✔ Done. AI Field Kit workflows now live in namespaced subfolders for most agents. Gemini CLI is rendered as TOML, Antigravity gets root-level Markdown copies, Codex gets generated skills under ~/.codex/skills/afk/, and other supported agents use managed per-file symlinks."
 }
 
 main

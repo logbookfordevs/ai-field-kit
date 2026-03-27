@@ -1,5 +1,5 @@
 ---
-name: structured-debugging
+name: afk-structured-debugging
 description: Investigate bugs/logs with clear expected vs actual behavior, root cause, and fixes.
 metadata:
   short-description: Structured debugging playbook

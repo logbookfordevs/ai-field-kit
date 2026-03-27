@@ -1,5 +1,5 @@
 ---
-name: documentation-authoring
+name: afk-documentation-authoring
 description: Write documentation using the DocX playbook (journeys, progressive disclosure, validation). Use when the user asks to write, rewrite, structure, or audit docs (READMEs, guides, API docs, onboarding, troubleshooting, runbooks) and wants a reader-first approach with quick wins first.
 ---
 

@@ -17,7 +17,7 @@ Global principles:
 - Use **progressive disclosure** (quick win first, details later).
 - Keep a **human tone** and anticipate common frustrations.
 
-When the task is explicitly about writing docs, use the **`documentation-authoring` skill**.
+When the task is explicitly about writing docs, use the **`afk-documentation-authoring` skill**.
 <!-- #endregion -->
 
 <!-- #region Coding Style Instructions -->
@@ -31,7 +31,7 @@ Always prioritize DX (developer experience). Keep code:
 - Debuggable
 - Easy to onboard into
 
-When the task is a review/refactor guidance, use the **`dx-code-review` skill**.
+When the task is a review/refactor guidance, use the **`afk-dx-coding-playbook` skill**.
 <!-- #endregion -->
 
 <!-- #region Coding Style Instructions -->

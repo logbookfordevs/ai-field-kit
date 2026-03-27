@@ -1,5 +1,5 @@
 ---
-name: animated-driven-frontend
+name: afk-animated-driven-frontend
 description: Design and implement animated UIs as cinematic, interactive, and immersive experiences. Use when the user asks for motion direction or choreography (timing, easing, sequencing), microinteractions (hover, press, drag, toggle), route or layout transitions (shared elements), motion systems (tokens, primitives, patterns), creative coding, immersive place metaphors (OS-like UI), tactile or sonic feedback, keyboard-driven interactions, or optional sound and 3D.
 ---
 
