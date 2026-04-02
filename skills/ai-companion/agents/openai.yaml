@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Companion"
+  short_description: "Boost skill discovery with skills.json"
+  default_prompt: "Use $ai-companion to check ~/.agents/skills/skills.json and improve native skill discovery before normal execution."

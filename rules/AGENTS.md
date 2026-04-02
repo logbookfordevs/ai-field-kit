@@ -109,8 +109,11 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 
 ## TypeScript Compilation
 
-- Do NOT automatically run type-checking after modifying TypeScript files.
-- When a task that modified `.ts` or `.tsx` files is complete, **ask the user** if they would like to run a compilation check (`npx tsc --noEmit`).
-- Only run the check if the user confirms.
-- If the user accepts and the compilation fails, fix all TypeScript errors before returning the final result.
+- Any modification in TypeScript files (`.ts`, `.tsx`) requires validation.
+- After making changes, ALWAYS run:
+  `npx tsc --noEmit`
+- If `npx tsc --noEmit` fails due to missing modules/dependencies, warn the user about it before proceeding.
+- Do not assume the code compiles.
+- If the compilation fails, fix all TypeScript errors before returning the final result.
 <!-- #endregion -->
+
