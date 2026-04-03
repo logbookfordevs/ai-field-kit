@@ -27,7 +27,7 @@
         },
         "opencode": {
           "name": "stitchmcp",
-          "enabled": true
+          "enabled": false
         }
       }
     },
@@ -51,7 +51,7 @@
         },
         "opencode": {
           "name": "notebooklm",
-          "enabled": true
+          "enabled": false
         }
       }
     },
@@ -79,7 +79,7 @@
         },
         "opencode": {
           "name": "shadcn",
-          "enabled": true
+          "enabled": false
         }
       }
     }

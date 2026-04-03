@@ -295,22 +295,118 @@ def sync_opencode_target(
         raise SyncError(f'{target.path} has a non-object "mcp" value.')
 
     added: List[str] = []
+    updated: List[str] = []
     skipped: List[str] = []
 
     for server_name, server_config in desired_servers.items():
-        if server_name in mcp:
+        rendered_config = render_opencode_server_config(server_config)
+
+        if server_name not in mcp:
+            mcp[server_name] = rendered_config
+            added.append(server_name)
+            continue
+
+        if mcp[server_name] == rendered_config:
             skipped.append(server_name)
             continue
-        mcp[server_name] = server_config
-        added.append(server_name)
 
-    report_target_result(target, added, skipped, dry_run)
+        mcp[server_name] = rendered_config
+        updated.append(server_name)
+    report_target_result(target, added, skipped, dry_run, updated)
 
-    if not added or dry_run:
-        return bool(added)
+    if not (added or updated) or dry_run:
+        return bool(added or updated)
 
     write_with_backup(target.path, json.dumps(document, indent=2) + "\n")
     return True
+
+
+def render_opencode_server_config(config: Mapping[str, Any]) -> Dict[str, Any]:
+    if "url" in config:
+        return render_opencode_remote_server_config(config)
+
+    return render_opencode_local_server_config(config)
+
+
+def render_opencode_local_server_config(config: Mapping[str, Any]) -> Dict[str, Any]:
+    command = config.get("command")
+    args = config.get("args", [])
+
+    if not isinstance(command, str) or not command:
+        raise SyncError('OpenCode local MCP config requires a non-empty string "command".')
+    if not isinstance(args, list) or not all(isinstance(item, str) for item in args):
+        raise SyncError('OpenCode local MCP config requires "args" to be a list of strings.')
+
+    rendered: Dict[str, Any] = {
+        "type": "local",
+        "command": [expand_env_vars(command), *[expand_env_vars(item) for item in args]],
+    }
+
+    environment = config.get("environment", config.get("env"))
+    if environment is not None:
+        if not isinstance(environment, dict) or not all(
+            isinstance(key, str) and isinstance(value, str) for key, value in environment.items()
+        ):
+            raise SyncError(
+                'OpenCode local MCP config requires "environment"/"env" to be an object of strings.'
+            )
+        rendered["environment"] = {
+            key: expand_env_vars(value) for key, value in environment.items()
+        }
+
+    enabled = config.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise SyncError('OpenCode MCP config "enabled" must be a boolean.')
+    rendered["enabled"] = enabled
+
+    if "timeout" in config:
+        if not isinstance(config["timeout"], (int, float)):
+            raise SyncError('OpenCode MCP config "timeout" must be a number.')
+        rendered["timeout"] = config["timeout"]
+
+    return rendered
+
+
+def render_opencode_remote_server_config(config: Mapping[str, Any]) -> Dict[str, Any]:
+    url = config.get("url")
+    if not isinstance(url, str) or not url:
+        raise SyncError('OpenCode remote MCP config requires a non-empty string "url".')
+
+    rendered: Dict[str, Any] = {
+        "type": "remote",
+        "url": expand_env_vars(url),
+    }
+
+    if "headers" in config:
+        headers = config["headers"]
+        if not isinstance(headers, dict) or not all(
+            isinstance(key, str) and isinstance(value, str) for key, value in headers.items()
+        ):
+            raise SyncError('OpenCode remote MCP config "headers" must be an object of strings.')
+        rendered["headers"] = {
+            key: expand_env_vars(value) for key, value in headers.items()
+        }
+
+    enabled = config.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise SyncError('OpenCode MCP config "enabled" must be a boolean.')
+    rendered["enabled"] = enabled
+
+    if "oauth" in config:
+        if not isinstance(config["oauth"], dict):
+            raise SyncError('OpenCode remote MCP config "oauth" must be an object.')
+        rendered["oauth"] = copy.deepcopy(config["oauth"])
+
+    if "timeout" in config:
+        if not isinstance(config["timeout"], (int, float)):
+            raise SyncError('OpenCode MCP config "timeout" must be a number.')
+        rendered["timeout"] = config["timeout"]
+
+    return rendered
+
+
+def expand_env_vars(value: str) -> str:
+    return os.path.expandvars(value)
 
 
 def load_json_document(path: Path) -> Dict[str, Any]:
@@ -400,15 +496,24 @@ def backup_existing_file(path: Path) -> None:
 
 
 def report_target_result(
-    target: Target, added: List[str], skipped: List[str], dry_run: bool
+    target: Target,
+    added: List[str],
+    skipped: List[str],
+    dry_run: bool,
+    updated: List[str] | None = None,
 ) -> None:
+    updated = updated or []
     action = "Would add" if dry_run else "Added"
+    update_action = "Would update" if dry_run else "Updated"
     print(f"▶ {target.name}: {target.path}")
 
     if added:
         print(f"   ↳ {action}: {', '.join(added)}")
     else:
         print("   ↳ Added: nothing")
+
+    if updated:
+        print(f"   ↳ {update_action}: {', '.join(updated)}")
 
     if skipped:
         print(f"   ↳ Skipped existing: {', '.join(skipped)}")
