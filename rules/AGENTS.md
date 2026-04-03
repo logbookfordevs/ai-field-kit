@@ -1,8 +1,6 @@
 <!-- #region Documentation Instructions -->
 # Documentation Instructions
 
-## DocX (Core)
-
 Documentation should be treated as a **product**, not an obligation.
 
 Global principles:
@@ -16,8 +14,6 @@ When the task is explicitly about writing docs, use the **`afk-documentation-aut
 
 <!-- #region Coding Style Instructions -->
 # Coding Style Instructions
-
-## DX Principles (Core)
 
 Always prioritize DX (developer experience). Keep code:
 - Readable
