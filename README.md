@@ -91,6 +91,16 @@ npx skills add https://github.com/logbookfordevs/ai-field-kit --list
 
 The CLI symlinks skill files into the right agent directories — no manual path juggling needed.
 
+### Install a single skill
+
+If you only want the taxonomy-aware discovery helper, install `ai-companion` directly:
+
+```bash
+npx skills add https://github.com/logbookfordevs/ai-field-kit --skill ai-companion
+```
+
+This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-companion/) and is designed to work with the `skills.json` file generated or maintained by AI Skills Companion.
+
 > **What does global vs. agent-specific mean?**
 > Global installs (`--global`) place the skill in `~/.agents/skills/` and make it available to every agent that reads from there.
 > Agent-specific installs target a single tool's config directory directly.
@@ -105,6 +115,7 @@ The CLI symlinks skill files into the right agent directories — no manual path
 | `afk-dx-coding-playbook` | DX-first heuristics for reviews, refactors, and API design |
 | `afk-spline-3d-integration` | Spline 3D integration guides for React and vanilla JS |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
+| `ai-companion` | Uses `skills.json` taxonomy to improve native skill discovery |
 
 ---
 

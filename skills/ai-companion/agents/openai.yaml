@@ -1,4 +1,4 @@
 interface:
   display_name: "AI Companion"
-  short_description: "Boost skill discovery with skills.json"
-  default_prompt: "Use $ai-companion to check ~/.agents/skills/skills.json and improve native skill discovery before normal execution."
+  short_description: "Choose skills using the user's taxonomy"
+  default_prompt: "Use $ai-companion first when the user asks to use their skills or when other skills need to be selected from the user's library. Check ~/.agents/skills/skills.json and let that taxonomy influence which working skills are chosen next."
