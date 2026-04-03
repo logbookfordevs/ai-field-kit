@@ -24,6 +24,10 @@
         },
         "claude": {
           "name": "StitchMCP"
+        },
+        "opencode": {
+          "name": "stitchmcp",
+          "enabled": true
         }
       }
     },
@@ -44,6 +48,10 @@
         },
         "claude": {
           "name": "notebooklm-mcp"
+        },
+        "opencode": {
+          "name": "notebooklm",
+          "enabled": true
         }
       }
     },
@@ -68,6 +76,10 @@
         },
         "claude": {
           "name": "shadcn"
+        },
+        "opencode": {
+          "name": "shadcn",
+          "enabled": true
         }
       }
     }

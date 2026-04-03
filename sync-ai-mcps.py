@@ -42,6 +42,11 @@ TARGETS: Dict[str, Target] = {
         "json",
     ),
     "claude": Target("claude", Path.home() / ".claude" / ".mcp.json", "json"),
+    "opencode": Target(
+        "opencode",
+        Path.home() / ".config" / "opencode" / "opencode.json",
+        "opencode_json",
+    ),
 }
 
 
@@ -101,6 +106,8 @@ def main() -> int:
             changed = sync_json_target(target, desired_servers, args.dry_run)
         elif target.format == "codex_toml":
             changed = sync_codex_target(target, desired_servers, args.dry_run)
+        elif target.format == "opencode_json":
+            changed = sync_opencode_target(target, desired_servers, args.dry_run)
         else:
             raise SyncError(f"Unsupported target format: {target.format}")
 
@@ -276,6 +283,33 @@ def sync_codex_target(
 
     new_text = append_toml_blocks(existing_text, blocks)
     write_with_backup(target.path, new_text)
+    return True
+
+
+def sync_opencode_target(
+    target: Target, desired_servers: "OrderedDict[str, Dict[str, Any]]", dry_run: bool
+) -> bool:
+    document = load_json_document(target.path)
+    mcp = document.setdefault("mcp", {})
+    if not isinstance(mcp, MutableMapping):
+        raise SyncError(f'{target.path} has a non-object "mcp" value.')
+
+    added: List[str] = []
+    skipped: List[str] = []
+
+    for server_name, server_config in desired_servers.items():
+        if server_name in mcp:
+            skipped.append(server_name)
+            continue
+        mcp[server_name] = server_config
+        added.append(server_name)
+
+    report_target_result(target, added, skipped, dry_run)
+
+    if not added or dry_run:
+        return bool(added)
+
+    write_with_backup(target.path, json.dumps(document, indent=2) + "\n")
     return True
 
 

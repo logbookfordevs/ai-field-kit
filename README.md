@@ -16,7 +16,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 | `skills/` | Reusable capabilities and quality lenses that shape how agents work |
 | `workflows/` | Slash-command workflows for explicit multi-step tasks |
 | `mcps/` | MCP server registry + sync script to configure them everywhere |
-| `sync-ai-agents.sh` | One-command sync: pulls repo and symlinks rules into all agents |
+| `sync-ai-agents.sh` | One-command sync: pulls repo and symlinks rules into all supported agents |
 | `sync-ai-workflows.sh` | One-command sync: manages per-workflow symlinks where possible and renders Gemini CLI commands as TOML |
 | `sync-ai-mcps.py` | Smart MCP sync: resolves API key placeholders, writes to each agent config |
 
@@ -46,7 +46,7 @@ cd ~/codes/ai-field-kit
 Then run the sync scripts in order:
 
 ```bash
-# 1. Symlink global agent rules (AGENTS.md → Gemini, Codex, KiloCode, Claude)
+# 1. Symlink global agent rules (AGENTS.md → Gemini, Codex, OpenCode, KiloCode, Claude)
 bash sync-ai-agents.sh
 
 # 2. Sync workflows into each agent's command or prompt directory
@@ -142,6 +142,7 @@ Different agents expose the same idea under different names and file formats, so
 |---|---|---|---|
 | Antigravity | Workflows | `~/.gemini/antigravity/global_workflows/` | Root-level workflow copies with generated YAML frontmatter |
 | Codex | Skills | `~/.codex/skills/afk/` | Generated skill folders built from each workflow |
+| OpenCode | Commands | `~/.config/opencode/commands/afk/` | Managed per-file symlinks |
 | Gemini CLI | Custom commands | `~/.gemini/commands/afk/` | Rendered TOML files |
 | Claude Code | Custom slash commands | `~/.claude/commands/afk/` | Managed per-file symlinks |
 | Cursor | Commands | `~/.cursor/commands/afk/` | Managed per-file symlinks |
@@ -157,6 +158,18 @@ Different agents expose the same idea under different names and file formats, so
 - This keeps AI Field Kit commands and Codex skills isolated from your personal or third-party entries in the same agent.
 - The script only refreshes files managed by this repo; it does not intentionally wipe unrelated commands in the parent command folders.
 - This is intentionally symlink-first for better DX: one source of truth, easier debugging, and no copy drift.
+
+### Global Rules Sync Targets
+
+`sync-ai-agents.sh` links the shared [`rules/AGENTS.md`](./rules/AGENTS.md) file into each supported tool's expected global instructions path:
+
+| Agent | Global rules path |
+|---|---|
+| Gemini | `~/.gemini/GEMINI.md` |
+| Codex | `~/.codex/AGENTS.md` |
+| OpenCode | `~/.config/opencode/AGENTS.md` |
+| KiloCode | `~/.kilocode/rules/AGENTS.md` |
+| Claude | `~/.claude/CLAUDE.md` |
 
 ---
 
@@ -244,6 +257,9 @@ The registry uses `KEY_STITCH`-style placeholders instead of real API keys. The 
 | Gemini / Antigravity | `~/.gemini/settings.json` / `~/.gemini/antigravity/mcp_config.json` |
 | Codex | `~/.codex/config.toml` |
 | Claude | `~/.claude/.mcp.json` |
+| OpenCode | `~/.config/opencode/opencode.json` |
+
+For OpenCode specifically, the sync script only merges into the top-level `mcp` object and preserves every other existing setting in `opencode.json`.
 
 ---
 
@@ -271,6 +287,7 @@ Sync only a specific agent:
 ```bash
 python3 sync-ai-mcps.py --agent gemini
 python3 sync-ai-mcps.py --agent codex
+python3 sync-ai-mcps.py --agent opencode
 ```
 
 Sync non-interactively (CI-friendly) — export keys first:

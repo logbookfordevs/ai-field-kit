@@ -98,6 +98,9 @@ main() {
   # Codex
   link_rule "$HOME_DIR/.codex/AGENTS.md"
 
+  # OpenCode
+  link_rule "$HOME_DIR/.config/opencode/AGENTS.md"
+
   # KiloCode
   link_rule "$HOME_DIR/.kilocode/rules/AGENTS.md"
 
