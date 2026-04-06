@@ -189,5 +189,4 @@ If no interactive loop is possible, choose the single best-fit method, apply it 
 These are suggestions, not required steps:
 - move into planning or execution outside this skill once the artifact is strong enough
 - `afk-documentation-authoring` if the refined artifact should become polished documentation for humans
-- `afk-dx-coding-playbook` if the refined artifact is code-facing and needs stronger DX or maintainability guidance
 - use `afk-note` if important final decisions or caveats should be preserved across handoffs

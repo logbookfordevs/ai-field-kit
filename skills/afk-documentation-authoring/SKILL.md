@@ -10,6 +10,8 @@ description: Write documentation using the DocX playbook (journeys, progressive 
 - **Documentation should be as enjoyable to consume as well-written code is to read**
 - **Always prioritize the experience of those who will use the documentation**
 - **Treat documentation as a product, not as an obligation**
+- **Do not stop at readable — aim for readable, usable, and enjoyable**
+- **When the material is technical or dry, use smart framing, strong examples, and the occasional apt analogy to keep the reader engaged without becoming gimmicky**
 
 ## Rule 1: Question Before Documenting
 
@@ -30,6 +32,14 @@ description: Write documentation using the DocX playbook (journeys, progressive 
 - "When you want to do X, follow these steps..."
 - "If you're migrating from Y, then..."
 - "To debug problem Z, start here..."
+
+When a pure journey format is not enough, combine:
+- the reader journey
+- the key decision or rationale behind the behavior
+
+Good docs often answer both:
+- "How do I do this?"
+- "Why is it designed this way?"
 
 ## Rule 3: Gratification First, Details Later
 
@@ -53,6 +63,14 @@ const user = await api.getUser({
 ```
 
 **Vs** pages of text explaining concepts before showing code.
+
+When documenting decisions or trade-offs, reverse the order only if the rationale is the product.
+
+Examples:
+- ADRs
+- architectural choice records
+- migration decisions
+- public API changes with meaningful trade-offs
 
 ## Rule 5: Test the Journey in Practice
 
@@ -79,6 +97,8 @@ const user = await api.getUser({
 - "Common error: if you see X, it means Y"
 - "Quick troubleshooting"
 - "FAQ of the problems that always come up"
+- "Why this weird constraint exists"
+- "What future readers and agents are likely to misread"
 
 ## Rule 8: Visual > Textual When Possible
 
@@ -106,6 +126,14 @@ const user = await api.getUser({
 ## All Parameters
 ```
 
+This is especially important for technical docs that also need durable engineering context.
+
+Layering often looks like:
+- quick start first
+- practical guide second
+- why / architecture notes next
+- deep reference or ADRs last
+
 ## Rule 10: Success Metrics
 
 **Document with these metrics in mind:**
@@ -122,6 +150,12 @@ const user = await api.getUser({
 - **Screenshots must be up to date**
 - **Clear versioning** (what changed between versions)
 
+For engineering docs, also keep alive:
+- architectural decisions that have changed
+- superseded choices
+- public API behavior changes
+- gotchas that future agents or teammates will otherwise rediscover painfully
+
 ## Rule 12: Developer Empathy
 
 **Always ask yourself:**
@@ -130,6 +164,65 @@ const user = await api.getUser({
 - "Would this make me excited to use it or look for alternatives?"
 - "If I were a junior, could I understand?"
 - "If I were a senior, would I be annoyed by unnecessary info?"
+
+## Rule 13: Document the Why When It Matters
+
+Documentation should not only explain what exists. It should capture why key decisions were made when future humans or agents will need that context.
+
+Especially document:
+- significant architectural decisions
+- public API or interface changes
+- non-obvious constraints
+- trade-offs between rejected alternatives
+- gotchas that are expensive to rediscover
+
+Do not write "why" sections for obvious code or throwaway changes.
+
+## Rule 14: Record Decisions, Not Just Instructions
+
+When the doc is really carrying a decision, prefer a simple decision-friendly shape:
+
+```md
+## Context
+[What problem or constraint existed]
+
+## Decision
+[What was chosen]
+
+## Alternatives Considered
+[What else was plausible and why it lost]
+
+## Consequences
+[What this means going forward]
+```
+
+This does not always need to be a formal ADR, but the reasoning should be durable.
+
+## Rule 15: Public APIs and Shared Interfaces Deserve Better Docs
+
+When documenting public APIs, shared interfaces, or team-facing modules, include:
+- what the interface is for
+- expected inputs and outputs
+- error behavior or failure modes
+- examples of correct usage
+- non-obvious constraints or compatibility assumptions
+
+Do not dump parameters without giving the reader a mental model.
+
+## Rule 16: Preserve Joy in Technical Docs
+
+Enjoyable documentation is not fluff.
+
+It can mean:
+- strong headings that create momentum
+- examples that feel realistic instead of sterile
+- smart analogies when they reduce confusion
+- a little warmth or wit where it helps the reader keep going
+
+It does **not** mean:
+- jokes that age badly
+- theatrics that distract from clarity
+- cute language that hides technical truth
 
 ## Final Checklist: Doc Review
 
@@ -140,6 +233,8 @@ Before publishing, ask:
 - [ ] Does it look like a product I'd enjoy using?
 - [ ] Did I anticipate the 3 most common problems?
 - [ ] Is the tone human and empathetic?
+- [ ] Did I capture the why for the decisions that future readers will otherwise have to rediscover?
+- [ ] If this touches a public API, major behavior, or architecture choice, is the rationale durable enough for future humans and agents?
 
 ---
 

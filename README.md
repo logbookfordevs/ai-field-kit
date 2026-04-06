@@ -75,15 +75,11 @@ npx skills add https://github.com/logbookfordevs/ai-field-kit
 The interactive mode lets you pick which skills to install and which agents to target. A few useful flags:
 
 ```bash
-# Install a specific skill globally (available to all agents on your machine)
-npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-dx-coding-playbook --global
-
 # Install all skills globally, skip confirmation
 npx skills add https://github.com/logbookfordevs/ai-field-kit --all --global
 
 # Install only to a specific agent
 npx skills add https://github.com/logbookfordevs/ai-field-kit --agent cursor
-npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-dx-coding-playbook --agent gemini
 
 # Preview what's available without installing
 npx skills add https://github.com/logbookfordevs/ai-field-kit --list
@@ -110,8 +106,8 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | Skill | What it unlocks |
 |---|---|
 | `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
+| `afk-code-simplify` | Refactors working code for clarity without changing behavior |
 | `afk-documentation-authoring` | DocX playbook: journeys, progressive disclosure, real empathy |
-| `afk-dx-coding-playbook` | DX-first heuristics for reviews, refactors, and API design |
 | `afk-spline-3d-integration` | Spline 3D integration guides for React and vanilla JS |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `ai-companion` | Uses `skills.json` taxonomy to improve native skill discovery |
@@ -157,6 +153,22 @@ If you're unsure which one to reach for, use this shortcut:
 - "This artifact is no longer active, but I want to keep it" -> `afk-archive-artifact`
 - "I need to bring archived work back into the active flow" -> `afk-unarchive-artifact`
 
+### Use Only What You Need
+
+AI Field Kit is not meant to be run as a mandatory full ceremony.
+
+Most of the time, you will not use every discussion or planning skill in one flow. In practice, many sessions only need one or two of them:
+
+- `afk-brainstorming-facilitator` when the idea space is still open
+- `afk-business-analyst` when the idea exists but needs stronger framing
+- `afk-deep-interview` when ambiguity is expensive and you want rigor
+- `afk-discuss-phase-context` when the scope is already known and only a phase needs clarification
+- `afk-phase-planning` when the work is already clear enough to sequence
+
+Use the smallest useful slice of AFK for the moment you are in.
+
+If the work is already clear, skip straight to the later skill that matches the need. If the work is messy, start earlier. The point is guidance, not bureaucracy.
+
 ### A simple flow that works well
 
 You do not need to use all of these every time, but this sequence works well for many spec-driven tasks:
@@ -166,6 +178,30 @@ You do not need to use all of these every time, but this sequence works well for
 3. Use `afk-deep-interview` when you want to pressure-test intent, scope, non-goals, and decision boundaries before planning.
 4. Use `afk-discuss-phase-context` when a specific phase needs its gray areas resolved.
 5. Use `afk-advanced-elicitation` on the resulting brief, context doc, or plan to improve quality before execution.
+6. Use `afk-phase-planning` when the work is clear enough to break into reviewable implementation phases.
+
+### Framework Pairings
+
+AI Field Kit is intentionally compatible with other frameworks and runtimes. It shapes the work before execution; it does not need to own execution.
+
+Useful pairings:
+
+- **AFK + OpenAgentsControl**
+  AFK shapes the brief, context, and phases. OpenAgentsControl can then execute with approval gates and project-pattern discipline.
+
+- **AFK + OpenSpec**
+  AFK helps explore, clarify, and strengthen the work before you formalize it into OpenSpec proposal/apply/archive artifacts.
+
+- **AFK + oh-my-codex / oh-my-openagent**
+  AFK can do the human-centered planning first, then hand off to a more autonomous execution harness when you want that mode.
+
+- **AFK + your normal prompting workflow**
+  AFK can stop at the artifact stage. You can then implement manually, prompt directly, or switch to any coding agent you prefer.
+
+The clean mental model is:
+
+- **AFK shapes the work**
+- **You choose how to execute it**
 
 ### Lightweight handoff contract
 
@@ -243,8 +279,8 @@ Several older AFK skills fit naturally around this flow as specialist companions
 
 | Skill | Where it fits |
 |---|---|
+| `afk-code-simplify` | When code already works but needs a cleaner, easier-to-review expression without changing behavior |
 | `afk-documentation-authoring` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
-| `afk-dx-coding-playbook` | When a refined plan or requirements artifact needs DX-oriented critique, maintainability guidance, or implementation-shaping advice |
 | `afk-structured-debugging` | When the real problem is a bug, failure, or investigation rather than new scoped work |
 | `afk-archive-artifact` | When an inactive artifact should move out of the active flow without being deleted |
 | `afk-unarchive-artifact` | When archived work needs to become active again |
@@ -254,8 +290,8 @@ These are not required steps in the main flow. They are optional specialists you
 
 #### How they connect
 
+- Use `afk-code-simplify` after implementation when the code works but has unnecessary complexity, awkward names, or noisy structure that should be reduced without changing behavior.
 - Use `afk-documentation-authoring` after `afk-business-analyst`, `afk-deep-interview`, or `afk-discuss-phase-context` when the output needs to become a human-friendly document instead of a working artifact.
-- Use `afk-dx-coding-playbook` after `afk-advanced-elicitation` or alongside planning artifacts when you want sharper implementation guidance with stronger developer experience.
 - Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
 - Use `afk-archive-artifact` when a flow output is done, paused, superseded, or merged and should move out of the active workspace.
 - Use `afk-unarchive-artifact` when archived work should return to the active workspace for revision or follow-up.
@@ -340,7 +376,7 @@ If you're deciding where a new prompt belongs, use this rule first:
 
 **Good skill examples in this repo:**
 
-- `afk-dx-coding-playbook`: a maintainability and readability lens that applies across reviews, refactors, and implementation work.
+- `afk-code-simplify`: a behavior-preserving refactor lens for reducing unnecessary complexity in working code.
 - `afk-structured-debugging`: a debugging approach that works across many bug reports and log investigations.
 - `afk-animated-driven-frontend`: motion strategy and interaction direction that can shape many different UI tasks.
 
@@ -505,6 +541,22 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use `KEY_YOUR_NAME` 
 | KiloCode | ✅ | ✅ | — |
 | Claude | ✅ | — | ✅ |
 | Cursor | — | ✅ | — |
+
+---
+
+## Acknowledgements
+
+AI Field Kit is heavily inspired by the open-source AI coding community and the people publishing their methods in public. This repo is its own opinionated kit, but it has learned a lot from these projects:
+
+- [OpenSpec](https://github.com/Fission-AI/OpenSpec/)
+- [OpenAgentsControl](https://github.com/darrenhinde/OpenAgentsControl)
+- [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex)
+- [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)
+- [Get Shit Done](https://github.com/gsd-build/get-shit-done?tab=readme-ov-file)
+- [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)
+- [agent-skills](https://github.com/addyosmani/agent-skills)
+
+Thanks to the maintainers and contributors behind those repos for sharing ideas, workflows, and techniques in the open. AI Field Kit borrows selectively, adapts heavily, and tries to stay honest about that lineage.
 
 ---
 

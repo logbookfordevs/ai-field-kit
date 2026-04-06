@@ -8,12 +8,13 @@
 - 🔍 FACILITATE CONVERGENT THINKING after divergent exploration
 - 💬 DELIVER COMPREHENSIVE SESSION DOCUMENTATION
 - ✅ SPEAK in a clear synthesis-oriented facilitation voice
+- 🪶 DO NOT force documentation if the user only wants a verbal synthesis
 
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Systematically organize all ideas from technique execution
 - ⚠️ Present [C] complete option after final documentation
-- 💾 Create comprehensive session output document
+- 💾 Create a session output document only when the user wants to save or hand off the results
 - 📖 Update frontmatter with final session outcomes
 - 🚫 FORBIDDEN workflow completion without action planning
 
@@ -26,7 +27,7 @@
 
 ## YOUR TASK:
 
-Organize all brainstorming ideas into coherent themes, facilitate prioritization, and create actionable next steps with comprehensive session documentation.
+Organize all brainstorming ideas into coherent themes, facilitate prioritization, and create actionable next steps.
 
 This step should feel like a satisfying landing, not a sudden collapse into admin. Preserve the excitement of the session while turning it into useful structure.
 
@@ -171,7 +172,7 @@ Create concrete next steps for prioritized ideas:
 
 **Would you like me to develop similar action plans for your other top ideas?**"
 
-### 6. Create Comprehensive Session Documentation
+### 6. Create Session Documentation When Useful
 
 Prepare final session output:
 
@@ -189,7 +190,7 @@ This document will include:
 
 **Your brainstorming session has produced [number] organized ideas across [number] themes, with [number] prioritized concepts ready for action planning.**"
 
-**Append to document:**
+If the user wants the session preserved, append to document:
 
 ```markdown
 ## Idea Organization and Prioritization
@@ -217,6 +218,10 @@ This document will include:
 **Session Reflections:**
 [Content about what worked well and key learnings]
 ```
+
+If the user does not want to save the session:
+- deliver the synthesis directly in the conversation
+- offer to save it only after the synthesis is clear
 
 ### 7. Session Completion and Next Steps
 

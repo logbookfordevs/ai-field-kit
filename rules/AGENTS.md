@@ -21,7 +21,7 @@ Always prioritize DX (developer experience). Keep code:
 - Debuggable
 - Easy to onboard into
 
-When the task is a review/refactor guidance, use the **`afk-dx-coding-playbook` skill**.
+When the task is a review/refactor guidance, prefer explicit review or refactor-focused skills and heuristics rather than a generic DX overlay.
 
 ### Rules to Follow
 
@@ -69,4 +69,3 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 - If `npx tsc --noEmit` fails due to missing modules/dependencies, warn the user about it before proceeding.
 - If the compilation fails, fix all TypeScript errors before returning the final result.
 <!-- #endregion -->
-

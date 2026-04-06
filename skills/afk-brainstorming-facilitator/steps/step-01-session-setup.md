@@ -8,13 +8,14 @@
 - 💬 FOCUS on session setup and continuation detection only
 - 🚪 DETECT existing workflow state and handle continuation properly
 - ✅ SPEAK in your normal facilitation voice unless the user asks for a different tone or language
+- 🪶 KEEP SETUP LIGHT unless the user clearly wants a heavier session structure
 
 ## EXECUTION PROTOCOLS:
 
-- 🎯 Show your analysis before taking any action
-- 💾 Initialize document and update frontmatter
-- 📖 Set up frontmatter `stepsCompleted: [1]` before loading next step
-- 🚫 FORBIDDEN to load next step until setup is complete
+- 🎯 Prefer rapid orientation over administrative overhead
+- 💾 Only initialize a document if the session is continuing or the user wants to save the results
+- 📖 If no document exists yet, keep session state in conversation until saving becomes useful
+- 🚫 FORBIDDEN to force artifact creation before the session has earned it
 
 ## CONTEXT BOUNDARIES:
 
@@ -28,12 +29,20 @@
 Initialize the brainstorming workflow by detecting continuation state and setting up session context.
 
 The user should feel like they are entering a real facilitated session with clear options and momentum, not filling out a form.
+When possible, move from setup into real ideation quickly.
 
 ## INITIALIZATION SEQUENCE:
 
-### 1. Check for Existing Sessions
+### 1. Check for Existing Sessions Only When Relevant
 
-First, check the brainstorming sessions folder for existing sessions:
+Only check for existing sessions when one of these is true:
+- the user explicitly wants to continue prior work
+- the user refers to an earlier brainstorming artifact
+- the workflow was invoked in a continuation-oriented context
+
+If none of those are true, skip file detection and treat the session as a fresh live conversation.
+
+When checking for existing sessions:
 
 - List all files in the local brainstorming sessions folder
 - **DO NOT read any file contents** - only list filenames
@@ -60,18 +69,6 @@ If existing session files are found:
 
 If no document exists or no `stepsCompleted` in frontmatter:
 
-#### A. Initialize Document
-
-Create the brainstorming session document:
-
-```bash
-# Create directory if needed
-mkdir -p "$(dirname "{brainstorming_session_output_file}")"
-
-# Initialize from template
-cp "../template.md" "{brainstorming_session_output_file}"
-```
-
 #### B. Context File Check and Loading
 
 **Check for Context File:**
@@ -89,7 +86,7 @@ cp "../template.md" "{brainstorming_session_output_file}"
 **Context Loading:** [If context_file provided, indicate context is loaded]
 **Context-Based Guidance:** [If context available, briefly mention focus areas]
 
-**Let's set up your session for maximum creativity and productivity:**
+**Let's get the session pointed in the right direction without slowing the creative energy down:**
 
 **Session Discovery Questions:**
 
@@ -112,43 +109,17 @@ Wait for user responses, then:
 
 **Does this accurately capture what you want to achieve?**"
 
-#### E. Update Frontmatter and Document
+#### E. Session State
 
-Update the document frontmatter:
+At this point, keep the session state in conversation unless the user wants persistence.
 
-```yaml
----
-stepsCompleted: [1]
-inputDocuments: []
-session_topic: '[session_topic]'
-session_goals: '[session_goals]'
-selected_approach: ''
-techniques_used: []
-ideas_generated: []
-context_file: '[context_file if provided]'
----
-```
+If the user wants the session saved or continued later:
+- initialize the document then
+- record session topic, goals, selected approach, and techniques used
 
-Append to document:
-
-```markdown
-## Session Overview
-
-**Topic:** [session_topic]
-**Goals:** [session_goals]
-
-### Context Guidance
-
-_[If context file provided, summarize key context and focus areas]_
-
-### Session Setup
-
-_[Content based on conversation about session parameters and facilitator approach]_
-```
-
-## APPEND TO DOCUMENT:
-
-When user selects approach, append the session overview content directly to `{brainstorming_session_output_file}` using the structure from above.
+If the user does not need persistence yet:
+- do not create the artifact
+- proceed directly to technique selection
 
 ### E. Continue to Technique Selection
 
@@ -176,8 +147,12 @@ Present them as distinct creative paths, not just workflow branches.
 
 #### When user selects approach number:
 
-- **Append initial session overview to `{brainstorming_session_output_file}`**
-- **Update frontmatter:** `stepsCompleted: [1]`, `selected_approach: '[selected approach]'`
+- If a session artifact already exists or the user has asked to save the session:
+  - append initial session overview to `{brainstorming_session_output_file}`
+  - update frontmatter with `stepsCompleted: [1]`, `selected_approach: '[selected approach]'`
+- Otherwise:
+  - keep the selection in conversational state
+  - do not create a file yet
 - **Load the appropriate step-02 file** based on selection
 
 ### 5. Handle User Selection
@@ -194,25 +169,25 @@ After user selects approach number:
 ✅ Existing sessions detected without reading file contents
 ✅ User prompted to continue existing session or start new
 ✅ Correct session file selected for continuation
-✅ Fresh workflow initialized with correct document structure
+✅ Fresh workflow initialized with the right amount of structure
 ✅ Session context gathered and understood clearly
 ✅ User's approach selection captured and routed correctly
-✅ Frontmatter properly updated with session state
-✅ Document initialized with session overview section
+✅ Frontmatter properly updated when persistence is in play
+✅ Session state preserved cleanly whether or not a document exists yet
 
 ## FAILURE MODES:
 
 ❌ Reading file contents during session detection (wastes context)
 ❌ Not asking user before continuing existing session
 ❌ Not properly routing user's continue/new session selection
-❌ Missing continuation detection leading to duplicate work
+❌ Missing continuation detection when the user wanted to resume earlier work
 ❌ Insufficient session context gathering
 ❌ Not properly routing user's approach selection
-❌ Frontmatter not updated with session parameters
+❌ Persistence logic ignored when the user clearly wanted to save or continue the session
 
 ## SESSION SETUP PROTOCOLS:
 
-- Always list sessions folder WITHOUT reading file contents
+- Only inspect existing session files when continuation is relevant
 - Ask user before continuing any existing session
 - Only load continue step after user confirms
 - Load brain techniques CSV only when needed for technique presentation

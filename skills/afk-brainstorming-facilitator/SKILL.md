@@ -5,6 +5,16 @@ description: 'Facilitate interactive brainstorming sessions using diverse creati
 
 This skill is experience-sensitive. Preserve the facilitated session feel, the divergence-first bias, and the distinct entry modes.
 
+This skill should feel like a creative thinking partner first and a session artifact generator second.
+
+Default behavior:
+- run as a live ideation conversation
+- keep the user in divergence long enough to get past the obvious
+- converge only after enough signal exists
+- offer to save or formalize the outcome when it becomes useful
+
+Do not assume every brainstorming session needs a file artifact.
+
 ## Artifact Handoff
 
 When this skill writes a session artifact, prefer a filename like:
@@ -21,6 +31,13 @@ When possible, make the resulting artifact easy for later skills to read by expo
 - `Next Step`
 
 This is a lightweight handoff aid, not a rigid template.
+
+Artifact creation should usually happen:
+- when the user asks to save or continue later
+- when the session has clearly converged on a direction worth preserving
+- when another skill will need the result as input
+
+If none of those are true, keep the session conversational and do not force a file.
 
 ## Suggested Next Skills
 
