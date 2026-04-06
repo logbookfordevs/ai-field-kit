@@ -298,7 +298,7 @@ A good phase plan should:
 ## Suggested Next Skills
 
 These are suggestions, not required steps:
-- use `afk-phase-planning` after `afk-business-analyst`, `afk-deep-interview`, `afk-discuss-phase-context`, or `afk-advanced-elicitation` when the work is clear enough to sequence
+- use `afk-phase-planning` after `afk-business-analyst`, `afk-deep-interview`, `afk-discuss-implementation-decisions`, or `afk-advanced-elicitation` when the work is clear enough to sequence
 - use `afk-advanced-elicitation` if the phase plan itself needs a stronger critique or simplification pass
 - use `afk-note` if important phase decisions or future enhancements should be preserved outside the main phase artifact
 - use `afk-archive-artifact` when an old phase plan is superseded by a newer one

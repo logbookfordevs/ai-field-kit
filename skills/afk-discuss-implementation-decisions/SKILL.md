@@ -1,39 +1,39 @@
 ---
-name: "afk-discuss-phase-context"
-description: "Clarify phase-level implementation decisions before planning. Use when a project phase needs focused discussion, unresolved choices need to be surfaced, or a CONTEXT.md-style artifact should be created for downstream planning or research."
+name: "afk-discuss-implementation-decisions"
+description: "Clarify implementation decisions for a bounded slice of work before planning. Use when a workstream, implementation slice, milestone, or phase has unresolved choices that need focused discussion and a reusable context artifact."
 metadata:
-  short-description: "Clarify phase-level decisions before planning and capture them in a reusable context artifact."
+  short-description: "Clarify implementation decisions before planning and capture them in a reusable context artifact."
 ---
 
-# Discuss Phase Context
+# Discuss Implementation Decisions
 
 Use this skill to gather the missing decisions that planning depends on.
 
-Its job is not to brainstorm endlessly or expand scope. Its job is to identify what is still unclear about a specific phase, discuss those gray areas with the user, and produce a context artifact that downstream work can rely on.
+Its job is not to brainstorm endlessly or expand scope. Its job is to identify what is still unclear about a specific bounded slice of work, discuss those gray areas with the user, and produce a context artifact that downstream work can rely on.
 
 ## Goal
 
-Extract the phase-specific decisions that researchers, planners, or implementers need so they can move forward without reopening the same questions.
+Extract the scope-specific decisions that researchers, planners, or implementers need so they can move forward without reopening the same questions.
 
 Typical output:
 - a context document for downstream planning
-- a phase discussion summary
+- a scoped discussion summary
 - another equivalent artifact requested by the user
 
 ## Inputs
 
 Use whatever exists:
-- a phase name, phase number, milestone, or workstream label
+- a scope label such as a phase name, workstream, milestone, or implementation slice
 - existing project materials such as planning docs, requirement notes, specs, tickets, prior context summaries, or design notes
 - relevant repository context and code patterns
 - the user's current goals and constraints
 
-If no formal phase structure exists, treat the user’s stated scope as the working phase.
+If no formal phase structure exists, treat the user’s stated scope as the working slice.
 
 ## Core Principles
 
 - Clarify implementation decisions, not broad product vision.
-- Respect scope boundaries. If new capabilities emerge, capture them as deferred ideas instead of folding them into the current phase.
+- Respect scope boundaries. If new capabilities emerge, capture them as deferred ideas instead of folding them into the current slice.
 - Do not re-ask questions that have already been answered in existing artifacts.
 - Ask only the highest-value questions needed to unblock planning.
 - Capture concrete decisions, trade-offs, assumptions, and unresolved questions.
@@ -60,10 +60,10 @@ Important behavior to preserve:
 
 ## Workflow
 
-### 1. Identify the phase boundary
+### 1. Identify the scope boundary
 
-- Determine which phase, milestone, or scoped chunk of work is under discussion.
-- If the phase is ambiguous, clarify it first.
+- Determine which workstream, implementation slice, milestone, or phase is under discussion.
+- If the scope is ambiguous, clarify it first.
 - If a roadmap or phase list exists, use it. If not, infer a practical boundary from the user’s request.
 
 ### 2. Load prior context
@@ -83,27 +83,27 @@ Look for:
 - reusable components or patterns
 - integration points
 - established naming or structural conventions
-- prior decisions that constrain the current phase
+- prior decisions that constrain the current slice
 
-Summarize only the context that affects the current phase discussion.
+Summarize only the context that affects the current scoped discussion.
 
 ### 4. Find the remaining gray areas
 
-Identify 3-4 phase-specific decisions that still need clarification.
+Identify 3-4 scope-specific decisions that still need clarification.
 
-Good gray areas are concrete and relevant to the phase, for example:
+Good gray areas are concrete and relevant to the current slice of work, for example:
 - layout, interaction states, density, or flow for user-facing work
 - responses, validation, auth, versioning, or error behavior for API work
 - output shape, flags, modes, and failure handling for CLI or automation work
 - structure, tone, depth, and navigation for documentation work
 - naming, grouping, criteria, and exceptions for organizational work
 
-Avoid generic buckets if the phase suggests more specific questions.
+Avoid generic buckets if the current scope suggests more specific questions.
 
 When presenting gray areas, prefer a compact choice list. For example:
 
 ```text
-Phase Discussion Areas
+Decision Discussion Areas
 
 1. Interaction model
    How should users move through this flow?
@@ -128,7 +128,7 @@ You may recommend one or two areas to start with when the best next topic is obv
 - Present the unresolved areas in a compact list.
 - Let the user choose which one to tackle first, or recommend an order if that helps.
 - Go deep enough to turn vague preferences into actionable decisions.
-- Keep the discussion centered on the current phase.
+- Keep the discussion centered on the current scoped slice.
 
 Suggested probing pattern:
 - Ask a few focused questions, usually in a short round.
@@ -188,24 +188,24 @@ Remaining areas:
 
 ### 6. Guard against scope creep
 
-If the user introduces new capabilities or work that belongs outside the current phase:
+If the user introduces new capabilities or work that belongs outside the current slice:
 - acknowledge the idea
 - capture it as deferred work
 - return to the current phase discussion
 
-This skill should sharpen the current phase, not quietly expand it.
+This skill should sharpen the current scope, not quietly expand it.
 
 ### 7. Write the context artifact
 
 Produce a context document that is useful for downstream planning.
 
 Preferred filename when writing a file:
-- `artifacts/context/context-<phase-or-topic>.md`
+- `artifacts/context/context-<scope-or-topic>.md`
 
 Prefer `artifacts/`. If `artifacts/` conflicts with the repo's structure, use `docs/artifacts/` when `docs/` exists. Otherwise follow the repo's existing convention.
 
 Recommended sections:
-- `Phase`
+- `Scope`
 - `Goal`
 - `What Is Already Decided`
 - `Gray Areas Discussed`

@@ -62,5 +62,5 @@ This is a support skill, not a main stage in the planning flow.
 
 After restoring an artifact, likely next steps are:
 - `afk-advanced-elicitation` to strengthen it
-- `afk-discuss-phase-context` to resolve new gray areas
+- `afk-discuss-implementation-decisions` to resolve new gray areas
 - `afk-deep-interview` if the work is still too ambiguous

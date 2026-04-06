@@ -280,6 +280,6 @@ If another workflow hands this skill an underspecified problem, default to analy
 
 These are suggestions, not required steps:
 - `afk-deep-interview` if the problem still needs stronger pressure-testing around intent, scope, and non-goals
-- `afk-discuss-phase-context` if the work is already phase-scoped and the next step is resolving gray areas
+- `afk-discuss-implementation-decisions` if the work is already scoped and the next step is resolving gray areas
 - `afk-advanced-elicitation` if the resulting brief or memo needs a stronger refinement pass
 - `afk-documentation-authoring` if the output now needs to become polished, reader-facing documentation

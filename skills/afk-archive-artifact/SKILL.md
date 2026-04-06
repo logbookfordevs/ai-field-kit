@@ -117,7 +117,7 @@ Decision rules:
 This is a support skill, not a main stage in the planning flow.
 
 Use it after:
-- `afk-discuss-phase-context`
+- `afk-discuss-implementation-decisions`
 - `afk-deep-interview`
 - `afk-business-analyst`
 - `afk-brainstorming-facilitator`

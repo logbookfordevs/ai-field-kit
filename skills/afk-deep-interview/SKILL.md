@@ -397,7 +397,7 @@ The interview artifact should be treated as the current source of truth for inte
 ## Suggested Next Skills
 
 These are suggestions, not required steps:
-- `afk-discuss-phase-context` if the next step is resolving implementation-facing gray areas inside a defined phase
+- `afk-discuss-implementation-decisions` if the next step is resolving implementation-facing gray areas inside a defined scope
 - `afk-advanced-elicitation` if the resulting brief or spec needs a stronger critique/refinement pass
 - `afk-documentation-authoring` if the clarified brief now needs to become a polished guide, memo, or handoff document
 - `afk-note` if critical boundaries or risks should be preserved in lightweight durable memory

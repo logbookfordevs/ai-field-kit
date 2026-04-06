@@ -117,7 +117,7 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-business-analyst` | Discovery, requirements clarification, competitor framing, and decision support |
 | `afk-deep-interview` | High-rigor, Socratic clarification mode for turning vague requests into execution-ready briefs |
-| `afk-discuss-phase-context` | Phase-focused discussion before planning to surface unresolved decisions and write context artifacts |
+| `afk-discuss-implementation-decisions` | Focused discussion before planning to surface unresolved implementation decisions and write context artifacts |
 | `afk-note` | Durable lightweight memory in a local notepad file for long sessions and handoffs |
 | `afk-unarchive-artifact` | Restores an archived artifact back into the active artifacts area |
 
@@ -132,7 +132,7 @@ They are intentionally similar, but they are not redundant:
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
 | `afk-business-analyst` | You want a capable analyst mode to structure ambiguity, compare options, or turn fuzziness into clearer business framing | Brief, decision memo, requirements outline, analysis summary |
 | `afk-deep-interview` | You want disciplined clarification before planning or execution and you're willing to be questioned one round at a time | Execution-ready brief or spec with clear boundaries |
-| `afk-discuss-phase-context` | You already know the phase or scoped chunk of work and need to resolve the gray areas before planning | Context artifact for downstream planning |
+| `afk-discuss-implementation-decisions` | You already know the bounded slice of work and need to resolve the gray areas before planning | Context artifact for downstream planning |
 | `afk-advanced-elicitation` | You already have a draft, brief, plan, or answer and want to pressure-test or improve it | Stronger revised artifact with visible critique/refinement |
 | `afk-note` | You need important context to survive interruptions, compaction, or handoffs | Durable lightweight memory |
 | `afk-ask-gemini` | You want an outside perspective, alternate framing, or a second opinion from another model | External-model artifact with summary and next steps |
@@ -146,7 +146,7 @@ If you're unsure which one to reach for, use this shortcut:
 - "We need more ideas" -> `afk-brainstorming-facilitator`
 - "We need clearer business framing" -> `afk-business-analyst`
 - "We need to interrogate the request before building" -> `afk-deep-interview`
-- "We know the phase, but implementation decisions are still fuzzy" -> `afk-discuss-phase-context`
+- "We know the slice of work, but implementation decisions are still fuzzy" -> `afk-discuss-implementation-decisions`
 - "We already have something written, but it needs a stronger pass" -> `afk-advanced-elicitation`
 - "I don't want to lose this context later" -> `afk-note`
 - "I want another model's opinion" -> `afk-ask-gemini`
@@ -162,7 +162,7 @@ Most of the time, you will not use every discussion or planning skill in one flo
 - `afk-brainstorming-facilitator` when the idea space is still open
 - `afk-business-analyst` when the idea exists but needs stronger framing
 - `afk-deep-interview` when ambiguity is expensive and you want rigor
-- `afk-discuss-phase-context` when the scope is already known and only a phase needs clarification
+- `afk-discuss-implementation-decisions` when the scope is already known and only the implementation gray areas need clarification
 - `afk-phase-planning` when the work is already clear enough to sequence
 
 Use the smallest useful slice of AFK for the moment you are in.
@@ -176,7 +176,7 @@ You do not need to use all of these every time, but this sequence works well for
 1. Start with `afk-brainstorming-facilitator` when the space is still wide open.
 2. Move to `afk-business-analyst` when the ideas need clearer framing, trade-offs, or requirements language.
 3. Use `afk-deep-interview` when you want to pressure-test intent, scope, non-goals, and decision boundaries before planning.
-4. Use `afk-discuss-phase-context` when a specific phase needs its gray areas resolved.
+4. Use `afk-discuss-implementation-decisions` when a specific slice of work needs its gray areas resolved.
 5. Use `afk-advanced-elicitation` on the resulting brief, context doc, or plan to improve quality before execution.
 6. Use `afk-phase-planning` when the work is clear enough to break into reviewable implementation phases.
 
@@ -244,7 +244,7 @@ These are suggestions, not hard requirements:
 | `afk-brainstorming-facilitator` | `artifacts/brainstorming/brainstorming-session-<topic-or-slug>.md` |
 | `afk-business-analyst` | `artifacts/analysis/analysis-brief-<topic-or-slug>.md` |
 | `afk-deep-interview` | `artifacts/interviews/deep-interview-brief-<topic-or-slug>.md` |
-| `afk-discuss-phase-context` | `artifacts/context/context-<phase-or-topic>.md` |
+| `afk-discuss-implementation-decisions` | `artifacts/context/context-<scope-or-topic>.md` |
 | `afk-advanced-elicitation` | usually revises an existing artifact instead of creating a new canonical file |
 | `afk-note` | `notepad.md` or another repo-local persistent notes file |
 | `afk-ask-gemini` | `artifacts/gemini-<slug>-<timestamp>.md` |
@@ -267,7 +267,7 @@ This keeps the flow legible without making every output feel identical.
 - `afk-brainstorming-facilitator` is for divergence. Do not reach for it if you already know what you want and just need tighter requirements.
 - `afk-business-analyst` is the best choice when you want the experience of talking to a smart strategist, not just filling in a template.
 - `afk-deep-interview` is the strictest one. Use it when ambiguity is expensive.
-- `afk-discuss-phase-context` is narrower than `afk-deep-interview`. It assumes the work is already scoped enough to discuss implementation-facing decisions.
+- `afk-discuss-implementation-decisions` is narrower than `afk-deep-interview`. It assumes the work is already scoped enough to discuss implementation-facing decisions.
 - `afk-advanced-elicitation` is not for first-pass discovery. It is best after a draft or direction already exists.
 - `afk-note`, `afk-ask-gemini`, and `afk-archive-artifact` are support skills. They pair well with the others but usually are not the main event.
 
@@ -291,7 +291,7 @@ These are not required steps in the main flow. They are optional specialists you
 #### How they connect
 
 - Use `afk-code-simplify` after implementation when the code works but has unnecessary complexity, awkward names, or noisy structure that should be reduced without changing behavior.
-- Use `afk-documentation-authoring` after `afk-business-analyst`, `afk-deep-interview`, or `afk-discuss-phase-context` when the output needs to become a human-friendly document instead of a working artifact.
+- Use `afk-documentation-authoring` after `afk-business-analyst`, `afk-deep-interview`, or `afk-discuss-implementation-decisions` when the output needs to become a human-friendly document instead of a working artifact.
 - Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
 - Use `afk-archive-artifact` when a flow output is done, paused, superseded, or merged and should move out of the active workspace.
 - Use `afk-unarchive-artifact` when archived work should return to the active workspace for revision or follow-up.
