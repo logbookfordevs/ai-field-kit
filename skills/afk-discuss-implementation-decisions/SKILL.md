@@ -37,6 +37,8 @@ If no formal phase structure exists, treat the user’s stated scope as the work
 - Do not re-ask questions that have already been answered in existing artifacts.
 - Ask only the highest-value questions needed to unblock planning.
 - Capture concrete decisions, trade-offs, assumptions, and unresolved questions.
+- Default to live collaborative discussion, not bulk question generation.
+- Treat pacing as part of the product: one area at a time is the default experience.
 
 ## Interaction Style
 
@@ -57,6 +59,20 @@ Important behavior to preserve:
 - keep the discussion moving in rounds
 - show what remains unvisited so the user knows the shape of the session
 - use simple visual layouts when they improve scanability
+- discuss one decision area at a time by default
+- avoid turning the session into a homework-style survey or matrix unless the user explicitly asks for a batched pass
+
+What this skill is intentionally not:
+- not a codebase-first assumptions pass
+- not a power-user bulk questionnaire
+- not a full implementation plan
+- not a worksheet that asks the user to answer every gray area in one reply
+
+The intended feel is:
+- collaborative
+- paced
+- builder-oriented
+- easy to answer in the moment
 
 ## Workflow
 
@@ -100,7 +116,11 @@ Good gray areas are concrete and relevant to the current slice of work, for exam
 
 Avoid generic buckets if the current scope suggests more specific questions.
 
-When presenting gray areas, prefer a compact choice list. For example:
+This step is for identifying candidate areas, not fully expanding them yet.
+Do not attach full option trees to every area at this stage.
+The purpose here is to help the user choose what to discuss first.
+
+When presenting gray areas, prefer a compact choice list that helps the user choose the next area to discuss, not a full worksheet to answer all at once. For example:
 
 ```text
 Decision Discussion Areas
@@ -121,28 +141,48 @@ f. Something else in freeform
 x. Stop discussion and create context with current decisions
 ```
 
-You may recommend one or two areas to start with when the best next topic is obvious.
+You may recommend one area to start with when the best next topic is obvious.
 
 ### 5. Discuss selected gray areas
 
 - Present the unresolved areas in a compact list.
-- Let the user choose which one to tackle first, or recommend an order if that helps.
+- Let the user choose which single area to tackle first, or recommend one if that helps.
 - Go deep enough to turn vague preferences into actionable decisions.
 - Keep the discussion centered on the current scoped slice.
 
+This is the core pacing rule:
+- identify several gray areas
+- expand only one area at a time
+- summarize that area before moving on
+
+Do not expand all areas in parallel unless the user explicitly asks for a matrix, worksheet, batch pass, or all-at-once comparison.
+
 Suggested probing pattern:
-- Ask a few focused questions, usually in a short round.
+- Ask a few focused questions for one area only, usually in a short round.
 - Prefer choices plus a freeform option when possible.
 - Use examples or contrasting options to make the trade-off concrete.
 - Summarize what is now decided.
 - Check whether the area is sufficiently clear or needs one more pass.
 - Move to the next area once the current one is actionable.
 
+Do not present a full decision survey across all unresolved areas unless the user explicitly asks for a matrix, scorecard, or all-at-once comparison.
+
 Default rhythm:
 - Start with up to 4 targeted questions for the selected area.
 - Then pause and offer a checkpoint.
 - If the user wants to go deeper, continue with another short round.
 - If the user wants to move on, show the remaining unvisited areas.
+
+Good question shape for a selected area:
+- concrete
+- contrastive when helpful
+- easy to answer with a choice or short freeform reply
+- informed by prior context or codebase reality when available
+
+Bad question shape:
+- long survey pages
+- asking for answers to multiple unrelated areas at once
+- dumping every option for every unresolved topic before the user has chosen a direction
 
 When helpful, present question options like this:
 
@@ -184,6 +224,55 @@ Remaining areas:
 - Error handling
 - Output shape
 - Naming and structure
+```
+
+Good default shape:
+1. show the candidate gray areas
+2. choose one
+3. discuss that one area only
+4. summarize what is now decided
+5. ask whether to go deeper, move to the next area, or stop
+
+Avoid this shape by default:
+- defining all decision areas in detail
+- providing options for all of them at once
+- asking the user to respond with a full numbered matrix
+
+Bad example:
+
+```text
+1. Runtime: pick 1/2/3
+2. Visual style: pick 1/2/3
+3. Architecture: pick 1/2/3
+4. Rewrite scope: pick 1/2/3
+Reply like 1-2, 2-1, 3-3, 4-2
+```
+
+That is a batched worksheet, not the default AFK discussion experience.
+
+Better example:
+
+```text
+Decision areas
+
+1. Runtime and pacing
+2. Visual treatment of V1
+3. Rewrite scope
+f. Something else
+x. Stop and capture current decisions
+```
+
+Then, after the user picks one:
+
+```text
+Let’s talk about runtime and pacing first.
+
+Choose the closest fit:
+1. Full-length version
+2. Tightened but still legible
+3. Condensed product-demo cut
+f. Something else
+x. Stop here
 ```
 
 ### 6. Guard against scope creep
@@ -241,6 +330,18 @@ The discussion itself should also feel high quality:
 - the skill offers natural opportunities to stop, continue, or deepen
 - the skill feels thoughtful and creative without becoming theatrical or noisy
 - the user can tell what has been decided and what still remains
+
+## AFK Boundary
+
+This skill intentionally keeps the default experience lighter than frameworks that expose multiple discuss modes.
+
+For AFK, the default is enough:
+- live discussion
+- one area at a time
+- compact checkpoints
+- reusable context artifact at the end
+
+Do not simulate extra modes unless the user explicitly asks for them.
 
 ## Non-Goals
 
