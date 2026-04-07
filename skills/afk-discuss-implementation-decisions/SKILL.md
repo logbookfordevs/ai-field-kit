@@ -159,18 +159,31 @@ Decision Discussion Areas
 4. Naming and structure
    How should this work be organized so it stays maintainable?
 
+a. Discuss all of them, one by one
 f. Something else in freeform
 x. Stop discussion and create context with current decisions
 ```
 
-You may recommend one area to start with when the best next topic is obvious.
+You may recommend one area to start with only when the best next topic is genuinely obvious and there is a concrete reason to say so.
+If you recommend a starting area:
+- keep it to one short sentence
+- tie it to an actual dependency, risk, or sequencing reason
+- do not present a broad opinionated analysis before the user chooses
+
+If there is no strong reason, present the areas neutrally and let the user choose.
 
 When an interactive question tool exists, present these candidate areas through that tool by default instead of plain text.
+
+Important interpretation rule:
+- if the user says "discuss all", "cover all", or "go through all of them", interpret that as "discuss all areas in sequence"
+- do not interpret that as "ask about all areas in one message"
+- only switch to a true batched worksheet when the user explicitly asks for all-at-once, one-message, matrix, worksheet, or single-reply mode
 
 ### 5. Discuss selected gray areas
 
 - Present the unresolved areas in a compact list.
-- Let the user choose which single area to tackle first, or recommend one if that helps.
+- Let the user choose which single area to tackle first.
+- Recommend a starting area only when doing so prevents confusion or unblocks the rest.
 - Go deep enough to turn vague preferences into actionable decisions.
 - Keep the discussion centered on the current scoped slice.
 
@@ -180,6 +193,7 @@ This is the core pacing rule:
 - summarize that area before moving on
 
 Do not expand all areas in parallel unless the user explicitly asks for a matrix, worksheet, batch pass, or all-at-once comparison.
+Do not pre-solve the whole session before the first area is chosen.
 
 Suggested probing pattern:
 - Ask a few focused questions for one area only, usually in a short round.
@@ -190,6 +204,18 @@ Suggested probing pattern:
 - Move to the next area once the current one is actionable.
 
 Do not present a full decision survey across all unresolved areas unless the user explicitly asks for a matrix, scorecard, or all-at-once comparison.
+
+If the user chooses "all", the correct behavior is:
+1. acknowledge that all areas will be covered
+2. pick the first area or ask which one to start with
+3. discuss that one area only
+4. checkpoint
+5. continue to the next remaining area
+
+The incorrect behavior is:
+- expanding every area immediately
+- asking for compact coded answers like `1a, 2b, 3c`
+- turning "all" into "all at once"
 
 Default rhythm:
 - Start with up to 4 targeted questions for the selected area.
@@ -207,6 +233,7 @@ Bad question shape:
 - long survey pages
 - asking for answers to multiple unrelated areas at once
 - dumping every option for every unresolved topic before the user has chosen a direction
+- giving your opinion on every gray area before the user has selected one
 
 When helpful, present question options like this:
 
@@ -301,6 +328,15 @@ Choose the closest fit:
 f. Something else
 x. Stop here
 ```
+
+Bad recommendation style:
+- "I recommend we start with X" with no concrete reason
+- "Best next area" when the user has not asked for steering
+- giving recommendations for several areas before any one is selected
+
+Better recommendation style:
+- "If you want, we can start with runtime because it affects the pacing of every later scene."
+- or no recommendation at all when the areas are equally discussable
 
 ### 6. Guard against scope creep
 
