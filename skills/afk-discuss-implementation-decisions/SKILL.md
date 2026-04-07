@@ -50,6 +50,7 @@ Prefer:
 - checking whether to continue, go deeper, move on, or stop
 - making progress visible as decisions accumulate
 - using lightweight visual formatting, including simple ASCII-style layouts, when that makes options easier to scan
+- using the host runtime's interactive question UI when it exists, with plain-text menus as fallback only
 
 The interaction should feel like structured discovery, not interrogation.
 
@@ -73,6 +74,27 @@ The intended feel is:
 - paced
 - builder-oriented
 - easy to answer in the moment
+
+## Interaction Mechanism
+
+When the host environment provides an interactive question mechanism, use it by default for:
+- choosing the next gray area to discuss
+- option-based decision questions inside a selected area
+- checkpoints such as go deeper / move on / stop
+
+Examples of acceptable host-native mechanisms:
+- Codex CLI: use `request_user_input` for structured multiple-choice questions
+- Claude Code: use `AskUserQuestion` for equivalent structured prompts
+- equivalent runtime-native interactive question tools in other hosts
+
+Use plain-text numbered menus only when:
+- no interactive question mechanism is available
+- the environment is explicitly text-only
+- the user has already switched into a freeform explanation and forcing a menu would be awkward
+- the question genuinely needs an open written answer instead of a menu choice
+
+Do not silently drift from interactive prompts into plain-text menus just because one answer was freeform.
+After a freeform reply, return to the interactive question mechanism for the next option-based choice when the tool is available.
 
 ## Workflow
 
@@ -142,6 +164,8 @@ x. Stop discussion and create context with current decisions
 ```
 
 You may recommend one area to start with when the best next topic is obvious.
+
+When an interactive question tool exists, present these candidate areas through that tool by default instead of plain text.
 
 ### 5. Discuss selected gray areas
 
@@ -216,6 +240,9 @@ x. Stop
 ```
 
 If the user wants to continue, deepen the same area with sharper questions. If the user wants to move on, carry forward the decisions already made.
+
+When the current step is still an option-based choice, return to the interactive question UI if available.
+Do not keep the rest of the session in plain text unless the environment requires it.
 
 When moving on, prefer showing the remaining areas explicitly. For example:
 
