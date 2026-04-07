@@ -106,7 +106,6 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | Skill | What it unlocks |
 |---|---|
 | `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
-| `afk-code-simplify` | Refactors working code for clarity without changing behavior |
 | `afk-documentation-authoring` | DocX playbook: journeys, progressive disclosure, real empathy |
 | `afk-spline-3d-integration` | Spline 3D integration guides for React and vanilla JS |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
@@ -279,7 +278,6 @@ Several older AFK skills fit naturally around this flow as specialist companions
 
 | Skill | Where it fits |
 |---|---|
-| `afk-code-simplify` | When code already works but needs a cleaner, easier-to-review expression without changing behavior |
 | `afk-documentation-authoring` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
 | `afk-structured-debugging` | When the real problem is a bug, failure, or investigation rather than new scoped work |
 | `afk-archive-artifact` | When an inactive artifact should move out of the active flow without being deleted |
@@ -290,7 +288,6 @@ These are not required steps in the main flow. They are optional specialists you
 
 #### How they connect
 
-- Use `afk-code-simplify` after implementation when the code works but has unnecessary complexity, awkward names, or noisy structure that should be reduced without changing behavior.
 - Use `afk-documentation-authoring` after `afk-business-analyst`, `afk-deep-interview`, or `afk-discuss-implementation-decisions` when the output needs to become a human-friendly document instead of a working artifact.
 - Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
 - Use `afk-archive-artifact` when a flow output is done, paused, superseded, or merged and should move out of the active workspace.
@@ -376,7 +373,6 @@ If you're deciding where a new prompt belongs, use this rule first:
 
 **Good skill examples in this repo:**
 
-- `afk-code-simplify`: a behavior-preserving refactor lens for reducing unnecessary complexity in working code.
 - `afk-structured-debugging`: a debugging approach that works across many bug reports and log investigations.
 - `afk-animated-driven-frontend`: motion strategy and interaction direction that can shape many different UI tasks.
 
