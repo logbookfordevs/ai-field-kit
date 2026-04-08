@@ -1,19 +1,25 @@
 # Changelog
 
-This repository does not use release tags as the primary way to communicate change.
-Instead, this changelog tracks meaningful updates by date.
+This changelog tracks meaningful updates by version and date.
 
 ## How We Use This File
 
-- Add new work to `## In Progress` while it is still evolving.
-- When a batch of changes feels complete, move it into a dated section like `## 2026-03-25`.
+- When a batch of changes feels complete, move it into a versioned section like `## v0.1.1 - 2026-04-08`.
 - Prefer reader-focused summaries over raw commit messages.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
-## In Progress
+## v0.1.1 - 2026-04-08
 
-- Nothing recorded yet.
+- `repo:` started lightweight versioning for changelog entries instead of relying only on date buckets.
+- `skills:` introduced the first AFK spec-driven primary skill set, including brainstorming, analysis, deep interview, implementation decision discussion, phase planning, and artifact lifecycle support.
+- `skills:` refactored `afk-brainstorming-facilitator` by rebasing it on the original BMAD brainstorming architecture, while adapting it to AFK paths, lighter setup, stronger partnership tone, and durable `artifacts/`-based session persistence.
+- `skills:` refined `afk-discuss-implementation-decisions` to preserve one-area-at-a-time pacing, host-native interactive question tools when available, and clearer resistance to worksheet-style batching.
+- `skills:` strengthened `afk-structured-debugging` around root-cause flow while preserving the earlier "what should happen vs what is happening" comparison experience.
+- `skills:` added `afk-phase-planning` for reviewable, execution-agnostic implementation phases with checkpoints and light progress markers.
+- `skills:` added `afk-archive-artifact` and `afk-unarchive-artifact` to support the branch-first artifact lifecycle.
+- `skills:` removed `afk-dx-coding-playbook` and `afk-code-simplify` after deciding those roles were either too broad or better consumed from external skill sources directly.
+- `docs:` expanded the README with workflow guidance, framework pairings, artifact lifecycle explanations, and acknowledgements to the upstream projects that informed AFK.
 
 ## 2026-03-23
 

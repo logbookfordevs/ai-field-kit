@@ -192,12 +192,12 @@ Before moving to next technique element:
 - **Switch techniques** for a fresh perspective?
 - Or are you feeling like we've **thoroughly explored** this space?
 
-Remember: The goal is quantity first - we can organize later. What feels right?"
+Remember: The goal is to stay in genuine divergence until we've clearly pushed beyond the obvious. What feels right?"
 
 **IMPORTANT:** Default to continuing exploration. Only suggest organization if:
 
 - User has explicitly asked to wrap up, OR
-- You've been exploring for 45+ minutes AND generated 100+ ideas, OR
+- You've clearly generated enough range, contrast, and signal that additional ideation is no longer adding much, OR
 - User's energy is clearly depleted (short responses, "I don't know", etc.)
 
 At every checkpoint, prefer:
