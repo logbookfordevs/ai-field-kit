@@ -225,11 +225,13 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
 
+Or check out the [OpenSpec](https://github.com/Fission-AI/OpenSpec/) for lightweight spec-driven organization.
+
 #### If you use OpenCode heavily
 
-It is often worth pairing AFK with a stronger agent runtime:
+It is often worth pairing AFK with a stronger agent runtime.
 
-- If OpenCode is your main terminal, it is often worth explicitly empowering it with an agent layer that can better coordinate skills, MCPs, and longer-running execution patterns.
+If OpenCode is your main terminal, it is often worth explicitly empowering it with an agent layer that can better coordinate skills, MCPs, and longer-running execution patterns.
 
 - **oh-my-openagent**  
   Repo: [code-yeongyu/oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)  
@@ -244,7 +246,7 @@ Quick rule of thumb:
 - **OpenAgentsControl**: plan first, approve, execute incrementally, ship; better for established patterns and tighter control
 
 For the fuller comparison that inspired this rule of thumb:
-- [OpenAgentsControl discussion #116](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)
+- [Discussion #116](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)
 
 #### Honorable mentions
 
