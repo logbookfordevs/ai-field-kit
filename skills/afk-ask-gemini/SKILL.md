@@ -44,12 +44,12 @@ gemini --version
 After local execution, save a markdown artifact to:
 
 ```text
-artifacts/gemini-<slug>-<timestamp>.md
+docs/gemini/gemini-<slug>-<timestamp>.md
 ```
 
 Another local artifact path is acceptable if the repository uses a different convention.
 
-Prefer `artifacts/`. If `artifacts/` conflicts with the repo's structure, use `docs/artifacts/` when `docs/` exists. Otherwise follow the repo's existing convention.
+Prefer `docs/` for artifacts written by this skill. If the repository already has a stronger local docs convention, adapt inside `docs/` instead of creating a separate artifact root.
 
 Minimum artifact sections:
 1. Original user task
@@ -74,7 +74,7 @@ If useful, also include shared anchor headings such as:
 ## Suggested Next Skills
 
 These are suggestions, not required steps:
-- return to `afk-business-analyst` if Gemini output changes the framing of the problem
+- return to `afk-deep-interview` if Gemini output changes the framing of the problem and the work needs stronger clarification
 - use `afk-advanced-elicitation` if the Gemini-informed artifact needs a stronger refinement pass
 - use `afk-note` if the important takeaways should be preserved for later
 

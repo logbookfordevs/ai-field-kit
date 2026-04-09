@@ -82,6 +82,7 @@ Recommended defaults:
 
 - Ask exactly one question per round.
 - Ask about intent and boundaries before implementation details.
+- Once intent and boundaries are clear enough, allow a short pass on remaining high-leverage gray areas in product behavior, UX, or decision framing that would materially affect downstream work.
 - Target the highest-leverage unresolved uncertainty each round.
 - Treat every answer as something to test, not just record.
 - Stay on the same thread when the answer is still vague.
@@ -101,6 +102,7 @@ Track clarity across these dimensions:
 - `Constraints`: limits that must hold
 - `Success Criteria`: how completion will be judged
 - `Context`: relevant existing codebase, product, or business context
+- `Local Gray Areas`: product-, behavior-, or UX-facing uncertainties that are not broad enough to justify a separate discovery process, but are still important enough to record before execution
 
 Mandatory readiness gates:
 - `Non-goals` are explicit
@@ -211,6 +213,33 @@ Default pressure ladder:
 
 Breadth without pressure is not progress.
 
+### 4.5. Surface Remaining Gray Areas
+
+After the core intent, scope, non-goals, and decision boundaries are reasonably clear, check whether any local gray areas still matter enough to cause downstream rework.
+
+Examples:
+- unresolved UX behavior choices
+- important interaction, flow, or feedback choices
+- local decision boundaries that downstream work should not have to guess
+- product or experience ambiguities that are now narrow enough to capture explicitly
+
+Common gray area categories at this stage:
+- interaction model
+- user flow shape
+- empty-state or fallback behavior
+- feedback behavior
+- information density and priority
+- what content or signals should be visible to the user
+- local product behavior choices that change the experience without reopening the whole scope
+
+Do this only when:
+- the macro problem is already clear enough
+- the remaining uncertainty is local, not foundational
+- capturing it now would materially improve the downstream brief
+
+Do not turn this into a second full workflow.
+The goal here is to absorb the most useful overlap from downstream decision discussion, not to replace a dedicated trade-off session when one is truly needed.
+
 ### 5. Use Challenge Modes
 
 Use these modes when they would sharpen the interview:
@@ -304,6 +333,7 @@ Recommended sections:
 - `Decision Boundaries`
 - `Constraints`
 - `Success Criteria`
+- `Local Gray Areas`
 - `Assumptions Exposed`
 - `Open Questions`
 - `Residual Risks`
@@ -322,9 +352,9 @@ I can turn this into a brief/spec now, or we can keep pushing on the remaining w
 ```
 
 Preferred filename when writing a file:
-- `artifacts/interviews/deep-interview-brief-<topic-or-slug>.md`
+- `docs/interviews/deep-interview-brief-<topic-or-slug>.md`
 
-Prefer `artifacts/`. If `artifacts/` conflicts with the repo's structure, use `docs/artifacts/` when `docs/` exists. Otherwise follow the repo's existing convention.
+Prefer `docs/` for artifacts written by this skill. If the repository already has a stronger local docs convention, adapt inside `docs/` instead of creating a separate artifact root.
 
 ## Brownfield Guidance
 
@@ -366,6 +396,7 @@ The final artifact should:
 - make boundaries explicit
 - separate facts from assumptions
 - surface trade-offs clearly
+- capture any remaining high-leverage local gray areas instead of leaving them implicit
 - reduce the chance of downstream misalignment
 
 The interview experience should also meet a quality bar:
@@ -397,7 +428,7 @@ The interview artifact should be treated as the current source of truth for inte
 ## Suggested Next Skills
 
 These are suggestions, not required steps:
-- `afk-discuss-implementation-decisions` if the next step is resolving implementation-facing gray areas inside a defined scope
+- `afk-coding-tradeoffs` if the next step is resolving UX and implementation trade-offs inside a defined scope
 - `afk-advanced-elicitation` if the resulting brief or spec needs a stronger critique/refinement pass
 - `afk-documentation-authoring` if the clarified brief now needs to become a polished guide, memo, or handoff document
 - `afk-note` if critical boundaries or risks should be preserved in lightweight durable memory
