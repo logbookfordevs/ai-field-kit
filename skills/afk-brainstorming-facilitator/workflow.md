@@ -48,8 +48,8 @@ Use locally available context only:
 
 ### Paths
 
-- `brainstorming_session_output_file` = `artifacts/brainstorming/brainstorming-session-{{date}}-{{time}}.md` (evaluated once at workflow start)
-- if `artifacts/` conflicts with the repo structure, prefer `docs/artifacts/brainstorming/`
+- `brainstorming_session_output_file` = `docs/brainstorming/brainstorming-session-{{date}}-{{time}}.md` (evaluated once at workflow start)
+- if the repository already has a stronger local docs convention, adapt inside `docs/` instead of creating a separate artifact root
 
 All steps MUST reference `{brainstorming_session_output_file}` instead of the full path pattern.
 - `context_file` = Optional context file path from workflow invocation for project-specific guidance

@@ -12,12 +12,10 @@ This changelog tracks meaningful updates by version and date.
 ## v0.1.1 - 2026-04-08
 
 - `repo:` started lightweight versioning for changelog entries instead of relying only on date buckets.
-- `skills:` introduced the first AFK spec-driven primary skill set, including brainstorming, analysis, deep interview, implementation decision discussion, phase planning, and artifact lifecycle support.
+- `skills:` introduced the first AFK spec-driven primary skill set around brainstorming, deep interview, and decision-shaping before implementation.
 - `skills:` refactored `afk-brainstorming-facilitator` by rebasing it on the original BMAD brainstorming architecture, while adapting it to AFK paths, lighter setup, stronger partnership tone, and durable `artifacts/`-based session persistence.
-- `skills:` refined `afk-discuss-implementation-decisions` to preserve one-area-at-a-time pacing, host-native interactive question tools when available, and clearer resistance to worksheet-style batching.
+- `skills:` replaced `afk-discuss-implementation-decisions` with `afk-coding-tradeoffs`, a more AFK-native skill for resolving UX and implementation trade-offs with Truss as the decision lens and reusable decision artifacts in `docs/decisions/`.
 - `skills:` strengthened `afk-structured-debugging` around root-cause flow while preserving the earlier "what should happen vs what is happening" comparison experience.
-- `skills:` added `afk-phase-planning` for reviewable, execution-agnostic implementation phases with checkpoints and light progress markers.
-- `skills:` added `afk-archive-artifact` and `afk-unarchive-artifact` to support the branch-first artifact lifecycle.
 - `skills:` removed `afk-dx-coding-playbook` and `afk-code-simplify` after deciding those roles were either too broad or better consumed from external skill sources directly.
 - `docs:` expanded the README with workflow guidance, framework pairings, artifact lifecycle explanations, and acknowledgements to the upstream projects that informed AFK.
 

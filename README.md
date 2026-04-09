@@ -111,14 +111,11 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `ai-companion` | Uses `skills.json` taxonomy to improve native skill discovery |
 | `afk-advanced-elicitation` | Structured critique and refinement loops for improving drafts, plans, and decisions |
-| `afk-archive-artifact` | Archives finished or inactive artifacts cleanly while preserving traceability |
 | `afk-ask-gemini` | Gets a second opinion from a local Gemini CLI and saves the result as an artifact |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
-| `afk-business-analyst` | Discovery, requirements clarification, competitor framing, and decision support |
 | `afk-deep-interview` | High-rigor, Socratic clarification mode for turning vague requests into execution-ready briefs |
-| `afk-discuss-implementation-decisions` | Focused discussion before planning to surface unresolved implementation decisions and write context artifacts |
+| `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with reusable decision artifacts |
 | `afk-note` | Durable lightweight memory in a local notepad file for long sessions and handoffs |
-| `afk-unarchive-artifact` | Restores an archived artifact back into the active artifacts area |
 
 ### Spec-Driven discussion and planning skills
 
@@ -129,28 +126,22 @@ They are intentionally similar, but they are not redundant:
 | Skill | Use it when | Best output |
 |---|---|---|
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
-| `afk-business-analyst` | You want a capable analyst mode to structure ambiguity, compare options, or turn fuzziness into clearer business framing | Brief, decision memo, requirements outline, analysis summary |
 | `afk-deep-interview` | You want disciplined clarification before planning or execution and you're willing to be questioned one round at a time | Execution-ready brief or spec with clear boundaries |
-| `afk-discuss-implementation-decisions` | You already know the bounded slice of work and need to resolve the gray areas before planning | Context artifact for downstream planning |
+| `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | Decision artifact for downstream implementation |
 | `afk-advanced-elicitation` | You already have a draft, brief, plan, or answer and want to pressure-test or improve it | Stronger revised artifact with visible critique/refinement |
 | `afk-note` | You need important context to survive interruptions, compaction, or handoffs | Durable lightweight memory |
 | `afk-ask-gemini` | You want an outside perspective, alternate framing, or a second opinion from another model | External-model artifact with summary and next steps |
-| `afk-archive-artifact` | You want to retire a finished, paused, superseded, or merged artifact without losing history | Archived artifact with an `ARCHIVE.md` note |
-| `afk-unarchive-artifact` | You want to bring an archived artifact back into active work | Restored artifact in active `artifacts/` |
 
 ### What to choose
 
 If you're unsure which one to reach for, use this shortcut:
 
 - "We need more ideas" -> `afk-brainstorming-facilitator`
-- "We need clearer business framing" -> `afk-business-analyst`
 - "We need to interrogate the request before building" -> `afk-deep-interview`
-- "We know the slice of work, but implementation decisions are still fuzzy" -> `afk-discuss-implementation-decisions`
+- "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-coding-tradeoffs`
 - "We already have something written, but it needs a stronger pass" -> `afk-advanced-elicitation`
 - "I don't want to lose this context later" -> `afk-note`
 - "I want another model's opinion" -> `afk-ask-gemini`
-- "This artifact is no longer active, but I want to keep it" -> `afk-archive-artifact`
-- "I need to bring archived work back into the active flow" -> `afk-unarchive-artifact`
 
 ### Use Only What You Need
 
@@ -159,10 +150,8 @@ AI Field Kit is not meant to be run as a mandatory full ceremony.
 Most of the time, you will not use every discussion or planning skill in one flow. In practice, many sessions only need one or two of them:
 
 - `afk-brainstorming-facilitator` when the idea space is still open
-- `afk-business-analyst` when the idea exists but needs stronger framing
 - `afk-deep-interview` when ambiguity is expensive and you want rigor
-- `afk-discuss-implementation-decisions` when the scope is already known and only the implementation gray areas need clarification
-- `afk-phase-planning` when the work is already clear enough to sequence
+- `afk-coding-tradeoffs` when the scope is already known and only the UX/implementation gray areas need clarification
 
 Use the smallest useful slice of AFK for the moment you are in.
 
@@ -173,11 +162,9 @@ If the work is already clear, skip straight to the later skill that matches the 
 You do not need to use all of these every time, but this sequence works well for many spec-driven tasks:
 
 1. Start with `afk-brainstorming-facilitator` when the space is still wide open.
-2. Move to `afk-business-analyst` when the ideas need clearer framing, trade-offs, or requirements language.
-3. Use `afk-deep-interview` when you want to pressure-test intent, scope, non-goals, and decision boundaries before planning.
-4. Use `afk-discuss-implementation-decisions` when a specific slice of work needs its gray areas resolved.
-5. Use `afk-advanced-elicitation` on the resulting brief, context doc, or plan to improve quality before execution.
-6. Use `afk-phase-planning` when the work is clear enough to break into reviewable implementation phases.
+2. Use `afk-deep-interview` when you want to pressure-test intent, scope, non-goals, and decision boundaries before planning.
+3. Use `afk-coding-tradeoffs` when a specific slice of work needs its UX and implementation trade-offs resolved.
+4. Use `afk-advanced-elicitation` on the resulting brief, context doc, or plan to improve quality before execution.
 
 ### Framework Pairings
 
@@ -186,10 +173,10 @@ AI Field Kit is intentionally compatible with other frameworks and runtimes. It 
 Useful pairings:
 
 - **AFK + OpenAgentsControl**
-  AFK shapes the brief, context, and phases. OpenAgentsControl can then execute with approval gates and project-pattern discipline.
+  AFK shapes the work. OpenAgentsControl is then a strong next layer when you want custom agents or existing OpenAgentsControl agents to enforce approval gates, behavior rules, and subagent orchestration.
 
 - **AFK + OpenSpec**
-  AFK helps explore, clarify, and strengthen the work before you formalize it into OpenSpec proposal/apply/archive artifacts.
+  AFK helps explore, clarify, and strengthen the work before you formalize it into OpenSpec artifacts. This is the strongest recommendation if you want a clean way to organize specs after discovery.
 
 - **AFK + oh-my-codex / oh-my-openagent**
   AFK can do the human-centered planning first, then hand off to a more autonomous execution harness when you want that mode.
@@ -197,10 +184,81 @@ Useful pairings:
 - **AFK + your normal prompting workflow**
   AFK can stop at the artifact stage. You can then implement manually, prompt directly, or switch to any coding agent you prefer.
 
+If you want a practical default stack, the strongest recommendation is:
+
+- use **AFK** for discovery, shaping, and clarification
+- use **OpenSpec** to organize specs and keep the work legible over time
+- use **OpenAgentsControl** when you want behavior control, approval gates, or agent/subagent workflows
+- use **oh-my-openagent** when you want a more autonomous path that can take a detailed plan or PRD, talk to Prometheus, and keep moving while you step away
+
 The clean mental model is:
 
 - **AFK shapes the work**
 - **You choose how to execute it**
+
+### Recommended External Skills
+
+AFK is strongest when it shapes the work first, then hands off to the best external skill or framework for the next job.
+
+#### Recommended after AFK discovery
+
+- **Spec Driven Development (Agent-Skills)**  
+  Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill spec-driven-development`  
+  Write a PRD covering objectives, commands, structure, code style, testing, and boundaries before any code. This is a strong follow-up after AFK discovery and clarification.
+
+- **Planning and Task Breakdown (Agent-Skills)**  
+  Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill planning-and-task-breakdown`  
+  Decompose specs into small, verifiable tasks with acceptance criteria and dependency ordering.
+
+- **Incremental Implementation (Agent-Skills)**  
+  Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill incremental-implementation`  
+  Prefer thin vertical slices: implement, test, verify, commit, with safe defaults and rollback-friendly changes.
+
+- **Test Driven Development (Agent-Skills)**  
+  Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill test-driven-development`  
+  Use when you want implementation to stay anchored in tests and short feedback loops instead of broad speculative coding.
+
+- **Code Simplification (Agent-Skills)**  
+  Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill code-simplification`  
+  Apply Chesterton's Fence, Rule of 500, and simplification heuristics to reduce complexity without changing behavior.
+
+Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
+- [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
+
+#### If you use OpenCode heavily
+
+It is often worth pairing AFK with a stronger agent runtime:
+
+- If OpenCode is your main terminal, it is often worth explicitly empowering it with an agent layer that can better coordinate skills, MCPs, and longer-running execution patterns.
+
+- **oh-my-openagent**  
+  Repo: [code-yeongyu/oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)  
+  Good fit when you want autonomous execution with parallel agents, batteries-included orchestration, and an OpenCode setup that leans hard into skills, MCPs, and Asteroids-style tooling. The trade-off is speed over control: just do it and keep going until done.
+
+- **OpenAgentsControl**  
+  Repo: [darrenhinde/OpenAgentsControl](https://github.com/darrenhinde/OpenAgentsControl)  
+  Good fit when you want plan-first execution, approval gates, incremental delivery, or your own set of agents, subagents, and rules via SystemBuilder on top of OpenCode.
+
+Quick rule of thumb:
+- **oh-my-openagent**: need autonomous execution with parallel agents; speed over control
+- **OpenAgentsControl**: plan first, approve, execute incrementally, ship; better for established patterns and tighter control
+
+For the fuller comparison that inspired this rule of thumb:
+- [OpenAgentsControl discussion #116](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)
+
+#### Honorable mentions
+
+- **oh-my-codex**  
+  Repo: [yeachan-heo/oh-my-codex](https://github.com/yeachan-heo/oh-my-codex)  
+  A strong autonomous option when you specifically want that mode inside the Codex CLI, Codex App, or extension.
+
+- **BMAD**  
+  Repo: [bmad-code-org/BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)  
+  A full 360 framework that can replace not only AFK but most of the stack above when you want one integrated system to discuss, plan, execute, and verify end to end.
+
+- **GSD**  
+  Repo: [Fission-AI/GetShitDone](https://github.com/Fission-AI/GetShitDone)  
+  A lighter alternative than BMAD and less independently autonomous than oh-my-codex or oh-my-openagent, but still strong when you want a system that discusses, plans, executes, and verifies in one flow without being Codex-only.
 
 ### Lightweight handoff contract
 
@@ -213,9 +271,7 @@ AI Field Kit uses a lightweight handoff model:
 
 The goal is handoff clarity, not template lock-in.
 
-Prefer `artifacts/`. If `artifacts/` conflicts with the repo's structure, use `docs/artifacts/` when `docs/` exists. Otherwise follow the repo's existing convention.
-
-Active work should stay in the main `artifacts/` area. Archived work should move to `artifacts/archive/`. Branches, not nested work folders, are the default way to separate parallel active work.
+Prefer `docs/` for AFK-generated artifacts. If the repository already has a stronger local convention, follow it, but default to `docs/` instead of creating a separate top-level artifact folder.
 
 #### Shared anchor sections
 
@@ -240,13 +296,12 @@ These are suggestions, not hard requirements:
 
 | Skill | Suggested artifact name |
 |---|---|
-| `afk-brainstorming-facilitator` | `artifacts/brainstorming/brainstorming-session-<topic-or-slug>.md` |
-| `afk-business-analyst` | `artifacts/analysis/analysis-brief-<topic-or-slug>.md` |
-| `afk-deep-interview` | `artifacts/interviews/deep-interview-brief-<topic-or-slug>.md` |
-| `afk-discuss-implementation-decisions` | `artifacts/context/context-<scope-or-topic>.md` |
+| `afk-brainstorming-facilitator` | `docs/brainstorming/brainstorming-session-<topic-or-slug>.md` |
+| `afk-deep-interview` | `docs/interviews/deep-interview-brief-<topic-or-slug>.md` |
+| `afk-coding-tradeoffs` | `docs/decisions/coding-tradeoffs-<slug>.md` |
 | `afk-advanced-elicitation` | usually revises an existing artifact instead of creating a new canonical file |
 | `afk-note` | `notepad.md` or another repo-local persistent notes file |
-| `afk-ask-gemini` | `artifacts/gemini-<slug>-<timestamp>.md` |
+| `afk-ask-gemini` | `docs/gemini/gemini-<slug>-<timestamp>.md` |
 
 #### How the handoff works
 
@@ -264,11 +319,10 @@ This keeps the flow legible without making every output feel identical.
 ### Practical guidance
 
 - `afk-brainstorming-facilitator` is for divergence. Do not reach for it if you already know what you want and just need tighter requirements.
-- `afk-business-analyst` is the best choice when you want the experience of talking to a smart strategist, not just filling in a template.
 - `afk-deep-interview` is the strictest one. Use it when ambiguity is expensive.
-- `afk-discuss-implementation-decisions` is narrower than `afk-deep-interview`. It assumes the work is already scoped enough to discuss implementation-facing decisions.
+- `afk-coding-tradeoffs` is narrower than `afk-deep-interview`. It assumes the work is already scoped enough to discuss UX and implementation trade-offs that materially change the result.
 - `afk-advanced-elicitation` is not for first-pass discovery. It is best after a draft or direction already exists.
-- `afk-note`, `afk-ask-gemini`, and `afk-archive-artifact` are support skills. They pair well with the others but usually are not the main event.
+- `afk-note` and `afk-ask-gemini` are support skills. They pair well with the others but usually are not the main event.
 
 ### Supporting skills around the flow
 
@@ -280,18 +334,14 @@ Several older AFK skills fit naturally around this flow as specialist companions
 |---|---|
 | `afk-documentation-authoring` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
 | `afk-structured-debugging` | When the real problem is a bug, failure, or investigation rather than new scoped work |
-| `afk-archive-artifact` | When an inactive artifact should move out of the active flow without being deleted |
-| `afk-unarchive-artifact` | When archived work needs to become active again |
 | `ai-companion` | When you want help discovering which installed skill best matches the current moment |
 
 These are not required steps in the main flow. They are optional specialists you bring in when the work changes shape.
 
 #### How they connect
 
-- Use `afk-documentation-authoring` after `afk-business-analyst`, `afk-deep-interview`, or `afk-discuss-implementation-decisions` when the output needs to become a human-friendly document instead of a working artifact.
+- Use `afk-documentation-authoring` after `afk-deep-interview` or `afk-coding-tradeoffs` when the output needs to become a human-friendly document instead of a working artifact.
 - Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
-- Use `afk-archive-artifact` when a flow output is done, paused, superseded, or merged and should move out of the active workspace.
-- Use `afk-unarchive-artifact` when archived work should return to the active workspace for revision or follow-up.
 - Use `ai-companion` when you're unsure whether you need the main flow, a support skill, or something else already installed.
 
 #### A useful mental model

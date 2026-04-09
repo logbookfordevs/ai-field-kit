@@ -1,44 +1,46 @@
 ---
-name: "afk-discuss-implementation-decisions"
-description: "Clarify implementation decisions for a bounded slice of work before planning. Use when a workstream, implementation slice, milestone, or phase has unresolved choices that need focused discussion and a reusable context artifact."
+name: "afk-coding-tradeoffs"
+description: "Discuss high-leverage UX and implementation trade-offs inside an already understood scope. Use when a feature is clear enough to build, but important local decisions about interaction behavior, composition strategy, code ownership, library commitments, or information design still need to be locked before coding."
 metadata:
-  short-description: "Clarify implementation decisions before planning and capture them in a reusable context artifact."
+  short-description: "Resolve UX and implementation trade-offs before coding and capture the final decisions in a reusable artifact."
 ---
 
-# Discuss Implementation Decisions
+# Coding Trade-offs
 
-Use this skill to gather the missing decisions that planning depends on.
+Use this skill when the feature is already understood, but the work still has meaningful gray areas in UX, behavior, composition, or implementation strategy.
 
-Its job is not to brainstorm endlessly or expand scope. Its job is to identify what is still unclear about a specific bounded slice of work, discuss those gray areas with the user, and produce a context artifact that downstream work can rely on.
+Its job is not to rediscover the product idea or do broad planning. Its job is to help the user make smart local decisions that materially change the result, then write those decisions down so future chats and agents do not have to reopen them.
 
 ## Goal
 
-Extract the scope-specific decisions that researchers, planners, or implementers need so they can move forward without reopening the same questions.
+Resolve high-leverage UX and implementation trade-offs inside a bounded scope and produce a reusable decision artifact that downstream work can trust.
 
 Typical output:
-- a context document for downstream planning
-- a scoped discussion summary
+- a decision memo for downstream implementation
+- a reusable trade-off record
 - another equivalent artifact requested by the user
 
 ## Inputs
 
 Use whatever exists:
-- a scope label such as a phase name, workstream, milestone, or implementation slice
+- a clearly bounded feature, screen, flow, component system, or implementation slice
 - existing project materials such as planning docs, requirement notes, specs, tickets, prior context summaries, or design notes
 - relevant repository context and code patterns
 - the user's current goals and constraints
 
-If no formal phase structure exists, treat the user’s stated scope as the working slice.
+If the scope is still broad or the real problem is not yet clear, another skill should usually come first.
 
 ## Core Principles
 
-- Clarify implementation decisions, not broad product vision.
-- Respect scope boundaries. If new capabilities emerge, capture them as deferred ideas instead of folding them into the current slice.
+- Discuss high-leverage local trade-offs, not broad product discovery.
+- Respect scope boundaries. If new capabilities emerge, capture them as deferred ideas instead of quietly expanding the feature.
 - Do not re-ask questions that have already been answered in existing artifacts.
-- Ask only the highest-value questions needed to unblock planning.
-- Capture concrete decisions, trade-offs, assumptions, and unresolved questions.
+- Ask only the highest-value questions needed to unblock confident implementation.
+- Prefer real trade-offs over stylistic bikeshedding.
+- Capture concrete decisions, trade-offs accepted, assumptions, and unresolved questions.
 - Default to live collaborative discussion, not bulk question generation.
-- Treat pacing as part of the product: one area at a time is the default experience.
+- Treat pacing as part of the product: one gray area at a time is the default experience.
+- Use `truss-evaluation` as the preferred decision lens whenever possible.
 
 ## Interaction Style
 
@@ -52,7 +54,7 @@ Prefer:
 - using lightweight visual formatting, including simple ASCII-style layouts, when that makes options easier to scan
 - using the host runtime's interactive question UI when it exists, with plain-text menus as fallback only
 
-The interaction should feel like structured discovery, not interrogation.
+The interaction should feel like a thoughtful engineering and UX trade-off discussion, not interrogation.
 
 Important behavior to preserve:
 - present unresolved areas as choices, not just prompts
@@ -60,11 +62,12 @@ Important behavior to preserve:
 - keep the discussion moving in rounds
 - show what remains unvisited so the user knows the shape of the session
 - use simple visual layouts when they improve scanability
-- discuss one decision area at a time by default
+- discuss one trade-off area at a time by default
 - avoid turning the session into a homework-style survey or matrix unless the user explicitly asks for a batched pass
 
 What this skill is intentionally not:
-- not a codebase-first assumptions pass
+- not broad ideation
+- not macro architecture design
 - not a power-user bulk questionnaire
 - not a full implementation plan
 - not a worksheet that asks the user to answer every gray area in one reply
@@ -72,13 +75,92 @@ What this skill is intentionally not:
 The intended feel is:
 - collaborative
 - paced
-- builder-oriented
+- engineering-minded
+- product-aware
 - easy to answer in the moment
+
+## Strong Dependency: Truss
+
+This skill should use `truss-evaluation` as its default trade-off lens.
+
+If `truss-evaluation` is available:
+- use it to structure the comparison of real options
+- frame the discussion around Maintainability, Strategy, Clarity, and Performance
+- prefer conditional recommendations grounded in actual trade-offs
+
+If `truss-evaluation` is missing:
+1. tell the user this skill is designed to work with Truss
+2. ask them to install it with:
+
+```bash
+npx skills add https://github.com/leoreisdias/truss-framework
+```
+
+3. do not pretend the intended experience is still fully available without it
+
+## External Library Rule
+
+Whenever the discussion or final recommendation points toward an external library, framework, registry, or platform dependency:
+- note that the decision should be validated against the best available source of truth before implementation
+- prefer a specific installed skill for that library or tool when one exists
+- otherwise prefer official documentation through MCP-backed sources such as Context7 when available
+
+Do not treat a library recommendation as "done" if the next implementation step would still benefit from:
+- current API details
+- setup constraints
+- version-specific behavior
+- library-specific best practices
+
+In the artifact, when relevant, note the follow-up explicitly. For example:
+- `Follow-up: consult the React Hook Form skill or official docs before implementation`
+- `Follow-up: validate TanStack Query strategy against Context7 docs`
+- `Follow-up: use the preferred registry/component skill before adopting the library output directly`
+
+## Interesting Trade-off Filter
+
+Ask a question only if the answer materially affects at least one of these:
+- user experience
+- interaction behavior
+- implementation strategy
+- future reuse or extensibility
+- correctness or bug surface
+- library or pattern commitment
+- code shape in a meaningful way
+
+If a choice is merely stylistic, syntactic, or low impact, do not ask it.
+
+Good examples:
+- modal vs drawer
+- one shared modal vs one modal per row
+- event handler vs `useEffect` when both are plausible
+- `useRef` container vs reactive UI state
+- queryOptions vs custom hooks vs hybrid TanStack Query strategy
+- fetch vs axios vs another client
+- registry component vs custom implementation
+- local child component vs separate file when it changes clarity or maintenance
+- explicit fallback vs generic fallback
+- what information should be visible in a dense table or list
+
+Read `references/examples.md` for more examples of smart versus boring questions.
+Read `references/must-check-early.md` for high-impact preferences that are often worth locking early when the scope makes them relevant.
+
+## Do Not Ask
+
+Do not ask about:
+- `type` vs `interface` as a style preference
+- `useState` vs `useReducer` for trivial local state
+- syntax or formatting choices already covered by repo conventions
+- choices already answered by:
+  - the existing stack
+  - repo conventions
+  - project instructions
+  - existing code patterns
+- low-impact style debates that do not materially change UX, implementation shape, or downstream cost
 
 ## Interaction Mechanism
 
 When the host environment provides an interactive question mechanism, use it by default for:
-- choosing the next gray area to discuss
+- choosing the next trade-off area to discuss
 - option-based decision questions inside a selected area
 - checkpoints such as go deeper / move on / stop
 
@@ -100,9 +182,9 @@ After a freeform reply, return to the interactive question mechanism for the nex
 
 ### 1. Identify the scope boundary
 
-- Determine which workstream, implementation slice, milestone, or phase is under discussion.
+- Determine which feature, screen, flow, component boundary, or implementation slice is under discussion.
 - If the scope is ambiguous, clarify it first.
-- If a roadmap or phase list exists, use it. If not, infer a practical boundary from the user’s request.
+- If the scope is still broad enough that product discovery is the real problem, stop and route toward the earlier AFK skills instead.
 
 ### 2. Load prior context
 
@@ -122,19 +204,26 @@ Look for:
 - integration points
 - established naming or structural conventions
 - prior decisions that constrain the current slice
+- stack commitments that already answer boring questions
+- existing UI or data patterns that make some options clearly in-scope or out-of-scope
 
 Summarize only the context that affects the current scoped discussion.
 
-### 4. Find the remaining gray areas
+Before moving on, check `references/must-check-early.md` and identify whether this scope clearly implies any early preference checks.
+Do not ask all of them by default. Only bring them in when the current scope makes them relevant enough that missing them now would likely cause rework later.
 
-Identify 3-4 scope-specific decisions that still need clarification.
+### 4. Find the remaining trade-off areas
 
-Good gray areas are concrete and relevant to the current slice of work, for example:
-- layout, interaction states, density, or flow for user-facing work
-- responses, validation, auth, versioning, or error behavior for API work
-- output shape, flags, modes, and failure handling for CLI or automation work
-- structure, tone, depth, and navigation for documentation work
-- naming, grouping, criteria, and exceptions for organizational work
+Identify 3-4 high-leverage local trade-off areas that still need clarification.
+
+Good trade-off areas are concrete and relevant to the current slice of work, for example:
+- interaction behavior and flow shape
+- information density and hierarchy
+- component ownership and composition strategy
+- state strategy when reactivity truly matters
+- library commitments and library usage style
+- error, fallback, and feedback behavior
+- code organization choices that materially change maintainability or clarity
 
 Avoid generic buckets if the current scope suggests more specific questions.
 
@@ -142,27 +231,34 @@ This step is for identifying candidate areas, not fully expanding them yet.
 Do not attach full option trees to every area at this stage.
 The purpose here is to help the user choose what to discuss first.
 
-When presenting gray areas, prefer a compact choice list that helps the user choose the next area to discuss, not a full worksheet to answer all at once. For example:
+When presenting trade-off areas, prefer a compact initial picker that lets the user choose one or more areas to cover without turning the session into a worksheet.
+
+Example initial picker:
 
 ```text
-Decision Discussion Areas
+Coding Trade-off Areas
+(Select one or more. We will discuss them one by one.)
 
-1. Interaction model
-   How should users move through this flow?
+[ ] Interaction behavior
+    Should this flow be modal, drawer-based, inline, or something else?
 
-2. Error handling
-   What should happen when validation fails or dependencies are unavailable?
+[ ] Component ownership
+    Should this behavior live in one shared controller or stay composable per item?
 
-3. Output shape
-   What should the final artifact contain, and how detailed should it be?
+[ ] Data / state strategy
+    What actually needs to be reactive, and what can stay outside render state?
 
-4. Naming and structure
-   How should this work be organized so it stays maintainable?
+[ ] Library commitment
+    Do we want a library here, and if so, which style of usage keeps the code clearer?
 
-a. Discuss all of them, one by one
-f. Something else in freeform
-x. Stop discussion and create context with current decisions
+[ ] Custom trade-off area: ________________________
+[ ] Stop discussion and create context with current decisions
 ```
+
+Preferred behavior:
+- if the user adds a custom area, include it in the selected set before discussion starts
+- if multiple areas are selected, discuss them one by one in sequence
+- if only one area is selected, start there directly
 
 You may recommend one area to start with only when the best next topic is genuinely obvious and there is a concrete reason to say so.
 If you recommend a starting area:
@@ -179,7 +275,7 @@ Important interpretation rule:
 - do not interpret that as "ask about all areas in one message"
 - only switch to a true batched worksheet when the user explicitly asks for all-at-once, one-message, matrix, worksheet, or single-reply mode
 
-### 5. Discuss selected gray areas
+### 5. Discuss selected trade-off areas with Truss
 
 - Present the unresolved areas in a compact list.
 - Let the user choose which single area to tackle first.
@@ -188,7 +284,7 @@ Important interpretation rule:
 - Keep the discussion centered on the current scoped slice.
 
 This is the core pacing rule:
-- identify several gray areas
+- identify several trade-off areas
 - expand only one area at a time
 - summarize that area before moving on
 
@@ -196,12 +292,34 @@ Do not expand all areas in parallel unless the user explicitly asks for a matrix
 Do not pre-solve the whole session before the first area is chosen.
 
 Suggested probing pattern:
+- name the trade-off clearly
+- state the local context and constraints
+- define what success means for this decision
+- present 2-4 real options only
+- use Truss to evaluate the options concisely
 - Ask a few focused questions for one area only, usually in a short round.
 - Prefer choices plus a freeform option when possible.
 - Use examples or contrasting options to make the trade-off concrete.
 - Summarize what is now decided.
 - Check whether the area is sufficiently clear or needs one more pass.
 - Move to the next area once the current one is actionable.
+
+For each area, require enough context to answer:
+- what is being optimized for
+- what constraints apply
+- what trade-offs are acceptable
+
+When Truss is active, organize the option comparison through:
+- Maintainability
+- Strategy
+- Clarity
+- Performance
+
+Prefer concise, conditional recommendations such as:
+- "Use a shared external modal if consistency and centralized state matter more."
+- "Use per-row composable modal ownership if local encapsulation and independent behavior matter more."
+
+When the chosen direction depends on an external library, add the follow-up check immediately after the recommendation instead of leaving it implicit.
 
 Do not present a full decision survey across all unresolved areas unless the user explicitly asks for a matrix, scorecard, or all-at-once comparison.
 
@@ -228,12 +346,15 @@ Good question shape for a selected area:
 - contrastive when helpful
 - easy to answer with a choice or short freeform reply
 - informed by prior context or codebase reality when available
+- high leverage according to the Interesting Trade-off Filter
 
 Bad question shape:
 - long survey pages
 - asking for answers to multiple unrelated areas at once
 - dumping every option for every unresolved topic before the user has chosen a direction
 - giving your opinion on every gray area before the user has selected one
+- bikeshedding style or syntax
+- asking about choices already settled by conventions
 
 When helpful, present question options like this:
 
@@ -260,7 +381,7 @@ Current status: Interaction model is mostly clear.
 
 What next?
 1. Go one level deeper on this area
-2. Move to the next gray area
+2. Move to the next trade-off area
 3. Capture this and create the context artifact
 f. Something else
 x. Stop
@@ -275,9 +396,9 @@ When moving on, prefer showing the remaining areas explicitly. For example:
 
 ```text
 Remaining areas:
-- Error handling
-- Output shape
-- Naming and structure
+- Error behavior
+- State strategy
+- Library usage style
 ```
 
 Good default shape:
@@ -307,19 +428,24 @@ That is a batched worksheet, not the default AFK discussion experience.
 Better example:
 
 ```text
-Decision areas
+Coding Trade-off Areas
+(Select one or more. We will cover them in sequence.)
 
-1. Runtime and pacing
-2. Visual treatment of V1
-3. Rewrite scope
-f. Something else
-x. Stop and capture current decisions
+[ ] Runtime and pacing
+[ ] Visual treatment of V1
+[ ] Rewrite scope
+[ ] Custom trade-off area: ________________________
+[ ] Stop and capture current decisions
 ```
 
-Then, after the user picks one:
+Then, after the user picks one or more:
 
 ```text
-Let’s talk about runtime and pacing first.
+Selected:
+- Runtime and pacing
+- Rewrite scope
+
+Let's talk about runtime and pacing first.
 
 Choose the closest fit:
 1. Full-length version
@@ -347,26 +473,24 @@ If the user introduces new capabilities or work that belongs outside the current
 
 This skill should sharpen the current scope, not quietly expand it.
 
-### 7. Write the context artifact
+### 7. Write the decision artifact
 
-Produce a context document that is useful for downstream planning.
+Produce a decision document that is useful for downstream implementation and future chats.
 
 Preferred filename when writing a file:
-- `artifacts/context/context-<scope-or-topic>.md`
+- `docs/decisions/coding-tradeoffs-<slug>.md`
 
-Prefer `artifacts/`. If `artifacts/` conflicts with the repo's structure, use `docs/artifacts/` when `docs/` exists. Otherwise follow the repo's existing convention.
+This artifact is mandatory, even if the conversation was short.
 
 Recommended sections:
-- `Scope`
 - `Goal`
-- `What Is Already Decided`
+- `Scope`
 - `Gray Areas Discussed`
+- `Options Considered`
+- `Truss Evaluation`
 - `Decisions`
-- `Constraints`
-- `Assumptions`
+- `Trade-offs Accepted`
 - `Open Questions`
-- `Deferred Ideas`
-- `Relevant Code or Project Context`
 - `Next Step`
 
 Adapt section names to the repository’s conventions when needed.
@@ -378,11 +502,13 @@ When the discussion was interactive, preserve that value in the artifact:
 
 ## Output Quality Bar
 
-The final context artifact should be clear enough that a planner or implementer can continue without having to ask the user the same questions again.
+The final artifact should be clear enough that another engineer or agent can continue without reopening the same trade-offs.
 
 It should:
 - reflect prior context accurately
 - capture concrete decisions rather than vague aspirations
+- show which options were genuinely considered
+- make the accepted trade-offs explicit
 - separate facts from assumptions
 - preserve unresolved questions where certainty is not yet possible
 - make the next step obvious
@@ -394,24 +520,13 @@ The discussion itself should also feel high quality:
 - the skill feels thoughtful and creative without becoming theatrical or noisy
 - the user can tell what has been decided and what still remains
 
-## AFK Boundary
-
-This skill intentionally keeps the default experience lighter than frameworks that expose multiple discuss modes.
-
-For AFK, the default is enough:
-- live discussion
-- one area at a time
-- compact checkpoints
-- reusable context artifact at the end
-
-Do not simulate extra modes unless the user explicitly asks for them.
-
 ## Non-Goals
 
 This skill is not for:
-- architecture design in depth
+- broad ideation
 - implementation planning in detail
-- performance tuning deep dives
+- architecture design in depth
+- low-level style bikeshedding
 - unconstrained product brainstorming
 
 Those may follow after the context artifact is complete.
@@ -419,6 +534,7 @@ Those may follow after the context artifact is complete.
 ## Suggested Next Skills
 
 These are suggestions, not required steps:
-- `afk-advanced-elicitation` if the context document needs a stronger refinement pass before planning
-- `afk-documentation-authoring` if the context artifact needs to become cleaner, more readable, or more user-facing
+- `afk-advanced-elicitation` if the decision artifact needs a stronger refinement pass
+- `afk-documentation-authoring` if the decision artifact needs to become cleaner, more readable, or more user-facing
 - `afk-note` if the most important decisions should also be preserved in lightweight durable memory
+*** End of File

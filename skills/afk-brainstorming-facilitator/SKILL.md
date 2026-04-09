@@ -17,7 +17,6 @@ Default behavior:
 ## Suggested Next Skills
 
 These are suggestions, not required steps:
-- `afk-business-analyst` if the idea set needs stronger framing, trade-offs, or requirements language
 - `afk-deep-interview` if the work is still too ambiguous to plan safely
 - `afk-documentation-authoring` if the brainstorming results need to become a polished brief, memo, or guide
 - `afk-note` if important discoveries need to survive handoffs or chat resets
