@@ -23,6 +23,30 @@ When the task is explicitly about writing docs, use the **`afk-documentation-aut
 
 # Personal Preferences
 
+## Workflow Framing
+- Treat the path from PRD/spec to implementation plan as a **workflow slice**, not the whole delivery lifecycle.
+- It is valid for work to start before this slice with brainstorming, discovery, elicitation, deep interview, or similar clarification flows.
+- It is also expected that more steps happen after this slice, including execution, testing, verification, review, and approval gates.
+
+### Artifact Boundaries
+- **PRD** explains the product vision, motivation, and why the work matters.
+- **Spec** explains the expected behavior, flow logic, and design intent. In smaller or solo contexts, it can absorb the PRD.
+- **RFC** explains a proposed direction and invites review and feedback before implementation. In some team contexts, this document may be called an ERD.
+- **Implementation Plan** is the technical execution artifact: files, types, interfaces, pseudocode, tasks, and build strategy.
+
+### RFC Positioning
+- RFC is **optional** and depends on team, project, and context.
+- RFC is usually **outside the core linear timeline**, even when it happens between spec and implementation planning.
+- RFC exists to gather feedback that may change the spec, the PRD, or the implementation plan.
+- Do not force RFC into every workflow. Use it when external or cross-team feedback is useful.
+
+### Implementation Planning Doctrine
+- A strong implementation plan should act as an **execution index**, not a bloated restatement of every prior document.
+- Prefer task-oriented plans with **on-demand references** to the exact prior docs, sections, or snippets needed for that task.
+- Optimize plans to reduce **context rot** and keep room for the codebase context that implementation will need.
+- Prefer a structure where **1 task can map to 1 clean agent session** when that improves focus, traceability, or parallel work.
+- When prior docs already exist, treat them as the primary planning source of truth.
+
 ## Skills
 Before modifying code, evaluate each installed skill against the current task.
 For each skill, determine YES/NO relevance and invoke all YES skills before proceeding.
