@@ -49,7 +49,6 @@ When the task is explicitly about writing docs, use the **`afk-documentation-aut
 
 ## Skills
 Before modifying code, evaluate each installed skill against the current task.
-For each skill, determine YES/NO relevance and invoke all YES skills before proceeding.
 Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
 
 ## Imports
