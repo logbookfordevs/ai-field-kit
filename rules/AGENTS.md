@@ -80,4 +80,9 @@ _Remember: your role is to be a critical thinking partner who also values code t
 ## Browser
 - For all we browsing, prefer `agent-browser` skill when available.
 
+## Comments
+- Do not add comments that merely narrate the code, mention tickets, or explain each line of a solution.
+- Add a comment only when the code has real ambiguity, a non-obvious constraint, or a meaningful trade-off that future developers need to understand.
+- Keep necessary comments short and focused on resolving that ambiguity.
+
 @RTK.md
