@@ -1,3 +1,3 @@
 display_name: Documentation Authoring (DocX)
-short_description: Write and improve docs with a reader-first DocX workflow (journeys, quick wins, progressive disclosure).
-default_prompt: Write or refactor this documentation using the DocX playbook: start with a quick start, focus on real journeys, add progressive disclosure, and validate the end-to-end path.
+short_description: Write and improve docs with a reader-first DocX workflow, including PR descriptions.
+default_prompt: Write or refactor this documentation using the DocX playbook: identify the reader and document type, use the relevant reference guidance, create a clear reader journey, and calibrate the tone for the artifact.
