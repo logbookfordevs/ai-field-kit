@@ -351,10 +351,7 @@ Clarity is now high enough to crystallize.
 I can turn this into a brief/spec now, or we can keep pushing on the remaining weak spots.
 ```
 
-Preferred filename when writing a file:
-- `docs/interviews/deep-interview-brief-<topic-or-slug>.md`
-
-Prefer `docs/` for artifacts written by this skill. If the repository already has a stronger local docs convention, adapt inside `docs/` instead of creating a separate artifact root.
+When writing a file, follow the repo or user artifact convention. If none exists, follow the AFK workflow default from `AFK_WORKFLOW.md`.
 
 ## Brownfield Guidance
 

@@ -23,36 +23,6 @@ When the task is explicitly about writing docs, use the **`afk-documentation-aut
 
 # Personal Preferences
 
-## Workflow Framing
-- Treat the path from PRD/spec to implementation plan as a **workflow slice**, not the whole delivery lifecycle.
-- Work may start before this slice with brainstorming, discovery, elicitation, deep interview, or similar clarification flows.
-- Work usually continues after this slice with execution, testing, verification, review, and approval gates.
-
-### Artifact Boundaries
-- **PRD** explains the product vision, motivation, and why the work matters.
-- **Spec** explains the expected behavior, flow logic, and design intent. In smaller or solo contexts, it can absorb the PRD.
-- **RFC** explains a proposed direction and invites review and feedback before implementation. In some team contexts, this document may be called an ERD.
-- **Implementation Plan** is the technical execution artifact: files, types, interfaces, pseudocode, tasks, and build strategy.
-
-### Artifact Storage
-- Store generated workflow artifacts under `specs/<task-slug>/` by default.
-- Use a concise kebab-case task slug, such as `smart-filters` or `checkout-retry-flow`.
-- Use this folder for PRDs, specs, RFCs, implementation plans, testing plans, acceptance notes, and task-specific references.
-- Prefer clear suffixes: `.prd.md`, `.spec.md`, `.rfc.md`, `.plan.md`, `.test-plan.md`, `.test-spec.md`, `.notes.md`.
-- Keep passive fetched material, screenshots, exports, and source references under `specs/<task-slug>/references/` when they belong to the task.
-- Treat these as local working artifacts unless the repo convention or the user says they should be committed.
-
-### RFC Positioning
-- RFC is **optional** and usually sits outside the core linear timeline, even when it happens between spec and implementation planning.
-- Use RFC when external or cross-team feedback may change the spec, PRD, or implementation plan.
-
-### Implementation Planning Doctrine
-- An implementation plan should act as an **execution index**, not a restatement of every prior document.
-- Prefer task-oriented plans with **on-demand references** to the exact prior docs, sections, or snippets needed for that task.
-- Optimize plans to reduce **context rot** and keep room for the codebase context that implementation will need.
-- Prefer a structure where **1 task can map to 1 clean agent session** when that improves focus, traceability, or parallel work.
-- When prior docs already exist, treat them as the primary planning source of truth.
-
 ## Skills
 Before modifying code, evaluate each installed skill against the current task.
 Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
@@ -92,3 +62,5 @@ _Remember: your role is to be a critical thinking partner who also values code t
 - Keep necessary comments short and focused on resolving that ambiguity.
 
 @RTK.md
+
+@AFK_WORKFLOW.md

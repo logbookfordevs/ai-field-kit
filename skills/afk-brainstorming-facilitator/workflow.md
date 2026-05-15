@@ -48,8 +48,7 @@ Use locally available context only:
 
 ### Paths
 
-- `brainstorming_session_output_file` = `docs/brainstorming/brainstorming-session-{{date}}-{{time}}.md` (evaluated once at workflow start)
-- if the repository already has a stronger local docs convention, adapt inside `docs/` instead of creating a separate artifact root
+- `brainstorming_session_output_file` = set this according to the repo or user artifact convention. If none exists, follow the AFK workflow default from `AFK_WORKFLOW.md`.
 
 All steps MUST reference `{brainstorming_session_output_file}` instead of the full path pattern.
 - `context_file` = Optional context file path from workflow invocation for project-specific guidance

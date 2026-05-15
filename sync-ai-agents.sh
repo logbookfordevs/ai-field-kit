@@ -8,6 +8,8 @@ REPO_URL="https://github.com/leoreisdias/ai-rules-workflows.git"
 # Source in repo
 AGENTS_REL_PATH="rules/AGENTS.md"
 RULES_SRC="$REPO_DIR/$AGENTS_REL_PATH"
+RULES_DIR="$REPO_DIR/rules"
+IMPORTED_RULE_FILES=("AFK_WORKFLOW.md")
 
 # Canonical store
 CANON_DIR="$HOME_DIR/.agents/rules"
@@ -35,6 +37,7 @@ copy_to_canonical() {
 
   mkdir -p "$CANON_DIR"
   cp "$RULES_SRC" "$CANON_FILE"
+  copy_imported_rules
   echo "✅ Canonical rules updated: $CANON_FILE"
 }
 
@@ -56,6 +59,36 @@ link_canonical() {
 
   ln -s "$RULES_SRC" "$CANON_FILE"
   echo "✅ Canonical rules linked: $CANON_FILE -> $RULES_SRC"
+
+  link_imported_rules
+}
+
+copy_imported_rules() {
+  local name src dest
+  for name in "${IMPORTED_RULE_FILES[@]}"; do
+    src="$RULES_DIR/$name"
+    dest="$CANON_DIR/$name"
+    if [ -f "$src" ]; then
+      cp "$src" "$dest"
+      echo "✅ Canonical import copied: $dest"
+    fi
+  done
+}
+
+link_imported_rules() {
+  local name src dest
+  for name in "${IMPORTED_RULE_FILES[@]}"; do
+    src="$RULES_DIR/$name"
+    dest="$CANON_DIR/$name"
+    if [ -f "$src" ]; then
+      backup_if_real_file "$dest"
+      if [ -L "$dest" ]; then
+        rm -f "$dest"
+      fi
+      ln -s "$src" "$dest"
+      echo "✅ Canonical import linked: $dest -> $src"
+    fi
+  done
 }
 
 backup_if_real_file() {
@@ -86,6 +119,103 @@ link_rule() {
   echo "✅ Linked: $dest -> $CANON_FILE"
 }
 
+link_claude_imports() {
+  local claude_dir="$HOME_DIR/.claude"
+  local claude_file="$claude_dir/CLAUDE.md"
+  local import_start="<!-- AFK:IMPORT:START -->"
+  local import_end="<!-- AFK:IMPORT:END -->"
+  local import_block
+
+  mkdir -p "$claude_dir"
+
+  link_claude_import_file "$CANON_FILE" "$claude_dir/AGENTS.md"
+
+  local name src
+  for name in "${IMPORTED_RULE_FILES[@]}"; do
+    src="$CANON_DIR/$name"
+    if [ -e "$src" ]; then
+      link_claude_import_file "$src" "$claude_dir/$name"
+    fi
+  done
+
+  import_block="$import_start
+@AGENTS.md
+$import_end"
+
+  if [ -L "$claude_file" ]; then
+    rm -f "$claude_file"
+  fi
+
+  if [ ! -f "$claude_file" ]; then
+    printf "%s\n" "$import_block" > "$claude_file"
+    echo "✅ Claude rules created with AFK import block: $claude_file"
+    return
+  fi
+
+  if grep -q "$import_start" "$claude_file"; then
+    local tmp
+    tmp="$(mktemp)"
+    awk -v start="$import_start" -v end="$import_end" -v block="$import_block" '
+      index($0, start) {
+        if (!replaced) {
+          print block
+          replaced = 1
+        }
+        in_block = 1
+        next
+      }
+      index($0, end) {
+        in_block = 0
+        next
+      }
+      !in_block {
+        print
+      }
+    ' "$claude_file" > "$tmp"
+    mv "$tmp" "$claude_file"
+    echo "✅ Claude AFK import block updated: $claude_file"
+  else
+    local tmp
+    tmp="$(mktemp)"
+    local first_local_line
+    first_local_line="$(awk '/^@RTK\.md$/ || /^<!-- OMC:IMPORT:START -->/ {print NR; exit}' "$claude_file")"
+
+    if [ -n "$first_local_line" ]; then
+      local bak
+      bak="$claude_file.bak.$(timestamp)"
+      cp "$claude_file" "$bak"
+      {
+        printf "%s\n\n" "$import_block"
+        tail -n +"$first_local_line" "$claude_file"
+      } > "$tmp"
+      mv "$tmp" "$claude_file"
+      echo "✅ Claude AFK import block added and local imports preserved: $claude_file"
+      echo "   ↳ 📦 Backed up previous Claude file to: $bak"
+    else
+      {
+        printf "%s\n\n" "$import_block"
+        cat "$claude_file"
+      } > "$tmp"
+      mv "$tmp" "$claude_file"
+      echo "✅ Claude AFK import block prepended: $claude_file"
+    fi
+  fi
+}
+
+link_claude_import_file() {
+  local src="$1"
+  local dest="$2"
+
+  backup_if_real_file "$dest"
+
+  if [ -L "$dest" ]; then
+    rm -f "$dest"
+  fi
+
+  ln -s "$src" "$dest"
+  echo "✅ Claude import linked: $dest -> $src"
+}
+
 main() {
   ensure_repo
   link_canonical
@@ -104,8 +234,8 @@ main() {
   # KiloCode
   link_rule "$HOME_DIR/.kilocode/rules/AGENTS.md"
 
-  # Claude
-  link_rule "$HOME_DIR/.claude/CLAUDE.md"
+  # Claude keeps a real CLAUDE.md so Claude-specific imports can coexist.
+  link_claude_imports
 
   echo "✔ Done. Rules are now single-source via symlink."
   echo "ℹ️  Skills sync removed: you’re handling skills via npx skills + ~/.agents/skills."
