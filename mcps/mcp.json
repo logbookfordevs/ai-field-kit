@@ -31,30 +31,6 @@
         }
       }
     },
-    "notebooklm": {
-      "config": {
-        "command": "${HOME}/.local/bin/notebooklm-mcp"
-      },
-      "targets": {
-        "codex": {
-          "name": "notebooklm",
-          "enabled": true
-        },
-        "gemini": {
-          "name": "notebooklm-mcp"
-        },
-        "antigravity": {
-          "name": "notebooklm-mcp"
-        },
-        "claude": {
-          "name": "notebooklm-mcp"
-        },
-        "opencode": {
-          "name": "notebooklm",
-          "enabled": false
-        }
-      }
-    },
     "shadcn": {
       "config": {
         "command": "npx",
