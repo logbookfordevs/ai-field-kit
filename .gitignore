@@ -9,6 +9,10 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Node
+node_modules/
+dist/
+
 # Local environment overrides
 .env
 .env.local

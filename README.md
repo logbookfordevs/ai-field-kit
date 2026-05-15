@@ -21,6 +21,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 | `skills/` | Reusable capabilities and quality lenses that shape how agents work |
 | `workflows/` | Slash-command workflows for explicit multi-step tasks |
 | `mcps/` | MCP server registry + sync script to configure them everywhere |
+| `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
 | `sync-ai-agents.sh` | One-command sync: pulls repo and symlinks rules into all supported agents |
 | `sync-ai-workflows.sh` | One-command sync: manages per-workflow symlinks where possible and renders Gemini CLI commands as TOML |
 | `sync-ai-mcps.py` | Smart MCP sync: resolves API key placeholders, writes to each agent config |
@@ -62,6 +63,18 @@ python3 sync-ai-mcps.py
 ```
 
 ✅ Done. Every agent on your machine now shares the same rules, workflows, and MCP servers.
+
+### Preview the AFK CLI
+
+The repo also includes the first local AFK CLI package. It is a setup router: AFK owns its rules and workflow sync behavior, while third-party installs still route through the official `skills` and `add-mcp` CLIs.
+
+```bash
+pnpm --dir packages/afk install
+pnpm --dir packages/afk run build
+node packages/afk/dist/index.js setup --dry-run
+```
+
+Use the dry run first. The CLI prints the exact rules, workflow, skills, and MCP setup actions before anything writes to your machine.
 
 ---
 
@@ -113,6 +126,7 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
 | `afk-documentation-authoring` | DocX playbook: journeys, progressive disclosure, real empathy |
 | `afk-execution-tracking` | Checkpointed implementation state across tasks, reviews, validation, and handoffs |
+| `afk-workflow` | AFK doctrine for specs, plans, tracking, and workflow artifact conventions |
 | `afk-spline-3d-integration` | Spline 3D integration guides for React and vanilla JS |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `ai-companion` | Uses `skills.json` taxonomy to improve native skill discovery |
@@ -131,6 +145,7 @@ They are intentionally similar, but they are not redundant:
 
 | Skill | Use it when | Best output |
 |---|---|---|
+| `afk-workflow` | The task involves PRDs, specs, RFCs, implementation plans, tracking, or workflow artifact conventions | Consistent artifact boundaries, storage defaults, and workflow framing |
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
 | `afk-deep-interview` | You want disciplined clarification before planning or execution and you're willing to be questioned one round at a time | Execution-ready brief or spec with clear boundaries |
 | `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | Decision artifact for downstream implementation |
@@ -143,6 +158,7 @@ They are intentionally similar, but they are not redundant:
 
 | Stage | AFK position |
 |---|---|
+| Workflow doctrine | `afk-workflow` |
 | Open / clarify | `afk-brainstorming-facilitator`, `afk-deep-interview` |
 | Pressure-test / decide | `afk-coding-tradeoffs`, `afk-advanced-elicitation` |
 | Spec creation | Flexible for now; use a good standalone external spec skill or normal prompting when that fits |
@@ -152,13 +168,14 @@ They are intentionally similar, but they are not redundant:
 | Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
 | Support | `afk-note`, `afk-ask`, `afk-documentation-authoring`, `afk-structured-debugging` |
 
-Generated workflow artifacts default to `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
+`afk-workflow` defines the default artifact convention: `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
 
 ### What to choose
 
 If you're unsure which one to reach for, use this shortcut:
 
 - "We need more ideas" -> `afk-brainstorming-facilitator`
+- "We are dealing with PRDs, specs, RFCs, plans, tracking, or workflow artifacts" -> `afk-workflow`
 - "We need to interrogate the request before building" -> `afk-deep-interview`
 - "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-coding-tradeoffs`
 - "We have a plan and need checkpointed execution" -> `afk-execution-tracking`

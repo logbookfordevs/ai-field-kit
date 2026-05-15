@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "stitch",
+      "label": "Stitch MCP",
+      "source": "https://stitch.googleapis.com/mcp",
+      "args": ["--header", "X-Goog-Api-Key: KEY_STITCH", "--name", "stitchmcp"],
+      "default": true
+    },
+    {
+      "id": "shadcn",
+      "label": "shadcn MCP",
+      "source": "npx shadcn@latest mcp",
+      "args": ["--name", "shadcn"],
+      "default": true
+    }
+  ]
+}

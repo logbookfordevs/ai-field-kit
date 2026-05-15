@@ -351,7 +351,7 @@ Clarity is now high enough to crystallize.
 I can turn this into a brief/spec now, or we can keep pushing on the remaining weak spots.
 ```
 
-When writing a file, follow the repo or user artifact convention. If none exists, follow the AFK workflow default from `AFK_WORKFLOW.md`.
+When writing a file, follow the repo or user artifact convention. If none exists, follow the AFK default from `afk-workflow`.
 
 ## Brownfield Guidance
 

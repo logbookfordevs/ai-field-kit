@@ -63,4 +63,5 @@ _Remember: your role is to be a critical thinking partner who also values code t
 
 @RTK.md
 
-@AFK_WORKFLOW.md
+## AFK Workflow
+- When the task involves PRDs, specs, RFCs/ERDs, implementation plans, execution tracking, workflow artifacts, or checkpointed implementation, use the **`afk-workflow` skill**.

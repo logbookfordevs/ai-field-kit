@@ -8,8 +8,6 @@ REPO_URL="https://github.com/leoreisdias/ai-rules-workflows.git"
 # Source in repo
 AGENTS_REL_PATH="rules/AGENTS.md"
 RULES_SRC="$REPO_DIR/$AGENTS_REL_PATH"
-RULES_DIR="$REPO_DIR/rules"
-IMPORTED_RULE_FILES=("AFK_WORKFLOW.md")
 
 # Canonical store
 CANON_DIR="$HOME_DIR/.agents/rules"
@@ -37,7 +35,6 @@ copy_to_canonical() {
 
   mkdir -p "$CANON_DIR"
   cp "$RULES_SRC" "$CANON_FILE"
-  copy_imported_rules
   echo "✅ Canonical rules updated: $CANON_FILE"
 }
 
@@ -59,36 +56,6 @@ link_canonical() {
 
   ln -s "$RULES_SRC" "$CANON_FILE"
   echo "✅ Canonical rules linked: $CANON_FILE -> $RULES_SRC"
-
-  link_imported_rules
-}
-
-copy_imported_rules() {
-  local name src dest
-  for name in "${IMPORTED_RULE_FILES[@]}"; do
-    src="$RULES_DIR/$name"
-    dest="$CANON_DIR/$name"
-    if [ -f "$src" ]; then
-      cp "$src" "$dest"
-      echo "✅ Canonical import copied: $dest"
-    fi
-  done
-}
-
-link_imported_rules() {
-  local name src dest
-  for name in "${IMPORTED_RULE_FILES[@]}"; do
-    src="$RULES_DIR/$name"
-    dest="$CANON_DIR/$name"
-    if [ -f "$src" ]; then
-      backup_if_real_file "$dest"
-      if [ -L "$dest" ]; then
-        rm -f "$dest"
-      fi
-      ln -s "$src" "$dest"
-      echo "✅ Canonical import linked: $dest -> $src"
-    fi
-  done
 }
 
 backup_if_real_file() {
@@ -129,14 +96,6 @@ link_claude_imports() {
   mkdir -p "$claude_dir"
 
   link_claude_import_file "$CANON_FILE" "$claude_dir/AGENTS.md"
-
-  local name src
-  for name in "${IMPORTED_RULE_FILES[@]}"; do
-    src="$CANON_DIR/$name"
-    if [ -e "$src" ]; then
-      link_claude_import_file "$src" "$claude_dir/$name"
-    fi
-  done
 
   import_block="$import_start
 @AGENTS.md

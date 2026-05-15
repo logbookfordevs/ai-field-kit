@@ -1,6 +1,6 @@
 ---
 name: afk-documentation-authoring
-description: Write documentation using the DocX playbook. Use when the user asks to write, rewrite, structure, or audit docs, including READMEs, guides, API docs, onboarding, troubleshooting, runbooks, implementation docs, and PR descriptions.
+description: Write or improve documentation using the DocX playbook. Use when the user asks to create, rewrite, restructure, polish, or critique documentation as a deliverable, including READMEs, guides, API docs, onboarding, troubleshooting, runbooks, implementation docs, and PR descriptions. Do not use for read-only documentation lookup, summarization, or context gathering unless the user asks for documentation changes or a docs review.
 ---
 
 # Documentation Authoring
@@ -8,6 +8,8 @@ description: Write documentation using the DocX playbook. Use when the user asks
 Use this skill when documentation should feel useful, clear, and worth reading.
 
 Documentation is a product experience. The job is not only to preserve facts; it is to help a real reader build the right mental model with the least frustration.
+
+Do not activate this skill for read-only documentation tasks. If the user only asks to read docs, inspect docs, find facts, summarize existing docs, or gather context from docs, use normal reading and analysis first. Activate this skill only when the expected output is authored documentation, documentation critique, or an edit to a documentation artifact.
 
 ## Operating Loop
 

@@ -48,7 +48,7 @@ Use locally available context only:
 
 ### Paths
 
-- `brainstorming_session_output_file` = set this according to the repo or user artifact convention. If none exists, follow the AFK workflow default from `AFK_WORKFLOW.md`.
+- `brainstorming_session_output_file` = set this according to the repo or user artifact convention. If none exists, follow the AFK default from `afk-workflow`.
 
 All steps MUST reference `{brainstorming_session_output_file}` instead of the full path pattern.
 - `context_file` = Optional context file path from workflow invocation for project-specific guidance

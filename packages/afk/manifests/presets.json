@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "id": "baseline",
+      "label": "AFK baseline",
+      "areas": ["rules", "workflows", "skills", "mcps"]
+    }
+  ]
+}

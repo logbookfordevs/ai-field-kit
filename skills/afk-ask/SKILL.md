@@ -64,7 +64,7 @@ Do not dump unrelated repo context into the advisor. Keep the prompt focused eno
 
 After local execution, save a markdown artifact.
 
-Follow the repo or user artifact convention. If none exists, follow the AFK workflow default from `AFK_WORKFLOW.md`.
+Follow the repo or user artifact convention. If none exists, follow the AFK default from `afk-workflow`.
 
 Minimum artifact sections:
 
