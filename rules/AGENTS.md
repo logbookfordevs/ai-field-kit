@@ -39,6 +39,10 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 - Don't run dev server commands (like `npm run dev`) - assume it's already running.
 - Focus on checking commands like typecheck or lint.
 
+## Worktrees
+- When creating or managing git worktrees, prefer the `yggtree` CLI via `npx yggtree`.
+- Use `npx yggtree --help` and `npx yggtree wt --help` to inspect the available workflow before choosing commands.
+
 ## Package Managers
 - Use pnpm if the project already uses it. Prefer pnpm in new projects.
 
