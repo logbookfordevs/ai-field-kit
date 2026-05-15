@@ -13,19 +13,13 @@ CANON_ROOT="$HOME_DIR/.agents/commands"
 CANON_DIR="$CANON_ROOT/$NAMESPACE_DIR"
 
 # Agent destination roots
-ROOT_KILO="$HOME_DIR/.kilocode/workflows"
-ROOT_CURSOR="$HOME_DIR/.cursor/commands"
 ROOT_OPENCODE="$HOME_DIR/.config/opencode/commands"
-ROOT_ANTIGRAVITY="$HOME_DIR/.gemini/antigravity/global_workflows"
 ROOT_CLAUDE="$HOME_DIR/.claude/commands"
 ROOT_GEMINI="$HOME_DIR/.gemini/commands"
 ROOT_CODEX="$HOME_DIR/.codex/skills"
 
 # Agent destinations
-DEST_KILO="$ROOT_KILO/$NAMESPACE_DIR"
-DEST_CURSOR="$ROOT_CURSOR/$NAMESPACE_DIR"
 DEST_OPENCODE="$ROOT_OPENCODE/$NAMESPACE_DIR"
-DEST_ANTIGRAVITY="$ROOT_ANTIGRAVITY/$NAMESPACE_DIR"
 DEST_CLAUDE="$ROOT_CLAUDE/$NAMESPACE_DIR"
 DEST_GEMINI="$ROOT_GEMINI/$NAMESPACE_DIR"
 DEST_CODEX="$ROOT_CODEX/$NAMESPACE_DIR"
@@ -206,30 +200,6 @@ sync_copied_markdown_dir() {
   echo "✅ Synced managed copies to $label: $dest"
 }
 
-sync_antigravity_workflows() {
-  local dest="$1"
-
-  normalize_root_dir "$dest"
-  clear_prefixed_entries "$dest" "afk-"
-
-  while IFS= read -r src; do
-    local filename target description escaped_description
-    filename="$(basename "$src")"
-    target="$dest/$filename"
-    description="$(extract_description "$src")"
-    escaped_description="$(escape_double_quotes "${description:-$(basename "$src" .md)}")"
-
-    {
-      printf -- '---\n'
-      printf 'description: "%s"\n' "$escaped_description"
-      printf -- '---\n\n'
-      cat "$src"
-    } > "$target"
-  done < <(list_workflow_files)
-
-  echo "✅ Synced Antigravity workflows with required frontmatter: $dest"
-}
-
 sync_codex_skills() {
   local dest="$1"
   local legacy_root="$HOME_DIR/.codex/prompts"
@@ -383,10 +353,7 @@ main() {
 
   echo "▶ Normalizing command roots and cleaning legacy flat installs"
   clear_legacy_root_managed_files "$CANON_ROOT"
-  clear_legacy_root_managed_files "$ROOT_KILO"
-  clear_legacy_root_managed_files "$ROOT_CURSOR"
   clear_legacy_root_managed_files "$ROOT_OPENCODE"
-  clear_legacy_root_managed_files "$ROOT_ANTIGRAVITY"
   clear_legacy_root_managed_files "$ROOT_CLAUDE"
   clear_legacy_root_managed_files "$ROOT_GEMINI"
   clear_legacy_root_managed_files "$ROOT_CODEX"
@@ -395,17 +362,14 @@ main() {
   sync_symlinked_markdown_dir "$CANON_DIR" "canonical store"
 
   echo "▶ Linking raw markdown workflow consumers"
-  sync_symlinked_markdown_dir "$DEST_KILO" "KiloCode workflows"
-  sync_symlinked_markdown_dir "$DEST_CURSOR" "Cursor commands"
   sync_symlinked_markdown_dir "$DEST_OPENCODE" "OpenCode commands"
   sync_symlinked_markdown_dir "$DEST_CLAUDE" "Claude Code commands"
 
   echo "▶ Syncing agent-specific command formats"
-  sync_antigravity_workflows "$ROOT_ANTIGRAVITY"
   sync_codex_skills "$DEST_CODEX"
   sync_gemini_commands "$DEST_GEMINI"
 
-  echo "✔ Done. AI Field Kit workflows now live in namespaced subfolders for most agents. Gemini CLI is rendered as TOML, Antigravity gets root-level Markdown copies, Codex gets generated skills under ~/.codex/skills/afk/, and other supported agents use managed per-file symlinks."
+  echo "✔ Done. AI Field Kit workflows now live in namespaced subfolders for supported targets. Gemini CLI is rendered as TOML, Codex gets generated skills under ~/.codex/skills/afk/, and Markdown workflow consumers use managed per-file symlinks."
 }
 
 main

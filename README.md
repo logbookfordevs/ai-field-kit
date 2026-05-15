@@ -38,7 +38,8 @@ No clone needed. Install directly from GitHub using the [`skills` CLI](https://s
 npx skills add https://github.com/logbookfordevs/ai-field-kit
 ```
 
-The interactive mode lets you pick which skills to install and which agents to target.
+The interactive mode lets you pick which skills to install. Agent-specific
+support is handled by the official `skills` CLI.
 
 ### Full setup — rules, workflows, and MCPs too
 
@@ -52,7 +53,7 @@ cd ~/codes/ai-field-kit
 Then run the sync scripts in order:
 
 ```bash
-# 1. Symlink global agent rules (AGENTS.md → Gemini, Codex, OpenCode, KiloCode, Claude)
+# 1. Symlink global agent rules (AGENTS.md → Gemini, Codex, OpenCode, Claude)
 bash sync-ai-agents.sh
 
 # 2. Sync workflows into each agent's command or prompt directory
@@ -62,11 +63,15 @@ bash sync-ai-workflows.sh
 python3 sync-ai-mcps.py
 ```
 
-✅ Done. Every agent on your machine now shares the same rules, workflows, and MCP servers.
+✅ Done. Supported rule/workflow targets now share the same AFK setup, while skills and MCPs are delegated to their official CLIs.
 
 ### Preview the AFK CLI
 
-The repo also includes the first local AFK CLI package. It is a setup router: AFK owns its rules and workflow sync behavior, while third-party installs still route through the official `skills` and `add-mcp` CLIs.
+The repo also includes the first local AFK CLI package. It is a setup router:
+AFK owns rules and workflow sync for a small v1 target set: Codex, Claude Code,
+Gemini, and OpenCode. Third-party installs still route through the official
+`skills` and `add-mcp` CLIs, while optional utilities delegate to their own
+install scripts.
 
 ```bash
 pnpm --dir packages/afk install
@@ -74,7 +79,21 @@ pnpm --dir packages/afk run build
 node packages/afk/dist/index.js setup --dry-run
 ```
 
-Use the dry run first. The CLI prints the exact rules, workflow, skills, and MCP setup actions before anything writes to your machine.
+Use the dry run first. The CLI prints the exact rules, workflow, skills, MCP,
+and utility setup actions before anything writes to your machine.
+
+AFK also works as a personal setup router. Keep convention-compatible manifests
+in your own GitHub repo under `afk/manifests/`, then refresh local defaults from
+that repo:
+
+```bash
+node packages/afk/dist/index.js setup --refresh-defaults --defaults-source your-org/dev-kit
+```
+
+That gives developers a way to carry their own recommended skills, MCPs,
+utilities, presets, and rule sources without patching the AFK CLI. For rules,
+their `rules.json` can point directly at their raw GitHub rules file so
+`rules sync` keeps fetching from their defaults.
 
 ---
 
@@ -90,14 +109,15 @@ The easiest way to install skills from this repo is with the [`skills` CLI](http
 npx skills add https://github.com/logbookfordevs/ai-field-kit
 ```
 
-The interactive mode lets you pick which skills to install and which agents to target. A few useful flags:
+The interactive mode lets you pick which skills to install and where the official
+`skills` CLI should place them. A few useful flags:
 
 ```bash
 # Install all skills globally, skip confirmation
 npx skills add https://github.com/logbookfordevs/ai-field-kit --all --global
 
 # Install only to a specific agent
-npx skills add https://github.com/logbookfordevs/ai-field-kit --agent cursor
+npx skills add https://github.com/logbookfordevs/ai-field-kit --agent claude-code
 
 # Preview what's available without installing
 npx skills add https://github.com/logbookfordevs/ai-field-kit --list
@@ -361,20 +381,15 @@ Different agents expose the same idea under different names and file formats, so
 
 | Agent | What the agent calls them | Global path used by this repo | Sync strategy |
 |---|---|---|---|
-| Antigravity | Workflows | `~/.gemini/antigravity/global_workflows/` | Root-level workflow copies with generated YAML frontmatter |
 | Codex | Skills | `~/.codex/skills/afk/` | Generated skill folders built from each workflow |
 | OpenCode | Commands | `~/.config/opencode/commands/afk/` | Managed per-file symlinks |
 | Gemini CLI | Custom commands | `~/.gemini/commands/afk/` | Rendered TOML files |
 | Claude Code | Custom slash commands | `~/.claude/commands/afk/` | Managed per-file symlinks |
-| Cursor | Commands | `~/.cursor/commands/afk/` | Managed per-file symlinks |
-| KiloCode | Workflows | `~/.kilocode/workflows/afk/` | Managed per-file symlinks |
 
 ### Compatibility Notes
 
 - Gemini CLI expects `.toml` command files, so `sync-ai-workflows.sh` converts repo workflows into TOML before syncing.
-- Antigravity currently receives root-level copied files because nested folders and symlinked entries may not be indexed reliably there.
 - Codex now receives generated AFK skills under `~/.codex/skills/afk/`, built from the workflow markdown files during sync.
-- Antigravity workflow files are exported with generated YAML frontmatter containing `description`, because that format appears to be required for manual workflow discovery there.
 - Other supported Markdown workflow consumers currently receive managed per-file symlinks inside the repo-owned `afk/` subfolder.
 - This keeps AI Field Kit commands and Codex skills isolated from your personal or third-party entries in the same agent.
 - The script only refreshes files managed by this repo; it does not intentionally wipe unrelated commands in the parent command folders.
@@ -389,7 +404,6 @@ Different agents expose the same idea under different names and file formats, so
 | Gemini | `~/.gemini/GEMINI.md` |
 | Codex | `~/.codex/AGENTS.md` |
 | OpenCode | `~/.config/opencode/AGENTS.md` |
-| KiloCode | `~/.kilocode/rules/AGENTS.md` |
 | Claude | `~/.claude/CLAUDE.md` |
 
 ---
@@ -473,7 +487,7 @@ The registry uses `KEY_STITCH`-style placeholders instead of real API keys. The 
 
 | Agent | Config target |
 |---|---|
-| Gemini / Antigravity | `~/.gemini/settings.json` / `~/.gemini/antigravity/mcp_config.json` |
+| Gemini | `~/.gemini/settings.json` |
 | Codex | `~/.codex/config.toml` |
 | Claude | `~/.claude/.mcp.json` |
 | OpenCode | `~/.config/opencode/opencode.json` |
@@ -568,13 +582,16 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use `KEY_YOUR_NAME` 
 
 ## Agents Supported
 
-| Agent | Rules | Workflows | MCP |
+AFK-owned rules and workflow sync currently target a focused v1 set. Skills and
+MCP installation are delegated to the official CLIs, so broader tool support can
+come from those projects without AFK reimplementing their installers.
+
+| Agent | Rules | Workflows | MCP delegation |
 |---|---|---|---|
-| Gemini CLI / Antigravity | ✅ | ✅ | ✅ |
-| Codex | ✅ | ✅ | ✅ |
-| KiloCode | ✅ | ✅ | — |
-| Claude | ✅ | — | ✅ |
-| Cursor | — | ✅ | — |
+| Codex | ✅ | ✅ | via `add-mcp` |
+| Claude Code | ✅ | ✅ | via `add-mcp` |
+| Gemini | ✅ | ✅ | via `add-mcp` |
+| OpenCode | ✅ | ✅ | via `add-mcp` |
 
 ---
 

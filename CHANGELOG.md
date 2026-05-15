@@ -13,12 +13,18 @@ This changelog tracks meaningful updates by version and date.
 
 - `cli:` added the first local AFK CLI package under `packages/afk`, centered on `afk setup` as an inspect-first setup router.
 - `cli:` ported AFK-owned rules and workflow sync planning into TypeScript while keeping skills and MCP installs delegated to the official `skills` and `add-mcp` CLIs.
-- `cli:` added JSON manifests for curated skills, MCP recommendations, and the baseline setup preset.
-- `cli:` added a warmer setup experience with an AFK banner and checkbox selection for setup areas, targets, skills, and MCPs.
+- `cli:` added JSON manifests for curated skills, MCP recommendations, utilities, and the baseline setup preset.
+- `cli:` added a warmer setup experience with an AFK banner and checkbox selection for setup areas, targets, skills, MCPs, and utilities.
 - `cli:` expanded AFK skill installation from one opaque bundle into individually selectable AFK skill entries.
 - `cli:` changed rules sync to inject raw AFK rules into a managed region inside host files, fetching rule markdown from GitHub by default with `--source local` and `--ref` escape hatches.
 - `cli:` grouped delegated skill installs into non-interactive `skills add --global --yes` calls, adding Claude Code as an extra target only when selected.
 - `cli:` added editable local manifests under `~/.agents/afk/` with `--init-only`, `--empty`, and `--refresh-defaults` setup modes so recommendations can evolve without CLI patches.
+- `cli:` added `--defaults-source` so local manifests can refresh from another convention-compatible GitHub repo.
+- `cli:` simplified `rules.json` to a direct `url` so refreshed personal defaults can point rules sync at their own GitHub rule file.
+- `cli:` narrowed AFK-owned rule/workflow targets to Codex, Claude Code, Gemini, and OpenCode while keeping skills and MCPs delegated to their official CLIs.
+- `cli:` added `afk utils install` for curated utilities, starting with Plannotator and RTK delegated installs plus RTK agent initialization for selected targets, including global Codex initialization from `~/.codex`.
+- `cli:` made utility installs best-effort so one third-party installer failure does not stop the remaining utilities.
+- `cli:` changed grouped setup to continue across selected areas and report failures at the end.
 - `rules:` replaced inline/imported AFK workflow doctrine in `AGENTS.md` with a small trigger that invokes the `afk-workflow` skill when workflow artifacts, specs, plans, RFCs, or tracking are involved.
 - `skills:` added `afk-workflow` as the activatable doctrine skill for artifact boundaries, RFC positioning, implementation planning, execution tracking handoff, and default artifact conventions.
 - `skills:` standardized generated workflow artifacts around the repo/user convention first, with AFK fallback defaults under `docs/<task-slug>/<task-slug>.<type>.md` and task references under `docs/<task-slug>/references/`.

@@ -36,11 +36,6 @@ class Target:
 TARGETS: Dict[str, Target] = {
     "codex": Target("codex", Path.home() / ".codex" / "config.toml", "codex_toml"),
     "gemini": Target("gemini", Path.home() / ".gemini" / "settings.json", "json"),
-    "antigravity": Target(
-        "antigravity",
-        Path.home() / ".gemini" / "antigravity" / "mcp_config.json",
-        "json",
-    ),
     "claude": Target("claude", Path.home() / ".claude" / ".mcp.json", "json"),
     "opencode": Target(
         "opencode",

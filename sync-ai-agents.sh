@@ -190,9 +190,6 @@ main() {
   # OpenCode
   link_rule "$HOME_DIR/.config/opencode/AGENTS.md"
 
-  # KiloCode
-  link_rule "$HOME_DIR/.kilocode/rules/AGENTS.md"
-
   # Claude keeps a real CLAUDE.md so Claude-specific imports can coexist.
   link_claude_imports
 
