@@ -9,6 +9,16 @@ This changelog tracks meaningful updates by version and date.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
+## v0.1.2 - 2026-05-15
+
+- `rules:` extracted AFK workflow doctrine from `AGENTS.md` into `rules/AFK_WORKFLOW.md`, keeping always-on rules smaller while preserving artifact, RFC, implementation planning, and execution tracking conventions.
+- `rules:` standardized generated workflow artifacts around the repo/user convention first, with AFK fallback defaults under `docs/<task-slug>/<task-slug>.<type>.md` and task references under `docs/<task-slug>/references/`.
+- `skills:` added `afk-execution-tracking` for checkpointed implementation after a plan exists, including task status, validation, engineer/product review gates, resume context, and parallel-agent coordination.
+- `skills:` renamed `afk-ask-gemini` to `afk-ask` and generalized it into a standalone local advisor skill for Claude, Codex, and Gemini CLIs, preserving reusable artifacts while keeping the advisor read-only by default.
+- `skills:` updated artifact-writing skills to follow repo/user artifact rules instead of hardcoding AFK paths, using `AFK_WORKFLOW.md` only as the fallback convention.
+- `sync:` updated agent rule sync so imported rule files travel with `AGENTS.md`, and changed Claude sync to keep a real `CLAUDE.md` with an AFK import block so Claude-only imports can coexist with shared rules.
+- `docs:` reframed the README around "standalone skills with an optional workflow path," added the current AFK workflow map, and removed internal handoff-contract details from the public README.
+
 ## v0.1.1 - 2026-04-08
 
 - `repo:` started lightweight versioning for changelog entries instead of relying only on date buckets.
