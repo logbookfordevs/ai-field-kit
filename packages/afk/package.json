@@ -1,0 +1,28 @@
+{
+  "name": "@logbook/afk",
+  "version": "0.1.0",
+  "description": "AI Field Kit setup router CLI.",
+  "type": "module",
+  "bin": {
+    "afk": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "manifests"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "npx tsc --noEmit",
+    "test": "pnpm run build && node --test \"dist/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.8.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "typescript": "^5.8.3"
+  }
+}

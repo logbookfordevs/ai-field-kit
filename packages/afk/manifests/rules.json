@@ -1,12 +1,5 @@
 {
   "version": 1,
-  "ref": "main",
   "source": "github",
-  "files": [
-    {
-      "id": "agents",
-      "path": "rules/AGENTS.md",
-      "default": true
-    }
-  ]
+  "url": "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/rules/AGENTS.md"
 }

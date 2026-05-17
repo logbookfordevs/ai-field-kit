@@ -82,6 +82,11 @@ node packages/afk/dist/index.js setup --dry-run
 Use the dry run first. The CLI prints the exact rules, workflow, skills, MCP,
 and utility setup actions before anything writes to your machine.
 
+`afk setup` asks whether to prepare a global field kit or only the current
+project. Scripted runs stay global by default; pass `--scope project` or
+`--local` when you want AFK-owned files, `skills`, `add-mcp`, and RTK init to
+use project scope.
+
 AFK also works as a personal setup router. Keep convention-compatible manifests
 in your own GitHub repo under `afk/manifests/`, then refresh local defaults from
 that repo:
