@@ -219,6 +219,18 @@
       "autoInvocation": true
     },
     {
+      "id": "grill-with-docs",
+      "label": "External / Grill With Docs",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "grill-with-docs",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": true
+    },
+    {
       "id": "afk-cinematic-landing-page-builder",
       "label": "AFK / Cinematic Landing Page Builder",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
