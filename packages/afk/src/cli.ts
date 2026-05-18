@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
 import { isAgentId } from "./agents.js";
-import { runDoctor } from "./doctor.js";
 import { runSetup, runArea } from "./setup.js";
 import { resolve } from "node:path";
 import { resolveHome, resolveRepoDir } from "./paths.js";
@@ -17,7 +16,7 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
   };
 
   if (parsed.help) {
-    runtime.io.stdout(helpText());
+    runtime.io.stdout(helpText(parsed.command, parsed.subcommand));
     return 0;
   }
 
@@ -33,10 +32,6 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
     return runSetup(runtime, options);
   }
 
-  if (command === "doctor") {
-    return runDoctor(runtime, options);
-  }
-
   const area = commandToArea(command, subcommand);
   if (area) {
     return runArea(area, runtime, options);
@@ -50,6 +45,8 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
 type ParseResult =
   | {
       help: true;
+      command?: string;
+      subcommand?: string | null;
     }
   | {
       help: false;
@@ -63,6 +60,149 @@ type ParseResult =
       subcommand: string | null;
       options: CliOptions;
     };
+
+type CommandHelp = {
+  title: string;
+  summary: string;
+  usage: string;
+  options: string[];
+  examples: string[];
+};
+
+const commandHelps: Record<string, CommandHelp> = {
+  setup: {
+    title: "AFK setup",
+    summary: "Guided setup for rules, workflows, skills, MCPs, and utilities.",
+    usage: "afk setup [options]",
+    options: [
+      "--dry-run                         Preview changes without applying them",
+      "--yes, -y                         Accept defaults and skip prompts",
+      "--scope global|project            Choose machine-wide or current-project setup",
+      "--local                           Alias for --scope project",
+      "--agent <agent>                   Limit agent targets; repeatable",
+      "--source github|local             Load rules/workflows from GitHub or this checkout",
+      "--ref <git-ref>                   Git ref for default AFK manifest URLs",
+      "--init-only                       Create/update local manifests only",
+      "--empty                           Create empty manifests with --init-only",
+      "--refresh-defaults                Refresh local manifests from remembered defaults",
+      "--defaults-source <github-source> Use and remember a custom defaults source",
+    ],
+    examples: [
+      "afk setup",
+      "afk setup --dry-run",
+      "afk setup --local",
+      "afk setup --refresh-defaults",
+      "afk setup --defaults-source your-org/dev-kit",
+    ],
+  },
+  "rules sync": {
+    title: "AFK rules sync",
+    summary: "Sync AFK rules into managed rule regions.",
+    usage: "afk rules sync [options]",
+    options: [
+      "--dry-run",
+      "--scope global|project",
+      "--local",
+      "--agent <agent>",
+      "--source github|local",
+      "--ref <git-ref>",
+      "--init-only",
+      "--empty",
+      "--refresh-defaults",
+      "--defaults-source <github-source>",
+    ],
+    examples: [
+      "afk rules sync --dry-run",
+      "afk rules sync --local",
+      "afk rules sync --source local",
+    ],
+  },
+  "workflows sync": {
+    title: "AFK workflows sync",
+    summary: "Install AFK workflows as managed commands, Gemini TOML commands, and Codex skills.",
+    usage: "afk workflows sync [options]",
+    options: [
+      "--dry-run",
+      "--scope global|project",
+      "--local",
+      "--agent <agent>",
+      "--source github|local",
+      "--init-only",
+      "--empty",
+      "--refresh-defaults",
+      "--defaults-source <github-source>",
+    ],
+    examples: [
+      "afk workflows sync --dry-run",
+      "afk workflows sync --local",
+      "afk workflows sync --agent codex",
+    ],
+  },
+  "skills install": {
+    title: "AFK skills install",
+    summary: "Delegate selected skills to the official skills CLI.",
+    usage: "afk skills install [options]",
+    options: [
+      "--dry-run",
+      "--yes, -y",
+      "--scope global|project",
+      "--local",
+      "--agent <agent>",
+      "--include-external",
+      "--init-only",
+      "--empty",
+      "--refresh-defaults",
+      "--defaults-source <github-source>",
+    ],
+    examples: [
+      "afk skills install --dry-run",
+      "afk skills install --yes",
+      "afk skills install --local --agent claude",
+    ],
+  },
+  "mcps install": {
+    title: "AFK MCPs install",
+    summary: "Delegate selected MCP recommendations to add-mcp.",
+    usage: "afk mcps install [options]",
+    options: [
+      "--dry-run",
+      "--yes, -y",
+      "--scope global|project",
+      "--local",
+      "--agent <agent>",
+      "--init-only",
+      "--empty",
+      "--refresh-defaults",
+      "--defaults-source <github-source>",
+    ],
+    examples: [
+      "afk mcps install --dry-run",
+      "afk mcps install --yes",
+      "afk mcps install --local --agent codex",
+    ],
+  },
+  "utils install": {
+    title: "AFK utils install",
+    summary: "Install optional developer utilities and run supported post-install setup.",
+    usage: "afk utils install [options]",
+    options: [
+      "--dry-run",
+      "--yes, -y",
+      "--scope global|project",
+      "--local",
+      "--agent <agent>",
+      "--init-only",
+      "--empty",
+      "--refresh-defaults",
+      "--defaults-source <github-source>",
+    ],
+    examples: [
+      "afk utils install --dry-run",
+      "afk utils install --yes",
+      "afk utils install --local --agent opencode",
+    ],
+  },
+};
 
 function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const args = [...argv];
@@ -84,8 +224,12 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
 
-  if (!command || command === "--help" || command === "-h") {
+  if (!command || command === "--help" || command === "-h" || command === "help") {
     return { help: true };
+  }
+
+  if (args.includes("--help") || args.includes("-h")) {
+    return { help: true, command, subcommand };
   }
 
   for (let index = 0; index < args.length; index += 1) {
@@ -249,18 +393,47 @@ function spawnCommand(command: string, args: string[], cwd?: string): Promise<Co
   });
 }
 
-function helpText(): string {
+function helpText(command?: string, subcommand?: string | null): string {
+  const commandHelp = command ? commandHelps[commandKey(command, subcommand)] : undefined;
+  if (commandHelp) {
+    return renderCommandHelp(commandHelp);
+  }
+
   return `AFK CLI
 
+Guided setup router for AI Field Kit.
+
 Usage:
-  afk setup [--dry-run] [--yes] [--scope global|project] [--local] [--agent <agent>] [--ref <git-ref>] [--source github|local] [--init-only] [--empty] [--refresh-defaults] [--defaults-source <github-source>]
-  afk rules sync [--dry-run] [--scope global|project] [--local] [--agent <agent>] [--ref <git-ref>] [--source github|local] [--init-only] [--empty] [--refresh-defaults] [--defaults-source <github-source>]
-  afk workflows sync [--dry-run] [--scope global|project] [--local] [--agent <agent>] [--init-only] [--empty] [--refresh-defaults] [--defaults-source <github-source>]
-  afk skills install [--dry-run] [--yes] [--scope global|project] [--local] [--agent <agent>] [--include-external] [--init-only] [--empty] [--refresh-defaults] [--defaults-source <github-source>]
-  afk mcps install [--dry-run] [--yes] [--scope global|project] [--local] [--agent <agent>] [--init-only] [--empty] [--refresh-defaults] [--defaults-source <github-source>]
-  afk utils install [--dry-run] [--yes] [--scope global|project] [--local] [--agent <agent>] [--init-only] [--empty] [--refresh-defaults] [--defaults-source <github-source>]
-  afk doctor
+  afk setup [options]
+  afk rules sync [options]
+  afk workflows sync [options]
+  afk skills install [options]
+  afk mcps install [options]
+  afk utils install [options]
+
+Run "afk <command> --help" for command-specific options.
 
 Agents:
   claude, codex, gemini, opencode`;
+}
+
+function commandKey(command: string, subcommand?: string | null): string {
+  return [command, subcommand].filter(Boolean).join(" ");
+}
+
+function renderCommandHelp(help: CommandHelp): string {
+  return [
+    help.title,
+    "",
+    help.summary,
+    "",
+    "Usage:",
+    `  ${help.usage}`,
+    "",
+    "Options:",
+    ...help.options.map((option) => `  ${option}`),
+    "",
+    "Examples:",
+    ...help.examples.map((example) => `  ${example}`),
+  ].join("\n");
 }

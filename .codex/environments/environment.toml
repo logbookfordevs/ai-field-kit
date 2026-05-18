@@ -8,7 +8,4 @@ script = ""
 [[actions]]
 name = "Run"
 icon = "run"
-command = '''
-pnpm --dir packages/afk install
-pnpm --dir packages/afk run build
-'''
+command = "./install.sh"

@@ -12,14 +12,17 @@ This changelog tracks meaningful updates by version and date.
 ## v0.1.2 - 2026-05-15
 
 - `cli:` added the first local AFK CLI package under `packages/afk`, centered on `afk setup` as an inspect-first setup router.
+- `cli:` added `install.sh` to build the local AFK package and expose it as an `afk` command during development.
 - `cli:` ported AFK-owned rules and workflow sync planning into TypeScript while keeping skills and MCP installs delegated to the official `skills` and `add-mcp` CLIs.
 - `cli:` added JSON manifests for curated skills, MCP recommendations, utilities, and the baseline setup preset.
 - `cli:` added a warmer setup experience with an AFK banner and checkbox selection for setup areas, targets, skills, MCPs, and utilities.
 - `cli:` expanded AFK skill installation from one opaque bundle into individually selectable AFK skill entries.
+- `cli:` removed the placeholder `afk doctor` command until it can return user-facing setup diagnostics instead of contributor-only repo checks.
 - `cli:` changed rules sync to inject raw AFK rules into a managed region inside host files, fetching rule markdown from GitHub by default with `--source local` and `--ref` escape hatches.
 - `cli:` grouped delegated skill installs into non-interactive `skills add --global --yes` calls, adding Claude Code as an extra target only when selected.
 - `cli:` added editable local manifests under `~/.agents/afk/` with `--init-only`, `--empty`, and `--refresh-defaults` setup modes so recommendations can evolve without CLI patches.
 - `cli:` added `--defaults-source` so local manifests can refresh from another convention-compatible GitHub repo.
+- `cli:` changed custom defaults sources to be remembered in `presets.json`, so later `--refresh-defaults` runs can reuse the same source.
 - `cli:` simplified `rules.json` to a direct `url` so refreshed personal defaults can point rules sync at their own GitHub rule file.
 - `cli:` narrowed AFK-owned rule/workflow targets to Codex, Claude Code, Gemini, and OpenCode while keeping skills and MCPs delegated to their official CLIs.
 - `cli:` added `afk utils install` for curated utilities, starting with Plannotator and RTK delegated installs plus RTK agent initialization for selected targets, including global Codex initialization from `~/.codex`.

@@ -108,9 +108,53 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     });
 
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("skills.json")));
+    const presetsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("presets.json"));
+    assert.ok(presetsWrite && presetsWrite.type === "write");
+    assert.ok(presetsWrite.content.includes("\"defaultsSource\": \"acme/dev-kit\""));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/rules.json")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/workflows.json")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests reuses remembered defaults source during refresh", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(String(input));
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "presets.json": JSON.stringify({ version: 1, presets: [] }),
+      "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
+      "workflows.json": JSON.stringify({ version: 1, source: "github", items: [] }),
+      "utils.json": JSON.stringify({ version: 1, items: [] }),
+    };
+
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-remembered-defaults-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "acme/dev-kit", presets: [] }, null, 2)}\n`);
+
+    await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      defaultsSource: "",
+      dryRun: true,
+    });
+
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
   } finally {
     globalThis.fetch = originalFetch;
   }

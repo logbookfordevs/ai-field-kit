@@ -5,6 +5,7 @@ import type { CliOptions, PathOperation } from "./types.js";
 
 const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "workflows.json", "utils.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
+const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
 export type ManifestName = (typeof manifestNames)[number];
 
@@ -71,6 +72,16 @@ export type UtilityManifestItem = {
   default: boolean;
 };
 
+export type PresetsManifest = {
+  version: number;
+  defaultsSource: string;
+  presets: Array<{
+    id: string;
+    label: string;
+    areas: string[];
+  }>;
+};
+
 export function localAfkDir(homeDir: string): string {
   return join(homeDir, ".agents", "afk");
 }
@@ -82,13 +93,16 @@ export function localManifestDir(homeDir: string): string {
 export async function ensureLocalManifests(options: Pick<CliOptions, "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "defaultsSource" | "dryRun">): Promise<PathOperation[]> {
   const operations: PathOperation[] = [];
   const manifestDir = localManifestDir(options.homeDir);
+  const effectiveDefaultsSource = options.defaultsSource || rememberedDefaultsSource(options.homeDir) || builtInDefaultsSource;
+  const shouldRefreshDefaults = options.refreshDefaults || Boolean(options.defaultsSource);
+
   if (!existsSync(manifestDir)) {
     operations.push({ type: "mkdir", path: manifestDir });
   }
 
   for (const name of manifestNames) {
     const target = join(manifestDir, name);
-    if (!options.refreshDefaults && existsSync(target)) {
+    if (!shouldRefreshDefaults && existsSync(target)) {
       const migrated = migrateLocalManifest(name, readFileSync(target, "utf8"));
       if (migrated) {
         operations.push({ type: "write", path: target, content: migrated });
@@ -97,8 +111,8 @@ export async function ensureLocalManifests(options: Pick<CliOptions, "homeDir" |
     }
 
     const content = options.empty
-      ? emptyManifestContent(name, options)
-      : await defaultManifestContent(name, options);
+      ? emptyManifestContent(name, options, effectiveDefaultsSource)
+      : await defaultManifestContent(name, options, effectiveDefaultsSource);
     operations.push({ type: "write", path: target, content });
   }
 
@@ -137,21 +151,33 @@ function parseLocalManifest<T>(homeDir: string, name: ManifestName, guard: (valu
   return parsed;
 }
 
-async function defaultManifestContent(name: ManifestName, options: Pick<CliOptions, "repoDir" | "rulesRef" | "rulesSource" | "defaultsSource">): Promise<string> {
-  if (name === "rules.json" && !options.defaultsSource) {
+async function defaultManifestContent(name: ManifestName, options: Pick<CliOptions, "repoDir" | "rulesRef" | "rulesSource">, defaultsSource: string): Promise<string> {
+  if (name === "rules.json" && defaultsSource === builtInDefaultsSource) {
     return `${JSON.stringify(defaultRulesManifest(options), null, 2)}\n`;
   }
 
-  if (name === "workflows.json" && !options.defaultsSource) {
+  if (name === "workflows.json" && defaultsSource === builtInDefaultsSource) {
     return `${JSON.stringify(defaultWorkflowManifest(options), null, 2)}\n`;
+  }
+
+  if (name === "presets.json") {
+    return withRememberedDefaultsSource(await fetchDefaultManifest(name, options, defaultsSource), defaultsSource);
   }
 
   if (options.rulesSource === "local") {
     return readFileSync(manifestPath(name), "utf8");
   }
 
+  return fetchDefaultManifest(name, options, defaultsSource);
+}
+
+async function fetchDefaultManifest(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): Promise<string> {
+  if (options.rulesSource === "local") {
+    return readFileSync(manifestPath(name), "utf8");
+  }
+
   try {
-    for (const baseUrl of defaultsManifestBaseUrls(options.defaultsSource, options.rulesRef)) {
+    for (const baseUrl of defaultsManifestBaseUrls(defaultsSource, options.rulesRef)) {
       const url = `${baseUrl}/${name}`;
       const response = await fetch(url);
       if (response.ok) {
@@ -163,6 +189,24 @@ async function defaultManifestContent(name: ManifestName, options: Pick<CliOptio
   }
 
   return readFileSync(manifestPath(name), "utf8");
+}
+
+function rememberedDefaultsSource(homeDir: string): string {
+  const path = join(localManifestDir(homeDir), "presets.json");
+  if (!existsSync(path)) {
+    return "";
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    if (isRecord(parsed) && typeof parsed.defaultsSource === "string") {
+      return parsed.defaultsSource.trim();
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
 }
 
 export function defaultsManifestBaseUrl(source: string, ref: string): string {
@@ -246,7 +290,7 @@ function workflowLabel(id: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">): string {
+function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): string {
   if (name === "skills.json") {
     return `${JSON.stringify({ version: 1, defaultSource: "", items: [] }, null, 2)}\n`;
   }
@@ -267,7 +311,20 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
     return `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`;
   }
 
-  return `${JSON.stringify({ version: 1, presets: [] }, null, 2)}\n`;
+  return `${JSON.stringify({ version: 1, defaultsSource, presets: [] }, null, 2)}\n`;
+}
+
+function withRememberedDefaultsSource(content: string, defaultsSource: string): string {
+  try {
+    const parsed: unknown = JSON.parse(content);
+    if (isRecord(parsed)) {
+      return `${JSON.stringify({ ...parsed, defaultsSource }, null, 2)}\n`;
+    }
+  } catch {
+    return content;
+  }
+
+  return content;
 }
 
 function ensureTrailingNewline(content: string): string {
@@ -275,6 +332,10 @@ function ensureTrailingNewline(content: string): string {
 }
 
 function migrateLocalManifest(name: ManifestName, content: string): string | null {
+  if (name === "presets.json") {
+    return migratePresetsManifest(content);
+  }
+
   if (name !== "mcps.json") {
     return null;
   }
@@ -310,6 +371,21 @@ function migrateLocalManifest(name: ManifestName, content: string): string | nul
   }
 
   return `${JSON.stringify({ ...parsed, version: Math.max(parsed.version, 2), items }, null, 2)}\n`;
+}
+
+function migratePresetsManifest(content: string): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return null;
+  }
+
+  if (!isRecord(parsed) || typeof parsed.version !== "number" || !Array.isArray(parsed.presets) || typeof parsed.defaultsSource === "string") {
+    return null;
+  }
+
+  return `${JSON.stringify({ ...parsed, defaultsSource: builtInDefaultsSource }, null, 2)}\n`;
 }
 
 function removeArgPair(args: string[], flag: string, value: string): string[] {

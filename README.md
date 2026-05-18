@@ -79,6 +79,13 @@ pnpm --dir packages/afk run build
 node packages/afk/dist/index.js setup --dry-run
 ```
 
+Install the local checkout as an `afk` command while developing:
+
+```bash
+./install.sh
+afk setup --dry-run
+```
+
 Use the dry run first. The CLI prints the exact rules, workflow, skills, MCP,
 and utility setup actions before anything writes to your machine.
 
@@ -100,7 +107,8 @@ utilities, presets, and rule sources without patching the AFK CLI. For rules,
 their `rules.json` can point directly at their raw GitHub rules file so
 `rules sync` keeps fetching from their defaults. For workflows, `workflows.json`
 lists each workflow with a direct raw markdown URL so `workflows sync` can do
-the same.
+the same. AFK remembers the chosen defaults source in `presets.json`, so later
+`--refresh-defaults` runs can use that source without repeating the flag.
 
 ---
 

@@ -8,6 +8,13 @@ pnpm --dir packages/afk run build
 node packages/afk/dist/index.js setup --dry-run
 ```
 
+From the repo root, install this checkout as a local `afk` command:
+
+```bash
+./install.sh
+afk setup --dry-run
+```
+
 `afk setup` opens with a branded banner and checkbox prompts. Setup areas,
 setup scope, AFK-owned rule/workflow targets, individual AFK skills,
 recommended external skills, MCP recommendations, and utility installs start
@@ -49,6 +56,7 @@ node packages/afk/dist/index.js setup --init-only
 node packages/afk/dist/index.js setup --init-only --empty
 node packages/afk/dist/index.js setup --refresh-defaults
 node packages/afk/dist/index.js setup --refresh-defaults --defaults-source your-org/dev-kit
+node packages/afk/dist/index.js setup --defaults-source your-org/dev-kit
 ```
 
 `--defaults-source` lets another GitHub repo become the manifest source as long
@@ -67,6 +75,10 @@ afk/manifests/
 For monorepos, AFK also falls back to `packages/afk/manifests/`. You can pass
 `owner/repo`, a GitHub repo URL, a GitHub `tree` URL for a custom manifest
 folder, or a raw GitHub manifest directory URL.
+
+When you pass `--defaults-source`, AFK writes that source into `presets.json`.
+Later, `--refresh-defaults` reuses the remembered source, so you do not need to
+repeat the flag.
 
 For rules, keep the source repo explicit in `rules.json`:
 
