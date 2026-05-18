@@ -1,6 +1,7 @@
 import { checkbox, select } from "@inquirer/prompts";
 import { agentIds } from "./agents.js";
-import { loadMcpManifest, loadSkillManifest, loadUtilityManifest } from "./manifest.js";
+import { loadMcpManifest, loadSkillManifest, loadUtilityManifest, loadWorkflowManifest } from "./manifest.js";
+import { afkCheckboxTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { AgentId, Area, CliOptions, SetupScope } from "./types.js";
 
 type Choice<Value extends string> = {
@@ -15,6 +16,7 @@ export type SetupSelection = {
   agents: AgentId[];
   setupScope: SetupScope;
   skillIds: string[];
+  workflowIds: string[];
   mcpIds: string[];
   utilIds: string[];
 };
@@ -25,12 +27,6 @@ const setupAreaChoices: Choice<Area>[] = [
     value: "rules",
     checked: true,
     description: "Sync AFK global rules into supported rule hosts.",
-  },
-  {
-    name: "Workflows",
-    value: "workflows",
-    checked: true,
-    description: "Sync slash commands and generated Codex workflow skills.",
   },
   {
     name: "Skills",
@@ -59,16 +55,19 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
       agents: options.agents,
       setupScope: options.setupScope,
       skillIds: loadSkillManifest(options).items.map((item) => item.id),
+      workflowIds: loadWorkflowManifest(options).items.map((item) => item.id),
       mcpIds: loadMcpManifest(options).items.map((item) => item.id),
       utilIds: loadUtilityManifest(options).items.map((item) => item.id),
     });
   }
 
+  resetPromptSteps();
   const setupScope = options.scopeExplicit ? options.setupScope : await selectSetupScope(options.cwd);
   const areas = await selectCheckbox("Choose what AFK should prepare", setupAreaChoices);
   const utilIds = areas.includes("utils") ? await selectUtils(options) : [];
   const needsAgents = areas.some((area) => area === "rules" || area === "workflows" || area === "mcps") || utilIds.includes("rtk");
   const agents = needsAgents ? await selectAgents(options.agents) : options.agents;
+  const workflowIds = areas.includes("workflows") ? await selectWorkflows(options) : [];
   const skillIds = areas.includes("skills") ? await selectSkills(options) : [];
   const mcpIds = areas.includes("mcps") ? await selectMcps(options) : [];
 
@@ -77,9 +76,58 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     agents,
     setupScope,
     skillIds,
+    workflowIds,
     mcpIds,
     utilIds,
   });
+}
+
+export async function selectRulesSync(options: CliOptions): Promise<Pick<SetupSelection, "agents">> {
+  if (options.yes) {
+    return { agents: options.agents };
+  }
+
+  resetPromptSteps();
+  return { agents: await selectAgents(options.agents) };
+}
+
+export async function selectWorkflowsSync(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "workflowIds">> {
+  if (options.yes) {
+    return {
+      agents: options.agents,
+      workflowIds: loadWorkflowManifest(options).items.map((item) => item.id),
+    };
+  }
+
+  resetPromptSteps();
+  return {
+    agents: await selectAgents(options.agents),
+    workflowIds: await selectWorkflows(options),
+  };
+}
+
+export async function selectSkillsInstall(options: CliOptions): Promise<Pick<SetupSelection, "skillIds">> {
+  if (options.yes) {
+    return { skillIds: loadSkillManifest(options).items.map((item) => item.id) };
+  }
+
+  resetPromptSteps();
+  return { skillIds: await selectSkills(options) };
+}
+
+export async function selectMcpsInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "mcpIds">> {
+  if (options.yes) {
+    return {
+      agents: options.agents,
+      mcpIds: loadMcpManifest(options).items.map((item) => item.id),
+    };
+  }
+
+  resetPromptSteps();
+  return {
+    agents: await selectAgents(options.agents),
+    mcpIds: await selectMcps(options),
+  };
 }
 
 export async function selectUtilsInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "utilIds">> {
@@ -90,6 +138,7 @@ export async function selectUtilsInstall(options: CliOptions): Promise<Pick<Setu
     };
   }
 
+  resetPromptSteps();
   const utilIds = await selectUtils(options);
   const agents = utilIds.includes("rtk") ? await selectAgents(options.agents) : options.agents;
   return { agents, utilIds };
@@ -101,6 +150,10 @@ export function normalizeSetupSelection(selection: SetupSelection): SetupSelecti
     areas: selection.areas.filter((area) => {
       if (area === "skills") {
         return selection.skillIds.length > 0;
+      }
+
+      if (area === "workflows") {
+        return selection.workflowIds.length > 0;
       }
 
       if (area === "mcps") {
@@ -117,6 +170,7 @@ export function normalizeSetupSelection(selection: SetupSelection): SetupSelecti
 }
 
 async function selectSetupScope(cwd: string): Promise<SetupScope> {
+  console.log(renderPromptStep("Scope", "Choose whether AFK writes global config or project-local files."));
   return select<SetupScope>({
     message: "Where should AFK set things up?",
     choices: [
@@ -132,6 +186,11 @@ async function selectSetupScope(cwd: string): Promise<SetupScope> {
       },
     ],
     default: "global",
+    instructions: {
+      navigation: "Use arrow keys to move.",
+      pager: "Use arrow keys to reveal more choices.",
+    },
+    theme: afkSelectTheme,
   });
 }
 
@@ -165,6 +224,19 @@ async function selectSkills(options: Pick<CliOptions, "homeDir">): Promise<strin
   );
 }
 
+async function selectWorkflows(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+  const manifest = loadWorkflowManifest(options);
+  return selectCheckbox(
+    "Choose workflows to sync",
+    manifest.items.map((item) => ({
+      name: item.label,
+      value: item.id,
+      checked: true,
+      description: item.url,
+    })),
+  );
+}
+
 async function selectMcps(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
   const manifest = loadMcpManifest(options);
   return selectCheckbox(
@@ -192,11 +264,13 @@ async function selectUtils(options: Pick<CliOptions, "homeDir">): Promise<string
 }
 
 async function selectCheckbox<Value extends string>(message: string, choices: Choice<Value>[]): Promise<Value[]> {
+  console.log(renderPromptStep(message, "Everything starts selected. Use space to unselect anything you want to skip."));
   return checkbox<Value>({
     message,
     choices,
     required: false,
     pageSize: 12,
     instructions: "Use space to toggle, enter to continue.",
+    theme: afkCheckboxTheme,
   });
 }

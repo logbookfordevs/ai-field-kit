@@ -1,8 +1,9 @@
 import { syncRules } from "./rules.js";
 import { syncWorkflows } from "./workflows.js";
+import { syncSkillInvocationPolicy } from "./skills.js";
 import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands } from "./delegates.js";
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { selectSetup, selectUtilsInstall } from "./interactive.js";
+import { selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall, selectWorkflowsSync } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { ensureLocalManifests } from "./manifest.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
@@ -24,6 +25,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     setupScope: selection.setupScope,
     scopeExplicit: true,
     selectedSkillIds: selection.skillIds,
+    selectedWorkflowIds: selection.workflowIds,
     selectedMcpIds: selection.mcpIds,
     selectedUtilIds: selection.utilIds,
   };
@@ -87,14 +89,42 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
   }
 
   switch (area) {
-    case "rules":
-      return syncRules(runtime, options);
-    case "workflows":
-      return syncWorkflows(runtime, options);
-    case "skills":
-      return runDelegateCommands(runtime, buildSkillCommands(options), options);
-    case "mcps":
-      return runDelegateCommands(runtime, buildMcpCommands(options), options);
+    case "rules": {
+      const selectedOptions = await resolveRulesOptions(options);
+      return syncRules(runtime, selectedOptions);
+    }
+    case "workflows": {
+      const selectedOptions = await resolveWorkflowOptions(options);
+      if (!selectedOptions.yes && selectedOptions.selectedWorkflowIds.length === 0) {
+        runtime.io.stdout("\nNo workflows selected. No changes planned.");
+        return 0;
+      }
+
+      return syncWorkflows(runtime, selectedOptions);
+    }
+    case "skills": {
+      const selectedOptions = await resolveSkillOptions(options);
+      if (!selectedOptions.yes && selectedOptions.selectedSkillIds.length === 0) {
+        runtime.io.stdout("\nNo skills selected. No changes planned.");
+        return 0;
+      }
+
+      const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
+      if (code === 0) {
+        syncSkillInvocationPolicy(runtime, selectedOptions);
+      }
+
+      return code;
+    }
+    case "mcps": {
+      const selectedOptions = await resolveMcpOptions(options);
+      if (!selectedOptions.yes && selectedOptions.selectedMcpIds.length === 0) {
+        runtime.io.stdout("\nNo MCPs selected. No changes planned.");
+        return 0;
+      }
+
+      return runDelegateCommands(runtime, buildMcpCommands(selectedOptions), selectedOptions);
+    }
     case "utils": {
       const selectedOptions = await resolveUtilityOptions(options);
       if (!selectedOptions.yes && selectedOptions.selectedUtilIds.length === 0) {
@@ -108,6 +138,56 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       });
     }
   }
+}
+
+async function resolveRulesOptions(options: CliOptions): Promise<CliOptions> {
+  if (options.yes || options.agents.length > 0) {
+    return options;
+  }
+
+  const selection = await selectRulesSync(options);
+  return {
+    ...options,
+    agents: selection.agents,
+  };
+}
+
+async function resolveWorkflowOptions(options: CliOptions): Promise<CliOptions> {
+  if (options.yes || options.selectedWorkflowIds.length > 0) {
+    return options;
+  }
+
+  const selection = await selectWorkflowsSync(options);
+  return {
+    ...options,
+    agents: selection.agents,
+    selectedWorkflowIds: selection.workflowIds,
+  };
+}
+
+async function resolveSkillOptions(options: CliOptions): Promise<CliOptions> {
+  if (options.yes || options.selectedSkillIds.length > 0) {
+    return options;
+  }
+
+  const selection = await selectSkillsInstall(options);
+  return {
+    ...options,
+    selectedSkillIds: selection.skillIds,
+  };
+}
+
+async function resolveMcpOptions(options: CliOptions): Promise<CliOptions> {
+  if (options.yes || options.selectedMcpIds.length > 0) {
+    return options;
+  }
+
+  const selection = await selectMcpsInstall(options);
+  return {
+    ...options,
+    agents: selection.agents,
+    selectedMcpIds: selection.mcpIds,
+  };
 }
 
 async function resolveUtilityOptions(options: CliOptions): Promise<CliOptions> {

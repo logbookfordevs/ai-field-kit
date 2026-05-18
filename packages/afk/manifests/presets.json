@@ -5,7 +5,7 @@
     {
       "id": "baseline",
       "label": "AFK baseline",
-      "areas": ["rules", "workflows", "skills", "mcps", "utils"]
+      "areas": ["rules", "skills", "mcps", "utils"]
     }
   ]
 }

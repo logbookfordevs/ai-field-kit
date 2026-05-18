@@ -21,6 +21,7 @@ export type SkillManifestItem = {
   source: string;
   args: string[];
   default: boolean;
+  autoInvocation?: boolean;
 };
 
 export type McpManifest = {
@@ -68,8 +69,14 @@ export type UtilityManifestItem = {
     command: string;
     args: string[];
   };
-  postInstall?: "rtk-init";
+  postInstall?: "rtk-init" | UtilityPostInstallCommand;
   default: boolean;
+};
+
+export type UtilityPostInstallCommand = {
+  label?: string;
+  command: string;
+  args: string[];
 };
 
 export type PresetsManifest = {
@@ -262,32 +269,12 @@ function defaultRulesManifest(options: Pick<CliOptions, "rulesRef" | "rulesSourc
   };
 }
 
-function defaultWorkflowManifest(options: Pick<CliOptions, "rulesRef" | "rulesSource">): WorkflowManifest {
-  const workflowIds = [
-    "afk-cinematic-landing-page-builder",
-    "afk-interactive-code-review",
-    "afk-pr-description-generator",
-    "afk-pr-story-flow-mermaid",
-    "afk-typecheck",
-  ];
-
+function defaultWorkflowManifest(options: Pick<CliOptions, "rulesSource">): WorkflowManifest {
   return {
     version: 1,
     source: options.rulesSource === "manifest" ? "github" : options.rulesSource,
-    items: workflowIds.map((id) => ({
-      id,
-      label: workflowLabel(id),
-      url: `${rawBaseUrl}/${encodeURIComponent(options.rulesRef)}/workflows/${id}.md`,
-      default: true,
-    })),
+    items: [],
   };
-}
-
-function workflowLabel(id: string): string {
-  return id
-    .replace(/^afk-/, "AFK / ")
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): string {
@@ -332,6 +319,10 @@ function ensureTrailingNewline(content: string): string {
 }
 
 function migrateLocalManifest(name: ManifestName, content: string): string | null {
+  if (name === "skills.json") {
+    return migrateSkillsManifest(content);
+  }
+
   if (name === "presets.json") {
     return migratePresetsManifest(content);
   }
@@ -371,6 +362,46 @@ function migrateLocalManifest(name: ManifestName, content: string): string | nul
   }
 
   return `${JSON.stringify({ ...parsed, version: Math.max(parsed.version, 2), items }, null, 2)}\n`;
+}
+
+function migrateSkillsManifest(content: string): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return null;
+  }
+
+  if (!isSkillManifest(parsed)) {
+    return null;
+  }
+
+  let changed = false;
+  const items = parsed.items.map((item) => {
+    if (item.autoInvocation !== undefined) {
+      return item;
+    }
+
+    changed = true;
+    return { ...item, autoInvocation: true };
+  });
+
+  if (parsed.defaultSource.includes("logbookfordevs/ai-field-kit")) {
+    const ids = new Set(items.map((item) => item.id));
+    const packaged = JSON.parse(readFileSync(manifestPath("skills.json"), "utf8")) as SkillManifest;
+    for (const item of packaged.items) {
+      if (!ids.has(item.id)) {
+        changed = true;
+        items.push(item);
+      }
+    }
+  }
+
+  if (!changed) {
+    return null;
+  }
+
+  return `${JSON.stringify({ ...parsed, items }, null, 2)}\n`;
 }
 
 function migratePresetsManifest(content: string): string | null {
@@ -434,7 +465,8 @@ function isSkillManifest(value: unknown): value is SkillManifest {
       typeof item.label === "string" &&
       typeof item.source === "string" &&
       isStringArray(item.args) &&
-      typeof item.default === "boolean"
+      typeof item.default === "boolean" &&
+      (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean")
     );
   });
 }
@@ -502,8 +534,17 @@ function isUtilityManifest(value: unknown): value is UtilityManifest {
       typeof item.description === "string" &&
       typeof item.install.command === "string" &&
       isStringArray(item.install.args) &&
-      (item.postInstall === undefined || item.postInstall === "rtk-init") &&
+      (item.postInstall === undefined || item.postInstall === "rtk-init" || isUtilityPostInstallCommand(item.postInstall)) &&
       typeof item.default === "boolean"
     );
   });
+}
+
+function isUtilityPostInstallCommand(value: unknown): value is UtilityPostInstallCommand {
+  return (
+    isRecord(value) &&
+    (value.label === undefined || typeof value.label === "string") &&
+    typeof value.command === "string" &&
+    isStringArray(value.args)
+  );
 }

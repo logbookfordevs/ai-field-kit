@@ -1,0 +1,5 @@
+display_name: AFK Interactive Code Review
+short_description: Review Pull Requests or branch diffs step by step, following the developer's reasoning instead of reading files in arbitrary order.
+default_prompt: Follow the AI Field Kit /afk-interactive-code-review workflow for this project.
+policy:
+  allow_implicit_invocation: false

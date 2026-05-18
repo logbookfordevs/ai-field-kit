@@ -58,10 +58,12 @@ export function planWorkflowSync(options: Pick<CliOptions, "agents" | "homeDir" 
   return operations;
 }
 
-async function loadWorkflowFiles(options: Pick<CliOptions, "homeDir" | "repoDir" | "rulesSource">): Promise<WorkflowFile[]> {
+async function loadWorkflowFiles(options: Pick<CliOptions, "homeDir" | "repoDir" | "rulesSource" | "selectedWorkflowIds">): Promise<WorkflowFile[]> {
   const manifest = loadWorkflowManifest(options);
   const source = options.rulesSource === "manifest" ? manifest.source : options.rulesSource;
-  const selected = manifest.items.filter((item) => item.default);
+  const selected = options.selectedWorkflowIds.length > 0
+    ? manifest.items.filter((item) => options.selectedWorkflowIds.includes(item.id))
+    : manifest.items.filter((item) => item.default);
 
   return Promise.all(selected.map(async (item) => ({
     filename: `${item.id}.md`,

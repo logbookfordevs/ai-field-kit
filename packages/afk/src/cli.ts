@@ -1,12 +1,12 @@
 import { spawn } from "node:child_process";
 import { isAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
+import { runManifestConfigure } from "./manifest-configure.js";
 import { resolve } from "node:path";
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import type { AgentId, Area, CliOptions, CommandResult, Runtime, SetupScope } from "./types.js";
 
 export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
-  const parsed = parseArgs(argv, env);
   const runtime: Runtime = {
     io: {
       stdout: (message) => console.log(message),
@@ -15,8 +15,23 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
     spawn: spawnCommand,
   };
 
+  try {
+    return await runCliWithRuntime(argv, env, runtime);
+  } catch (error) {
+    if (isPromptExit(error)) {
+      runtime.io.stdout("\nAFK setup cancelled. Nothing else was changed from this prompt.");
+      return 130;
+    }
+
+    throw error;
+  }
+}
+
+async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
+  const parsed = parseArgs(argv, env);
+
   if (parsed.help) {
-    runtime.io.stdout(helpText(parsed.command, parsed.subcommand));
+    runtime.io.stdout(helpText(parsed.commandPath));
     return 0;
   }
 
@@ -26,27 +41,35 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
     return 1;
   }
 
-  const { command, subcommand, options } = parsed;
+  const { commandPath, options } = parsed;
+  const key = commandKey(commandPath);
 
-  if (command === "setup") {
+  if (key === "setup") {
     return runSetup(runtime, options);
   }
 
-  const area = commandToArea(command, subcommand);
+  if (key === "manifests configure") {
+    return runManifestConfigure(runtime, options);
+  }
+
+  const area = commandToArea(commandPath);
   if (area) {
     return runArea(area, runtime, options);
   }
 
-  runtime.io.stderr(`Unknown command: ${command ?? "(none)"}`);
+  runtime.io.stderr(`Unknown command: ${key || "(none)"}`);
   runtime.io.stderr(helpText());
   return 1;
+}
+
+export function isPromptExit(error: unknown): boolean {
+  return error instanceof Error && error.name === "ExitPromptError";
 }
 
 type ParseResult =
   | {
       help: true;
-      command?: string;
-      subcommand?: string | null;
+      commandPath?: string[];
     }
   | {
       help: false;
@@ -56,8 +79,7 @@ type ParseResult =
   | {
       help: false;
       kind: "command";
-      command: string;
-      subcommand: string | null;
+      commandPath: string[];
       options: CliOptions;
     };
 
@@ -95,10 +117,10 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup --defaults-source your-org/dev-kit",
     ],
   },
-  "rules sync": {
-    title: "AFK rules sync",
+  "setup rules sync": {
+    title: "AFK setup rules sync",
     summary: "Sync AFK rules into managed rule regions.",
-    usage: "afk rules sync [options]",
+    usage: "afk setup rules sync [options]",
     options: [
       "--dry-run",
       "--scope global|project",
@@ -112,15 +134,15 @@ const commandHelps: Record<string, CommandHelp> = {
       "--defaults-source <github-source>",
     ],
     examples: [
-      "afk rules sync --dry-run",
-      "afk rules sync --local",
-      "afk rules sync --source local",
+      "afk setup rules sync --dry-run",
+      "afk setup rules sync --local",
+      "afk setup rules sync --source local",
     ],
   },
-  "workflows sync": {
-    title: "AFK workflows sync",
+  "setup workflows sync": {
+    title: "AFK setup workflows sync",
     summary: "Install AFK workflows as managed commands, Gemini TOML commands, and Codex skills.",
-    usage: "afk workflows sync [options]",
+    usage: "afk setup workflows sync [options]",
     options: [
       "--dry-run",
       "--scope global|project",
@@ -133,15 +155,15 @@ const commandHelps: Record<string, CommandHelp> = {
       "--defaults-source <github-source>",
     ],
     examples: [
-      "afk workflows sync --dry-run",
-      "afk workflows sync --local",
-      "afk workflows sync --agent codex",
+      "afk setup workflows sync --dry-run",
+      "afk setup workflows sync --local",
+      "afk setup workflows sync --agent codex",
     ],
   },
-  "skills install": {
-    title: "AFK skills install",
+  "setup skills install": {
+    title: "AFK setup skills install",
     summary: "Delegate selected skills to the official skills CLI.",
-    usage: "afk skills install [options]",
+    usage: "afk setup skills install [options]",
     options: [
       "--dry-run",
       "--yes, -y",
@@ -155,15 +177,15 @@ const commandHelps: Record<string, CommandHelp> = {
       "--defaults-source <github-source>",
     ],
     examples: [
-      "afk skills install --dry-run",
-      "afk skills install --yes",
-      "afk skills install --local --agent claude",
+      "afk setup skills install --dry-run",
+      "afk setup skills install --yes",
+      "afk setup skills install --local --agent claude",
     ],
   },
-  "mcps install": {
-    title: "AFK MCPs install",
+  "setup mcps install": {
+    title: "AFK setup MCPs install",
     summary: "Delegate selected MCP recommendations to add-mcp.",
-    usage: "afk mcps install [options]",
+    usage: "afk setup mcps install [options]",
     options: [
       "--dry-run",
       "--yes, -y",
@@ -176,15 +198,15 @@ const commandHelps: Record<string, CommandHelp> = {
       "--defaults-source <github-source>",
     ],
     examples: [
-      "afk mcps install --dry-run",
-      "afk mcps install --yes",
-      "afk mcps install --local --agent codex",
+      "afk setup mcps install --dry-run",
+      "afk setup mcps install --yes",
+      "afk setup mcps install --local --agent codex",
     ],
   },
-  "utils install": {
-    title: "AFK utils install",
+  "setup utils install": {
+    title: "AFK setup utils install",
     summary: "Install optional developer utilities and run supported post-install setup.",
-    usage: "afk utils install [options]",
+    usage: "afk setup utils install [options]",
     options: [
       "--dry-run",
       "--yes, -y",
@@ -197,17 +219,32 @@ const commandHelps: Record<string, CommandHelp> = {
       "--defaults-source <github-source>",
     ],
     examples: [
-      "afk utils install --dry-run",
-      "afk utils install --yes",
-      "afk utils install --local --agent opencode",
+      "afk setup utils install --dry-run",
+      "afk setup utils install --yes",
+      "afk setup utils install --local --agent opencode",
+    ],
+  },
+  "manifests configure": {
+    title: "AFK manifests configure",
+    summary: "Interactively author AFK manifest JSON files.",
+    usage: "afk manifests configure [options]",
+    options: [
+      "--local                          Write to ./afk/manifests for a defaults repo",
+      "--from-current                   Start from existing manifests when present",
+      "--dry-run                        Preview generated files without writing",
+    ],
+    examples: [
+      "afk manifests configure",
+      "afk manifests configure --local",
+      "afk manifests configure --from-current",
     ],
   },
 };
 
 function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const args = [...argv];
-  const command = args.shift();
-  const subcommand = args[0] && !args[0].startsWith("-") ? args.shift() ?? null : null;
+  const commandPath = readCommandPath(args);
+  const key = commandKey(commandPath);
   const agents: AgentId[] = [];
   let dryRun = false;
   let yes = false;
@@ -220,21 +257,28 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let empty = false;
   let refreshDefaults = false;
   let defaultsSource = "";
+  let manifestConfigureLocal = false;
+  let manifestConfigureFromCurrent = false;
   const homeDir = resolveHome(env);
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
 
-  if (!command || command === "--help" || command === "-h" || command === "help") {
+  if (commandPath.length === 0 || key === "--help" || key === "-h" || key === "help") {
     return { help: true };
   }
 
   if (args.includes("--help") || args.includes("-h")) {
-    return { help: true, command, subcommand };
+    return { help: true, commandPath };
   }
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (!arg) {
+      continue;
+    }
+
+    if (key === "manifests configure" && arg === "--from-current") {
+      manifestConfigureFromCurrent = true;
       continue;
     }
 
@@ -249,6 +293,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
+      if (key === "manifests configure") {
+        manifestConfigureLocal = true;
+        continue;
+      }
+
       setupScope = "project";
       scopeExplicit = true;
       continue;
@@ -331,8 +380,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   return {
     help: false,
     kind: "command",
-    command,
-    subcommand,
+    commandPath,
     options: {
       agents,
       setupScope,
@@ -341,6 +389,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       yes,
       includeExternal,
       selectedSkillIds: [],
+      selectedWorkflowIds: [],
       selectedMcpIds: [],
       selectedUtilIds: [],
       rulesRef,
@@ -349,6 +398,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       empty,
       refreshDefaults,
       defaultsSource,
+      manifestConfigureLocal,
+      manifestConfigureFromCurrent,
       homeDir,
       repoDir,
       cwd,
@@ -356,24 +407,34 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   };
 }
 
-function commandToArea(command: string | undefined, subcommand: string | null): Area | null {
-  if (command === "rules" && subcommand === "sync") {
+function readCommandPath(args: string[]): string[] {
+  const commandPath: string[] = [];
+  while (args[0] && !args[0].startsWith("-")) {
+    commandPath.push(args.shift() ?? "");
+  }
+
+  return commandPath.filter(Boolean);
+}
+
+function commandToArea(commandPath: string[]): Area | null {
+  const key = commandKey(commandPath);
+  if (key === "setup rules sync") {
     return "rules";
   }
 
-  if (command === "workflows" && subcommand === "sync") {
+  if (key === "setup workflows sync") {
     return "workflows";
   }
 
-  if (command === "skills" && subcommand === "install") {
+  if (key === "setup skills install") {
     return "skills";
   }
 
-  if (command === "mcps" && subcommand === "install") {
+  if (key === "setup mcps install") {
     return "mcps";
   }
 
-  if (command === "utils" && subcommand === "install") {
+  if (key === "setup utils install") {
     return "utils";
   }
 
@@ -393,8 +454,8 @@ function spawnCommand(command: string, args: string[], cwd?: string): Promise<Co
   });
 }
 
-function helpText(command?: string, subcommand?: string | null): string {
-  const commandHelp = command ? commandHelps[commandKey(command, subcommand)] : undefined;
+function helpText(commandPath?: string[]): string {
+  const commandHelp = commandPath ? commandHelps[commandKey(commandPath)] : undefined;
   if (commandHelp) {
     return renderCommandHelp(commandHelp);
   }
@@ -405,11 +466,12 @@ Guided setup router for AI Field Kit.
 
 Usage:
   afk setup [options]
-  afk rules sync [options]
-  afk workflows sync [options]
-  afk skills install [options]
-  afk mcps install [options]
-  afk utils install [options]
+  afk setup rules sync [options]
+  afk setup workflows sync [options]
+  afk setup skills install [options]
+  afk setup mcps install [options]
+  afk setup utils install [options]
+  afk manifests configure [options]
 
 Run "afk <command> --help" for command-specific options.
 
@@ -417,8 +479,8 @@ Agents:
   claude, codex, gemini, opencode`;
 }
 
-function commandKey(command: string, subcommand?: string | null): string {
-  return [command, subcommand].filter(Boolean).join(" ");
+function commandKey(commandPath: string[] = []): string {
+  return commandPath.join(" ");
 }
 
 function renderCommandHelp(help: CommandHelp): string {

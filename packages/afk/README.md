@@ -16,8 +16,8 @@ afk setup --dry-run
 ```
 
 `afk setup` opens with a branded banner and checkbox prompts. Setup areas,
-setup scope, AFK-owned rule/workflow targets, individual AFK skills,
-recommended external skills, MCP recommendations, and utility installs start
+setup scope, AFK-owned rule targets, individual AFK skills, recommended external
+skills, MCP recommendations, and utility installs start
 selected so you can remove only the pieces you do not want.
 
 By default, `afk setup` prepares a global field kit for this machine. Choose
@@ -29,15 +29,13 @@ node packages/afk/dist/index.js setup --local --dry-run
 ```
 
 In project scope, AFK omits the upstream `--global` flags for `skills` and
-`add-mcp`, writes AFK-owned rule/workflow files under the current directory,
-and runs RTK project initialization from that directory. Plannotator remains a
-global utility install because its installer does not expose a project scope.
+`add-mcp`, writes AFK-owned rule files under the current directory, and runs RTK
+project initialization from that directory. Plannotator remains a global utility
+install because its installer does not expose a project scope.
 
-Workflow sync writes managed files instead of symlinking back to a repo
-checkout. Markdown command consumers receive copied markdown files, Gemini gets
-rendered TOML, and Codex gets generated skills. Workflow sources come from
-`workflows.json`, where each item points directly at the raw markdown file to
-install.
+Workflow-style AFK procedures are shipped as skills. Their manifest entries set
+`autoInvocation: false`, so AFK keeps them installed and available without
+encouraging agents to call them implicitly.
 
 The CLI stores editable local setup manifests under:
 
@@ -59,6 +57,18 @@ node packages/afk/dist/index.js setup --refresh-defaults --defaults-source your-
 node packages/afk/dist/index.js setup --defaults-source your-org/dev-kit
 ```
 
+Author your own manifests interactively:
+
+```bash
+afk manifests configure
+afk manifests configure --local
+afk manifests configure --from-current
+```
+
+`afk manifests configure` writes to `~/.agents/afk/manifests/`.
+`afk manifests configure --local` writes to `./afk/manifests/`, matching the
+GitHub defaults convention used by `--defaults-source`.
+
 `--defaults-source` lets another GitHub repo become the manifest source as long
 as it follows the AFK convention:
 
@@ -68,7 +78,6 @@ afk/manifests/
   mcps.json
   presets.json
   rules.json
-  workflows.json
   utils.json
 ```
 
@@ -91,20 +100,22 @@ For rules, keep the source repo explicit in `rules.json`:
 ```
 
 That lets a personal defaults repo refresh the manifest and keep future
-`rules sync` runs pointed at the same repo.
+`setup rules sync` runs pointed at the same repo.
 
-Workflow defaults use the same direct-URL idea, but with multiple items:
+Skills can opt out of automatic invocation:
 
 ```json
 {
   "version": 1,
-  "source": "github",
+  "defaultSource": "https://github.com/your-org/dev-kit",
   "items": [
     {
-      "id": "my-workflow",
-      "label": "My Workflow",
-      "url": "https://raw.githubusercontent.com/your-org/dev-kit/main/workflows/my-workflow.md",
-      "default": true
+      "id": "review-pr",
+      "label": "Review PR",
+      "source": "https://github.com/your-org/dev-kit",
+      "args": ["--skill", "review-pr"],
+      "default": true,
+      "autoInvocation": false
     }
   ]
 }
@@ -113,8 +124,9 @@ Workflow defaults use the same direct-URL idea, but with multiple items:
 Selected skills are grouped into non-interactive `skills` CLI calls with
 `--yes`. Global scope adds `--global`; project scope leaves that flag out so
 the official CLI installs into project skill locations. AFK keeps the default
-symlink behavior, and adds a separate Claude Code target only when Claude is
-selected.
+symlink behavior. When `autoInvocation` is false, AFK adds Claude Code
+`disable-model-invocation: true` frontmatter and OpenAI
+`allow_implicit_invocation: false` policy metadata after the official install.
 
 Utilities are curated developer tools AFK can install by delegating to their
 official install scripts. V1 includes Plannotator for plan review loops and RTK
@@ -129,8 +141,8 @@ rest.
 During `afk setup`, each selected area runs independently. If Skills fails, AFK
 still tries MCPs and Utils, then exits non-zero with a summary of failed areas.
 
-V1 owns AFK rules and workflow sync behavior for Codex, Claude Code, Gemini,
-and OpenCode. More AFK-owned targets can be added over time. Skills and MCP
+V1 owns AFK rules sync behavior for Codex, Claude Code, Gemini, and OpenCode.
+More AFK-owned targets can be added over time. Skills and MCP
 installation are delegated to the official CLIs, so their broader compatibility
 belongs to those tools.
 
@@ -152,17 +164,17 @@ and `CLAUDE.md` for Claude Code.
 Use a local checkout while developing rule changes:
 
 ```bash
-node packages/afk/dist/index.js rules sync --dry-run --source local
+node packages/afk/dist/index.js setup rules sync --dry-run --source local
 ```
 
 Update `rules.json` when you want a stable public setup:
 
 ```bash
-node packages/afk/dist/index.js rules sync --dry-run
+node packages/afk/dist/index.js setup rules sync --dry-run
 ```
 
 Install only utilities:
 
 ```bash
-node packages/afk/dist/index.js utils install --dry-run
+node packages/afk/dist/index.js setup utils install --dry-run
 ```

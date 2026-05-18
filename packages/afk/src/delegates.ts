@@ -23,13 +23,7 @@ export function buildSkillCommands(options: CliOptions): DelegateCommand[] {
       ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))
       : manifest.items.filter((item) => item.default || options.includeExternal);
 
-  const commands = buildSkillSourceCommands(selected, "Shared skills", [], options.setupScope);
-
-  if (shouldInstallClaudeSkills(options.agents)) {
-    commands.push(...buildSkillSourceCommands(selected, "Claude skills", ["--agent", "claude-code"], options.setupScope));
-  }
-
-  return commands;
+  return buildSkillSourceCommands(selected, "Shared skills", [], options.setupScope);
 }
 
 export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "homeDir" | "selectedMcpIds" | "setupScope">): DelegateCommand[] {
@@ -136,6 +130,14 @@ function buildUtilityInstallCommand(item: UtilityManifestItem): DelegateCommand 
 }
 
 function buildUtilityPostInstallCommands(item: UtilityManifestItem, options: Pick<CliOptions, "agents" | "homeDir" | "setupScope">): DelegateCommand[] {
+  if (typeof item.postInstall === "object") {
+    return [{
+      label: item.postInstall.label ?? `${item.label} / post-install`,
+      command: item.postInstall.command,
+      args: item.postInstall.args,
+    }];
+  }
+
   if (item.postInstall !== "rtk-init") {
     return [];
   }
@@ -209,15 +211,24 @@ function buildSkillSourceCommands(
       source,
       ...(scope === "global" ? ["--global"] : []),
       "--yes",
-      "--skill",
-      ...sourceItems.map((item) => item.id),
+      ...skillSelectionArgs(sourceItems),
       ...targetArgs,
     ],
   }));
 }
 
-function shouldInstallClaudeSkills(agents: AgentId[]): boolean {
-  return agents.length === 0 || agents.includes("claude");
+function skillSelectionArgs(items: SkillManifestItem[]): string[] {
+  const skillIds = items.map((item) => skillIdFromArgs(item.args));
+  if (skillIds.some((id) => !id)) {
+    return [];
+  }
+
+  return ["--skill", ...skillIds.filter((id): id is string => Boolean(id))];
+}
+
+function skillIdFromArgs(args: string[]): string | null {
+  const index = args.indexOf("--skill");
+  return index >= 0 ? args[index + 1] ?? null : null;
 }
 
 function sourceLabel(source: string): string {

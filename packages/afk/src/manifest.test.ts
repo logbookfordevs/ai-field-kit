@@ -52,6 +52,50 @@ test("ensureLocalManifests migrates the old Stitch header default", async () => 
   assert.deepEqual(next.items[0]?.args, ["--name", "stitchmcp"]);
 });
 
+test("ensureLocalManifests migrates built-in skills to invocation policy metadata", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-skills-manifest-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  const manifestPath = join(manifestDir, "skills.json");
+  writeFileSync(
+    manifestPath,
+    `${JSON.stringify(
+      {
+        version: 1,
+        defaultSource: "https://github.com/logbookfordevs/ai-field-kit",
+        items: [
+          {
+            id: "afk-note",
+            label: "AFK / Note",
+            source: "https://github.com/logbookfordevs/ai-field-kit",
+            args: ["--skill", "afk-note", "--global"],
+            default: true,
+          },
+        ],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const operations = await ensureLocalManifests({
+    homeDir,
+    repoDir: "/tmp/repo",
+    rulesRef: "main",
+    rulesSource: "local",
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: "",
+    dryRun: false,
+  });
+
+  const write = operations.find((operation) => operation.type === "write" && operation.path === manifestPath);
+  assert.ok(write && write.type === "write");
+  const next = JSON.parse(write.content) as { items: Array<{ id: string; autoInvocation?: boolean }> };
+  assert.equal(next.items.find((item) => item.id === "afk-note")?.autoInvocation, true);
+  assert.equal(next.items.find((item) => item.id === "afk-typecheck")?.autoInvocation, false);
+});
+
 test("defaultsManifestBaseUrl resolves GitHub shorthand to the AFK manifest convention", () => {
   assert.equal(
     defaultsManifestBaseUrl("acme/dev-kit", "main"),

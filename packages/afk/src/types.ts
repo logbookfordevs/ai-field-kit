@@ -17,6 +17,7 @@ export type CliOptions = {
   yes: boolean;
   includeExternal: boolean;
   selectedSkillIds: string[];
+  selectedWorkflowIds: string[];
   selectedMcpIds: string[];
   selectedUtilIds: string[];
   rulesRef: string;
@@ -25,6 +26,8 @@ export type CliOptions = {
   empty: boolean;
   refreshDefaults: boolean;
   defaultsSource: string;
+  manifestConfigureLocal: boolean;
+  manifestConfigureFromCurrent: boolean;
   homeDir: string;
   repoDir: string;
   cwd: string;

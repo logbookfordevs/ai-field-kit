@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
+import { localManifestDir } from "./manifest.js";
 import type { CliOptions, Runtime } from "./types.js";
 
 const options: CliOptions = {
@@ -11,6 +15,7 @@ const options: CliOptions = {
   yes: true,
   includeExternal: false,
   selectedSkillIds: [],
+  selectedWorkflowIds: [],
   selectedMcpIds: [],
   selectedUtilIds: [],
   rulesRef: "main",
@@ -19,6 +24,8 @@ const options: CliOptions = {
   empty: false,
   refreshDefaults: false,
   defaultsSource: "",
+  manifestConfigureLocal: false,
+  manifestConfigureFromCurrent: false,
   homeDir: "/tmp/home",
   repoDir: "/tmp/repo",
   cwd: "/tmp/project",
@@ -41,17 +48,41 @@ test("buildSkillCommands omits global scope for project installs", () => {
   assert.ok(commands[0]?.args.includes("--yes"));
 });
 
-test("buildSkillCommands adds a Claude target only when Claude is selected", () => {
-  const commands = buildSkillCommands({ ...options, agents: ["codex", "claude"] });
-  assert.equal(commands.length, 2);
-  assert.ok(commands[1]?.args.includes("--agent"));
-  assert.ok(commands[1]?.args.includes("claude-code"));
+test("buildSkillCommands omits skill filter for whole-source skill entries", () => {
+  const homeDir = localHomeWithManifest("skills.json", {
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "whole-source",
+        label: "Whole Source",
+        source: "https://github.com/example/skill-pack",
+        args: [],
+        default: true,
+      },
+    ],
+  });
+  const commands = buildSkillCommands({ ...options, homeDir, selectedSkillIds: ["whole-source"] });
+
+  assert.ok(commands.some((command) => (
+    command.args.includes("https://github.com/example/skill-pack") &&
+    !command.args.includes("--skill")
+  )));
 });
 
-test("buildSkillCommands adds Claude target for default all-agent selection", () => {
+test("buildSkillCommands does not add a duplicate Claude-only install", () => {
+  const commands = buildSkillCommands({ ...options, agents: ["codex", "claude"] });
+  assert.equal(commands.length, 1);
+  assert.ok(!commands[0]?.args.includes("--agent"));
+  assert.ok(!commands[0]?.args.includes("claude-code"));
+});
+
+test("buildSkillCommands relies on the skills CLI default symlink fanout", () => {
   const commands = buildSkillCommands({ ...options, agents: [] });
-  assert.equal(commands.length, 2);
-  assert.ok(commands[1]?.args.includes("claude-code"));
+  assert.equal(commands.length, 1);
+  assert.ok(commands[0]?.args.includes("--yes"));
+  assert.ok(!commands[0]?.args.includes("--copy"));
+  assert.ok(!commands[0]?.args.includes("--agent"));
 });
 
 test("buildMcpCommands uses add-mcp with mapped agents", () => {
@@ -111,6 +142,31 @@ test("buildUtilityCommands runs RTK init locally for project scope", () => {
   assert.equal(commands[2]?.cwd, undefined);
 });
 
+test("buildUtilityCommands supports generic post-install commands", () => {
+  const homeDir = localHomeWithManifest("utils.json", {
+    version: 1,
+    items: [
+      {
+        id: "custom-postinstall",
+        label: "Custom Utility",
+        description: "Custom utility.",
+        install: { command: "sh", args: ["-c", "install-custom"] },
+        postInstall: { command: "sh", args: ["-c", "custom init"] },
+        default: true,
+      },
+    ],
+  });
+  const commands = buildUtilityCommands({ ...options, homeDir, selectedUtilIds: ["custom-postinstall"] });
+
+  assert.deepEqual(
+    commands.map((command) => [command.label, command.command, command.args]),
+    [
+      ["Custom Utility / install", "sh", ["-c", "install-custom"]],
+      ["Custom Utility / post-install", "sh", ["-c", "custom init"]],
+    ],
+  );
+});
+
 test("runDelegateCommands fails fast by default", async () => {
   const calls: string[] = [];
   const runtime = fakeRuntime(calls, [7, 0]);
@@ -153,4 +209,12 @@ function fakeRuntime(calls: string[], codes: number[], warnings: string[] = []):
       return { code: codes.shift() ?? 0 };
     },
   };
+}
+
+function localHomeWithManifest(name: string, content: unknown): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-delegates-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
+  return homeDir;
 }

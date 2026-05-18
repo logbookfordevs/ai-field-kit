@@ -6,127 +6,277 @@
       "id": "afk-advanced-elicitation",
       "label": "AFK / Advanced Elicitation",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-advanced-elicitation", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-advanced-elicitation",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-animated-driven-frontend",
       "label": "AFK / Animated Driven Frontend",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-animated-driven-frontend", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-animated-driven-frontend",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-ask",
       "label": "AFK / Ask",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-ask", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-ask",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-brainstorming-facilitator",
       "label": "AFK / Brainstorming Facilitator",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-brainstorming-facilitator", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-brainstorming-facilitator",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-coding-tradeoffs",
       "label": "AFK / Coding Tradeoffs",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-coding-tradeoffs", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-coding-tradeoffs",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-deep-interview",
       "label": "AFK / Deep Interview",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-deep-interview", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-deep-interview",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-documentation-authoring",
       "label": "AFK / Documentation Authoring",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-documentation-authoring", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-documentation-authoring",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-execution-tracking",
       "label": "AFK / Execution Tracking",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-execution-tracking", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-execution-tracking",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-workflow",
       "label": "AFK / Workflow",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-workflow", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-workflow",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-note",
       "label": "AFK / Note",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-note", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-note",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-spline-3d-integration",
       "label": "AFK / Spline 3D Integration",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-spline-3d-integration", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-spline-3d-integration",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "afk-structured-debugging",
       "label": "AFK / Structured Debugging",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "afk-structured-debugging", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "afk-structured-debugging",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "ai-companion",
       "label": "AFK / AI Companion",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": ["--skill", "ai-companion", "--global"],
-      "default": true
+      "args": [
+        "--skill",
+        "ai-companion",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
     },
     {
       "id": "spec-driven-development",
       "label": "External / Spec Driven Development",
       "source": "https://github.com/addyosmani/agent-skills.git",
-      "args": ["--skill", "spec-driven-development", "--global"],
-      "default": false
+      "args": [
+        "--skill",
+        "spec-driven-development",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": true
     },
     {
       "id": "planning-and-task-breakdown",
       "label": "External / Planning and Task Breakdown",
       "source": "https://github.com/addyosmani/agent-skills.git",
-      "args": ["--skill", "planning-and-task-breakdown", "--global"],
-      "default": false
+      "args": [
+        "--skill",
+        "planning-and-task-breakdown",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": true
     },
     {
       "id": "incremental-implementation",
       "label": "External / Incremental Implementation",
       "source": "https://github.com/addyosmani/agent-skills.git",
-      "args": ["--skill", "incremental-implementation", "--global"],
-      "default": false
+      "args": [
+        "--skill",
+        "incremental-implementation",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": true
     },
     {
       "id": "test-driven-development",
       "label": "External / Test Driven Development",
       "source": "https://github.com/addyosmani/agent-skills.git",
-      "args": ["--skill", "test-driven-development", "--global"],
-      "default": false
+      "args": [
+        "--skill",
+        "test-driven-development",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": true
     },
     {
       "id": "code-simplification",
       "label": "External / Code Simplification",
       "source": "https://github.com/addyosmani/agent-skills.git",
-      "args": ["--skill", "code-simplification", "--global"],
-      "default": false
+      "args": [
+        "--skill",
+        "code-simplification",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": true
+    },
+    {
+      "id": "afk-cinematic-landing-page-builder",
+      "label": "AFK / Cinematic Landing Page Builder",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-cinematic-landing-page-builder",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": false
+    },
+    {
+      "id": "afk-interactive-code-review",
+      "label": "AFK / Interactive Code Review",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-interactive-code-review",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": false
+    },
+    {
+      "id": "afk-pr-description-generator",
+      "label": "AFK / PR Description Generator",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-pr-description-generator",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": false
+    },
+    {
+      "id": "afk-pr-story-flow-mermaid",
+      "label": "AFK / PR Story Flow Mermaid",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-pr-story-flow-mermaid",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": false
+    },
+    {
+      "id": "afk-typecheck",
+      "label": "AFK / Typecheck",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-typecheck",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": false
     }
   ]
 }

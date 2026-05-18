@@ -1,36 +1,5 @@
 {
   "version": 1,
   "source": "github",
-  "items": [
-    {
-      "id": "afk-cinematic-landing-page-builder",
-      "label": "AFK / Cinematic Landing Page Builder",
-      "url": "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/workflows/afk-cinematic-landing-page-builder.md",
-      "default": true
-    },
-    {
-      "id": "afk-interactive-code-review",
-      "label": "AFK / Interactive Code Review",
-      "url": "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/workflows/afk-interactive-code-review.md",
-      "default": true
-    },
-    {
-      "id": "afk-pr-description-generator",
-      "label": "AFK / PR Description Generator",
-      "url": "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/workflows/afk-pr-description-generator.md",
-      "default": true
-    },
-    {
-      "id": "afk-pr-story-flow-mermaid",
-      "label": "AFK / PR Story Flow Mermaid",
-      "url": "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/workflows/afk-pr-story-flow-mermaid.md",
-      "default": true
-    },
-    {
-      "id": "afk-typecheck",
-      "label": "AFK / Typecheck",
-      "url": "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/workflows/afk-typecheck.md",
-      "default": true
-    }
-  ]
+  "items": []
 }

@@ -23,13 +23,16 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` added editable local manifests under `~/.agents/afk/` with `--init-only`, `--empty`, and `--refresh-defaults` setup modes so recommendations can evolve without CLI patches.
 - `cli:` added `--defaults-source` so local manifests can refresh from another convention-compatible GitHub repo.
 - `cli:` changed custom defaults sources to be remembered in `presets.json`, so later `--refresh-defaults` runs can reuse the same source.
+- `cli:` added `afk manifests configure` for interactive manifest authoring, including `--local` for creating `./afk/manifests/` defaults repos.
+- `cli:` moved scoped setup actions under `afk setup ...` so future `afk skills ...` commands can focus on skill management instead of setup installation.
 - `cli:` simplified `rules.json` to a direct `url` so refreshed personal defaults can point rules sync at their own GitHub rule file.
 - `cli:` narrowed AFK-owned rule/workflow targets to Codex, Claude Code, Gemini, and OpenCode while keeping skills and MCPs delegated to their official CLIs.
-- `cli:` added `afk utils install` for curated utilities, starting with Plannotator and RTK delegated installs plus RTK agent initialization for selected targets, including global Codex initialization from `~/.codex`.
+- `cli:` added `afk setup utils install` for curated utilities, starting with Plannotator and RTK delegated installs plus RTK agent initialization for selected targets, including global Codex initialization from `~/.codex`.
 - `cli:` made utility installs best-effort so one third-party installer failure does not stop the remaining utilities.
 - `cli:` changed grouped setup to continue across selected areas and report failures at the end.
 - `cli:` added global/project setup scope selection, including `--scope project` and `--local`, so AFK can prepare either machine-wide config or repo-local rules, workflows, skills, MCPs, and RTK initialization.
 - `cli:` changed workflow sync to use `workflows.json` direct workflow URLs and write managed files instead of symlinking markdown commands back to a repo checkout.
+- `cli:` moved AFK workflow-style procedures into skill packages and added `autoInvocation` manifest metadata so broad procedural skills can be installed without implicit agent invocation.
 - `rules:` replaced inline/imported AFK workflow doctrine in `AGENTS.md` with a small trigger that invokes the `afk-workflow` skill when workflow artifacts, specs, plans, RFCs, or tracking are involved.
 - `skills:` added `afk-workflow` as the activatable doctrine skill for artifact boundaries, RFC positioning, implementation planning, execution tracking handoff, and default artifact conventions.
 - `skills:` standardized generated workflow artifacts around the repo/user convention first, with AFK fallback defaults under `docs/<task-slug>/<task-slug>.<type>.md` and task references under `docs/<task-slug>/references/`.
