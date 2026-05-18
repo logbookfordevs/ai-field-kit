@@ -76,6 +76,22 @@ export const afkCheckboxTheme = {
   helpMode: "always",
 } as const;
 
+export const afkPromptTheme = {
+  prefix: {
+    idle: cool("◇"),
+    done: success("◆"),
+  },
+  style: {
+    answer: (text: string) => success(text),
+    message: (text: string) => `${bold}${text}${reset}`,
+    error: (text: string) => color(239, 125, 103, `> ${text}`),
+    defaultAnswer: (text: string) => muted(`(${text})`),
+    help: (text: string) => muted(text),
+    highlight: (text: string) => cool(text),
+    key: (text: string) => cool(`<${text}>`),
+  },
+} as const;
+
 function formatKeys(keys: [key: string, action: string][]): string {
   return muted(keys.map(([key, action]) => `${cool(key)} ${action}`).join("  ·  "));
 }

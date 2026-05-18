@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { checkbox, confirm, input } from "@inquirer/prompts";
 import { localManifestDir, type McpManifest, type RulesManifest, type SkillManifest, type UtilityManifest, type WorkflowManifest } from "./manifest.js";
+import { afkCheckboxTheme, afkPromptTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
 type ManifestArea = Area;
@@ -28,8 +29,10 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
   const outputDir = options.manifestConfigureLocal ? join(options.cwd, "afk", "manifests") : localManifestDir(options.homeDir);
   const existing = options.manifestConfigureFromCurrent ? readExistingManifests(outputDir) : {};
 
+  resetPromptSteps();
   runtime.io.stdout("\nAFK manifests configure");
   runtime.io.stdout(`Writing to: ${outputDir}`);
+  runtime.io.stdout(renderPromptStep("Manifest files", "Choose the setup data you want AFK to help author."));
 
   const areas = await checkbox<ManifestArea>({
     message: "Choose manifests to configure",
@@ -37,6 +40,7 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
     required: false,
     pageSize: 8,
     instructions: "Use space to toggle, enter to continue.",
+    theme: afkCheckboxTheme,
   });
 
   if (areas.length === 0) {
@@ -46,6 +50,7 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
 
   const drafts: ManifestDrafts = {};
   for (const area of areas) {
+    runtime.io.stdout(renderPromptStep(areaTitle(area), areaDescription(area)));
     drafts[`${area}.json`] = await configureArea(area, existing);
   }
 
@@ -59,7 +64,8 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
     return 0;
   }
 
-  const shouldWrite = await confirm({ message: `Write ${areas.length} manifest file(s)?`, default: true });
+  runtime.io.stdout(renderPromptStep("Write manifests", "Review the preview above, then confirm whether AFK should write the files."));
+  const shouldWrite = await askConfirm(`Write ${areas.length} manifest file(s)?`, true);
   if (!shouldWrite) {
     runtime.io.stdout("\nCancelled. No manifests written.");
     return 0;
@@ -90,7 +96,7 @@ async function configureArea(area: ManifestArea, existing: ExistingManifest): Pr
 }
 
 async function configureRules(existing?: RulesManifest): Promise<string> {
-  const url = await input({
+  const url = await askInput({
     message: "Rules raw URL or local path",
     default: existing?.url || "",
     required: true,
@@ -107,14 +113,14 @@ async function configureWorkflows(existing?: WorkflowManifest): Promise<string> 
   const items = [...(existing?.items ?? [])];
 
   while (true) {
-    const url = await input({ message: "Workflow raw markdown URL (blank to finish)" });
+    const url = await askInput({ message: "Workflow raw markdown URL (blank to finish)" });
     if (!url.trim()) {
       break;
     }
 
     const id = uniqueId(inferId(url), items.map((item) => item.id));
-    const label = await input({ message: "Workflow label", default: inferLabel(id) });
-    const isDefault = await confirm({ message: "Selected by default?", default: true });
+    const label = await askInput({ message: "Workflow label", default: inferLabel(id) });
+    const isDefault = await askConfirm("Selected by default?", true);
     items.push({ id, label, url, default: isDefault });
   }
 
@@ -130,19 +136,19 @@ async function configureSkills(existing?: SkillManifest): Promise<string> {
   let defaultSource = existing?.defaultSource ?? "";
 
   while (true) {
-    const source = await input({ message: "Skill source repo URL (blank to finish)" });
+    const source = await askInput({ message: "Skill source repo URL (blank to finish)" });
     if (!source.trim()) {
       break;
     }
 
     defaultSource ||= source;
-    const skill = await input({ message: "Specific skill id/name (optional; blank installs the whole source)" });
+    const skill = await askInput({ message: "Specific skill id/name (optional; blank installs the whole source)" });
     const idSeed = skill.trim() ? skill : source;
 
     const id = uniqueId(inferId(idSeed), items.map((item) => item.id));
-    const label = await input({ message: "Skill label", default: inferLabel(id) });
-    const isDefault = await confirm({ message: "Selected by default?", default: true });
-    const autoInvocation = await confirm({ message: "Allow automatic model invocation?", default: true });
+    const label = await askInput({ message: "Skill label", default: inferLabel(id) });
+    const isDefault = await askConfirm("Selected by default?", true);
+    const autoInvocation = await askConfirm("Allow automatic model invocation?", true);
     items.push({
       id,
       label,
@@ -164,16 +170,16 @@ async function configureMcps(existing?: McpManifest): Promise<string> {
   const items = [...(existing?.items ?? [])];
 
   while (true) {
-    const source = await input({ message: "MCP source or command (blank to finish)" });
+    const source = await askInput({ message: "MCP source or command (blank to finish)" });
     if (!source.trim()) {
       break;
     }
 
     const id = uniqueId(inferId(source), items.map((item) => item.id));
-    const label = await input({ message: "MCP label", default: inferLabel(id) });
-    const name = await input({ message: "add-mcp --name value", default: id });
-    const extraArgs = await input({ message: "Extra add-mcp args (optional)" });
-    const isDefault = await confirm({ message: "Selected by default?", default: true });
+    const label = await askInput({ message: "MCP label", default: inferLabel(id) });
+    const name = await askInput({ message: "add-mcp --name value", default: id });
+    const extraArgs = await askInput({ message: "Extra add-mcp args (optional)" });
+    const isDefault = await askConfirm("Selected by default?", true);
     items.push({
       id,
       label,
@@ -190,16 +196,16 @@ async function configureUtils(existing?: UtilityManifest): Promise<string> {
   const items = [...(existing?.items ?? [])];
 
   while (true) {
-    const installLine = await input({ message: "Utility install command (blank to finish)" });
+    const installLine = await askInput({ message: "Utility install command (blank to finish)" });
     if (!installLine.trim()) {
       break;
     }
 
     const id = uniqueId(inferId(installLine), items.map((item) => item.id));
-    const label = await input({ message: "Utility label", default: inferLabel(id) });
-    const description = await input({ message: "Utility description", default: `${label} install script.` });
-    const postInstallLine = await input({ message: "Post-install command (optional)" });
-    const isDefault = await confirm({ message: "Selected by default?", default: true });
+    const label = await askInput({ message: "Utility label", default: inferLabel(id) });
+    const description = await askInput({ message: "Utility description", default: `${label} install script.` });
+    const postInstallLine = await askInput({ message: "Post-install command (optional)" });
+    const isDefault = await askConfirm("Selected by default?", true);
     items.push({
       id,
       label,
@@ -213,6 +219,57 @@ async function configureUtils(existing?: UtilityManifest): Promise<string> {
   }
 
   return json({ version: 1, items });
+}
+
+type InputConfig = {
+  message: string;
+  default?: string;
+  required?: boolean;
+};
+
+async function askInput(config: InputConfig): Promise<string> {
+  return input({
+    ...config,
+    theme: afkPromptTheme,
+  });
+}
+
+async function askConfirm(message: string, defaultValue: boolean): Promise<boolean> {
+  return confirm({
+    message,
+    default: defaultValue,
+    theme: afkPromptTheme,
+  });
+}
+
+function areaTitle(area: ManifestArea): string {
+  switch (area) {
+    case "rules":
+      return "Rules manifest";
+    case "workflows":
+      return "Workflow manifest";
+    case "skills":
+      return "Skills manifest";
+    case "mcps":
+      return "MCP manifest";
+    case "utils":
+      return "Utils manifest";
+  }
+}
+
+function areaDescription(area: ManifestArea): string {
+  switch (area) {
+    case "rules":
+      return "Point rules sync at a raw AGENTS.md source.";
+    case "workflows":
+      return "List custom workflow markdown URLs when you still need command-style sync.";
+    case "skills":
+      return "List skills delegated to the official skills CLI.";
+    case "mcps":
+      return "List MCPs delegated to add-mcp.";
+    case "utils":
+      return "List utility install scripts and optional post-install commands.";
+  }
 }
 
 export function inferId(value: string): string {
