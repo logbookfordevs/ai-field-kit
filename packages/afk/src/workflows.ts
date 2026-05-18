@@ -1,7 +1,7 @@
-import { basename, dirname, join } from "node:path";
-import { readdirSync } from "node:fs";
-import { applyOperation, formatOperation, isDirectory, isSymlink, managedMarker, pathExists, readText, summarizeOperations } from "./fs-utils.js";
+import { basename, join } from "node:path";
+import { applyOperation, formatOperation, isSymlink, managedMarker, pathExists, readText, summarizeOperations } from "./fs-utils.js";
 import { filterAgents } from "./agents.js";
+import { loadWorkflowManifest } from "./manifest.js";
 import type { AgentId, CliOptions, PathOperation, Runtime } from "./types.js";
 
 const namespace = "afk";
@@ -13,7 +13,8 @@ const supportedWorkflowAgents: AgentId[] = [
 ];
 
 export async function syncWorkflows(runtime: Runtime, options: CliOptions): Promise<number> {
-  const operations = planWorkflowSync(options);
+  const workflowFiles = await loadWorkflowFiles(options);
+  const operations = planWorkflowSync(options, workflowFiles);
 
   if (options.dryRun) {
     runtime.io.stdout("\nWorkflow sync plan");
@@ -31,20 +32,23 @@ export async function syncWorkflows(runtime: Runtime, options: CliOptions): Prom
   return 0;
 }
 
-export function planWorkflowSync(options: Pick<CliOptions, "agents" | "homeDir" | "repoDir" | "cwd" | "setupScope">): PathOperation[] {
-  const sourceDir = join(options.repoDir, "workflows");
-  const workflowFiles = listWorkflowFiles(sourceDir);
+export type WorkflowFile = {
+  filename: string;
+  content: string;
+};
+
+export function planWorkflowSync(options: Pick<CliOptions, "agents" | "homeDir" | "cwd" | "setupScope">, workflowFiles: WorkflowFile[]): PathOperation[] {
   const operations: PathOperation[] = [];
 
   if (workflowFiles.length === 0) {
-    operations.push({ type: "skip", path: sourceDir, reason: "no workflow markdown files found" });
+    operations.push({ type: "skip", path: "workflows.json", reason: "no default workflow items found" });
     return operations;
   }
 
   const rootDir = options.setupScope === "global" ? options.homeDir : options.cwd;
   const canonicalRoot = join(rootDir, ".agents", "commands");
   operations.push(...clearLegacyRoot(canonicalRoot));
-  operations.push(...syncSymlinkedMarkdownDir(join(canonicalRoot, namespace), workflowFiles));
+  operations.push(...syncCopiedMarkdownDir(join(canonicalRoot, namespace), workflowFiles));
 
   const selectedAgents = filterAgents(options.agents, supportedWorkflowAgents);
   for (const agent of selectedAgents) {
@@ -54,16 +58,56 @@ export function planWorkflowSync(options: Pick<CliOptions, "agents" | "homeDir" 
   return operations;
 }
 
-function planAgentWorkflowSync(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">, agent: AgentId, workflowFiles: string[]): PathOperation[] {
+async function loadWorkflowFiles(options: Pick<CliOptions, "homeDir" | "repoDir" | "rulesSource">): Promise<WorkflowFile[]> {
+  const manifest = loadWorkflowManifest(options);
+  const source = options.rulesSource === "manifest" ? manifest.source : options.rulesSource;
+  const selected = manifest.items.filter((item) => item.default);
+
+  return Promise.all(selected.map(async (item) => ({
+    filename: `${item.id}.md`,
+    content: source === "local"
+      ? await readLocalWorkflow(options.repoDir, localWorkflowPath(item.url))
+      : await fetchWorkflow(item.url),
+  })));
+}
+
+async function readLocalWorkflow(repoDir: string, file: string): Promise<string> {
+  return readText(join(repoDir, file));
+}
+
+async function fetchWorkflow(url: string): Promise<string> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Could not fetch ${url}: ${response.status} ${response.statusText}`);
+  }
+
+  return response.text();
+}
+
+function localWorkflowPath(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const rawGithubMatch = parsed.hostname === "raw.githubusercontent.com" ? parsed.pathname.match(/^\/[^/]+\/[^/]+\/[^/]+\/(.+)$/) : null;
+    if (rawGithubMatch?.[1]) {
+      return rawGithubMatch[1];
+    }
+  } catch {
+    return url;
+  }
+
+  return url.replace(/^\/+/, "");
+}
+
+function planAgentWorkflowSync(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">, agent: AgentId, workflowFiles: WorkflowFile[]): PathOperation[] {
   const rootDir = options.setupScope === "global" ? options.homeDir : options.cwd;
 
   switch (agent) {
     case "opencode":
-      return syncSymlinkedMarkdownDir(options.setupScope === "global"
+      return syncCopiedMarkdownDir(options.setupScope === "global"
         ? join(options.homeDir, ".config", "opencode", "commands", namespace)
         : join(options.cwd, ".opencode", "commands", namespace), workflowFiles);
     case "claude":
-      return syncSymlinkedMarkdownDir(join(rootDir, ".claude", "commands", namespace), workflowFiles);
+      return syncCopiedMarkdownDir(join(rootDir, ".claude", "commands", namespace), workflowFiles);
     case "codex":
       return syncCodexSkills(options.setupScope === "global"
         ? join(options.homeDir, ".codex", "skills", namespace)
@@ -73,23 +117,12 @@ function planAgentWorkflowSync(options: Pick<CliOptions, "homeDir" | "cwd" | "se
   }
 }
 
-function listWorkflowFiles(sourceDir: string): string[] {
-  if (!isDirectory(sourceDir)) {
-    return [];
-  }
-
-  return readdirSync(sourceDir)
-    .filter((file) => file.endsWith(".md"))
-    .sort()
-    .map((file) => join(sourceDir, file));
-}
-
-function syncSymlinkedMarkdownDir(destination: string, workflowFiles: string[]): PathOperation[] {
+function syncCopiedMarkdownDir(destination: string, workflowFiles: WorkflowFile[]): PathOperation[] {
   const operations = clearManagedFiles(destination);
   operations.push({ type: "mkdir", path: destination });
 
   for (const source of workflowFiles) {
-    const target = join(destination, basename(source));
+    const target = join(destination, source.filename);
     if (pathExists(target) && !isSymlink(target)) {
       operations.push({ type: "skip", path: target, reason: "existing unmanaged file" });
       continue;
@@ -99,23 +132,23 @@ function syncSymlinkedMarkdownDir(destination: string, workflowFiles: string[]):
       operations.push({ type: "remove", path: target });
     }
 
-    operations.push({ type: "symlink", source, target });
+    operations.push({ type: "write", path: target, content: source.content });
   }
 
-  operations.push({ type: "write", path: join(destination, managedMarker), content: workflowFiles.map((file) => basename(file)).join("\n") + "\n" });
+  operations.push({ type: "write", path: join(destination, managedMarker), content: workflowFiles.map((file) => file.filename).join("\n") + "\n" });
   return operations;
 }
 
-function syncCodexSkills(destination: string, workflowFiles: string[]): PathOperation[] {
+function syncCodexSkills(destination: string, workflowFiles: WorkflowFile[]): PathOperation[] {
   const operations = clearManagedFiles(destination);
   operations.push({ type: "mkdir", path: destination });
 
   for (const source of workflowFiles) {
-    const stem = basename(source, ".md");
+    const stem = basename(source.filename, ".md");
     const title = toTitleCase(stem.replace(/^afk-/, ""));
     const skillDir = join(destination, stem);
-    const description = extractDescription(readText(source)) || `Workflow skill generated from /${stem}.`;
-    const skillMd = `---\nname: ${stem}\ndescription: ${description}\n---\n\n# AFK ${title}\n\nThis skill is generated from the AI Field Kit workflow \`/${stem}\`.\n\nUse it when the user wants this exact named operating procedure executed with the same checkpoints, guardrails, and output expectations defined below.\n\n${readText(source)}`;
+    const description = extractDescription(source.content) || `Workflow skill generated from /${stem}.`;
+    const skillMd = `---\nname: ${stem}\ndescription: ${description}\n---\n\n# AFK ${title}\n\nThis skill is generated from the AI Field Kit workflow \`/${stem}\`.\n\nUse it when the user wants this exact named operating procedure executed with the same checkpoints, guardrails, and output expectations defined below.\n\n${source.content}`;
     const openaiYaml = `display_name: AFK ${title}\nshort_description: ${description}\ndefault_prompt: Follow the AI Field Kit /${stem} workflow for this project.\n`;
 
     operations.push({ type: "mkdir", path: join(skillDir, "agents") });
@@ -123,22 +156,22 @@ function syncCodexSkills(destination: string, workflowFiles: string[]): PathOper
     operations.push({ type: "write", path: join(skillDir, "agents", "openai.yaml"), content: openaiYaml });
   }
 
-  operations.push({ type: "write", path: join(destination, managedMarker), content: workflowFiles.map((file) => basename(file, ".md")).join("\n") + "\n" });
+  operations.push({ type: "write", path: join(destination, managedMarker), content: workflowFiles.map((file) => basename(file.filename, ".md")).join("\n") + "\n" });
   return operations;
 }
 
-function syncGeminiCommands(destination: string, workflowFiles: string[]): PathOperation[] {
+function syncGeminiCommands(destination: string, workflowFiles: WorkflowFile[]): PathOperation[] {
   const operations = clearManagedFiles(destination);
   operations.push({ type: "mkdir", path: destination });
 
   for (const source of workflowFiles) {
-    const stem = basename(source, ".md");
-    const description = extractDescription(readText(source)) || stem;
-    const content = `description = "${escapeDoubleQuotes(description)}"\nprompt = """\n${escapeTomlMultiline(readText(source))}\n"""\n`;
+    const stem = basename(source.filename, ".md");
+    const description = extractDescription(source.content) || stem;
+    const content = `description = "${escapeDoubleQuotes(description)}"\nprompt = """\n${escapeTomlMultiline(source.content)}\n"""\n`;
     operations.push({ type: "write", path: join(destination, `${stem}.toml`), content });
   }
 
-  operations.push({ type: "write", path: join(destination, managedMarker), content: workflowFiles.map((file) => `${basename(file, ".md")}.toml`).join("\n") + "\n" });
+  operations.push({ type: "write", path: join(destination, managedMarker), content: workflowFiles.map((file) => `${basename(file.filename, ".md")}.toml`).join("\n") + "\n" });
   return operations;
 }
 

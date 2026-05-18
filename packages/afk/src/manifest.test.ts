@@ -87,6 +87,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
+      "workflows.json": JSON.stringify({ version: 1, source: "github", items: [] }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -109,6 +110,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("skills.json")));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/rules.json")));
+    assert.ok(requestedUrls.some((url) => url.endsWith("/workflows.json")));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -130,6 +132,7 @@ test("ensureLocalManifests falls back to package manifests when compact manifest
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
+      "workflows.json": JSON.stringify({ version: 1, source: "github", items: [] }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
     };
 

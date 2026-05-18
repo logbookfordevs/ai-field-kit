@@ -26,6 +26,12 @@ In project scope, AFK omits the upstream `--global` flags for `skills` and
 and runs RTK project initialization from that directory. Plannotator remains a
 global utility install because its installer does not expose a project scope.
 
+Workflow sync writes managed files instead of symlinking back to a repo
+checkout. Markdown command consumers receive copied markdown files, Gemini gets
+rendered TOML, and Codex gets generated skills. Workflow sources come from
+`workflows.json`, where each item points directly at the raw markdown file to
+install.
+
 The CLI stores editable local setup manifests under:
 
 ```text
@@ -54,6 +60,7 @@ afk/manifests/
   mcps.json
   presets.json
   rules.json
+  workflows.json
   utils.json
 ```
 
@@ -73,6 +80,23 @@ For rules, keep the source repo explicit in `rules.json`:
 
 That lets a personal defaults repo refresh the manifest and keep future
 `rules sync` runs pointed at the same repo.
+
+Workflow defaults use the same direct-URL idea, but with multiple items:
+
+```json
+{
+  "version": 1,
+  "source": "github",
+  "items": [
+    {
+      "id": "my-workflow",
+      "label": "My Workflow",
+      "url": "https://raw.githubusercontent.com/your-org/dev-kit/main/workflows/my-workflow.md",
+      "default": true
+    }
+  ]
+}
+```
 
 Selected skills are grouped into non-interactive `skills` CLI calls with
 `--yes`. Global scope adds `--global`; project scope leaves that flag out so

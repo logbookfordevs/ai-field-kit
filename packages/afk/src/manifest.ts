@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, PathOperation } from "./types.js";
 
-const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "utils.json"] as const;
+const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "workflows.json", "utils.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 
 export type ManifestName = (typeof manifestNames)[number];
@@ -39,6 +39,19 @@ export type RulesManifest = {
   version: number;
   source: "github" | "local";
   url: string;
+};
+
+export type WorkflowManifest = {
+  version: number;
+  source: "github" | "local";
+  items: WorkflowManifestItem[];
+};
+
+export type WorkflowManifestItem = {
+  id: string;
+  label: string;
+  url: string;
+  default: boolean;
 };
 
 export type UtilityManifest = {
@@ -104,6 +117,10 @@ export function loadRulesManifest(options: Pick<CliOptions, "homeDir">): RulesMa
   return parseLocalManifest<RulesManifest>(options.homeDir, "rules.json", isRulesManifest);
 }
 
+export function loadWorkflowManifest(options: Pick<CliOptions, "homeDir">): WorkflowManifest {
+  return parseLocalManifest<WorkflowManifest>(options.homeDir, "workflows.json", isWorkflowManifest);
+}
+
 export function loadUtilityManifest(options: Pick<CliOptions, "homeDir">): UtilityManifest {
   return parseLocalManifest<UtilityManifest>(options.homeDir, "utils.json", isUtilityManifest);
 }
@@ -123,6 +140,10 @@ function parseLocalManifest<T>(homeDir: string, name: ManifestName, guard: (valu
 async function defaultManifestContent(name: ManifestName, options: Pick<CliOptions, "repoDir" | "rulesRef" | "rulesSource" | "defaultsSource">): Promise<string> {
   if (name === "rules.json" && !options.defaultsSource) {
     return `${JSON.stringify(defaultRulesManifest(options), null, 2)}\n`;
+  }
+
+  if (name === "workflows.json" && !options.defaultsSource) {
+    return `${JSON.stringify(defaultWorkflowManifest(options), null, 2)}\n`;
   }
 
   if (options.rulesSource === "local") {
@@ -197,6 +218,34 @@ function defaultRulesManifest(options: Pick<CliOptions, "rulesRef" | "rulesSourc
   };
 }
 
+function defaultWorkflowManifest(options: Pick<CliOptions, "rulesRef" | "rulesSource">): WorkflowManifest {
+  const workflowIds = [
+    "afk-cinematic-landing-page-builder",
+    "afk-interactive-code-review",
+    "afk-pr-description-generator",
+    "afk-pr-story-flow-mermaid",
+    "afk-typecheck",
+  ];
+
+  return {
+    version: 1,
+    source: options.rulesSource === "manifest" ? "github" : options.rulesSource,
+    items: workflowIds.map((id) => ({
+      id,
+      label: workflowLabel(id),
+      url: `${rawBaseUrl}/${encodeURIComponent(options.rulesRef)}/workflows/${id}.md`,
+      default: true,
+    })),
+  };
+}
+
+function workflowLabel(id: string): string {
+  return id
+    .replace(/^afk-/, "AFK / ")
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">): string {
   if (name === "skills.json") {
     return `${JSON.stringify({ version: 1, defaultSource: "", items: [] }, null, 2)}\n`;
@@ -208,6 +257,10 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
 
   if (name === "rules.json") {
     return `${JSON.stringify({ version: 1, source: "github", url: "" }, null, 2)}\n`;
+  }
+
+  if (name === "workflows.json") {
+    return `${JSON.stringify({ version: 1, source: "github", items: [] }, null, 2)}\n`;
   }
 
   if (name === "utils.json") {
@@ -336,6 +389,25 @@ function isRulesManifest(value: unknown): value is RulesManifest {
   }
 
   return typeof value.url === "string";
+}
+
+function isWorkflowManifest(value: unknown): value is WorkflowManifest {
+  if (!isRecord(value) || typeof value.version !== "number" || (value.source !== "github" && value.source !== "local") || !Array.isArray(value.items)) {
+    return false;
+  }
+
+  return value.items.every((item) => {
+    if (!isRecord(item)) {
+      return false;
+    }
+
+    return (
+      typeof item.id === "string" &&
+      typeof item.label === "string" &&
+      typeof item.url === "string" &&
+      typeof item.default === "boolean"
+    );
+  });
 }
 
 function isUtilityManifest(value: unknown): value is UtilityManifest {

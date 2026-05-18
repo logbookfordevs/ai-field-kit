@@ -23,7 +23,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 | `mcps/` | MCP server registry + sync script to configure them everywhere |
 | `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
 | `sync-ai-agents.sh` | One-command sync: pulls repo and symlinks rules into all supported agents |
-| `sync-ai-workflows.sh` | One-command sync: manages per-workflow symlinks where possible and renders Gemini CLI commands as TOML |
+| `sync-ai-workflows.sh` | Legacy one-command sync: manages per-workflow symlinks where possible and renders Gemini CLI commands as TOML |
 | `sync-ai-mcps.py` | Smart MCP sync: resolves API key placeholders, writes to each agent config |
 
 ---
@@ -98,7 +98,9 @@ node packages/afk/dist/index.js setup --refresh-defaults --defaults-source your-
 That gives developers a way to carry their own recommended skills, MCPs,
 utilities, presets, and rule sources without patching the AFK CLI. For rules,
 their `rules.json` can point directly at their raw GitHub rules file so
-`rules sync` keeps fetching from their defaults.
+`rules sync` keeps fetching from their defaults. For workflows, `workflows.json`
+lists each workflow with a direct raw markdown URL so `workflows sync` can do
+the same.
 
 ---
 
@@ -387,18 +389,18 @@ Different agents expose the same idea under different names and file formats, so
 | Agent | What the agent calls them | Global path used by this repo | Sync strategy |
 |---|---|---|---|
 | Codex | Skills | `~/.codex/skills/afk/` | Generated skill folders built from each workflow |
-| OpenCode | Commands | `~/.config/opencode/commands/afk/` | Managed per-file symlinks |
+| OpenCode | Commands | `~/.config/opencode/commands/afk/` | Managed copied markdown files |
 | Gemini CLI | Custom commands | `~/.gemini/commands/afk/` | Rendered TOML files |
-| Claude Code | Custom slash commands | `~/.claude/commands/afk/` | Managed per-file symlinks |
+| Claude Code | Custom slash commands | `~/.claude/commands/afk/` | Managed copied markdown files |
 
 ### Compatibility Notes
 
 - Gemini CLI expects `.toml` command files, so `sync-ai-workflows.sh` converts repo workflows into TOML before syncing.
 - Codex now receives generated AFK skills under `~/.codex/skills/afk/`, built from the workflow markdown files during sync.
-- Other supported Markdown workflow consumers currently receive managed per-file symlinks inside the repo-owned `afk/` subfolder.
+- Other supported Markdown workflow consumers receive managed copied markdown files inside the repo-owned `afk/` subfolder.
 - This keeps AI Field Kit commands and Codex skills isolated from your personal or third-party entries in the same agent.
 - The script only refreshes files managed by this repo; it does not intentionally wipe unrelated commands in the parent command folders.
-- This is intentionally symlink-first for better DX: one source of truth, easier debugging, and no copy drift.
+- The AFK CLI writes self-contained workflow files rather than symlinking back to a repo checkout. Workflow sources are driven by `workflows.json`, so npm-installed setup can refresh from raw GitHub URLs.
 
 ### Global Rules Sync Targets
 

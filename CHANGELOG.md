@@ -26,6 +26,7 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` made utility installs best-effort so one third-party installer failure does not stop the remaining utilities.
 - `cli:` changed grouped setup to continue across selected areas and report failures at the end.
 - `cli:` added global/project setup scope selection, including `--scope project` and `--local`, so AFK can prepare either machine-wide config or repo-local rules, workflows, skills, MCPs, and RTK initialization.
+- `cli:` changed workflow sync to use `workflows.json` direct workflow URLs and write managed files instead of symlinking markdown commands back to a repo checkout.
 - `rules:` replaced inline/imported AFK workflow doctrine in `AGENTS.md` with a small trigger that invokes the `afk-workflow` skill when workflow artifacts, specs, plans, RFCs, or tracking are involved.
 - `skills:` added `afk-workflow` as the activatable doctrine skill for artifact boundaries, RFC positioning, implementation planning, execution tracking handoff, and default artifact conventions.
 - `skills:` standardized generated workflow artifacts around the repo/user convention first, with AFK fallback defaults under `docs/<task-slug>/<task-slug>.<type>.md` and task references under `docs/<task-slug>/references/`.
