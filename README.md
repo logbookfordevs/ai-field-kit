@@ -283,6 +283,10 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill code-simplification`  
   Apply Chesterton's Fence, Rule of 500, and simplification heuristics to reduce complexity without changing behavior.
 
+- **Grill With Docs (Matt Pocock Skills)**  
+  Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
+  Stress-test a plan against the project's domain language, existing code, `CONTEXT.md`, and ADRs, updating documentation only as decisions become clear.
+
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
 

@@ -46,7 +46,7 @@ Use these task statuses consistently:
 - `blocked`: cannot continue without a decision, dependency, access, or fix outside the current task
 - `done`: checkpoint accepted, not merely implemented
 
-When review needs more detail, keep the main status as `review` and split gates in frontmatter or the body:
+Use review gates when a checkpoint needs more than one layer of review, such as both code review and product/user validation. Keep the main status as `review` and split gates in frontmatter or the body:
 
 ```yaml
 review_gates:
@@ -57,6 +57,8 @@ review_gates:
 Use `code` for engineer review of implementation strategy, clarity, maintainability, semantics, performance, and ship-readiness.
 
 Use `product` for user-facing validation of behavior, workflow, and whether the outcome feels right.
+
+Do not add review gates to every checkpoint by default. For code-only checkpoints, a normal `review` status plus validation notes is enough.
 
 ## Minimum Frontmatter
 
@@ -85,9 +87,30 @@ Prefer short, skimmable sections:
 - `Working Set`: files touched or expected to be touched for the current checkpoint
 - `Validation`: commands run and results
 - `Review Notes`: code review and product validation notes
+- `Review Guide`: for product gates, the current phase walkthrough, expected behavior, edge/stress checks, and what the reviewer should notice
 - `Next Action`: the single next move
 
 The body can be flexible. The non-negotiable part is that a new agent can resume without guessing what happened, what is safe to touch, and what needs approval.
+
+## Product Review Guides
+
+When a checkpoint includes a `product` review gate, include a short guided tour for the current task, phase, or checkpoint. Write it as a reviewer journey, not as a generic QA checklist.
+
+Use this shape when helpful:
+
+```markdown
+### Review Guide: <phase or task name>
+
+- Start from: <screen, command, route, state, or fixture>
+- Walkthrough: <the happy-path flow the reviewer should try>
+- Expected: <what should happen and what should feel different or correct>
+- Stress: <edge cases, awkward inputs, slow states, empty states, permission boundaries, or repeated actions>
+- Watch for: <regressions, confusing copy, visual mismatch, broken workflow, or product-fit concerns>
+```
+
+Keep it proportional to the product risk. A small UI copy change may need two bullets. A workflow change that affects user decisions, data integrity, payments, permissions, onboarding, or cross-role behavior should get a fuller tour.
+
+Skip this section for code-only review gates. Code review already has an obvious surface: the diff, validation results, and implementation notes.
 
 ## Operating Loop
 
