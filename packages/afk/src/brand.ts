@@ -1,13 +1,4 @@
-const useColor = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
-const reset = useColor ? "\u001B[0m" : "";
-const bold = useColor ? "\u001B[1m" : "";
-
-const warmGradient = [
-  [246, 178, 107],
-  [239, 125, 103],
-  [177, 112, 184],
-  [91, 141, 239],
-] as const;
+import { ansi, bold, paint, reset, routeGradient, terminalPalette } from "./terminal-theme.js";
 
 export function renderBanner(): string {
   const title = [
@@ -60,27 +51,19 @@ export function renderSetupOutro(input: {
 }
 
 export function sectionTitle(value: string): string {
-  return `${ansi(246, 178, 107)}◆${reset} ${bold}${value}${reset}`;
+  return `${paint(terminalPalette.rust, "◆")} ${bold}${value}${reset}`;
 }
 
 export function muted(value: string): string {
-  return `${ansi(142, 129, 115)}${value}${reset}`;
+  return paint(terminalPalette.driftwood, value);
 }
 
 function gradient(value: string): string {
   return [...value]
     .map((char, index) => {
-      const colorIndex = Math.min(warmGradient.length - 1, Math.floor((index / Math.max(1, value.length - 1)) * warmGradient.length));
-      const color = warmGradient[colorIndex] ?? warmGradient[0];
+      const colorIndex = Math.min(routeGradient.length - 1, Math.floor((index / Math.max(1, value.length - 1)) * routeGradient.length));
+      const color = routeGradient[colorIndex] ?? routeGradient[0];
       return `${ansi(color[0], color[1], color[2])}${char}`;
     })
     .join("") + reset;
-}
-
-function ansi(red: number, green: number, blue: number): string {
-  if (!useColor) {
-    return "";
-  }
-
-  return `\u001B[38;2;${red};${green};${blue}m`;
 }

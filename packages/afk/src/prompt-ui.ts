@@ -1,6 +1,4 @@
-const useColor = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
-const reset = useColor ? "\u001B[0m" : "";
-const bold = useColor ? "\u001B[1m" : "";
+import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 
 let promptStep = 0;
 
@@ -13,11 +11,11 @@ export function renderPromptStep(title: string, detail?: string): string {
   const step = String(promptStep).padStart(2, "0");
   const lines = [
     "",
-    `${warm("┌")}   ${badge(`step ${step}`)} ${bold}${title}${reset}`,
+    `${chartLine("┌")}   ${badge(`step ${step}`)} ${bold}${title}${reset}`,
   ];
 
   if (detail) {
-    lines.push(`${warm("│")}   ${muted(detail)}`);
+    lines.push(`${chartLine("│")}   ${muted(detail)}`);
   }
 
   return lines.join("\n");
@@ -25,40 +23,40 @@ export function renderPromptStep(title: string, detail?: string): string {
 
 export const afkSelectTheme = {
   prefix: {
-    idle: cool("◇"),
-    done: success("◆"),
+    idle: sea("◇"),
+    done: signal("◆"),
   },
   icon: {
-    cursor: cool("◆"),
+    cursor: brass("◆"),
   },
   style: {
-    answer: (text: string) => success(text),
+    answer: (text: string) => sea(text),
     message: (text: string) => `${bold}${text}${reset}`,
     description: (text: string) => muted(text),
-    highlight: (text: string) => cool(text),
+    highlight: (text: string) => brass(text),
     help: (text: string) => muted(text),
-    key: (text: string) => cool(`<${text}>`),
+    key: (text: string) => sea(`<${text}>`),
     keysHelpTip: (keys: [key: string, action: string][]) => formatKeys(keys),
   },
 } as const;
 
 export const afkCheckboxTheme = {
   prefix: {
-    idle: cool("◇"),
-    done: success("◆"),
+    idle: sea("◇"),
+    done: signal("◆"),
   },
   icon: {
-    checked: success("■"),
+    checked: brass("■"),
     unchecked: muted("□"),
-    cursor: cool("◆ "),
+    cursor: signal("◆ "),
   },
   style: {
-    answer: (text: string) => success(text),
+    answer: (text: string) => sea(text),
     message: (text: string) => `${bold}${text}${reset}`,
     description: (text: string) => muted(text),
-    highlight: (text: string) => cool(text),
+    highlight: (text: string) => brass(text),
     help: (text: string) => muted(text),
-    key: (text: string) => cool(`<${text}>`),
+    key: (text: string) => sea(`<${text}>`),
     disabledChoice: (text: string) => muted(`- ${text}`),
     renderSelectedChoices: <Value>(selectedChoices: ReadonlyArray<{ short: string }>) => {
       if (selectedChoices.length === 0) {
@@ -78,48 +76,48 @@ export const afkCheckboxTheme = {
 
 export const afkPromptTheme = {
   prefix: {
-    idle: cool("◇"),
-    done: success("◆"),
+    idle: sea("◇"),
+    done: signal("◆"),
   },
   style: {
-    answer: (text: string) => success(text),
+    answer: (text: string) => sea(text),
     message: (text: string) => `${bold}${text}${reset}`,
-    error: (text: string) => color(239, 125, 103, `> ${text}`),
+    error: (text: string) => ember(`> ${text}`),
     defaultAnswer: (text: string) => muted(`(${text})`),
     help: (text: string) => muted(text),
-    highlight: (text: string) => cool(text),
-    key: (text: string) => cool(`<${text}>`),
+    highlight: (text: string) => brass(text),
+    key: (text: string) => sea(`<${text}>`),
   },
 } as const;
 
 function formatKeys(keys: [key: string, action: string][]): string {
-  return muted(keys.map(([key, action]) => `${cool(key)} ${action}`).join("  ·  "));
+  return muted(keys.map(([key, action]) => `${sea(key)} ${action}`).join("  ·  "));
 }
 
 function badge(value: string): string {
-  return `${cool(" ")}${cool(value)}${cool(" ")}`;
+  return `${signal(" ")}${signal(value)}${signal(" ")}`;
 }
 
-function success(value: string): string {
-  return color(132, 181, 135, value);
+function sea(value: string): string {
+  return paint(terminalPalette.harbor, value);
 }
 
-function cool(value: string): string {
-  return color(91, 141, 239, value);
+function brass(value: string): string {
+  return paint(terminalPalette.brass, value);
 }
 
-function warm(value: string): string {
-  return color(246, 178, 107, value);
+function signal(value: string): string {
+  return paint(terminalPalette.rust, value);
 }
 
 function muted(value: string): string {
-  return color(142, 129, 115, value);
+  return paint(terminalPalette.driftwood, value);
 }
 
-function color(red: number, green: number, blue: number, value: string): string {
-  if (!useColor) {
-    return value;
-  }
+function ember(value: string): string {
+  return paint(terminalPalette.ember, value);
+}
 
-  return `\u001B[38;2;${red};${green};${blue}m${value}${reset}`;
+function chartLine(value: string): string {
+  return paint(terminalPalette.sienna, value);
 }
