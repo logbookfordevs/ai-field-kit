@@ -21,6 +21,9 @@ When the task is explicitly about writing docs, use the **`afk-documentation-aut
 - Default to Tailwind v4 zero-config setup; do NOT create `tailwind.config.js`/`tailwind.config.ts` unless explicitly required by the project.
 - When setting up Tailwind CSS, use the `tailwind-design-system` skill as initial reference.
 
+## Headless Components
+- Use the project’s existing headless foundation if one exists. Otherwise prefer Base UI.
+
 # Personal Preferences
 
 ## Skills
@@ -48,6 +51,12 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 
 ## Tech Stack
 When uncertain, prefer: Tailwind, TypeScript, React.
+
+## Frontend UX Defaults
+- UX quality beats avoiding setup work. Do not ship visibly worse interactions just to avoid adding a well-fit library, registry, config, or component primitive.
+- For navigation, drawers, sidebars, command menus, forms, tables, modals, and other established UI patterns, prefer mature primitives or registry components over ad hoc rebuilds when they materially improve UX, accessibility, responsiveness, or interaction quality.
+- In React/Tailwind projects, consider shadcn/ui and other community registries early when a standard app primitive is needed. If the repo is not yet configured, compare setup cost against the UX cost of a custom workaround; do not reject the registry only because setup is required.
+- Mobile is not a degraded version of desktop. Replace cramped, wrapped, clipped, or awkward controls with a proper responsive pattern such as a drawer, sheet, sidebar, menu, or command surface.
 
 ## Coding Style Instructions
 Always prioritize DX with concise and simple solutions. Keep code: Readable, Maintainable, Easy to onboard into.

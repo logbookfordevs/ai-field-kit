@@ -155,6 +155,7 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-deep-interview` | High-rigor, Socratic clarification mode for turning vague requests into execution-ready briefs |
 | `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with ADR-style decision artifacts |
+| `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
 | `afk-note` | Durable lightweight memory in a local notepad file for long sessions and handoffs |
 
 ### Spec-Driven discussion and planning skills
