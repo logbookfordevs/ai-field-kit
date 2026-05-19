@@ -154,7 +154,7 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | `afk-ask` | Gets a second opinion from a local Claude, Codex, or Gemini CLI and saves the result as an artifact |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-deep-interview` | High-rigor, Socratic clarification mode for turning vague requests into execution-ready briefs |
-| `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with reusable decision artifacts |
+| `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with ADR-style decision artifacts |
 | `afk-note` | Durable lightweight memory in a local notepad file for long sessions and handoffs |
 
 ### Spec-Driven discussion and planning skills
@@ -168,7 +168,7 @@ They are intentionally similar, but they are not redundant:
 | `afk-workflow` | The task involves PRDs, specs, RFCs, implementation plans, tracking, or workflow artifact conventions | Consistent artifact boundaries, storage defaults, and workflow framing |
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
 | `afk-deep-interview` | You want disciplined clarification before planning or execution and you're willing to be questioned one round at a time | Execution-ready brief or spec with clear boundaries |
-| `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | Decision artifact for downstream implementation |
+| `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | ADR-style decision record for downstream implementation |
 | `afk-execution-tracking` | You have an implementation plan and want checkpointed execution instead of one long build run | Canonical tracking file with task status, review gates, validation, and next action |
 | `afk-advanced-elicitation` | You already have a draft, brief, plan, or answer and want to pressure-test or improve it | Stronger revised artifact with visible critique/refinement |
 | `afk-note` | You need important context to survive interruptions, compaction, or handoffs | Durable lightweight memory |
@@ -217,15 +217,30 @@ Use the smallest useful slice of AFK for the moment you are in.
 
 If the work is already clear, skip straight to the later skill that matches the need. If the work is messy, start earlier. The point is guidance, not bureaucracy.
 
-### A simple flow that works well
+### A practical optional workflow
 
-You do not need to use all of these every time, but this sequence works well for many spec-driven tasks:
+You do not need every step. Pick the smallest useful path for the moment you are in.
 
-1. Start with `afk-brainstorming-facilitator` when the space is still wide open.
-2. Use `afk-deep-interview` when you want to pressure-test intent, scope, non-goals, and decision boundaries before planning.
-3. Use `afk-coding-tradeoffs` when a specific slice of work needs its UX and implementation trade-offs resolved.
-4. Use `afk-advanced-elicitation` on the resulting brief, context doc, or plan to improve quality before execution.
-5. Use `afk-execution-tracking` after an implementation plan exists and you want checkpointed execution, resume safety, or parallel coordination.
+1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
+2. Use `afk-deep-interview` when intent, scope, non-goals, or decision boundaries are still expensive to get wrong.
+3. Write or refine the PRD/spec with your preferred spec skill or normal prompting.
+4. Use `afk-coding-tradeoffs` when a known slice still has UX, behavior, or implementation decisions to lock. It captures those decisions as ADR-style records.
+5. Use `grill-with-docs` when a draft, ADR, or plan needs pressure against domain language, existing code, `CONTEXT.md`, or prior ADRs. Default to this after `afk-coding-tradeoffs`; use it before when domain terms are the unclear part.
+6. Use `afk-advanced-elicitation` when a draft needs a stronger reasoning/refinement pass that is not specifically about codebase or domain-doc alignment.
+7. Create the implementation plan with your preferred planning tool or normal prompting.
+8. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or implementation notes.
+
+Most flows only use a few of these. For example:
+
+```text
+PRD/spec -> afk-coding-tradeoffs -> grill-with-docs -> implementation plan -> afk-execution-tracking
+```
+
+If the domain language is fuzzy, swap the middle:
+
+```text
+PRD/spec -> grill-with-docs -> afk-coding-tradeoffs -> implementation plan
+```
 
 ### Framework Pairings
 
@@ -261,7 +276,7 @@ The clean mental model is:
 
 AFK is strongest when it shapes the work first, then hands off to the best external skill or framework for the next job.
 
-#### Recommended after AFK discovery
+#### Optional companion skills
 
 - **Spec Driven Development (Agent-Skills)**  
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill spec-driven-development`  
@@ -285,7 +300,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Grill With Docs (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
-  Stress-test a plan against the project's domain language, existing code, `CONTEXT.md`, and ADRs, updating documentation only as decisions become clear.
+  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. It complements `afk-coding-tradeoffs`: use trade-offs first when decisions are fuzzy, and Grill With Docs first when domain language is fuzzy.
 
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)

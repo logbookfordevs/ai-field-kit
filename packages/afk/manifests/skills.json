@@ -32,7 +32,7 @@
     },
     {
       "id": "afk-coding-tradeoffs",
-      "label": "AFK / Coding Tradeoffs",
+      "label": "AFK / Coding Tradeoffs (ADR)",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
       "args": ["--skill", "afk-coding-tradeoffs", "--global"],
       "default": true
@@ -126,6 +126,13 @@
       "label": "External / Code Simplification",
       "source": "https://github.com/addyosmani/agent-skills.git",
       "args": ["--skill", "code-simplification", "--global"],
+      "default": false
+    },
+    {
+      "id": "grill-with-docs",
+      "label": "External / Grill With Docs",
+      "source": "https://github.com/mattpocock/skills",
+      "args": ["--skill", "grill-with-docs", "--global"],
       "default": false
     }
   ]

@@ -1,27 +1,31 @@
 ---
 name: afk-workflow
-description: Apply the AFK workflow doctrine for PRDs, specs, RFCs, implementation plans, tracking files, and generated workflow artifacts. Use when work involves spec-driven development, planning artifacts, artifact storage, checkpointed implementation, or resuming/coordinating multi-step execution.
+description: Apply AFK workflow doctrine for non-trivial product and engineering work involving PRDs, specs, RFCs, implementation plans, tracking, handoff notes, or generated workflow artifacts. Skip quick one-shot operations with no workflow state, artifact, or handoff.
 metadata:
   short-description: Apply AFK workflow doctrine for specs, plans, tracking, and artifact conventions.
 ---
 
 # AFK Workflow
 
-Use this skill as a behavior lens when the task involves PRDs, specs, RFCs, implementation plans, tracking files, generated workflow artifacts, or checkpointed execution.
+Use this skill as the default behavior lens for non-trivial product and engineering work: discovery, brainstorming, elicitation, PRDs, specs, RFCs, implementation planning, execution, testing, validation, tracking, handoff, or generated workflow artifacts.
 
 This skill is not a full ceremony. It keeps artifact boundaries, storage, and handoff expectations consistent while letting the user choose the actual planning or execution method.
+
+Skip quick one-shot operations where no workflow state, artifact, or handoff is needed.
 
 ## Workflow Framing
 
 - Treat the path from PRD/spec to implementation plan as a **workflow slice**, not the whole delivery lifecycle.
 - Work may start before this slice with brainstorming, discovery, elicitation, deep interview, or similar clarification flows.
 - Work usually continues after this slice with execution, testing, verification, review, and approval gates.
+- A task does not need every workflow stage to qualify; meaningful context, decisions, validation, or handoff is enough.
 
 ## Artifact Boundaries
 
-- **PRD** explains the product vision, motivation, and why the work matters.
-- **Spec** explains expected behavior, flow logic, and design intent. In smaller or solo contexts, it can absorb the PRD.
-- **RFC** explains a proposed direction and invites review and feedback before implementation. In some team contexts, this document may be called an ERD.
+- **PRD** explains product intent: user problem, goals, scope, non-goals, success criteria, and stakeholder context.
+- **Spec** explains behavior and design decisions: user flow, expected behavior, acceptance criteria, edge cases, constraints, and relevant design references. In small or solo contexts, PRD and spec can be combined when one artifact covers both responsibilities.
+- If the PRD or combined artifact lacks behavior needed for implementation, create or update a spec before writing the implementation plan.
+- **RFC** explains a proposed direction and invites review and feedback before implementation planning.
 - **Implementation Plan** is the technical execution artifact: files, types, interfaces, pseudocode, tasks, and build strategy.
 - **Tracking** follows the implementation plan and records execution status, checkpoints, validation, and handoff notes.
 
@@ -30,15 +34,14 @@ This skill is not a full ceremony. It keeps artifact boundaries, storage, and ha
 - Follow the repo or user artifact convention first.
 - If no convention exists, store generated workflow artifacts under `docs/<task-slug>/`.
 - Use a concise kebab-case task slug, such as `smart-filters` or `checkout-retry-flow`.
-- Prefer `docs/<task-slug>/<task-slug>.<type>.md`, using clear suffixes such as `.prd.md`, `.spec.md`, `.rfc.md`, `.plan.md`, `.tracking.md`, `.test-plan.md`, `.test-spec.md`, `.brainstorming.md`, `.interview.md`, `.tradeoffs.md`, `.gemini.md`, and `.notes.md`.
+- Prefer `docs/<task-slug>/<task-slug>.<type>.md`, using clear suffixes such as `.prd.md`, `.spec.md`, `.rfc.md`, `.plan.md`, `.tracking.md`, `.implementation-notes.md`, `.test-plan.md`, `.test-spec.md`, `.brainstorming.md`, `.interview.md`, `.tradeoffs.md`, `.gemini.md`, and `.notes.md`.
+- Keep ADR-style decision records under `docs/<task-slug>/decisions/` with sequential filenames such as `0001-shared-modal-ownership.adr.md`, unless the repo has a stronger ADR convention.
 - Keep passive fetched material, screenshots, exports, and source references under `docs/<task-slug>/references/` when they belong to the task.
 - Treat generated workflow artifacts as local working artifacts unless the repo convention or the user says they should be committed.
 
 ## RFC Positioning
 
-- RFC is **optional** and usually sits outside the core linear timeline, even when it happens between spec and implementation planning.
-- Use RFC when external or cross-team feedback may change the spec, PRD, or implementation plan.
-- Do not force RFC into every workflow.
+- Create an RFC only when the user asks for one or confirms that team review is needed before implementation planning.
 
 ## Implementation Planning Doctrine
 
@@ -53,6 +56,13 @@ This skill is not a full ceremony. It keeps artifact boundaries, storage, and ha
 - For checkpointed or multi-step implementation, use `afk-execution-tracking` after the implementation plan exists and before execution starts.
 - Keep one canonical tracking file per feature or plan. If no stronger convention exists, use `docs/<task-slug>/<task-slug>.tracking.md`.
 - Parallel agents should update their assigned task sections in the canonical tracking file instead of creating competing status files.
+
+## Implementation Notes
+
+- During implementation from a PRD, spec, RFC, or plan, keep running notes for decisions the source artifact did not settle.
+- Record deviations, assumptions, trade-offs, scope changes, surprising constraints, and anything the reviewer or next agent should know.
+- Prefer the tracking file when one exists. Otherwise, use `docs/<task-slug>/<task-slug>.implementation-notes.md` when the work needs a handoff trail.
+- Keep notes concise and decision-oriented. Skip them for quick one-shot edits.
 
 ## Behavior
 

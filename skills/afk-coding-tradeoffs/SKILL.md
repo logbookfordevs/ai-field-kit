@@ -1,8 +1,8 @@
 ---
 name: "afk-coding-tradeoffs"
-description: "Discuss high-leverage UX and implementation trade-offs inside an already understood scope. Use when a feature is clear enough to build, but important local decisions about interaction behavior, composition strategy, code ownership, library commitments, or information design still need to be locked before coding."
+description: "Discuss high-leverage UX and implementation trade-offs inside an already understood scope and capture the outcome as an ADR-style decision record. Use when important local decisions need to be locked before coding, including ADR discussions, interaction behavior, composition strategy, code ownership, library commitments, or information design."
 metadata:
-  short-description: "Resolve UX and implementation trade-offs before coding and capture the final decisions in a reusable artifact."
+  short-description: "Resolve UX and implementation trade-offs before coding and capture the final decisions in an ADR-style artifact."
 ---
 
 # Coding Trade-offs
@@ -13,11 +13,11 @@ Its job is not to rediscover the product idea or do broad planning. Its job is t
 
 ## Goal
 
-Resolve high-leverage UX and implementation trade-offs inside a bounded scope and produce a reusable decision artifact that downstream work can trust.
+Resolve high-leverage UX and implementation trade-offs inside a bounded scope and produce an ADR-style decision artifact that downstream work can trust.
 
 Typical output:
-- a decision memo for downstream implementation
-- a reusable trade-off record
+- an ADR-style decision record under `docs/<task-slug>/decisions/`
+- a reusable trade-off record when the repo uses different naming
 - another equivalent artifact requested by the user
 
 ## Inputs
@@ -473,22 +473,32 @@ If the user introduces new capabilities or work that belongs outside the current
 
 This skill should sharpen the current scope, not quietly expand it.
 
-### 7. Write the decision artifact
+### 7. Write the ADR-style decision artifact
 
 Produce a decision document that is useful for downstream implementation and future chats.
 
 When writing a file, follow the repo or user artifact convention. If none exists, follow the AFK default from `afk-workflow`.
 
+Use sequential ADR filenames under `docs/<task-slug>/decisions/`, such as `0001-shared-modal-ownership.adr.md`. Scan existing files in that folder and increment the highest number.
+
 This artifact is mandatory, even if the conversation was short.
 
+Keep ADRs focused. A decision deserves its own ADR when it is:
+- hard enough to reverse that changing it later would matter
+- surprising without context, so a future reader may wonder why it was done this way
+- the result of a real trade-off with plausible alternatives
+
+If the discussion resolves several unrelated decisions, create one ADR per meaningful decision area. Update an existing ADR only when the new information belongs to the same decision and does not reverse it. If an accepted decision changes direction, create a new ADR that supersedes the old one instead of rewriting history.
+
 Recommended sections:
-- `Goal`
-- `Scope`
+- `Status`
+- `Context`
+- `Decision`
 - `Gray Areas Discussed`
 - `Options Considered`
 - `Truss Evaluation`
-- `Decisions`
 - `Trade-offs Accepted`
+- `Consequences`
 - `Open Questions`
 - `Next Step`
 
