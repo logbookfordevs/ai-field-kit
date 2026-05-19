@@ -21,10 +21,6 @@ if [[ ! -d "$AFK_DIR/dist" ]]; then
   fail "could not find packages/afk/dist"
 fi
 
-if [[ ! -d "$AFK_DIR/manifests" ]]; then
-  fail "could not find packages/afk/manifests"
-fi
-
 tmp_dir="$(mktemp -d)"
 cleanup() {
   rm -rf "$tmp_dir"
@@ -34,7 +30,6 @@ trap cleanup EXIT
 package_dir="$tmp_dir/package"
 mkdir -p "$package_dir"
 cp -R "$AFK_DIR/dist" "$package_dir/dist"
-cp -R "$AFK_DIR/manifests" "$package_dir/manifests"
 
 if [[ -f "$AFK_DIR/package.json" ]]; then
   cp "$AFK_DIR/package.json" "$package_dir/package.json"
