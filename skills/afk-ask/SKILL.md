@@ -1,8 +1,8 @@
 ---
 name: afk-ask
-description: Ask a local AI CLI advisor such as Claude, Codex, or Gemini and capture the result as a reusable artifact. Use when a second opinion, critique, brainstorm, review, or alternate model perspective would help.
+description: Ask a local AI CLI advisor such as Claude, Codex, or Agy and capture the result as a reusable artifact. Use when a second opinion, critique, brainstorm, review, or alternate model perspective would help.
 metadata:
-  short-description: Ask a local Claude, Codex, or Gemini CLI for a second opinion and preserve the answer.
+  short-description: Ask a local Claude, Codex, or Agy CLI for a second opinion and preserve the answer.
 ---
 
 # Ask
@@ -21,7 +21,8 @@ Supported providers:
 
 - `claude`
 - `codex`
-- `gemini`
+- `agy`
+- `gemini` (legacy alias for `agy`)
 
 If the provider is missing, ask the user which local advisor they want to use.
 
@@ -34,7 +35,7 @@ Check availability with:
 ```bash
 claude --version
 codex --version
-gemini --version
+agy --help
 ```
 
 Use the matching non-interactive command:
@@ -42,8 +43,10 @@ Use the matching non-interactive command:
 ```bash
 claude --permission-mode plan -p "{{PROMPT}}"
 codex exec --sandbox read-only --ask-for-approval never "{{PROMPT}}"
-gemini --approval-mode plan -p "{{PROMPT}}"
+agy --sandbox --print "{{PROMPT}}"
 ```
+
+For `gemini`, use the same `agy --sandbox --print "{{PROMPT}}"` command. Do not call the deprecated `gemini` binary.
 
 If the installed CLI has different flags, inspect `--help` and adapt while keeping the same principle: local, non-interactive, transparent, and read-only.
 
