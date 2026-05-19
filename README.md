@@ -13,6 +13,26 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 
 ---
 
+## Index
+
+- [What's in the Kit](#whats-in-the-kit)
+- [Quick Start](#quick-start)
+  - [Just the skills](#just-the-skills--30-seconds)
+  - [Full setup](#full-setup--rules-workflows-and-mcps-too)
+  - [Preview the AFK CLI](#preview-the-afk-cli)
+- [The Skills](#the-skills)
+- [The Workflows](#the-workflows)
+- [Skill vs Workflow Rubric](#skill-vs-workflow-rubric)
+- [The MCP Registry](#the-mcp-registry)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [Common Issues](#common-issues)
+- [Agents Supported](#agents-supported)
+- [Acknowledgements](#acknowledgements)
+- [Support This Work](#support-this-work)
+
+---
+
 ## What's in the Kit
 
 | Piece | What it does |
