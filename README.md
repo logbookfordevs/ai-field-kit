@@ -225,21 +225,14 @@ You do not need every step. Pick the smallest useful path for the moment you are
 2. Use `afk-deep-interview` when intent, scope, non-goals, or decision boundaries are still expensive to get wrong.
 3. Write or refine the PRD/spec with your preferred spec skill or normal prompting.
 4. Use `afk-coding-tradeoffs` when a known slice still has UX, behavior, or implementation decisions to lock. It captures those decisions as ADR-style records.
-5. Use `grill-with-docs` when a draft, ADR, or plan needs pressure against domain language, existing code, `CONTEXT.md`, or prior ADRs. Default to this after `afk-coding-tradeoffs`; use it before when domain terms are the unclear part.
-6. Use `afk-advanced-elicitation` when a draft needs a stronger reasoning/refinement pass that is not specifically about codebase or domain-doc alignment.
-7. Create the implementation plan with your preferred planning tool or normal prompting.
-8. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or implementation notes.
+5. Use `afk-advanced-elicitation` when a draft needs a stronger reasoning/refinement pass.
+6. Create the implementation plan with your preferred planning tool or normal prompting.
+7. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or implementation notes.
 
 Most flows only use a few of these. For example:
 
 ```text
-PRD/spec -> afk-coding-tradeoffs -> grill-with-docs -> implementation plan -> afk-execution-tracking
-```
-
-If the domain language is fuzzy, swap the middle:
-
-```text
-PRD/spec -> grill-with-docs -> afk-coding-tradeoffs -> implementation plan
+PRD/spec -> afk-coding-tradeoffs -> implementation plan -> afk-execution-tracking
 ```
 
 ### Framework Pairings
