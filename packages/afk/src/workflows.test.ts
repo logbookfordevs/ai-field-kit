@@ -82,6 +82,7 @@ test("syncWorkflows honors selected workflow ids", async () => {
     defaultsSource: "",
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
+    selectedManifestCategories: [],
     homeDir,
     repoDir,
     cwd: join(root, "project"),

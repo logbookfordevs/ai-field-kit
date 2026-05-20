@@ -7,6 +7,55 @@ import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegate
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions, Runtime } from "./types.js";
 
+const defaultHomeDir = localHomeWithManifests({
+  "skills.json": {
+    version: 1,
+    defaultSource: "https://github.com/logbookfordevs/ai-field-kit",
+    items: [
+      {
+        id: "afk-note",
+        label: "AFK / Note",
+        source: "https://github.com/logbookfordevs/ai-field-kit",
+        args: ["--skill", "afk-note", "--global"],
+        default: true,
+        autoInvocation: true,
+      },
+    ],
+  },
+  "mcps.json": {
+    version: 1,
+    items: [
+      {
+        id: "stitch",
+        label: "Stitch MCP",
+        source: "https://stitch.googleapis.com/mcp",
+        args: ["--name", "stitchmcp"],
+        default: true,
+      },
+    ],
+  },
+  "utils.json": {
+    version: 1,
+    items: [
+      {
+        id: "plannotator",
+        label: "Plannotator",
+        description: "Review and annotate plans before implementation.",
+        install: { command: "bash", args: ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash"] },
+        default: true,
+      },
+      {
+        id: "rtk",
+        label: "RTK",
+        description: "Compress noisy command output for coding agents.",
+        install: { command: "sh", args: ["-c", "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"] },
+        postInstall: "rtk-init",
+        default: true,
+      },
+    ],
+  },
+});
+
 const options: CliOptions = {
   agents: ["codex"],
   setupScope: "global",
@@ -26,7 +75,8 @@ const options: CliOptions = {
   defaultsSource: "",
   manifestConfigureLocal: false,
   manifestConfigureFromCurrent: false,
-  homeDir: "/tmp/home",
+  selectedManifestCategories: [],
+  homeDir: defaultHomeDir,
   repoDir: "/tmp/repo",
   cwd: "/tmp/project",
 };
@@ -123,7 +173,7 @@ test("buildUtilityCommands adds RTK init commands for selected agents", () => {
       ["rtk", ["init", "--global", "--opencode"]],
     ],
   );
-  assert.equal(commands[2]?.cwd, "/tmp/home/.codex");
+  assert.equal(commands[2]?.cwd, join(defaultHomeDir, ".codex"));
 });
 
 test("buildUtilityCommands runs RTK init locally for project scope", () => {
@@ -212,9 +262,15 @@ function fakeRuntime(calls: string[], codes: number[], warnings: string[] = []):
 }
 
 function localHomeWithManifest(name: string, content: unknown): string {
+  return localHomeWithManifests({ [name]: content });
+}
+
+function localHomeWithManifests(manifests: Record<string, unknown>): string {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-delegates-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
-  writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
+  for (const [name, content] of Object.entries(manifests)) {
+    writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
+  }
   return homeDir;
 }

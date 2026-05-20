@@ -17,9 +17,15 @@ fail() {
   exit 1
 }
 
-if [[ ! -d "$AFK_DIR/dist" ]]; then
-  fail "could not find packages/afk/dist"
+if ! command -v pnpm >/dev/null 2>&1; then
+  fail "pnpm is required to package AFK"
 fi
+
+info "installing AFK package dependencies"
+pnpm --dir "$AFK_DIR" install
+
+info "building AFK package"
+pnpm --dir "$AFK_DIR" run build
 
 tmp_dir="$(mktemp -d)"
 cleanup() {
@@ -30,6 +36,7 @@ trap cleanup EXIT
 package_dir="$tmp_dir/package"
 mkdir -p "$package_dir"
 cp -R "$AFK_DIR/dist" "$package_dir/dist"
+find "$package_dir/dist" -name '*.test.js' -delete
 
 if [[ -f "$AFK_DIR/package.json" ]]; then
   cp "$AFK_DIR/package.json" "$package_dir/package.json"

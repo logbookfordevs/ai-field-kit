@@ -2,9 +2,10 @@ import { spawn } from "node:child_process";
 import { isAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
+import { runManifestShow } from "./manifest-show.js";
 import { resolve } from "node:path";
 import { resolveHome, resolveRepoDir } from "./paths.js";
-import type { AgentId, Area, CliOptions, CommandResult, Runtime, SetupScope } from "./types.js";
+import type { AgentId, Area, CliOptions, CommandResult, ManifestCategory, Runtime, SetupScope } from "./types.js";
 
 export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
   const runtime: Runtime = {
@@ -50,6 +51,10 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (key === "manifests configure") {
     return runManifestConfigure(runtime, options);
+  }
+
+  if (key === "manifests show" || key === "manifest show") {
+    return runManifestShow(runtime, options);
   }
 
   const area = commandToArea(commandPath);
@@ -102,12 +107,12 @@ const commandHelps: Record<string, CommandHelp> = {
       "--scope global|project            Choose machine-wide or current-project setup",
       "--local                           Alias for --scope project",
       "--agent <agent>                   Limit agent targets; repeatable",
-      "--source github|local             Load rules/workflows from GitHub or this checkout",
+      "--source github|local             Load manifests from remote sources or this checkout for development",
       "--ref <git-ref>                   Git ref for default AFK manifest URLs",
       "--init-only                       Create/update local manifests only",
       "--empty                           Create empty manifests with --init-only",
-      "--refresh-defaults                Refresh local manifests from remembered defaults",
-      "--defaults-source <github-source> Use and remember a custom defaults source",
+      "--refresh-defaults                Refresh local manifests from remembered defaults and exit",
+      "--defaults-source <source>        Use and remember a custom remote or local defaults source",
     ],
     examples: [
       "afk setup",
@@ -115,6 +120,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup --local",
       "afk setup --refresh-defaults",
       "afk setup --defaults-source your-org/dev-kit",
+      "afk setup --defaults-source ./afk/manifests",
     ],
   },
   "setup rules sync": {
@@ -131,7 +137,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--init-only",
       "--empty",
       "--refresh-defaults",
-      "--defaults-source <github-source>",
+      "--defaults-source <source>",
     ],
     examples: [
       "afk setup rules sync --dry-run",
@@ -152,7 +158,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--init-only",
       "--empty",
       "--refresh-defaults",
-      "--defaults-source <github-source>",
+      "--defaults-source <source>",
     ],
     examples: [
       "afk setup workflows sync --dry-run",
@@ -174,7 +180,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--init-only",
       "--empty",
       "--refresh-defaults",
-      "--defaults-source <github-source>",
+      "--defaults-source <source>",
     ],
     examples: [
       "afk setup skills install --dry-run",
@@ -195,7 +201,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--init-only",
       "--empty",
       "--refresh-defaults",
-      "--defaults-source <github-source>",
+      "--defaults-source <source>",
     ],
     examples: [
       "afk setup mcps install --dry-run",
@@ -216,7 +222,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--init-only",
       "--empty",
       "--refresh-defaults",
-      "--defaults-source <github-source>",
+      "--defaults-source <source>",
     ],
     examples: [
       "afk setup utils install --dry-run",
@@ -239,6 +245,45 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk manifests configure --from-current",
     ],
   },
+  "manifests show": {
+    title: "AFK manifests show",
+    summary: "Show the current local AFK manifest configuration.",
+    usage: "afk manifests show [options]",
+    options: [
+      "--local                          Show ./afk/manifests instead of global manifests",
+      "--rules                          Show rules manifest",
+      "--workflows                      Show workflows manifest",
+      "--skills                         Show skills manifest",
+      "--mcp, --mcps                    Show MCP manifest",
+      "--utils                          Show utilities manifest",
+      "--presets                        Show presets manifest",
+    ],
+    examples: [
+      "afk manifests show",
+      "afk manifests show --local",
+      "afk manifests show --rules --skills",
+      "afk manifest show --mcp --utils",
+    ],
+  },
+  "manifest show": {
+    title: "AFK manifest show",
+    summary: "Alias for afk manifests show.",
+    usage: "afk manifest show [options]",
+    options: [
+      "--local                          Show ./afk/manifests instead of global manifests",
+      "--rules                          Show rules manifest",
+      "--workflows                      Show workflows manifest",
+      "--skills                         Show skills manifest",
+      "--mcp, --mcps                    Show MCP manifest",
+      "--utils                          Show utilities manifest",
+      "--presets                        Show presets manifest",
+    ],
+    examples: [
+      "afk manifest show",
+      "afk manifest show --local",
+      "afk manifest show --rules --skills",
+    ],
+  },
 };
 
 function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
@@ -259,6 +304,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let defaultsSource = "";
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
+  const selectedManifestCategories: ManifestCategory[] = [];
   const homeDir = resolveHome(env);
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
@@ -279,6 +325,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (key === "manifests configure" && arg === "--from-current") {
       manifestConfigureFromCurrent = true;
+      continue;
+    }
+
+    if ((key === "manifests show" || key === "manifest show") && manifestCategoryFlag(arg)) {
+      const category = manifestCategoryFlag(arg);
+      if (category && !selectedManifestCategories.includes(category)) {
+        selectedManifestCategories.push(category);
+      }
       continue;
     }
 
@@ -400,6 +454,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       defaultsSource,
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
+      selectedManifestCategories,
       homeDir,
       repoDir,
       cwd,
@@ -472,6 +527,7 @@ Usage:
   afk setup mcps install [options]
   afk setup utils install [options]
   afk manifests configure [options]
+  afk manifests show [options]
 
 Run "afk <command> --help" for command-specific options.
 
@@ -481,6 +537,30 @@ Agents:
 
 function commandKey(commandPath: string[] = []): string {
   return commandPath.join(" ");
+}
+
+function manifestCategoryFlag(arg: string): ManifestCategory | null {
+  switch (arg) {
+    case "--rules":
+      return "rules";
+    case "--workflow":
+    case "--workflows":
+      return "workflows";
+    case "--skill":
+    case "--skills":
+      return "skills";
+    case "--mcp":
+    case "--mcps":
+      return "mcps";
+    case "--util":
+    case "--utils":
+      return "utils";
+    case "--preset":
+    case "--presets":
+      return "presets";
+    default:
+      return null;
+  }
 }
 
 function renderCommandHelp(help: CommandHelp): string {

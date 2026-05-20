@@ -52,7 +52,7 @@ test("ensureLocalManifests migrates the old Stitch header default", async () => 
   assert.deepEqual(next.items[0]?.args, ["--name", "stitchmcp"]);
 });
 
-test("ensureLocalManifests migrates built-in skills to invocation policy metadata", async () => {
+test("ensureLocalManifests migrates existing skills to invocation policy metadata", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-skills-manifest-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
@@ -93,7 +93,7 @@ test("ensureLocalManifests migrates built-in skills to invocation policy metadat
   assert.ok(write && write.type === "write");
   const next = JSON.parse(write.content) as { items: Array<{ id: string; autoInvocation?: boolean }> };
   assert.equal(next.items.find((item) => item.id === "afk-note")?.autoInvocation, true);
-  assert.equal(next.items.find((item) => item.id === "afk-typecheck")?.autoInvocation, false);
+  assert.equal(next.items.some((item) => item.id === "afk-typecheck"), false);
 });
 
 test("defaultsManifestBaseUrl resolves GitHub shorthand to the AFK manifest convention", () => {
@@ -204,7 +204,7 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
   }
 });
 
-test("ensureLocalManifests falls back to package manifests when compact manifests are missing", async () => {
+test("ensureLocalManifests falls back to remote package manifest convention when compact manifests are missing", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
   globalThis.fetch = async (input) => {
@@ -243,6 +243,46 @@ test("ensureLocalManifests falls back to package manifests when compact manifest
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("utils.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/afk/manifests/skills.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/packages/afk/manifests/skills.json")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests keeps existing files when a custom source omits a manifest", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("missing", { status: 404 });
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-partial-defaults-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(
+      join(manifestDir, "workflows.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          source: "github",
+          items: [{ id: "keep-me", label: "Keep Me", url: "https://example.com/workflows/keep.md", default: true }],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+    });
+
+    const workflowOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("workflows.json"));
+    assert.equal(workflowOperation?.type, "skip");
+    assert.equal(readFileSync(join(manifestDir, "workflows.json"), "utf8").includes("keep-me"), true);
   } finally {
     globalThis.fetch = originalFetch;
   }

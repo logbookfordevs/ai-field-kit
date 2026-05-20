@@ -97,7 +97,7 @@ node packages/afk/dist/index.js setup --dry-run
 Install the local checkout as an `afk` command while developing:
 
 ```bash
-./install.sh
+./scripts/install.sh --local
 afk setup --dry-run
 ```
 

@@ -7,11 +7,11 @@
     "afk": "./dist/index.js"
   },
   "files": [
-    "dist",
-    "manifests"
+    "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "pnpm run clean && tsc",
     "typecheck": "npx tsc --noEmit",
     "prepack": "pnpm run build",
     "test": "pnpm run build && node --test \"dist/**/*.test.js\""

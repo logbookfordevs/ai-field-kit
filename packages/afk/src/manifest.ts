@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, PathOperation } from "./types.js";
 
@@ -89,6 +89,13 @@ export type PresetsManifest = {
   }>;
 };
 
+type ManifestOptions = Pick<
+  CliOptions,
+  "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "defaultsSource" | "dryRun"
+> & {
+  cwd?: string;
+};
+
 export function localAfkDir(homeDir: string): string {
   return join(homeDir, ".agents", "afk");
 }
@@ -97,7 +104,7 @@ export function localManifestDir(homeDir: string): string {
   return join(localAfkDir(homeDir), "manifests");
 }
 
-export async function ensureLocalManifests(options: Pick<CliOptions, "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "defaultsSource" | "dryRun">): Promise<PathOperation[]> {
+export async function ensureLocalManifests(options: ManifestOptions): Promise<PathOperation[]> {
   const operations: PathOperation[] = [];
   const manifestDir = localManifestDir(options.homeDir);
   const effectiveDefaultsSource = options.defaultsSource || rememberedDefaultsSource(options.homeDir) || builtInDefaultsSource;
@@ -120,7 +127,13 @@ export async function ensureLocalManifests(options: Pick<CliOptions, "homeDir" |
     const content = options.empty
       ? emptyManifestContent(name, options, effectiveDefaultsSource)
       : await defaultManifestContent(name, options, effectiveDefaultsSource);
-    operations.push({ type: "write", path: target, content });
+    if (content) {
+      operations.push({ type: "write", path: target, content });
+    } else if (existsSync(target)) {
+      operations.push({ type: "skip", path: target, reason: "not provided by defaults source" });
+    } else {
+      operations.push({ type: "write", path: target, content: emptyManifestContent(name, options, effectiveDefaultsSource) });
+    }
   }
 
   return operations;
@@ -148,39 +161,36 @@ export function loadUtilityManifest(options: Pick<CliOptions, "homeDir">): Utili
 
 function parseLocalManifest<T>(homeDir: string, name: ManifestName, guard: (value: unknown) => value is T): T {
   const path = join(localManifestDir(homeDir), name);
-  const sourcePath = existsSync(path) ? path : manifestPath(name);
-  const parsed: unknown = JSON.parse(readFileSync(sourcePath, "utf8"));
+  if (!existsSync(path)) {
+    throw new Error(`Missing AFK manifest: ${path}. Run "afk setup --refresh-defaults" to prepare local manifests.`);
+  }
+
+  const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
 
   if (!guard(parsed)) {
-    throw new Error(`Invalid AFK manifest: ${sourcePath}`);
+    throw new Error(`Invalid AFK manifest: ${path}`);
   }
 
   return parsed;
 }
 
-async function defaultManifestContent(name: ManifestName, options: Pick<CliOptions, "repoDir" | "rulesRef" | "rulesSource">, defaultsSource: string): Promise<string> {
-  if (name === "rules.json" && defaultsSource === builtInDefaultsSource) {
-    return `${JSON.stringify(defaultRulesManifest(options), null, 2)}\n`;
-  }
-
-  if (name === "workflows.json" && defaultsSource === builtInDefaultsSource) {
-    return `${JSON.stringify(defaultWorkflowManifest(options), null, 2)}\n`;
-  }
-
+async function defaultManifestContent(name: ManifestName, options: ManifestOptions, defaultsSource: string): Promise<string | null> {
   if (name === "presets.json") {
-    return withRememberedDefaultsSource(await fetchDefaultManifest(name, options, defaultsSource), defaultsSource);
-  }
-
-  if (options.rulesSource === "local") {
-    return readFileSync(manifestPath(name), "utf8");
+    const content = await fetchDefaultManifest(name, options, defaultsSource);
+    return content ? withRememberedDefaultsSource(content, defaultsSource) : null;
   }
 
   return fetchDefaultManifest(name, options, defaultsSource);
 }
 
-async function fetchDefaultManifest(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): Promise<string> {
+async function fetchDefaultManifest(name: ManifestName, options: ManifestOptions, defaultsSource: string): Promise<string | null> {
   if (options.rulesSource === "local") {
-    return readFileSync(manifestPath(name), "utf8");
+    return readLocalPackageManifest(name, options);
+  }
+
+  const localContent = readLocalDefaultManifest(name, options, defaultsSource);
+  if (localContent) {
+    return localContent;
   }
 
   try {
@@ -192,10 +202,57 @@ async function fetchDefaultManifest(name: ManifestName, options: Pick<CliOptions
       }
     }
   } catch {
-    return readFileSync(manifestPath(name), "utf8");
+    return null;
   }
 
-  return readFileSync(manifestPath(name), "utf8");
+  return null;
+}
+
+function readLocalPackageManifest(name: ManifestName, options: ManifestOptions): string | null {
+  const cwd = options.cwd ?? process.cwd();
+  const candidates = [
+    join(cwd, "packages", "afk", "manifests", name),
+    join(cwd, "manifests", name),
+    join(options.repoDir, "packages", "afk", "manifests", name),
+    manifestPath(name),
+  ];
+
+  for (const candidate of unique(candidates)) {
+    if (existsSync(candidate)) {
+      return ensureTrailingNewline(readFileSync(candidate, "utf8"));
+    }
+  }
+
+  return null;
+}
+
+function readLocalDefaultManifest(name: ManifestName, options: ManifestOptions, defaultsSource: string): string | null {
+  const normalized = defaultsSource.trim().replace(/\/$/, "");
+  if (!normalized || normalized.startsWith("http://") || normalized.startsWith("https://") || normalized.includes("github.com")) {
+    return null;
+  }
+
+  if (/^[^/\s]+\/[^/\s]+$/.test(normalized)) {
+    return null;
+  }
+
+  const basePath = isAbsolute(normalized) ? normalized : resolve(options.cwd ?? process.cwd(), normalized);
+  const candidates = [
+    join(basePath, name),
+    join(basePath, "afk", "manifests", name),
+  ];
+
+  for (const candidate of unique(candidates)) {
+    if (existsSync(candidate)) {
+      return ensureTrailingNewline(readFileSync(candidate, "utf8"));
+    }
+  }
+
+  return null;
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 function rememberedDefaultsSource(homeDir: string): string {
@@ -259,22 +316,6 @@ function defaultRepoManifestUrls(owner: string, repo: string, ref: string): stri
     `${base}/afk/manifests`,
     `${base}/packages/afk/manifests`,
   ];
-}
-
-function defaultRulesManifest(options: Pick<CliOptions, "rulesRef" | "rulesSource">): RulesManifest {
-  return {
-    version: 1,
-    source: options.rulesSource === "manifest" ? "github" : options.rulesSource,
-    url: `${rawBaseUrl}/${encodeURIComponent(options.rulesRef)}/rules/AGENTS.md`,
-  };
-}
-
-function defaultWorkflowManifest(options: Pick<CliOptions, "rulesSource">): WorkflowManifest {
-  return {
-    version: 1,
-    source: options.rulesSource === "manifest" ? "github" : options.rulesSource,
-    items: [],
-  };
 }
 
 function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): string {
@@ -385,17 +426,6 @@ function migrateSkillsManifest(content: string): string | null {
     changed = true;
     return { ...item, autoInvocation: true };
   });
-
-  if (parsed.defaultSource.includes("logbookfordevs/ai-field-kit")) {
-    const ids = new Set(items.map((item) => item.id));
-    const packaged = JSON.parse(readFileSync(manifestPath("skills.json"), "utf8")) as SkillManifest;
-    for (const item of packaged.items) {
-      if (!ids.has(item.id)) {
-        changed = true;
-        items.push(item);
-      }
-    }
-  }
 
   if (!changed) {
     return null;

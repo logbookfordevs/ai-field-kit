@@ -160,6 +160,13 @@ link_entrypoint() {
 if [[ "$LOCAL_MODE" -eq 1 ]]; then
   LOCAL_ROOT="$(find_local_root)" || fail "--local must be run from this repository checkout"
   info "using local checkout at $LOCAL_ROOT"
+  if ! command -v pnpm >/dev/null 2>&1; then
+    fail "pnpm is required for --local installs"
+  fi
+  info "installing local AFK package dependencies"
+  pnpm --dir "$LOCAL_ROOT/packages/afk" install
+  info "building local AFK package"
+  pnpm --dir "$LOCAL_ROOT/packages/afk" run build
   link_entrypoint "$LOCAL_ROOT/packages/afk/dist/index.js"
   exit 0
 fi

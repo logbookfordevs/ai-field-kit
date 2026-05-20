@@ -10,6 +10,12 @@ import type { Area, CliOptions, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
   runtime.io.stdout(renderBanner());
+
+  if (options.refreshDefaults) {
+    runtime.io.stdout("Refreshing local AFK manifests from your configured defaults source.");
+    return ensureManifestFiles(runtime, options);
+  }
+
   runtime.io.stdout("Choose the parts of your AI field setup you want AFK to prepare.");
   runtime.io.stdout(muted("Everything starts selected. Unselect anything you want to leave alone."));
 

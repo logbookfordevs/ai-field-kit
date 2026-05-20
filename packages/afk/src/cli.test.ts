@@ -19,7 +19,7 @@ test("runCli prints contextual setup help", async () => {
 
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK setup"));
-  assert.ok(output.join("\n").includes("--defaults-source <github-source>"));
+  assert.ok(output.join("\n").includes("--defaults-source <source>"));
   assert.ok(!output.join("\n").includes("afk setup mcps install [options]"));
 });
 
@@ -40,6 +40,17 @@ test("runCli prints contextual manifest configure help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK manifests configure"));
   assert.ok(output.join("\n").includes("afk manifests configure --local"));
+  assert.ok(!output.join("\n").includes("AFK setup\n"));
+});
+
+test("runCli prints contextual manifest show help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["manifests", "show", "--help"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK manifests show"));
+  assert.ok(output.join("\n").includes("--local"));
+  assert.ok(output.join("\n").includes("--rules"));
   assert.ok(!output.join("\n").includes("AFK setup\n"));
 });
 

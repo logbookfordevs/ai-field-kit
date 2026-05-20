@@ -8,6 +8,7 @@ export type AgentId =
 
 export type Area = "rules" | "workflows" | "skills" | "mcps" | "utils";
 export type SetupScope = "global" | "project";
+export type ManifestCategory = "rules" | "workflows" | "skills" | "mcps" | "utils" | "presets";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -28,6 +29,7 @@ export type CliOptions = {
   defaultsSource: string;
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
+  selectedManifestCategories: ManifestCategory[];
   homeDir: string;
   repoDir: string;
   cwd: string;
