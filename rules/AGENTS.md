@@ -59,7 +59,7 @@ When uncertain, prefer: Tailwind, TypeScript, React.
 - Mobile is not a degraded version of desktop. Replace cramped, wrapped, clipped, or awkward controls with a proper responsive pattern such as a drawer, sheet, sidebar, menu, or command surface.
 
 ## Coding Style Instructions
-Always prioritize DX with concise and simple solutions. Keep code: Readable, Maintainable, Easy to onboard into.
+Keep code: Readable, Maintainable, Easy to onboard into. DX is always important.
 When the task is a review/refactor guidance, prefer explicit review.
 
 When evaluating code and thinking between solutions, apply `Truss Evaluation` skill as criteria.
