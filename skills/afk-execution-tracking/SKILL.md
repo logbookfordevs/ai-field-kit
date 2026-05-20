@@ -35,6 +35,15 @@ Use the same task slug as the related plan whenever possible.
 
 For parallel work, keep one tracking file per feature or plan. Each agent updates its assigned section in that file. Create separate scratch notes only when they are clearly subordinate to the canonical tracking file.
 
+When a tracking file grows large, keep the canonical `.tracking.md` as the entrypoint and move completed checkpoint details into sibling files under `tracking/`:
+
+```text
+docs/<task-slug>/<task-slug>.tracking.md
+docs/<task-slug>/tracking/<checkpoint-slug>.md
+```
+
+The canonical file must still contain the current snapshot, task ledger, next action, and links to any split checkpoint files.
+
 ## Statuses
 
 Use these task statuses consistently:
@@ -67,7 +76,7 @@ Default to a `product` review gate when the task changes user-facing UI, copy, v
 
 Keep review gate names to this small set: `code`, `design`, and `product`.
 
-Do not create gates for evidence or validation sources like Figma, backend contracts, tests, or lint. Record those under `Validation`, `Review Notes`, or a focused evidence note instead.
+Do not create gates named after evidence or validation sources like Figma, backend contracts, tests, or lint. Record those under `Validation`, `Review Notes`, or a focused evidence note instead.
 
 When `current_status` is `review`, every required review gate should usually be `review`. Use `pending` only before that review layer is ready, `blocked` when it cannot proceed without an external decision or dependency, and `done` only after that layer is accepted.
 
@@ -115,9 +124,17 @@ Include enough task-local detail to resume safely. Use only the headings that he
 
 Common task headings include `Scope`, `Changes`, `Validation`, `Review Gates`, `Review Guide`, `Notes / Decisions`, and `Next Action`. Do not force empty sections.
 
-Preserve completed task sections as historical packets. When updating the file, refresh the frontmatter, `Current Snapshot`, `Task Ledger`, and the active task section. Do not keep appending task-specific details to global sections.
+Preserve completed task sections as historical packets, either inline or in linked `tracking/<checkpoint-slug>.md` files. When updating the file, refresh the frontmatter, `Current Snapshot`, `Task Ledger`, and the active task section. Do not keep appending task-specific details to global sections.
 
 The body can be flexible. The non-negotiable part is that a new agent can resume without guessing what happened, what is current, what is historical, what is safe to touch, and what needs approval.
+
+## Notes And Decisions
+
+During execution, record task-local notes for deviations, assumptions, trade-offs, scope changes, surprising constraints, and reviewer or next-agent context.
+
+Prefer the active task section in the tracking file. If notes grow beyond the current checkpoint or need to survive as a standalone handoff, use `docs/<task-slug>/<task-slug>.implementation-notes.md`.
+
+If a decision changes architecture, ownership, integration contracts, data model, migration strategy, or long-term maintenance expectations, create or update an ADR under `docs/<task-slug>/decisions/` unless the repo has a stronger convention.
 
 ## Design And Product Review Guides
 
@@ -145,11 +162,12 @@ Skip this section for code-only review gates. Code review already has an obvious
 
 1. Locate the source plan and task slug.
 2. Create the tracking file if it does not exist.
-3. Mark the active task as `in_progress` before editing.
-4. Record important scope changes, working set changes, and blockers as they happen.
-5. Move to `validating` before running verification.
-6. Move to `review` only when the checkpoint is ready for responsible engineer review.
-7. Move to `done` only after the checkpoint is accepted.
-8. Update `updated_at` whenever the tracking file changes.
+3. For existing tracking files, check size with `wc -l` and split completed checkpoint details into linked `tracking/` files when the canonical file is over 300 lines.
+4. Mark the active task as `in_progress` before editing.
+5. Record important scope changes, working set changes, and blockers as they happen.
+6. Move to `validating` before running verification.
+7. Move to `review` only when the checkpoint is ready for responsible engineer review.
+8. Move to `done` only after the checkpoint is accepted.
+9. Update `updated_at` whenever the tracking file changes.
 
 If execution changes the implementation plan materially, note the divergence in tracking before continuing.
