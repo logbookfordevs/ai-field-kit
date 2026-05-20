@@ -1,9 +1,9 @@
 import type { PathLike } from "node:fs";
 
 export type AgentId =
+  | "antigravity"
   | "claude"
   | "codex"
-  | "gemini"
   | "opencode";
 
 export type Area = "rules" | "skills" | "mcps" | "utils";

@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { isAgentId } from "./agents.js";
+import { normalizeAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
 import { runManifestShow } from "./manifest-show.js";
@@ -397,10 +397,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--agent") {
       const value = args[index + 1];
-      if (!value || !isAgentId(value)) {
+      const agent = value ? normalizeAgentId(value) : null;
+      if (!agent) {
         return { help: false, kind: "error", error: `Invalid --agent value: ${value ?? "(missing)"}` };
       }
-      agents.push(value);
+      agents.push(agent);
       index += 1;
       continue;
     }
@@ -503,7 +504,10 @@ Usage:
 Run "afk <command> --help" for command-specific options.
 
 Agents:
-  claude, codex, gemini, opencode`;
+  antigravity, claude, codex, opencode
+
+Aliases:
+  agy, gemini -> antigravity`;
 }
 
 function commandKey(commandPath: string[] = []): string {

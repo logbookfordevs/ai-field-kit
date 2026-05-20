@@ -1,6 +1,6 @@
 # 🧭 AI Field Kit — by Logbook for Devs
 
-> *The rules, skills, MCP configs, and sync scripts powering a DX-first AI developer workflow.*
+> *The rules, skills, MCP manifests, and setup router powering a DX-first AI developer workflow.*
 
 A curated, version-controlled collection of everything you need to make AI coding agents actually useful in a real development environment. No fluff — just the configuration, prompts, and automation that ship every day.
 
@@ -19,7 +19,6 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 - [Quick Start](#quick-start)
   - [Just the skills](#just-the-skills--30-seconds)
   - [Full setup](#full-setup--rules-and-mcps-too)
-  - [Preview the AFK CLI](#preview-the-afk-cli)
 - [The Skills](#the-skills)
 - [The Workflows](#the-workflows)
 - [Skill vs Workflow Rubric](#skill-vs-workflow-rubric)
@@ -39,10 +38,8 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 |---|---|
 | `rules/` | Global agent instructions (AGENTS.md) shared across all AI tools |
 | `.agents/skills/` | Reusable capabilities, quality lenses, and explicit workflow-style procedures |
-| `mcps/` | MCP server registry + sync script to configure them everywhere |
+| `mcps/` | MCP server registry for delegated setup through official tooling |
 | `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
-| `sync-ai-agents.sh` | One-command sync: pulls repo and symlinks rules into all supported agents |
-| `sync-ai-mcps.py` | Smart MCP sync: resolves API key placeholders, writes to each agent config |
 
 ---
 
@@ -68,23 +65,11 @@ git clone https://github.com/logbookfordevs/ai-field-kit.git ~/codes/ai-field-ki
 cd ~/codes/ai-field-kit
 ```
 
-Then run the sync scripts in order:
+Then use the AFK CLI as the setup router:
 
-```bash
-# 1. Symlink global agent rules (AGENTS.md → Gemini, Codex, OpenCode, Claude)
-bash sync-ai-agents.sh
-
-# 2. Inject MCP server configs (prompts for API keys as needed)
-python3 sync-ai-mcps.py
-```
-
-✅ Done. Supported rule targets now share the same AFK setup, while skills and MCPs are delegated to their official CLIs.
-
-### Preview the AFK CLI
-
-The repo also includes the first local AFK CLI package. It is a setup router:
-AFK owns rules sync for a small v1 target set: Codex, Claude Code, Gemini, and
-OpenCode. Third-party installs still route through the official
+The repo includes a local AFK CLI package. AFK owns rule setup for a small v1
+target set: Antigravity/Agy, Codex, Claude Code, and OpenCode. Third-party
+installs still route through the official
 `skills` and `add-mcp` CLIs, while optional utilities delegate to their own
 install scripts.
 
@@ -427,13 +412,14 @@ Workflow-style AFK procedures are skills for named, repeatable user journeys. Us
 
 These skills are installed through the normal skills flow with `autoInvocation: false`, so agents can see them without automatically choosing them for broad prompts.
 
-### Global Rules Sync Targets
+### Global Rules Targets
 
-`sync-ai-agents.sh` links the shared [`rules/AGENTS.md`](./rules/AGENTS.md) file into each supported tool's expected global instructions path:
+The shared [`rules/AGENTS.md`](./rules/AGENTS.md) file is the source for
+supported tools' global instruction hosts:
 
 | Agent | Global rules path |
 |---|---|
-| Gemini | `~/.gemini/GEMINI.md` |
+| Antigravity / Agy | `~/.gemini/GEMINI.md` |
 | Codex | `~/.codex/AGENTS.md` |
 | OpenCode | `~/.config/opencode/AGENTS.md` |
 | Claude | `~/.claude/CLAUDE.md` |
@@ -503,15 +489,17 @@ In practice:
 
 ## The MCP Registry
 
-`mcps/mcp.json` is a single source of truth for your MCP server configurations. Instead of maintaining separate configs per agent, you define servers once and the sync script distributes them.
+`mcps/mcp.json` is a single source of truth for MCP server recommendations.
+AFK delegates installation to official upstream tooling instead of owning
+per-agent config writers.
 
 ### How `KEY_*` placeholders work
 
-The registry uses `KEY_STITCH`-style placeholders instead of real API keys. The sync script (`sync-ai-mcps.py`) resolves them at runtime:
+The registry uses `KEY_STITCH`-style placeholders instead of real API keys:
 
 1. Checks if an environment variable with that name is set
 2. If not, prompts you securely to enter the value
-3. Writes the resolved config into each agent's config file
+3. Let the delegated installer write the target agent config
 
 **Your real keys never touch the repo.** ✅
 
@@ -519,48 +507,22 @@ The registry uses `KEY_STITCH`-style placeholders instead of real API keys. The 
 
 | Agent | Config target |
 |---|---|
-| Gemini | `~/.gemini/settings.json` |
+| Antigravity / Agy | `~/.gemini/settings.json` |
 | Codex | `~/.codex/config.toml` |
 | Claude | `~/.claude/.mcp.json` |
 | OpenCode | `~/.config/opencode/opencode.json` |
 
-For OpenCode specifically, the sync script only merges into the top-level `mcp` object and preserves every other existing setting in `opencode.json`.
+Use `add-mcp` or the agent's official setup flow for the actual install.
 
 ---
 
 ## Configuration
 
-### Override the repo path
+### AFK manifests
 
-By default, sync scripts expect the repo at `~/codes/ai-field-kit`. Override with:
-
-```bash
-export AI_RULES_REPO=/path/to/your/clone
-bash sync-ai-agents.sh
-```
-
-### MCP server options
-
-Preview changes before writing:
-
-```bash
-python3 sync-ai-mcps.py --dry-run
-```
-
-Sync only a specific agent:
-
-```bash
-python3 sync-ai-mcps.py --agent gemini
-python3 sync-ai-mcps.py --agent codex
-python3 sync-ai-mcps.py --agent opencode
-```
-
-Sync non-interactively (CI-friendly) — export keys first:
-
-```bash
-export KEY_STITCH=your_value
-python3 sync-ai-mcps.py --non-interactive
-```
+AFK setup is driven by manifests under `packages/afk/manifests/`. Use them to
+define recommended rules, skills, MCPs, utilities, and presets while keeping
+installation delegated to the right upstream CLI.
 
 ---
 
@@ -590,7 +552,7 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use `KEY_YOUR_NAME` 
         "args": ["-y", "my-mcp-package", "--api-key", "KEY_MY_SERVER"]
       },
       "targets": {
-        "gemini": { "name": "my-server" },
+        "antigravity": { "name": "my-server" },
         "codex": { "name": "my-server", "enabled": true }
       }
     }
@@ -602,11 +564,9 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use `KEY_YOUR_NAME` 
 
 ## Common Issues
 
-**Symlink already exists and points somewhere wrong** — The sync scripts handle this automatically: they back up real files and replace broken symlinks. Check for `.bak.*` files in the destination directories if something seems off.
-
 **Skills not discovered by my agent** — Make sure the skill lives at `~/.agents/skills/<name>/SKILL.md` and that your agent is configured to read from `~/.agents/skills/`.
 
-**`KEY_*` placeholder error** — Either export the env var before running, or let the script prompt you interactively. See [MCP server options](#mcp-server-options) above.
+**`KEY_*` placeholder error** — Export the env var before running the delegated installer, or let that installer prompt when supported.
 
 ---
 
@@ -620,7 +580,7 @@ projects without AFK reimplementing their installers.
 |---|---|---|
 | Codex | ✅ | via `add-mcp` |
 | Claude Code | ✅ | via `add-mcp` |
-| Gemini | ✅ | via `add-mcp` |
+| Antigravity / Agy | ✅ | via `add-mcp` |
 | OpenCode | ✅ | via `add-mcp` |
 
 ---

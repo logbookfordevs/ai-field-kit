@@ -8,7 +8,7 @@ const afkRegionStart = "<!-- AFK:RULES:START -->";
 const afkRegionEnd = "<!-- AFK:RULES:END -->";
 const legacyImportStart = "<!-- AFK:IMPORT:START -->";
 const legacyImportEnd = "<!-- AFK:IMPORT:END -->";
-const linkedRulesAgents: AgentId[] = ["codex", "gemini", "opencode"];
+const linkedRulesAgents: AgentId[] = ["antigravity", "codex", "opencode"];
 
 type RulesContent = {
   afk: string;
@@ -70,7 +70,7 @@ function planProjectRules(
   timestamp: string,
 ): PathOperation[] {
   const operations: PathOperation[] = [];
-  const selected = filterAgents(options.agents, ["claude", "codex", "gemini", "opencode"]);
+  const selected = filterAgents(options.agents, ["antigravity", "claude", "codex", "opencode"]);
   const hostPaths = new Set<string>();
 
   for (const agent of selected) {
@@ -227,7 +227,7 @@ function agentRulesDestination(homeDir: string, agent: AgentId): string {
   switch (agent) {
     case "codex":
       return join(homeDir, ".codex", "AGENTS.md");
-    case "gemini":
+    case "antigravity":
       return join(homeDir, ".gemini", "GEMINI.md");
     case "opencode":
       return join(homeDir, ".config", "opencode", "AGENTS.md");
@@ -240,7 +240,7 @@ function projectRulesDestination(cwd: string, agent: AgentId): string {
   switch (agent) {
     case "claude":
       return join(cwd, "CLAUDE.md");
-    case "gemini":
+    case "antigravity":
       return join(cwd, "GEMINI.md");
     case "codex":
     case "opencode":

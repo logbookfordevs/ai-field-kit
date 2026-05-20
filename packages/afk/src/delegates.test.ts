@@ -159,36 +159,48 @@ test("buildUtilityCommands installs selected utilities", () => {
   assert.deepEqual(commands[0]?.args, ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash"]);
 });
 
+test("buildMcpCommands maps Antigravity to the add-mcp antigravity target", () => {
+  const commands = buildMcpCommands({ ...options, agents: ["antigravity"] });
+  assert.ok(commands[0]?.args.includes("-a"));
+  assert.ok(commands[0]?.args.includes("antigravity"));
+  assert.ok(!commands[0]?.args.includes("gemini-cli"));
+});
+
+test("buildMcpCommands skips project-scoped Antigravity installs", () => {
+  const commands = buildMcpCommands({ ...options, agents: ["antigravity"], setupScope: "project" });
+  assert.deepEqual(commands, []);
+});
+
 test("buildUtilityCommands adds RTK init commands for selected agents", () => {
-  const commands = buildUtilityCommands({ ...options, agents: ["claude", "codex", "gemini", "opencode"], selectedUtilIds: ["rtk"] });
+  const commands = buildUtilityCommands({ ...options, agents: ["antigravity", "claude", "codex", "opencode"], selectedUtilIds: ["rtk"] });
 
   assert.deepEqual(
     commands.map((command) => [command.command, command.args]),
     [
       ["sh", ["-c", "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"]],
+      ["rtk", ["init", "--global", "--gemini"]],
       ["rtk", ["init", "--global"]],
       ["rtk", ["init", "--codex"]],
-      ["rtk", ["init", "--global", "--gemini"]],
       ["rtk", ["init", "--global", "--opencode"]],
     ],
   );
-  assert.equal(commands[2]?.cwd, join(defaultHomeDir, ".codex"));
+  assert.equal(commands[3]?.cwd, join(defaultHomeDir, ".codex"));
 });
 
 test("buildUtilityCommands runs RTK init locally for project scope", () => {
-  const commands = buildUtilityCommands({ ...options, setupScope: "project", agents: ["claude", "codex", "gemini", "opencode"], selectedUtilIds: ["rtk"] });
+  const commands = buildUtilityCommands({ ...options, setupScope: "project", agents: ["antigravity", "claude", "codex", "opencode"], selectedUtilIds: ["rtk"] });
 
   assert.deepEqual(
     commands.map((command) => [command.command, command.args]),
     [
       ["sh", ["-c", "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"]],
+      ["rtk", ["init", "--agent", "antigravity"]],
       ["rtk", ["init"]],
       ["rtk", ["init", "--codex"]],
-      ["rtk", ["init", "--gemini"]],
       ["rtk", ["init", "--opencode"]],
     ],
   );
-  assert.equal(commands[2]?.cwd, undefined);
+  assert.equal(commands[3]?.cwd, undefined);
 });
 
 test("buildUtilityCommands supports generic post-install commands", () => {

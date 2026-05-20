@@ -133,16 +133,18 @@ official install scripts. V1 includes Plannotator for plan review loops and RTK
 for token-light command output. When RTK is selected, AFK follows up with
 agent-specific `rtk init` commands for the selected AFK targets. In global
 scope, Codex is initialized from `~/.codex` so RTK lands in the global Codex
-rules location instead of the current project. In project scope, RTK init runs
-from the current project without global flags. Utility installs are best-effort:
-if one third-party script fails, AFK reports the failure and continues with the
-rest.
+rules location instead of the current project, and Antigravity/Agy uses RTK's
+Gemini compatibility initializer because Antigravity still consumes the global
+`~/.gemini/GEMINI.md` host. In project scope, Antigravity/Agy uses
+`rtk init --agent antigravity`, while other RTK init commands run from the
+current project without global flags. Utility installs are best-effort: if one
+third-party script fails, AFK reports the failure and continues with the rest.
 
 During `afk setup`, each selected area runs independently. If Skills fails, AFK
 still tries MCPs and Utils, then exits non-zero with a summary of failed areas.
 
-V1 owns AFK rules sync behavior for Codex, Claude Code, Gemini, and OpenCode.
-More AFK-owned targets can be added over time. Skills and MCP
+V1 owns AFK rules sync behavior for Antigravity/Agy, Codex, Claude Code, and
+OpenCode. More AFK-owned targets can be added over time. Skills and MCP
 installation are delegated to the official CLIs, so their broader compatibility
 belongs to those tools.
 
@@ -155,11 +157,11 @@ injects it into a managed region inside the user-owned host file:
 
 The CLI preserves content outside the `AFK:RULES` region and updates that
 region in place on later runs. Agent-specific rule files still symlink to the
-shared host file, matching the older sync script behavior.
+shared host file.
 
 In project scope, rules are injected directly into project host files instead
-of global agent files: `AGENTS.md` for Codex/OpenCode, `GEMINI.md` for Gemini,
-and `CLAUDE.md` for Claude Code.
+of global agent files: `AGENTS.md` for Codex/OpenCode, `GEMINI.md` for
+Antigravity/Agy, and `CLAUDE.md` for Claude Code.
 
 Use a local checkout while developing rule changes:
 

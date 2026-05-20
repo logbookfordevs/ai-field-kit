@@ -81,7 +81,7 @@ test("planRulesSync includes Claude-specific host when Claude is selected", () =
 test("planRulesSync writes project rule hosts for project scope", () => {
   const operations = planRulesSync(
     {
-      agents: ["claude", "codex", "gemini", "opencode"],
+      agents: ["antigravity", "claude", "codex", "opencode"],
       homeDir: "/tmp/home",
       cwd: "/tmp/project",
       setupScope: "project",
