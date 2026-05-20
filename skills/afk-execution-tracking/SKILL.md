@@ -46,19 +46,26 @@ Use these task statuses consistently:
 - `blocked`: cannot continue without a decision, dependency, access, or fix outside the current task
 - `done`: checkpoint accepted, not merely implemented
 
-Use review gates only when a checkpoint needs more than one human review layer, such as both code review and product/user validation. Keep the main status as `review` and split gates in frontmatter or the body:
+Use review gates only when a checkpoint needs more than one human review layer. Keep the main status as `review` and use only the applicable gates in frontmatter or the body:
 
 ```yaml
 review_gates:
   code: review
+  design: review
   product: review
 ```
 
 Use `code` for engineer review of implementation strategy, clarity, maintainability, semantics, performance, and ship-readiness.
 
+Use `design` for visual parity review against an explicit design reference.
+
+Default to a `design` review gate when the task changes user-facing visuals and has an explicit design reference or visual parity expectation. Passing code validation or recording design-reference evidence does not replace design review.
+
 Use `product` for user-facing validation of behavior, workflow, and whether the outcome feels right.
 
-Keep review gate names to this small set: `code` and, when relevant, `product`.
+Default to a `product` review gate when the task changes user-facing UI, copy, visual state, visibility rules, empty states, or product behavior. Passing code validation or recording design-reference evidence does not replace product POV review.
+
+Keep review gate names to this small set: `code`, `design`, and `product`.
 
 Do not create gates for evidence or validation sources like Figma, backend contracts, tests, or lint. Record those under `Validation`, `Review Notes`, or a focused evidence note instead.
 
@@ -112,9 +119,11 @@ Preserve completed task sections as historical packets. When updating the file, 
 
 The body can be flexible. The non-negotiable part is that a new agent can resume without guessing what happened, what is current, what is historical, what is safe to touch, and what needs approval.
 
-## Product Review Guides
+## Design And Product Review Guides
 
-When a checkpoint includes a `product` review gate, include a short guided tour for the current task, phase, or checkpoint. Write it as a reviewer journey, not as a generic QA checklist.
+When a checkpoint includes a `design` or `product` review gate, include a short guided tour for the current task, phase, or checkpoint. Write it as a reviewer journey, not as a generic QA checklist.
+
+When handing off a task with `design` or `product` review gates, explicitly say which reviews are needed and name the visual states, behavior, copy, or workflow to check.
 
 Use this shape when helpful:
 
