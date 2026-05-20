@@ -23,7 +23,7 @@ Do not use this skill for tiny one-shot edits unless the user asks for tracking.
 
 ## Storage
 
-Create or update one canonical tracking file.
+Create or update one canonical tracking index plus checkpoint files.
 
 Follow the repo or user artifact convention. If none exists, use the AFK workflow default:
 
@@ -33,16 +33,16 @@ docs/<task-slug>/<task-slug>.tracking.md
 
 Use the same task slug as the related plan whenever possible.
 
-For parallel work, keep one tracking file per feature or plan. Each agent updates its assigned section in that file. Create separate scratch notes only when they are clearly subordinate to the canonical tracking file.
+For parallel work, keep one canonical tracking index per feature or plan. Each agent updates its assigned checkpoint file and the index row for that checkpoint. Create separate scratch notes only when they are clearly subordinate to the canonical tracking set.
 
-When a tracking file grows large, keep the canonical `.tracking.md` as the entrypoint and move completed checkpoint details into sibling files under `tracking/`:
+Use the canonical `.tracking.md` as the entrypoint and put checkpoint-specific detail in sibling files under `tracking/`:
 
 ```text
 docs/<task-slug>/<task-slug>.tracking.md
 docs/<task-slug>/tracking/<checkpoint-slug>.md
 ```
 
-The canonical file must still contain the current snapshot, task ledger, next action, and links to any split checkpoint files.
+The canonical file contains the current snapshot, task ledger, next action, and links to checkpoint files. Open the current checkpoint file by default. Open previous checkpoint files only when the current task references them or code/context is not enough.
 
 ## Statuses
 
@@ -100,21 +100,21 @@ Allowed frontmatter fields are `title`, `updated_at`, `source_plan`, `current_ta
 
 If the pause cadence matters, write one sentence in `Resume Context` instead of adding another frontmatter field.
 
-Do not put evidence, validation, dependency, or historical task data in frontmatter. Keep details like Figma nodes, backend contracts, test runs, owners, and parallel agents in the relevant body section.
+Do not put evidence, validation, dependency, or historical task data in frontmatter. Keep details like Figma nodes, backend contracts, test runs, owners, and parallel agents in the relevant checkpoint file.
 
 ## Body Shape
 
-Keep global sections short. They are for the current dashboard and stable cross-task context only:
+Keep the canonical `.tracking.md` short. It is an index for the current dashboard and stable cross-task context only:
 
 - `Resume Context`: what a fresh agent needs to know before continuing
 - `Current Snapshot`: active task, status, review gates, blockers, and whether work is paused
-- `Task Ledger`: compact table with each task, status, last update, and one-line notes
+- `Task Ledger`: compact table with each task, status, last update, one-line notes, and a link to the checkpoint file
 - `Next Action`: the single next move
 
-Put task-specific detail inside the matching task section instead of appending it to shared global sections. The invariant is where the information lives, not an exact heading template.
+Put task-specific detail inside the matching checkpoint file instead of appending it to the canonical index. The invariant is where the information lives, not an exact heading template.
 
 ```markdown
-## Task: <task-slug>
+# <checkpoint title>
 
 Status: <pending | in_progress | validating | review | blocked | done>
 Updated: <timestamp>
@@ -124,15 +124,15 @@ Include enough task-local detail to resume safely. Use only the headings that he
 
 Common task headings include `Scope`, `Changes`, `Validation`, `Review Gates`, `Review Guide`, `Notes / Decisions`, and `Next Action`. Do not force empty sections.
 
-Preserve completed task sections as historical packets, either inline or in linked `tracking/<checkpoint-slug>.md` files. When updating the file, refresh the frontmatter, `Current Snapshot`, `Task Ledger`, and the active task section. Do not keep appending task-specific details to global sections.
+Preserve completed checkpoint files as historical packets. When updating tracking, refresh the frontmatter, `Current Snapshot`, `Task Ledger`, `Next Action`, and the active checkpoint file. Do not append checkpoint-specific details to the canonical index.
 
-The body can be flexible. The non-negotiable part is that a new agent can resume without guessing what happened, what is current, what is historical, what is safe to touch, and what needs approval.
+The body can be flexible. The non-negotiable part is that a new agent can open the canonical index, find the current checkpoint file, and resume without guessing what happened, what is current, what is historical, what is safe to touch, and what needs approval.
 
 ## Notes And Decisions
 
 During execution, record task-local notes for deviations, assumptions, trade-offs, scope changes, surprising constraints, and reviewer or next-agent context.
 
-Prefer the active task section in the tracking file. If notes grow beyond the current checkpoint or need to survive as a standalone handoff, use `docs/<task-slug>/<task-slug>.implementation-notes.md`.
+Prefer the active checkpoint file. If notes grow beyond the current checkpoint or need to survive as a standalone handoff, use `docs/<task-slug>/<task-slug>.implementation-notes.md`.
 
 If a decision changes architecture, ownership, integration contracts, data model, migration strategy, or long-term maintenance expectations, create or update an ADR under `docs/<task-slug>/decisions/` unless the repo has a stronger convention.
 
@@ -161,13 +161,13 @@ Skip this section for code-only review gates. Code review already has an obvious
 ## Operating Loop
 
 1. Locate the source plan and task slug.
-2. Create the tracking file if it does not exist.
-3. For existing tracking files, check size with `wc -l` and split completed checkpoint details into linked `tracking/` files when the canonical file is over 300 lines.
+2. Create the canonical tracking index and active checkpoint file if they do not exist.
+3. Open the current checkpoint file by default; open previous checkpoint files only when needed.
 4. Mark the active task as `in_progress` before editing.
-5. Record important scope changes, working set changes, and blockers as they happen.
+5. Record important scope changes, working set changes, and blockers as they happen in the active checkpoint file.
 6. Move to `validating` before running verification.
 7. Move to `review` only when the checkpoint is ready for responsible engineer review.
 8. Move to `done` only after the checkpoint is accepted.
-9. Update `updated_at` whenever the tracking file changes.
+9. Update `updated_at` in the canonical index and active checkpoint file whenever tracking changes.
 
 If execution changes the implementation plan materially, note the divergence in tracking before continuing.
