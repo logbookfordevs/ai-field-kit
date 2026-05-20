@@ -5,7 +5,7 @@
       "id": "stitch",
       "label": "Stitch MCP",
       "source": "https://stitch.googleapis.com/mcp",
-      "args": ["--header", "X-Goog-Api-Key: KEY_STITCH", "--name", "stitchmcp"],
+      "args": ["--name", "stitchmcp"],
       "default": true
     },
     {

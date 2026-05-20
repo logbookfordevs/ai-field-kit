@@ -38,12 +38,10 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 | Piece | What it does |
 |---|---|
 | `rules/` | Global agent instructions (AGENTS.md) shared across all AI tools |
-| `skills/` | Reusable capabilities and quality lenses that shape how agents work |
-| `workflows/` | Slash-command workflows for explicit multi-step tasks |
+| `.agents/skills/` | Reusable capabilities, quality lenses, and explicit workflow-style procedures |
 | `mcps/` | MCP server registry + sync script to configure them everywhere |
 | `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
 | `sync-ai-agents.sh` | One-command sync: pulls repo and symlinks rules into all supported agents |
-| `sync-ai-workflows.sh` | One-command sync: manages per-workflow symlinks where possible and renders Gemini CLI commands as TOML |
 | `sync-ai-mcps.py` | Smart MCP sync: resolves API key placeholders, writes to each agent config |
 
 ---
@@ -76,20 +74,17 @@ Then run the sync scripts in order:
 # 1. Symlink global agent rules (AGENTS.md → Gemini, Codex, OpenCode, Claude)
 bash sync-ai-agents.sh
 
-# 2. Sync workflows into each agent's command or prompt directory
-bash sync-ai-workflows.sh
-
-# 3. Inject MCP server configs (prompts for API keys as needed)
+# 2. Inject MCP server configs (prompts for API keys as needed)
 python3 sync-ai-mcps.py
 ```
 
-✅ Done. Supported rule/workflow targets now share the same AFK setup, while skills and MCPs are delegated to their official CLIs.
+✅ Done. Supported rule targets now share the same AFK setup, while skills and MCPs are delegated to their official CLIs.
 
 ### Preview the AFK CLI
 
 The repo also includes the first local AFK CLI package. It is a setup router:
-AFK owns rules and workflow sync for a small v1 target set: Codex, Claude Code,
-Gemini, and OpenCode. Third-party installs still route through the official
+AFK owns rules sync for a small v1 target set: Codex, Claude Code, Gemini, and
+OpenCode. Third-party installs still route through the official
 `skills` and `add-mcp` CLIs, while optional utilities delegate to their own
 install scripts.
 
@@ -99,8 +94,20 @@ pnpm --dir packages/afk run build
 node packages/afk/dist/index.js setup --dry-run
 ```
 
-Use the dry run first. The CLI prints the exact rules, workflow, skills, MCP,
-and utility setup actions before anything writes to your machine.
+Install the local checkout as an `afk` command while developing:
+
+```bash
+./install.sh
+afk setup --dry-run
+```
+
+Use the dry run first. The CLI prints the exact rules, skills, MCP, and utility
+setup actions before anything writes to your machine.
+
+`afk setup` asks whether to prepare a global field kit or only the current
+project. Scripted runs stay global by default; pass `--scope project` or
+`--local` when you want AFK-owned files, `skills`, `add-mcp`, and RTK init to
+use project scope.
 
 AFK also works as a personal setup router. Keep convention-compatible manifests
 in your own GitHub repo under `afk/manifests/`, then refresh local defaults from
@@ -113,7 +120,17 @@ node packages/afk/dist/index.js setup --refresh-defaults --defaults-source your-
 That gives developers a way to carry their own recommended skills, MCPs,
 utilities, presets, and rule sources without patching the AFK CLI. For rules,
 their `rules.json` can point directly at their raw GitHub rules file so
-`rules sync` keeps fetching from their defaults.
+`setup rules sync` keeps fetching from their defaults. AFK remembers the chosen defaults source in `presets.json`, so later
+`--refresh-defaults` runs can use that source without repeating the flag.
+
+To create those manifest files interactively, run:
+
+```bash
+afk manifests configure --local
+```
+
+That writes `./afk/manifests/` in the current repo, ready to publish as a
+personal defaults source.
 
 ---
 
@@ -396,37 +413,19 @@ That keeps the main flow coherent without pretending every skill belongs in the 
 
 ---
 
-## The Workflows
+## Workflow-Style Skills
 
-Workflows are markdown slash commands for named, repeatable user journeys. Use them when the task has a clear intake, flow, checkpoints, and output.
+Workflow-style AFK procedures are skills for named, repeatable user journeys. Use them when the task has a clear intake, flow, checkpoints, and output.
 
-| Command | What it does |
+| Skill | What it does |
 |---|---|
-| `/afk-cinematic-landing-page-builder` | Builds a premium landing page from a fixed creative intake |
-| `/afk-interactive-code-review` | Reviews a PR step by step with pauses after each file |
-| `/afk-pr-description-generator` | Generates a structured PR description from branch diffs |
-| `/afk-pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
-| `/afk-typecheck` | Runs `tsc`, writes a temporary typecheck report when needed, fixes issues, and asks whether to keep or delete the report |
+| `afk-cinematic-landing-page-builder` | Builds a premium landing page from a fixed creative intake |
+| `afk-interactive-code-review` | Reviews a PR step by step with pauses after each file |
+| `afk-pr-description-generator` | Generates a structured PR description from branch diffs |
+| `afk-pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
+| `afk-typecheck` | Runs `tsc`, writes a temporary typecheck report when needed, fixes issues, and asks whether to keep or delete the report |
 
-### Workflow Sync Targets
-
-Different agents expose the same idea under different names and file formats, so the sync script keeps AI Field Kit workflows namespaced per agent and renders agent-compatible variants when needed.
-
-| Agent | What the agent calls them | Global path used by this repo | Sync strategy |
-|---|---|---|---|
-| Codex | Skills | `~/.codex/skills/afk/` | Generated skill folders built from each workflow |
-| OpenCode | Commands | `~/.config/opencode/commands/afk/` | Managed per-file symlinks |
-| Gemini CLI | Custom commands | `~/.gemini/commands/afk/` | Rendered TOML files |
-| Claude Code | Custom slash commands | `~/.claude/commands/afk/` | Managed per-file symlinks |
-
-### Compatibility Notes
-
-- Gemini CLI expects `.toml` command files, so `sync-ai-workflows.sh` converts repo workflows into TOML before syncing.
-- Codex now receives generated AFK skills under `~/.codex/skills/afk/`, built from the workflow markdown files during sync.
-- Other supported Markdown workflow consumers currently receive managed per-file symlinks inside the repo-owned `afk/` subfolder.
-- This keeps AI Field Kit commands and Codex skills isolated from your personal or third-party entries in the same agent.
-- The script only refreshes files managed by this repo; it does not intentionally wipe unrelated commands in the parent command folders.
-- This is intentionally symlink-first for better DX: one source of truth, easier debugging, and no copy drift.
+These skills are installed through the normal skills flow with `autoInvocation: false`, so agents can see them without automatically choosing them for broad prompts.
 
 ### Global Rules Sync Targets
 
@@ -567,7 +566,7 @@ python3 sync-ai-mcps.py --non-interactive
 
 ## Contributing
 
-This kit grows with real-world use. If you've built a skill, workflow, or MCP config that's made your AI workflow meaningfully better — open a PR.
+This kit grows with real-world use. If you've built a skill or MCP config that's made your AI workflow meaningfully better — open a PR.
 
 **Adding a skill:**
 
@@ -575,10 +574,8 @@ This kit grows with real-world use. If you've built a skill, workflow, or MCP co
 2. Fill in `my-skill/SKILL.md` following the existing patterns in `skills/`
 3. Open a PR with a short description of what the skill does and when to use it
 
-**Adding a workflow:**
-
-1. Add a `.md` file to `workflows/` with the standard instruction format
-2. Open a PR
+For explicit multi-step procedures, add them as skills with `autoInvocation: false`
+in `packages/afk/manifests/skills.json`.
 
 **Adding an MCP server:**
 
@@ -615,16 +612,16 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use `KEY_YOUR_NAME` 
 
 ## Agents Supported
 
-AFK-owned rules and workflow sync currently target a focused v1 set. Skills and
-MCP installation are delegated to the official CLIs, so broader tool support can
-come from those projects without AFK reimplementing their installers.
+AFK-owned rules currently target a focused v1 set. Skills and MCP installation
+are delegated to the official CLIs, so broader tool support can come from those
+projects without AFK reimplementing their installers.
 
-| Agent | Rules | Workflows | MCP delegation |
-|---|---|---|---|
-| Codex | ✅ | ✅ | via `add-mcp` |
-| Claude Code | ✅ | ✅ | via `add-mcp` |
-| Gemini | ✅ | ✅ | via `add-mcp` |
-| OpenCode | ✅ | ✅ | via `add-mcp` |
+| Agent | Rules | MCP delegation |
+|---|---|---|
+| Codex | ✅ | via `add-mcp` |
+| Claude Code | ✅ | via `add-mcp` |
+| Gemini | ✅ | via `add-mcp` |
+| OpenCode | ✅ | via `add-mcp` |
 
 ---
 
