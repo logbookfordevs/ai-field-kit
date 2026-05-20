@@ -95,7 +95,7 @@ Keep global sections short. They are for the current dashboard and stable cross-
 - `Task Ledger`: compact table with each task, status, last update, and one-line notes
 - `Next Action`: the single next move
 
-Put task-specific detail inside the matching task section instead of appending it to shared global sections:
+Put task-specific detail inside the matching task section instead of appending it to shared global sections. The invariant is where the information lives, not an exact heading template.
 
 ```markdown
 ## Task: <task-slug>
@@ -103,27 +103,10 @@ Put task-specific detail inside the matching task section instead of appending i
 Status: <pending | in_progress | validating | review | blocked | done>
 Updated: <timestamp>
 
-### Scope
-What this task is responsible for.
-
-### Changes
-What changed during this task only.
-
-### Validation
-Commands, results, and source evidence for this task only.
-
-### Review Gates
-Only when multiple human review layers exist.
-
-### Review Guide
-Only when a product gate exists.
-
-### Notes / Decisions
-Important decisions, blockers, or scope changes from this task.
-
-### Next Action
-What happens after this task.
+Include enough task-local detail to resume safely. Use only the headings that help the next reader.
 ```
+
+Common task headings include `Scope`, `Changes`, `Validation`, `Review Gates`, `Review Guide`, `Notes / Decisions`, and `Next Action`. Do not force empty sections.
 
 Preserve completed task sections as historical packets. When updating the file, refresh the frontmatter, `Current Snapshot`, `Task Ledger`, and the active task section. Do not keep appending task-specific details to global sections.
 
