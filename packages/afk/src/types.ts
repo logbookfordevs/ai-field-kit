@@ -6,9 +6,9 @@ export type AgentId =
   | "gemini"
   | "opencode";
 
-export type Area = "rules" | "workflows" | "skills" | "mcps" | "utils";
+export type Area = "rules" | "skills" | "mcps" | "utils";
 export type SetupScope = "global" | "project";
-export type ManifestCategory = "rules" | "workflows" | "skills" | "mcps" | "utils" | "presets";
+export type ManifestCategory = "rules" | "skills" | "mcps" | "utils" | "presets";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -18,7 +18,6 @@ export type CliOptions = {
   yes: boolean;
   includeExternal: boolean;
   selectedSkillIds: string[];
-  selectedWorkflowIds: string[];
   selectedMcpIds: string[];
   selectedUtilIds: string[];
   rulesRef: string;

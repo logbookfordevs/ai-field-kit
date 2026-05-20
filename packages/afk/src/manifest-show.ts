@@ -13,7 +13,6 @@ type ManifestShowCategory = {
 
 const categories: ManifestShowCategory[] = [
   { id: "rules", label: "Rules", filename: "rules.json" },
-  { id: "workflows", label: "Workflows", filename: "workflows.json" },
   { id: "skills", label: "Skills", filename: "skills.json" },
   { id: "mcps", label: "MCPs", filename: "mcps.json" },
   { id: "utils", label: "Utils", filename: "utils.json" },
@@ -91,8 +90,6 @@ function renderManifestSummary(category: ManifestCategory, manifest: unknown): s
   switch (category) {
     case "rules":
       return renderRules(manifest);
-    case "workflows":
-      return renderItems(manifest, "workflow");
     case "skills":
       return renderSkills(manifest);
     case "mcps":

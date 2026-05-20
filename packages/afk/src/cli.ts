@@ -99,7 +99,7 @@ type CommandHelp = {
 const commandHelps: Record<string, CommandHelp> = {
   setup: {
     title: "AFK setup",
-    summary: "Guided setup for rules, workflows, skills, MCPs, and utilities.",
+    summary: "Guided setup for rules, skills, MCPs, and utilities.",
     usage: "afk setup [options]",
     options: [
       "--dry-run                         Preview changes without applying them",
@@ -143,27 +143,6 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup rules sync --dry-run",
       "afk setup rules sync --local",
       "afk setup rules sync --source local",
-    ],
-  },
-  "setup workflows sync": {
-    title: "AFK setup workflows sync",
-    summary: "Install AFK workflows as managed commands, Gemini TOML commands, and Codex skills.",
-    usage: "afk setup workflows sync [options]",
-    options: [
-      "--dry-run",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--source github|local",
-      "--init-only",
-      "--empty",
-      "--refresh-defaults",
-      "--defaults-source <source>",
-    ],
-    examples: [
-      "afk setup workflows sync --dry-run",
-      "afk setup workflows sync --local",
-      "afk setup workflows sync --agent codex",
     ],
   },
   "setup skills install": {
@@ -252,7 +231,6 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--local                          Show ./afk/manifests instead of global manifests",
       "--rules                          Show rules manifest",
-      "--workflows                      Show workflows manifest",
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
       "--utils                          Show utilities manifest",
@@ -272,7 +250,6 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--local                          Show ./afk/manifests instead of global manifests",
       "--rules                          Show rules manifest",
-      "--workflows                      Show workflows manifest",
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
       "--utils                          Show utilities manifest",
@@ -443,7 +420,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       yes,
       includeExternal,
       selectedSkillIds: [],
-      selectedWorkflowIds: [],
       selectedMcpIds: [],
       selectedUtilIds: [],
       rulesRef,
@@ -475,10 +451,6 @@ function commandToArea(commandPath: string[]): Area | null {
   const key = commandKey(commandPath);
   if (key === "setup rules sync") {
     return "rules";
-  }
-
-  if (key === "setup workflows sync") {
-    return "workflows";
   }
 
   if (key === "setup skills install") {
@@ -522,7 +494,6 @@ Guided setup router for AI Field Kit.
 Usage:
   afk setup [options]
   afk setup rules sync [options]
-  afk setup workflows sync [options]
   afk setup skills install [options]
   afk setup mcps install [options]
   afk setup utils install [options]
@@ -543,9 +514,6 @@ function manifestCategoryFlag(arg: string): ManifestCategory | null {
   switch (arg) {
     case "--rules":
       return "rules";
-    case "--workflow":
-    case "--workflows":
-      return "workflows";
     case "--skill":
     case "--skills":
       return "skills";

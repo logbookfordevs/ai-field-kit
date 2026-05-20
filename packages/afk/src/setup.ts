@@ -1,9 +1,8 @@
 import { syncRules } from "./rules.js";
-import { syncWorkflows } from "./workflows.js";
 import { syncSkillInvocationPolicy } from "./skills.js";
 import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands } from "./delegates.js";
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall, selectWorkflowsSync } from "./interactive.js";
+import { selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { ensureLocalManifests } from "./manifest.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
@@ -31,7 +30,6 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     setupScope: selection.setupScope,
     scopeExplicit: true,
     selectedSkillIds: selection.skillIds,
-    selectedWorkflowIds: selection.workflowIds,
     selectedMcpIds: selection.mcpIds,
     selectedUtilIds: selection.utilIds,
   };
@@ -99,15 +97,6 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const selectedOptions = await resolveRulesOptions(options);
       return syncRules(runtime, selectedOptions);
     }
-    case "workflows": {
-      const selectedOptions = await resolveWorkflowOptions(options);
-      if (!selectedOptions.yes && selectedOptions.selectedWorkflowIds.length === 0) {
-        runtime.io.stdout("\nNo workflows selected. No changes planned.");
-        return 0;
-      }
-
-      return syncWorkflows(runtime, selectedOptions);
-    }
     case "skills": {
       const selectedOptions = await resolveSkillOptions(options);
       if (!selectedOptions.yes && selectedOptions.selectedSkillIds.length === 0) {
@@ -155,19 +144,6 @@ async function resolveRulesOptions(options: CliOptions): Promise<CliOptions> {
   return {
     ...options,
     agents: selection.agents,
-  };
-}
-
-async function resolveWorkflowOptions(options: CliOptions): Promise<CliOptions> {
-  if (options.yes || options.selectedWorkflowIds.length > 0) {
-    return options;
-  }
-
-  const selection = await selectWorkflowsSync(options);
-  return {
-    ...options,
-    agents: selection.agents,
-    selectedWorkflowIds: selection.workflowIds,
   };
 }
 
@@ -235,8 +211,6 @@ function areaLabel(area: Area): string {
   switch (area) {
     case "rules":
       return "Rules";
-    case "workflows":
-      return "Workflows";
     case "skills":
       return "Skills";
     case "mcps":

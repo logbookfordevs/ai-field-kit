@@ -8,7 +8,6 @@ test("normalizeSetupSelection removes item areas when every item is unselected",
     agents: ["codex"],
     setupScope: "global",
     skillIds: [],
-    workflowIds: [],
     mcpIds: [],
     utilIds: [],
   });
@@ -22,24 +21,9 @@ test("normalizeSetupSelection keeps item areas when at least one item is selecte
     agents: [],
     setupScope: "project",
     skillIds: ["afk-note"],
-    workflowIds: ["afk-typecheck"],
     mcpIds: ["stitch"],
     utilIds: ["rtk"],
   });
 
   assert.deepEqual(selection.areas, ["skills", "mcps", "utils"]);
-});
-
-test("normalizeSetupSelection removes workflows when every workflow is unselected", () => {
-  const selection = normalizeSetupSelection({
-    areas: ["workflows", "rules"],
-    agents: [],
-    setupScope: "global",
-    skillIds: [],
-    workflowIds: [],
-    mcpIds: [],
-    utilIds: [],
-  });
-
-  assert.deepEqual(selection.areas, ["rules"]);
 });

@@ -18,7 +18,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 - [What's in the Kit](#whats-in-the-kit)
 - [Quick Start](#quick-start)
   - [Just the skills](#just-the-skills--30-seconds)
-  - [Full setup](#full-setup--rules-workflows-and-mcps-too)
+  - [Full setup](#full-setup--rules-and-mcps-too)
   - [Preview the AFK CLI](#preview-the-afk-cli)
 - [The Skills](#the-skills)
 - [The Workflows](#the-workflows)
@@ -59,7 +59,7 @@ npx skills add https://github.com/logbookfordevs/ai-field-kit
 The interactive mode lets you pick which skills to install. Agent-specific
 support is handled by the official `skills` CLI.
 
-### Full setup — rules, workflows, and MCPs too
+### Full setup — rules and MCPs too
 
 If you want the complete stack, clone the repo first:
 

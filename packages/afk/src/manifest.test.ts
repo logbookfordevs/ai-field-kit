@@ -131,7 +131,6 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "workflows.json": JSON.stringify({ version: 1, source: "github", items: [] }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -157,7 +156,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     assert.ok(presetsWrite.content.includes("\"defaultsSource\": \"acme/dev-kit\""));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/rules.json")));
-    assert.ok(requestedUrls.some((url) => url.endsWith("/workflows.json")));
+    assert.ok(!requestedUrls.some((url) => url.endsWith("/workflows.json")));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -174,7 +173,6 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "workflows.json": JSON.stringify({ version: 1, source: "github", items: [] }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -220,7 +218,6 @@ test("ensureLocalManifests falls back to remote package manifest convention when
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "workflows.json": JSON.stringify({ version: 1, source: "github", items: [] }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -257,12 +254,19 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
     const manifestDir = localManifestDir(homeDir);
     mkdirSync(manifestDir, { recursive: true });
     writeFileSync(
-      join(manifestDir, "workflows.json"),
+      join(manifestDir, "utils.json"),
       `${JSON.stringify(
         {
           version: 1,
-          source: "github",
-          items: [{ id: "keep-me", label: "Keep Me", url: "https://example.com/workflows/keep.md", default: true }],
+          items: [
+            {
+              id: "keep-me",
+              label: "Keep Me",
+              description: "Keep existing utility manifest.",
+              install: { command: "sh", args: ["-c", "keep-me"] },
+              default: true,
+            },
+          ],
         },
         null,
         2,
@@ -280,9 +284,9 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
       dryRun: true,
     });
 
-    const workflowOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("workflows.json"));
-    assert.equal(workflowOperation?.type, "skip");
-    assert.equal(readFileSync(join(manifestDir, "workflows.json"), "utf8").includes("keep-me"), true);
+    const utilityOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("utils.json"));
+    assert.equal(utilityOperation?.type, "skip");
+    assert.equal(readFileSync(join(manifestDir, "utils.json"), "utf8").includes("keep-me"), true);
   } finally {
     globalThis.fetch = originalFetch;
   }

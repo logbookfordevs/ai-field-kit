@@ -64,7 +64,6 @@ const options: CliOptions = {
   yes: true,
   includeExternal: false,
   selectedSkillIds: [],
-  selectedWorkflowIds: [],
   selectedMcpIds: [],
   selectedUtilIds: [],
   rulesRef: "main",

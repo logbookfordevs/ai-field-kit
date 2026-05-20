@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, PathOperation } from "./types.js";
 
-const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "workflows.json", "utils.json"] as const;
+const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "utils.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -41,19 +41,6 @@ export type RulesManifest = {
   version: number;
   source: "github" | "local";
   url: string;
-};
-
-export type WorkflowManifest = {
-  version: number;
-  source: "github" | "local";
-  items: WorkflowManifestItem[];
-};
-
-export type WorkflowManifestItem = {
-  id: string;
-  label: string;
-  url: string;
-  default: boolean;
 };
 
 export type UtilityManifest = {
@@ -149,10 +136,6 @@ export function loadMcpManifest(options: Pick<CliOptions, "homeDir">): McpManife
 
 export function loadRulesManifest(options: Pick<CliOptions, "homeDir">): RulesManifest {
   return parseLocalManifest<RulesManifest>(options.homeDir, "rules.json", isRulesManifest);
-}
-
-export function loadWorkflowManifest(options: Pick<CliOptions, "homeDir">): WorkflowManifest {
-  return parseLocalManifest<WorkflowManifest>(options.homeDir, "workflows.json", isWorkflowManifest);
 }
 
 export function loadUtilityManifest(options: Pick<CliOptions, "homeDir">): UtilityManifest {
@@ -329,10 +312,6 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
 
   if (name === "rules.json") {
     return `${JSON.stringify({ version: 1, source: "github", url: "" }, null, 2)}\n`;
-  }
-
-  if (name === "workflows.json") {
-    return `${JSON.stringify({ version: 1, source: "github", items: [] }, null, 2)}\n`;
   }
 
   if (name === "utils.json") {
@@ -527,25 +506,6 @@ function isRulesManifest(value: unknown): value is RulesManifest {
   }
 
   return typeof value.url === "string";
-}
-
-function isWorkflowManifest(value: unknown): value is WorkflowManifest {
-  if (!isRecord(value) || typeof value.version !== "number" || (value.source !== "github" && value.source !== "local") || !Array.isArray(value.items)) {
-    return false;
-  }
-
-  return value.items.every((item) => {
-    if (!isRecord(item)) {
-      return false;
-    }
-
-    return (
-      typeof item.id === "string" &&
-      typeof item.label === "string" &&
-      typeof item.url === "string" &&
-      typeof item.default === "boolean"
-    );
-  });
 }
 
 function isUtilityManifest(value: unknown): value is UtilityManifest {

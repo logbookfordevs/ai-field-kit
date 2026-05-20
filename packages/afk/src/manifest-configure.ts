@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { checkbox, confirm, input } from "@inquirer/prompts";
-import { localManifestDir, type McpManifest, type RulesManifest, type SkillManifest, type UtilityManifest, type WorkflowManifest } from "./manifest.js";
+import { localManifestDir, type McpManifest, type RulesManifest, type SkillManifest, type UtilityManifest } from "./manifest.js";
 import { afkCheckboxTheme, afkPromptTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
@@ -13,13 +13,11 @@ type ExistingManifest = {
   skills?: SkillManifest;
   mcps?: McpManifest;
   rules?: RulesManifest;
-  workflows?: WorkflowManifest;
   utils?: UtilityManifest;
 };
 
 const manifestAreaChoices: Array<{ name: string; value: ManifestArea; checked: boolean; description: string }> = [
   { name: "Rules", value: "rules", checked: true, description: "Point rules sync at one AGENTS.md source." },
-  { name: "Workflows", value: "workflows", checked: true, description: "List workflow markdown URLs to install." },
   { name: "Skills", value: "skills", checked: true, description: "List skills delegated to the skills CLI." },
   { name: "MCPs", value: "mcps", checked: true, description: "List MCPs delegated to add-mcp." },
   { name: "Utils", value: "utils", checked: true, description: "List utility install scripts." },
@@ -84,8 +82,6 @@ async function configureArea(area: ManifestArea, existing: ExistingManifest): Pr
   switch (area) {
     case "rules":
       return configureRules(existing.rules);
-    case "workflows":
-      return configureWorkflows(existing.workflows);
     case "skills":
       return configureSkills(existing.skills);
     case "mcps":
@@ -106,28 +102,6 @@ async function configureRules(existing?: RulesManifest): Promise<string> {
     version: 1,
     source: inferSource(url),
     url,
-  });
-}
-
-async function configureWorkflows(existing?: WorkflowManifest): Promise<string> {
-  const items = [...(existing?.items ?? [])];
-
-  while (true) {
-    const url = await askInput({ message: "Workflow raw markdown URL (blank to finish)" });
-    if (!url.trim()) {
-      break;
-    }
-
-    const id = uniqueId(inferId(url), items.map((item) => item.id));
-    const label = await askInput({ message: "Workflow label", default: inferLabel(id) });
-    const isDefault = await askConfirm("Selected by default?", true);
-    items.push({ id, label, url, default: isDefault });
-  }
-
-  return json({
-    version: 1,
-    source: inferSourceFromUrls(items.map((item) => item.url)),
-    items,
   });
 }
 
@@ -246,8 +220,6 @@ function areaTitle(area: ManifestArea): string {
   switch (area) {
     case "rules":
       return "Rules manifest";
-    case "workflows":
-      return "Workflow manifest";
     case "skills":
       return "Skills manifest";
     case "mcps":
@@ -261,8 +233,6 @@ function areaDescription(area: ManifestArea): string {
   switch (area) {
     case "rules":
       return "Point rules sync at a raw AGENTS.md source.";
-    case "workflows":
-      return "List custom workflow markdown URLs when you still need command-style sync.";
     case "skills":
       return "List skills delegated to the official skills CLI.";
     case "mcps":
@@ -310,10 +280,6 @@ function inferSource(value: string): "github" | "local" {
   return /^https:\/\/(raw\.githubusercontent\.com|github\.com)\//.test(value) ? "github" : "local";
 }
 
-function inferSourceFromUrls(urls: string[]): "github" | "local" {
-  return urls.every((url) => inferSource(url) === "github") ? "github" : "local";
-}
-
 function uniqueId(id: string, existingIds: string[]): string {
   if (!existingIds.includes(id)) {
     return id;
@@ -336,7 +302,6 @@ function readExistingManifests(outputDir: string): ExistingManifest {
   const skills = readJsonIfExists<SkillManifest>(join(outputDir, "skills.json"));
   const mcps = readJsonIfExists<McpManifest>(join(outputDir, "mcps.json"));
   const rules = readJsonIfExists<RulesManifest>(join(outputDir, "rules.json"));
-  const workflows = readJsonIfExists<WorkflowManifest>(join(outputDir, "workflows.json"));
   const utils = readJsonIfExists<UtilityManifest>(join(outputDir, "utils.json"));
 
   if (skills) {
@@ -347,9 +312,6 @@ function readExistingManifests(outputDir: string): ExistingManifest {
   }
   if (rules) {
     existing.rules = rules;
-  }
-  if (workflows) {
-    existing.workflows = workflows;
   }
   if (utils) {
     existing.utils = utils;
