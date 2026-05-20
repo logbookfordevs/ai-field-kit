@@ -173,7 +173,7 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `ai-companion` | Uses `skills.json` taxonomy to improve native skill discovery |
 | `afk-advanced-elicitation` | Structured critique and refinement loops for improving drafts, plans, and decisions |
-| `afk-ask` | Gets a second opinion from a local Claude, Codex, or Agy CLI and saves the result as an artifact |
+| `afk-ask` | Gets a second opinion through Kiro/OpenCode, Codex, or Agy and saves the result as an artifact |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-deep-interview` | High-rigor, Socratic clarification mode for turning vague requests into execution-ready briefs |
 | `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with ADR-style decision artifacts |

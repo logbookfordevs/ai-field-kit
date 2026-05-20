@@ -1,4 +1,4 @@
 interface:
   display_name: "Ask"
-  short_description: "Ask a local Claude, Codex, or Agy CLI for a second opinion and preserve the answer."
-  default_prompt: "Ask a local AI CLI advisor for a focused second opinion: choose Claude, Codex, or Agy; run the matching read-only non-interactive command; save the raw answer and summary as an artifact using the repo convention. Treat Gemini as a legacy alias for Agy."
+  short_description: "Ask a local Kiro/OpenCode, Codex, or Agy CLI for a second opinion and preserve the answer."
+  default_prompt: "Ask a local AI CLI advisor for a focused second opinion: route Claude/model requests through Kiro first, then OpenCode Zen; never use claude -p; use Codex or Agy when selected; save the raw answer and summary as an artifact using the repo convention. Treat Gemini as a legacy alias for Agy."
