@@ -136,6 +136,16 @@ Prefer the active checkpoint file. If notes grow beyond the current checkpoint o
 
 If a decision changes architecture, ownership, integration contracts, data model, migration strategy, or long-term maintenance expectations, create or update an ADR under `docs/<task-slug>/decisions/` unless the repo has a stronger convention.
 
+Before final handoff after implementation or review fixes, run a notes/ADR check:
+
+- If the fix introduced a non-obvious behavior invariant, record an implementation note in the active checkpoint file.
+- If the fix establishes a reusable policy, ownership boundary, shared component rule, integration contract, data/model rule, or long-term product decision, create or update an ADR.
+- If neither applies, no note is needed.
+
+Implementation note examples: render/unmount ordering requires delaying submit until a modal is dismissed; a counter has mutually exclusive paths to avoid double-counting; local state must be cleared before back/forward navigation.
+
+ADR examples: shared dialog affordances belong in LexUI primitives, not individual modals; disabled backend states are modeled as availability instead of generic errors; a display surface waits for a confirmed backend contract before shipping metrics.
+
 ## Design And Product Review Guides
 
 When a checkpoint includes a `design` or `product` review gate, include a short guided tour for the current task, phase, or checkpoint. Write it as a reviewer journey, not as a generic QA checklist.
@@ -167,7 +177,8 @@ Skip this section for code-only review gates. Code review already has an obvious
 5. Record important scope changes, working set changes, and blockers as they happen in the active checkpoint file.
 6. Move to `validating` before running verification.
 7. Move to `review` only when the checkpoint is ready for responsible engineer review.
-8. Move to `done` only after the checkpoint is accepted.
-9. Update `updated_at` in the canonical index and active checkpoint file whenever tracking changes.
+8. Before final handoff, run the notes/ADR check and update the active checkpoint file if needed.
+9. Move to `done` only after the checkpoint is accepted.
+10. Update `updated_at` in the canonical index and active checkpoint file whenever tracking changes.
 
 If execution changes the implementation plan materially, note the divergence in tracking before continuing.
