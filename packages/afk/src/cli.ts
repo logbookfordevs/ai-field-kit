@@ -1,9 +1,11 @@
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { normalizeAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
 import { runManifestShow } from "./manifest-show.js";
-import { resolve } from "node:path";
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import type { AgentId, Area, CliOptions, CommandResult, ManifestCategory, Runtime, SetupScope } from "./types.js";
 
@@ -30,6 +32,11 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
 
 async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
   const parsed = parseArgs(argv, env);
+
+  if (parsed.version) {
+    runtime.io.stdout(`afk ${packageVersion()}`);
+    return 0;
+  }
 
   if (parsed.help) {
     runtime.io.stdout(helpText(parsed.commandPath));
@@ -73,15 +80,22 @@ export function isPromptExit(error: unknown): boolean {
 
 type ParseResult =
   | {
+      version: true;
+      help: false;
+    }
+  | {
+      version?: false;
       help: true;
       commandPath?: string[];
     }
   | {
+      version?: false;
       help: false;
       kind: "error";
       error: string;
     }
   | {
+      version?: false;
       help: false;
       kind: "command";
       commandPath: string[];
@@ -285,6 +299,10 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const homeDir = resolveHome(env);
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
+
+  if (args.includes("--version") || args.includes("-v")) {
+    return { version: true, help: false };
+  }
 
   if (commandPath.length === 0 || key === "--help" || key === "-h" || key === "help") {
     return { help: true };
@@ -493,6 +511,7 @@ function helpText(commandPath?: string[]): string {
 Guided setup router for AI Field Kit.
 
 Usage:
+  afk --version
   afk setup [options]
   afk setup rules sync [options]
   afk setup skills install [options]
@@ -512,6 +531,12 @@ Aliases:
 
 function commandKey(commandPath: string[] = []): string {
   return commandPath.join(" ");
+}
+
+function packageVersion(): string {
+  const packageJsonPath = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: unknown };
+  return typeof packageJson.version === "string" ? packageJson.version : "unknown";
 }
 
 function manifestCategoryFlag(arg: string): ManifestCategory | null {

@@ -9,11 +9,15 @@ This changelog tracks meaningful updates by version and date.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
+## TBD - TBD
+
+- `cli:` changed global rules sync to merge the AFK managed region into each agent's own rule file instead of replacing Codex, Antigravity/Agy, or OpenCode hosts with symlinks.
+- `cli:` added top-level `afk --version` and `afk -v` output sourced from the CLI package metadata.
+
 ## v0.5.1 - 2026-05-19
 
 - `cli:` restored the tracked AFK CLI source package and release packaging that were missing from the `v0.5.0` release, so the published archive now includes the runnable setup router code instead of only documenting it.
 - `cli:` restored `afk manifests show`, refresh-only `afk setup --refresh-defaults`, remote-first manifest refresh behavior, and clean release-asset packaging without bundled manifests, stale doctor output, or compiled tests.
-- `cli:` changed global rules sync to merge the AFK managed region into each agent's own rule file instead of replacing Codex, Antigravity/Agy, or OpenCode hosts with symlinks.
 - `cli:` removed the separate workflow manifest and command-sync lane; workflow-style AFK procedures now ship through `skills.json` as manual-invocation skills.
 - `cli:` renamed the AFK Gemini target to Antigravity/Agy, kept `gemini` as a compatibility alias, switched MCP delegation to `add-mcp -a antigravity`, and routed RTK project setup through `rtk init --agent antigravity`.
 - `sync:` removed the deprecated `sync-ai-agents.sh`, `sync-ai-workflows.sh`, and `sync-ai-mcps.py` scripts now that setup routes through the AFK CLI and upstream installer CLIs.

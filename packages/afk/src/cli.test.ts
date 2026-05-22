@@ -1,6 +1,21 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { isPromptExit, runCli } from "./cli.js";
+
+test("runCli prints package version for version flags", async () => {
+  const output: string[] = [];
+  const expectedVersion = (JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string }).version;
+  const code = await withConsole(output, () => runCli(["--version"]));
+
+  assert.equal(code, 0);
+  assert.equal(output.join("\n"), `afk ${expectedVersion}`);
+
+  output.length = 0;
+  const shortCode = await withConsole(output, () => runCli(["-v"]));
+  assert.equal(shortCode, 0);
+  assert.equal(output.join("\n"), `afk ${expectedVersion}`);
+});
 
 test("runCli prints general help for top-level help", async () => {
   const output: string[] = [];
@@ -10,6 +25,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("Guided setup router for AI Field Kit."));
   assert.ok(output.join("\n").includes("afk setup [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps install [options]"));
+  assert.ok(output.join("\n").includes("afk --version"));
   assert.ok(output.join("\n").includes('Run "afk <command> --help"'));
 });
 
