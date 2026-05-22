@@ -8,7 +8,7 @@ const afkRegionStart = "<!-- AFK:RULES:START -->";
 const afkRegionEnd = "<!-- AFK:RULES:END -->";
 const legacyImportStart = "<!-- AFK:IMPORT:START -->";
 const legacyImportEnd = "<!-- AFK:IMPORT:END -->";
-const linkedRulesAgents: AgentId[] = ["antigravity", "codex", "opencode"];
+const globalRulesAgents: AgentId[] = ["antigravity", "codex", "opencode"];
 
 type RulesContent = {
   afk: string;
@@ -43,18 +43,9 @@ export function planRulesSync(
     return planProjectRules(options, normalizedRules, timestamp);
   }
 
-  const agentsDir = join(options.homeDir, ".agents");
-  const agentsHost = join(agentsDir, "AGENTS.md");
-
-  operations.push({ type: "mkdir", path: agentsDir });
-  operations.push(...removeLegacySidecars(agentsDir, timestamp));
-  operations.push(...upsertManagedRulesRegion(agentsHost, normalizedRules, timestamp));
-
-  for (const agent of filterAgents(options.agents, linkedRulesAgents)) {
+  for (const agent of filterAgents(options.agents, globalRulesAgents)) {
     operations.push(...removeLegacySidecars(dirname(agentRulesDestination(options.homeDir, agent)), timestamp));
-    operations.push(
-      ...replaceWithSymlink(agentRulesDestination(options.homeDir, agent), agentsHost, timestamp),
-    );
+    operations.push(...upsertManagedRulesRegion(agentRulesDestination(options.homeDir, agent), normalizedRules, timestamp));
   }
 
   if (shouldConfigureClaude(options.agents)) {
@@ -150,8 +141,10 @@ function upsertManagedRulesRegion(path: string, afkRules: string, timestamp: str
   const region = renderManagedRulesRegion(afkRules);
 
   if (isSymlink(path)) {
+    const current = pathExists(path) ? readText(path) : "";
+    const next = current ? updateManagedRulesRegion(current, region) : region;
     operations.push({ type: "remove", path });
-    operations.push({ type: "write", path, content: region });
+    operations.push({ type: "write", path, content: next });
     return operations;
   }
 
@@ -188,20 +181,6 @@ function planClaudeRules(homeDir: string, content: RulesContent, timestamp: stri
 
 function shouldConfigureClaude(agents: AgentId[]): boolean {
   return agents.length === 0 || agents.includes("claude");
-}
-
-function replaceWithSymlink(destination: string, source: string, timestamp: string): PathOperation[] {
-  const operations: PathOperation[] = [];
-  const backup = backupTarget(destination, timestamp);
-  if (backup) {
-    operations.push(backup);
-  }
-  if (pathExists(destination) || isSymlink(destination)) {
-    operations.push({ type: "remove", path: destination });
-  }
-  operations.push({ type: "symlink", source, target: destination });
-
-  return operations;
 }
 
 function removeLegacySidecars(directory: string, timestamp: string): PathOperation[] {

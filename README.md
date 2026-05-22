@@ -414,8 +414,9 @@ These skills are installed through the normal skills flow with `autoInvocation: 
 
 ### Global Rules Targets
 
-The shared [`rules/AGENTS.md`](./rules/AGENTS.md) file is the source for
-supported tools' global instruction hosts:
+The shared [`rules/AGENTS.md`](./rules/AGENTS.md) file is the source for AFK's
+managed rules region. The CLI merges that region into each supported global
+instruction host without replacing user-owned content in the rest of the file:
 
 | Agent | Global rules path |
 |---|---|
