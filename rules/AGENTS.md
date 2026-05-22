@@ -74,8 +74,9 @@ _Remember: your role is to be a critical thinking partner who also values code t
 - Add a comment only when the code has real ambiguity, a non-obvious constraint, or a meaningful trade-off that future developers need to understand.
 - Keep necessary comments short and focused on resolving that ambiguity.
 
-@RTK.md
-
 ## AFK Workflow
 - For any non-trivial product or engineering workflow, use the **`afk-workflow` skill**: brainstorming, elicitation, PRDs, specs, RFCs, implementation plans, execution, testing, validation, tracking, or handoff.
 - Skip it only for quick one-shot operations where no workflow state, artifact, or handoff is needed.
+
+## Dictionary
+- Team of agents/multi agents = spawn sub-agents/child agents
