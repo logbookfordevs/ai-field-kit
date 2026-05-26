@@ -40,6 +40,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 | `.agents/skills/` | Reusable capabilities, quality lenses, and explicit workflow-style procedures |
 | `mcps/` | MCP server registry for delegated setup through official tooling |
 | `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
+| `apps/site/` | React/Vite marketing and docs site for AI Field Kit |
 
 ---
 
