@@ -68,10 +68,10 @@ cd ~/codes/ai-field-kit
 Then use the AFK CLI as the setup router:
 
 The repo includes a local AFK CLI package. AFK owns rule setup for a small v1
-target set: Antigravity/Agy, Codex, Claude Code, and OpenCode. Third-party
-installs still route through the official
-`skills` and `add-mcp` CLIs, while optional utilities delegate to their own
-install scripts.
+target set: Antigravity/Agy, Codex, Claude Code, and OpenCode. It can also merge
+AFK lifecycle hooks for Codex, Claude Code, and local Cursor targets. Third-party
+installs still route through the official `skills` and `add-mcp` CLIs, while
+optional utilities delegate to their own install scripts.
 
 ```bash
 pnpm --dir packages/afk install
@@ -86,8 +86,8 @@ Install the local checkout as an `afk` command while developing:
 afk setup --dry-run
 ```
 
-Use the dry run first. The CLI prints the exact rules, skills, MCP, and utility
-setup actions before anything writes to your machine.
+Use the dry run first. The CLI prints the exact rules, skills, MCP, utility, and
+hook setup actions before anything writes to your machine.
 
 `afk setup` asks whether to prepare a global field kit or only the current
 project. Scripted runs stay global by default; pass `--scope project` or
@@ -99,14 +99,17 @@ in your own GitHub repo under `afk/manifests/`, then refresh local defaults from
 that repo:
 
 ```bash
-node packages/afk/dist/index.js setup --refresh-defaults --defaults-source your-org/dev-kit
+node packages/afk/dist/index.js setup refresh --defaults-source your-org/dev-kit
 ```
 
 That gives developers a way to carry their own recommended skills, MCPs,
-utilities, presets, and rule sources without patching the AFK CLI. For rules,
-their `rules.json` can point directly at their raw GitHub rules file so
-`setup rules sync` keeps fetching from their defaults. AFK remembers the chosen defaults source in `presets.json`, so later
-`--refresh-defaults` runs can use that source without repeating the flag.
+utilities, hooks, presets, and rule sources without patching the AFK CLI. For
+rules, their `rules.json` can point directly at their raw GitHub rules file.
+For hooks, their `hooks.json` can point at source scripts in their own repo.
+AFK remembers the chosen defaults source in `presets.json`, so later
+`afk setup refresh` runs can use that source without repeating the flag. Use
+`afk setup refresh --local` to refresh `./afk/manifests` for the current project
+instead of the global manifest store.
 
 To create those manifest files interactively, run:
 

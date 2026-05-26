@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { defaultsManifestBaseUrl, defaultsManifestBaseUrls, ensureLocalManifests, localManifestDir } from "./manifest.js";
+import { defaultsManifestBaseUrl, defaultsManifestBaseUrls, ensureLocalManifests, localManifestDir, projectManifestDir } from "./manifest.js";
 
 test("ensureLocalManifests migrates the old Stitch header default", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-manifest-"));
@@ -37,6 +37,7 @@ test("ensureLocalManifests migrates the old Stitch header default", async () => 
     rulesSource: "local",
     empty: false,
     refreshDefaults: false,
+    manifestLocal: false,
     defaultsSource: "",
     dryRun: false,
   });
@@ -85,6 +86,7 @@ test("ensureLocalManifests migrates existing skills to invocation policy metadat
     rulesSource: "local",
     empty: false,
     refreshDefaults: false,
+    manifestLocal: false,
     defaultsSource: "",
     dryRun: false,
   });
@@ -123,6 +125,7 @@ test("defaultsManifestBaseUrl preserves GitHub tree paths as manifest directorie
 test("ensureLocalManifests can refresh defaults from a custom source", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
+  const hookManifest = JSON.stringify({ version: 1, items: [] });
   globalThis.fetch = async (input) => {
     requestedUrls.push(String(input));
     const name = String(input).split("/").pop();
@@ -132,6 +135,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": hookManifest,
     };
 
     return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
@@ -146,6 +150,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
       rulesSource: "github",
       empty: false,
       refreshDefaults: true,
+      manifestLocal: false,
       defaultsSource: "acme/dev-kit",
       dryRun: true,
     });
@@ -156,6 +161,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     assert.ok(presetsWrite.content.includes("\"defaultsSource\": \"acme/dev-kit\""));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/rules.json")));
+    assert.ok(requestedUrls.some((url) => url.endsWith("/hooks.json")));
     assert.ok(!requestedUrls.some((url) => url.endsWith("/workflows.json")));
   } finally {
     globalThis.fetch = originalFetch;
@@ -165,6 +171,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
 test("ensureLocalManifests reuses remembered defaults source during refresh", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
+  const hookManifest = JSON.stringify({ version: 1, items: [] });
   globalThis.fetch = async (input) => {
     requestedUrls.push(String(input));
     const name = String(input).split("/").pop();
@@ -174,6 +181,7 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": hookManifest,
     };
 
     return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
@@ -192,6 +200,7 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
       rulesSource: "github",
       empty: false,
       refreshDefaults: true,
+      manifestLocal: false,
       defaultsSource: "",
       dryRun: true,
     });
@@ -202,9 +211,52 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
   }
 });
 
+test("ensureLocalManifests can refresh project-local manifests", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(String(input));
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "presets.json": JSON.stringify({ version: 1, presets: [] }),
+      "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
+      "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": JSON.stringify({ version: 1, items: [] }),
+    };
+
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const cwd = mkdtempSync(join(tmpdir(), "afk-project-defaults-"));
+    const manifestDir = projectManifestDir(cwd);
+    const operations = await ensureLocalManifests({
+      homeDir: "/tmp/home",
+      repoDir: "/tmp/repo",
+      cwd,
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: true,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+    });
+
+    assert.ok(operations.some((operation) => operation.type === "mkdir" && operation.path === manifestDir));
+    assert.ok(operations.some((operation) => operation.type === "write" && operation.path === join(manifestDir, "skills.json")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("ensureLocalManifests falls back to remote package manifest convention when compact manifests are missing", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
+  const hookManifest = JSON.stringify({ version: 1, items: [] });
   globalThis.fetch = async (input) => {
     const url = String(input);
     requestedUrls.push(url);
@@ -219,6 +271,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": hookManifest,
     };
 
     return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
@@ -233,6 +286,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
       rulesSource: "github",
       empty: false,
       refreshDefaults: true,
+      manifestLocal: false,
       defaultsSource: "acme/dev-kit",
       dryRun: true,
     });
@@ -280,6 +334,7 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
       rulesSource: "github",
       empty: false,
       refreshDefaults: true,
+      manifestLocal: false,
       defaultsSource: "acme/dev-kit",
       dryRun: true,
     });

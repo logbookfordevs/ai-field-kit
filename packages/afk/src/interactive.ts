@@ -1,6 +1,6 @@
 import { checkbox, select } from "@inquirer/prompts";
-import { agentIds } from "./agents.js";
-import { loadMcpManifest, loadSkillManifest, loadUtilityManifest } from "./manifest.js";
+import { agentIds, hookAgentIds } from "./agents.js";
+import { loadHookManifest, loadMcpManifest, loadSkillManifest, loadUtilityManifest } from "./manifest.js";
 import { afkCheckboxTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { AgentId, Area, CliOptions, SetupScope } from "./types.js";
 
@@ -14,10 +14,12 @@ type Choice<Value extends string> = {
 export type SetupSelection = {
   areas: Area[];
   agents: AgentId[];
+  hookAgents: AgentId[];
   setupScope: SetupScope;
   skillIds: string[];
   mcpIds: string[];
   utilIds: string[];
+  hookIds: string[];
 };
 
 const setupAreaChoices: Choice<Area>[] = [
@@ -45,6 +47,12 @@ const setupAreaChoices: Choice<Area>[] = [
     checked: true,
     description: "Install optional developer utilities AFK recommends.",
   },
+  {
+    name: "Hooks",
+    value: "hooks",
+    checked: true,
+    description: "Merge AFK lifecycle hooks into supported agent hook configs.",
+  },
 ];
 
 export async function selectSetup(options: CliOptions): Promise<SetupSelection> {
@@ -52,10 +60,12 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     return normalizeSetupSelection({
       areas: setupAreaChoices.map((choice) => choice.value),
       agents: options.agents,
+      hookAgents: options.agents,
       setupScope: options.setupScope,
       skillIds: loadSkillManifest(options).items.map((item) => item.id),
       mcpIds: loadMcpManifest(options).items.map((item) => item.id),
       utilIds: loadUtilityManifest(options).items.map((item) => item.id),
+      hookIds: loadHookManifest(options).items.map((item) => item.id),
     });
   }
 
@@ -67,14 +77,18 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
   const agents = needsAgents ? await selectAgents(options.agents) : options.agents;
   const skillIds = areas.includes("skills") ? await selectSkills(options) : [];
   const mcpIds = areas.includes("mcps") ? await selectMcps(options) : [];
+  const hookIds = areas.includes("hooks") ? await selectHooks(options) : [];
+  const hookAgents = hookIds.length > 0 ? await selectHookAgents(options.agents) : options.agents;
 
   return normalizeSetupSelection({
     areas,
     agents,
+    hookAgents,
     setupScope,
     skillIds,
     mcpIds,
     utilIds,
+    hookIds,
   });
 }
 
@@ -125,9 +139,25 @@ export async function selectUtilsInstall(options: CliOptions): Promise<Pick<Setu
   return { agents, utilIds };
 }
 
+export async function selectHooksInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "hookIds">> {
+  if (options.yes) {
+    return {
+      agents: options.agents.filter((agent) => hookAgentIds.includes(agent)),
+      hookIds: loadHookManifest(options).items.map((item) => item.id),
+    };
+  }
+
+  resetPromptSteps();
+  return {
+    agents: await selectHookAgents(options.agents),
+    hookIds: await selectHooks(options),
+  };
+}
+
 export function normalizeSetupSelection(selection: SetupSelection): SetupSelection {
   return {
     ...selection,
+    hookAgents: selection.hookAgents.filter((agent) => hookAgentIds.includes(agent)),
     areas: selection.areas.filter((area) => {
       if (area === "skills") {
         return selection.skillIds.length > 0;
@@ -139,6 +169,10 @@ export function normalizeSetupSelection(selection: SetupSelection): SetupSelecti
 
       if (area === "utils") {
         return selection.utilIds.length > 0;
+      }
+
+      if (area === "hooks") {
+        return selection.hookIds.length > 0;
       }
 
       return true;
@@ -172,13 +206,22 @@ async function selectSetupScope(cwd: string): Promise<SetupScope> {
 }
 
 async function selectAgents(preselected: AgentId[]): Promise<AgentId[]> {
-  if (preselected.length > 0) {
-    return preselected;
+  return selectAgentChoices("Choose agent targets", agentIds, preselected);
+}
+
+async function selectHookAgents(preselected: AgentId[]): Promise<AgentId[]> {
+  return selectAgentChoices("Choose hook targets", hookAgentIds, preselected);
+}
+
+async function selectAgentChoices(message: string, choices: AgentId[], preselected: AgentId[]): Promise<AgentId[]> {
+  const supportedPreselected = preselected.filter((agent) => choices.includes(agent));
+  if (supportedPreselected.length > 0) {
+    return supportedPreselected;
   }
 
   return selectCheckbox(
-    "Choose agent targets",
-    agentIds.map((agent) => {
+    message,
+    choices.map((agent) => {
       return {
         name: agent,
         value: agent,
@@ -218,6 +261,19 @@ async function selectUtils(options: Pick<CliOptions, "homeDir">): Promise<string
   const manifest = loadUtilityManifest(options);
   return selectCheckbox(
     "Choose utilities to install",
+    manifest.items.map((item) => ({
+      name: item.label,
+      value: item.id,
+      checked: true,
+      description: item.description,
+    })),
+  );
+}
+
+async function selectHooks(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+  const manifest = loadHookManifest(options);
+  return selectCheckbox(
+    "Choose hooks to install",
     manifest.items.map((item) => ({
       name: item.label,
       value: item.id,

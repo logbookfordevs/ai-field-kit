@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, PathOperation } from "./types.js";
 
-const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "utils.json"] as const;
+const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "utils.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -66,6 +66,23 @@ export type UtilityPostInstallCommand = {
   args: string[];
 };
 
+export type HookManifest = {
+  version: number;
+  items: HookManifestItem[];
+};
+
+export type HookManifestItem = {
+  id: string;
+  label: string;
+  description: string;
+  source: string;
+  command: string;
+  args: string[];
+  events: Array<"stop">;
+  agents: Array<"codex" | "claude" | "cursor-local">;
+  default: boolean;
+};
+
 export type PresetsManifest = {
   version: number;
   defaultsSource: string;
@@ -78,7 +95,7 @@ export type PresetsManifest = {
 
 type ManifestOptions = Pick<
   CliOptions,
-  "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "defaultsSource" | "dryRun"
+  "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "defaultsSource" | "dryRun" | "manifestLocal"
 > & {
   cwd?: string;
 };
@@ -91,10 +108,14 @@ export function localManifestDir(homeDir: string): string {
   return join(localAfkDir(homeDir), "manifests");
 }
 
+export function projectManifestDir(cwd: string): string {
+  return join(cwd, "afk", "manifests");
+}
+
 export async function ensureLocalManifests(options: ManifestOptions): Promise<PathOperation[]> {
   const operations: PathOperation[] = [];
-  const manifestDir = localManifestDir(options.homeDir);
-  const effectiveDefaultsSource = options.defaultsSource || rememberedDefaultsSource(options.homeDir) || builtInDefaultsSource;
+  const manifestDir = manifestDirForOptions(options);
+  const effectiveDefaultsSource = options.defaultsSource || rememberedDefaultsSource(manifestDir) || builtInDefaultsSource;
   const shouldRefreshDefaults = options.refreshDefaults || Boolean(options.defaultsSource);
 
   if (!existsSync(manifestDir)) {
@@ -142,10 +163,14 @@ export function loadUtilityManifest(options: Pick<CliOptions, "homeDir">): Utili
   return parseLocalManifest<UtilityManifest>(options.homeDir, "utils.json", isUtilityManifest);
 }
 
+export function loadHookManifest(options: Pick<CliOptions, "homeDir">): HookManifest {
+  return parseLocalManifest<HookManifest>(options.homeDir, "hooks.json", isHookManifest);
+}
+
 function parseLocalManifest<T>(homeDir: string, name: ManifestName, guard: (value: unknown) => value is T): T {
   const path = join(localManifestDir(homeDir), name);
   if (!existsSync(path)) {
-    throw new Error(`Missing AFK manifest: ${path}. Run "afk setup --refresh-defaults" to prepare local manifests.`);
+    throw new Error(`Missing AFK manifest: ${path}. Run "afk setup refresh" to prepare local manifests.`);
   }
 
   const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
@@ -238,8 +263,12 @@ function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-function rememberedDefaultsSource(homeDir: string): string {
-  const path = join(localManifestDir(homeDir), "presets.json");
+function manifestDirForOptions(options: ManifestOptions): string {
+  return options.manifestLocal ? projectManifestDir(options.cwd ?? process.cwd()) : localManifestDir(options.homeDir);
+}
+
+function rememberedDefaultsSource(manifestDir: string): string {
+  const path = join(manifestDir, "presets.json");
   if (!existsSync(path)) {
     return "";
   }
@@ -315,6 +344,10 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
   }
 
   if (name === "utils.json") {
+    return `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`;
+  }
+
+  if (name === "hooks.json") {
     return `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`;
   }
 
@@ -537,4 +570,30 @@ function isUtilityPostInstallCommand(value: unknown): value is UtilityPostInstal
     typeof value.command === "string" &&
     isStringArray(value.args)
   );
+}
+
+function isHookManifest(value: unknown): value is HookManifest {
+  if (!isRecord(value) || typeof value.version !== "number" || !Array.isArray(value.items)) {
+    return false;
+  }
+
+  return value.items.every((item) => {
+    if (!isRecord(item)) {
+      return false;
+    }
+
+    return (
+      typeof item.id === "string" &&
+      typeof item.label === "string" &&
+      typeof item.description === "string" &&
+      typeof item.source === "string" &&
+      typeof item.command === "string" &&
+      isStringArray(item.args) &&
+      Array.isArray(item.events) &&
+      item.events.every((event) => event === "stop") &&
+      Array.isArray(item.agents) &&
+      item.agents.every((agent) => agent === "codex" || agent === "claude" || agent === "cursor-local") &&
+      typeof item.default === "boolean"
+    );
+  });
 }

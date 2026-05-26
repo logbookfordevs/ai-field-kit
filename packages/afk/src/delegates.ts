@@ -151,7 +151,7 @@ function buildUtilityPostInstallCommands(item: UtilityManifestItem, options: Pic
     return [];
   }
 
-  const selectedAgents = options.agents.length > 0 ? options.agents : defaultUtilityAgents();
+  const selectedAgents = filterUtilityAgents(options.agents);
   return selectedAgents.map((agent) => ({
     label: `RTK / init ${agentLabel(agent)}`,
     command: "rtk",
@@ -162,6 +162,14 @@ function buildUtilityPostInstallCommands(item: UtilityManifestItem, options: Pic
 
 function defaultUtilityAgents(): AgentId[] {
   return ["antigravity", "claude", "codex", "opencode"];
+}
+
+function filterUtilityAgents(agents: AgentId[]): AgentId[] {
+  if (agents.length === 0) {
+    return defaultUtilityAgents();
+  }
+
+  return agents.filter((agent) => defaultUtilityAgents().includes(agent));
 }
 
 function rtkInitArgs(agent: AgentId, scope: "global" | "project"): string[] {
@@ -175,6 +183,8 @@ function rtkInitArgs(agent: AgentId, scope: "global" | "project"): string[] {
         return ["init", "--agent", "antigravity"];
       case "opencode":
         return ["init", "--opencode"];
+      case "cursor-local":
+        return ["init"];
     }
   }
 
@@ -189,6 +199,8 @@ function rtkInitArgs(agent: AgentId, scope: "global" | "project"): string[] {
       return ["init", "--global", "--gemini"];
     case "opencode":
       return ["init", "--global", "--opencode"];
+    case "cursor-local":
+      return ["init", "--global"];
   }
 }
 
@@ -202,6 +214,8 @@ function agentLabel(agent: AgentId): string {
       return "Antigravity";
     case "opencode":
       return "OpenCode";
+    case "cursor-local":
+      return "Cursor Local";
   }
 }
 

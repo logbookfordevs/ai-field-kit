@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 - `cli:` changed global rules sync to merge the AFK managed region into each agent's own rule file instead of replacing Codex, Antigravity/Agy, or OpenCode hosts with symlinks.
 - `cli:` added top-level `afk --version` and `afk -v` output sourced from the CLI package metadata.
+- `cli:` replaced the setup refresh flag with `afk setup refresh`, including `--local` support for refreshing project-level `./afk/manifests`.
 - `release:` added an AFK version bump helper that promotes the current changelog TBD section, updates the CLI package version, and refreshes the pinned install example.
 
 ## v0.5.1 - 2026-05-19

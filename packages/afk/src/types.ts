@@ -4,11 +4,12 @@ export type AgentId =
   | "antigravity"
   | "claude"
   | "codex"
+  | "cursor-local"
   | "opencode";
 
-export type Area = "rules" | "skills" | "mcps" | "utils";
+export type Area = "rules" | "skills" | "mcps" | "utils" | "hooks";
 export type SetupScope = "global" | "project";
-export type ManifestCategory = "rules" | "skills" | "mcps" | "utils" | "presets";
+export type ManifestCategory = "rules" | "skills" | "mcps" | "utils" | "hooks" | "presets";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -20,12 +21,14 @@ export type CliOptions = {
   selectedSkillIds: string[];
   selectedMcpIds: string[];
   selectedUtilIds: string[];
+  selectedHookIds: string[];
   rulesRef: string;
   rulesSource: "manifest" | "github" | "local";
   initOnly: boolean;
   empty: boolean;
   refreshDefaults: boolean;
   defaultsSource: string;
+  manifestLocal: boolean;
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
   selectedManifestCategories: ManifestCategory[];

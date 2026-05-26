@@ -224,6 +224,8 @@ function projectRulesDestination(cwd: string, agent: AgentId): string {
     case "codex":
     case "opencode":
       return join(cwd, "AGENTS.md");
+    case "cursor-local":
+      return join(cwd, ".cursor", "rules", "afk.mdc");
   }
 }
 
