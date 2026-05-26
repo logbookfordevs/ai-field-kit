@@ -179,6 +179,7 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with ADR-style decision artifacts |
 | `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
 | `afk-note` | Durable lightweight memory in a local notepad file for long sessions and handoffs |
+| `afk-pickup` | Explicitly resumes from disposable handoff notes saved in the OS temp directory |
 
 ### Spec-Driven discussion and planning skills
 
@@ -195,6 +196,7 @@ They are intentionally similar, but they are not redundant:
 | `afk-execution-tracking` | You have an implementation plan and want checkpointed execution instead of one long build run | Canonical tracking file with task status, review gates, validation, and next action |
 | `afk-advanced-elicitation` | You already have a draft, brief, plan, or answer and want to pressure-test or improve it | Stronger revised artifact with visible critique/refinement |
 | `afk-note` | You need important context to survive interruptions, compaction, or handoffs | Durable lightweight memory |
+| `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
 
 ### How the workflow currently maps
@@ -209,7 +211,7 @@ They are intentionally similar, but they are not redundant:
 | Implementation planning | Flexible for now; use plan modes, external planning skills, or normal prompting depending on the project |
 | Execution control | `afk-execution-tracking` |
 | Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
-| Support | `afk-note`, `afk-ask`, `afk-documentation-authoring`, `afk-structured-debugging` |
+| Support | `afk-note`, `afk-pickup`, `afk-ask`, `afk-documentation-authoring`, `afk-structured-debugging` |
 
 `afk-workflow` defines the default artifact convention: `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
 
@@ -224,6 +226,7 @@ If you're unsure which one to reach for, use this shortcut:
 - "We have a plan and need checkpointed execution" -> `afk-execution-tracking`
 - "We already have something written, but it needs a stronger pass" -> `afk-advanced-elicitation`
 - "I don't want to lose this context later" -> `afk-note`
+- "A previous agent left a temp handoff for this session" -> `afk-pickup`
 - "I want another model's opinion" -> `afk-ask`
 
 ### Use Only What You Need
@@ -318,6 +321,10 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
   Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. It complements `afk-coding-tradeoffs`: use trade-offs first when decisions are fuzzy, and Grill With Docs first when domain language is fuzzy.
 
+- **Handoff (Matt Pocock Skills)**  
+  Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  
+  Create a compact handoff document for a fresh agent when a session needs to continue elsewhere. It saves outside the workspace on purpose, keeping the note disposable. Pair it with `afk-pickup` in the next session to search temp locations, verify referenced paths, and resume from the right handoff.
+
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
 
@@ -365,19 +372,20 @@ For the fuller comparison that inspired this rule of thumb:
 - `afk-coding-tradeoffs` is narrower than `afk-deep-interview`. It assumes the work is already scoped enough to discuss UX and implementation trade-offs that materially change the result.
 - `afk-execution-tracking` starts after an implementation plan exists. Use it when execution needs checkpoints, resume safety, or parallel coordination.
 - `afk-advanced-elicitation` is not for first-pass discovery. It is best after a draft or direction already exists.
-- `afk-note` and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
+- `afk-note`, `afk-pickup`, and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
 
 ### Supporting skills around the flow
 
 The spec-shaping flow is the core lane, but it is not the whole story of AI Field Kit.
 
-Several older AFK skills fit naturally around this flow as specialist companions rather than main stages:
+Several AFK support skills fit naturally around this flow as specialist companions rather than main stages:
 
 | Skill | Where it fits |
 |---|---|
 | `afk-documentation-authoring` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
 | `afk-structured-debugging` | When the real problem is a bug, failure, or investigation rather than new scoped work |
 | `ai-companion` | When you want help discovering which installed skill best matches the current moment |
+| `afk-pickup` | When a previous session created a disposable temp handoff and the new session needs to find it |
 
 These are not required steps in the main flow. They are optional specialists you bring in when the work changes shape.
 
@@ -386,6 +394,7 @@ These are not required steps in the main flow. They are optional specialists you
 - Use `afk-documentation-authoring` after `afk-deep-interview` or `afk-coding-tradeoffs` when the output needs to become a human-friendly document instead of a working artifact.
 - Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
 - Use `ai-companion` when you're unsure whether you need the main flow, a support skill, or something else already installed.
+- Use `afk-pickup` after the external `handoff` skill when the previous session kept its handoff note disposable in the OS temp directory.
 
 #### A useful mental model
 

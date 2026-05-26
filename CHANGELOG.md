@@ -14,6 +14,9 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` changed global rules sync to merge the AFK managed region into each agent's own rule file instead of replacing Codex, Antigravity/Agy, or OpenCode hosts with symlinks.
 - `cli:` added top-level `afk --version` and `afk -v` output sourced from the CLI package metadata.
 - `release:` added an AFK version bump helper that promotes the current changelog TBD section, updates the CLI package version, and refreshes the pinned install example.
+- `skills:` added `afk-pickup` as a manual support skill for finding and resuming disposable handoff notes from the OS temp directory.
+- `skills:` added Matt Pocock's external `handoff` skill to the default setup recommendations with manual invocation, pairing it with `afk-pickup` for the next-session resume flow.
+- `repo:` added project-local agent guidance that prefers tiny skills for naturally clear jobs instead of turning every skill into a workflow ceremony.
 
 ## v0.5.1 - 2026-05-19
 
