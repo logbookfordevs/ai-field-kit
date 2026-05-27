@@ -1,9 +1,9 @@
 ---
-name: afk-documentation-authoring
-description: Write or improve documentation using the DocX playbook. Use when the user asks to create, rewrite, restructure, polish, or critique documentation as a deliverable, including READMEs, guides, API docs, onboarding, troubleshooting, runbooks, implementation docs, and PR descriptions. Do not use for read-only documentation lookup, summarization, or context gathering unless the user asks for documentation changes or a docs review.
+name: afk-doc-craft
+description: Write, improve, or critique documentation using a reader-first playbook. Use when the user asks to create, rewrite, restructure, polish, or critique documentation as a deliverable, including READMEs, guides, API docs, onboarding, troubleshooting, runbooks, implementation docs, and PR descriptions. Do not use for read-only documentation lookup, summarization, or context gathering unless the user asks for documentation changes or a docs review.
 ---
 
-# Documentation Authoring
+# AFK Doc Craft
 
 Use this skill when documentation should feel useful, clear, and worth reading.
 
