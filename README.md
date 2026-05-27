@@ -40,6 +40,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 | `.agents/skills/` | Reusable capabilities, quality lenses, and explicit workflow-style procedures |
 | `mcps/` | MCP server registry for delegated setup through official tooling |
 | `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
+| `apps/site/` | React/Vite marketing and docs site for AI Field Kit |
 
 ---
 
@@ -166,7 +167,7 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | Skill | What it unlocks |
 |---|---|
 | `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
-| `afk-documentation-authoring` | DocX playbook: journeys, progressive disclosure, real empathy |
+| `afk-doc-craft` | Reader-first documentation craft: journeys, progressive disclosure, real empathy |
 | `afk-execution-tracking` | Checkpointed implementation state across tasks, reviews, validation, and handoffs |
 | `afk-workflow` | AFK doctrine for specs, plans, tracking, and workflow artifact conventions |
 | `afk-spline-3d-integration` | Spline 3D integration guides for React and vanilla JS |
@@ -211,7 +212,7 @@ They are intentionally similar, but they are not redundant:
 | Implementation planning | Flexible for now; use plan modes, external planning skills, or normal prompting depending on the project |
 | Execution control | `afk-execution-tracking` |
 | Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
-| Support | `afk-note`, `afk-pickup`, `afk-ask`, `afk-documentation-authoring`, `afk-structured-debugging` |
+| Support | `afk-note`, `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
 
 `afk-workflow` defines the default artifact convention: `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
 
@@ -382,7 +383,7 @@ Several AFK support skills fit naturally around this flow as specialist companio
 
 | Skill | Where it fits |
 |---|---|
-| `afk-documentation-authoring` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
+| `afk-doc-craft` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
 | `afk-structured-debugging` | When the real problem is a bug, failure, or investigation rather than new scoped work |
 | `ai-companion` | When you want help discovering which installed skill best matches the current moment |
 | `afk-pickup` | When a previous session created a disposable temp handoff and the new session needs to find it |
@@ -391,7 +392,7 @@ These are not required steps in the main flow. They are optional specialists you
 
 #### How they connect
 
-- Use `afk-documentation-authoring` after `afk-deep-interview` or `afk-coding-tradeoffs` when the output needs to become a human-friendly document instead of a working artifact.
+- Use `afk-doc-craft` after `afk-deep-interview` or `afk-coding-tradeoffs` when the output needs to become a human-friendly document instead of a working artifact.
 - Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
 - Use `ai-companion` when you're unsure whether you need the main flow, a support skill, or something else already installed.
 - Use `afk-pickup` after the external `handoff` skill when the previous session kept its handoff note disposable in the OS temp directory.

@@ -75,12 +75,12 @@
       "autoInvocation": true
     },
     {
-      "id": "afk-documentation-authoring",
-      "label": "AFK / Documentation Authoring",
+      "id": "afk-doc-craft",
+      "label": "AFK / Doc Craft",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
       "args": [
         "--skill",
-        "afk-documentation-authoring",
+        "afk-doc-craft",
         "--global"
       ],
       "default": true,

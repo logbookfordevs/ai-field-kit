@@ -5,7 +5,7 @@ Documentation should be treated as a **product**, not an obligation.
 - Use **progressive disclosure** (quick win first, details later).
 - Keep a **human tone** and anticipate common frustrations.
 
-When the task is explicitly about writing docs, use the **`afk-documentation-authoring` skill**.
+When the task is explicitly about writing docs, use the **`afk-doc-craft` skill**.
 
 # Library Preferences
 

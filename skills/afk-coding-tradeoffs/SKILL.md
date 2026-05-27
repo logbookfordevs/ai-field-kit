@@ -544,6 +544,6 @@ Those may follow after the context artifact is complete.
 
 These are suggestions, not required steps:
 - `afk-advanced-elicitation` if the decision artifact needs a stronger refinement pass
-- `afk-documentation-authoring` if the decision artifact needs to become cleaner, more readable, or more user-facing
+- `afk-doc-craft` if the decision artifact needs to become cleaner, more readable, or more user-facing
 - `afk-note` if the most important decisions should also be preserved in lightweight durable memory
 *** End of File
