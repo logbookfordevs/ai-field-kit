@@ -4,7 +4,7 @@ import { inferId, inferLabel } from "./manifest-configure.js";
 
 test("inferId prefers URL filename stems", () => {
   assert.equal(
-    inferId("https://raw.githubusercontent.com/me/dev-kit/main/workflows/review-pr.md"),
+    inferId("https://raw.githubusercontent.com/me/dev-kit/main/skills/review-pr.md"),
     "review-pr",
   );
 });

@@ -8,4 +8,4 @@ script = ""
 [[actions]]
 name = "Run"
 icon = "run"
-command = "./install.sh"
+command = "./scripts/install.sh"

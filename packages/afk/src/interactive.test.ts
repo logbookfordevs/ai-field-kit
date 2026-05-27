@@ -6,11 +6,12 @@ test("normalizeSetupSelection removes item areas when every item is unselected",
   const selection = normalizeSetupSelection({
     areas: ["rules", "skills", "mcps"],
     agents: ["codex"],
+    hookAgents: [],
     setupScope: "global",
     skillIds: [],
-    workflowIds: [],
     mcpIds: [],
     utilIds: [],
+    hookIds: [],
   });
 
   assert.deepEqual(selection.areas, ["rules"]);
@@ -20,26 +21,59 @@ test("normalizeSetupSelection keeps item areas when at least one item is selecte
   const selection = normalizeSetupSelection({
     areas: ["skills", "mcps", "utils"],
     agents: [],
+    hookAgents: [],
     setupScope: "project",
     skillIds: ["afk-note"],
-    workflowIds: ["afk-typecheck"],
     mcpIds: ["stitch"],
     utilIds: ["rtk"],
+    hookIds: [],
   });
 
   assert.deepEqual(selection.areas, ["skills", "mcps", "utils"]);
 });
 
-test("normalizeSetupSelection removes workflows when every workflow is unselected", () => {
+test("normalizeSetupSelection keeps hooks when at least one hook is selected", () => {
   const selection = normalizeSetupSelection({
-    areas: ["workflows", "rules"],
-    agents: [],
-    setupScope: "global",
+    areas: ["hooks"],
+    agents: ["codex"],
+    hookAgents: ["codex"],
+    setupScope: "project",
     skillIds: [],
-    workflowIds: [],
     mcpIds: [],
     utilIds: [],
+    hookIds: ["afk-execution-tracking-stop-check"],
   });
 
-  assert.deepEqual(selection.areas, ["rules"]);
+  assert.deepEqual(selection.areas, ["hooks"]);
+});
+
+test("normalizeSetupSelection removes hooks when every hook target is unselected", () => {
+  const selection = normalizeSetupSelection({
+    areas: ["hooks"],
+    agents: [],
+    hookAgents: [],
+    setupScope: "project",
+    skillIds: [],
+    mcpIds: [],
+    utilIds: [],
+    hookIds: ["afk-execution-tracking-stop-check"],
+  });
+
+  assert.deepEqual(selection.areas, []);
+});
+
+test("normalizeSetupSelection filters hook-only Cursor from general agents", () => {
+  const selection = normalizeSetupSelection({
+    areas: ["hooks"],
+    agents: ["cursor-local"],
+    hookAgents: ["cursor-local"],
+    setupScope: "project",
+    skillIds: [],
+    mcpIds: [],
+    utilIds: [],
+    hookIds: ["afk-execution-tracking-stop-check"],
+  });
+
+  assert.deepEqual(selection.agents, ["cursor-local"]);
+  assert.deepEqual(selection.hookAgents, ["cursor-local"]);
 });

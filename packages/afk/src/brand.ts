@@ -17,7 +17,7 @@ export function renderBanner(): string {
     gradient(rule),
     ...title.map((line) => `${bold}${gradient(line)}${reset}`),
     "",
-    `${bold}${gradient(name)}${reset}`,
+    `${bold}${brandText(name)}${reset}`,
     muted(subtitle),
     gradient(rule),
     "",
@@ -41,7 +41,7 @@ export function renderSetupOutro(input: {
   return [
     "",
     gradient(rule),
-    `${bold}${gradient(title)}${reset}`,
+    `${bold}${brandText(title)}${reset}`,
     muted(body),
     muted(`Scope: ${input.scopeLabel}`),
     muted(`Areas: ${input.areas.join(", ")}`),
@@ -56,6 +56,10 @@ export function sectionTitle(value: string): string {
 
 export function muted(value: string): string {
   return paint(terminalPalette.driftwood, value);
+}
+
+function brandText(value: string): string {
+  return paint(terminalPalette.brass, value);
 }
 
 function gradient(value: string): string {

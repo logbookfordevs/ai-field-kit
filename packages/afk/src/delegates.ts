@@ -28,7 +28,10 @@ export function buildSkillCommands(options: CliOptions): DelegateCommand[] {
 
 export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "homeDir" | "selectedMcpIds" | "setupScope">): DelegateCommand[] {
   const manifest = loadMcpManifest(options);
-  const agentArgs = buildAddMcpAgentArgs(options.agents, options.yes);
+  const agentArgs = buildAddMcpAgentArgs(options.agents, options.yes, options.setupScope);
+  if (options.agents.length > 0 && agentArgs.length === 0) {
+    return [];
+  }
 
   return manifest.items
     .filter((item) => options.selectedMcpIds.length === 0 ? item.default : options.selectedMcpIds.includes(item.id))
@@ -103,11 +106,15 @@ export async function runDelegateCommands(
   return 0;
 }
 
-function buildAddMcpAgentArgs(agents: AgentId[], nonInteractive: boolean): string[] {
-  const selected = agents.length > 0 ? agents : nonInteractive ? defaultMcpAgents() : [];
+function buildAddMcpAgentArgs(agents: AgentId[], nonInteractive: boolean, scope: "global" | "project"): string[] {
+  const selected = agents.length > 0 ? agents : nonInteractive ? defaultMcpAgents(scope) : [];
   const args: string[] = [];
 
   for (const agent of selected) {
+    if (scope === "project" && agent === "antigravity") {
+      continue;
+    }
+
     const addMcpName = addMcpAgentNames[agent];
     if (addMcpName) {
       args.push("-a", addMcpName);
@@ -117,8 +124,10 @@ function buildAddMcpAgentArgs(agents: AgentId[], nonInteractive: boolean): strin
   return args;
 }
 
-function defaultMcpAgents(): AgentId[] {
-  return ["claude", "codex", "gemini", "opencode"];
+function defaultMcpAgents(scope: "global" | "project"): AgentId[] {
+  return scope === "global"
+    ? ["antigravity", "claude", "codex", "opencode"]
+    : ["claude", "codex", "opencode"];
 }
 
 function buildUtilityInstallCommand(item: UtilityManifestItem): DelegateCommand {
@@ -142,13 +151,25 @@ function buildUtilityPostInstallCommands(item: UtilityManifestItem, options: Pic
     return [];
   }
 
-  const selectedAgents = options.agents.length > 0 ? options.agents : defaultMcpAgents();
+  const selectedAgents = filterUtilityAgents(options.agents);
   return selectedAgents.map((agent) => ({
     label: `RTK / init ${agentLabel(agent)}`,
     command: "rtk",
     args: rtkInitArgs(agent, options.setupScope),
     ...(options.setupScope === "global" && agent === "codex" ? { cwd: join(options.homeDir, ".codex") } : {}),
   }));
+}
+
+function defaultUtilityAgents(): AgentId[] {
+  return ["antigravity", "claude", "codex", "opencode"];
+}
+
+function filterUtilityAgents(agents: AgentId[]): AgentId[] {
+  if (agents.length === 0) {
+    return defaultUtilityAgents();
+  }
+
+  return agents.filter((agent) => defaultUtilityAgents().includes(agent));
 }
 
 function rtkInitArgs(agent: AgentId, scope: "global" | "project"): string[] {
@@ -158,10 +179,12 @@ function rtkInitArgs(agent: AgentId, scope: "global" | "project"): string[] {
         return ["init"];
       case "codex":
         return ["init", "--codex"];
-      case "gemini":
-        return ["init", "--gemini"];
+      case "antigravity":
+        return ["init", "--agent", "antigravity"];
       case "opencode":
         return ["init", "--opencode"];
+      case "cursor-local":
+        return ["init"];
     }
   }
 
@@ -170,10 +193,14 @@ function rtkInitArgs(agent: AgentId, scope: "global" | "project"): string[] {
       return ["init", "--global"];
     case "codex":
       return ["init", "--codex"];
-    case "gemini":
+    case "antigravity":
+      // Antigravity still consumes the global Gemini rules host, so global RTK uses
+      // the Gemini compatibility initializer while project setup uses Antigravity.
       return ["init", "--global", "--gemini"];
     case "opencode":
       return ["init", "--global", "--opencode"];
+    case "cursor-local":
+      return ["init", "--global"];
   }
 }
 
@@ -183,10 +210,12 @@ function agentLabel(agent: AgentId): string {
       return "Claude Code";
     case "codex":
       return "Codex";
-    case "gemini":
-      return "Gemini";
+    case "antigravity":
+      return "Antigravity";
     case "opencode":
       return "OpenCode";
+    case "cursor-local":
+      return "Cursor Local";
   }
 }
 

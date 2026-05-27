@@ -1,16 +1,20 @@
 import { spawn } from "node:child_process";
-import { isAgentId } from "./agents.js";
+import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { normalizeAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
+import { runManifestShow } from "./manifest-show.js";
 import { runSkillsCommand } from "./skills/commands.js";
 import { managedSkillAgents } from "./skills/catalog.js";
-import { resolve } from "node:path";
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import type {
   AgentId,
   Area,
   CliOptions,
   CommandResult,
+  ManifestCategory,
   ManagedSkillAgent,
   Runtime,
   SetupScope,
@@ -45,6 +49,11 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
 async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
   const parsed = parseArgs(argv, env);
 
+  if (parsed.version) {
+    runtime.io.stdout(`afk ${packageVersion()}`);
+    return 0;
+  }
+
   if (parsed.help) {
     runtime.io.stdout(helpText(parsed.commandPath));
     return 0;
@@ -59,7 +68,7 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
   const { commandPath, options } = parsed;
   const key = commandKey(commandPath);
 
-  if (key === "setup") {
+  if (key === "setup" || key === "setup refresh") {
     return runSetup(runtime, options);
   }
 
@@ -69,6 +78,10 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (commandPath[0] === "skills") {
     return runSkillsCommand(commandPath, runtime, options);
+  }
+
+  if (key === "manifests show" || key === "manifest show") {
+    return runManifestShow(runtime, options);
   }
 
   const area = commandToArea(commandPath);
@@ -87,15 +100,22 @@ export function isPromptExit(error: unknown): boolean {
 
 type ParseResult =
   | {
+      version: true;
+      help: false;
+    }
+  | {
+      version?: false;
       help: true;
       commandPath?: string[];
     }
   | {
+      version?: false;
       help: false;
       kind: "error";
       error: string;
     }
   | {
+      version?: false;
       help: false;
       kind: "command";
       commandPath: string[];
@@ -107,140 +127,205 @@ type CommandHelp = {
   summary: string;
   usage: string;
   options: string[];
+  subcommands?: string[];
   examples: string[];
 };
+
+const setupOptions = {
+  dryRun: "--dry-run                         Preview changes without applying them",
+  yes: "--yes, -y                         Accept defaults and skip prompts",
+  scope: "--scope global|project            Choose machine-wide or current-project setup",
+  localScope: "--local                           Alias for --scope project",
+  localManifest: "--local                           Refresh ./afk/manifests instead of global manifests",
+  agent: "--agent <agent>                   Limit agent targets; repeatable",
+  source: "--source github|local             Load default manifests from GitHub or this checkout",
+  ref: "--ref <git-ref>                   Git ref for default AFK manifest URLs",
+  initOnly: "--init-only                       Create/update local manifests only, then exit",
+  empty: "--empty                           Create empty manifests with --init-only or refresh",
+  defaultsSource: "--defaults-source <source>        Use and remember a custom remote or local defaults source",
+  includeExternal: "--include-external                Include external recommended skills when installing skills",
+};
+
+const setupAreaOptions = [
+  setupOptions.dryRun,
+  setupOptions.yes,
+  setupOptions.scope,
+  setupOptions.localScope,
+  setupOptions.agent,
+  setupOptions.source,
+  setupOptions.ref,
+  setupOptions.initOnly,
+  setupOptions.empty,
+  setupOptions.defaultsSource,
+];
 
 const commandHelps: Record<string, CommandHelp> = {
   setup: {
     title: "AFK setup",
-    summary: "Guided setup for rules, workflows, skills, MCPs, and utilities.",
+    summary: "Guided setup for rules, skills, MCPs, utilities, and hooks.",
     usage: "afk setup [options]",
     options: [
-      "--dry-run                         Preview changes without applying them",
-      "--yes, -y                         Accept defaults and skip prompts",
-      "--scope global|project            Choose machine-wide or current-project setup",
-      "--local                           Alias for --scope project",
-      "--agent <agent>                   Limit agent targets; repeatable",
-      "--source github|local             Load rules/workflows from GitHub or this checkout",
-      "--ref <git-ref>                   Git ref for default AFK manifest URLs",
-      "--init-only                       Create/update local manifests only",
-      "--empty                           Create empty manifests with --init-only",
-      "--refresh-defaults                Refresh local manifests from remembered defaults",
-      "--defaults-source <github-source> Use and remember a custom defaults source",
+      setupOptions.dryRun,
+      setupOptions.yes,
+      setupOptions.scope,
+      setupOptions.localScope,
+      setupOptions.agent,
+      setupOptions.source,
+      setupOptions.ref,
+      setupOptions.initOnly,
+      setupOptions.empty,
+      setupOptions.defaultsSource,
+    ],
+    subcommands: [
+      "afk setup refresh                 Refresh global or project-local AFK manifests",
+      "afk setup rules                   Sync AFK rules into managed agent rule regions",
+      "afk setup skills                  Delegate skill installation to the official skills CLI",
+      "afk setup mcps                    Delegate MCP installation to add-mcp",
+      "afk setup utils                   Install optional developer utilities",
+      "afk setup hooks                   Merge AFK lifecycle hooks into agent hook configs",
     ],
     examples: [
       "afk setup",
       "afk setup --dry-run",
       "afk setup --local",
-      "afk setup --refresh-defaults",
+      "afk setup refresh --defaults-source your-org/dev-kit",
       "afk setup --defaults-source your-org/dev-kit",
+      "afk setup --defaults-source ./afk/manifests",
+    ],
+  },
+  "setup refresh": {
+    title: "AFK setup refresh",
+    summary: "Refresh AFK manifests from the remembered or selected defaults source.",
+    usage: "afk setup refresh [options]",
+    options: [
+      setupOptions.dryRun,
+      setupOptions.localManifest,
+      setupOptions.source,
+      setupOptions.ref,
+      setupOptions.empty,
+      setupOptions.defaultsSource,
+    ],
+    examples: [
+      "afk setup refresh",
+      "afk setup refresh --local",
+      "afk setup refresh --defaults-source your-org/dev-kit",
+      "afk setup refresh --source local",
+    ],
+  },
+  "setup hooks": {
+    title: "AFK setup hooks",
+    summary: "Merge selected AFK lifecycle hooks into supported agent hook configs.",
+    usage: "afk setup hooks [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup hooks --dry-run",
+      "afk setup hooks --yes --agent codex",
+      "afk setup hooks --local --agent cursor-local",
+    ],
+  },
+  "setup hooks install": {
+    title: "AFK setup hooks",
+    summary: "Merge selected AFK lifecycle hooks into supported agent hook configs.",
+    usage: "afk setup hooks [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup hooks --dry-run",
+      "afk setup hooks --yes --agent codex",
+      "afk setup hooks --local --agent cursor-local",
+    ],
+  },
+  "setup rules": {
+    title: "AFK setup rules",
+    summary: "Sync AFK rules into managed rule regions.",
+    usage: "afk setup rules [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup rules --dry-run",
+      "afk setup rules --local",
+      "afk setup rules --source local",
     ],
   },
   "setup rules sync": {
-    title: "AFK setup rules sync",
+    title: "AFK setup rules",
     summary: "Sync AFK rules into managed rule regions.",
-    usage: "afk setup rules sync [options]",
-    options: [
-      "--dry-run",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--source github|local",
-      "--ref <git-ref>",
-      "--init-only",
-      "--empty",
-      "--refresh-defaults",
-      "--defaults-source <github-source>",
-    ],
+    usage: "afk setup rules [options]",
+    options: setupAreaOptions,
     examples: [
-      "afk setup rules sync --dry-run",
-      "afk setup rules sync --local",
-      "afk setup rules sync --source local",
+      "afk setup rules --dry-run",
+      "afk setup rules --local",
+      "afk setup rules --source local",
     ],
   },
-  "setup workflows sync": {
-    title: "AFK setup workflows sync",
-    summary: "Install AFK workflows as managed commands, Gemini TOML commands, and Codex skills.",
-    usage: "afk setup workflows sync [options]",
+  "setup skills": {
+    title: "AFK setup skills",
+    summary: "Delegate selected skills to the official skills CLI.",
+    usage: "afk setup skills [options]",
     options: [
-      "--dry-run",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--source github|local",
-      "--init-only",
-      "--empty",
-      "--refresh-defaults",
-      "--defaults-source <github-source>",
+      ...setupAreaOptions,
+      setupOptions.includeExternal,
     ],
     examples: [
-      "afk setup workflows sync --dry-run",
-      "afk setup workflows sync --local",
-      "afk setup workflows sync --agent codex",
+      "afk setup skills --dry-run",
+      "afk setup skills --yes",
+      "afk setup skills --local --agent claude",
     ],
   },
   "setup skills install": {
-    title: "AFK setup skills install",
+    title: "AFK setup skills",
     summary: "Delegate selected skills to the official skills CLI.",
-    usage: "afk setup skills install [options]",
+    usage: "afk setup skills [options]",
     options: [
-      "--dry-run",
-      "--yes, -y",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--include-external",
-      "--init-only",
-      "--empty",
-      "--refresh-defaults",
-      "--defaults-source <github-source>",
+      ...setupAreaOptions,
+      setupOptions.includeExternal,
     ],
     examples: [
-      "afk setup skills install --dry-run",
-      "afk setup skills install --yes",
-      "afk setup skills install --local --agent claude",
+      "afk setup skills --dry-run",
+      "afk setup skills --yes",
+      "afk setup skills --local --agent claude",
+    ],
+  },
+  "setup mcps": {
+    title: "AFK setup MCPs",
+    summary: "Delegate selected MCP recommendations to add-mcp.",
+    usage: "afk setup mcps [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup mcps --dry-run",
+      "afk setup mcps --yes",
+      "afk setup mcps --local --agent codex",
     ],
   },
   "setup mcps install": {
-    title: "AFK setup MCPs install",
+    title: "AFK setup MCPs",
     summary: "Delegate selected MCP recommendations to add-mcp.",
-    usage: "afk setup mcps install [options]",
-    options: [
-      "--dry-run",
-      "--yes, -y",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--init-only",
-      "--empty",
-      "--refresh-defaults",
-      "--defaults-source <github-source>",
-    ],
+    usage: "afk setup mcps [options]",
+    options: setupAreaOptions,
     examples: [
-      "afk setup mcps install --dry-run",
-      "afk setup mcps install --yes",
-      "afk setup mcps install --local --agent codex",
+      "afk setup mcps --dry-run",
+      "afk setup mcps --yes",
+      "afk setup mcps --local --agent codex",
+    ],
+  },
+  "setup utils": {
+    title: "AFK setup utils",
+    summary: "Install optional developer utilities and run supported post-install setup.",
+    usage: "afk setup utils [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup utils --dry-run",
+      "afk setup utils --yes",
+      "afk setup utils --local --agent opencode",
     ],
   },
   "setup utils install": {
-    title: "AFK setup utils install",
+    title: "AFK setup utils",
     summary: "Install optional developer utilities and run supported post-install setup.",
-    usage: "afk setup utils install [options]",
-    options: [
-      "--dry-run",
-      "--yes, -y",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--init-only",
-      "--empty",
-      "--refresh-defaults",
-      "--defaults-source <github-source>",
-    ],
+    usage: "afk setup utils [options]",
+    options: setupAreaOptions,
     examples: [
-      "afk setup utils install --dry-run",
-      "afk setup utils install --yes",
-      "afk setup utils install --local --agent opencode",
+      "afk setup utils --dry-run",
+      "afk setup utils --yes",
+      "afk setup utils --local --agent opencode",
     ],
   },
   "manifests configure": {
@@ -379,6 +464,45 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills categorize --mode recategorize-all --instruction \"Prefer workflow-oriented categories\"",
     ],
   },
+  "manifests show": {
+    title: "AFK manifests show",
+    summary: "Show the current local AFK manifest configuration.",
+    usage: "afk manifests show [options]",
+    options: [
+      "--local                          Show ./afk/manifests instead of global manifests",
+      "--rules                          Show rules manifest",
+      "--skills                         Show skills manifest",
+      "--mcp, --mcps                    Show MCP manifest",
+      "--utils                          Show utilities manifest",
+      "--hooks                          Show hooks manifest",
+      "--presets                        Show presets manifest",
+    ],
+    examples: [
+      "afk manifests show",
+      "afk manifests show --local",
+      "afk manifests show --rules --skills",
+      "afk manifest show --mcp --utils",
+    ],
+  },
+  "manifest show": {
+    title: "AFK manifest show",
+    summary: "Alias for afk manifests show.",
+    usage: "afk manifest show [options]",
+    options: [
+      "--local                          Show ./afk/manifests instead of global manifests",
+      "--rules                          Show rules manifest",
+      "--skills                         Show skills manifest",
+      "--mcp, --mcps                    Show MCP manifest",
+      "--utils                          Show utilities manifest",
+      "--hooks                          Show hooks manifest",
+      "--presets                        Show presets manifest",
+    ],
+    examples: [
+      "afk manifest show",
+      "afk manifest show --local",
+      "afk manifest show --rules --skills",
+    ],
+  },
 };
 
 function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
@@ -395,8 +519,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
   let empty = false;
-  let refreshDefaults = false;
+  const refreshDefaults = key === "setup refresh";
   let defaultsSource = "";
+  let manifestLocal = false;
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
   let skillsListScope: SkillsListScope = "all";
@@ -412,10 +537,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillCategorizationMode: SkillCategorizationMode | undefined;
   let skillCategorizationRunner: SkillCategorizationRunner = "codex-exec";
   let skillCategorizationInstruction = "";
+  const selectedManifestCategories: ManifestCategory[] = [];
   const homeDir = resolveHome(env);
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
   const isSkillsCommand = commandPath[0] === "skills";
+
+  if (args.includes("--version") || args.includes("-v")) {
+    return { version: true, help: false };
+  }
 
   if (commandPath.length === 0 || key === "--help" || key === "-h" || key === "help") {
     return { help: true };
@@ -436,6 +566,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if ((key === "manifests show" || key === "manifest show") && manifestCategoryFlag(arg)) {
+      const category = manifestCategoryFlag(arg);
+      if (category && !selectedManifestCategories.includes(category)) {
+        selectedManifestCategories.push(category);
+      }
+      continue;
+    }
+
     if (arg === "--dry-run") {
       dryRun = true;
       continue;
@@ -452,6 +590,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
+      if (key === "setup refresh") {
+        manifestLocal = true;
+        continue;
+      }
+
       if (key === "manifests configure") {
         manifestConfigureLocal = true;
         continue;
@@ -497,11 +640,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (arg === "--refresh-defaults") {
-      refreshDefaults = true;
-      continue;
-    }
-
     if (arg === "--defaults-source") {
       const value = args[index + 1];
       if (!value) {
@@ -543,10 +681,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         continue;
       }
 
-      if (!value || !isAgentId(value)) {
+      const agent = value ? normalizeAgentId(value) : null;
+      if (!agent) {
         return { help: false, kind: "error", error: `Invalid --agent value: ${value ?? "(missing)"}` };
       }
-      agents.push(value);
+      agents.push(agent);
       index += 1;
       continue;
     }
@@ -661,15 +800,16 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       yes,
       includeExternal,
       selectedSkillIds: [],
-      selectedWorkflowIds: [],
       selectedMcpIds: [],
       selectedUtilIds: [],
+      selectedHookIds: [],
       rulesRef,
       rulesSource,
       initOnly,
       empty,
       refreshDefaults,
       defaultsSource,
+      manifestLocal,
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
       skillsListScope,
@@ -685,6 +825,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillCategorizationMode,
       skillCategorizationRunner,
       skillCategorizationInstruction,
+      selectedManifestCategories,
       homeDir,
       repoDir,
       cwd,
@@ -711,24 +852,24 @@ function readCommandPath(args: string[]): string[] {
 
 function commandToArea(commandPath: string[]): Area | null {
   const key = commandKey(commandPath);
-  if (key === "setup rules sync") {
+  if (key === "setup rules" || key === "setup rules sync") {
     return "rules";
   }
 
-  if (key === "setup workflows sync") {
-    return "workflows";
-  }
-
-  if (key === "setup skills install") {
+  if (key === "setup skills" || key === "setup skills install") {
     return "skills";
   }
 
-  if (key === "setup mcps install") {
+  if (key === "setup mcps" || key === "setup mcps install") {
     return "mcps";
   }
 
-  if (key === "setup utils install") {
+  if (key === "setup utils" || key === "setup utils install") {
     return "utils";
+  }
+
+  if (key === "setup hooks" || key === "setup hooks install") {
+    return "hooks";
   }
 
   return null;
@@ -758,19 +899,26 @@ function helpText(commandPath?: string[]): string {
 Guided setup router for AI Field Kit.
 
 Usage:
+  afk --version
   afk setup [options]
-  afk setup rules sync [options]
-  afk setup workflows sync [options]
-  afk setup skills install [options]
-  afk setup mcps install [options]
-  afk setup utils install [options]
+  afk setup refresh [options]
+  afk setup rules [options]
+  afk setup skills [options]
+  afk setup mcps [options]
+  afk setup utils [options]
+  afk setup hooks [options]
   afk skills <command> [options]
   afk manifests configure [options]
+  afk manifests show [options]
 
 Run "afk <command> --help" for command-specific options.
 
 Agents:
-  claude, codex, gemini, opencode`;
+  antigravity, claude, codex, cursor-local, opencode
+
+Aliases:
+  agy, gemini -> antigravity
+  cursor, cursor-ide, cursor-cli -> cursor-local`;
 }
 
 function commandKey(commandPath: string[] = []): string {
@@ -785,8 +933,38 @@ function helpKey(commandPath: string[] = []): string {
   return commandKey(commandPath);
 }
 
+function packageVersion(): string {
+  const packageJsonPath = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: unknown };
+  return typeof packageJson.version === "string" ? packageJson.version : "unknown";
+}
+
+function manifestCategoryFlag(arg: string): ManifestCategory | null {
+  switch (arg) {
+    case "--rules":
+      return "rules";
+    case "--skill":
+    case "--skills":
+      return "skills";
+    case "--mcp":
+    case "--mcps":
+      return "mcps";
+    case "--util":
+    case "--utils":
+      return "utils";
+    case "--hook":
+    case "--hooks":
+      return "hooks";
+    case "--preset":
+    case "--presets":
+      return "presets";
+    default:
+      return null;
+  }
+}
+
 function renderCommandHelp(help: CommandHelp): string {
-  return [
+  const parts = [
     help.title,
     "",
     help.summary,
@@ -796,8 +974,13 @@ function renderCommandHelp(help: CommandHelp): string {
     "",
     "Options:",
     ...help.options.map((option) => `  ${option}`),
-    "",
-    "Examples:",
-    ...help.examples.map((example) => `  ${example}`),
-  ].join("\n");
+  ];
+
+  if (help.subcommands && help.subcommands.length > 0) {
+    parts.push("", "Subcommands:", ...help.subcommands.map((subcommand) => `  ${subcommand}`));
+  }
+
+  parts.push("", "Examples:", ...help.examples.map((example) => `  ${example}`));
+
+  return parts.join("\n");
 }

@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { planRulesSync } from "./rules.js";
 
-test("planRulesSync injects AFK rules into the shared host file", () => {
+test("planRulesSync injects AFK rules into the selected global agent file", () => {
   const operations = planRulesSync(
     {
       agents: ["codex"],
@@ -15,11 +18,10 @@ test("planRulesSync injects AFK rules into the shared host file", () => {
     },
   );
 
-  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.agents/AGENTS.md"));
-  assert.ok(operations.some((operation) => operation.type === "symlink" && operation.target === "/tmp/home/.codex/AGENTS.md" && operation.source === "/tmp/home/.agents/AGENTS.md"));
+  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.codex/AGENTS.md"));
   assert.ok(!operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.agents/AFK.md"));
-  assert.ok(!operations.some((operation) => operation.type === "symlink" && operation.target === "/tmp/home/.codex/AFK.md"));
-  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.agents/AGENTS.md" && operation.content.includes("<!-- AFK:RULES:START -->")));
+  assert.ok(!operations.some((operation) => operation.type === "symlink"));
+  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.codex/AGENTS.md" && operation.content.includes("<!-- AFK:RULES:START -->")));
   assert.ok(!operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.claude/CLAUDE.md"));
 });
 
@@ -36,13 +38,13 @@ test("planRulesSync strips markdown imports from the managed rules region", () =
     },
   );
 
-  const write = operations.find((operation) => operation.type === "write" && operation.path === "/tmp/home/.agents/AGENTS.md");
+  const write = operations.find((operation) => operation.type === "write" && operation.path === "/tmp/home/.codex/AGENTS.md");
   assert.ok(write && write.type === "write");
   assert.ok(!write.content.includes("@AFK_WORKFLOW.md"));
   assert.ok(!write.content.includes("@RTK.md"));
 });
 
-test("planRulesSync links all default agent rule hosts when no agent is selected", () => {
+test("planRulesSync writes all default agent rule hosts when no agent is selected", () => {
   const operations = planRulesSync(
     {
       agents: [],
@@ -55,10 +57,48 @@ test("planRulesSync links all default agent rule hosts when no agent is selected
     },
   );
 
-  assert.ok(operations.some((operation) => operation.type === "symlink" && operation.target === "/tmp/home/.codex/AGENTS.md"));
-  assert.ok(operations.some((operation) => operation.type === "symlink" && operation.target === "/tmp/home/.gemini/GEMINI.md"));
-  assert.ok(operations.some((operation) => operation.type === "symlink" && operation.target === "/tmp/home/.config/opencode/AGENTS.md"));
-  assert.equal(operations.filter((operation) => operation.type === "symlink").length, 3);
+  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.codex/AGENTS.md"));
+  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.gemini/GEMINI.md"));
+  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.config/opencode/AGENTS.md"));
+  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.claude/CLAUDE.md"));
+  assert.ok(!operations.some((operation) => operation.type === "symlink"));
+});
+
+test("planRulesSync converts an existing global rules symlink into a real merged file", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-rules-"));
+  try {
+    const homeDir = join(root, "home");
+    const sharedDir = join(homeDir, ".agents");
+    const codexDir = join(homeDir, ".codex");
+    const sharedRules = join(sharedDir, "AGENTS.md");
+    const codexRules = join(codexDir, "AGENTS.md");
+
+    mkdirSync(sharedDir, { recursive: true });
+    mkdirSync(codexDir, { recursive: true });
+    writeFileSync(sharedRules, "Codex-only note\n");
+    symlinkSync(sharedRules, codexRules);
+
+    const operations = planRulesSync(
+      {
+        agents: ["codex"],
+        homeDir,
+        cwd: join(root, "project"),
+        setupScope: "global",
+      },
+      {
+        afk: "# AFK\n",
+      },
+    );
+
+    const write = operations.find((operation) => operation.type === "write" && operation.path === codexRules);
+    assert.ok(operations.some((operation) => operation.type === "remove" && operation.path === codexRules));
+    assert.ok(write && write.type === "write");
+    assert.ok(write.content.includes("# AFK"));
+    assert.ok(write.content.includes("Codex-only note"));
+    assert.ok(!operations.some((operation) => operation.type === "symlink"));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("planRulesSync includes Claude-specific host when Claude is selected", () => {
@@ -81,7 +121,7 @@ test("planRulesSync includes Claude-specific host when Claude is selected", () =
 test("planRulesSync writes project rule hosts for project scope", () => {
   const operations = planRulesSync(
     {
-      agents: ["claude", "codex", "gemini", "opencode"],
+      agents: ["antigravity", "claude", "codex", "opencode"],
       homeDir: "/tmp/home",
       cwd: "/tmp/project",
       setupScope: "project",

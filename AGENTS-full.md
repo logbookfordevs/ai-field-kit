@@ -8,7 +8,7 @@ Always respond in english!
 <!-- #region Documentation Instructions -->
 # Documentation Instructions
 
-## Core Philosophy: Documentation Experience (DocX)
+## Core Philosophy: Reader-First Documentation
 
 - **Documentation should be as enjoyable to consume as well-written code is to read**
 - **Always prioritize the experience of those who will use the documentation**

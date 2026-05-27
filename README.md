@@ -1,6 +1,6 @@
 # 🧭 AI Field Kit — by Logbook for Devs
 
-> *The rules, skills, MCP configs, and sync scripts powering a DX-first AI developer workflow.*
+> *The rules, skills, MCP manifests, and setup router powering a DX-first AI developer workflow.*
 
 A curated, version-controlled collection of everything you need to make AI coding agents actually useful in a real development environment. No fluff — just the configuration, prompts, and automation that ship every day.
 
@@ -13,16 +13,34 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 
 ---
 
+## Index
+
+- [What's in the Kit](#whats-in-the-kit)
+- [Quick Start](#quick-start)
+  - [Just the skills](#just-the-skills--30-seconds)
+  - [Full setup](#full-setup--rules-and-mcps-too)
+- [The Skills](#the-skills)
+- [The Workflows](#the-workflows)
+- [Skill vs Workflow Rubric](#skill-vs-workflow-rubric)
+- [The MCP Registry](#the-mcp-registry)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [Common Issues](#common-issues)
+- [Agents Supported](#agents-supported)
+- [Acknowledgements](#acknowledgements)
+- [Support This Work](#support-this-work)
+
+---
+
 ## What's in the Kit
 
 | Piece | What it does |
 |---|---|
 | `rules/` | Global agent instructions (AGENTS.md) shared across all AI tools |
 | `.agents/skills/` | Reusable capabilities, quality lenses, and explicit workflow-style procedures |
-| `mcps/` | MCP server registry + sync script to configure them everywhere |
+| `mcps/` | MCP server registry for delegated setup through official tooling |
 | `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
-| `sync-ai-agents.sh` | One-command sync: pulls repo and symlinks rules into all supported agents |
-| `sync-ai-mcps.py` | Smart MCP sync: resolves API key placeholders, writes to each agent config |
+| `apps/site/` | React/Vite marketing and docs site for AI Field Kit |
 
 ---
 
@@ -39,34 +57,35 @@ npx skills add https://github.com/logbookfordevs/ai-field-kit
 The interactive mode lets you pick which skills to install. Agent-specific
 support is handled by the official `skills` CLI.
 
-### Full setup — rules, workflows, and MCPs too
+### Full setup — rules and MCPs too
 
-If you want the complete stack, clone the repo first:
+If you want the complete stack, install the AFK CLI from the hosted install
+script:
+
+```bash
+curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
+afk setup --dry-run
+```
+
+The hosted script is the same installer kept in this repo at
+[`scripts/install.sh`](./scripts/install.sh). It installs the latest AFK release
+without requiring a clone.
+
+Use the dry run first. The CLI prints the exact rules, skills, MCP, and utility
+setup actions before anything writes to your machine.
+
+AFK owns rule setup for a small v1
+target set: Antigravity/Agy, Codex, Claude Code, and OpenCode. Third-party
+installs still route through the official
+`skills` and `add-mcp` CLIs, while optional utilities delegate to their own
+install scripts.
+
+If you want to work from source, clone the repo and run the local CLI package:
 
 ```bash
 git clone https://github.com/logbookfordevs/ai-field-kit.git ~/codes/ai-field-kit
 cd ~/codes/ai-field-kit
 ```
-
-Then run the sync scripts in order:
-
-```bash
-# 1. Symlink global agent rules (AGENTS.md → Gemini, Codex, OpenCode, Claude)
-bash sync-ai-agents.sh
-
-# 2. Inject MCP server configs (prompts for API keys as needed)
-python3 sync-ai-mcps.py
-```
-
-✅ Done. Supported rule targets now share the same AFK setup, while skills and MCPs are delegated to their official CLIs.
-
-### Preview the AFK CLI
-
-The repo also includes the first local AFK CLI package. It is a setup router:
-AFK owns rules sync for a small v1 target set: Codex, Claude Code, Gemini, and
-OpenCode. Third-party installs still route through the official
-`skills` and `add-mcp` CLIs, while optional utilities delegate to their own
-install scripts.
 
 ```bash
 pnpm --dir packages/afk install
@@ -77,12 +96,12 @@ node packages/afk/dist/index.js setup --dry-run
 Install the local checkout as an `afk` command while developing:
 
 ```bash
-./install.sh
+./scripts/install.sh --local
 afk setup --dry-run
 ```
 
-Use the dry run first. The CLI prints the exact rules, skills, MCP, and utility
-setup actions before anything writes to your machine.
+Use the dry run first. The CLI prints the exact rules, skills, MCP, utility, and
+hook setup actions before anything writes to your machine.
 
 `afk setup` asks whether to prepare a global field kit or only the current
 project. Scripted runs stay global by default; pass `--scope project` or
@@ -94,14 +113,17 @@ in your own GitHub repo under `afk/manifests/`, then refresh local defaults from
 that repo:
 
 ```bash
-node packages/afk/dist/index.js setup --refresh-defaults --defaults-source your-org/dev-kit
+node packages/afk/dist/index.js setup refresh --defaults-source your-org/dev-kit
 ```
 
 That gives developers a way to carry their own recommended skills, MCPs,
-utilities, presets, and rule sources without patching the AFK CLI. For rules,
-their `rules.json` can point directly at their raw GitHub rules file so
-`setup rules sync` keeps fetching from their defaults. AFK remembers the chosen defaults source in `presets.json`, so later
-`--refresh-defaults` runs can use that source without repeating the flag.
+utilities, hooks, presets, and rule sources without patching the AFK CLI. For
+rules, their `rules.json` can point directly at their raw GitHub rules file.
+For hooks, their `hooks.json` can point at source scripts in their own repo.
+AFK remembers the chosen defaults source in `presets.json`, so later
+`afk setup refresh` runs can use that source without repeating the flag. Use
+`afk setup refresh --local` to refresh `./afk/manifests` for the current project
+instead of the global manifest store.
 
 To create those manifest files interactively, run:
 
@@ -161,18 +183,20 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | Skill | What it unlocks |
 |---|---|
 | `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
-| `afk-documentation-authoring` | DocX playbook: journeys, progressive disclosure, real empathy |
+| `afk-doc-craft` | Reader-first documentation craft: journeys, progressive disclosure, real empathy |
 | `afk-execution-tracking` | Checkpointed implementation state across tasks, reviews, validation, and handoffs |
 | `afk-workflow` | AFK doctrine for specs, plans, tracking, and workflow artifact conventions |
 | `afk-spline-3d-integration` | Spline 3D integration guides for React and vanilla JS |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `ai-companion` | Uses `skills.json` taxonomy to improve native skill discovery |
 | `afk-advanced-elicitation` | Structured critique and refinement loops for improving drafts, plans, and decisions |
-| `afk-ask` | Gets a second opinion from a local Claude, Codex, or Gemini CLI and saves the result as an artifact |
+| `afk-ask` | Gets a second opinion through Kiro/OpenCode, Codex, or Agy and saves the result as an artifact |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-deep-interview` | High-rigor, Socratic clarification mode for turning vague requests into execution-ready briefs |
-| `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with reusable decision artifacts |
+| `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with ADR-style decision artifacts |
+| `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
 | `afk-note` | Durable lightweight memory in a local notepad file for long sessions and handoffs |
+| `afk-pickup` | Explicitly resumes from disposable handoff notes saved in the OS temp directory |
 
 ### Spec-Driven discussion and planning skills
 
@@ -185,10 +209,11 @@ They are intentionally similar, but they are not redundant:
 | `afk-workflow` | The task involves PRDs, specs, RFCs, implementation plans, tracking, or workflow artifact conventions | Consistent artifact boundaries, storage defaults, and workflow framing |
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
 | `afk-deep-interview` | You want disciplined clarification before planning or execution and you're willing to be questioned one round at a time | Execution-ready brief or spec with clear boundaries |
-| `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | Decision artifact for downstream implementation |
+| `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | ADR-style decision record for downstream implementation |
 | `afk-execution-tracking` | You have an implementation plan and want checkpointed execution instead of one long build run | Canonical tracking file with task status, review gates, validation, and next action |
 | `afk-advanced-elicitation` | You already have a draft, brief, plan, or answer and want to pressure-test or improve it | Stronger revised artifact with visible critique/refinement |
 | `afk-note` | You need important context to survive interruptions, compaction, or handoffs | Durable lightweight memory |
+| `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
 
 ### How the workflow currently maps
@@ -203,7 +228,7 @@ They are intentionally similar, but they are not redundant:
 | Implementation planning | Flexible for now; use plan modes, external planning skills, or normal prompting depending on the project |
 | Execution control | `afk-execution-tracking` |
 | Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
-| Support | `afk-note`, `afk-ask`, `afk-documentation-authoring`, `afk-structured-debugging` |
+| Support | `afk-note`, `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
 
 `afk-workflow` defines the default artifact convention: `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
 
@@ -218,6 +243,7 @@ If you're unsure which one to reach for, use this shortcut:
 - "We have a plan and need checkpointed execution" -> `afk-execution-tracking`
 - "We already have something written, but it needs a stronger pass" -> `afk-advanced-elicitation`
 - "I don't want to lose this context later" -> `afk-note`
+- "A previous agent left a temp handoff for this session" -> `afk-pickup`
 - "I want another model's opinion" -> `afk-ask`
 
 ### Use Only What You Need
@@ -234,15 +260,23 @@ Use the smallest useful slice of AFK for the moment you are in.
 
 If the work is already clear, skip straight to the later skill that matches the need. If the work is messy, start earlier. The point is guidance, not bureaucracy.
 
-### A simple flow that works well
+### A practical optional workflow
 
-You do not need to use all of these every time, but this sequence works well for many spec-driven tasks:
+You do not need every step. Pick the smallest useful path for the moment you are in.
 
-1. Start with `afk-brainstorming-facilitator` when the space is still wide open.
-2. Use `afk-deep-interview` when you want to pressure-test intent, scope, non-goals, and decision boundaries before planning.
-3. Use `afk-coding-tradeoffs` when a specific slice of work needs its UX and implementation trade-offs resolved.
-4. Use `afk-advanced-elicitation` on the resulting brief, context doc, or plan to improve quality before execution.
-5. Use `afk-execution-tracking` after an implementation plan exists and you want checkpointed execution, resume safety, or parallel coordination.
+1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
+2. Use `afk-deep-interview` when intent, scope, non-goals, or decision boundaries are still expensive to get wrong.
+3. Write or refine the PRD/spec with your preferred spec skill or normal prompting.
+4. Use `afk-coding-tradeoffs` when a known slice still has UX, behavior, or implementation decisions to lock. It captures those decisions as ADR-style records.
+5. Use `afk-advanced-elicitation` when a draft needs a stronger reasoning/refinement pass.
+6. Create the implementation plan with your preferred planning tool or normal prompting.
+7. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or implementation notes.
+
+Most flows only use a few of these. For example:
+
+```text
+PRD/spec -> afk-coding-tradeoffs -> implementation plan -> afk-execution-tracking
+```
 
 ### Framework Pairings
 
@@ -278,7 +312,7 @@ The clean mental model is:
 
 AFK is strongest when it shapes the work first, then hands off to the best external skill or framework for the next job.
 
-#### Recommended after AFK discovery
+#### Optional companion skills
 
 - **Spec Driven Development (Agent-Skills)**  
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill spec-driven-development`  
@@ -299,6 +333,14 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 - **Code Simplification (Agent-Skills)**  
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill code-simplification`  
   Apply Chesterton's Fence, Rule of 500, and simplification heuristics to reduce complexity without changing behavior.
+
+- **Grill With Docs (Matt Pocock Skills)**  
+  Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
+  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. It complements `afk-coding-tradeoffs`: use trade-offs first when decisions are fuzzy, and Grill With Docs first when domain language is fuzzy.
+
+- **Handoff (Matt Pocock Skills)**  
+  Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  
+  Create a compact handoff document for a fresh agent when a session needs to continue elsewhere. It saves outside the workspace on purpose, keeping the note disposable. Pair it with `afk-pickup` in the next session to search temp locations, verify referenced paths, and resume from the right handoff.
 
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
@@ -347,27 +389,29 @@ For the fuller comparison that inspired this rule of thumb:
 - `afk-coding-tradeoffs` is narrower than `afk-deep-interview`. It assumes the work is already scoped enough to discuss UX and implementation trade-offs that materially change the result.
 - `afk-execution-tracking` starts after an implementation plan exists. Use it when execution needs checkpoints, resume safety, or parallel coordination.
 - `afk-advanced-elicitation` is not for first-pass discovery. It is best after a draft or direction already exists.
-- `afk-note` and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
+- `afk-note`, `afk-pickup`, and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
 
 ### Supporting skills around the flow
 
 The spec-shaping flow is the core lane, but it is not the whole story of AI Field Kit.
 
-Several older AFK skills fit naturally around this flow as specialist companions rather than main stages:
+Several AFK support skills fit naturally around this flow as specialist companions rather than main stages:
 
 | Skill | Where it fits |
 |---|---|
-| `afk-documentation-authoring` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
+| `afk-doc-craft` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
 | `afk-structured-debugging` | When the real problem is a bug, failure, or investigation rather than new scoped work |
 | `ai-companion` | When you want help discovering which installed skill best matches the current moment |
+| `afk-pickup` | When a previous session created a disposable temp handoff and the new session needs to find it |
 
 These are not required steps in the main flow. They are optional specialists you bring in when the work changes shape.
 
 #### How they connect
 
-- Use `afk-documentation-authoring` after `afk-deep-interview` or `afk-coding-tradeoffs` when the output needs to become a human-friendly document instead of a working artifact.
+- Use `afk-doc-craft` after `afk-deep-interview` or `afk-coding-tradeoffs` when the output needs to become a human-friendly document instead of a working artifact.
 - Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
 - Use `ai-companion` when you're unsure whether you need the main flow, a support skill, or something else already installed.
+- Use `afk-pickup` after the external `handoff` skill when the previous session kept its handoff note disposable in the OS temp directory.
 
 #### A useful mental model
 
@@ -394,13 +438,15 @@ Workflow-style AFK procedures are skills for named, repeatable user journeys. Us
 
 These skills are installed through the normal skills flow with `autoInvocation: false`, so agents can see them without automatically choosing them for broad prompts.
 
-### Global Rules Sync Targets
+### Global Rules Targets
 
-`sync-ai-agents.sh` links the shared [`rules/AGENTS.md`](./rules/AGENTS.md) file into each supported tool's expected global instructions path:
+The shared [`rules/AGENTS.md`](./rules/AGENTS.md) file is the source for AFK's
+managed rules region. The CLI merges that region into each supported global
+instruction host without replacing user-owned content in the rest of the file:
 
 | Agent | Global rules path |
 |---|---|
-| Gemini | `~/.gemini/GEMINI.md` |
+| Antigravity / Agy | `~/.gemini/GEMINI.md` |
 | Codex | `~/.codex/AGENTS.md` |
 | OpenCode | `~/.config/opencode/AGENTS.md` |
 | Claude | `~/.claude/CLAUDE.md` |
@@ -470,15 +516,17 @@ In practice:
 
 ## The MCP Registry
 
-`mcps/mcp.json` is a single source of truth for your MCP server configurations. Instead of maintaining separate configs per agent, you define servers once and the sync script distributes them.
+`mcps/mcp.json` is a single source of truth for MCP server recommendations.
+AFK delegates installation to official upstream tooling instead of owning
+per-agent config writers.
 
 ### How `KEY_*` placeholders work
 
-The registry uses `KEY_STITCH`-style placeholders instead of real API keys. The sync script (`sync-ai-mcps.py`) resolves them at runtime:
+The registry uses `KEY_STITCH`-style placeholders instead of real API keys:
 
 1. Checks if an environment variable with that name is set
 2. If not, prompts you securely to enter the value
-3. Writes the resolved config into each agent's config file
+3. Let the delegated installer write the target agent config
 
 **Your real keys never touch the repo.** ✅
 
@@ -486,48 +534,22 @@ The registry uses `KEY_STITCH`-style placeholders instead of real API keys. The 
 
 | Agent | Config target |
 |---|---|
-| Gemini | `~/.gemini/settings.json` |
+| Antigravity / Agy | `~/.gemini/settings.json` |
 | Codex | `~/.codex/config.toml` |
 | Claude | `~/.claude/.mcp.json` |
 | OpenCode | `~/.config/opencode/opencode.json` |
 
-For OpenCode specifically, the sync script only merges into the top-level `mcp` object and preserves every other existing setting in `opencode.json`.
+Use `add-mcp` or the agent's official setup flow for the actual install.
 
 ---
 
 ## Configuration
 
-### Override the repo path
+### AFK manifests
 
-By default, sync scripts expect the repo at `~/codes/ai-field-kit`. Override with:
-
-```bash
-export AI_RULES_REPO=/path/to/your/clone
-bash sync-ai-agents.sh
-```
-
-### MCP server options
-
-Preview changes before writing:
-
-```bash
-python3 sync-ai-mcps.py --dry-run
-```
-
-Sync only a specific agent:
-
-```bash
-python3 sync-ai-mcps.py --agent gemini
-python3 sync-ai-mcps.py --agent codex
-python3 sync-ai-mcps.py --agent opencode
-```
-
-Sync non-interactively (CI-friendly) — export keys first:
-
-```bash
-export KEY_STITCH=your_value
-python3 sync-ai-mcps.py --non-interactive
-```
+AFK setup is driven by manifests under `packages/afk/manifests/`. Use them to
+define recommended rules, skills, MCPs, utilities, and presets while keeping
+installation delegated to the right upstream CLI.
 
 ---
 
@@ -557,7 +579,7 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use `KEY_YOUR_NAME` 
         "args": ["-y", "my-mcp-package", "--api-key", "KEY_MY_SERVER"]
       },
       "targets": {
-        "gemini": { "name": "my-server" },
+        "antigravity": { "name": "my-server" },
         "codex": { "name": "my-server", "enabled": true }
       }
     }
@@ -569,11 +591,9 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use `KEY_YOUR_NAME` 
 
 ## Common Issues
 
-**Symlink already exists and points somewhere wrong** — The sync scripts handle this automatically: they back up real files and replace broken symlinks. Check for `.bak.*` files in the destination directories if something seems off.
-
 **Skills not discovered by my agent** — Make sure the skill lives at `~/.agents/skills/<name>/SKILL.md` and that your agent is configured to read from `~/.agents/skills/`.
 
-**`KEY_*` placeholder error** — Either export the env var before running, or let the script prompt you interactively. See [MCP server options](#mcp-server-options) above.
+**`KEY_*` placeholder error** — Export the env var before running the delegated installer, or let that installer prompt when supported.
 
 ---
 
@@ -587,7 +607,7 @@ projects without AFK reimplementing their installers.
 |---|---|---|
 | Codex | ✅ | via `add-mcp` |
 | Claude Code | ✅ | via `add-mcp` |
-| Gemini | ✅ | via `add-mcp` |
+| Antigravity / Agy | ✅ | via `add-mcp` |
 | OpenCode | ✅ | via `add-mcp` |
 
 ---

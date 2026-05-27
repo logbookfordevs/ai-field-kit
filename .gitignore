@@ -12,6 +12,7 @@ __pycache__/
 # Node
 node_modules/
 dist/
+.release/
 
 # Local environment overrides
 .env

@@ -18,7 +18,7 @@ Default behavior:
 
 These are suggestions, not required steps:
 - `afk-deep-interview` if the work is still too ambiguous to plan safely
-- `afk-documentation-authoring` if the brainstorming results need to become a polished brief, memo, or guide
+- `afk-doc-craft` if the brainstorming results need to become a polished brief, memo, or guide
 - `afk-note` if important discoveries need to survive handoffs or chat resets
 
 Follow the instructions in ./workflow.md.

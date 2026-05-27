@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { defaultsManifestBaseUrl, defaultsManifestBaseUrls, ensureLocalManifests, localManifestDir } from "./manifest.js";
+import { defaultsManifestBaseUrl, defaultsManifestBaseUrls, ensureLocalManifests, localManifestDir, projectManifestDir } from "./manifest.js";
 
 test("ensureLocalManifests migrates the old Stitch header default", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-manifest-"));
@@ -37,6 +37,7 @@ test("ensureLocalManifests migrates the old Stitch header default", async () => 
     rulesSource: "local",
     empty: false,
     refreshDefaults: false,
+    manifestLocal: false,
     defaultsSource: "",
     dryRun: false,
   });
@@ -52,7 +53,7 @@ test("ensureLocalManifests migrates the old Stitch header default", async () => 
   assert.deepEqual(next.items[0]?.args, ["--name", "stitchmcp"]);
 });
 
-test("ensureLocalManifests migrates built-in skills to invocation policy metadata", async () => {
+test("ensureLocalManifests migrates existing skills to invocation policy metadata", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-skills-manifest-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
@@ -85,6 +86,7 @@ test("ensureLocalManifests migrates built-in skills to invocation policy metadat
     rulesSource: "local",
     empty: false,
     refreshDefaults: false,
+    manifestLocal: false,
     defaultsSource: "",
     dryRun: false,
   });
@@ -93,7 +95,7 @@ test("ensureLocalManifests migrates built-in skills to invocation policy metadat
   assert.ok(write && write.type === "write");
   const next = JSON.parse(write.content) as { items: Array<{ id: string; autoInvocation?: boolean }> };
   assert.equal(next.items.find((item) => item.id === "afk-note")?.autoInvocation, true);
-  assert.equal(next.items.find((item) => item.id === "afk-typecheck")?.autoInvocation, false);
+  assert.equal(next.items.some((item) => item.id === "afk-typecheck"), false);
 });
 
 test("defaultsManifestBaseUrl resolves GitHub shorthand to the AFK manifest convention", () => {
@@ -123,6 +125,7 @@ test("defaultsManifestBaseUrl preserves GitHub tree paths as manifest directorie
 test("ensureLocalManifests can refresh defaults from a custom source", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
+  const hookManifest = JSON.stringify({ version: 1, items: [] });
   globalThis.fetch = async (input) => {
     requestedUrls.push(String(input));
     const name = String(input).split("/").pop();
@@ -131,8 +134,8 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "workflows.json": JSON.stringify({ version: 1, source: "github", items: [] }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": hookManifest,
     };
 
     return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
@@ -147,6 +150,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
       rulesSource: "github",
       empty: false,
       refreshDefaults: true,
+      manifestLocal: false,
       defaultsSource: "acme/dev-kit",
       dryRun: true,
     });
@@ -157,7 +161,8 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     assert.ok(presetsWrite.content.includes("\"defaultsSource\": \"acme/dev-kit\""));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/rules.json")));
-    assert.ok(requestedUrls.some((url) => url.endsWith("/workflows.json")));
+    assert.ok(requestedUrls.some((url) => url.endsWith("/hooks.json")));
+    assert.ok(!requestedUrls.some((url) => url.endsWith("/workflows.json")));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -166,6 +171,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
 test("ensureLocalManifests reuses remembered defaults source during refresh", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
+  const hookManifest = JSON.stringify({ version: 1, items: [] });
   globalThis.fetch = async (input) => {
     requestedUrls.push(String(input));
     const name = String(input).split("/").pop();
@@ -174,8 +180,8 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "workflows.json": JSON.stringify({ version: 1, source: "github", items: [] }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": hookManifest,
     };
 
     return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
@@ -194,6 +200,7 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
       rulesSource: "github",
       empty: false,
       refreshDefaults: true,
+      manifestLocal: false,
       defaultsSource: "",
       dryRun: true,
     });
@@ -204,9 +211,52 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
   }
 });
 
-test("ensureLocalManifests falls back to package manifests when compact manifests are missing", async () => {
+test("ensureLocalManifests can refresh project-local manifests", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(String(input));
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "presets.json": JSON.stringify({ version: 1, presets: [] }),
+      "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
+      "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": JSON.stringify({ version: 1, items: [] }),
+    };
+
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const cwd = mkdtempSync(join(tmpdir(), "afk-project-defaults-"));
+    const manifestDir = projectManifestDir(cwd);
+    const operations = await ensureLocalManifests({
+      homeDir: "/tmp/home",
+      repoDir: "/tmp/repo",
+      cwd,
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: true,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+    });
+
+    assert.ok(operations.some((operation) => operation.type === "mkdir" && operation.path === manifestDir));
+    assert.ok(operations.some((operation) => operation.type === "write" && operation.path === join(manifestDir, "skills.json")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests falls back to remote package manifest convention when compact manifests are missing", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  const hookManifest = JSON.stringify({ version: 1, items: [] });
   globalThis.fetch = async (input) => {
     const url = String(input);
     requestedUrls.push(url);
@@ -220,8 +270,8 @@ test("ensureLocalManifests falls back to package manifests when compact manifest
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "workflows.json": JSON.stringify({ version: 1, source: "github", items: [] }),
       "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": hookManifest,
     };
 
     return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
@@ -236,6 +286,7 @@ test("ensureLocalManifests falls back to package manifests when compact manifest
       rulesSource: "github",
       empty: false,
       refreshDefaults: true,
+      manifestLocal: false,
       defaultsSource: "acme/dev-kit",
       dryRun: true,
     });
@@ -243,6 +294,54 @@ test("ensureLocalManifests falls back to package manifests when compact manifest
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("utils.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/afk/manifests/skills.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/packages/afk/manifests/skills.json")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests keeps existing files when a custom source omits a manifest", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("missing", { status: 404 });
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-partial-defaults-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(
+      join(manifestDir, "utils.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          items: [
+            {
+              id: "keep-me",
+              label: "Keep Me",
+              description: "Keep existing utility manifest.",
+              install: { command: "sh", args: ["-c", "keep-me"] },
+              default: true,
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+    });
+
+    const utilityOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("utils.json"));
+    assert.equal(utilityOperation?.type, "skip");
+    assert.equal(readFileSync(join(manifestDir, "utils.json"), "utf8").includes("keep-me"), true);
   } finally {
     globalThis.fetch = originalFetch;
   }

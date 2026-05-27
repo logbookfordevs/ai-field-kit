@@ -1,12 +1,13 @@
 import type { PathLike } from "node:fs";
 
 export type AgentId =
+  | "antigravity"
   | "claude"
   | "codex"
-  | "gemini"
+  | "cursor-local"
   | "opencode";
 
-export type Area = "rules" | "workflows" | "skills" | "mcps" | "utils";
+export type Area = "rules" | "skills" | "mcps" | "utils" | "hooks";
 export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "agent" | "all";
 export type ManagedSkillAgent =
@@ -30,6 +31,7 @@ export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
 export type SkillOpenApp = "finder" | "code" | "cursor" | "zed" | "agy";
 export type SkillAgentMetadata = "codex";
+export type ManifestCategory = "rules" | "skills" | "mcps" | "utils" | "hooks" | "presets";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -39,15 +41,16 @@ export type CliOptions = {
   yes: boolean;
   includeExternal: boolean;
   selectedSkillIds: string[];
-  selectedWorkflowIds: string[];
   selectedMcpIds: string[];
   selectedUtilIds: string[];
+  selectedHookIds: string[];
   rulesRef: string;
   rulesSource: "manifest" | "github" | "local";
   initOnly: boolean;
   empty: boolean;
   refreshDefaults: boolean;
   defaultsSource: string;
+  manifestLocal: boolean;
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
   skillsListScope?: SkillsListScope;
@@ -63,6 +66,7 @@ export type CliOptions = {
   skillCategorizationMode?: SkillCategorizationMode | undefined;
   skillCategorizationRunner?: SkillCategorizationRunner;
   skillCategorizationInstruction?: string;
+  selectedManifestCategories: ManifestCategory[];
   homeDir: string;
   repoDir: string;
   cwd: string;

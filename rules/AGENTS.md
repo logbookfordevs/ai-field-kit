@@ -5,7 +5,7 @@ Documentation should be treated as a **product**, not an obligation.
 - Use **progressive disclosure** (quick win first, details later).
 - Keep a **human tone** and anticipate common frustrations.
 
-When the task is explicitly about writing docs, use the **`afk-documentation-authoring` skill**.
+When the task is explicitly about writing docs, use the **`afk-doc-craft` skill**.
 
 # Library Preferences
 
@@ -20,6 +20,9 @@ When the task is explicitly about writing docs, use the **`afk-documentation-aut
 - Tailwind CSS v4 is preferred library for CSS.
 - Default to Tailwind v4 zero-config setup; do NOT create `tailwind.config.js`/`tailwind.config.ts` unless explicitly required by the project.
 - When setting up Tailwind CSS, use the `tailwind-design-system` skill as initial reference.
+
+## Headless Components
+- Use the project’s existing headless foundation if one exists. Otherwise prefer Base UI.
 
 # Personal Preferences
 
@@ -41,7 +44,7 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 
 ## Worktrees
 - When creating or managing git worktrees, prefer the `yggtree` CLI via `npx yggtree`.
-- Use `npx yggtree --help` and `npx yggtree wt --help` to inspect the available workflow before choosing commands.
+- Use `npx yggtree --help` to inspect the available workflow before choosing commands.
 
 ## Package Managers
 - Use pnpm if the project already uses it. Prefer pnpm in new projects.
@@ -49,8 +52,14 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 ## Tech Stack
 When uncertain, prefer: Tailwind, TypeScript, React.
 
+## Frontend UX Defaults
+- UX quality beats avoiding setup work. Do not ship visibly worse interactions just to avoid adding a well-fit library, registry, config, or component primitive.
+- For navigation, drawers, sidebars, command menus, forms, tables, modals, and other established UI patterns, prefer mature primitives or registry components over ad hoc rebuilds when they materially improve UX, accessibility, responsiveness, or interaction quality.
+- In React/Tailwind projects, consider shadcn/ui and other community registries early when a standard app primitive is needed. If the repo is not yet configured, compare setup cost against the UX cost of a custom workaround; do not reject the registry only because setup is required.
+- Mobile is not a degraded version of desktop. Replace cramped, wrapped, clipped, or awkward controls with a proper responsive pattern such as a drawer, sheet, sidebar, menu, or command surface.
+
 ## Coding Style Instructions
-Always prioritize DX with concise and simple solutions. Keep code: Readable, Maintainable, Easy to onboard into.
+Keep code: Readable, Maintainable, Easy to onboard into. DX is always important.
 When the task is a review/refactor guidance, prefer explicit review.
 
 When evaluating code and thinking between solutions, apply `Truss Evaluation` skill as criteria.
@@ -65,7 +74,9 @@ _Remember: your role is to be a critical thinking partner who also values code t
 - Add a comment only when the code has real ambiguity, a non-obvious constraint, or a meaningful trade-off that future developers need to understand.
 - Keep necessary comments short and focused on resolving that ambiguity.
 
-@RTK.md
-
 ## AFK Workflow
-- When the task involves PRDs, specs, RFCs/ERDs, implementation plans, execution tracking, workflow artifacts, or checkpointed implementation, use the **`afk-workflow` skill**.
+- For any non-trivial product or engineering workflow, use the **`afk-workflow` skill**: brainstorming, elicitation, PRDs, specs, RFCs, implementation plans, execution, testing, validation, tracking, or handoff.
+- Skip it only for quick one-shot operations where no workflow state, artifact, or handoff is needed.
+
+## Dictionary
+- Team of agents/multi agents = spawn sub-agents/child agents

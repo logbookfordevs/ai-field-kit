@@ -4,42 +4,66 @@ This changelog tracks meaningful updates by version and date.
 
 ## How We Use This File
 
-- When a batch of changes feels complete, move it into a versioned section like `## v0.1.1 - 2026-04-08`.
+- Keep unreleased work in `## TBD - TBD`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
 - Prefer reader-focused summaries over raw commit messages.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
-## v0.1.2 - 2026-05-15
+## TBD - TBD
 
-- `cli:` added the first local AFK CLI package under `packages/afk`, centered on `afk setup` as an inspect-first setup router.
-- `cli:` added `install.sh` to build the local AFK package and expose it as an `afk` command during development.
-- `cli:` ported AFK-owned rules and workflow sync planning into TypeScript while keeping skills and MCP installs delegated to the official `skills` and `add-mcp` CLIs.
-- `cli:` added JSON manifests for curated skills, MCP recommendations, utilities, and the baseline setup preset.
-- `cli:` added a warmer setup experience with an AFK banner and checkbox selection for setup areas, targets, skills, MCPs, and utilities.
-- `cli:` expanded AFK skill installation from one opaque bundle into individually selectable AFK skill entries.
-- `cli:` removed the placeholder `afk doctor` command until it can return user-facing setup diagnostics instead of contributor-only repo checks.
-- `cli:` changed rules sync to inject raw AFK rules into a managed region inside host files, fetching rule markdown from GitHub by default with `--source local` and `--ref` escape hatches.
-- `cli:` grouped delegated skill installs into non-interactive `skills add --global --yes` calls, adding Claude Code as an extra target only when selected.
-- `cli:` added editable local manifests under `~/.agents/afk/` with `--init-only`, `--empty`, and `--refresh-defaults` setup modes so recommendations can evolve without CLI patches.
-- `cli:` added `--defaults-source` so local manifests can refresh from another convention-compatible GitHub repo.
-- `cli:` changed custom defaults sources to be remembered in `presets.json`, so later `--refresh-defaults` runs can reuse the same source.
-- `cli:` added `afk manifests configure` for interactive manifest authoring, including `--local` for creating `./afk/manifests/` defaults repos.
-- `cli:` moved scoped setup actions under `afk setup ...` so future `afk skills ...` commands can focus on skill management instead of setup installation.
-- `cli:` simplified `rules.json` to a direct `url` so refreshed personal defaults can point rules sync at their own GitHub rule file.
-- `cli:` narrowed AFK-owned rule/workflow targets to Codex, Claude Code, Gemini, and OpenCode while keeping skills and MCPs delegated to their official CLIs.
-- `cli:` added `afk setup utils install` for curated utilities, starting with Plannotator and RTK delegated installs plus RTK agent initialization for selected targets, including global Codex initialization from `~/.codex`.
-- `cli:` made utility installs best-effort so one third-party installer failure does not stop the remaining utilities.
-- `cli:` changed grouped setup to continue across selected areas and report failures at the end.
-- `cli:` added global/project setup scope selection, including `--scope project` and `--local`, so AFK can prepare either machine-wide config or repo-local rules, workflows, skills, MCPs, and RTK initialization.
-- `cli:` changed workflow sync to use `workflows.json` direct workflow URLs and write managed files instead of symlinking markdown commands back to a repo checkout.
-- `cli:` moved AFK workflow-style procedures into skill packages and added `autoInvocation` manifest metadata so broad procedural skills can be installed without implicit agent invocation.
+## v0.5.2 - 2026-05-27
+
+- `cli:` changed global rules sync to merge the AFK managed region into each agent's own rule file instead of replacing Codex, Antigravity/Agy, or OpenCode hosts with symlinks.
+- `cli:` added top-level `afk --version` and `afk -v` output sourced from the CLI package metadata.
+- `cli:` replaced the setup refresh flag with `afk setup refresh`, including `--local` support for refreshing project-level `./afk/manifests`.
+- `cli:` added hook installation as a first-class setup area, with `hooks.json`, interactive selection, manifest show/configure support, dry-run planning, and safe merging into Codex, Claude Code, and local Cursor hook configs.
+- `cli:` added the AFK execution-tracking stop hook source and hook install planning for copying managed hook scripts into agent-specific hook folders.
+- `cli:` added Cursor aliases for local hook setup while keeping Cursor out of general rule/MCP/utility agent targeting.
+- `cli:` made `afk setup rules`, `afk setup skills`, `afk setup mcps`, `afk setup utils`, and `afk setup hooks` the canonical area commands while keeping the older `sync`/`install` forms as compatibility aliases.
+- `cli:` expanded setup help so `afk setup --help` lists setup subcommands and each setup area help screen explains shared options instead of showing bare flags.
+- `cli:` refined the AFK terminal banner colors for a warmer, more legible setup experience.
+- `release:` added an AFK version bump helper that promotes the current changelog TBD section, updates the CLI package version, and refreshes the pinned install example.
+- `repo:` added a pnpm workspace and root package scripts so the AFK package and site can live in the same repository cleanly.
+- `repo:` added project-local Codex config and refreshed agent guidance, including the dictionary rule that maps "team of agents" and "multi agents" to spawned child agents.
+- `skills:` added `afk-pickup` as a manual support skill for finding and resuming disposable handoff notes from the OS temp directory.
+- `skills:` added Matt Pocock's external `handoff` skill to the default setup recommendations with manual invocation, pairing it with `afk-pickup` for the next-session resume flow.
+- `skills:` renamed `afk-documentation-authoring` to `afk-doc-craft` across the skill directory, README, manifests, and dependent skill references.
+- `skills:` refined `afk-execution-tracking` around active checkpoint files, review gates, split-plan handoffs, and stale-tracking recovery.
+- `repo:` added project-local agent guidance that prefers tiny skills for naturally clear jobs instead of turning every skill into a workflow ceremony.
+- `site:` moved the AI Field Kit React/Vite site into this repo under `apps/site`, including the Vite app, favicon assets, provider icons, Tailwind styling, workspace wiring, and root scripts for site build/dev workflows.
+- `site:` exposed the canonical installer at `/install.sh` through the site and updated README setup docs to prefer the hosted `https://ai-field-kit.logbookfordevs.com/install.sh` path.
+- `docs:` added README guidance for the hosted install path, hook manifests, shorter setup area commands, and the renamed `afk-doc-craft` documentation skill.
+
+## v0.5.1 - 2026-05-19
+
+- `cli:` restored the tracked AFK CLI source package and release packaging that were missing from the `v0.5.0` release, so the published archive now includes the runnable setup router code instead of only documenting it.
+- `cli:` restored `afk manifests show`, refresh-only `afk setup --refresh-defaults`, remote-first manifest refresh behavior, and clean release-asset packaging without bundled manifests, stale doctor output, or compiled tests.
+- `cli:` removed the separate workflow manifest and command-sync lane; workflow-style AFK procedures now ship through `skills.json` as manual-invocation skills.
+- `cli:` renamed the AFK Gemini target to Antigravity/Agy, kept `gemini` as a compatibility alias, switched MCP delegation to `add-mcp -a antigravity`, and routed RTK project setup through `rtk init --agent antigravity`.
+- `sync:` removed the deprecated `sync-ai-agents.sh`, `sync-ai-workflows.sh`, and `sync-ai-mcps.py` scripts now that setup routes through the AFK CLI and upstream installer CLIs.
+
+## v0.5.0 - 2026-05-19
+
+- `cli:` added the initial AFK CLI package under `packages/afk`, centered on `afk setup` as an inspect-first setup router for rules, skills, MCPs, and utilities.
+- `cli:` added a warm guided setup experience with an AFK banner, scope selection, and granular checkboxes for setup areas, agents, skills, MCPs, and utilities.
+- `cli:` added TypeScript implementations for AFK-owned rules sync while keeping third-party installation delegated to the official `skills` and `add-mcp` CLIs.
+- `cli:` added remote-owned JSON manifests for skills, MCPs, utilities, rules, and presets so recommendations can evolve without patching the CLI.
+- `cli:` added editable local manifest storage under `~/.agents/afk/manifests`, plus `--init-only`, `--empty`, `--refresh-defaults`, and `--defaults-source` setup modes.
+- `cli:` added `afk manifests configure` for authoring global or repo-local manifest files and `afk manifests show` for inspecting global or project-local manifest state.
+- `cli:` added rules sync that injects AFK rules into managed regions inside host rule files without replacing user-owned content.
+- `cli:` added non-interactive delegated skill installs through `skills add --global --yes`, letting the official `skills` CLI handle agent target fanout.
+- `cli:` added initial AFK-owned rule support for Codex, Claude Code, Gemini, and OpenCode; skills and MCP coverage remains owned by their upstream CLIs.
+- `cli:` keeps workflow-style AFK procedures in `skills.json` as manual-invocation skills instead of maintaining a separate workflow manifest or command-sync lane.
+- `cli:` added `afk setup utils install` for curated utilities, starting with Plannotator and RTK delegated installs plus RTK initialization for selected agents.
+- `cli:` added best-effort utility installation and grouped setup summaries so one utility failure does not block the rest of the selected setup route.
+- `cli:` added release-asset packaging and install scripts for GitHub Releases while keeping `--source local` available as an explicit development escape hatch.
 - `rules:` replaced inline/imported AFK workflow doctrine in `AGENTS.md` with a small trigger that invokes the `afk-workflow` skill when workflow artifacts, specs, plans, RFCs, or tracking are involved.
 - `skills:` added `afk-workflow` as the activatable doctrine skill for artifact boundaries, RFC positioning, implementation planning, execution tracking handoff, and default artifact conventions.
 - `skills:` standardized generated workflow artifacts around the repo/user convention first, with AFK fallback defaults under `docs/<task-slug>/<task-slug>.<type>.md` and task references under `docs/<task-slug>/references/`.
 - `skills:` added `afk-execution-tracking` for checkpointed implementation after a plan exists, including task status, validation, engineer/product review gates, resume context, and parallel-agent coordination.
 - `skills:` renamed `afk-ask-gemini` to `afk-ask` and generalized it into a standalone local advisor skill for Claude, Codex, and Gemini CLIs, preserving reusable artifacts while keeping the advisor read-only by default.
-- `skills:` updated artifact-writing skills to follow repo/user artifact rules instead of hardcoding AFK paths, using `afk-workflow` as the fallback convention.
-- `sync:` updated agent rule sync so imported rule files travel with `AGENTS.md`, and changed Claude sync to keep a real `CLAUDE.md` with an AFK import block so Claude-only imports can coexist with shared rules.
+- `skills:` aligned artifact-writing skills with repo/user artifact rules instead of hardcoded AFK paths, using `afk-workflow` as the fallback convention.
+- `sync:` writes AFK rules as raw managed regions in host rule files, including `CLAUDE.md`, so reruns update AFK-owned content without replacing user-owned rules.
 - `docs:` reframed the README around "standalone skills with an optional workflow path," added the current AFK workflow map, and removed internal handoff-contract details from the public README.
 
 ## v0.1.1 - 2026-04-08
