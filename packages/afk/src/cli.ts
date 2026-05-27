@@ -107,8 +107,37 @@ type CommandHelp = {
   summary: string;
   usage: string;
   options: string[];
+  subcommands?: string[];
   examples: string[];
 };
+
+const setupOptions = {
+  dryRun: "--dry-run                         Preview changes without applying them",
+  yes: "--yes, -y                         Accept defaults and skip prompts",
+  scope: "--scope global|project            Choose machine-wide or current-project setup",
+  localScope: "--local                           Alias for --scope project",
+  localManifest: "--local                           Refresh ./afk/manifests instead of global manifests",
+  agent: "--agent <agent>                   Limit agent targets; repeatable",
+  source: "--source github|local             Load default manifests from GitHub or this checkout",
+  ref: "--ref <git-ref>                   Git ref for default AFK manifest URLs",
+  initOnly: "--init-only                       Create/update local manifests only, then exit",
+  empty: "--empty                           Create empty manifests with --init-only or refresh",
+  defaultsSource: "--defaults-source <source>        Use and remember a custom remote or local defaults source",
+  includeExternal: "--include-external                Include external recommended skills when installing skills",
+};
+
+const setupAreaOptions = [
+  setupOptions.dryRun,
+  setupOptions.yes,
+  setupOptions.scope,
+  setupOptions.localScope,
+  setupOptions.agent,
+  setupOptions.source,
+  setupOptions.ref,
+  setupOptions.initOnly,
+  setupOptions.empty,
+  setupOptions.defaultsSource,
+];
 
 const commandHelps: Record<string, CommandHelp> = {
   setup: {
@@ -116,21 +145,30 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Guided setup for rules, skills, MCPs, utilities, and hooks.",
     usage: "afk setup [options]",
     options: [
-      "--dry-run                         Preview changes without applying them",
-      "--yes, -y                         Accept defaults and skip prompts",
-      "--scope global|project            Choose machine-wide or current-project setup",
-      "--local                           Alias for --scope project",
-      "--agent <agent>                   Limit agent targets; repeatable",
-      "--source github|local             Load manifests from remote sources or this checkout for development",
-      "--ref <git-ref>                   Git ref for default AFK manifest URLs",
-      "--init-only                       Create/update local manifests only",
-      "--empty                           Create empty manifests with --init-only",
-      "--defaults-source <source>        Use and remember a custom remote or local defaults source",
+      setupOptions.dryRun,
+      setupOptions.yes,
+      setupOptions.scope,
+      setupOptions.localScope,
+      setupOptions.agent,
+      setupOptions.source,
+      setupOptions.ref,
+      setupOptions.initOnly,
+      setupOptions.empty,
+      setupOptions.defaultsSource,
+    ],
+    subcommands: [
+      "afk setup refresh                 Refresh global or project-local AFK manifests",
+      "afk setup rules                   Sync AFK rules into managed agent rule regions",
+      "afk setup skills                  Delegate skill installation to the official skills CLI",
+      "afk setup mcps                    Delegate MCP installation to add-mcp",
+      "afk setup utils                   Install optional developer utilities",
+      "afk setup hooks                   Merge AFK lifecycle hooks into agent hook configs",
     ],
     examples: [
       "afk setup",
       "afk setup --dry-run",
       "afk setup --local",
+      "afk setup refresh --defaults-source your-org/dev-kit",
       "afk setup --defaults-source your-org/dev-kit",
       "afk setup --defaults-source ./afk/manifests",
     ],
@@ -140,12 +178,12 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Refresh AFK manifests from the remembered or selected defaults source.",
     usage: "afk setup refresh [options]",
     options: [
-      "--dry-run                         Preview manifest writes without applying them",
-      "--local                           Refresh ./afk/manifests instead of global manifests",
-      "--source github|local             Load manifests from remote sources or this checkout for development",
-      "--ref <git-ref>                   Git ref for default AFK manifest URLs",
-      "--empty                           Write empty manifest files",
-      "--defaults-source <source>        Use and remember a custom remote or local defaults source",
+      setupOptions.dryRun,
+      setupOptions.localManifest,
+      setupOptions.source,
+      setupOptions.ref,
+      setupOptions.empty,
+      setupOptions.defaultsSource,
     ],
     examples: [
       "afk setup refresh",
@@ -154,106 +192,120 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup refresh --source local",
     ],
   },
-  "setup hooks install": {
-    title: "AFK setup hooks install",
+  "setup hooks": {
+    title: "AFK setup hooks",
     summary: "Merge selected AFK lifecycle hooks into supported agent hook configs.",
-    usage: "afk setup hooks install [options]",
-    options: [
-      "--dry-run",
-      "--yes, -y",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--init-only",
-      "--empty",
-      "--defaults-source <source>",
-    ],
+    usage: "afk setup hooks [options]",
+    options: setupAreaOptions,
     examples: [
-      "afk setup hooks install --dry-run",
-      "afk setup hooks install --yes --agent codex",
-      "afk setup hooks install --local --agent cursor-local",
+      "afk setup hooks --dry-run",
+      "afk setup hooks --yes --agent codex",
+      "afk setup hooks --local --agent cursor-local",
+    ],
+  },
+  "setup hooks install": {
+    title: "AFK setup hooks",
+    summary: "Merge selected AFK lifecycle hooks into supported agent hook configs.",
+    usage: "afk setup hooks [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup hooks --dry-run",
+      "afk setup hooks --yes --agent codex",
+      "afk setup hooks --local --agent cursor-local",
+    ],
+  },
+  "setup rules": {
+    title: "AFK setup rules",
+    summary: "Sync AFK rules into managed rule regions.",
+    usage: "afk setup rules [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup rules --dry-run",
+      "afk setup rules --local",
+      "afk setup rules --source local",
     ],
   },
   "setup rules sync": {
-    title: "AFK setup rules sync",
+    title: "AFK setup rules",
     summary: "Sync AFK rules into managed rule regions.",
-    usage: "afk setup rules sync [options]",
+    usage: "afk setup rules [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup rules --dry-run",
+      "afk setup rules --local",
+      "afk setup rules --source local",
+    ],
+  },
+  "setup skills": {
+    title: "AFK setup skills",
+    summary: "Delegate selected skills to the official skills CLI.",
+    usage: "afk setup skills [options]",
     options: [
-      "--dry-run",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--source github|local",
-      "--ref <git-ref>",
-      "--init-only",
-      "--empty",
-      "--defaults-source <source>",
+      ...setupAreaOptions,
+      setupOptions.includeExternal,
     ],
     examples: [
-      "afk setup rules sync --dry-run",
-      "afk setup rules sync --local",
-      "afk setup rules sync --source local",
+      "afk setup skills --dry-run",
+      "afk setup skills --yes",
+      "afk setup skills --local --agent claude",
     ],
   },
   "setup skills install": {
-    title: "AFK setup skills install",
+    title: "AFK setup skills",
     summary: "Delegate selected skills to the official skills CLI.",
-    usage: "afk setup skills install [options]",
+    usage: "afk setup skills [options]",
     options: [
-      "--dry-run",
-      "--yes, -y",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--include-external",
-      "--init-only",
-      "--empty",
-      "--defaults-source <source>",
+      ...setupAreaOptions,
+      setupOptions.includeExternal,
     ],
     examples: [
-      "afk setup skills install --dry-run",
-      "afk setup skills install --yes",
-      "afk setup skills install --local --agent claude",
+      "afk setup skills --dry-run",
+      "afk setup skills --yes",
+      "afk setup skills --local --agent claude",
+    ],
+  },
+  "setup mcps": {
+    title: "AFK setup MCPs",
+    summary: "Delegate selected MCP recommendations to add-mcp.",
+    usage: "afk setup mcps [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup mcps --dry-run",
+      "afk setup mcps --yes",
+      "afk setup mcps --local --agent codex",
     ],
   },
   "setup mcps install": {
-    title: "AFK setup MCPs install",
+    title: "AFK setup MCPs",
     summary: "Delegate selected MCP recommendations to add-mcp.",
-    usage: "afk setup mcps install [options]",
-    options: [
-      "--dry-run",
-      "--yes, -y",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--init-only",
-      "--empty",
-      "--defaults-source <source>",
-    ],
+    usage: "afk setup mcps [options]",
+    options: setupAreaOptions,
     examples: [
-      "afk setup mcps install --dry-run",
-      "afk setup mcps install --yes",
-      "afk setup mcps install --local --agent codex",
+      "afk setup mcps --dry-run",
+      "afk setup mcps --yes",
+      "afk setup mcps --local --agent codex",
+    ],
+  },
+  "setup utils": {
+    title: "AFK setup utils",
+    summary: "Install optional developer utilities and run supported post-install setup.",
+    usage: "afk setup utils [options]",
+    options: setupAreaOptions,
+    examples: [
+      "afk setup utils --dry-run",
+      "afk setup utils --yes",
+      "afk setup utils --local --agent opencode",
     ],
   },
   "setup utils install": {
-    title: "AFK setup utils install",
+    title: "AFK setup utils",
     summary: "Install optional developer utilities and run supported post-install setup.",
-    usage: "afk setup utils install [options]",
-    options: [
-      "--dry-run",
-      "--yes, -y",
-      "--scope global|project",
-      "--local",
-      "--agent <agent>",
-      "--init-only",
-      "--empty",
-      "--defaults-source <source>",
-    ],
+    usage: "afk setup utils [options]",
+    options: setupAreaOptions,
     examples: [
-      "afk setup utils install --dry-run",
-      "afk setup utils install --yes",
-      "afk setup utils install --local --agent opencode",
+      "afk setup utils --dry-run",
+      "afk setup utils --yes",
+      "afk setup utils --local --agent opencode",
     ],
   },
   "manifests configure": {
@@ -506,23 +558,23 @@ function readCommandPath(args: string[]): string[] {
 
 function commandToArea(commandPath: string[]): Area | null {
   const key = commandKey(commandPath);
-  if (key === "setup rules sync") {
+  if (key === "setup rules" || key === "setup rules sync") {
     return "rules";
   }
 
-  if (key === "setup skills install") {
+  if (key === "setup skills" || key === "setup skills install") {
     return "skills";
   }
 
-  if (key === "setup mcps install") {
+  if (key === "setup mcps" || key === "setup mcps install") {
     return "mcps";
   }
 
-  if (key === "setup utils install") {
+  if (key === "setup utils" || key === "setup utils install") {
     return "utils";
   }
 
-  if (key === "setup hooks install") {
+  if (key === "setup hooks" || key === "setup hooks install") {
     return "hooks";
   }
 
@@ -556,11 +608,11 @@ Usage:
   afk --version
   afk setup [options]
   afk setup refresh [options]
-  afk setup rules sync [options]
-  afk setup skills install [options]
-  afk setup mcps install [options]
-  afk setup utils install [options]
-  afk setup hooks install [options]
+  afk setup rules [options]
+  afk setup skills [options]
+  afk setup mcps [options]
+  afk setup utils [options]
+  afk setup hooks [options]
   afk manifests configure [options]
   afk manifests show [options]
 
@@ -609,7 +661,7 @@ function manifestCategoryFlag(arg: string): ManifestCategory | null {
 }
 
 function renderCommandHelp(help: CommandHelp): string {
-  return [
+  const parts = [
     help.title,
     "",
     help.summary,
@@ -619,8 +671,13 @@ function renderCommandHelp(help: CommandHelp): string {
     "",
     "Options:",
     ...help.options.map((option) => `  ${option}`),
-    "",
-    "Examples:",
-    ...help.examples.map((example) => `  ${example}`),
-  ].join("\n");
+  ];
+
+  if (help.subcommands && help.subcommands.length > 0) {
+    parts.push("", "Subcommands:", ...help.subcommands.map((subcommand) => `  ${subcommand}`));
+  }
+
+  parts.push("", "Examples:", ...help.examples.map((example) => `  ${example}`));
+
+  return parts.join("\n");
 }

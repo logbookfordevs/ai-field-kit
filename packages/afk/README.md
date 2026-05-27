@@ -103,7 +103,7 @@ For rules, keep the source repo explicit in `rules.json`:
 ```
 
 That lets a personal defaults repo refresh the manifest and keep future
-`setup rules sync` runs pointed at the same repo.
+`setup rules` runs pointed at the same repo.
 
 Hooks point at a source script plus the native command AFK should merge into
 agent hook config:
@@ -201,23 +201,23 @@ Antigravity/Agy, and `CLAUDE.md` for Claude Code.
 Use a local checkout while developing rule changes:
 
 ```bash
-node packages/afk/dist/index.js setup rules sync --dry-run --source local
+node packages/afk/dist/index.js setup rules --dry-run --source local
 ```
 
 Update `rules.json` when you want a stable public setup:
 
 ```bash
-node packages/afk/dist/index.js setup rules sync --dry-run
+node packages/afk/dist/index.js setup rules --dry-run
 ```
 
 Install only utilities:
 
 ```bash
-node packages/afk/dist/index.js setup utils install --dry-run
+node packages/afk/dist/index.js setup utils --dry-run
 ```
 
 Install only hooks:
 
 ```bash
-node packages/afk/dist/index.js setup hooks install --dry-run
+node packages/afk/dist/index.js setup hooks --dry-run
 ```
