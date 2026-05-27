@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-const { execFileSync } = require("node:child_process");
-const { createHash } = require("node:crypto");
-const { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } = require("node:fs");
-const { dirname, join } = require("node:path");
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const agent = readArg("--agent") || "codex";
 
@@ -15,6 +15,12 @@ function main() {
   }
 
   const cwd = typeof input.cwd === "string" && input.cwd ? input.cwd : process.cwd();
+  const marker = readActiveTrackingMarker(cwd);
+  if (!marker) {
+    clearSentinel(cwd);
+    return allow();
+  }
+
   const status = git(cwd, ["status", "--porcelain", "--untracked-files=all"]);
   if (!status.ok) {
     return allow();
@@ -23,12 +29,6 @@ function main() {
   const paths = parseStatusPaths(status.stdout);
   const implementationPaths = paths.filter(isImplementationPath);
   if (implementationPaths.length === 0) {
-    clearSentinel(cwd);
-    return allow();
-  }
-
-  const marker = readActiveTrackingMarker(cwd);
-  if (!marker) {
     clearSentinel(cwd);
     return allow();
   }
