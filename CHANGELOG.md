@@ -11,14 +11,28 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v0.5.2 - 2026-05-27
+
 - `cli:` changed global rules sync to merge the AFK managed region into each agent's own rule file instead of replacing Codex, Antigravity/Agy, or OpenCode hosts with symlinks.
 - `cli:` added top-level `afk --version` and `afk -v` output sourced from the CLI package metadata.
 - `cli:` replaced the setup refresh flag with `afk setup refresh`, including `--local` support for refreshing project-level `./afk/manifests`.
+- `cli:` added hook installation as a first-class setup area, with `hooks.json`, interactive selection, manifest show/configure support, dry-run planning, and safe merging into Codex, Claude Code, and local Cursor hook configs.
+- `cli:` added the AFK execution-tracking stop hook source and hook install planning for copying managed hook scripts into agent-specific hook folders.
+- `cli:` added Cursor aliases for local hook setup while keeping Cursor out of general rule/MCP/utility agent targeting.
+- `cli:` made `afk setup rules`, `afk setup skills`, `afk setup mcps`, `afk setup utils`, and `afk setup hooks` the canonical area commands while keeping the older `sync`/`install` forms as compatibility aliases.
+- `cli:` expanded setup help so `afk setup --help` lists setup subcommands and each setup area help screen explains shared options instead of showing bare flags.
+- `cli:` refined the AFK terminal banner colors for a warmer, more legible setup experience.
 - `release:` added an AFK version bump helper that promotes the current changelog TBD section, updates the CLI package version, and refreshes the pinned install example.
+- `repo:` added a pnpm workspace and root package scripts so the AFK package and site can live in the same repository cleanly.
+- `repo:` added project-local Codex config and refreshed agent guidance, including the dictionary rule that maps "team of agents" and "multi agents" to spawned child agents.
 - `skills:` added `afk-pickup` as a manual support skill for finding and resuming disposable handoff notes from the OS temp directory.
 - `skills:` added Matt Pocock's external `handoff` skill to the default setup recommendations with manual invocation, pairing it with `afk-pickup` for the next-session resume flow.
+- `skills:` renamed `afk-documentation-authoring` to `afk-doc-craft` across the skill directory, README, manifests, and dependent skill references.
+- `skills:` refined `afk-execution-tracking` around active checkpoint files, review gates, split-plan handoffs, and stale-tracking recovery.
 - `repo:` added project-local agent guidance that prefers tiny skills for naturally clear jobs instead of turning every skill into a workflow ceremony.
-- `site:` moved the AI Field Kit React/Vite site into this repo under `apps/site` and added root scripts for site build/dev workflows.
+- `site:` moved the AI Field Kit React/Vite site into this repo under `apps/site`, including the Vite app, favicon assets, provider icons, Tailwind styling, workspace wiring, and root scripts for site build/dev workflows.
+- `site:` exposed the canonical installer at `/install.sh` through the site and updated README setup docs to prefer the hosted `https://ai-field-kit.logbookfordevs.com/install.sh` path.
+- `docs:` added README guidance for the hosted install path, hook manifests, shorter setup area commands, and the renamed `afk-doc-craft` documentation skill.
 
 ## v0.5.1 - 2026-05-19
 

@@ -42,7 +42,7 @@ Environment:
 
 Examples:
   curl -fsSL https://raw.githubusercontent.com/leoreisdias/ai-rules-workflows/main/scripts/install.sh | bash
-  curl -fsSL https://raw.githubusercontent.com/leoreisdias/ai-rules-workflows/main/scripts/install.sh | bash -s -- --version v0.5.1
+  curl -fsSL https://raw.githubusercontent.com/leoreisdias/ai-rules-workflows/main/scripts/install.sh | bash -s -- --version v0.5.2
   ./scripts/install.sh --local
 USAGE
 }
