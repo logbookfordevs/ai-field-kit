@@ -1,0 +1,3 @@
+display_name: AFK Doc Craft
+short_description: Write and improve docs with a reader-first workflow, including PR descriptions.
+default_prompt: Write or refactor this documentation using the reader-first playbook: identify the reader and document type, use the relevant reference guidance, create a clear reader journey, and calibrate the tone for the artifact.

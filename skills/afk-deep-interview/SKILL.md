@@ -427,7 +427,7 @@ The interview artifact should be treated as the current source of truth for inte
 These are suggestions, not required steps:
 - `afk-coding-tradeoffs` if the next step is resolving UX and implementation trade-offs inside a defined scope
 - `afk-advanced-elicitation` if the resulting brief or spec needs a stronger critique/refinement pass
-- `afk-documentation-authoring` if the clarified brief now needs to become a polished guide, memo, or handoff document
+- `afk-doc-craft` if the clarified brief now needs to become a polished guide, memo, or handoff document
 - `afk-note` if critical boundaries or risks should be preserved in lightweight durable memory
 
 Task: {{ARGUMENTS}}

@@ -75,12 +75,12 @@
       "autoInvocation": true
     },
     {
-      "id": "afk-documentation-authoring",
-      "label": "AFK / Documentation Authoring",
+      "id": "afk-doc-craft",
+      "label": "AFK / Doc Craft",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
       "args": [
         "--skill",
-        "afk-documentation-authoring",
+        "afk-doc-craft",
         "--global"
       ],
       "default": true,
@@ -133,6 +133,18 @@
       ],
       "default": true,
       "autoInvocation": true
+    },
+    {
+      "id": "afk-pickup",
+      "label": "AFK / Pickup",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-pickup",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": false
     },
     {
       "id": "afk-spline-3d-integration",
@@ -241,6 +253,18 @@
       ],
       "default": false,
       "autoInvocation": true
+    },
+    {
+      "id": "handoff",
+      "label": "External / Handoff",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "handoff",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": false
     },
     {
       "id": "afk-cinematic-landing-page-builder",

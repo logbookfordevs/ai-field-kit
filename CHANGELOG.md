@@ -15,6 +15,10 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` added top-level `afk --version` and `afk -v` output sourced from the CLI package metadata.
 - `cli:` replaced the setup refresh flag with `afk setup refresh`, including `--local` support for refreshing project-level `./afk/manifests`.
 - `release:` added an AFK version bump helper that promotes the current changelog TBD section, updates the CLI package version, and refreshes the pinned install example.
+- `skills:` added `afk-pickup` as a manual support skill for finding and resuming disposable handoff notes from the OS temp directory.
+- `skills:` added Matt Pocock's external `handoff` skill to the default setup recommendations with manual invocation, pairing it with `afk-pickup` for the next-session resume flow.
+- `repo:` added project-local agent guidance that prefers tiny skills for naturally clear jobs instead of turning every skill into a workflow ceremony.
+- `site:` moved the AI Field Kit React/Vite site into this repo under `apps/site` and added root scripts for site build/dev workflows.
 
 ## v0.5.1 - 2026-05-19
 

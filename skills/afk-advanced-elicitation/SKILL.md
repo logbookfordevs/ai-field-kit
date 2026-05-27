@@ -188,5 +188,5 @@ If no interactive loop is possible, choose the single best-fit method, apply it 
 
 These are suggestions, not required steps:
 - move into planning or execution outside this skill once the artifact is strong enough
-- `afk-documentation-authoring` if the refined artifact should become polished documentation for humans
+- `afk-doc-craft` if the refined artifact should become polished documentation for humans
 - use `afk-note` if important final decisions or caveats should be preserved across handoffs
