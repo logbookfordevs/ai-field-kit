@@ -2,6 +2,8 @@
 
 Date: 2026-05-27
 
+Status: Implemented in `packages/afk` on 2026-05-27.
+
 ## Goal
 
 Implement the selected AppKit parity slice for `afk skills`:
@@ -165,3 +167,8 @@ Category matching should accept category id or visible label case-insensitively.
 - `afk skills open` can open a selected skill file or folder with Finder, Code, Cursor, Zed, or Antigravity.
 - `afk skills trash` never affects project or agent roots and never permanently deletes a skill.
 - Existing `show`, `disable`, `enable`, `rename`, and `categorize` behavior remains intact.
+
+## Validation
+
+- `pnpm --dir packages/afk run typecheck`
+- `pnpm --dir packages/afk run test`

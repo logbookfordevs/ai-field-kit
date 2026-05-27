@@ -184,10 +184,15 @@ Manage local skills:
 ```bash
 afk skills list
 afk skills list --scope global --json
+afk skills list --scope agent --agent codex
+afk skills list --category Docs --tag writing
 afk skills show afk-note
+afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
 afk skills enable old-skill
 afk skills rename afk-note "AFK Note"
+afk skills rename afk-note "AFK Note" --agent-metadata codex
+afk skills trash old-skill --dry-run
 afk skills categorize --dry-run
 ```
 
@@ -203,7 +208,17 @@ In v1, mutating commands only operate on the shared global library:
 ~/.agents/skills/afk-skills.json
 ```
 
-`afk skills list` also reads current-project Codex and Claude skill roots when
-they exist, but those project roots are read-only for now. `afk skills
-categorize` uses `codex exec` to create or update AFK's explicit taxonomy file,
-`afk-skills.json`, while preserving the path for a later SDK-backed runner.
+`afk skills list` also reads current-project Codex and Claude skill roots, plus
+read-only installed-agent roots such as Codex, Claude, Gemini, OpenCode, Cursor,
+Zed, and Kiro when they exist. Use `--scope agent` to focus on installed-agent
+libraries, and `--category`, `--tag`, `--platform`, or `--uncategorized` to
+filter AFK taxonomy metadata.
+
+`afk skills open` can open a skill file or folder in Finder, VS Code, Cursor,
+Zed, or Antigravity. `afk skills rename` stores an AFK-owned display label by
+default; add `--agent-metadata codex` to also update or create
+`agents/openai.yaml` with `interface.display_name`.
+
+`afk skills categorize` uses `codex exec` to create or
+update AFK's explicit taxonomy file, `afk-skills.json`, while preserving the
+path for a later SDK-backed runner.

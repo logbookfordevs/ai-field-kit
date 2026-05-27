@@ -49,8 +49,34 @@ test("runCli prints contextual skills help", async () => {
 
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK skills list"));
-  assert.ok(output.join("\n").includes("--scope global|project|all"));
+  assert.ok(output.join("\n").includes("--scope global|project|agent|all"));
+  assert.ok(output.join("\n").includes("--category <id-or-label>"));
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
+});
+
+test("runCli prints contextual skills open help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "open", "--help"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK skills open"));
+  assert.ok(output.join("\n").includes("--app finder|code|cursor|zed|agy"));
+});
+
+test("runCli validates skills open app", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "open", "demo", "--app", "vim"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Invalid --app value: vim"));
+});
+
+test("runCli validates skills agent metadata", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "rename", "demo", "Demo", "--agent-metadata", "claude"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Invalid --agent-metadata value: claude"));
 });
 
 test("runCli validates skills categorize runner", async () => {

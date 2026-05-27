@@ -8,10 +8,28 @@ export type AgentId =
 
 export type Area = "rules" | "workflows" | "skills" | "mcps" | "utils";
 export type SetupScope = "global" | "project";
-export type SkillsListScope = "global" | "project" | "all";
-export type ManagedSkillAgent = "codex" | "claude";
+export type SkillsListScope = "global" | "project" | "agent" | "all";
+export type ManagedSkillAgent =
+  | "codex"
+  | "claude"
+  | "gemini"
+  | "antigravity"
+  | "opencode"
+  | "cursor"
+  | "amp"
+  | "goose"
+  | "warp"
+  | "zed"
+  | "roo-code"
+  | "aider"
+  | "continue"
+  | "kiro"
+  | "jules"
+  | "openhands";
 export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
+export type SkillOpenApp = "finder" | "code" | "cursor" | "zed" | "agy";
+export type SkillAgentMetadata = "codex";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -35,6 +53,13 @@ export type CliOptions = {
   skillsListScope?: SkillsListScope;
   skillsAgent?: ManagedSkillAgent | undefined;
   skillsJson?: boolean;
+  skillsCategory?: string;
+  skillsTag?: string;
+  skillsPlatform?: string;
+  skillsUncategorized?: boolean;
+  skillOpenApp?: SkillOpenApp;
+  skillOpenTarget?: "file" | "folder";
+  skillAgentMetadata?: SkillAgentMetadata | undefined;
   skillCategorizationMode?: SkillCategorizationMode | undefined;
   skillCategorizationRunner?: SkillCategorizationRunner;
   skillCategorizationInstruction?: string;

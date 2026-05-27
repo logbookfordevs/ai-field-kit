@@ -3,6 +3,7 @@ import { isAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
 import { runSkillsCommand } from "./skills/commands.js";
+import { managedSkillAgents } from "./skills/catalog.js";
 import { resolve } from "node:path";
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import type {
@@ -13,8 +14,10 @@ import type {
   ManagedSkillAgent,
   Runtime,
   SetupScope,
+  SkillAgentMetadata,
   SkillCategorizationMode,
   SkillCategorizationRunner,
+  SkillOpenApp,
   SkillsListScope,
 } from "./types.js";
 
@@ -262,9 +265,11 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "list                              List global and project skills",
       "show <folder>                     Show one skill",
+      "open <folder>                     Open SKILL.md or the skill folder",
       "disable <folder>                  Move a global skill into .disabled",
       "enable <folder>                   Move a disabled global skill back to active",
       "rename <folder> <display-name>    Store an AFK display name in afk-skills.json",
+      "trash <folder>                    Move a global skill to Trash",
       "categorize                        Create or update afk-skills.json with Codex",
     ],
     examples: [
@@ -276,16 +281,21 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills list": {
     title: "AFK skills list",
-    summary: "List global AFK skills and read-only current-project Codex/Claude skills.",
+    summary: "List global AFK skills, project skills, and read-only installed-agent skills.",
     usage: "afk skills list [options]",
     options: [
-      "--scope global|project|all        Choose which skill roots to list",
-      "--agent codex|claude              Limit project roots to one agent",
+      "--scope global|project|agent|all  Choose which skill roots to list",
+      "--agent <agent>                   Limit project or agent roots",
+      "--category <id-or-label>          Filter by AFK category",
+      "--tag <tag>                       Filter by AFK tag",
+      "--platform <platform>             Filter by AFK platform",
+      "--uncategorized                   Show records without an AFK category",
       "--json                            Print JSON records",
     ],
     examples: [
       "afk skills list",
       "afk skills list --scope global",
+      "afk skills list --scope agent --agent codex",
       "afk skills list --scope project --agent codex",
     ],
   },
@@ -300,6 +310,21 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk skills show afk-note",
       "afk skills show afk-note --json",
+    ],
+  },
+  "skills open": {
+    title: "AFK skills open",
+    summary: "Open a skill file or folder in Finder or a supported editor.",
+    usage: "afk skills open <folder> [options]",
+    options: [
+      "--file                            Open SKILL.md (default)",
+      "--folder                          Open the skill folder",
+      "--app finder|code|cursor|zed|agy  Choose the app command",
+      "--agent <agent>                   Limit lookup to one agent",
+    ],
+    examples: [
+      "afk skills open afk-note",
+      "afk skills open afk-note --folder --app cursor",
     ],
   },
   "skills disable": {
@@ -320,8 +345,24 @@ const commandHelps: Record<string, CommandHelp> = {
     title: "AFK skills rename",
     summary: "Store a display name override in ~/.agents/skills/afk-skills.json.",
     usage: "afk skills rename <folder> <display-name> [options]",
-    options: ["--dry-run                         Preview the taxonomy update without applying it"],
-    examples: ["afk skills rename afk-note \"AFK Note\" --dry-run", "afk skills rename afk-note \"AFK Note\""],
+    options: [
+      "--agent-metadata codex            Also update agents/openai.yaml display_name",
+      "--dry-run                         Preview the metadata update without applying it",
+    ],
+    examples: [
+      "afk skills rename afk-note \"AFK Note\" --dry-run",
+      "afk skills rename afk-note \"AFK Note\" --agent-metadata codex",
+    ],
+  },
+  "skills trash": {
+    title: "AFK skills trash",
+    summary: "Move a global skill folder to the macOS Trash.",
+    usage: "afk skills trash <folder> [options]",
+    options: [
+      "--dry-run                         Preview the Trash move without applying it",
+      "--yes, -y                         Skip confirmation",
+    ],
+    examples: ["afk skills trash old-skill --dry-run", "afk skills trash old-skill --yes"],
   },
   "skills categorize": {
     title: "AFK skills categorize",
@@ -361,6 +402,13 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsListScope: SkillsListScope = "all";
   let skillsAgent: ManagedSkillAgent | undefined;
   let skillsJson = false;
+  let skillsCategory = "";
+  let skillsTag = "";
+  let skillsPlatform = "";
+  let skillsUncategorized = false;
+  let skillOpenApp: SkillOpenApp = "finder";
+  let skillOpenTarget: "file" | "folder" = "file";
+  let skillAgentMetadata: SkillAgentMetadata | undefined;
   let skillCategorizationMode: SkillCategorizationMode | undefined;
   let skillCategorizationRunner: SkillCategorizationRunner = "codex-exec";
   let skillCategorizationInstruction = "";
@@ -417,7 +465,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     if (arg === "--scope") {
       const value = args[index + 1];
       if (isSkillsCommand) {
-        if (value !== "global" && value !== "project" && value !== "all") {
+        if (value !== "global" && value !== "project" && value !== "agent" && value !== "all") {
           return { help: false, kind: "error", error: `Invalid --scope value: ${value ?? "(missing)"}` };
         }
         skillsListScope = value;
@@ -487,7 +535,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     if (arg === "--agent") {
       const value = args[index + 1];
       if (isSkillsCommand) {
-        if (value !== "codex" && value !== "claude") {
+        if (!value || !isManagedSkillAgent(value)) {
           return { help: false, kind: "error", error: `Invalid --agent value: ${value ?? "(missing)"}` };
         }
         skillsAgent = value;
@@ -499,6 +547,71 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         return { help: false, kind: "error", error: `Invalid --agent value: ${value ?? "(missing)"}` };
       }
       agents.push(value);
+      index += 1;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--category") {
+      const value = args[index + 1];
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --category value" };
+      }
+      skillsCategory = value;
+      index += 1;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--tag") {
+      const value = args[index + 1];
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --tag value" };
+      }
+      skillsTag = value;
+      index += 1;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--platform") {
+      const value = args[index + 1];
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --platform value" };
+      }
+      skillsPlatform = value;
+      index += 1;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--uncategorized") {
+      skillsUncategorized = true;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--file") {
+      skillOpenTarget = "file";
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--folder") {
+      skillOpenTarget = "folder";
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--app") {
+      const value = args[index + 1];
+      if (!value || !isSkillOpenApp(value)) {
+        return { help: false, kind: "error", error: `Invalid --app value: ${value ?? "(missing)"}` };
+      }
+      skillOpenApp = value;
+      index += 1;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--agent-metadata") {
+      const value = args[index + 1];
+      if (value !== "codex") {
+        return { help: false, kind: "error", error: `Invalid --agent-metadata value: ${value ?? "(missing)"}` };
+      }
+      skillAgentMetadata = value;
       index += 1;
       continue;
     }
@@ -562,6 +675,13 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsListScope,
       skillsAgent,
       skillsJson,
+      skillsCategory,
+      skillsTag,
+      skillsPlatform,
+      skillsUncategorized,
+      skillOpenApp,
+      skillOpenTarget,
+      skillAgentMetadata,
       skillCategorizationMode,
       skillCategorizationRunner,
       skillCategorizationInstruction,
@@ -570,6 +690,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       cwd,
     },
   };
+}
+
+function isManagedSkillAgent(value: string): value is ManagedSkillAgent {
+  return managedSkillAgents().includes(value as ManagedSkillAgent);
+}
+
+function isSkillOpenApp(value: string): value is SkillOpenApp {
+  return value === "finder" || value === "code" || value === "cursor" || value === "zed" || value === "agy";
 }
 
 function readCommandPath(args: string[]): string[] {

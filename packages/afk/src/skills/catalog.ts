@@ -5,7 +5,7 @@ import type { ManagedSkillAgent, SkillsListScope } from "../types.js";
 export const afkSkillsTaxonomyFileName = "afk-skills.json";
 
 export type SkillStorage = "active" | "disabled";
-export type SkillRootKind = "global-library" | "project-agent";
+export type SkillRootKind = "global-library" | "project-agent" | "agent-library";
 
 export type SkillRecord = {
   folder: string;
@@ -89,6 +89,46 @@ export function loadSkillCatalog(options: {
   };
 }
 
+export type SkillListFilters = {
+  category?: string | undefined;
+  tag?: string | undefined;
+  platform?: string | undefined;
+  uncategorized?: boolean | undefined;
+};
+
+export function filterSkillRecords(records: SkillRecord[], filters: SkillListFilters): SkillRecord[] {
+  return records.filter((record) => {
+    if (filters.uncategorized && record.categoryId) {
+      return false;
+    }
+
+    if (filters.category) {
+      const category = normalize(filters.category);
+      const id = normalize(record.categoryId);
+      const label = normalize(record.category);
+      if (category !== id && category !== label) {
+        return false;
+      }
+    }
+
+    if (filters.tag) {
+      const tag = normalize(filters.tag);
+      if (!record.tags.some((item) => normalize(item) === tag)) {
+        return false;
+      }
+    }
+
+    if (filters.platform) {
+      const platform = normalize(filters.platform);
+      if (!record.platforms.some((item) => normalize(item) === platform)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
+
 export function parseSkillFile(contents: string, fallbackName: string): FrontmatterMetadata {
   const lines = contents.split(/\r?\n/);
   if (lines[0]?.trim() !== "---") {
@@ -126,11 +166,20 @@ export function parseSkillFile(contents: string, fallbackName: string): Frontmat
 
   const values = parseFrontmatterValues(frontmatterLines);
 
-  const description = nonEmpty(values.get("description")) ?? firstBodyParagraph(bodyLines.join("\n"));
+  const description = normalizeSkillDescription(values.get("description")) ?? firstBodyParagraph(bodyLines.join("\n"));
   return {
     name: nonEmpty(values.get("name")) ?? fallbackName,
     description,
   };
+}
+
+export function normalizeSkillDescription(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed || isYamlBlockScalarMarker(trimmed)) {
+    return undefined;
+  }
+
+  return trimmed;
 }
 
 export function loadCategorizationState(homeDir: string): SkillCategorizationState {
@@ -178,6 +227,33 @@ export function moveGlobalSkill(options: {
 
   if (!options.dryRun) {
     mkdirSync(dirname(destination), { recursive: true });
+    renameSync(source, destination);
+  }
+
+  return `${source} -> ${destination}`;
+}
+
+export function trashGlobalSkill(options: {
+  homeDir: string;
+  folder: string;
+  dryRun: boolean;
+  platform?: NodeJS.Platform;
+}): string {
+  const platform = options.platform ?? process.platform;
+  if (platform !== "darwin") {
+    throw new Error("Trash is currently supported on macOS only.");
+  }
+
+  const source = resolveGlobalSkillPath(options.homeDir, options.folder);
+  if (!source) {
+    throw new Error(`Could not find global skill: ${options.folder}`);
+  }
+
+  const trashRoot = join(options.homeDir, ".Trash");
+  const destination = uniqueTrashPath(trashRoot, options.folder);
+
+  if (!options.dryRun) {
+    mkdirSync(trashRoot, { recursive: true });
     renameSync(source, destination);
   }
 
@@ -235,6 +311,65 @@ export function renameGlobalSkill(options: {
   }
 
   return categorization.path;
+}
+
+export function renameCodexSkillMetadata(options: {
+  record: SkillRecord;
+  displayName: string;
+  dryRun: boolean;
+}): string {
+  const displayName = validateDisplayName(options.displayName);
+  const path = join(options.record.rootPath, options.record.folder, "agents", "openai.yaml");
+
+  if (options.dryRun) {
+    return path;
+  }
+
+  mkdirSync(dirname(path), { recursive: true });
+  const current = existsSync(path) ? readFileSync(path, "utf8") : "";
+  writeFileSync(path, updateOpenAiMetadataDisplayName(current, displayName));
+
+  return path;
+}
+
+export function updateOpenAiMetadataDisplayName(contents: string, displayName: string): string {
+  const quotedName = quoteYamlString(validateDisplayName(displayName));
+  if (!contents.trim()) {
+    return [
+      "interface:",
+      `  display_name: ${quotedName}`,
+      "",
+    ].join("\n");
+  }
+
+  const lines = contents.split(/\r?\n/);
+  const interfaceIndex = lines.findIndex((line) => /^interface:\s*$/.test(line));
+  if (interfaceIndex < 0) {
+    return [
+      "interface:",
+      `  display_name: ${quotedName}`,
+      ...lines,
+    ].join("\n").replace(/\n+$/, "\n");
+  }
+
+  let insertIndex = interfaceIndex + 1;
+  for (let index = interfaceIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    if (/^\S/.test(line) && line.trim().length > 0) {
+      break;
+    }
+
+    if (/^\s+display_name:\s*/.test(line)) {
+      const indent = line.match(/^\s*/)?.[0] ?? "  ";
+      lines[index] = `${indent}display_name: ${quotedName}`;
+      return lines.join("\n").replace(/\n+$/, "\n");
+    }
+
+    insertIndex = index + 1;
+  }
+
+  lines.splice(insertIndex, 0, `  display_name: ${quotedName}`);
+  return lines.join("\n").replace(/\n+$/, "\n");
 }
 
 export function sortSkillRecords(records: SkillRecord[]): SkillRecord[] {
@@ -298,6 +433,23 @@ function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationStat
     });
 }
 
+function validateDisplayName(value: string): string {
+  const displayName = value.trim();
+  if (!displayName) {
+    throw new Error("Display name cannot be empty.");
+  }
+
+  if (/[\r\n]/.test(displayName)) {
+    throw new Error("Display name must stay on a single line.");
+  }
+
+  return displayName;
+}
+
+function quoteYamlString(value: string): string {
+  return JSON.stringify(value);
+}
+
 function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
   return [
     {
@@ -330,7 +482,46 @@ function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
       readOnly: true,
       agent: "claude",
     },
+    ...agentSkillRoots(homeDir),
   ];
+}
+
+export function managedSkillAgents(): ManagedSkillAgent[] {
+  return knownAgentRoots.map((root) => root.agent);
+}
+
+const knownAgentRoots: Array<{
+  agent: ManagedSkillAgent;
+  label: string;
+  path: string;
+}> = [
+  { agent: "codex", label: "Codex", path: ".codex/skills" },
+  { agent: "claude", label: "Claude", path: ".claude/skills" },
+  { agent: "gemini", label: "Gemini", path: ".gemini/skills" },
+  { agent: "antigravity", label: "Gemini / Antigravity", path: ".gemini/antigravity/skills" },
+  { agent: "opencode", label: "OpenCode", path: ".config/opencode/skills" },
+  { agent: "cursor", label: "Cursor", path: ".cursor/skills" },
+  { agent: "amp", label: "Amp", path: ".amp/skills" },
+  { agent: "goose", label: "Goose", path: ".config/goose/skills" },
+  { agent: "warp", label: "Warp", path: ".warp/skills" },
+  { agent: "zed", label: "Zed", path: ".config/zed/skills" },
+  { agent: "roo-code", label: "Roo Code", path: ".roo/skills" },
+  { agent: "aider", label: "Aider", path: ".aider/skills" },
+  { agent: "continue", label: "Continue", path: ".continue/skills" },
+  { agent: "kiro", label: "Kiro", path: ".kiro/skills" },
+  { agent: "jules", label: "Jules", path: ".jules/skills" },
+  { agent: "openhands", label: "OpenHands", path: ".openhands/skills" },
+];
+
+function agentSkillRoots(homeDir: string): SkillRoot[] {
+  return knownAgentRoots.map((root) => ({
+    kind: "agent-library",
+    label: root.label,
+    path: join(homeDir, root.path),
+    storage: "active",
+    readOnly: true,
+    agent: root.agent,
+  }));
 }
 
 function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
@@ -342,7 +533,11 @@ function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
     return root.kind === "global-library";
   }
 
-  return root.kind === "project-agent";
+  if (scope === "project") {
+    return root.kind === "project-agent";
+  }
+
+  return root.kind === "agent-library";
 }
 
 function globalSkillsRoot(homeDir: string): string {
@@ -358,6 +553,40 @@ function firstBodyParagraph(contents: string): string | undefined {
     .split(/\n\s*\n/)
     .map((paragraph) => paragraph.trim())
     .find((paragraph) => paragraph.length > 0 && !paragraph.startsWith("#") && paragraph !== ">");
+}
+
+function resolveGlobalSkillPath(homeDir: string, folder: string): string | undefined {
+  const active = join(globalSkillsRoot(homeDir), folder);
+  if (existsSync(active)) {
+    return active;
+  }
+
+  const disabled = join(disabledSkillsRoot(homeDir), folder);
+  if (existsSync(disabled)) {
+    return disabled;
+  }
+
+  return undefined;
+}
+
+function uniqueTrashPath(trashRoot: string, folder: string): string {
+  const first = join(trashRoot, folder);
+  if (!existsSync(first)) {
+    return first;
+  }
+
+  let index = 1;
+  while (true) {
+    const candidate = join(trashRoot, `${folder}-${index}`);
+    if (!existsSync(candidate)) {
+      return candidate;
+    }
+    index += 1;
+  }
+}
+
+function normalize(value: string | undefined): string {
+  return value?.trim().toLowerCase() ?? "";
 }
 
 function nonEmpty(value: string | undefined): string | undefined {
@@ -377,7 +606,7 @@ function parseFrontmatterValues(lines: string[]): Map<string, string> {
 
     const key = match[1] ?? "";
     const rawValue = (match[2] ?? "").trim();
-    if (rawValue === ">" || rawValue === "|") {
+    if (isYamlBlockScalarMarker(rawValue)) {
       const blockLines: string[] = [];
       while (index + 1 < lines.length) {
         const nextLine = lines[index + 1] ?? "";
@@ -389,7 +618,7 @@ function parseFrontmatterValues(lines: string[]): Map<string, string> {
         index += 1;
       }
 
-      values.set(key, formatYamlBlockScalar(blockLines, rawValue));
+      values.set(key, formatYamlBlockScalar(blockLines, rawValue.startsWith("|") ? "|" : ">"));
       continue;
     }
 
@@ -411,6 +640,10 @@ function formatYamlBlockScalar(lines: string[], style: ">" | "|"): string {
   return meaningfulLines.join(" ");
 }
 
+function isYamlBlockScalarMarker(value: string): boolean {
+  return /^[>|][+-]?$/.test(value.trim());
+}
+
 function isSkillCatalogDefinition(value: unknown): value is SkillCatalogDefinition {
   if (!value || typeof value !== "object") {
     return false;
@@ -425,7 +658,11 @@ function rootSortOrder(record: SkillRecord): number {
     return 0;
   }
 
-  return record.agent === "codex" ? 1 : 2;
+  if (record.rootKind === "project-agent") {
+    return record.agent === "codex" ? 1 : 2;
+  }
+
+  return 10 + Math.max(0, managedSkillAgents().indexOf(record.agent ?? "codex"));
 }
 
 function ensureUncategorizedScope(definition: SkillCatalogDefinition): SkillCatalogScope {

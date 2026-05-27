@@ -56,7 +56,8 @@ export function renderSkillMove(input: {
 export function renderSkillRename(input: {
   folder: string;
   displayName: string;
-  path: string;
+  path?: string | undefined;
+  metadataPath?: string | undefined;
   dryRun: boolean;
 }): string {
   return [
@@ -64,7 +65,37 @@ export function renderSkillRename(input: {
     input.dryRun
       ? `${muted("Would label")} ${strong(input.folder)} ${muted("as")} ${accent(input.displayName)}`
       : `${muted("Labeled")} ${strong(input.folder)} ${muted("as")} ${accent(input.displayName)}`,
-    muted(input.path),
+    input.path ? renderField("AFK label", input.path) : undefined,
+    input.metadataPath ? renderField("Codex meta", input.metadataPath) : undefined,
+  ].filter((line): line is string => Boolean(line)).join("\n");
+}
+
+export function renderSkillOpen(input: {
+  folder: string;
+  app: string;
+  target: string;
+  commandLine: string;
+}): string {
+  return [
+    sectionTitle("Skill Open"),
+    `${muted("Opening")} ${strong(input.folder)} ${muted("with")} ${accent(input.app)}`,
+    renderField("Target", input.target),
+    "",
+    `${muted("$")} ${input.commandLine}`,
+  ].join("\n");
+}
+
+export function renderSkillTrash(input: {
+  folder: string;
+  movement: string;
+  dryRun: boolean;
+}): string {
+  return [
+    sectionTitle(input.dryRun ? "Trash Preview" : "Trash Complete"),
+    input.dryRun
+      ? `${muted("Would move")} ${strong(input.folder)} ${muted("to Trash")}`
+      : `${muted("Moved")} ${strong(input.folder)} ${muted("to Trash")}`,
+    muted(input.movement),
   ].join("\n");
 }
 
@@ -122,13 +153,14 @@ function renderLibrarySummary(records: SkillRecord[], categorization: SkillCateg
   const active = records.filter((record) => record.storage === "active").length;
   const disabled = records.filter((record) => record.storage === "disabled").length;
   const project = records.filter((record) => record.rootKind === "project-agent").length;
+  const agent = records.filter((record) => record.rootKind === "agent-library").length;
   const taxonomy = categorization.state === "loaded"
     ? afkSkillsTaxonomyFileName
     : categorization.state === "invalid"
       ? `${afkSkillsTaxonomyFileName} needs repair`
       : `${afkSkillsTaxonomyFileName} not created yet`;
 
-  return `${active} active · ${disabled} disabled · ${project} project · ${taxonomy}`;
+  return `${active} active · ${disabled} disabled · ${project} project · ${agent} agent · ${taxonomy}`;
 }
 
 function renderField(label: string, value: string): string {
