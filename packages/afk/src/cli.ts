@@ -2,9 +2,21 @@ import { spawn } from "node:child_process";
 import { isAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
+import { runSkillsCommand } from "./skills/commands.js";
 import { resolve } from "node:path";
 import { resolveHome, resolveRepoDir } from "./paths.js";
-import type { AgentId, Area, CliOptions, CommandResult, Runtime, SetupScope } from "./types.js";
+import type {
+  AgentId,
+  Area,
+  CliOptions,
+  CommandResult,
+  ManagedSkillAgent,
+  Runtime,
+  SetupScope,
+  SkillCategorizationMode,
+  SkillCategorizationRunner,
+  SkillsListScope,
+} from "./types.js";
 
 export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
   const runtime: Runtime = {
@@ -50,6 +62,10 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (key === "manifests configure") {
     return runManifestConfigure(runtime, options);
+  }
+
+  if (commandPath[0] === "skills") {
+    return runSkillsCommand(commandPath, runtime, options);
   }
 
   const area = commandToArea(commandPath);
@@ -239,6 +255,89 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk manifests configure --from-current",
     ],
   },
+  skills: {
+    title: "AFK skills",
+    summary: "Inspect and manage local AFK skill libraries.",
+    usage: "afk skills <command> [options]",
+    options: [
+      "list                              List global and project skills",
+      "show <folder>                     Show one skill",
+      "disable <folder>                  Move a global skill into .disabled",
+      "enable <folder>                   Move a disabled global skill back to active",
+      "rename <folder> <display-name>    Store an AFK display name in afk-skills.json",
+      "categorize                        Create or update afk-skills.json with Codex",
+    ],
+    examples: [
+      "afk skills list",
+      "afk skills list --scope global --json",
+      "afk skills disable old-skill --dry-run",
+      "afk skills categorize --mode append-missing --dry-run",
+    ],
+  },
+  "skills list": {
+    title: "AFK skills list",
+    summary: "List global AFK skills and read-only current-project Codex/Claude skills.",
+    usage: "afk skills list [options]",
+    options: [
+      "--scope global|project|all        Choose which skill roots to list",
+      "--agent codex|claude              Limit project roots to one agent",
+      "--json                            Print JSON records",
+    ],
+    examples: [
+      "afk skills list",
+      "afk skills list --scope global",
+      "afk skills list --scope project --agent codex",
+    ],
+  },
+  "skills show": {
+    title: "AFK skills show",
+    summary: "Show details for one discovered skill.",
+    usage: "afk skills show <folder> [options]",
+    options: [
+      "--agent codex|claude              Limit project lookup to one agent",
+      "--json                            Print JSON record",
+    ],
+    examples: [
+      "afk skills show afk-note",
+      "afk skills show afk-note --json",
+    ],
+  },
+  "skills disable": {
+    title: "AFK skills disable",
+    summary: "Disable a global skill by moving it to ~/.agents/skills/.disabled.",
+    usage: "afk skills disable <folder> [options]",
+    options: ["--dry-run                         Preview the move without applying it"],
+    examples: ["afk skills disable old-skill --dry-run", "afk skills disable old-skill"],
+  },
+  "skills enable": {
+    title: "AFK skills enable",
+    summary: "Enable a global skill by moving it out of ~/.agents/skills/.disabled.",
+    usage: "afk skills enable <folder> [options]",
+    options: ["--dry-run                         Preview the move without applying it"],
+    examples: ["afk skills enable old-skill --dry-run", "afk skills enable old-skill"],
+  },
+  "skills rename": {
+    title: "AFK skills rename",
+    summary: "Store a display name override in ~/.agents/skills/afk-skills.json.",
+    usage: "afk skills rename <folder> <display-name> [options]",
+    options: ["--dry-run                         Preview the taxonomy update without applying it"],
+    examples: ["afk skills rename afk-note \"AFK Note\" --dry-run", "afk skills rename afk-note \"AFK Note\""],
+  },
+  "skills categorize": {
+    title: "AFK skills categorize",
+    summary: "Create or update ~/.agents/skills/afk-skills.json with Codex exec.",
+    usage: "afk skills categorize [options]",
+    options: [
+      "--mode append-missing|recategorize-all",
+      "--instruction <text>              Add guidance to the Codex prompt",
+      "--runner codex-exec               Categorization runner; v1 supports codex-exec",
+      "--dry-run                         Print command and prompt without running Codex",
+    ],
+    examples: [
+      "afk skills categorize --dry-run",
+      "afk skills categorize --mode recategorize-all --instruction \"Prefer workflow-oriented categories\"",
+    ],
+  },
 };
 
 function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
@@ -259,9 +358,16 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let defaultsSource = "";
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
+  let skillsListScope: SkillsListScope = "all";
+  let skillsAgent: ManagedSkillAgent | undefined;
+  let skillsJson = false;
+  let skillCategorizationMode: SkillCategorizationMode | undefined;
+  let skillCategorizationRunner: SkillCategorizationRunner = "codex-exec";
+  let skillCategorizationInstruction = "";
   const homeDir = resolveHome(env);
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
+  const isSkillsCommand = commandPath[0] === "skills";
 
   if (commandPath.length === 0 || key === "--help" || key === "-h" || key === "help") {
     return { help: true };
@@ -287,6 +393,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (isSkillsCommand && arg === "--json") {
+      skillsJson = true;
+      continue;
+    }
+
     if (arg === "--yes" || arg === "-y") {
       yes = true;
       continue;
@@ -305,6 +416,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--scope") {
       const value = args[index + 1];
+      if (isSkillsCommand) {
+        if (value !== "global" && value !== "project" && value !== "all") {
+          return { help: false, kind: "error", error: `Invalid --scope value: ${value ?? "(missing)"}` };
+        }
+        skillsListScope = value;
+        index += 1;
+        continue;
+      }
+
       if (value !== "global" && value !== "project") {
         return { help: false, kind: "error", error: `Invalid --scope value: ${value ?? "(missing)"}` };
       }
@@ -366,10 +486,49 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--agent") {
       const value = args[index + 1];
+      if (isSkillsCommand) {
+        if (value !== "codex" && value !== "claude") {
+          return { help: false, kind: "error", error: `Invalid --agent value: ${value ?? "(missing)"}` };
+        }
+        skillsAgent = value;
+        index += 1;
+        continue;
+      }
+
       if (!value || !isAgentId(value)) {
         return { help: false, kind: "error", error: `Invalid --agent value: ${value ?? "(missing)"}` };
       }
       agents.push(value);
+      index += 1;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--mode") {
+      const value = args[index + 1];
+      if (value !== "append-missing" && value !== "recategorize-all") {
+        return { help: false, kind: "error", error: `Invalid --mode value: ${value ?? "(missing)"}` };
+      }
+      skillCategorizationMode = value;
+      index += 1;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--runner") {
+      const value = args[index + 1];
+      if (value !== "codex-exec") {
+        return { help: false, kind: "error", error: `Invalid --runner value: ${value ?? "(missing)"}` };
+      }
+      skillCategorizationRunner = value;
+      index += 1;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--instruction") {
+      const value = args[index + 1];
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --instruction value" };
+      }
+      skillCategorizationInstruction = value;
       index += 1;
       continue;
     }
@@ -400,6 +559,12 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       defaultsSource,
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
+      skillsListScope,
+      skillsAgent,
+      skillsJson,
+      skillCategorizationMode,
+      skillCategorizationRunner,
+      skillCategorizationInstruction,
       homeDir,
       repoDir,
       cwd,
@@ -455,7 +620,7 @@ function spawnCommand(command: string, args: string[], cwd?: string): Promise<Co
 }
 
 function helpText(commandPath?: string[]): string {
-  const commandHelp = commandPath ? commandHelps[commandKey(commandPath)] : undefined;
+  const commandHelp = commandPath ? commandHelps[helpKey(commandPath)] : undefined;
   if (commandHelp) {
     return renderCommandHelp(commandHelp);
   }
@@ -471,6 +636,7 @@ Usage:
   afk setup skills install [options]
   afk setup mcps install [options]
   afk setup utils install [options]
+  afk skills <command> [options]
   afk manifests configure [options]
 
 Run "afk <command> --help" for command-specific options.
@@ -481,6 +647,14 @@ Agents:
 
 function commandKey(commandPath: string[] = []): string {
   return commandPath.join(" ");
+}
+
+function helpKey(commandPath: string[] = []): string {
+  if (commandPath[0] === "skills" && commandPath[1]) {
+    return commandPath.slice(0, 2).join(" ");
+  }
+
+  return commandKey(commandPath);
 }
 
 function renderCommandHelp(help: CommandHelp): string {

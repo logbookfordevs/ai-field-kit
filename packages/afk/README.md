@@ -178,3 +178,32 @@ Install only utilities:
 ```bash
 node packages/afk/dist/index.js setup utils install --dry-run
 ```
+
+Manage local skills:
+
+```bash
+afk skills list
+afk skills list --scope global --json
+afk skills show afk-note
+afk skills disable old-skill --dry-run
+afk skills enable old-skill
+afk skills rename afk-note "AFK Note"
+afk skills categorize --dry-run
+```
+
+`afk skills` is separate from `afk setup skills install`. Setup still delegates
+installation to the official `skills` CLI; the skills command family manages
+local skill libraries that already exist on disk.
+
+In v1, mutating commands only operate on the shared global library:
+
+```text
+~/.agents/skills/
+~/.agents/skills/.disabled/
+~/.agents/skills/afk-skills.json
+```
+
+`afk skills list` also reads current-project Codex and Claude skill roots when
+they exist, but those project roots are read-only for now. `afk skills
+categorize` uses `codex exec` to create or update AFK's explicit taxonomy file,
+`afk-skills.json`, while preserving the path for a later SDK-backed runner.

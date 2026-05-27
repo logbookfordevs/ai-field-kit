@@ -43,6 +43,24 @@ test("runCli prints contextual manifest configure help", async () => {
   assert.ok(!output.join("\n").includes("AFK setup\n"));
 });
 
+test("runCli prints contextual skills help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "list", "--help"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK skills list"));
+  assert.ok(output.join("\n").includes("--scope global|project|all"));
+  assert.ok(!output.join("\n").includes("AFK setup skills install"));
+});
+
+test("runCli validates skills categorize runner", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "categorize", "--runner", "sdk"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Invalid --runner value: sdk"));
+});
+
 test("isPromptExit detects Inquirer Ctrl-C exits", () => {
   const error = new Error("User force closed the prompt with SIGINT");
   error.name = "ExitPromptError";

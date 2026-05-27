@@ -40,6 +40,18 @@ export const afkSelectTheme = {
   },
 } as const;
 
+export const afkSearchTheme = {
+  icon: {
+    cursor: brass("◆"),
+  },
+  style: {
+    description: (text: string) => muted(text),
+    searchTerm: (text: string) => brass(text),
+    disabled: (text: string) => muted(text),
+    keysHelpTip: (keys: [key: string, action: string][]) => formatKeys(keys),
+  },
+} as const;
+
 export const afkCheckboxTheme = {
   prefix: {
     idle: sea("◇"),

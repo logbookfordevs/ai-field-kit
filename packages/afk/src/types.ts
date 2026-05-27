@@ -8,6 +8,10 @@ export type AgentId =
 
 export type Area = "rules" | "workflows" | "skills" | "mcps" | "utils";
 export type SetupScope = "global" | "project";
+export type SkillsListScope = "global" | "project" | "all";
+export type ManagedSkillAgent = "codex" | "claude";
+export type SkillCategorizationMode = "append-missing" | "recategorize-all";
+export type SkillCategorizationRunner = "codex-exec";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -28,6 +32,12 @@ export type CliOptions = {
   defaultsSource: string;
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
+  skillsListScope?: SkillsListScope;
+  skillsAgent?: ManagedSkillAgent | undefined;
+  skillsJson?: boolean;
+  skillCategorizationMode?: SkillCategorizationMode | undefined;
+  skillCategorizationRunner?: SkillCategorizationRunner;
+  skillCategorizationInstruction?: string;
   homeDir: string;
   repoDir: string;
   cwd: string;
