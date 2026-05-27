@@ -17,7 +17,7 @@ afk setup --dry-run
 
 `afk setup` opens with a branded banner and checkbox prompts. Setup areas,
 setup scope, AFK-owned rule targets, individual AFK skills, recommended external
-skills, MCP recommendations, and utility installs start
+skills, MCP recommendations, utility installs, and lifecycle hooks start
 selected so you can remove only the pieces you do not want.
 
 By default, `afk setup` prepares a global field kit for this machine. Choose
@@ -44,16 +44,17 @@ The CLI stores editable local setup manifests under:
 ```
 
 First run seeds those files from AFK defaults. After that, commands read the
-local manifests, so you can add, remove, or replace skills, MCPs, and utilities
-without patching the CLI.
+local manifests, so you can add, remove, or replace skills, MCPs, utilities, or
+hooks without patching the CLI.
 
 Useful manifest setup modes:
 
 ```bash
 node packages/afk/dist/index.js setup --init-only
 node packages/afk/dist/index.js setup --init-only --empty
-node packages/afk/dist/index.js setup --refresh-defaults
-node packages/afk/dist/index.js setup --refresh-defaults --defaults-source your-org/dev-kit
+node packages/afk/dist/index.js setup refresh
+node packages/afk/dist/index.js setup refresh --local
+node packages/afk/dist/index.js setup refresh --defaults-source your-org/dev-kit
 node packages/afk/dist/index.js setup --defaults-source your-org/dev-kit
 ```
 
@@ -79,6 +80,7 @@ afk/manifests/
   presets.json
   rules.json
   utils.json
+  hooks.json
 ```
 
 For monorepos, AFK also falls back to `packages/afk/manifests/`. You can pass
@@ -86,8 +88,9 @@ For monorepos, AFK also falls back to `packages/afk/manifests/`. You can pass
 folder, or a raw GitHub manifest directory URL.
 
 When you pass `--defaults-source`, AFK writes that source into `presets.json`.
-Later, `--refresh-defaults` reuses the remembered source, so you do not need to
-repeat the flag.
+Later, `afk setup refresh` reuses the remembered source, so you do not need to
+repeat the flag. `afk setup refresh --local` refreshes `./afk/manifests` for the
+current project instead of `~/.agents/afk/manifests`.
 
 For rules, keep the source repo explicit in `rules.json`:
 
@@ -101,6 +104,32 @@ For rules, keep the source repo explicit in `rules.json`:
 
 That lets a personal defaults repo refresh the manifest and keep future
 `setup rules sync` runs pointed at the same repo.
+
+Hooks point at a source script plus the native command AFK should merge into
+agent hook config:
+
+```json
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "company-stop-check",
+      "label": "Company Stop Check",
+      "description": "Run a local handoff guard.",
+      "source": "https://raw.githubusercontent.com/your-org/dev-kit/main/hooks/company-stop-check.js",
+      "command": "node",
+      "args": ["${HOOK_FILE}", "--agent", "${AGENT}"],
+      "events": ["stop"],
+      "agents": ["codex", "claude"],
+      "default": true
+    }
+  ]
+}
+```
+
+AFK copies the source script into the selected agent's hook folder, expands
+`${HOOK_FILE}` and `${AGENT}`, and then merges the command into the agent's
+native hook config.
 
 Skills can opt out of automatic invocation:
 
@@ -148,6 +177,12 @@ OpenCode. More AFK-owned targets can be added over time. Skills and MCP
 installation are delegated to the official CLIs, so their broader compatibility
 belongs to those tools.
 
+Hooks are merged into existing agent hook configs instead of replacing them.
+V1 supports Codex, Claude Code, and local Cursor targets. Codex uses
+`.codex/hooks.json`; Claude Code uses `.claude/settings.json`; Cursor local
+uses `.cursor/hooks.json`. Cursor Cloud lifecycle hooks are intentionally out of
+scope.
+
 Rules sync fetches the latest AFK rule markdown from GitHub by default, then
 injects it into a managed region inside the user-owned host file:
 
@@ -179,4 +214,10 @@ Install only utilities:
 
 ```bash
 node packages/afk/dist/index.js setup utils install --dry-run
+```
+
+Install only hooks:
+
+```bash
+node packages/afk/dist/index.js setup hooks install --dry-run
 ```

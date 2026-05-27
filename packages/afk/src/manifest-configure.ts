@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { checkbox, confirm, input } from "@inquirer/prompts";
-import { localManifestDir, type McpManifest, type RulesManifest, type SkillManifest, type UtilityManifest } from "./manifest.js";
-import { afkCheckboxTheme, afkPromptTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
+import { localManifestDir, type HookManifest, type McpManifest, type RulesManifest, type SkillManifest, type UtilityManifest } from "./manifest.js";
+import { DEFAULT_CHECKED, afkCheckboxTheme, afkPromptTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
 type ManifestArea = Area;
@@ -14,13 +14,15 @@ type ExistingManifest = {
   mcps?: McpManifest;
   rules?: RulesManifest;
   utils?: UtilityManifest;
+  hooks?: HookManifest;
 };
 
 const manifestAreaChoices: Array<{ name: string; value: ManifestArea; checked: boolean; description: string }> = [
-  { name: "Rules", value: "rules", checked: true, description: "Point rules sync at one AGENTS.md source." },
-  { name: "Skills", value: "skills", checked: true, description: "List skills delegated to the skills CLI." },
-  { name: "MCPs", value: "mcps", checked: true, description: "List MCPs delegated to add-mcp." },
-  { name: "Utils", value: "utils", checked: true, description: "List utility install scripts." },
+  { name: "Rules", value: "rules", checked: DEFAULT_CHECKED, description: "Point rules sync at one AGENTS.md source." },
+  { name: "Skills", value: "skills", checked: DEFAULT_CHECKED, description: "List skills delegated to the skills CLI." },
+  { name: "MCPs", value: "mcps", checked: DEFAULT_CHECKED, description: "List MCPs delegated to add-mcp." },
+  { name: "Utils", value: "utils", checked: DEFAULT_CHECKED, description: "List utility install scripts." },
+  { name: "Hooks", value: "hooks", checked: DEFAULT_CHECKED, description: "List lifecycle hooks AFK can merge into agent configs." },
 ];
 
 export async function runManifestConfigure(runtime: Runtime, options: CliOptions): Promise<number> {
@@ -30,7 +32,7 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
   resetPromptSteps();
   runtime.io.stdout("\nAFK manifests configure");
   runtime.io.stdout(`Writing to: ${outputDir}`);
-  runtime.io.stdout(renderPromptStep("Manifest files", "Choose the setup data you want AFK to help author."));
+  runtime.io.stdout(renderPromptStep("Manifest files", defaultCheckedDetail));
 
   const areas = await checkbox<ManifestArea>({
     message: "Choose manifests to configure",
@@ -88,6 +90,8 @@ async function configureArea(area: ManifestArea, existing: ExistingManifest): Pr
       return configureMcps(existing.mcps);
     case "utils":
       return configureUtils(existing.utils);
+    case "hooks":
+      return configureHooks(existing.hooks);
   }
 }
 
@@ -195,6 +199,29 @@ async function configureUtils(existing?: UtilityManifest): Promise<string> {
   return json({ version: 1, items });
 }
 
+async function configureHooks(existing?: HookManifest): Promise<string> {
+  const items = [...(existing?.items ?? [])];
+  const shouldAddDefault = items.length === 0
+    ? await askConfirm("Add AFK execution tracking stop check?", true)
+    : false;
+
+  if (shouldAddDefault) {
+    items.push({
+      id: "afk-execution-tracking-stop-check",
+      label: "AFK / Execution Tracking Stop Check",
+      description: "Nudge the agent once before final handoff when implementation files changed without tracking, implementation notes, or ADR reconciliation.",
+      source: "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/hooks/afk-execution-tracking-stop-check.js",
+      command: "node",
+      args: ["${HOOK_FILE}", "--agent", "${AGENT}"],
+      events: ["stop"],
+      agents: ["codex", "claude", "cursor-local"],
+      default: true,
+    });
+  }
+
+  return json({ version: 1, items });
+}
+
 type InputConfig = {
   message: string;
   default?: string;
@@ -226,6 +253,8 @@ function areaTitle(area: ManifestArea): string {
       return "MCP manifest";
     case "utils":
       return "Utils manifest";
+    case "hooks":
+      return "Hooks manifest";
   }
 }
 
@@ -239,6 +268,8 @@ function areaDescription(area: ManifestArea): string {
       return "List MCPs delegated to add-mcp.";
     case "utils":
       return "List utility install scripts and optional post-install commands.";
+    case "hooks":
+      return "List lifecycle hooks AFK can merge into agent hook configs.";
   }
 }
 
@@ -303,6 +334,7 @@ function readExistingManifests(outputDir: string): ExistingManifest {
   const mcps = readJsonIfExists<McpManifest>(join(outputDir, "mcps.json"));
   const rules = readJsonIfExists<RulesManifest>(join(outputDir, "rules.json"));
   const utils = readJsonIfExists<UtilityManifest>(join(outputDir, "utils.json"));
+  const hooks = readJsonIfExists<HookManifest>(join(outputDir, "hooks.json"));
 
   if (skills) {
     existing.skills = skills;
@@ -315,6 +347,9 @@ function readExistingManifests(outputDir: string): ExistingManifest {
   }
   if (utils) {
     existing.utils = utils;
+  }
+  if (hooks) {
+    existing.hooks = hooks;
   }
 
   return existing;

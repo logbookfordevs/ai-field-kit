@@ -1,22 +1,28 @@
 import { syncRules } from "./rules.js";
+import { syncHooks } from "./hooks.js";
 import { syncSkillInvocationPolicy } from "./skills.js";
 import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands } from "./delegates.js";
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall } from "./interactive.js";
+import { selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { ensureLocalManifests } from "./manifest.js";
+import { defaultCheckedDetail } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
   runtime.io.stdout(renderBanner());
 
   if (options.refreshDefaults) {
-    runtime.io.stdout("Refreshing local AFK manifests from your configured defaults source.");
+    runtime.io.stdout(
+      options.manifestLocal
+        ? "Refreshing project AFK manifests from your configured defaults source."
+        : "Refreshing global AFK manifests from your configured defaults source.",
+    );
     return ensureManifestFiles(runtime, options);
   }
 
   runtime.io.stdout("Choose the parts of your AI field setup you want AFK to prepare.");
-  runtime.io.stdout(muted("Everything starts selected. Unselect anything you want to leave alone."));
+  runtime.io.stdout(muted(defaultCheckedDetail));
 
   const manifestCode = await ensureManifestFiles(runtime, options);
   if (manifestCode !== 0 || options.initOnly) {
@@ -32,6 +38,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     selectedSkillIds: selection.skillIds,
     selectedMcpIds: selection.mcpIds,
     selectedUtilIds: selection.utilIds,
+    selectedHookIds: selection.hookIds,
   };
 
   if (selection.areas.length === 0) {
@@ -56,7 +63,8 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
 
   for (const area of selection.areas) {
     runtime.io.stdout(`\n${sectionTitle(areaLabel(area))}`);
-    const code = await runArea(area, runtime, selectedOptions);
+    const areaOptions = area === "hooks" ? { ...selectedOptions, agents: selection.hookAgents } : selectedOptions;
+    const code = await runArea(area, runtime, areaOptions);
     if (code !== 0) {
       failures.push({ area, code });
       runtime.io.stderr(`${areaLabel(area)} failed with exit code ${code}. Continuing with remaining setup areas.`);
@@ -132,6 +140,15 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         continueOnError: true,
       });
     }
+    case "hooks": {
+      const selectedOptions = await resolveHookOptions(options);
+      if (!selectedOptions.yes && (selectedOptions.selectedHookIds.length === 0 || selectedOptions.agents.length === 0)) {
+        runtime.io.stdout("\nNo hooks selected. No changes planned.");
+        return 0;
+      }
+
+      return syncHooks(runtime, selectedOptions);
+    }
   }
 }
 
@@ -185,6 +202,19 @@ async function resolveUtilityOptions(options: CliOptions): Promise<CliOptions> {
   };
 }
 
+async function resolveHookOptions(options: CliOptions): Promise<CliOptions> {
+  if (options.yes || options.selectedHookIds.length > 0) {
+    return options;
+  }
+
+  const selection = await selectHooksInstall(options);
+  return {
+    ...options,
+    agents: selection.agents,
+    selectedHookIds: selection.hookIds,
+  };
+}
+
 async function ensureManifestFiles(runtime: Runtime, options: CliOptions): Promise<number> {
   const operations = await ensureLocalManifests(options);
   if (operations.length === 0) {
@@ -217,6 +247,8 @@ function areaLabel(area: Area): string {
       return "MCPs";
     case "utils":
       return "Utils";
+    case "hooks":
+      return "Hooks";
   }
 }
 

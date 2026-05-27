@@ -7,6 +7,12 @@ export const agentIds: AgentId[] = [
   "opencode",
 ];
 
+export const hookAgentIds: AgentId[] = [
+  "codex",
+  "claude",
+  "cursor-local",
+];
+
 export const addMcpAgentNames: Partial<Record<AgentId, string>> = {
   antigravity: "antigravity",
   claude: "claude-code",
@@ -15,12 +21,16 @@ export const addMcpAgentNames: Partial<Record<AgentId, string>> = {
 };
 
 export function isAgentId(value: string): value is AgentId {
-  return (agentIds as string[]).includes(value);
+  return ([...agentIds, ...hookAgentIds] as string[]).includes(value);
 }
 
 export function normalizeAgentId(value: string): AgentId | null {
   if (value === "agy" || value === "gemini") {
     return "antigravity";
+  }
+
+  if (value === "cursor" || value === "cursor-ide" || value === "cursor-cli") {
+    return "cursor-local";
   }
 
   return isAgentId(value) ? value : null;

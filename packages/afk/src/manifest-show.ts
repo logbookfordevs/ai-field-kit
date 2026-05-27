@@ -16,6 +16,7 @@ const categories: ManifestShowCategory[] = [
   { id: "skills", label: "Skills", filename: "skills.json" },
   { id: "mcps", label: "MCPs", filename: "mcps.json" },
   { id: "utils", label: "Utils", filename: "utils.json" },
+  { id: "hooks", label: "Hooks", filename: "hooks.json" },
   { id: "presets", label: "Presets", filename: "presets.json" },
 ];
 
@@ -96,6 +97,8 @@ function renderManifestSummary(category: ManifestCategory, manifest: unknown): s
       return renderItems(manifest, "MCP");
     case "utils":
       return renderUtils(manifest);
+    case "hooks":
+      return renderHooks(manifest);
     case "presets":
       return renderPresets(manifest);
   }
@@ -140,6 +143,17 @@ function renderUtils(manifest: Record<string, unknown>): string {
     ...renderItemList(manifest.items, "utility", (item) => {
       const description = typeof item.description === "string" ? item.description : "";
       return sourceItemLine(`${labelFor(item)}${defaultSuffix(item.default)}`, description);
+    }),
+  ].join("\n");
+}
+
+function renderHooks(manifest: Record<string, unknown>): string {
+  return [
+    summaryLine("version", valueOrUnknown(manifest.version)),
+    ...renderItemList(manifest.items, "hook", (item) => {
+      const agents = Array.isArray(item.agents) ? ` [${item.agents.filter((value) => typeof value === "string").join(", ")}]` : "";
+      const description = typeof item.description === "string" ? item.description : "";
+      return sourceItemLine(`${labelFor(item)}${defaultSuffix(item.default)}${agents}`, description);
     }),
   ].join("\n");
 }

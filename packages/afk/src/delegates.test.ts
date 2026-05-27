@@ -66,11 +66,13 @@ const options: CliOptions = {
   selectedSkillIds: [],
   selectedMcpIds: [],
   selectedUtilIds: [],
+  selectedHookIds: [],
   rulesRef: "main",
   rulesSource: "local",
   initOnly: false,
   empty: false,
   refreshDefaults: false,
+    manifestLocal: false,
   defaultsSource: "",
   manifestConfigureLocal: false,
   manifestConfigureFromCurrent: false,
@@ -186,6 +188,16 @@ test("buildUtilityCommands adds RTK init commands for selected agents", () => {
   );
   assert.equal(commands[3]?.cwd, join(defaultHomeDir, ".codex"));
 });
+
+test("buildUtilityCommands ignores Cursor local because it is hook-only", () => {
+  const commands = buildUtilityCommands({ ...options, agents: ["cursor-local"], selectedUtilIds: ["rtk"] });
+
+  assert.deepEqual(
+    commands.map((command) => [command.command, command.args]),
+    [["sh", ["-c", "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"]]],
+  );
+});
+
 
 test("buildUtilityCommands runs RTK init locally for project scope", () => {
   const commands = buildUtilityCommands({ ...options, setupScope: "project", agents: ["antigravity", "claude", "codex", "opencode"], selectedUtilIds: ["rtk"] });

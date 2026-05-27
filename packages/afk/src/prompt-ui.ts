@@ -2,6 +2,12 @@ import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 
 let promptStep = 0;
 
+export const DEFAULT_CHECKED = false;
+
+export const defaultCheckedDetail = DEFAULT_CHECKED
+  ? "Everything starts selected. Use space to unselect anything you want to skip."
+  : "Nothing starts selected. Use space to choose what you want to include.";
+
 export function resetPromptSteps(): void {
   promptStep = 0;
 }

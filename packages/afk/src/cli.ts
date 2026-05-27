@@ -52,7 +52,7 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
   const { commandPath, options } = parsed;
   const key = commandKey(commandPath);
 
-  if (key === "setup") {
+  if (key === "setup" || key === "setup refresh") {
     return runSetup(runtime, options);
   }
 
@@ -113,7 +113,7 @@ type CommandHelp = {
 const commandHelps: Record<string, CommandHelp> = {
   setup: {
     title: "AFK setup",
-    summary: "Guided setup for rules, skills, MCPs, and utilities.",
+    summary: "Guided setup for rules, skills, MCPs, utilities, and hooks.",
     usage: "afk setup [options]",
     options: [
       "--dry-run                         Preview changes without applying them",
@@ -125,16 +125,53 @@ const commandHelps: Record<string, CommandHelp> = {
       "--ref <git-ref>                   Git ref for default AFK manifest URLs",
       "--init-only                       Create/update local manifests only",
       "--empty                           Create empty manifests with --init-only",
-      "--refresh-defaults                Refresh local manifests from remembered defaults and exit",
       "--defaults-source <source>        Use and remember a custom remote or local defaults source",
     ],
     examples: [
       "afk setup",
       "afk setup --dry-run",
       "afk setup --local",
-      "afk setup --refresh-defaults",
       "afk setup --defaults-source your-org/dev-kit",
       "afk setup --defaults-source ./afk/manifests",
+    ],
+  },
+  "setup refresh": {
+    title: "AFK setup refresh",
+    summary: "Refresh AFK manifests from the remembered or selected defaults source.",
+    usage: "afk setup refresh [options]",
+    options: [
+      "--dry-run                         Preview manifest writes without applying them",
+      "--local                           Refresh ./afk/manifests instead of global manifests",
+      "--source github|local             Load manifests from remote sources or this checkout for development",
+      "--ref <git-ref>                   Git ref for default AFK manifest URLs",
+      "--empty                           Write empty manifest files",
+      "--defaults-source <source>        Use and remember a custom remote or local defaults source",
+    ],
+    examples: [
+      "afk setup refresh",
+      "afk setup refresh --local",
+      "afk setup refresh --defaults-source your-org/dev-kit",
+      "afk setup refresh --source local",
+    ],
+  },
+  "setup hooks install": {
+    title: "AFK setup hooks install",
+    summary: "Merge selected AFK lifecycle hooks into supported agent hook configs.",
+    usage: "afk setup hooks install [options]",
+    options: [
+      "--dry-run",
+      "--yes, -y",
+      "--scope global|project",
+      "--local",
+      "--agent <agent>",
+      "--init-only",
+      "--empty",
+      "--defaults-source <source>",
+    ],
+    examples: [
+      "afk setup hooks install --dry-run",
+      "afk setup hooks install --yes --agent codex",
+      "afk setup hooks install --local --agent cursor-local",
     ],
   },
   "setup rules sync": {
@@ -150,7 +187,6 @@ const commandHelps: Record<string, CommandHelp> = {
       "--ref <git-ref>",
       "--init-only",
       "--empty",
-      "--refresh-defaults",
       "--defaults-source <source>",
     ],
     examples: [
@@ -172,7 +208,6 @@ const commandHelps: Record<string, CommandHelp> = {
       "--include-external",
       "--init-only",
       "--empty",
-      "--refresh-defaults",
       "--defaults-source <source>",
     ],
     examples: [
@@ -193,7 +228,6 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent <agent>",
       "--init-only",
       "--empty",
-      "--refresh-defaults",
       "--defaults-source <source>",
     ],
     examples: [
@@ -214,7 +248,6 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent <agent>",
       "--init-only",
       "--empty",
-      "--refresh-defaults",
       "--defaults-source <source>",
     ],
     examples: [
@@ -248,6 +281,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
       "--utils                          Show utilities manifest",
+      "--hooks                          Show hooks manifest",
       "--presets                        Show presets manifest",
     ],
     examples: [
@@ -267,6 +301,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
       "--utils                          Show utilities manifest",
+      "--hooks                          Show hooks manifest",
       "--presets                        Show presets manifest",
     ],
     examples: [
@@ -291,8 +326,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
   let empty = false;
-  let refreshDefaults = false;
+  const refreshDefaults = key === "setup refresh";
   let defaultsSource = "";
+  let manifestLocal = false;
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
   const selectedManifestCategories: ManifestCategory[] = [];
@@ -342,6 +378,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
+      if (key === "setup refresh") {
+        manifestLocal = true;
+        continue;
+      }
+
       if (key === "manifests configure") {
         manifestConfigureLocal = true;
         continue;
@@ -375,11 +416,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--empty") {
       empty = true;
-      continue;
-    }
-
-    if (arg === "--refresh-defaults") {
-      refreshDefaults = true;
       continue;
     }
 
@@ -441,12 +477,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       selectedSkillIds: [],
       selectedMcpIds: [],
       selectedUtilIds: [],
+      selectedHookIds: [],
       rulesRef,
       rulesSource,
       initOnly,
       empty,
       refreshDefaults,
       defaultsSource,
+      manifestLocal,
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
       selectedManifestCategories,
@@ -484,6 +522,10 @@ function commandToArea(commandPath: string[]): Area | null {
     return "utils";
   }
 
+  if (key === "setup hooks install") {
+    return "hooks";
+  }
+
   return null;
 }
 
@@ -513,20 +555,23 @@ Guided setup router for AI Field Kit.
 Usage:
   afk --version
   afk setup [options]
+  afk setup refresh [options]
   afk setup rules sync [options]
   afk setup skills install [options]
   afk setup mcps install [options]
   afk setup utils install [options]
+  afk setup hooks install [options]
   afk manifests configure [options]
   afk manifests show [options]
 
 Run "afk <command> --help" for command-specific options.
 
 Agents:
-  antigravity, claude, codex, opencode
+  antigravity, claude, codex, cursor-local, opencode
 
 Aliases:
-  agy, gemini -> antigravity`;
+  agy, gemini -> antigravity
+  cursor, cursor-ide, cursor-cli -> cursor-local`;
 }
 
 function commandKey(commandPath: string[] = []): string {
@@ -552,6 +597,9 @@ function manifestCategoryFlag(arg: string): ManifestCategory | null {
     case "--util":
     case "--utils":
       return "utils";
+    case "--hook":
+    case "--hooks":
+      return "hooks";
     case "--preset":
     case "--presets":
       return "presets";

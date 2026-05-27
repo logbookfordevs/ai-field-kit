@@ -1,6 +1,6 @@
 ---
 name: afk-execution-tracking
-description: Track checkpointed implementation after a plan exists. Use when execution should be split into reviewable tasks, resumed across chats, coordinated across parallel agents, or paused for engineer and product validation instead of running the whole plan at once.
+description: Track implementation when explicitly requested or when execution needs checkpoints, approval gates, handoff notes, parallel agents, interruption recovery, or durable progress state after a plan exists.
 metadata:
   short-description: Track implementation checkpoints, statuses, validation, and handoffs across agent sessions.
 ---
@@ -13,7 +13,8 @@ The goal is to keep implementation state visible without turning the plan into a
 
 ## Use When
 
-- a plan has multiple tasks, majors, phases, or checkpoints
+- the user explicitly asks for tracked execution
+- execution has visible checkpoints, approval gates, or handoff notes
 - execution should pause for engineer review before continuing
 - work may resume in a later chat
 - parallel agents need a shared status source
@@ -40,6 +41,22 @@ Use the canonical `.tracking.md` as the entrypoint and put checkpoint-specific d
 ```text
 docs/<task-slug>/<task-slug>.tracking.md
 docs/<task-slug>/tracking/<checkpoint-slug>.md
+```
+
+When execution tracking is active, maintain a small runtime marker:
+
+```text
+.afk/execution-tracking/current.json
+```
+
+Write or update it when creating or resuming tracking, and when the active checkpoint changes:
+
+```json
+{
+  "tracking": "docs/<task-slug>/<task-slug>.tracking.md",
+  "checkpoint": "docs/<task-slug>/tracking/<checkpoint-slug>.md",
+  "updated_at": "2026-05-27T13:42:00-03:00"
+}
 ```
 
 The canonical file contains the current snapshot, task ledger, next action, and links to checkpoint files. Open the current checkpoint file by default. Open previous checkpoint files only when the current task references them or code/context is not enough.
@@ -138,8 +155,8 @@ If a decision changes architecture, ownership, integration contracts, data model
 
 Before final handoff after implementation or review fixes, run a notes/ADR check:
 
-- If the fix introduced a non-obvious behavior invariant, record an implementation note in the active checkpoint file.
-- If the fix establishes a reusable policy, ownership boundary, shared component rule, integration contract, data/model rule, or long-term product decision, create or update an ADR.
+- If the change introduced a non-obvious behavior invariant, record an implementation note in the active checkpoint file.
+- If the change establishes a reusable policy, ownership boundary, shared component rule, integration contract, data/model rule, or long-term product decision, create or update an ADR.
 - If neither applies, no note is needed.
 
 Implementation note examples: render/unmount ordering requires delaying submit until a modal is dismissed; a counter has mutually exclusive paths to avoid double-counting; local state must be cleared before back/forward navigation.
@@ -172,13 +189,14 @@ Skip this section for code-only review gates. Code review already has an obvious
 
 1. Locate the source plan and task slug.
 2. Create the canonical tracking index and active checkpoint file if they do not exist.
-3. Open the current checkpoint file by default; open previous checkpoint files only when needed.
-4. Mark the active task as `in_progress` before editing.
-5. Record important scope changes, working set changes, and blockers as they happen in the active checkpoint file.
-6. Move to `validating` before running verification.
-7. Move to `review` only when the checkpoint is ready for responsible engineer review.
-8. Before final handoff, run the notes/ADR check and update the active checkpoint file if needed.
-9. Move to `done` only after the checkpoint is accepted.
-10. Update `updated_at` in the canonical index and active checkpoint file whenever tracking changes.
+3. Write or update `.afk/execution-tracking/current.json` with the canonical index and active checkpoint paths.
+4. Open the current checkpoint file by default; open previous checkpoint files only when needed.
+5. Mark the active task as `in_progress` before editing.
+6. Record important scope changes, working set changes, and blockers as they happen in the active checkpoint file.
+7. Move to `validating` before running verification.
+8. Move to `review` only when the checkpoint is ready for responsible engineer review.
+9. Before final handoff, run the notes/ADR check and update the active checkpoint file if needed.
+10. Move to `done` only after the checkpoint is accepted.
+11. Update `updated_at` in the canonical index, active checkpoint file, and active marker whenever tracking changes.
 
 If execution changes the implementation plan materially, note the divergence in tracking before continuing.

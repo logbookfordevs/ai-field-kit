@@ -24,9 +24,30 @@ test("runCli prints general help for top-level help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("Guided setup router for AI Field Kit."));
   assert.ok(output.join("\n").includes("afk setup [options]"));
+  assert.ok(output.join("\n").includes("afk setup refresh [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps install [options]"));
+  assert.ok(output.join("\n").includes("afk setup hooks install [options]"));
   assert.ok(output.join("\n").includes("afk --version"));
   assert.ok(output.join("\n").includes('Run "afk <command> --help"'));
+});
+
+test("runCli prints contextual setup refresh help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "refresh", "--help"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK setup refresh"));
+  assert.ok(output.join("\n").includes("afk setup refresh --local"));
+  assert.ok(output.join("\n").includes("Refresh ./afk/manifests"));
+  assert.ok(!output.join("\n").includes("--refresh-defaults"));
+});
+
+test("runCli rejects the removed refresh-defaults flag", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "--refresh-defaults"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown option: --refresh-defaults"));
 });
 
 test("runCli prints contextual setup help", async () => {
@@ -49,6 +70,16 @@ test("runCli prints contextual area help", async () => {
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
 });
 
+test("runCli prints contextual hooks help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "hooks", "install", "--help"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK setup hooks install"));
+  assert.ok(output.join("\n").includes("Merge selected AFK lifecycle hooks"));
+  assert.ok(!output.join("\n").includes("AFK setup skills install"));
+});
+
 test("runCli prints contextual manifest configure help", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["manifests", "configure", "--help"]));
@@ -67,6 +98,7 @@ test("runCli prints contextual manifest show help", async () => {
   assert.ok(output.join("\n").includes("AFK manifests show"));
   assert.ok(output.join("\n").includes("--local"));
   assert.ok(output.join("\n").includes("--rules"));
+  assert.ok(output.join("\n").includes("--hooks"));
   assert.ok(!output.join("\n").includes("AFK setup\n"));
 });
 
