@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -124,6 +125,56 @@ test("planHooksSync can install hook source from a remote manifest URL", async (
   }
 });
 
+test("execution tracking hook allows implementation changes when tracking was not started", () => {
+  const repo = prepareGitRepo();
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
+
+  const result = runTrackingHook(repo);
+
+  assert.equal(result.continue, true);
+});
+
+test("execution tracking hook allows implementation changes when old tracking exists without an active marker", () => {
+  const repo = prepareGitRepo();
+  mkdirSync(join(repo, "docs", "demo"), { recursive: true });
+  writeFileSync(join(repo, "docs", "demo", "demo.tracking.md"), "# Demo Tracking\n");
+  git(repo, ["add", "docs/demo/demo.tracking.md"]);
+  git(repo, ["commit", "-m", "add tracking"]);
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
+
+  const result = runTrackingHook(repo);
+
+  assert.equal(result.continue, true);
+});
+
+test("execution tracking hook blocks once when active marker exists and implementation changes lack reconciliation", () => {
+  const repo = prepareGitRepo();
+  writeActiveMarker(repo);
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
+
+  const first = runTrackingHook(repo);
+  const second = runTrackingHook(repo);
+
+  assert.equal(first.decision, "block");
+  assert.match(String(first.reason), /AFK execution-tracking marker is active/);
+  assert.equal(second.continue, true);
+});
+
+test("execution tracking hook allows implementation changes when active checkpoint changed too", () => {
+  const repo = prepareGitRepo();
+  writeActiveMarker(repo);
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-1.md"), "# Phase 1\nUpdated\n");
+  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
+
+  const result = runTrackingHook(repo);
+
+  assert.equal(result.continue, true);
+});
+
 function prepareHome(overrides: Partial<{ id: string; source: string; agents: string[] }> = {}): string {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-hooks-"));
   const manifestDir = localManifestDir(homeDir);
@@ -152,4 +203,46 @@ function prepareHome(overrides: Partial<{ id: string; source: string; agents: st
     )}\n`,
   );
   return homeDir;
+}
+
+function prepareGitRepo(): string {
+  const repo = mkdtempSync(join(tmpdir(), "afk-hook-repo-"));
+  git(repo, ["init"]);
+  git(repo, ["config", "user.email", "test@example.com"]);
+  git(repo, ["config", "user.name", "Test User"]);
+  return repo;
+}
+
+function writeActiveMarker(repo: string): void {
+  mkdirSync(join(repo, ".afk", "execution-tracking"), { recursive: true });
+  mkdirSync(join(repo, "docs", "demo", "tracking"), { recursive: true });
+  writeFileSync(join(repo, "docs", "demo", "demo.tracking.md"), "# Demo Tracking\n");
+  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-1.md"), "# Phase 1\n");
+  writeFileSync(
+    join(repo, ".afk", "execution-tracking", "current.json"),
+    `${JSON.stringify(
+      {
+        tracking: "docs/demo/demo.tracking.md",
+        checkpoint: "docs/demo/tracking/phase-1.md",
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  git(repo, ["add", "docs/demo/demo.tracking.md", "docs/demo/tracking/phase-1.md", ".afk/execution-tracking/current.json"]);
+  git(repo, ["commit", "-m", "add active tracking"]);
+}
+
+function runTrackingHook(cwd: string): { continue?: boolean; decision?: string; reason?: string } {
+  const scriptPath = join(process.cwd(), "..", "..", "hooks", "afk-execution-tracking-stop-check.js");
+  const output = execFileSync("node", [scriptPath], {
+    cwd,
+    input: JSON.stringify({ cwd }),
+    encoding: "utf8",
+  });
+  return JSON.parse(output) as { continue?: boolean; decision?: string; reason?: string };
+}
+
+function git(cwd: string, args: string[]): string {
+  return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
 }

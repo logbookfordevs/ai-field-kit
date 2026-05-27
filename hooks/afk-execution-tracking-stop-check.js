@@ -27,7 +27,13 @@ function main() {
     return allow();
   }
 
-  const reconciliationPaths = paths.filter(isReconciliationPath);
+  const marker = readActiveTrackingMarker(cwd);
+  if (!marker) {
+    clearSentinel(cwd);
+    return allow();
+  }
+
+  const reconciliationPaths = paths.filter((path) => isReconciliationPath(path, marker));
   if (reconciliationPaths.length > 0) {
     clearSentinel(cwd);
     return allow();
@@ -44,9 +50,8 @@ function main() {
 
 function blockOnce() {
   const reason = [
-    "Implementation files changed, but I do not see tracking, implementation notes, or ADR files changed.",
-    "Before final handoff, reconcile the active AFK tracking checkpoint and run the notes/ADR check.",
-    "If no tracking, note, or ADR update is needed, say that explicitly and why.",
+    "Implementation files changed and an AFK execution-tracking marker is active, but the active tracking checkpoint, implementation notes, or ADRs do not appear to have changed.",
+    "Before final handoff, update the active tracking checkpoint or related notes/ADRs if the implementation changed their status, validation, decisions, or handoff context.",
   ].join(" ");
 
   return output({ decision: "block", reason });
@@ -93,7 +98,7 @@ function parseStatusPaths(status) {
 
 function isImplementationPath(path) {
   const normalized = path.replace(/\\/g, "/");
-  if (isReconciliationPath(normalized)) {
+  if (isReconciliationPath(normalized, null)) {
     return false;
   }
 
@@ -109,13 +114,39 @@ function isImplementationPath(path) {
     /(^|\/)(package\.json|tsconfig[^/]*\.json|vite\.config\.[jt]s|next\.config\.[jt]s|webpack\.config\.[jt]s|\.github\/workflows\/[^/]+\.ya?ml)$/.test(normalized);
 }
 
-function isReconciliationPath(path) {
+function isReconciliationPath(path, marker) {
   const normalized = path.replace(/\\/g, "/");
+  if (marker && marker.relevantPaths.some((relevantPath) => normalized === relevantPath || normalized.startsWith(`${relevantPath}/`))) {
+    return true;
+  }
+
   return /(^|\/)docs\/[^/]+\/tracking\/[^/]+\.md$/.test(normalized) ||
     /\.tracking\.md$/.test(normalized) ||
     /\.implementation-notes\.md$/.test(normalized) ||
     /\.adr\.md$/.test(normalized) ||
     /(^|\/)docs\/[^/]+\/decisions\/[^/]+\.md$/.test(normalized);
+}
+
+function readActiveTrackingMarker(cwd) {
+  const path = join(cwd, ".afk", "execution-tracking", "current.json");
+  if (!existsSync(path)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8"));
+    const relevantPaths = [
+      typeof parsed.tracking === "string" ? parsed.tracking : "",
+      typeof parsed.checkpoint === "string" ? parsed.checkpoint : "",
+      ...(Array.isArray(parsed.related) ? parsed.related.filter((item) => typeof item === "string") : []),
+    ]
+      .map((item) => item.replace(/\\/g, "/").replace(/^\.?\//, ""))
+      .filter(Boolean);
+
+    return relevantPaths.length > 0 ? { relevantPaths } : null;
+  } catch {
+    return null;
+  }
 }
 
 function sentinelPath(cwd) {
