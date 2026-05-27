@@ -92,6 +92,81 @@ test("planHooksSync updates the AFK hook without duplicating Cursor hooks", asyn
   assert.ok(next.hooks.stop.some((hook) => hook.command.includes("--agent cursor-local")));
 });
 
+test("planHooksSync preserves empty hook target selection as a no-op", async () => {
+  const homeDir = prepareHome();
+
+  const operations = await planHooksSync({
+    agents: [],
+    homeDir,
+    cwd: "/tmp/project",
+    repoDir: "/Users/leonardo/codes/ai-rules-workflows",
+    selectedHookIds: ["afk-execution-tracking-stop-check"],
+    setupScope: "global",
+  });
+
+  assert.deepEqual(operations, []);
+});
+
+test("planHooksSync removes previous managed hooks by installed filename", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    assert.equal(String(input), "https://example.com/hooks/company-stop.mjs");
+    return new Response("#!/usr/bin/env node\nconsole.log('company hook');\n", { status: 200 });
+  };
+
+  try {
+    const homeDir = prepareHome({
+      id: "company-stop-check",
+      source: "https://example.com/hooks/company-stop.mjs",
+      agents: ["codex"],
+    });
+    const codexConfig = join(homeDir, ".codex", "hooks.json");
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexConfig,
+      `${JSON.stringify(
+        {
+          hooks: {
+            Stop: [
+              {
+                matcher: "",
+                hooks: [
+                  { type: "command", command: "node keep.js" },
+                  { type: "command", command: "node \"/old/global/.codex/hooks/company-stop.mjs\" --agent codex" },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    const operations = await planHooksSync({
+      agents: ["codex"],
+      homeDir,
+      cwd: "/tmp/project",
+      repoDir: "/tmp/repo",
+      selectedHookIds: ["company-stop-check"],
+      setupScope: "global",
+    });
+
+    for (const operation of operations) {
+      applyOperation(operation);
+    }
+
+    const next = JSON.parse(readFileSync(codexConfig, "utf8")) as {
+      hooks: { Stop: Array<{ hooks: Array<{ command: string }> }> };
+    };
+    const commands = next.hooks.Stop.flatMap((entry) => entry.hooks.map((hook) => hook.command));
+    assert.ok(commands.includes("node keep.js"));
+    assert.equal(commands.filter((command) => command.includes("company-stop.mjs")).length, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("planHooksSync can install hook source from a remote manifest URL", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input) => {

@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { applyOperation, formatOperation, pathExists, readText, summarizeOperations } from "./fs-utils.js";
-import { filterAgents } from "./agents.js";
 import { loadHookManifest, type HookManifestItem } from "./manifest.js";
 import type { AgentId, CliOptions, PathOperation, Runtime } from "./types.js";
 
@@ -52,7 +51,7 @@ function selectHookItems(items: HookManifestItem[], selectedHookIds: string[]): 
 }
 
 function selectedHookAgents(selected: AgentId[], supported: HookAgentId[]): HookAgentId[] {
-  return filterAgents(selected, hookAgents).filter((agent): agent is HookAgentId => supported.includes(agent as HookAgentId));
+  return selected.filter((agent): agent is HookAgentId => hookAgents.includes(agent as HookAgentId) && supported.includes(agent as HookAgentId));
 }
 
 function planAgentHook(
@@ -125,7 +124,7 @@ function mergeCodexClaudeStopHook(hooks: Record<string, unknown>, command: strin
     statusMessage: "Checking AFK tracking",
   };
 
-  upsertMatcherHook(entries, "", handler, command, item.id);
+  upsertMatcherHook(entries, "", handler, command, item);
 }
 
 function mergeCursorStopHook(hooks: Record<string, unknown>, command: string, item: HookManifestItem): void {
@@ -136,7 +135,7 @@ function mergeCursorStopHook(hooks: Record<string, unknown>, command: string, it
     return;
   }
 
-  const filtered = entries.filter((entry) => !isRecord(entry) || !isManagedHookCommand(entry.command, item.id));
+  const filtered = entries.filter((entry) => !isRecord(entry) || !isManagedHookCommand(entry.command, item));
   filtered.push(hook);
   hooks.stop = filtered;
 }
@@ -146,7 +145,7 @@ function upsertMatcherHook(
   matcher: string,
   handler: Record<string, unknown>,
   command: string,
-  itemId: string,
+  item: HookManifestItem,
 ): void {
   const existingGroup = entries.find((entry) => isRecord(entry) && entry.matcher === matcher);
   const group: Record<string, unknown> = isRecord(existingGroup) ? existingGroup : { matcher, hooks: [] };
@@ -155,7 +154,7 @@ function upsertMatcherHook(
   }
 
   const hooks = Array.isArray(group.hooks) ? group.hooks : [];
-  const filtered = hooks.filter((hook) => !isRecord(hook) || (!isManagedHookCommand(hook.command, itemId) && hook.command !== command));
+  const filtered = hooks.filter((hook) => !isRecord(hook) || (!isManagedHookCommand(hook.command, item) && hook.command !== command));
   filtered.push(handler);
   group.hooks = filtered;
 }
@@ -226,8 +225,9 @@ function ensureTrailingNewline(content: string): string {
   return content.endsWith("\n") ? content : `${content}\n`;
 }
 
-function isManagedHookCommand(value: unknown, itemId: string): boolean {
-  return typeof value === "string" && value.includes(`${itemId}.js`);
+function isManagedHookCommand(value: unknown, item: HookManifestItem): boolean {
+  const filename = safeHookFilename(item);
+  return typeof value === "string" && filename.length > 0 && value.includes(filename);
 }
 
 function quoteArg(value: string): string {

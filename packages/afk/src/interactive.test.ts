@@ -47,6 +47,21 @@ test("normalizeSetupSelection keeps hooks when at least one hook is selected", (
   assert.deepEqual(selection.areas, ["hooks"]);
 });
 
+test("normalizeSetupSelection removes hooks when every hook target is unselected", () => {
+  const selection = normalizeSetupSelection({
+    areas: ["hooks"],
+    agents: [],
+    hookAgents: [],
+    setupScope: "project",
+    skillIds: [],
+    mcpIds: [],
+    utilIds: [],
+    hookIds: ["afk-execution-tracking-stop-check"],
+  });
+
+  assert.deepEqual(selection.areas, []);
+});
+
 test("normalizeSetupSelection filters hook-only Cursor from general agents", () => {
   const selection = normalizeSetupSelection({
     areas: ["hooks"],

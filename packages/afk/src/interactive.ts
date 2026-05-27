@@ -172,7 +172,7 @@ export function normalizeSetupSelection(selection: SetupSelection): SetupSelecti
       }
 
       if (area === "hooks") {
-        return selection.hookIds.length > 0;
+        return selection.hookIds.length > 0 && selection.hookAgents.length > 0;
       }
 
       return true;

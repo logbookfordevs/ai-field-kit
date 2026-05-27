@@ -141,7 +141,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
     }
     case "hooks": {
       const selectedOptions = await resolveHookOptions(options);
-      if (!selectedOptions.yes && selectedOptions.selectedHookIds.length === 0) {
+      if (!selectedOptions.yes && (selectedOptions.selectedHookIds.length === 0 || selectedOptions.agents.length === 0)) {
         runtime.io.stdout("\nNo hooks selected. No changes planned.");
         return 0;
       }
