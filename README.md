@@ -59,20 +59,33 @@ support is handled by the official `skills` CLI.
 
 ### Full setup — rules and MCPs too
 
-If you want the complete stack, clone the repo first:
+If you want the complete stack, install the AFK CLI from the hosted install
+script:
+
+```bash
+curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
+afk setup --dry-run
+```
+
+The hosted script is the same installer kept in this repo at
+[`scripts/install.sh`](./scripts/install.sh). It installs the latest AFK release
+without requiring a clone.
+
+Use the dry run first. The CLI prints the exact rules, skills, MCP, and utility
+setup actions before anything writes to your machine.
+
+AFK owns rule setup for a small v1
+target set: Antigravity/Agy, Codex, Claude Code, and OpenCode. Third-party
+installs still route through the official
+`skills` and `add-mcp` CLIs, while optional utilities delegate to their own
+install scripts.
+
+If you want to work from source, clone the repo and run the local CLI package:
 
 ```bash
 git clone https://github.com/logbookfordevs/ai-field-kit.git ~/codes/ai-field-kit
 cd ~/codes/ai-field-kit
 ```
-
-Then use the AFK CLI as the setup router:
-
-The repo includes a local AFK CLI package. AFK owns rule setup for a small v1
-target set: Antigravity/Agy, Codex, Claude Code, and OpenCode. Third-party
-installs still route through the official
-`skills` and `add-mcp` CLIs, while optional utilities delegate to their own
-install scripts.
 
 ```bash
 pnpm --dir packages/afk install
@@ -86,9 +99,6 @@ Install the local checkout as an `afk` command while developing:
 ./scripts/install.sh --local
 afk setup --dry-run
 ```
-
-Use the dry run first. The CLI prints the exact rules, skills, MCP, and utility
-setup actions before anything writes to your machine.
 
 `afk setup` asks whether to prepare a global field kit or only the current
 project. Scripted runs stay global by default; pass `--scope project` or
