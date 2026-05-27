@@ -6,6 +6,7 @@ import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js"
 import { selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { ensureLocalManifests } from "./manifest.js";
+import { defaultCheckedDetail } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
@@ -21,7 +22,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
   }
 
   runtime.io.stdout("Choose the parts of your AI field setup you want AFK to prepare.");
-  runtime.io.stdout(muted("Everything starts selected. Unselect anything you want to leave alone."));
+  runtime.io.stdout(muted(defaultCheckedDetail));
 
   const manifestCode = await ensureManifestFiles(runtime, options);
   if (manifestCode !== 0 || options.initOnly) {

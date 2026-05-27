@@ -13,6 +13,7 @@ This skill is not a full ceremony. It keeps artifact boundaries, storage, and ha
 
 Skip quick one-shot operations where no workflow state, artifact, or handoff is needed.
 
+
 ## Workflow Framing
 
 - Treat the path from PRD/spec to implementation plan as a **workflow slice**, not the whole delivery lifecycle.
@@ -53,15 +54,16 @@ Skip quick one-shot operations where no workflow state, artifact, or handoff is 
 
 ## Execution Tracking
 
-- For checkpointed or multi-step implementation, use `afk-execution-tracking` after the implementation plan exists and before execution starts.
-- Keep one canonical tracking file per feature or plan. If no stronger convention exists, use `docs/<task-slug>/<task-slug>.tracking.md`.
-- Parallel agents should update their assigned task sections in the canonical tracking file instead of creating competing status files.
+- Use `afk-execution-tracking` when explicitly requested, or when execution needs checkpoints, approval gates, handoff notes, parallel agents, interruption recovery, or durable progress state.
+- Skip it for short, single-session implementations where the plan is concrete and final response plus validation are enough.
+- Start tracking after a plan exists and before tracked execution begins.
 
 ## Implementation Notes
 
 - During implementation from a PRD, spec, RFC, or plan, keep running notes for decisions the source artifact did not settle.
 - Record deviations, assumptions, trade-offs, scope changes, surprising constraints, and anything the reviewer or next agent should know.
 - Prefer the tracking file when one exists. Otherwise, use `docs/<task-slug>/<task-slug>.implementation-notes.md` when the work needs a handoff trail.
+- If a decision changes architecture, ownership, integration contracts, data model, migration strategy, or long-term maintenance expectations, create or update an ADR under `docs/<task-slug>/decisions/` unless the repo has a stronger convention.
 - Keep notes concise and decision-oriented. Skip them for quick one-shot edits.
 
 ## Behavior

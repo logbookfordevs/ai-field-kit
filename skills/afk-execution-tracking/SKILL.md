@@ -1,6 +1,6 @@
 ---
 name: afk-execution-tracking
-description: Track checkpointed implementation after a plan exists. Use when execution should be split into reviewable tasks, resumed across chats, coordinated across parallel agents, or paused for engineer and product validation instead of running the whole plan at once.
+description: Track implementation when explicitly requested or when execution needs checkpoints, approval gates, handoff notes, parallel agents, interruption recovery, or durable progress state after a plan exists.
 metadata:
   short-description: Track implementation checkpoints, statuses, validation, and handoffs across agent sessions.
 ---
@@ -13,7 +13,8 @@ The goal is to keep implementation state visible without turning the plan into a
 
 ## Use When
 
-- a plan has multiple tasks, majors, phases, or checkpoints
+- the user explicitly asks for tracked execution
+- execution has visible checkpoints, approval gates, or handoff notes
 - execution should pause for engineer review before continuing
 - work may resume in a later chat
 - parallel agents need a shared status source
@@ -154,8 +155,8 @@ If a decision changes architecture, ownership, integration contracts, data model
 
 Before final handoff after implementation or review fixes, run a notes/ADR check:
 
-- If the fix introduced a non-obvious behavior invariant, record an implementation note in the active checkpoint file.
-- If the fix establishes a reusable policy, ownership boundary, shared component rule, integration contract, data/model rule, or long-term product decision, create or update an ADR.
+- If the change introduced a non-obvious behavior invariant, record an implementation note in the active checkpoint file.
+- If the change establishes a reusable policy, ownership boundary, shared component rule, integration contract, data/model rule, or long-term product decision, create or update an ADR.
 - If neither applies, no note is needed.
 
 Implementation note examples: render/unmount ordering requires delaying submit until a modal is dismissed; a counter has mutually exclusive paths to avoid double-counting; local state must be cleared before back/forward navigation.

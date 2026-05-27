@@ -1,7 +1,7 @@
 import { checkbox, select } from "@inquirer/prompts";
 import { agentIds, hookAgentIds } from "./agents.js";
 import { loadHookManifest, loadMcpManifest, loadSkillManifest, loadUtilityManifest } from "./manifest.js";
-import { afkCheckboxTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
+import { DEFAULT_CHECKED, afkCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { AgentId, Area, CliOptions, SetupScope } from "./types.js";
 
 type Choice<Value extends string> = {
@@ -26,31 +26,31 @@ const setupAreaChoices: Choice<Area>[] = [
   {
     name: "Rules",
     value: "rules",
-    checked: true,
+    checked: DEFAULT_CHECKED,
     description: "Sync AFK global rules into supported rule hosts.",
   },
   {
     name: "Skills",
     value: "skills",
-    checked: true,
+    checked: DEFAULT_CHECKED,
     description: "Delegate AFK and recommended skill installs to the skills CLI.",
   },
   {
     name: "MCPs",
     value: "mcps",
-    checked: true,
+    checked: DEFAULT_CHECKED,
     description: "Delegate recommended MCP installs to add-mcp.",
   },
   {
     name: "Utils",
     value: "utils",
-    checked: true,
+    checked: DEFAULT_CHECKED,
     description: "Install optional developer utilities AFK recommends.",
   },
   {
     name: "Hooks",
     value: "hooks",
-    checked: true,
+    checked: DEFAULT_CHECKED,
     description: "Merge AFK lifecycle hooks into supported agent hook configs.",
   },
 ];
@@ -225,7 +225,7 @@ async function selectAgentChoices(message: string, choices: AgentId[], preselect
       return {
         name: agent,
         value: agent,
-        checked: true,
+        checked: DEFAULT_CHECKED,
       };
     }),
   );
@@ -238,7 +238,7 @@ async function selectSkills(options: Pick<CliOptions, "homeDir">): Promise<strin
     manifest.items.map((item) => ({
       name: item.label,
       value: item.id,
-      checked: true,
+      checked: DEFAULT_CHECKED,
       description: item.args.join(" "),
     })),
   );
@@ -251,7 +251,7 @@ async function selectMcps(options: Pick<CliOptions, "homeDir">): Promise<string[
     manifest.items.map((item) => ({
       name: item.label,
       value: item.id,
-      checked: true,
+      checked: DEFAULT_CHECKED,
       description: item.source,
     })),
   );
@@ -264,7 +264,7 @@ async function selectUtils(options: Pick<CliOptions, "homeDir">): Promise<string
     manifest.items.map((item) => ({
       name: item.label,
       value: item.id,
-      checked: true,
+      checked: DEFAULT_CHECKED,
       description: item.description,
     })),
   );
@@ -277,14 +277,14 @@ async function selectHooks(options: Pick<CliOptions, "homeDir">): Promise<string
     manifest.items.map((item) => ({
       name: item.label,
       value: item.id,
-      checked: true,
+      checked: DEFAULT_CHECKED,
       description: item.description,
     })),
   );
 }
 
 async function selectCheckbox<Value extends string>(message: string, choices: Choice<Value>[]): Promise<Value[]> {
-  console.log(renderPromptStep(message, "Everything starts selected. Use space to unselect anything you want to skip."));
+  console.log(renderPromptStep(message, defaultCheckedDetail));
   return checkbox<Value>({
     message,
     choices,

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { checkbox, confirm, input } from "@inquirer/prompts";
 import { localManifestDir, type HookManifest, type McpManifest, type RulesManifest, type SkillManifest, type UtilityManifest } from "./manifest.js";
-import { afkCheckboxTheme, afkPromptTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
+import { DEFAULT_CHECKED, afkCheckboxTheme, afkPromptTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
 type ManifestArea = Area;
@@ -18,11 +18,11 @@ type ExistingManifest = {
 };
 
 const manifestAreaChoices: Array<{ name: string; value: ManifestArea; checked: boolean; description: string }> = [
-  { name: "Rules", value: "rules", checked: true, description: "Point rules sync at one AGENTS.md source." },
-  { name: "Skills", value: "skills", checked: true, description: "List skills delegated to the skills CLI." },
-  { name: "MCPs", value: "mcps", checked: true, description: "List MCPs delegated to add-mcp." },
-  { name: "Utils", value: "utils", checked: true, description: "List utility install scripts." },
-  { name: "Hooks", value: "hooks", checked: true, description: "List lifecycle hooks AFK can merge into agent configs." },
+  { name: "Rules", value: "rules", checked: DEFAULT_CHECKED, description: "Point rules sync at one AGENTS.md source." },
+  { name: "Skills", value: "skills", checked: DEFAULT_CHECKED, description: "List skills delegated to the skills CLI." },
+  { name: "MCPs", value: "mcps", checked: DEFAULT_CHECKED, description: "List MCPs delegated to add-mcp." },
+  { name: "Utils", value: "utils", checked: DEFAULT_CHECKED, description: "List utility install scripts." },
+  { name: "Hooks", value: "hooks", checked: DEFAULT_CHECKED, description: "List lifecycle hooks AFK can merge into agent configs." },
 ];
 
 export async function runManifestConfigure(runtime: Runtime, options: CliOptions): Promise<number> {
@@ -32,7 +32,7 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
   resetPromptSteps();
   runtime.io.stdout("\nAFK manifests configure");
   runtime.io.stdout(`Writing to: ${outputDir}`);
-  runtime.io.stdout(renderPromptStep("Manifest files", "Choose the setup data you want AFK to help author."));
+  runtime.io.stdout(renderPromptStep("Manifest files", defaultCheckedDetail));
 
   const areas = await checkbox<ManifestArea>({
     message: "Choose manifests to configure",
