@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+- `cli:` added a compact additional-agent prompt for skill installs that explains `.agents/skills` as always included, then passes selected Claude Code, Kiro CLI, Kilo Code, Pi, and Droid targets through to the official `skills` CLI with `--agent`.
+
 ## v0.5.2 - 2026-05-27
 
 - `cli:` changed global rules sync to merge the AFK managed region into each agent's own rule file instead of replacing Codex, Antigravity/Agy, or OpenCode hosts with symlinks.

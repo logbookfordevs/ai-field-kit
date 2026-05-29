@@ -64,6 +64,7 @@ const options: CliOptions = {
   yes: true,
   includeExternal: false,
   selectedSkillIds: [],
+  selectedSkillAgentIds: [],
   selectedMcpIds: [],
   selectedUtilIds: [],
   selectedHookIds: [],
@@ -134,6 +135,15 @@ test("buildSkillCommands relies on the skills CLI default symlink fanout", () =>
   assert.ok(commands[0]?.args.includes("--yes"));
   assert.ok(!commands[0]?.args.includes("--copy"));
   assert.ok(!commands[0]?.args.includes("--agent"));
+});
+
+test("buildSkillCommands passes additional skill agents to the skills CLI", () => {
+  const commands = buildSkillCommands({ ...options, selectedSkillAgentIds: ["claude-code", "kiro-cli", "kilo", "pi", "droid"] });
+
+  assert.deepEqual(
+    commands[0]?.args.filter((arg, index, args) => arg === "--agent" || args[index - 1] === "--agent"),
+    ["--agent", "claude-code", "--agent", "kiro-cli", "--agent", "kilo", "--agent", "pi", "--agent", "droid"],
+  );
 });
 
 test("buildMcpCommands uses add-mcp with mapped agents", () => {

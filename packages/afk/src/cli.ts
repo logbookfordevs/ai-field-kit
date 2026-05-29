@@ -527,6 +527,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       yes,
       includeExternal,
       selectedSkillIds: [],
+      selectedSkillAgentIds: [],
       selectedMcpIds: [],
       selectedUtilIds: [],
       selectedHookIds: [],
