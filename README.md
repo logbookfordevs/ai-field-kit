@@ -342,6 +342,18 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  
   Create a compact handoff document for a fresh agent when a session needs to continue elsewhere. It saves outside the workspace on purpose, keeping the note disposable. Pair it with `afk-pickup` in the next session to search temp locations, verify referenced paths, and resume from the right handoff.
 
+- **Impeccable**  
+  Install: `npx skills add pbakaus/impeccable`  
+  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. Impeccable's own docs prefer `npx impeccable skills install` for the harness-tailored setup.
+
+- **cmux**  
+  Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  
+  Use when you are working inside a cmux terminal and need deterministic control of windows, workspaces, panes, surfaces, focus, routing, and visual attention cues for parallel agent orchestration.
+
+- **tmux (steipete/clawdis)**  
+  Install: `npx skills add https://github.com/steipete/clawdis --skill tmux`  
+  Use when parallel agents or long-running interactive CLI sessions live in tmux. It helps send keystrokes, inspect pane output, and monitor sessions that continue across disconnects.
+
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
 
