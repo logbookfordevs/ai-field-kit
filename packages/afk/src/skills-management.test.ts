@@ -17,7 +17,9 @@ import {
   type SkillRecord,
 } from "./skills/catalog.js";
 import { buildCodexCategorizationCommand, runCodexCategorization } from "./skills/categorization.js";
-import { buildSkillOpenCommand, filterSkillChoices } from "./skills/commands.js";
+import { buildSkillOpenCommand, filterSkillChoices, formatLockedSkillChoice, runSkillsCommand } from "./skills/commands.js";
+import { renderSkillChoice } from "./skills/render.js";
+import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 
 test("parseSkillFile reads frontmatter name and description", () => {
@@ -287,6 +289,165 @@ test("buildSkillOpenCommand targets files, folders, and supported apps", () => {
   });
 });
 
+test("renderSkillChoice separates core picker fields", () => {
+  assert.equal(renderSkillChoice({
+    folder: "demo",
+    name: "Demo Skill",
+    originalName: "Demo Skill",
+    description: "Demo description",
+    rootLabel: "Global Library",
+    rootPath: "/tmp/skills",
+    skillFilePath: "/tmp/skills/demo/SKILL.md",
+    storage: "active",
+    rootKind: "global-library",
+    readOnly: false,
+    agent: undefined,
+    category: "Docs",
+    categoryId: "docs",
+    tags: [],
+    platforms: [],
+  }), "Demo Skill [demo] Global Library · active · managed · Docs");
+
+  assert.equal(renderSkillChoice({
+    folder: "disabled-demo",
+    name: "Disabled Demo",
+    originalName: "Disabled Demo",
+    description: "Demo description",
+    rootLabel: "Global Library / Disabled",
+    rootPath: "/tmp/skills/.disabled",
+    skillFilePath: "/tmp/skills/.disabled/disabled-demo/SKILL.md",
+    storage: "disabled",
+    rootKind: "global-library",
+    readOnly: false,
+    agent: undefined,
+    category: undefined,
+    categoryId: undefined,
+    tags: [],
+    platforms: [],
+  }), "Disabled Demo [disabled-demo] Global Library / Disabled · disabled · managed");
+});
+
+test("loadLockedSkills reads global and project tracked skills by scope", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-locks-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeGlobalSkillLock(homeDir, {
+    "global-skill": {
+      source: "owner/global",
+      sourceType: "github",
+      skillPath: "skills/global-skill/SKILL.md",
+      skillFolderHash: "abc",
+      updatedAt: "2026-05-27T00:00:00.000Z",
+    },
+  });
+  writeProjectSkillLock(cwd, {
+    "project-skill": {
+      source: "owner/project",
+      sourceType: "github",
+      skillPath: "skills/project-skill/SKILL.md",
+    },
+    "local-skill": {
+      source: "../local",
+      sourceType: "local",
+      skillPath: "SKILL.md",
+    },
+  });
+
+  assert.deepEqual(loadLockedSkills({ homeDir, cwd, scope: "global" }).map((record) => record.name), ["global-skill"]);
+  assert.deepEqual(loadLockedSkills({ homeDir, cwd, scope: "project" }).map((record) => record.name), ["project-skill"]);
+  assert.deepEqual(loadLockedSkills({ homeDir, cwd, scope: "all" }).map((record) => record.name), ["global-skill", "project-skill"]);
+});
+
+test("buildSkillUpgradeCommands delegates through npx skills update", () => {
+  assert.deepEqual(buildSkillUpgradeCommands({
+    cwd: "/tmp/project",
+    scope: "global",
+    skills: ["frontend-design", "web-design-guidelines"],
+    yes: true,
+  }), [{
+    label: "Global skills",
+    command: "npx",
+    args: ["--yes", "skills", "update", "frontend-design", "web-design-guidelines", "-g", "-y"],
+    cwd: "/tmp/project",
+    scope: "global",
+  }]);
+
+  assert.deepEqual(buildSkillUpgradeCommands({
+    cwd: "/tmp/project",
+    scope: "all",
+    skills: [],
+    yes: false,
+  }).map((command) => command.args), [
+    ["--yes", "skills", "update", "-g"],
+    ["--yes", "skills", "update", "-p"],
+  ]);
+});
+
+test("formatLockedSkillChoice separates name scope and source", () => {
+  assert.equal(formatLockedSkillChoice({
+    name: "afk-note",
+    scope: "global",
+    source: "logbookfordevs/ai-field-kit",
+    sourceType: "github",
+    skillPath: "skills/afk-note/SKILL.md",
+    updatedAt: undefined,
+  }), "afk-note [global] logbookfordevs/ai-field-kit");
+});
+
+test("runSkillsCommand upgrade --all skips upstream when no tracked skills exist", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-empty-"));
+  const output: string[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      throw new Error("spawn should not run without tracked skills");
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "upgrade"], runtime, {
+    ...baseOptions(root),
+    skillsUpgradeAll: true,
+  });
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("No global tracked skills found."));
+});
+
+test("runSkillsCommand upgrade explicit names invokes global update by default", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-run-"));
+  writeGlobalSkillLock(join(root, "home"), {
+    demo: {
+      source: "owner/demo",
+      sourceType: "github",
+      skillPath: "skills/demo/SKILL.md",
+      skillFolderHash: "abc",
+    },
+  });
+  const spawned: Array<{ command: string; args: string[]; cwd?: string }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: () => undefined,
+      stderr: () => undefined,
+    },
+    spawn: async (command, args, cwd) => {
+      spawned.push(cwd ? { command, args, cwd } : { command, args });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "upgrade", "demo"], runtime, baseOptions(root));
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["--yes", "skills", "update", "demo", "-g"],
+    cwd: join(root, "project"),
+  }]);
+});
+
 test("renameGlobalSkill updates existing afk-skills entry", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-rename-"));
   const homeDir = join(root, "home");
@@ -429,6 +590,59 @@ test("runCodexCategorization dry-run does not spawn codex", async () => {
 function writeSkill(root: string, folder: string, name: string): void {
   mkdirSync(join(root, folder), { recursive: true });
   writeFileSync(join(root, folder, "SKILL.md"), `---\nname: ${name}\ndescription: ${name} description\n---\n\n# ${name}\n`);
+}
+
+function writeGlobalSkillLock(homeDir: string, skills: Record<string, object>): void {
+  mkdirSync(join(homeDir, ".agents"), { recursive: true });
+  writeFileSync(join(homeDir, ".agents", ".skill-lock.json"), JSON.stringify({ version: 3, skills }));
+}
+
+function writeProjectSkillLock(cwd: string, skills: Record<string, object>): void {
+  mkdirSync(cwd, { recursive: true });
+  writeFileSync(join(cwd, "skills-lock.json"), JSON.stringify({ version: 1, skills }));
+}
+
+function baseOptions(root: string) {
+  return {
+    agents: [],
+    setupScope: "global" as const,
+    scopeExplicit: false,
+    dryRun: false,
+    yes: false,
+    includeExternal: false,
+    selectedSkillIds: [],
+    selectedMcpIds: [],
+    selectedUtilIds: [],
+    selectedHookIds: [],
+    rulesRef: "main",
+    rulesSource: "manifest" as const,
+    initOnly: false,
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: "",
+    manifestLocal: false,
+    manifestConfigureLocal: false,
+    manifestConfigureFromCurrent: false,
+    skillsListScope: "all" as const,
+    skillsUpgradeScope: "global" as const,
+    skillsUpgradeAll: false,
+    skillsAgent: undefined,
+    skillsJson: false,
+    skillsCategory: "",
+    skillsTag: "",
+    skillsPlatform: "",
+    skillsUncategorized: false,
+    skillOpenApp: "finder" as const,
+    skillOpenTarget: "file" as const,
+    skillAgentMetadata: undefined,
+    skillCategorizationMode: undefined,
+    skillCategorizationRunner: "codex-exec" as const,
+    skillCategorizationInstruction: "",
+    selectedManifestCategories: [],
+    homeDir: join(root, "home"),
+    repoDir: root,
+    cwd: join(root, "project"),
+  };
 }
 
 function skillRecord(input: { folder: string; rootPath: string }): SkillRecord {

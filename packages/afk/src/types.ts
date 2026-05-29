@@ -10,6 +10,7 @@ export type AgentId =
 export type Area = "rules" | "skills" | "mcps" | "utils" | "hooks";
 export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "agent" | "all";
+export type SkillsUpgradeScope = "global" | "project" | "all";
 export type ManagedSkillAgent =
   | "codex"
   | "claude"
@@ -54,6 +55,8 @@ export type CliOptions = {
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
   skillsListScope?: SkillsListScope;
+  skillsUpgradeAll?: boolean;
+  skillsUpgradeScope?: SkillsUpgradeScope;
   skillsAgent?: ManagedSkillAgent | undefined;
   skillsJson?: boolean;
   skillsCategory?: string;

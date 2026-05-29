@@ -132,6 +132,26 @@ test("runCli prints contextual skills open help", async () => {
   assert.ok(output.join("\n").includes("--app finder|code|cursor|zed|agy"));
 });
 
+test("runCli prints contextual skills upgrade help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK skills upgrade"));
+  assert.ok(text.includes("--scope global|project|all"));
+  assert.ok(text.includes("--all"));
+  assert.ok(!text.includes("AFK skills check"));
+});
+
+test("runCli validates skills upgrade scope", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--scope", "agent"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Invalid --scope value: agent"));
+});
+
 test("runCli validates skills open app", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["skills", "open", "demo", "--app", "vim"]));

@@ -14,8 +14,9 @@ AFK now covers the core Global Library management loop from the AppKit app:
 - categorize local skills through Codex CLI
 - browse current-project Codex and Claude roots as read-only roots
 - prompt with searchable choices when `show`, `disable`, `enable`, or `rename` is missing a skill operand
+- upgrade selected or all tracked skills by delegating to the official `skills` CLI
 
-The main AppKit behavior still not represented in AFK is not the local mutate loop. It is the surrounding discovery and maintenance surface: official catalog search, source install command preparation, installed-agent browsing beyond the shared library, update checks, and local file actions.
+The main AppKit behavior still not represented in AFK is not the local mutate loop. It is the surrounding discovery surface: official catalog search, source install command preparation, and catalog export.
 
 ## Current AFK Coverage
 
@@ -23,9 +24,12 @@ Implemented in `packages/afk/src/skills/`:
 
 - `afk skills list`
 - `afk skills show`
+- `afk skills open`
 - `afk skills disable`
 - `afk skills enable`
 - `afk skills rename`
+- `afk skills trash`
+- `afk skills upgrade`
 - `afk skills categorize`
 
 The implementation intentionally uses `~/.agents/skills/afk-skills.json` instead of the AppKit-era `skills.json`, which is the right AFK-owned boundary. Mutations are also intentionally limited to the shared global library in v1.
@@ -51,7 +55,7 @@ AFK has the functional equivalent for the CLI-oriented subset, with the taxonomy
 
 AFK lists current-project `.codex/skills` and `.claude/skills` as read-only project roots. That matches the approved v1 direction, although it is narrower than AppKit's broader installed-agent browser.
 
-## Remaining AppKit Parity Backlog
+## Remaining AppKit Parity Backlog And Notes
 
 ### 1. Official Skills Hub Search
 
@@ -97,7 +101,7 @@ afk skills add <source> [--skill <name>] [--global|--project] [--agent <id>...] 
 
 This should still delegate to the official `skills` CLI. AFK should be the ergonomic wrapper, not the installer owner.
 
-### 3. Update Check And Update All
+### 3. Upgrade Selected Or All Skills
 
 AppKit exposes:
 
@@ -105,16 +109,34 @@ AppKit exposes:
 - Update All, backed by `npx --yes skills update`
 - parsed per-skill status in the installed browser
 
-AFK does not currently expose these.
+AFK now exposes this maintenance flow as `afk skills upgrade`.
+
+Important upstream behavior:
+
+- The official `skills check` command currently routes to the same update implementation as `skills update` / `skills upgrade`, so AFK should not expose `afk skills check` as a read-only wrapper.
+- The official `skills update` / `skills upgrade` command prompts for scope when no scope flags or skill names are provided. It does not show a searchable skill picker.
+- AFK can add real value by making selection searchable and scope-aware, then delegating the actual update to the official `skills` CLI.
 
 Recommended CLI shape:
 
 ```bash
-afk skills check [--json]
-afk skills update [--dry-run]
+afk skills upgrade [skills...] [--scope global|project|all] [--all] [--yes]
 ```
 
-This is a strong fit for AFK because it preserves the thin-router model.
+Default behavior:
+
+- `--scope` defaults to `global`.
+- No skill args and no `--all` opens AFK's branded searchable selection flow for the selected scope.
+- Explicit skill args skip the picker.
+- `--all` skips the picker and delegates every tracked skill in the selected scope.
+- `--yes` forwards non-interactive confirmation behavior to the official CLI.
+- `--scope all` should show grouped records for interactive selection and delegate both global and project updates when `--all` is passed.
+
+This is a strong fit for AFK because it preserves the thin-router model while giving users a better selection experience than upstream currently provides.
+
+Implementation plan:
+
+[docs/skills-upgrade/skills-upgrade.plan.md](/Users/leonardo/.codex/worktrees/d8fa/ai-rules-workflows/docs/skills-upgrade/skills-upgrade.plan.md)
 
 ### 4. Catalog Backup / Export
 
@@ -157,14 +179,13 @@ The following items were selected for the next implementation slice and moved to
 
 1. Add official Hub discovery: `afk skills find` and/or `afk skills search`, delegating to `npx --yes skills find`.
 2. Add ad-hoc official install wrapper: `afk skills add <source> ...`, delegating to `npx --yes skills add`.
-3. Add maintenance commands: `afk skills check` and `afk skills update`.
-4. Consider `export` if Catalog Backup is still a product requirement for AFK CLI.
+3. Consider `export` if Catalog Backup is still a product requirement for AFK CLI.
 
 ## Bottom Line
 
-No major Global Library management feature is left behind. After the AppKit Parity slice, the remaining AppKit value is mostly in two adjacent surfaces:
+No major Global Library management feature is left behind. After the AppKit Parity and Skills Upgrade slices, the remaining AppKit value is mostly in the official catalog surface:
 
-- official catalog discovery and source install delegation
-- update maintenance
+- official catalog discovery
+- source install delegation
 
-The next backlog slice after AppKit Parity should likely be `afk skills find`, `afk skills add`, `afk skills check`, and `afk skills update`, because those preserve AFK's router identity while recovering the official catalog and maintenance workflows.
+The next backlog slice after AppKit Parity should likely be `afk skills find` and `afk skills add`, because those preserve AFK's router identity while recovering the official catalog workflows. Avoid `afk skills check` until upstream has a clearly read-only check surface or AFK implements its own read-only checker intentionally.

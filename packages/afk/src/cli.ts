@@ -23,6 +23,7 @@ import type {
   SkillCategorizationRunner,
   SkillOpenApp,
   SkillsListScope,
+  SkillsUpgradeScope,
 } from "./types.js";
 
 export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
@@ -355,12 +356,14 @@ const commandHelps: Record<string, CommandHelp> = {
       "enable <folder>                   Move a disabled global skill back to active",
       "rename <folder> <display-name>    Store an AFK display name in afk-skills.json",
       "trash <folder>                    Move a global skill to Trash",
+      "upgrade [skills...]               Upgrade selected or all tracked skills",
       "categorize                        Create or update afk-skills.json with Codex",
     ],
     examples: [
       "afk skills list",
       "afk skills list --scope global --json",
       "afk skills disable old-skill --dry-run",
+      "afk skills upgrade --all",
       "afk skills categorize --mode append-missing --dry-run",
     ],
   },
@@ -449,6 +452,22 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: ["afk skills trash old-skill --dry-run", "afk skills trash old-skill --yes"],
   },
+  "skills upgrade": {
+    title: "AFK skills upgrade",
+    summary: "Choose tracked skills with AFK, then delegate updates to the official skills CLI.",
+    usage: "afk skills upgrade [skills...] [options]",
+    options: [
+      "--scope global|project|all        Choose tracked skills to upgrade (default: global)",
+      "--all                             Upgrade every tracked skill in the selected scope",
+      "--yes, -y                         Forward non-interactive confirmation to skills update",
+    ],
+    examples: [
+      "afk skills upgrade",
+      "afk skills upgrade --all",
+      "afk skills upgrade --scope project",
+      "afk skills upgrade frontend-design web-design-guidelines",
+    ],
+  },
   "skills categorize": {
     title: "AFK skills categorize",
     summary: "Create or update ~/.agents/skills/afk-skills.json with Codex exec.",
@@ -525,6 +544,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
   let skillsListScope: SkillsListScope = "all";
+  let skillsUpgradeScope: SkillsUpgradeScope = "global";
+  let skillsUpgradeAll = false;
   let skillsAgent: ManagedSkillAgent | undefined;
   let skillsJson = false;
   let skillsCategory = "";
@@ -608,6 +629,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     if (arg === "--scope") {
       const value = args[index + 1];
       if (isSkillsCommand) {
+        if (commandPath[1] === "upgrade") {
+          if (value !== "global" && value !== "project" && value !== "all") {
+            return { help: false, kind: "error", error: `Invalid --scope value: ${value ?? "(missing)"}` };
+          }
+          skillsUpgradeScope = value;
+          index += 1;
+          continue;
+        }
+
         if (value !== "global" && value !== "project" && value !== "agent" && value !== "all") {
           return { help: false, kind: "error", error: `Invalid --scope value: ${value ?? "(missing)"}` };
         }
@@ -627,6 +657,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--include-external") {
       includeExternal = true;
+      continue;
+    }
+
+    if (isSkillsCommand && arg === "--all") {
+      if (commandPath[1] !== "upgrade") {
+        return { help: false, kind: "error", error: "Unknown option: --all" };
+      }
+      skillsUpgradeAll = true;
       continue;
     }
 
@@ -813,6 +851,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
       skillsListScope,
+      skillsUpgradeAll,
+      skillsUpgradeScope,
       skillsAgent,
       skillsJson,
       skillsCategory,

@@ -115,6 +115,18 @@ export function renderCategorizationRoute(input: {
   ].join("\n");
 }
 
+export function renderSkillUpgradeRoute(input: {
+  label: string;
+  commandLine: string;
+}): string {
+  return [
+    sectionTitle("Skill Upgrade"),
+    `${muted("Delegating")} ${accent(input.label)} ${muted("to the official skills CLI")}`,
+    "",
+    `${muted("$")} ${input.commandLine}`,
+  ].join("\n");
+}
+
 export function renderPromptPreview(prompt: string): string {
   return [
     "",
@@ -124,13 +136,18 @@ export function renderPromptPreview(prompt: string): string {
 }
 
 export function renderSkillChoice(record: SkillRecord): string {
-  const markers = [
-    record.rootLabel,
-    record.storage === "disabled" ? "disabled" : undefined,
-    record.category,
-  ].filter(Boolean);
+  const details = [
+    muted(record.rootLabel),
+    record.storage === "disabled" ? warn("disabled") : success("active"),
+    record.readOnly ? muted("read-only") : accent("managed"),
+    record.category ? accent(record.category) : undefined,
+  ].filter((value): value is string => Boolean(value));
 
-  return `${strong(record.name)} ${muted(`[${record.folder}]`)} ${muted(markers.join(" · "))}`;
+  return [
+    strong(accent(record.name)),
+    muted(`[${record.folder}]`),
+    details.join(` ${muted("·")} `),
+  ].filter(Boolean).join(" ");
 }
 
 function renderSkillGroup(label: string, records: SkillRecord[]): string[] {

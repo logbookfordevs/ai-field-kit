@@ -1,6 +1,7 @@
 import { confirm, input, search } from "@inquirer/prompts";
 import { join } from "node:path";
 import { afkPromptTheme, afkSearchTheme, renderPromptStep } from "../prompt-ui.js";
+import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
 import {
@@ -22,8 +23,14 @@ import {
   renderSkillRename,
   renderSkillTrash,
 } from "./render.js";
+import {
+  buildSkillUpgradeCommands,
+  loadLockedSkills,
+  runSkillUpgradeCommands,
+  type LockedSkillRecord,
+} from "./upgrade.js";
 
-type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "rename" | "trash" | "categorize";
+type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "rename" | "trash" | "upgrade" | "categorize";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   const command = commandPath[1] as SkillCommandName | undefined;
@@ -45,6 +52,8 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
         return runSkillsRename(operands[0], operands.slice(1).join(" "), runtime, options);
       case "trash":
         return runSkillsTrash(operands[0], runtime, options);
+      case "upgrade":
+        return runSkillsUpgrade(operands, runtime, options);
       case "categorize":
         return runCodexCategorization(runtime, {
           homeDir: options.homeDir,
@@ -61,6 +70,44 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
     runtime.io.stderr(error instanceof Error ? error.message : String(error));
     return 1;
   }
+}
+
+async function runSkillsUpgrade(skillNames: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const scope = options.skillsUpgradeScope ?? "global";
+  if (scope === "all" && skillNames.length > 0) {
+    runtime.io.stderr("Use --scope global or --scope project when passing explicit skill names.");
+    return 1;
+  }
+
+  const lockedSkills = loadLockedSkills({
+    homeDir: options.homeDir,
+    cwd: options.cwd,
+    scope,
+  });
+  const selectedNames = skillNames.length > 0
+    ? skillNames
+    : options.skillsUpgradeAll
+      ? []
+      : await promptLockedSkills(lockedSkills, scope);
+
+  if (!options.skillsUpgradeAll && selectedNames.length === 0) {
+    runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}tracked skills selected.`);
+    return 1;
+  }
+
+  if (options.skillsUpgradeAll && lockedSkills.length === 0) {
+    runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}tracked skills found.`);
+    return 1;
+  }
+
+  const commands = buildSkillUpgradeCommands({
+    cwd: options.cwd,
+    scope,
+    skills: selectedNames,
+    yes: options.yes,
+  });
+
+  return runSkillUpgradeCommands(runtime, commands);
 }
 
 function runSkillsList(runtime: Runtime, options: CliOptions): number {
@@ -91,6 +138,72 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
   runtime.io.stdout(renderSkillList(records, snapshot.categorization));
 
   return 0;
+}
+
+function filterLockedSkillChoices(records: LockedSkillRecord[], term: string | undefined): LockedSkillRecord[] {
+  const tokens = term?.trim().toLowerCase().split(/\s+/).filter(Boolean) ?? [];
+  if (tokens.length === 0) {
+    return records;
+  }
+
+  return records.filter((record) => {
+    const searchable = [
+      record.name,
+      record.scope,
+      record.source,
+      record.sourceType,
+      record.skillPath ?? "",
+      record.updatedAt ?? "",
+    ].join(" ").toLowerCase();
+
+    return tokens.every((token) => searchable.includes(token));
+  });
+}
+
+async function promptLockedSkills(
+  records: LockedSkillRecord[],
+  scope: string,
+): Promise<string[]> {
+  if (records.length === 0) {
+    return [];
+  }
+
+  console.log(renderPromptStep("Skill Upgrade", "Type to filter by name, scope, source, or path."));
+  const selected = new Map<string, LockedSkillRecord>();
+
+  while (selected.size < records.length) {
+    const available = records.filter((record) => !selected.has(record.name));
+    const record = await search<LockedSkillRecord>({
+      message: scope === "all" ? "Select a skill to upgrade:" : `Select a ${scope} skill to upgrade:`,
+      source: async (term) => filterLockedSkillChoices(available, term).map((item) => ({
+        name: formatLockedSkillChoice(item),
+        value: item,
+        description: [item.source, item.skillPath].filter(Boolean).join(" · "),
+      })),
+      pageSize: 10,
+      instructions: {
+        navigation: "Use arrow keys to move.",
+        pager: "Type to filter; use arrow keys to reveal more choices.",
+      },
+      theme: afkSearchTheme,
+    });
+    selected.set(record.name, record);
+
+    if (selected.size >= records.length) {
+      break;
+    }
+
+    const addAnother = await confirm({
+      message: "Select another skill?",
+      default: false,
+      theme: afkPromptTheme,
+    });
+    if (!addAnother) {
+      break;
+    }
+  }
+
+  return [...selected.keys()];
 }
 
 async function runSkillsOpen(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
@@ -400,4 +513,24 @@ function formatSkillChoice(record: SkillRecord): string {
   ].filter(Boolean);
 
   return `${record.name} [${record.folder}] (${markers.join(", ")})`;
+}
+
+export function formatLockedSkillChoice(record: LockedSkillRecord): string {
+  return [
+    strong(record.name),
+    badge(record.scope),
+    muted(record.source),
+  ].join(" ");
+}
+
+function strong(value: string): string {
+  return `${bold}${paint(terminalPalette.brass, value)}${reset}`;
+}
+
+function badge(value: string): string {
+  return paint(terminalPalette.harbor, `[${value}]`);
+}
+
+function muted(value: string): string {
+  return paint(terminalPalette.driftwood, value);
 }
