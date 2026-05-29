@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { test } from "vitest";
 import { applyOperation } from "./fs-utils.js";
 import { planHooksSync } from "./hooks.js";
 import { localManifestDir } from "./manifest.js";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 test("planHooksSync installs hook source and merges Codex Stop hook into existing hooks.json", async () => {
   const homeDir = prepareHome();
@@ -34,7 +37,7 @@ test("planHooksSync installs hook source and merges Codex Stop hook into existin
     agents: ["codex"],
     homeDir,
     cwd: "/tmp/project",
-    repoDir: "/Users/leonardo/codes/ai-rules-workflows",
+    repoDir: repoRoot,
     selectedHookIds: ["afk-execution-tracking-stop-check"],
     setupScope: "global",
   });
@@ -77,7 +80,7 @@ test("planHooksSync updates the AFK hook without duplicating Cursor hooks", asyn
     agents: ["cursor-local"],
     homeDir,
     cwd: "/tmp/project",
-    repoDir: "/Users/leonardo/codes/ai-rules-workflows",
+    repoDir: repoRoot,
     selectedHookIds: ["afk-execution-tracking-stop-check"],
     setupScope: "global",
   });
@@ -99,7 +102,7 @@ test("planHooksSync preserves empty hook target selection as a no-op", async () 
     agents: [],
     homeDir,
     cwd: "/tmp/project",
-    repoDir: "/Users/leonardo/codes/ai-rules-workflows",
+    repoDir: repoRoot,
     selectedHookIds: ["afk-execution-tracking-stop-check"],
     setupScope: "global",
   });
@@ -309,7 +312,7 @@ function writeActiveMarker(repo: string): void {
 }
 
 function runTrackingHook(cwd: string): { continue?: boolean; decision?: string; reason?: string } {
-  const scriptPath = join(process.cwd(), "..", "..", "hooks", "afk-execution-tracking-stop-check.js");
+  const scriptPath = join(repoRoot, "hooks", "afk-execution-tracking-stop-check.js");
   const output = execFileSync("node", [scriptPath], {
     cwd,
     input: JSON.stringify({ cwd }),
