@@ -343,8 +343,8 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Create a compact handoff document for a fresh agent when a session needs to continue elsewhere. It saves outside the workspace on purpose, keeping the note disposable. Pair it with `afk-pickup` in the next session to search temp locations, verify referenced paths, and resume from the right handoff.
 
 - **Impeccable**  
-  Install: `npx skills add pbakaus/impeccable`  
-  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK installs the portable skill through the normal skills flow; advanced Codex craft/live workflows can still use `npx impeccable skills install` inside a project to add Impeccable's Codex sidecars.
+  Install: `npx impeccable skills install`  
+  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Utilities and handles the Codex-global setup so Codex gets Impeccable's tailored `.agents` build, including nested Codex agent metadata.
 
 - **cmux**  
   Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  

@@ -267,16 +267,6 @@
       "autoInvocation": false
     },
     {
-      "id": "impeccable",
-      "label": "External / Impeccable",
-      "source": "pbakaus/impeccable",
-      "args": [
-        "--global"
-      ],
-      "default": false,
-      "autoInvocation": true
-    },
-    {
       "id": "cmux",
       "label": "External / cmux",
       "source": "https://github.com/manaflow-ai/cmux",

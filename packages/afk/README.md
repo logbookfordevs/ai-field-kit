@@ -159,9 +159,10 @@ symlink behavior. When `autoInvocation` is false, AFK adds Claude Code
 
 Utilities are curated developer tools AFK can install by delegating to their
 official install scripts. V1 includes Plannotator for plan review loops, RTK
-for token-light command output, and Yggtree for git worktree workflows. When
-RTK is selected, AFK follows up with agent-specific `rtk init` commands for
-the selected AFK targets. In global
+for token-light command output, Yggtree for git worktree workflows, and
+Impeccable's Codex-tailored frontend design skill. When RTK is selected, AFK
+follows up with agent-specific `rtk init` commands for the selected AFK targets.
+In global
 scope, Codex is initialized from `~/.codex` so RTK lands in the global Codex
 rules location instead of the current project, and Antigravity/Agy uses RTK's
 Gemini compatibility initializer because Antigravity still consumes the global

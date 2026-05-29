@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "AFK Docs — Impeccable Pass",
+  "entry": "afk-docs-refined.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "primary": true,
+  "createdAt": "2026-05-29T12:00:34.309Z",
+  "updatedAt": "2026-05-29T12:00:34.312Z",
+  "sourceSkillId": "impeccable",
+  "designSystemId": "warm-editorial",
+  "metadata": {
+    "identifier": "afk-docs-refined",
+    "artifactType": "text/html",
+    "inferred": false
+  }
+}
