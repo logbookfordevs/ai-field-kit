@@ -1,8 +1,8 @@
 import { checkbox, select } from "@inquirer/prompts";
-import { agentIds, hookAgentIds } from "./agents.js";
+import { agentIds, hookAgentIds, skillAgentChoices, skillAgentIds, universalSkillAgentLabels } from "./agents.js";
 import { loadHookManifest, loadMcpManifest, loadSkillManifest, loadUtilityManifest } from "./manifest.js";
 import { DEFAULT_CHECKED, afkCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
-import type { AgentId, Area, CliOptions, SetupScope } from "./types.js";
+import type { AgentId, Area, CliOptions, SetupScope, SkillAgentId } from "./types.js";
 
 type Choice<Value extends string> = {
   name: string;
@@ -17,6 +17,7 @@ export type SetupSelection = {
   hookAgents: AgentId[];
   setupScope: SetupScope;
   skillIds: string[];
+  skillAgents: SkillAgentId[];
   mcpIds: string[];
   utilIds: string[];
   hookIds: string[];
@@ -63,6 +64,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
       hookAgents: options.agents,
       setupScope: options.setupScope,
       skillIds: loadSkillManifest(options).items.map((item) => item.id),
+      skillAgents: options.selectedSkillAgentIds,
       mcpIds: loadMcpManifest(options).items.map((item) => item.id),
       utilIds: loadUtilityManifest(options).items.map((item) => item.id),
       hookIds: loadHookManifest(options).items.map((item) => item.id),
@@ -76,6 +78,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
   const needsAgents = areas.some((area) => area === "rules" || area === "mcps") || utilIds.includes("rtk");
   const agents = needsAgents ? await selectAgents(options.agents) : options.agents;
   const skillIds = areas.includes("skills") ? await selectSkills(options) : [];
+  const skillAgents = skillIds.length > 0 ? await selectSkillAgents(options) : [];
   const mcpIds = areas.includes("mcps") ? await selectMcps(options) : [];
   const hookIds = areas.includes("hooks") ? await selectHooks(options) : [];
   const hookAgents = hookIds.length > 0 ? await selectHookAgents(options.agents) : options.agents;
@@ -86,6 +89,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     hookAgents,
     setupScope,
     skillIds,
+    skillAgents,
     mcpIds,
     utilIds,
     hookIds,
@@ -101,13 +105,20 @@ export async function selectRulesSync(options: CliOptions): Promise<Pick<SetupSe
   return { agents: await selectAgents(options.agents) };
 }
 
-export async function selectSkillsInstall(options: CliOptions): Promise<Pick<SetupSelection, "skillIds">> {
+export async function selectSkillsInstall(options: CliOptions): Promise<Pick<SetupSelection, "skillIds" | "skillAgents">> {
   if (options.yes) {
-    return { skillIds: loadSkillManifest(options).items.map((item) => item.id) };
+    return {
+      skillIds: loadSkillManifest(options).items.map((item) => item.id),
+      skillAgents: options.selectedSkillAgentIds,
+    };
   }
 
   resetPromptSteps();
-  return { skillIds: await selectSkills(options) };
+  const skillIds = await selectSkills(options);
+  return {
+    skillIds,
+    skillAgents: skillIds.length > 0 ? await selectSkillAgents(options) : [],
+  };
 }
 
 export async function selectMcpsInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "mcpIds">> {
@@ -158,6 +169,7 @@ export function normalizeSetupSelection(selection: SetupSelection): SetupSelecti
   return {
     ...selection,
     hookAgents: selection.hookAgents.filter((agent) => hookAgentIds.includes(agent)),
+    skillAgents: selection.skillAgents.filter((agent) => skillAgentIds.includes(agent)),
     areas: selection.areas.filter((area) => {
       if (area === "skills") {
         return selection.skillIds.length > 0;
@@ -242,6 +254,45 @@ async function selectSkills(options: Pick<CliOptions, "homeDir">): Promise<strin
       description: item.args.join(" "),
     })),
   );
+}
+
+async function selectSkillAgents(options: Pick<CliOptions, "selectedSkillAgentIds">): Promise<SkillAgentId[]> {
+  console.log(renderPromptStep("Universal skills", ".agents/skills is always included."));
+  for (const line of compactInlineList(universalSkillAgentLabels, 88)) {
+    console.log(`  ${line}`);
+  }
+
+  return selectCheckbox(
+    "Choose additional skill agent links",
+    skillAgentChoices.map((agent) => ({
+      name: agent.label,
+      value: agent.id,
+      checked: options.selectedSkillAgentIds.includes(agent.id),
+      description: agent.path,
+    })),
+  );
+}
+
+function compactInlineList(values: string[], maxLineLength: number): string[] {
+  const lines: string[] = [];
+  let current = "";
+
+  for (const value of values) {
+    const next = current ? `${current}, ${value}` : value;
+    if (current && next.length > maxLineLength) {
+      lines.push(current);
+      current = value;
+      continue;
+    }
+
+    current = next;
+  }
+
+  if (current) {
+    lines.push(current);
+  }
+
+  return lines;
 }
 
 async function selectMcps(options: Pick<CliOptions, "homeDir">): Promise<string[]> {

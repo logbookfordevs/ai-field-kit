@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 import { inferId, inferLabel } from "./manifest-configure.js";
 
 test("inferId prefers URL filename stems", () => {

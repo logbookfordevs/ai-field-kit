@@ -7,7 +7,7 @@ import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
 import { runManifestShow } from "./manifest-show.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
-import type { AgentId, Area, CliOptions, CommandResult, ManifestCategory, Runtime, SetupScope } from "./types.js";
+import type { AgentId, Area, CliOptions, CommandResult, ManifestCategory, Runtime, SetupScope, SkillAgentId } from "./types.js";
 
 export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
   const runtime: Runtime = {
@@ -369,6 +369,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const commandPath = readCommandPath(args);
   const key = commandKey(commandPath);
   const agents: AgentId[] = [];
+  const selectedSkillAgentIds: SkillAgentId[] = [];
   let dryRun = false;
   let yes = false;
   let setupScope: SetupScope = "global";
@@ -501,7 +502,24 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (arg === "--agent") {
+    if (arg === "--agent" || arg === "-a") {
+      if (isSkillsCommand(key)) {
+        const values = readOptionValues(args, index + 1);
+        if (values.length === 0) {
+          return { help: false, kind: "error", error: "Missing --agent value" };
+        }
+
+        for (const value of values) {
+          if (!isSkillAgentId(value)) {
+            return { help: false, kind: "error", error: `Invalid --agent value for skills: ${value}` };
+          }
+          selectedSkillAgentIds.push(value);
+        }
+
+        index += values.length;
+        continue;
+      }
+
       const value = args[index + 1];
       const agent = value ? normalizeAgentId(value) : null;
       if (!agent) {
@@ -527,6 +545,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       yes,
       includeExternal,
       selectedSkillIds: [],
+      selectedSkillAgentIds,
       selectedMcpIds: [],
       selectedUtilIds: [],
       selectedHookIds: [],
@@ -579,6 +598,27 @@ function commandToArea(commandPath: string[]): Area | null {
   }
 
   return null;
+}
+
+function isSkillsCommand(key: string): boolean {
+  return key === "setup skills" || key === "setup skills install";
+}
+
+function isSkillAgentId(value: string): value is SkillAgentId {
+  return value === "claude-code" || value === "kiro-cli" || value === "kilo" || value === "pi" || value === "droid";
+}
+
+function readOptionValues(args: string[], startIndex: number): string[] {
+  const values: string[] = [];
+  for (let index = startIndex; index < args.length; index += 1) {
+    const value = args[index];
+    if (!value || value.startsWith("-")) {
+      break;
+    }
+    values.push(value);
+  }
+
+  return values;
 }
 
 function spawnCommand(command: string, args: string[], cwd?: string): Promise<CommandResult> {

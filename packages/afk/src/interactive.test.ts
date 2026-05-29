@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 import { normalizeSetupSelection } from "./interactive.js";
 
 test("normalizeSetupSelection removes item areas when every item is unselected", () => {
@@ -9,6 +9,7 @@ test("normalizeSetupSelection removes item areas when every item is unselected",
     hookAgents: [],
     setupScope: "global",
     skillIds: [],
+    skillAgents: [],
     mcpIds: [],
     utilIds: [],
     hookIds: [],
@@ -24,12 +25,14 @@ test("normalizeSetupSelection keeps item areas when at least one item is selecte
     hookAgents: [],
     setupScope: "project",
     skillIds: ["afk-note"],
+    skillAgents: ["kiro-cli"],
     mcpIds: ["stitch"],
     utilIds: ["rtk"],
     hookIds: [],
   });
 
   assert.deepEqual(selection.areas, ["skills", "mcps", "utils"]);
+  assert.deepEqual(selection.skillAgents, ["kiro-cli"]);
 });
 
 test("normalizeSetupSelection keeps hooks when at least one hook is selected", () => {
@@ -39,6 +42,7 @@ test("normalizeSetupSelection keeps hooks when at least one hook is selected", (
     hookAgents: ["codex"],
     setupScope: "project",
     skillIds: [],
+    skillAgents: [],
     mcpIds: [],
     utilIds: [],
     hookIds: ["afk-execution-tracking-stop-check"],
@@ -54,6 +58,7 @@ test("normalizeSetupSelection removes hooks when every hook target is unselected
     hookAgents: [],
     setupScope: "project",
     skillIds: [],
+    skillAgents: [],
     mcpIds: [],
     utilIds: [],
     hookIds: ["afk-execution-tracking-stop-check"],
@@ -69,6 +74,7 @@ test("normalizeSetupSelection filters hook-only Cursor from general agents", () 
     hookAgents: ["cursor-local"],
     setupScope: "project",
     skillIds: [],
+    skillAgents: [],
     mcpIds: [],
     utilIds: [],
     hookIds: ["afk-execution-tracking-stop-check"],

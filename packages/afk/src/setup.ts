@@ -36,6 +36,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     setupScope: selection.setupScope,
     scopeExplicit: true,
     selectedSkillIds: selection.skillIds,
+    selectedSkillAgentIds: selection.skillAgents,
     selectedMcpIds: selection.mcpIds,
     selectedUtilIds: selection.utilIds,
     selectedHookIds: selection.hookIds,
@@ -57,6 +58,9 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
   runtime.io.stdout(`- Areas: ${selection.areas.join(", ")}`);
   if (selection.agents.length > 0) {
     runtime.io.stdout(`- Agents: ${selection.agents.join(", ")}`);
+  }
+  if (selection.skillAgents.length > 0) {
+    runtime.io.stdout(`- Additional skill agents: ${selection.skillAgents.join(", ")}`);
   }
 
   const failures: Array<{ area: Area; code: number }> = [];
@@ -173,6 +177,7 @@ async function resolveSkillOptions(options: CliOptions): Promise<CliOptions> {
   return {
     ...options,
     selectedSkillIds: selection.skillIds,
+    selectedSkillAgentIds: selection.skillAgents,
   };
 }
 
