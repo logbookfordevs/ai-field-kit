@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import { test } from "vitest";
 import { applyOperation } from "./fs-utils.js";
 import { planHooksSync } from "./hooks.js";
 import { localManifestDir } from "./manifest.js";

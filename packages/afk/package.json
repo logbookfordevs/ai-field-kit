@@ -19,7 +19,7 @@
     "release:bump:minor": "node ../../scripts/bump-afk-version.mjs minor",
     "release:bump:major": "node ../../scripts/bump-afk-version.mjs major",
     "release:pack": "../../scripts/package-afk-release.sh",
-    "test": "pnpm run build && node --test \"dist/**/*.test.js\""
+    "test": "vitest run"
   },
   "engines": {
     "node": ">=20"
@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.21",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.7"
   }
 }

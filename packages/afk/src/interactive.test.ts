@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 import { normalizeSetupSelection } from "./interactive.js";
 
 test("normalizeSetupSelection removes item areas when every item is unselected", () => {

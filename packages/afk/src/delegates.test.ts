@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import { test } from "vitest";
 import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions, Runtime } from "./types.js";
