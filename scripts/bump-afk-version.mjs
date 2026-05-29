@@ -7,7 +7,6 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(scriptDir, "..");
 const packageJsonPath = resolve(rootDir, "packages", "afk", "package.json");
 const changelogPath = resolve(rootDir, "CHANGELOG.md");
-const installScriptPath = resolve(rootDir, "scripts", "install.sh");
 
 const args = process.argv.slice(2);
 const dryRun = takeFlag(args, "--dry-run");
@@ -31,25 +30,18 @@ const today = new Date().toISOString().slice(0, 10);
 packageJson.version = nextVersion;
 const nextPackageJson = `${JSON.stringify(packageJson, null, 2)}\n`;
 const nextChangelog = promoteChangelog(readFileSync(changelogPath, "utf8"), nextVersion, today);
-const nextInstallScript = readFileSync(installScriptPath, "utf8").replace(
-  /--version v\d+\.\d+\.\d+/g,
-  `--version v${nextVersion}`,
-);
 
 if (dryRun) {
   info(`would bump AFK ${currentVersion} -> ${nextVersion}`);
   info(`would promote CHANGELOG.md TBD section to v${nextVersion} - ${today}`);
-  info("would update install.sh version example");
   process.exit(0);
 }
 
 writeFileSync(packageJsonPath, nextPackageJson);
 writeFileSync(changelogPath, nextChangelog);
-writeFileSync(installScriptPath, nextInstallScript);
 
 info(`bumped AFK ${currentVersion} -> ${nextVersion}`);
 info(`promoted CHANGELOG.md TBD section to v${nextVersion} - ${today}`);
-info("updated install.sh version example");
 
 function takeFlag(values, flag) {
   const index = values.indexOf(flag);
@@ -121,8 +113,7 @@ function promoteChangelog(content, version, date) {
 function usage() {
   console.log(`Usage: node scripts/bump-afk-version.mjs [patch|minor|major|x.y.z] [--dry-run]
 
-Bumps packages/afk/package.json, promotes CHANGELOG.md's TBD section, and
-updates the install.sh pinned-version example.
+Bumps packages/afk/package.json and promotes CHANGELOG.md's TBD section.
 
 Examples:
   node scripts/bump-afk-version.mjs patch

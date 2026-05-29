@@ -59,17 +59,12 @@ support is handled by the official `skills` CLI.
 
 ### Full setup — rules and MCPs too
 
-If you want the complete stack, install the AFK CLI from the hosted install
-script:
+If you want the complete stack, install the AFK CLI from npm:
 
 ```bash
-curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
+npm install -g @logbookfordevs/afk
 afk setup --dry-run
 ```
-
-The hosted script is the same installer kept in this repo at
-[`scripts/install.sh`](./scripts/install.sh). It installs the latest AFK release
-without requiring a clone.
 
 Use the dry run first. The CLI prints the exact rules, skills, MCP, and utility
 setup actions before anything writes to your machine.
@@ -99,6 +94,9 @@ Install the local checkout as an `afk` command while developing:
 ./scripts/install.sh --local
 afk setup --dry-run
 ```
+
+`scripts/install.sh` is for local development installs from this checkout. The
+recommended user-facing install path is the npm package above.
 
 Use the dry run first. The CLI prints the exact rules, skills, MCP, utility, and
 hook setup actions before anything writes to your machine.

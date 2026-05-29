@@ -1,6 +1,18 @@
 # AFK CLI
 
-Local setup router for AI Field Kit.
+Setup router for AI Field Kit.
+
+Install the published CLI from npm:
+
+```bash
+npm install -g @logbookfordevs/afk
+afk setup --dry-run
+```
+
+Use the dry run first. AFK prints the exact rules, skills, MCP, utility, and
+hook setup actions before anything writes to your machine.
+
+To work from this repository checkout:
 
 ```bash
 pnpm --dir packages/afk install
@@ -14,6 +26,9 @@ From the repo root, install this checkout as a local `afk` command:
 ./scripts/install.sh --local
 afk setup --dry-run
 ```
+
+`scripts/install.sh` is intended for local development installs from this
+checkout. The user-facing install path is the npm package.
 
 `afk setup` opens with a branded banner and checkbox prompts. Setup areas,
 setup scope, AFK-owned rule targets, individual AFK skills, recommended external

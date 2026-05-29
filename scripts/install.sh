@@ -22,7 +22,9 @@ usage() {
   cat <<'USAGE'
 Usage: install.sh [options]
 
-Installs AFK from a GitHub Release asset without cloning the repository.
+Development helper for linking this checkout as a local afk command.
+Remote release options are retained for maintainers, but npm is the
+recommended user-facing install path.
 
 Options:
   --version <tag>         Release tag to install. Defaults to latest.
@@ -41,8 +43,6 @@ Environment:
   AFK_BIN_DIR             Same as --bin-dir.
 
 Examples:
-  curl -fsSL https://raw.githubusercontent.com/leoreisdias/ai-rules-workflows/main/scripts/install.sh | bash
-  curl -fsSL https://raw.githubusercontent.com/leoreisdias/ai-rules-workflows/main/scripts/install.sh | bash -s -- --version v0.5.2
   ./scripts/install.sh --local
 USAGE
 }

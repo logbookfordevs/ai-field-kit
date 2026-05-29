@@ -8,13 +8,7 @@ import { Opencode } from '@/components/ui/svgs/opencode.jsx';
 
 const installCommand = 'npx skills add https://github.com/logbookfordevs/ai-field-kit';
 
-const fullSetupCommand = [
-  'git clone https://github.com/logbookfordevs/ai-field-kit.git ~/codes/ai-field-kit',
-  'cd ~/codes/ai-field-kit',
-  'bash sync-ai-agents.sh',
-  'bash sync-ai-workflows.sh',
-  'python3 sync-ai-mcps.py',
-].join('\n');
+const fullSetupCommand = 'npm install -g @logbookfordevs/afk\nafk setup --dry-run';
 
 const kitLayers = [
   {
@@ -99,7 +93,7 @@ const tabs = [
   {
     id: 'full',
     label: 'Full setup',
-    text: 'Clone the repository, then sync rules, workflows, and MCP configs into the supported agents on your machine.',
+    text: 'Install the AFK CLI from npm, then preview the rules, skills, MCP, utility, and hook setup before anything writes to your machine.',
     command: fullSetupCommand,
     copyLabel: 'Copy full setup commands',
   },
@@ -255,7 +249,7 @@ function App() {
 
           <div className="overflow-hidden rounded-[8px] border border-[#201a16] bg-[#fffaf0] shadow-[0_18px_45px_rgba(63,45,27,0.14)]" aria-label="Terminal-inspired sync map">
             <div className="flex justify-between gap-3 bg-[#18221f] px-3.5 py-3 font-mono text-[0.78rem] text-[#f7efe2]">
-              <span>sync-ai-agents.sh</span>
+              <span>afk setup</span>
               <span>status: ready</span>
             </div>
             <div className="p-[18px]">
@@ -279,9 +273,8 @@ function App() {
                   </span>
                 ))}
               </div>
-              <pre className="overflow-x-auto rounded-[8px] bg-[#18221f] p-[18px] font-mono text-[0.82rem] leading-[1.75] whitespace-pre-wrap text-[#f9ecd4]"><code>{`$ ${installCommand}
-$ bash sync-ai-workflows.sh
-$ python3 sync-ai-mcps.py
+              <pre className="overflow-x-auto rounded-[8px] bg-[#18221f] p-[18px] font-mono text-[0.82rem] leading-[1.75] whitespace-pre-wrap text-[#f9ecd4]"><code>{`$ npm install -g @logbookfordevs/afk
+$ afk setup --dry-run
 
 rules      -> linked
 skills     -> installed
