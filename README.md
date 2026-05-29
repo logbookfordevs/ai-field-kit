@@ -344,7 +344,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Impeccable**  
   Install: `npx skills add pbakaus/impeccable`  
-  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. Impeccable's own docs prefer `npx impeccable skills install` for the harness-tailored setup.
+  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK installs the portable skill through the normal skills flow; advanced Codex craft/live workflows can still use `npx impeccable skills install` inside a project to add Impeccable's Codex sidecars.
 
 - **cmux**  
   Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  
@@ -358,6 +358,8 @@ Other useful Agent-Skills companions include security, performance, and Chrome D
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
 
 Or check out the [OpenSpec](https://github.com/Fission-AI/OpenSpec/) for lightweight spec-driven organization.
+
+If more recommended skills require official installers instead of `npx skills add`, revisit whether `skills.json` should support per-skill installer overrides.
 
 #### If you use OpenCode heavily
 
