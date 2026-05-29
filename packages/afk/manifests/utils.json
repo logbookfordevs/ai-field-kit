@@ -21,6 +21,16 @@
       },
       "postInstall": "rtk-init",
       "default": true
+    },
+    {
+      "id": "yggtree",
+      "label": "Yggtree",
+      "description": "Create and manage git worktrees with a focused CLI workflow for agent-friendly branch and workspace handling.",
+      "install": {
+        "command": "npm",
+        "args": ["install", "-g", "yggtree"]
+      },
+      "default": true
     }
   ]
 }

@@ -39,8 +39,8 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 - Focus on checking commands like typecheck or lint.
 
 ## Worktrees
-- When creating or managing git worktrees, prefer the `yggtree` CLI via `npx yggtree`.
-- Use `npx yggtree --help` to inspect the available workflow before choosing commands.
+- When creating or managing git worktrees, prefer the installed `yggtree` CLI.
+- Use `yggtree --help` to inspect the available workflow before choosing commands.
 
 ## Package Managers
 - Use pnpm if the project already uses it. Prefer pnpm in new projects.
