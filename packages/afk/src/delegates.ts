@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { addMcpAgentNames } from "./agents.js";
 import { loadMcpManifest, loadSkillManifest, loadUtilityManifest, type SkillManifestItem, type UtilityManifestItem } from "./manifest.js";
-import type { AgentId, CliOptions, Runtime } from "./types.js";
+import type { AgentId, CliOptions, Runtime, SkillAgentId } from "./types.js";
 
 export type DelegateCommand = {
   label: string;
@@ -23,7 +23,7 @@ export function buildSkillCommands(options: CliOptions): DelegateCommand[] {
       ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))
       : manifest.items.filter((item) => item.default || options.includeExternal);
 
-  return buildSkillSourceCommands(selected, "Shared skills", [], options.setupScope);
+  return buildSkillSourceCommands(selected, "Shared skills", buildSkillsAgentArgs(options.selectedSkillAgentIds), options.setupScope);
 }
 
 export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "homeDir" | "selectedMcpIds" | "setupScope">): DelegateCommand[] {
@@ -217,6 +217,10 @@ function agentLabel(agent: AgentId): string {
     case "cursor-local":
       return "Cursor Local";
   }
+}
+
+function buildSkillsAgentArgs(agents: SkillAgentId[]): string[] {
+  return agents.flatMap((agent) => ["--agent", agent]);
 }
 
 function buildSkillSourceCommands(

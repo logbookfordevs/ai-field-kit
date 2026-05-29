@@ -1,0 +1,1185 @@
+<!doctype html>
+<!--
+  Homepage design direction for AI Field Kit.
+  Docs copy, command names, install URLs, and repository claims must be verified against the AFK repo before production implementation.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Field Kit · One Field Kit For Every Coding Agent</title>
+  <style>
+    /* design-systems/warm-editorial/tokens.css
+     * Structured token bindings for Warm Editorial.
+     * warm editorial system with cream canvas, serif display, and calm publication rhythm.
+     */
+
+    :root {
+      --bg: #fbf6ee;
+      --surface: #fffdf8;
+      --surface-warm: #f1e3cf;
+      --fg: #201914;
+      --fg-2: #4c4037;
+      --muted: #7a6d63;
+      --meta: #9b5b32;
+      --border: #ded2c3;
+      --border-soft: #eee4d7;
+      --accent: #9b5b32;
+      --accent-on: #ffffff;
+      --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+      --accent-active: color-mix(in oklab, var(--accent), black 14%);
+      --success: #4f8a4f;
+      --warn: #c9822f;
+      --danger: #b33a3a;
+      --font-display: Georgia, "Times New Roman", serif;
+      --font-body: Inter, system-ui, sans-serif;
+      --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
+      --text-xs: 12px;
+      --text-sm: 14px;
+      --text-base: 17px;
+      --text-lg: 20px;
+      --text-xl: 28px;
+      --text-2xl: 42px;
+      --text-3xl: 64px;
+      --text-4xl: 88px;
+      --leading-body: 1.62;
+      --leading-tight: 1;
+      --tracking-display: -0.025em;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+      --section-y-desktop: 112px;
+      --section-y-tablet: 80px;
+      --section-y-phone: 56px;
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-pill: 9999px;
+      --elev-flat: none;
+      --elev-ring: 0 0 0 1px var(--border);
+      --elev-raised: 0 20px 52px rgba(32, 25, 20, 0.12);
+      --focus-ring: 0 0 0 4px rgba(155, 91, 50, 0.24);
+      --motion-fast: 150ms;
+      --motion-base: 240ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --container-max: 1180px;
+      --container-gutter-desktop: 36px;
+      --container-gutter-tablet: 24px;
+      --container-gutter-phone: 16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% 4%, color-mix(in oklab, var(--surface-warm), transparent 34%), transparent 28rem),
+        linear-gradient(180deg, var(--bg), color-mix(in oklab, var(--bg), var(--surface-warm) 18%));
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: var(--leading-body);
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+    p { margin: 0; text-wrap: pretty; }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      text-wrap: balance;
+    }
+
+    .container {
+      width: min(100% - (var(--container-gutter-desktop) * 2), var(--container-max));
+      margin-inline: auto;
+    }
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid color-mix(in oklab, var(--border), transparent 22%);
+      background: color-mix(in oklab, var(--bg), transparent 8%);
+      backdrop-filter: blur(18px);
+    }
+    .topnav-inner {
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: var(--space-6);
+    }
+    .brand-lockup {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      letter-spacing: var(--tracking-display);
+    }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0;
+      box-shadow: var(--elev-ring);
+    }
+    .topnav nav {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(var(--space-4), 3vw, var(--space-8));
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--muted);
+    }
+    .topnav nav a {
+      border-bottom: 1px solid transparent;
+      transition: color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
+    }
+    .topnav nav a:hover { color: var(--fg); border-color: var(--accent); }
+    .topnav nav a:focus-visible {
+      outline: none;
+      color: var(--fg);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent), transparent 70%);
+    }
+    .nav-actions { justify-self: end; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      min-height: 46px;
+      padding: 14px 20px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: 650;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform var(--motion-fast) var(--ease-standard), 
+                  background var(--motion-fast) var(--ease-standard), 
+                  border-color var(--motion-fast) var(--ease-standard), 
+                  color var(--motion-fast) var(--ease-standard),
+                  box-shadow var(--motion-fast) var(--ease-standard);
+    }
+    .btn:hover { 
+      transform: translateY(-1px); 
+    }
+    .btn:focus-visible { 
+      outline: none; 
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 70%);
+      transform: translateY(-1px);
+    }
+    .btn:active {
+      transform: translateY(0);
+      transition-duration: 100ms;
+    }
+    .btn-primary { 
+      background: var(--accent); 
+      color: var(--accent-on); 
+      border-color: var(--accent); 
+    }
+    .btn-primary:hover { 
+      background: var(--accent-hover);
+      box-shadow: 0 6px 16px color-mix(in oklab, var(--accent), transparent 65%);
+    }
+    .btn-secondary { 
+      background: transparent; 
+      color: var(--fg); 
+      border-color: var(--fg); 
+    }
+    .btn-secondary:hover { 
+      background: color-mix(in oklab, var(--fg), transparent 94%);
+      box-shadow: 0 2px 8px color-mix(in oklab, var(--fg), transparent 85%);
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--meta);
+    }
+    .section {
+      padding-block: var(--section-y-desktop);
+      border-top: 1px solid color-mix(in oklab, var(--border), transparent 16%);
+    }
+    .section--tight {
+      padding-block: calc(var(--section-y-desktop) * 0.7);
+    }
+    .section--loose {
+      padding-block: calc(var(--section-y-desktop) * 1.15);
+    }
+    .section--extra-loose {
+      padding-block: calc(var(--section-y-desktop) * 1.35);
+    }
+    .section-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(280px, 0.55fr);
+      gap: clamp(var(--space-8), 7vw, 88px);
+      align-items: end;
+      margin-bottom: clamp(var(--space-12), 4vw, 64px);
+    }
+    .section h2 {
+      font-family: var(--font-display);
+      font-size: clamp(var(--text-2xl), 4.2vw, 64px);
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      max-width: 14ch;
+      text-wrap: balance;
+    }
+    .section-lead {
+      color: var(--fg-2);
+      font-size: var(--text-lg);
+      line-height: 1.6;
+      max-width: 48ch;
+      text-wrap: pretty;
+    }
+
+    .hero {
+      min-height: calc(100vh - 72px);
+      padding-block: clamp(80px, 10vw, 128px) var(--section-y-desktop);
+      display: grid;
+      align-items: center;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.86fr) minmax(460px, 1.14fr);
+      gap: clamp(var(--space-8), 6vw, 76px);
+      align-items: center;
+    }
+    .hero-copy {
+      display: grid;
+      gap: var(--space-6);
+      align-content: start;
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(48px, 6.5vw, 72px);
+      line-height: var(--leading-tight);
+      letter-spacing: -0.02em;
+      max-width: 11ch;
+      text-wrap: balance;
+    }
+    .hero .lead {
+      color: var(--fg-2);
+      font-size: clamp(var(--text-lg), 2vw, 22px);
+      line-height: 1.55;
+      max-width: 46ch;
+      text-wrap: pretty;
+    }
+    .hero-cta {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .command-strip {
+      display: grid;
+      gap: var(--space-3);
+      max-width: 660px;
+    }
+    .command-capsule {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: color-mix(in oklab, var(--surface), var(--bg) 28%);
+      box-shadow: var(--elev-ring);
+      transition: border-color var(--motion-base) var(--ease-standard), transform var(--motion-base) var(--ease-standard), box-shadow var(--motion-base) var(--ease-standard);
+    }
+    .command-capsule:hover {
+      transform: translateY(-2px);
+      border-color: color-mix(in oklab, var(--accent), var(--border) 46%);
+      box-shadow: var(--elev-raised);
+    }
+    .command-label {
+      color: var(--meta);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+    .command-capsule code {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      color: var(--fg);
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      line-height: 1.45;
+    }
+    .copy-btn {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--fg-2);
+      padding: 8px 10px;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      cursor: pointer;
+      transition: color var(--motion-fast) var(--ease-standard), 
+                  border-color var(--motion-fast) var(--ease-standard), 
+                  background var(--motion-fast) var(--ease-standard),
+                  transform var(--motion-fast) var(--ease-standard);
+    }
+    .copy-btn:hover, .copy-btn.is-copied {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: color-mix(in oklab, var(--surface-warm), transparent 56%);
+      transform: translateY(-1px);
+    }
+    .copy-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent), transparent 70%);
+      transform: translateY(-1px);
+    }
+    .copy-btn:active {
+      transform: translateY(0);
+      transition-duration: 100ms;
+    }
+
+    .route-map {
+      position: relative;
+      min-height: 660px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(90deg, color-mix(in oklab, var(--border), transparent 76%) 1px, transparent 1px),
+        linear-gradient(0deg, color-mix(in oklab, var(--border), transparent 78%) 1px, transparent 1px),
+        color-mix(in oklab, var(--surface), var(--bg) 24%);
+      background-size: 54px 54px;
+      overflow: hidden;
+      box-shadow: var(--elev-raised);
+    }
+    .route-map::before {
+      content: "";
+      position: absolute;
+      inset: 9%;
+      border: 1px solid color-mix(in oklab, var(--accent), transparent 72%);
+      border-radius: 50%;
+      opacity: 0.65;
+    }
+    .route-map svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .lane {
+      fill: none;
+      stroke: color-mix(in oklab, var(--accent), var(--border) 42%);
+      stroke-width: 1.4;
+      stroke-linecap: round;
+      stroke-dasharray: 8 12;
+      opacity: 0.72;
+      animation: lanePulse 6s var(--ease-standard) infinite;
+    }
+    .lane:nth-child(2n) { animation-delay: 1.2s; }
+    .lane:nth-child(3n) { animation-delay: 2.3s; }
+    .lane-core {
+      stroke: color-mix(in oklab, var(--fg), var(--accent) 36%);
+      stroke-width: 1.1;
+      stroke-dasharray: 2 12;
+      opacity: 0.5;
+      animation-duration: 8s;
+    }
+    @keyframes lanePulse {
+      0%, 100% { stroke-dashoffset: 0; opacity: 0.46; }
+      50% { stroke-dashoffset: -42; opacity: 0.95; }
+    }
+    .kit-core {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      translate: -50% -50%;
+      width: min(236px, 42vw);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--fg);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--elev-raised);
+    }
+    .kit-core-inner {
+      width: calc(100% - 38px);
+      height: calc(100% - 38px);
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+    .kit-core strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(46px, 7vw, 78px);
+      line-height: 0.9;
+      letter-spacing: var(--tracking-display);
+    }
+    .kit-core span {
+      display: block;
+      margin-top: var(--space-2);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .agent-node {
+      position: absolute;
+      display: grid;
+      gap: 2px;
+      min-width: 104px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: color-mix(in oklab, var(--surface), transparent 4%);
+      box-shadow: var(--elev-ring);
+    }
+    .agent-node strong {
+      font-size: var(--text-sm);
+      line-height: 1.2;
+    }
+    .agent-node span {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .agent-node:nth-of-type(1) { left: 9%; top: 13%; }
+    .agent-node:nth-of-type(2) { right: 12%; top: 11%; }
+    .agent-node:nth-of-type(3) { left: 5%; top: 43%; }
+    .agent-node:nth-of-type(4) { right: 6%; top: 41%; }
+    .agent-node:nth-of-type(5) { left: 15%; bottom: 12%; }
+    .agent-node:nth-of-type(6) { right: 18%; bottom: 10%; }
+    .agent-node:nth-of-type(7) { left: 50%; bottom: 4%; translate: -50% 0; }
+    .map-note {
+      position: absolute;
+      left: var(--space-6);
+      bottom: var(--space-6);
+      right: var(--space-6);
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-4);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+    }
+
+    .pain-ledger {
+      border-top: 1px solid var(--fg);
+    }
+    .ledger-row {
+      display: grid;
+      grid-template-columns: 164px minmax(0, 1fr) minmax(220px, 0.52fr);
+      gap: clamp(var(--space-6), 4vw, var(--space-8));
+      padding: clamp(var(--space-6), 3vw, var(--space-8)) 0;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+    }
+    .ledger-row h3 {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+      text-wrap: balance;
+    }
+    .ledger-row p { 
+      color: var(--fg-2); 
+      line-height: 1.6;
+      max-width: 52ch;
+      text-wrap: pretty;
+    }
+    .ledger-row .meta {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .kit-ledger {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: clamp(var(--space-8), 6vw, 76px);
+      align-items: start;
+    }
+    .stack-diagram {
+      position: sticky;
+      top: 112px;
+      display: grid;
+      gap: var(--space-3);
+    }
+    .stack-layer {
+      padding: var(--space-5);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: color-mix(in oklab, var(--surface), var(--bg) 24%);
+      box-shadow: var(--elev-ring);
+    }
+    .stack-layer:first-child {
+      border-color: var(--fg);
+      background: var(--surface);
+    }
+    .stack-layer strong {
+      display: block;
+      margin-bottom: var(--space-1);
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      line-height: 1.1;
+      letter-spacing: var(--tracking-display);
+    }
+    .stack-layer span {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .manual-list {
+      border-top: 1px solid var(--fg);
+    }
+    .manual-item {
+      display: grid;
+      grid-template-columns: 144px minmax(0, 1fr);
+      gap: clamp(var(--space-6), 4vw, var(--space-8));
+      padding: clamp(var(--space-5), 2.5vw, var(--space-6)) 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .manual-item code {
+      color: var(--meta);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .manual-item h3 {
+      font-size: var(--text-lg);
+      line-height: 1.3;
+      margin-bottom: var(--space-2);
+      text-wrap: balance;
+    }
+    .manual-item p {
+      color: var(--fg-2);
+      font-size: var(--text-sm);
+      line-height: 1.6;
+      max-width: 48ch;
+      text-wrap: pretty;
+    }
+
+    .paths {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-6);
+      align-items: stretch;
+    }
+    .path-panel {
+      display: grid;
+      align-content: start;
+      gap: var(--space-5);
+      padding: var(--space-8);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: color-mix(in oklab, var(--surface), var(--bg) 16%);
+      box-shadow: var(--elev-ring);
+    }
+    .path-panel.primary {
+      border-color: color-mix(in oklab, var(--accent), var(--border) 35%);
+      background: var(--surface);
+    }
+    .path-panel h3 {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      line-height: 1.12;
+      letter-spacing: -0.015em;
+      text-wrap: balance;
+    }
+    .path-panel p { 
+      color: var(--fg-2); 
+      line-height: 1.6;
+      max-width: 46ch;
+      text-wrap: pretty;
+    }
+    .tradeoffs {
+      display: grid;
+      gap: var(--space-2);
+      padding: 0;
+      margin: 0;
+      list-style: none;
+      color: var(--fg-2);
+      font-size: var(--text-sm);
+    }
+    .tradeoffs li {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: var(--space-2);
+      align-items: start;
+    }
+    .tradeoffs li::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      margin-top: 9px;
+      border-radius: var(--radius-pill);
+      background: var(--accent);
+    }
+
+    .layers {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1fr);
+      gap: clamp(var(--space-8), 6vw, 72px);
+      align-items: center;
+    }
+    .layer-plates {
+      display: grid;
+      gap: var(--space-4);
+      perspective: 900px;
+    }
+    .plate {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-4);
+      align-items: center;
+      padding: var(--space-5);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: var(--elev-ring);
+      transform: rotateX(0deg);
+    }
+    .plate:nth-child(1) { margin-left: 0; }
+    .plate:nth-child(2) { margin-left: var(--space-8); }
+    .plate:nth-child(3) { margin-left: calc(var(--space-8) * 2); border-color: var(--fg); }
+    .plate-index {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-sm);
+      background: color-mix(in oklab, var(--surface-warm), var(--bg) 22%);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--meta);
+    }
+    .plate h3 {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      letter-spacing: var(--tracking-display);
+      line-height: 1.1;
+    }
+    .plate p { color: var(--muted); font-size: var(--text-sm); }
+
+    .agent-band {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      border-top: 1px solid var(--fg);
+      border-bottom: 1px solid var(--fg);
+    }
+    .agent-chip {
+      min-height: 132px;
+      display: grid;
+      align-content: center;
+      gap: var(--space-1);
+      padding: var(--space-4);
+      border-right: 1px solid var(--border);
+      background: color-mix(in oklab, var(--bg), var(--surface) 22%);
+      transition: background var(--motion-base) var(--ease-standard), transform var(--motion-base) var(--ease-standard);
+    }
+    .agent-chip:last-child { border-right: 0; }
+    .agent-chip:hover {
+      background: var(--surface);
+      transform: translateY(-3px);
+    }
+    .agent-chip strong {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      line-height: 1.1;
+      letter-spacing: var(--tracking-display);
+    }
+    .agent-chip span {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .footer-cta {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.55fr);
+      gap: var(--space-8);
+      align-items: end;
+      padding: var(--space-12) 0;
+      border-top: 1px solid var(--fg);
+    }
+    .footer-cta h2 {
+      font-family: var(--font-display);
+      font-size: clamp(var(--text-2xl), 4.5vw, 56px);
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      max-width: 14ch;
+      text-wrap: balance;
+    }
+    .pagefoot {
+      border-top: 1px solid var(--border);
+      padding-block: var(--space-8);
+      color: var(--muted);
+      font-size: var(--text-sm);
+    }
+    .pagefoot .container {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .pagefoot a {
+      color: var(--fg);
+      border-bottom: 1px solid color-mix(in oklab, var(--accent), transparent 44%);
+    }
+
+    .reveal {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 520ms cubic-bezier(0.25, 0, 0, 1), transform 520ms cubic-bezier(0.25, 0, 0, 1);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      .reveal.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .topnav-inner { grid-template-columns: 1fr auto; }
+      .topnav nav { display: none; }
+      .hero-grid, .kit-ledger, .layers, .footer-cta { grid-template-columns: 1fr; }
+      .route-map { min-height: 580px; }
+      .stack-diagram { position: static; }
+      .agent-band { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .agent-chip:nth-child(4) { border-right: 0; }
+    }
+    @media (max-width: 720px) {
+      .container { width: min(100% - (var(--container-gutter-phone) * 2), var(--container-max)); }
+      .section { padding-block: var(--section-y-phone); }
+      .section--tight { padding-block: calc(var(--section-y-phone) * 0.75); }
+      .section--loose { padding-block: calc(var(--section-y-phone) * 1.15); }
+      .section-heading, .ledger-row, .manual-item, .paths { grid-template-columns: 1fr; gap: var(--space-4); }
+      .hero { min-height: auto; padding-block: var(--section-y-phone); }
+      .hero h1 { font-size: clamp(42px, 11vw, 68px); max-width: 10ch; }
+      .hero .lead { font-size: var(--text-lg); max-width: 42ch; }
+      .hero-cta .btn { width: 100%; }
+      .command-capsule {
+        grid-template-columns: 1fr auto;
+        align-items: start;
+      }
+      .command-label { grid-column: 1 / -1; }
+      .route-map {
+        min-height: 520px;
+        background-size: 42px 42px;
+      }
+      .kit-core { width: min(190px, 60vw); }
+      .agent-node {
+        min-width: 92px;
+        padding: 8px 10px;
+      }
+      .agent-node:nth-of-type(1) { left: 5%; top: 8%; }
+      .agent-node:nth-of-type(2) { right: 5%; top: 8%; }
+      .agent-node:nth-of-type(3) { left: 4%; top: 34%; }
+      .agent-node:nth-of-type(4) { right: 4%; top: 34%; }
+      .agent-node:nth-of-type(5) { left: 5%; bottom: 18%; }
+      .agent-node:nth-of-type(6) { right: 5%; bottom: 18%; }
+      .agent-node:nth-of-type(7) { bottom: 4%; }
+      .map-note { display: none; }
+      .plate:nth-child(2), .plate:nth-child(3) { margin-left: 0; }
+      .agent-band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .agent-chip, .agent-chip:nth-child(4) { border-right: 1px solid var(--border); }
+      .agent-chip:nth-child(2n) { border-right: 0; }
+    }
+    @media (max-width: 420px) {
+      .brand-lockup span:last-child { display: none; }
+      .nav-actions .btn { padding-inline: 14px; }
+      .route-map { min-height: 480px; }
+      .agent-node strong { font-size: var(--text-xs); }
+      .agent-node span { display: none; }
+      .agent-node { min-width: 76px; text-align: center; }
+      .command-capsule code { font-size: var(--text-xs); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav" data-od-id="topnav">
+    <div class="container topnav-inner">
+      <a class="brand-lockup" href="#top" aria-label="AI Field Kit home">
+        <span class="brand-mark">AFK</span>
+        <span>AI Field Kit</span>
+      </a>
+      <nav aria-label="Homepage sections">
+        <a href="#why">Why</a>
+        <a href="#kit">Kit</a>
+        <a href="#setup">Setup</a>
+        <a href="#agents">Agents</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-primary" href="#setup">Install AFK</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" data-od-id="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy reveal">
+          <p class="eyebrow">Logbook for Devs · AI Field Kit</p>
+          <h1>One Field Kit For Every Coding Agent.</h1>
+          <p class="lead">Version your rules, skills, workflows, hooks, MCPs, and utilities once. AFK helps your local agents inherit the same standards wherever the work happens.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#setup">Install AFK</a>
+            <a class="btn btn-secondary" href="#setup">Get Skills Only</a>
+          </div>
+          <div class="command-strip" aria-label="Primary setup commands">
+            <div class="command-capsule">
+              <span class="command-label">Full stack</span>
+              <code>curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash</code>
+              <button class="copy-btn" data-copy="curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash">Copy</button>
+            </div>
+            <div class="command-capsule">
+              <span class="command-label">Skills only</span>
+              <code>npx skills add https://github.com/logbookfordevs/ai-field-kit</code>
+              <button class="copy-btn" data-copy="npx skills add https://github.com/logbookfordevs/ai-field-kit">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="route-map reveal" aria-label="AFK routing map connecting shared standards to coding agents">
+          <svg viewBox="0 0 720 660" role="img" aria-hidden="true">
+            <path class="lane" d="M360 330 C230 150, 168 100, 96 92" />
+            <path class="lane" d="M360 330 C496 144, 562 96, 646 90" />
+            <path class="lane" d="M360 330 C194 288, 126 286, 58 304" />
+            <path class="lane" d="M360 330 C510 288, 610 280, 674 304" />
+            <path class="lane" d="M360 330 C236 470, 188 548, 116 570" />
+            <path class="lane" d="M360 330 C492 480, 540 552, 610 576" />
+            <path class="lane" d="M360 330 C356 440, 356 542, 360 626" />
+            <path class="lane lane-core" d="M220 330 C280 290, 440 290, 500 330" />
+            <path class="lane lane-core" d="M260 220 C324 260, 392 262, 458 220" />
+            <path class="lane lane-core" d="M252 452 C320 414, 404 416, 470 452" />
+          </svg>
+          <div class="agent-node"><strong>Codex</strong><span>terminal</span></div>
+          <div class="agent-node"><strong>Gemini</strong><span>cli</span></div>
+          <div class="agent-node"><strong>Claude</strong><span>code</span></div>
+          <div class="agent-node"><strong>Cursor</strong><span>editor</span></div>
+          <div class="agent-node"><strong>OpenCode</strong><span>agent</span></div>
+          <div class="agent-node"><strong>Kiro</strong><span>workflow</span></div>
+          <div class="agent-node"><strong>KiloCode</strong><span>surface</span></div>
+          <div class="kit-core">
+            <div class="kit-core-inner">
+              <div>
+                <strong>AFK</strong>
+                <span>shared field kit</span>
+              </div>
+            </div>
+          </div>
+          <div class="map-note">
+            <span>rules · skills · workflows · hooks · MCPs</span>
+            <span>same standards, local context</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--extra-loose" id="why" data-od-id="why-it-exists">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="eyebrow">Why It Exists</p>
+            <h2>Agent Habits Fragment Fast.</h2>
+          </div>
+          <p class="section-lead">Every coding agent has its own memory surface, config shape, tool wiring, and idea of “how this project works.” AFK gives those surfaces a shared operating layer without becoming another agent.</p>
+        </div>
+        <div class="pain-ledger reveal">
+          <article class="ledger-row">
+            <span class="meta">Problem</span>
+            <h3>Standards Drift By Tool.</h3>
+            <p>Codex may know one review doctrine, Cursor another, and a terminal agent something else entirely. The cost is not one bad answer; it is maintaining the same habits repeatedly.</p>
+          </article>
+          <article class="ledger-row">
+            <span class="meta">Pattern</span>
+            <h3>Context Belongs Near The Work.</h3>
+            <p>Project-specific rules, setup choices, hooks, and manifests should travel with the repository when they matter, while personal defaults stay reusable across machines.</p>
+          </article>
+          <article class="ledger-row">
+            <span class="meta">Position</span>
+            <h3>AFK Is The Field Kit, Not The Agent.</h3>
+            <p>It prepares the standards and utilities your local agents inherit. You keep choosing the agent surface; AFK keeps the working system coherent.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="kit" data-od-id="what-ships">
+      <div class="container kit-ledger">
+        <aside class="stack-diagram reveal" aria-label="AFK kit stack">
+          <div class="stack-layer">
+            <span>Layer 01</span>
+            <strong>Rules</strong>
+            <p>Always-on standards for how agents should work in a repo.</p>
+          </div>
+          <div class="stack-layer">
+            <span>Layer 02</span>
+            <strong>Skills</strong>
+            <p>Reusable playbooks for reviews, docs, debugging, planning, and execution.</p>
+          </div>
+          <div class="stack-layer">
+            <span>Layer 03</span>
+            <strong>Runtime Utilities</strong>
+            <p>Hooks, MCPs, setup flows, and small helpers that make the kit operational.</p>
+          </div>
+        </aside>
+        <div class="reveal">
+          <p class="eyebrow">What Ships In The Kit</p>
+          <h2>Field Manual, Not Card Wall.</h2>
+          <div class="manual-list" style="margin-top: var(--space-8);">
+            <article class="manual-item">
+              <code>rules</code>
+              <div>
+                <h3>Shared working standards.</h3>
+                <p>Capture repository doctrine, agent behavior, safety boundaries, and review expectations in versioned files.</p>
+              </div>
+            </article>
+            <article class="manual-item">
+              <code>skills</code>
+              <div>
+                <h3>Reusable expert routines.</h3>
+                <p>Install focused instructions for common work: documentation, debugging, task breakdown, tradeoff analysis, reviews, and handoff.</p>
+              </div>
+            </article>
+            <article class="manual-item">
+              <code>workflows</code>
+              <div>
+                <h3>Repeatable multi-step operating modes.</h3>
+                <p>Use lightweight process when the task needs discovery, planning, checkpoints, validation, or a durable artifact.</p>
+              </div>
+            </article>
+            <article class="manual-item">
+              <code>hooks</code>
+              <div>
+                <h3>Guardrails at the moment of action.</h3>
+                <p>Prompt, stop, or route work when an agent is about to cross a project boundary or miss a required verification step.</p>
+              </div>
+            </article>
+            <article class="manual-item">
+              <code>MCPs</code>
+              <div>
+                <h3>Tool wiring that moves with the setup.</h3>
+                <p>Keep external capabilities discoverable through the same field kit instead of rebuilding tool context per agent.</p>
+              </div>
+            </article>
+            <article class="manual-item">
+              <code>utilities</code>
+              <div>
+                <h3>Small commands for local operating hygiene.</h3>
+                <p>Support installation, syncing, diagnostics, and repo-local setup without turning the homepage into a docs manual.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--tight" id="setup" data-od-id="two-setup-paths">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="eyebrow">Two Setup Paths</p>
+            <h2>Choose The Amount Of Kit You Want.</h2>
+          </div>
+          <p class="section-lead">Some developers only want portable skills. Others want the CLI, manifests, hooks, MCPs, and project-local conventions working together.</p>
+        </div>
+        <div class="paths reveal">
+          <article class="path-panel">
+            <p class="eyebrow">Path 01</p>
+            <h3>Get Skills Only.</h3>
+            <p>Best when you want the reusable AFK skill library inside an existing agent setup without adopting the full CLI stack yet.</p>
+            <div class="command-capsule">
+              <span class="command-label">Command</span>
+              <code>npx skills add https://github.com/logbookfordevs/ai-field-kit</code>
+              <button class="copy-btn" data-copy="npx skills add https://github.com/logbookfordevs/ai-field-kit">Copy</button>
+            </div>
+            <ul class="tradeoffs">
+              <li>Smallest install path for skill discovery and reuse.</li>
+              <li>Does not try to own your agent stack or project manifests.</li>
+              <li>Useful when testing AFK one workflow at a time.</li>
+            </ul>
+          </article>
+          <article class="path-panel primary">
+            <p class="eyebrow">Path 02</p>
+            <h3>Install The AFK CLI Stack.</h3>
+            <p>Best when you want rules, skills, workflows, hooks, MCPs, and utilities managed as one operating layer across local agents.</p>
+            <div class="command-capsule">
+              <span class="command-label">Command</span>
+              <code>curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash</code>
+              <button class="copy-btn" data-copy="curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash">Copy</button>
+            </div>
+            <ul class="tradeoffs">
+              <li>Sets up the portable field kit rather than one isolated skill.</li>
+              <li>Designed for multi-agent developers who move between surfaces.</li>
+              <li>Leaves production command details for repo-verified docs.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" data-od-id="project-local-layers">
+      <div class="container layers">
+        <div class="layer-plates reveal" aria-label="AFK context layers">
+          <article class="plate">
+            <span class="plate-index">01</span>
+            <div>
+              <h3>Global Defaults</h3>
+              <p>Portable baseline rules and skills for your machines.</p>
+            </div>
+          </article>
+          <article class="plate">
+            <span class="plate-index">02</span>
+            <div>
+              <h3>User Preferences</h3>
+              <p>Your personal agent habits, tool choices, and local workflow taste.</p>
+            </div>
+          </article>
+          <article class="plate">
+            <span class="plate-index">03</span>
+            <div>
+              <h3>Project Manifests</h3>
+              <p>Repo-local context when architecture, commands, or handoff rules must be specific.</p>
+            </div>
+          </article>
+        </div>
+        <div class="reveal">
+          <p class="eyebrow">Project-Local When It Matters</p>
+          <h2>Defaults Should Travel. Context Should Stay Close.</h2>
+          <p class="section-lead" style="margin-top: var(--space-6);">AFK’s homepage story stays high-level: common defaults across agents, personal preferences where developers need them, and project-local manifests where the repository needs final say.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--loose" id="agents" data-od-id="multi-agent-band">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="eyebrow">Built For Multi-Agent Developers</p>
+            <h2>One Kit Across Many Surfaces.</h2>
+          </div>
+          <p class="section-lead">The homepage should make compatibility legible without pretending AFK replaces the tools developers already use.</p>
+        </div>
+        <div class="agent-band reveal" aria-label="Compatible agent surfaces">
+          <div class="agent-chip"><strong>Codex</strong><span>terminal</span></div>
+          <div class="agent-chip"><strong>Gemini</strong><span>cli</span></div>
+          <div class="agent-chip"><strong>Claude</strong><span>code</span></div>
+          <div class="agent-chip"><strong>Cursor</strong><span>editor</span></div>
+          <div class="agent-chip"><strong>OpenCode</strong><span>agent</span></div>
+          <div class="agent-chip"><strong>Kiro</strong><span>workflow</span></div>
+          <div class="agent-chip"><strong>KiloCode</strong><span>surface</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" data-od-id="footer-cta">
+      <div class="container">
+        <div class="footer-cta reveal">
+          <div>
+            <p class="eyebrow">AI Field Kit</p>
+            <h2>Give Every Agent The Same Working Standards.</h2>
+          </div>
+          <div class="command-strip">
+            <div class="command-capsule">
+              <span class="command-label">Start</span>
+              <code>curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash</code>
+              <button class="copy-btn" data-copy="curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash">Copy</button>
+            </div>
+            <a class="btn btn-secondary" href="https://github.com/logbookfordevs/ai-field-kit" target="_blank" rel="noopener">View GitHub</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pagefoot" data-od-id="footer">
+    <div class="container">
+      <span>AI Field Kit is a product by Logbook for Devs.</span>
+      <span><a href="https://github.com/logbookfordevs/ai-field-kit" target="_blank" rel="noopener">GitHub</a> · <a href="https://logbookfordevs.com" target="_blank" rel="noopener">Logbook for Devs</a></span>
+    </div>
+  </footer>
+
+  <script>
+    const copyButtons = document.querySelectorAll("[data-copy]");
+    copyButtons.forEach((button) => {
+      button.addEventListener("click", async () => {
+        const value = button.getAttribute("data-copy") || "";
+        const original = button.textContent;
+        try {
+          await navigator.clipboard.writeText(value);
+          button.textContent = "Copied";
+          button.classList.add("is-copied");
+        } catch {
+          button.textContent = "Select";
+        }
+        window.setTimeout(() => {
+          button.textContent = original;
+          button.classList.remove("is-copied");
+        }, 1600);
+      });
+    });
+
+    const revealItems = document.querySelectorAll(".reveal");
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.14 });
+      revealItems.forEach((item) => observer.observe(item));
+    } else {
+      revealItems.forEach((item) => item.classList.add("is-visible"));
+    }
+  </script>
+</body>
+</html>

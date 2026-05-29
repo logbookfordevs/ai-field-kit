@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AFK · The Developer's Field Manual</title>
+  <style>
+    :root {
+      --bg: #fbf6ee; --surface: #fffdf8; --surface-warm: #f1e3cf;
+      --fg: #201914; --fg-2: #4c4037; --muted: #7a6d63;
+      --border: #ded2c3; --border-soft: #eee4d7;
+      --accent: #9b5b32; --accent-soft: color-mix(in oklab, var(--accent) 10%, transparent);
+      --accent-on: #ffffff;
+      --font-display: Georgia, "Times New Roman", serif;
+      --font-body: Inter, system-ui, sans-serif;
+      --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
+      --text-xs: 12px; --text-sm: 14px; --text-base: 17px; --text-lg: 20px;
+      --text-xl: 28px; --text-2xl: 42px; --text-4xl: 88px;
+      --leading-body: 1.62; --leading-tight: 1.05;
+      --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+      --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+      --sp-16: 64px; --sp-20: 80px; --sp-24: 96px; --sp-32: 128px;
+      --r-sm: 10px; --r-md: 16px; --r-lg: 24px;
+      --ease-out: cubic-bezier(0.25, 0, 0, 1);
+      --ease-std: cubic-bezier(0.2, 0, 0, 1);
+      --t-fast: 150ms; --t-base: 240ms;
+      --sidebar-w: 260px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: var(--leading-body);
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4 {
+      font-family: var(--font-display);
+      letter-spacing: -0.02em;
+      margin: 0;
+      line-height: var(--leading-tight);
+      text-wrap: balance;
+    }
+    p { margin: 0; text-wrap: pretty; }
+    a { color: inherit; text-decoration: none; }
+    pre, code { font-family: var(--font-mono); }
+    code {
+      font-size: 0.88em;
+      background: var(--surface-warm);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; top: 16px; left: 16px;
+      width: var(--sidebar-w);
+      height: calc(100vh - 32px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: 0 8px 32px rgba(32,25,20,0.09), 0 1px 4px rgba(32,25,20,0.05);
+      display: flex; flex-direction: column;
+      padding: var(--sp-8) 0;
+      z-index: 100;
+      overflow-y: auto;
+    }
+    .sidebar-brand {
+      display: flex; align-items: center; gap: var(--sp-3);
+      padding: 0 var(--sp-6) var(--sp-6);
+      border-bottom: 1px solid var(--border-soft);
+      margin-bottom: var(--sp-4);
+    }
+    .logo-mark {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      border-radius: 7px;
+      display: grid; place-items: center;
+      color: var(--accent-on);
+      flex-shrink: 0;
+    }
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: var(--text-base);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .nav-list {
+      list-style: none; padding: 0 var(--sp-3); margin: 0;
+      flex: 1; position: relative;
+    }
+    .nav-link {
+      display: block;
+      padding: 9px var(--sp-3);
+      font-size: var(--text-sm);
+      color: var(--muted);
+      border-radius: var(--r-sm);
+      transition: color var(--t-fast) var(--ease-std);
+      position: relative; z-index: 2;
+    }
+    .nav-link:hover { color: var(--fg); }
+    .nav-link.is-active { color: var(--accent); font-weight: 600; }
+    .nav-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .nav-pill {
+      position: absolute;
+      left: var(--sp-3); right: var(--sp-3);
+      background: var(--accent-soft);
+      border-radius: var(--r-sm);
+      pointer-events: none; z-index: 1;
+      transition: top var(--t-base) var(--ease-out), height var(--t-base) var(--ease-out);
+    }
+    .sidebar-footer {
+      padding: var(--sp-4) var(--sp-6) 0;
+      border-top: 1px solid var(--border-soft);
+      margin-top: var(--sp-4);
+    }
+    .sidebar-footer a {
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--muted);
+      display: flex; justify-content: space-between;
+      transition: color var(--t-fast);
+    }
+    .sidebar-footer a:hover { color: var(--fg); }
+
+    /* ── Main content ── */
+    .docs-main {
+      margin-left: calc(var(--sidebar-w) + 32px);
+      max-width: 740px;
+      padding: 0 var(--sp-12) var(--sp-32);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding-top: var(--sp-32);
+      padding-bottom: var(--sp-20);
+    }
+    .hero-kicker {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: var(--sp-5);
+      display: block;
+    }
+    .hero h1 {
+      font-size: clamp(44px, 5.5vw, 72px);
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      max-width: 13ch;
+      margin-bottom: var(--sp-6);
+    }
+    .hero h1 em { font-style: italic; color: var(--accent); }
+    .hero-lead {
+      font-size: var(--text-lg);
+      color: var(--fg-2);
+      max-width: 52ch;
+      line-height: 1.6;
+      margin-bottom: var(--sp-8);
+    }
+    .hero-actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: var(--sp-2);
+      padding: 11px 22px;
+      font-family: var(--font-body); font-size: var(--text-sm); font-weight: 500;
+      border-radius: var(--r-md); border: none; cursor: pointer;
+      transition: transform var(--t-fast) var(--ease-out), filter var(--t-fast);
+      text-decoration: none;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .btn-primary { background: var(--accent); color: var(--accent-on); }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-secondary { background: transparent; color: var(--fg); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--fg-2); }
+
+    /* ── Sections — varied rhythm ── */
+    .section {
+      padding-top: var(--sp-24);
+      padding-bottom: var(--sp-24);
+      border-top: 1px solid var(--border-soft);
+    }
+    /* Tight sections: commands, manifest */
+    .section--tight {
+      padding-top: var(--sp-16);
+      padding-bottom: var(--sp-16);
+    }
+    /* Loose sections: resolution, setup */
+    .section--loose {
+      padding-top: var(--sp-32);
+      padding-bottom: var(--sp-32);
+    }
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: var(--sp-4);
+      display: block;
+    }
+    .section h2 {
+      font-size: var(--text-2xl);
+      margin-bottom: var(--sp-4);
+    }
+    .section-lead {
+      font-size: var(--text-lg);
+      color: var(--fg-2);
+      max-width: 54ch;
+      line-height: 1.6;
+      margin-bottom: var(--sp-8);
+    }
+    /* h3 after lead needs breathing room */
+    .section h3 {
+      font-size: var(--text-xl);
+      margin-bottom: var(--sp-3);
+      margin-top: var(--sp-10);
+    }
+    .section h3:first-of-type { margin-top: var(--sp-12); }
+    .section p { color: var(--fg-2); max-width: 62ch; }
+    .section p + p { margin-top: var(--sp-4); }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: var(--fg);
+      color: #e8ddd4;
+      padding: var(--sp-6);
+      border-radius: var(--r-lg);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.65;
+      overflow-x: auto;
+      margin-top: var(--sp-6);
+    }
+    .code-block pre { margin: 0; }
+    .c-dim { color: #7a6d63; }
+    .c-key { color: #c9822f; }
+    .c-str { color: #8aad8a; }
+    .c-acc { color: #d4956a; }
+    .c-ok  { color: #6aad6a; }
+    .c-err { color: #c97070; }
+
+    /* ── Code tabs ── */
+    .code-tabs { display: flex; gap: var(--sp-1); margin-top: var(--sp-8); }
+    .code-tab {
+      padding: 6px 14px;
+      font-family: var(--font-mono); font-size: 12px;
+      border-radius: var(--r-sm) var(--r-sm) 0 0;
+      border: 1px solid var(--border); border-bottom: none;
+      background: var(--surface); color: var(--muted);
+      cursor: pointer;
+      transition: color var(--t-fast) var(--ease-std), background var(--t-fast) var(--ease-std);
+    }
+    .code-tab:hover:not(.is-active) { color: var(--fg-2); background: var(--surface-warm); }
+    .code-tab.is-active { background: var(--fg); color: #e8ddd4; border-color: var(--fg); }
+    .code-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .code-tab-panel { display: none; }
+    .code-tab-panel.is-active { display: block; }
+    .code-tab-panel .code-block { border-radius: 0 var(--r-lg) var(--r-lg) var(--r-lg); margin-top: 0; }
+
+    /* ── Flow list (resolution layers) ── */
+    .flow-list {
+      margin-top: var(--sp-8);
+      display: flex; flex-direction: column;
+    }
+    .flow-item {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: var(--sp-4);
+      padding: var(--sp-5) 0;
+      border-bottom: 1px solid var(--border-soft);
+      align-items: start;
+    }
+    .flow-item:last-child { border-bottom: none; }
+    .flow-num {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      padding-top: 3px;
+    }
+    .flow-item strong {
+      display: block;
+      font-size: var(--text-lg);
+      font-weight: 600;
+      margin-bottom: var(--sp-1);
+    }
+    .flow-path {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--muted);
+    }
+
+    /* ── Defaults grid ── */
+    .defaults-list {
+      margin-top: var(--sp-8);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-10) var(--sp-12);
+    }
+    .di-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: var(--sp-2);
+      display: block;
+    }
+    .default-item h3 {
+      font-size: var(--text-base);
+      font-weight: 700;
+      margin: 0 0 var(--sp-2);
+      /* override section h3 spacing — these are grid items, not flow headings */
+      margin-top: 0 !important;
+    }
+    .default-item p { font-size: var(--text-sm); color: var(--muted); }
+
+    /* ── Command list ── */
+    .cmd-list { margin-top: var(--sp-8); display: flex; flex-direction: column; }
+    .cmd-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-4);
+      align-items: baseline;
+      padding: var(--sp-4) 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .cmd-row:last-child { border-bottom: none; }
+    .cmd-row code { font-size: var(--text-sm); }
+    .cmd-desc { font-size: var(--text-sm); color: var(--muted); }
+
+    /* ── Setup steps ── */
+    .setup-steps { margin-top: var(--sp-8); counter-reset: step; }
+    .setup-step {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: var(--sp-5);
+      padding: var(--sp-6) 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .setup-step:last-child { border-bottom: none; }
+    .setup-step::before {
+      content: counter(step);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--muted);
+      padding-top: 5px;
+    }
+    .setup-step h3 {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      margin: 0 0 var(--sp-2);
+      margin-top: 0 !important;
+    }
+    .setup-step p { font-size: var(--text-sm); color: var(--muted); }
+
+    /* ── Footer ── */
+    .site-footer {
+      margin-left: calc(var(--sidebar-w) + 32px);
+      border-top: 1px solid var(--border);
+      padding: var(--sp-12);
+      display: grid;
+      grid-template-columns: 1fr 180px;
+      gap: var(--sp-8);
+      align-items: start;
+    }
+    .footer-brand {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      font-weight: 700;
+      margin-bottom: var(--sp-2);
+    }
+    .footer-tagline { font-size: var(--text-sm); color: var(--muted); max-width: 38ch; }
+    .footer-links { display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-end; }
+    .footer-links a {
+      font-family: var(--font-mono); font-size: 12px; color: var(--muted);
+      transition: color var(--t-fast);
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-meta {
+      margin-top: var(--sp-8); padding-top: var(--sp-4);
+      border-top: 1px solid var(--border-soft);
+      font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+      display: flex; justify-content: space-between;
+      grid-column: 1 / -1;
+    }
+
+    /* ── Reveal animation ── */
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal {
+        opacity: 0;
+        transform: translateY(16px);
+        transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+      }
+      .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .docs-main { margin-left: 0; padding-inline: var(--sp-6); }
+      .site-footer { margin-left: 0; padding-inline: var(--sp-6); grid-template-columns: 1fr; }
+      .defaults-list { grid-template-columns: 1fr; }
+      .cmd-row { grid-template-columns: 1fr; gap: var(--sp-1); }
+    }
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 40px; }
+      .hero-actions { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+      .section--loose { padding-top: var(--sp-20); padding-bottom: var(--sp-20); }
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <span class="logo-text">AFK Field Kit</span>
+    </div>
+    <nav aria-label="Documentation">
+      <ul class="nav-list" id="nav-list">
+        <div class="nav-pill" id="nav-pill" aria-hidden="true"></div>
+        <li><a href="#hero"       class="nav-link is-active" data-section="hero">The Kit</a></li>
+        <li><a href="#resolution" class="nav-link" data-section="resolution">Resolution Engine</a></li>
+        <li><a href="#manifest"   class="nav-link" data-section="manifest">Manifest Authoring</a></li>
+        <li><a href="#defaults"   class="nav-link" data-section="defaults">Built-in Defaults</a></li>
+        <li><a href="#commands"   class="nav-link" data-section="commands">Command Surface</a></li>
+        <li><a href="#setup"      class="nav-link" data-section="setup">Machine Setup</a></li>
+      </ul>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://github.com/logbookfordevs/ai-field-kit" target="_blank" rel="noopener">
+        <span>v0.5.1 · STABLE</span><span>GitHub ↗</span>
+      </a>
+    </div>
+  </aside>
+
+  <main class="docs-main">
+
+    <section id="hero" class="hero reveal" data-od-id="hero">
+      <span class="hero-kicker">AI Field Kit</span>
+      <h1>Curated patterns for <em>autonomous</em> coding.</h1>
+      <p class="hero-lead">AFK is not a framework. It is a set of resolution rules that shape how your coding agents behave, what skills they possess, and how they perceive your local project standards.</p>
+      <div class="hero-actions">
+        <a href="#setup" class="btn btn-primary">Setup Machine</a>
+        <a href="#resolution" class="btn btn-secondary">How it Works</a>
+      </div>
+    </section>
+
+    <section id="resolution" class="section section--loose reveal" data-od-id="resolution">
+      <span class="section-label">Core Logic</span>
+      <h2>The Resolution Engine.</h2>
+      <p class="section-lead">AFK merges manifest files from three distinct layers. Global defaults, user preferences, and project-local rules — each overriding the last.</p>
+      <div class="flow-list">
+        <div class="flow-item">
+          <span class="flow-num">1</span>
+          <div><strong>Local Layer</strong><span class="flow-path">./.afk/manifests/</span></div>
+        </div>
+        <div class="flow-item">
+          <span class="flow-num">2</span>
+          <div><strong>User Layer</strong><span class="flow-path">~/.afk/manifests/</span></div>
+        </div>
+        <div class="flow-item">
+          <span class="flow-num">3</span>
+          <div><strong>Global Layer</strong><span class="flow-path">@logbookfordevs/ai-field-kit</span></div>
+        </div>
+      </div>
+      <h3>Precedence Rule</h3>
+      <p>The <strong>Local Layer</strong> always wins. A rule in your project's <code>.afk/</code> folder completely overrides any matching rule in your home directory or the AFK defaults. This is how you enforce project-specific architectures without polluting your global setup.</p>
+    </section>
+
+    <section id="manifest" class="section section--tight reveal" data-od-id="manifest">
+      <span class="section-label">Masterclass</span>
+      <h2>Authoring your first manifest.</h2>
+      <p class="section-lead">A manifest is a JSON object that declares four types of assets: rules, skills, MCPs, and utilities.</p>
+      <div class="code-tabs" id="manifest-tabs" role="tablist">
+        <button class="code-tab is-active" role="tab" aria-selected="true"  aria-controls="panel-rules"  data-panel="rules">rules.json</button>
+        <button class="code-tab"           role="tab" aria-selected="false" aria-controls="panel-skills" data-panel="skills">skills.json</button>
+        <button class="code-tab"           role="tab" aria-selected="false" aria-controls="panel-mcps"   data-panel="mcps">mcps.json</button>
+      </div>
+      <div class="code-tab-panel is-active" id="panel-rules" role="tabpanel">
+        <div class="code-block"><pre><span class="c-dim">{</span>
+  <span class="c-key">"rules"</span>: [
+    <span class="c-dim">{</span>
+      <span class="c-key">"id"</span>: <span class="c-str">"react-patterns"</span>,
+      <span class="c-key">"target"</span>: [<span class="c-str">"clauderc"</span>, <span class="c-str">"gemini"</span>],
+      <span class="c-key">"content"</span>: <span class="c-str">"Always use functional components..."</span>
+    <span class="c-dim">}</span>
+  ]
+<span class="c-dim">}</span></pre></div>
+      </div>
+      <div class="code-tab-panel" id="panel-skills" role="tabpanel">
+        <div class="code-block"><pre><span class="c-dim">{</span>
+  <span class="c-key">"skills"</span>: [
+    <span class="c-str">"afk-deep-interview"</span>,
+    <span class="c-str">"afk-coding-tradeoffs"</span>,
+    <span class="c-str">"afk-execution-tracking"</span>
+  ]
+<span class="c-dim">}</span></pre></div>
+      </div>
+      <div class="code-tab-panel" id="panel-mcps" role="tabpanel">
+        <div class="code-block"><pre><span class="c-dim">{</span>
+  <span class="c-key">"mcps"</span>: [
+    <span class="c-dim">{</span>
+      <span class="c-key">"id"</span>: <span class="c-str">"stitch-mcp"</span>,
+      <span class="c-key">"args"</span>: [<span class="c-str">"--port"</span>, <span class="c-str">"63162"</span>]
+    <span class="c-dim">}</span>
+  ]
+<span class="c-dim">}</span></pre></div>
+      </div>
+      <h3>Keep rules atomic</h3>
+      <p>Don't create massive rules. Keep them focused: <code>testing-standards.md</code>, <code>error-handling.md</code>. Atomic rules are easier to mix and match across project types.</p>
+    </section>
+
+    <section id="defaults" class="section reveal" data-od-id="defaults">
+      <h2>Standard AFK Defaults.</h2>
+      <p class="section-lead">Out of the box, AFK ships high-leverage configurations for the modern stack. Battle-tested patterns from the Logbook team.</p>
+      <div class="defaults-list">
+        <div class="default-item">
+          <span class="di-tag">Vibe-First</span>
+          <h3>Standard Rules</h3>
+          <p>Tailored instructions for <code>claude-code</code> and <code>gemini-cli</code> that prioritize idiomatic code over AI slop.</p>
+        </div>
+        <div class="default-item">
+          <span class="di-tag">AFK-*</span>
+          <h3>Essential Skills</h3>
+          <p>The Big Three: <code>afk-deep-interview</code>, <code>afk-coding-tradeoffs</code>, and <code>afk-execution-tracking</code>.</p>
+        </div>
+        <div class="default-item">
+          <span class="di-tag">Context-Rich</span>
+          <h3>Curated MCPs</h3>
+          <p>Native integrations for Stitch, Notion, and GitHub that expand your agent's peripheral vision.</p>
+        </div>
+        <div class="default-item">
+          <span class="di-tag">Safe-Ops</span>
+          <h3>Utility Wrappers</h3>
+          <p>Smart proxies like <code>rtk</code> (Rust Token Killer) to save context budget during dev ops.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="commands" class="section section--tight reveal" data-od-id="commands">
+      <h2>Command Surface.</h2>
+      <p class="section-lead">The AFK CLI is your primary tool for syncing state and authoring manifests.</p>
+      <div class="cmd-list">
+        <div class="cmd-row">
+          <code>afk setup</code>
+          <p class="cmd-desc">Full interactive environment initialization</p>
+        </div>
+        <div class="cmd-row">
+          <code>afk manifests configure --local</code>
+          <p class="cmd-desc">Create a project-local manifest structure</p>
+        </div>
+        <div class="cmd-row">
+          <code>afk setup rules sync --dry-run</code>
+          <p class="cmd-desc">Preview what files will be modified before committing</p>
+        </div>
+        <div class="cmd-row">
+          <code>afk info</code>
+          <p class="cmd-desc">Show your fully resolved environment and active layers</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="setup" class="section section--loose reveal" data-od-id="setup">
+      <span class="section-label">Installation</span>
+      <h2>Machine Setup.</h2>
+      <p class="section-lead">Designed to be a zero-install experience for most developers. One command, three choices, done.</p>
+      <div class="setup-steps">
+        <div class="setup-step">
+          <div>
+            <h3>Install the CLI</h3>
+            <div class="code-block" style="margin-top:12px"><pre><span class="c-acc">curl</span> -sSL afk.run | bash</pre></div>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div>
+            <h3>Choose your profile</h3>
+            <p>AFK will ask if you want <strong>Minimal</strong>, <strong>Standard</strong>, or <strong>Full</strong>. Standard is the right choice for most developers.</p>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div>
+            <h3>Verify the environment</h3>
+            <div class="code-block" style="margin-top:12px"><pre><span class="c-acc">afk</span> info
+
+<span class="c-ok">✓</span> CLI installed to /usr/local/bin
+<span class="c-ok">✓</span> Home manifest initialized
+<span class="c-ok">✓</span> ZSH alias 'afk' created
+<span class="c-dim">Layers: Global, User · Skills: 12 installed</span></pre></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div>
+      <div class="footer-brand">AFK Field Kit</div>
+      <p class="footer-tagline">Curated resolution rules and skills for autonomous coding agents. Built by Logbook for Devs.</p>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/logbookfordevs/ai-field-kit" target="_blank" rel="noopener">GitHub ↗</a>
+      <a href="https://logbookfordevs.com" target="_blank" rel="noopener">Logbook for Devs ↗</a>
+      <a href="#setup">Get Started</a>
+    </div>
+    <div class="footer-meta">
+      <span>v0.5.1 · STABLE</span>
+      <span>© 2026 Logbook for Devs</span>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    // ── Nav pill: tracks active link ──────────────────────────────────────
+    const navList = document.getElementById('nav-list');
+    const pill    = document.getElementById('nav-pill');
+
+    function movePill(link) {
+      const listRect = navList.getBoundingClientRect();
+      const linkRect = link.getBoundingClientRect();
+      pill.style.top    = (linkRect.top  - listRect.top)  + 'px';
+      pill.style.height = linkRect.height + 'px';
+    }
+
+    const activeLink = navList.querySelector('.nav-link.is-active');
+    if (activeLink) {
+      pill.style.transition = 'none';
+      movePill(activeLink);
+      requestAnimationFrame(() => { pill.style.transition = ''; });
+    }
+
+    // ── Scroll spy ────────────────────────────────────────────────────────
+    const sections = Array.from(document.querySelectorAll('[data-od-id]'));
+    const navLinks = Array.from(navList.querySelectorAll('.nav-link'));
+
+    function onScroll() {
+      const mid = window.scrollY + window.innerHeight * 0.35;
+      let current = sections[0];
+      for (const s of sections) {
+        if (s.offsetTop <= mid) current = s;
+      }
+      navLinks.forEach(l => {
+        const active = l.dataset.section === current.id;
+        l.classList.toggle('is-active', active);
+        if (active) movePill(l);
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // ── Code tabs ─────────────────────────────────────────────────────────
+    document.querySelectorAll('.code-tabs').forEach(tabGroup => {
+      tabGroup.addEventListener('click', e => {
+        const tab = e.target.closest('.code-tab');
+        if (!tab) return;
+        const panelId = 'panel-' + tab.dataset.panel;
+        const container = tabGroup.parentElement;
+
+        tabGroup.querySelectorAll('.code-tab').forEach(t => {
+          t.classList.remove('is-active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        container.querySelectorAll('.code-tab-panel').forEach(p => p.classList.remove('is-active'));
+
+        tab.classList.add('is-active');
+        tab.setAttribute('aria-selected', 'true');
+        const panel = document.getElementById(panelId);
+        if (panel) panel.classList.add('is-active');
+      });
+    });
+
+    // ── Reveal on scroll (enhancement — content visible without it) ───────
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!prefersReduced && typeof gsap !== 'undefined') {
+      const reveals = document.querySelectorAll('.reveal');
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            gsap.to(entry.target, {
+              opacity: 1, y: 0,
+              duration: 0.55,
+              ease: 'power2.out',
+              clearProps: 'transform'
+            });
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.08 });
+
+      reveals.forEach(el => observer.observe(el));
+    } else {
+      // Ensure content is visible when motion is reduced or GSAP unavailable
+      document.querySelectorAll('.reveal').forEach(el => {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+      });
+    }
+  </script>
+</body>
+</html>

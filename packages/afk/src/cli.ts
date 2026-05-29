@@ -24,6 +24,7 @@ import type {
   SkillOpenApp,
   SkillsListScope,
   SkillsUpgradeScope,
+  SkillAgentId,
 } from "./types.js";
 
 export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
@@ -529,6 +530,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const commandPath = readCommandPath(args);
   const key = commandKey(commandPath);
   const agents: AgentId[] = [];
+  const selectedSkillAgentIds: SkillAgentId[] = [];
   let dryRun = false;
   let yes = false;
   let setupScope: SetupScope = "global";
@@ -562,7 +564,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const homeDir = resolveHome(env);
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
-  const isSkillsCommand = commandPath[0] === "skills";
+  const isAfkSkillsCommand = commandPath[0] === "skills";
 
   if (args.includes("--version") || args.includes("-v")) {
     return { version: true, help: false };
@@ -600,7 +602,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--json") {
+    if (isAfkSkillsCommand && arg === "--json") {
       skillsJson = true;
       continue;
     }
@@ -628,7 +630,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--scope") {
       const value = args[index + 1];
-      if (isSkillsCommand) {
+      if (isAfkSkillsCommand) {
         if (commandPath[1] === "upgrade") {
           if (value !== "global" && value !== "project" && value !== "all") {
             return { help: false, kind: "error", error: `Invalid --scope value: ${value ?? "(missing)"}` };
@@ -660,7 +662,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--all") {
+    if (isAfkSkillsCommand && arg === "--all") {
       if (commandPath[1] !== "upgrade") {
         return { help: false, kind: "error", error: "Unknown option: --all" };
       }
@@ -708,9 +710,26 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (arg === "--agent") {
+    if (arg === "--agent" || arg === "-a") {
+      if (isSetupSkillsCommand(key)) {
+        const values = readOptionValues(args, index + 1);
+        if (values.length === 0) {
+          return { help: false, kind: "error", error: "Missing --agent value" };
+        }
+
+        for (const value of values) {
+          if (!isSkillAgentId(value)) {
+            return { help: false, kind: "error", error: `Invalid --agent value for skills: ${value}` };
+          }
+          selectedSkillAgentIds.push(value);
+        }
+
+        index += values.length;
+        continue;
+      }
+
       const value = args[index + 1];
-      if (isSkillsCommand) {
+      if (isAfkSkillsCommand) {
         if (!value || !isManagedSkillAgent(value)) {
           return { help: false, kind: "error", error: `Invalid --agent value: ${value ?? "(missing)"}` };
         }
@@ -728,7 +747,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--category") {
+    if (isAfkSkillsCommand && arg === "--category") {
       const value = args[index + 1];
       if (!value) {
         return { help: false, kind: "error", error: "Missing --category value" };
@@ -738,7 +757,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--tag") {
+    if (isAfkSkillsCommand && arg === "--tag") {
       const value = args[index + 1];
       if (!value) {
         return { help: false, kind: "error", error: "Missing --tag value" };
@@ -748,7 +767,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--platform") {
+    if (isAfkSkillsCommand && arg === "--platform") {
       const value = args[index + 1];
       if (!value) {
         return { help: false, kind: "error", error: "Missing --platform value" };
@@ -758,22 +777,22 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--uncategorized") {
+    if (isAfkSkillsCommand && arg === "--uncategorized") {
       skillsUncategorized = true;
       continue;
     }
 
-    if (isSkillsCommand && arg === "--file") {
+    if (isAfkSkillsCommand && arg === "--file") {
       skillOpenTarget = "file";
       continue;
     }
 
-    if (isSkillsCommand && arg === "--folder") {
+    if (isAfkSkillsCommand && arg === "--folder") {
       skillOpenTarget = "folder";
       continue;
     }
 
-    if (isSkillsCommand && arg === "--app") {
+    if (isAfkSkillsCommand && arg === "--app") {
       const value = args[index + 1];
       if (!value || !isSkillOpenApp(value)) {
         return { help: false, kind: "error", error: `Invalid --app value: ${value ?? "(missing)"}` };
@@ -783,7 +802,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--agent-metadata") {
+    if (isAfkSkillsCommand && arg === "--agent-metadata") {
       const value = args[index + 1];
       if (value !== "codex") {
         return { help: false, kind: "error", error: `Invalid --agent-metadata value: ${value ?? "(missing)"}` };
@@ -793,7 +812,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--mode") {
+    if (isAfkSkillsCommand && arg === "--mode") {
       const value = args[index + 1];
       if (value !== "append-missing" && value !== "recategorize-all") {
         return { help: false, kind: "error", error: `Invalid --mode value: ${value ?? "(missing)"}` };
@@ -803,7 +822,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--runner") {
+    if (isAfkSkillsCommand && arg === "--runner") {
       const value = args[index + 1];
       if (value !== "codex-exec") {
         return { help: false, kind: "error", error: `Invalid --runner value: ${value ?? "(missing)"}` };
@@ -813,7 +832,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isSkillsCommand && arg === "--instruction") {
+    if (isAfkSkillsCommand && arg === "--instruction") {
       const value = args[index + 1];
       if (!value) {
         return { help: false, kind: "error", error: "Missing --instruction value" };
@@ -838,6 +857,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       yes,
       includeExternal,
       selectedSkillIds: [],
+      selectedSkillAgentIds,
       selectedMcpIds: [],
       selectedUtilIds: [],
       selectedHookIds: [],
@@ -913,6 +933,27 @@ function commandToArea(commandPath: string[]): Area | null {
   }
 
   return null;
+}
+
+function isSetupSkillsCommand(key: string): boolean {
+  return key === "setup skills" || key === "setup skills install";
+}
+
+function isSkillAgentId(value: string): value is SkillAgentId {
+  return value === "claude-code" || value === "kiro-cli" || value === "kilo" || value === "pi" || value === "droid";
+}
+
+function readOptionValues(args: string[], startIndex: number): string[] {
+  const values: string[] = [];
+  for (let index = startIndex; index < args.length; index += 1) {
+    const value = args[index];
+    if (!value || value.startsWith("-")) {
+      break;
+    }
+    values.push(value);
+  }
+
+  return values;
 }
 
 function spawnCommand(command: string, args: string[], cwd?: string): Promise<CommandResult> {

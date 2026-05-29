@@ -158,9 +158,11 @@ symlink behavior. When `autoInvocation` is false, AFK adds Claude Code
 `allow_implicit_invocation: false` policy metadata after the official install.
 
 Utilities are curated developer tools AFK can install by delegating to their
-official install scripts. V1 includes Plannotator for plan review loops and RTK
-for token-light command output. When RTK is selected, AFK follows up with
-agent-specific `rtk init` commands for the selected AFK targets. In global
+official install scripts. V1 includes Plannotator for plan review loops, RTK
+for token-light command output, Yggtree for git worktree workflows, and
+Impeccable's Codex-tailored frontend design skill. When RTK is selected, AFK
+follows up with agent-specific `rtk init` commands for the selected AFK targets.
+In global
 scope, Codex is initialized from `~/.codex` so RTK lands in the global Codex
 rules location instead of the current project, and Antigravity/Agy uses RTK's
 Gemini compatibility initializer because Antigravity still consumes the global

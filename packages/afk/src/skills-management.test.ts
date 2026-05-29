@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import { test } from "vitest";
 import {
   afkSkillsTaxonomyFileName,
   filterSkillRecords,
@@ -611,6 +611,7 @@ function baseOptions(root: string) {
     yes: false,
     includeExternal: false,
     selectedSkillIds: [],
+    selectedSkillAgentIds: [],
     selectedMcpIds: [],
     selectedUtilIds: [],
     selectedHookIds: [],

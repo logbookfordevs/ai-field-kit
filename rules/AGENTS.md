@@ -1,11 +1,7 @@
 # Documentation Instructions
-Documentation should be treated as a **product**, not an obligation.
-- Optimize for the **reader's experience** (clarity over completeness).
-- Prefer **journeys and real scenarios** over feature dumps.
-- Use **progressive disclosure** (quick win first, details later).
-- Keep a **human tone** and anticipate common frustrations.
+When the task is explicitly about writing, rewriting, restructuring, or reviewing docs, use the **`afk-doc-craft` skill**.
 
-When the task is explicitly about writing docs, use the **`afk-doc-craft` skill**.
+Treat docs as reader-facing product work; let the skill provide the detailed writing doctrine.
 
 # Library Preferences
 
@@ -43,8 +39,8 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 - Focus on checking commands like typecheck or lint.
 
 ## Worktrees
-- When creating or managing git worktrees, prefer the `yggtree` CLI via `npx yggtree`.
-- Use `npx yggtree --help` to inspect the available workflow before choosing commands.
+- When creating or managing git worktrees, prefer the installed `yggtree` CLI.
+- Use `yggtree --help` to inspect the available workflow before choosing commands.
 
 ## Package Managers
 - Use pnpm if the project already uses it. Prefer pnpm in new projects.
@@ -53,10 +49,9 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 When uncertain, prefer: Tailwind, TypeScript, React.
 
 ## Frontend UX Defaults
-- UX quality beats avoiding setup work. Do not ship visibly worse interactions just to avoid adding a well-fit library, registry, config, or component primitive.
-- For navigation, drawers, sidebars, command menus, forms, tables, modals, and other established UI patterns, prefer mature primitives or registry components over ad hoc rebuilds when they materially improve UX, accessibility, responsiveness, or interaction quality.
-- In React/Tailwind projects, consider shadcn/ui and other community registries early when a standard app primitive is needed. If the repo is not yet configured, compare setup cost against the UX cost of a custom workaround; do not reject the registry only because setup is required.
-- Mobile is not a degraded version of desktop. Replace cramped, wrapped, clipped, or awkward controls with a proper responsive pattern such as a drawer, sheet, sidebar, menu, or command surface.
+- UX quality beats avoiding setup. For standard app primitives in React/Tailwind, use the **`afk-ui-registry-preferences` skill** before choosing custom UI or a registry.
+- Prefer mature primitives or registry components when they materially improve UX, accessibility, responsiveness, or interaction quality.
+- Mobile is not degraded desktop; replace cramped, wrapped, clipped, or awkward controls with proper responsive patterns.
 
 ## Coding Style Instructions
 Keep code: Readable, Maintainable, Easy to onboard into. DX is always important.
@@ -80,3 +75,6 @@ _Remember: your role is to be a critical thinking partner who also values code t
 
 ## Dictionary
 - Team of agents/multi agents = spawn sub-agents/child agents
+- Users/developers = people using the product or tooling being built; do not assume they are the agent reading the file or that they will read implementation code.
+- Just/focus just on = this is a hard scope limiter. Do the narrowed request only; do not widen into adjacent cleanup, refactors, docs, or “while I’m here” improvements unless asked.
+- CLI/MCP/hooks/plugins/agent config = different integration surfaces, not interchangeable names for “tool setup.” Before recommending one, compare capability, automation behavior, ownership, token/context overhead, and install friction.

@@ -15,6 +15,12 @@ function main() {
   }
 
   const cwd = typeof input.cwd === "string" && input.cwd ? input.cwd : process.cwd();
+  const marker = readActiveTrackingMarker(cwd);
+  if (!marker) {
+    clearSentinel(cwd);
+    return allow();
+  }
+
   const status = git(cwd, ["status", "--porcelain", "--untracked-files=all"]);
   if (!status.ok) {
     return allow();
@@ -23,12 +29,6 @@ function main() {
   const paths = parseStatusPaths(status.stdout);
   const implementationPaths = paths.filter(isImplementationPath);
   if (implementationPaths.length === 0) {
-    clearSentinel(cwd);
-    return allow();
-  }
-
-  const marker = readActiveTrackingMarker(cwd);
-  if (!marker) {
     clearSentinel(cwd);
     return allow();
   }

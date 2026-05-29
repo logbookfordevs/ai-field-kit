@@ -7,6 +7,8 @@ export type AgentId =
   | "cursor-local"
   | "opencode";
 
+export type SkillAgentId = "claude-code" | "kiro-cli" | "kilo" | "pi" | "droid";
+
 export type Area = "rules" | "skills" | "mcps" | "utils" | "hooks";
 export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "agent" | "all";
@@ -42,6 +44,7 @@ export type CliOptions = {
   yes: boolean;
   includeExternal: boolean;
   selectedSkillIds: string[];
+  selectedSkillAgentIds: SkillAgentId[];
   selectedMcpIds: string[];
   selectedUtilIds: string[];
   selectedHookIds: string[];

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "afk-homepage-direction.html",
+  "entry": "afk-homepage-direction.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-05-29T11:21:02.978Z",
+  "updatedAt": "2026-05-29T11:21:02.978Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

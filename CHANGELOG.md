@@ -11,6 +11,9 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+- `cli:` added a compact additional-agent prompt for skill installs that explains `.agents/skills` as always included, then passes selected Claude Code, Kiro CLI, Kilo Code, Pi, and Droid targets through to the official `skills` CLI with `--agent`, including noninteractive `afk setup skills --yes --agent ...` runs.
+- `repo:` migrated AFK CLI tests from Node's built-in test runner to Vitest and added GitHub Actions CI for AFK typecheck, AFK tests, and the site production build.
+
 ## v0.5.2 - 2026-05-27
 
 - `cli:` changed global rules sync to merge the AFK managed region into each agent's own rule file instead of replacing Codex, Antigravity/Agy, or OpenCode hosts with symlinks.

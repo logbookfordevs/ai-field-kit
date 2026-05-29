@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import test from "node:test";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { test } from "vitest";
 import { isPromptExit, runCli } from "./cli.js";
+import { localManifestDir } from "./manifest.js";
 
 test("runCli prints package version for version flags", async () => {
   const output: string[] = [];
@@ -80,6 +83,40 @@ test("runCli prints contextual area help", async () => {
   assert.ok(text.includes("--agent <agent>                   Limit agent targets; repeatable"));
   assert.ok(text.includes("--defaults-source <source>        Use and remember a custom remote or local defaults source"));
   assert.ok(!text.includes("AFK setup skills"));
+});
+
+test("runCli accepts skills CLI agent targets for noninteractive skill installs", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "afk-note",
+          label: "AFK / Note",
+          source: "https://github.com/logbookfordevs/ai-field-kit",
+          args: ["--skill", "afk-note"],
+          default: true,
+          autoInvocation: true,
+        },
+      ],
+    },
+    "mcps.json": { version: 1, items: [] },
+    "presets.json": { version: 1, defaultsSource: "", presets: [] },
+    "rules.json": { version: 1, source: "github", url: "" },
+    "utils.json": { version: 1, items: [] },
+    "hooks.json": { version: 1, items: [] },
+  });
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(
+    ["setup", "skills", "--dry-run", "--yes", "--agent", "claude-code"],
+    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+  ));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("$ npx skills add https://github.com/logbookfordevs/ai-field-kit"));
+  assert.ok(text.includes("--agent claude-code"));
 });
 
 test("runCli keeps old area command forms as aliases", async () => {
@@ -212,4 +249,14 @@ async function withConsole(output: string[], fn: () => Promise<number>): Promise
     console.log = originalLog;
     console.error = originalError;
   }
+}
+
+function localHomeWithManifests(manifests: Record<string, unknown>): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-cli-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  for (const [name, content] of Object.entries(manifests)) {
+    writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
+  }
+  return homeDir;
 }

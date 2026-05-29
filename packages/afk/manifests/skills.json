@@ -267,6 +267,30 @@
       "autoInvocation": false
     },
     {
+      "id": "cmux",
+      "label": "External / cmux",
+      "source": "https://github.com/manaflow-ai/cmux",
+      "args": [
+        "--skill",
+        "cmux",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": true
+    },
+    {
+      "id": "tmux",
+      "label": "External / tmux",
+      "source": "https://github.com/steipete/clawdis",
+      "args": [
+        "--skill",
+        "tmux",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": true
+    },
+    {
       "id": "afk-cinematic-landing-page-builder",
       "label": "AFK / Cinematic Landing Page Builder",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
