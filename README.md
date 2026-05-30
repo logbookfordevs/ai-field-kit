@@ -332,9 +332,25 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill code-simplification`  
   Apply Chesterton's Fence, Rule of 500, and simplification heuristics to reduce complexity without changing behavior.
 
+- **Write a Skill (Matt Pocock Skills)**  
+  Install: `npx skills add https://github.com/mattpocock/skills --skill write-a-skill`  
+  Use when you are creating or refining a skill and want the small, composable style: clear trigger metadata, concise `SKILL.md`, one-level references, and scripts only when they reduce repeated fragile work. This pairs well with AFK because it keeps new skills sharp instead of turning every preference into a framework.
+
 - **Grill With Docs (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
   Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. It complements `afk-coding-tradeoffs`: use trade-offs first when decisions are fuzzy, and Grill With Docs first when domain language is fuzzy.
+
+- **To Issues (Matt Pocock Skills)**  
+  Install: `npx skills add https://github.com/mattpocock/skills --skill to-issues`  
+  Use after the PRD/spec and implementation plan are shaped. It turns the plan into thin, independently grabbable issue-tracker slices, so Linear or GitHub follows the workflow instead of driving it.
+
+- **Setup Matt Pocock Skills (Matt Pocock Skills)**  
+  Install: `npx skills add https://github.com/mattpocock/skills --skill setup-matt-pocock-skills`  
+  Run once per repo when Matt's issue-tracker skills need context about where issues live, which triage labels to use, and where domain docs or ADRs are stored. This supports `to-issues` without making setup scaffolding part of the default workflow.
+
+- **Prototype (Matt Pocock Skills)**  
+  Install: `npx skills add https://github.com/mattpocock/skills --skill prototype`  
+  Use when a decision needs a throwaway artifact before production work: a tiny terminal prototype for state or business logic, or several UI variations on one route for front-end direction. This can pair with Impeccable for FE work when you want quick prototype learning without opening a separate design tool.
 
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  

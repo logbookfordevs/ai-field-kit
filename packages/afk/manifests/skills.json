@@ -243,6 +243,18 @@
       "autoInvocation": true
     },
     {
+      "id": "write-a-skill",
+      "label": "External / Write a Skill",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "write-a-skill",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
+    },
+    {
       "id": "grill-with-docs",
       "label": "External / Grill With Docs",
       "source": "https://github.com/mattpocock/skills",
@@ -253,6 +265,42 @@
       ],
       "default": false,
       "autoInvocation": true
+    },
+    {
+      "id": "to-issues",
+      "label": "External / To Issues",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "to-issues",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
+    },
+    {
+      "id": "prototype",
+      "label": "External / Prototype",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "prototype",
+        "--global"
+      ],
+      "default": true,
+      "autoInvocation": true
+    },
+    {
+      "id": "setup-matt-pocock-skills",
+      "label": "External / Setup Matt Pocock Skills",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "setup-matt-pocock-skills",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": false
     },
     {
       "id": "handoff",
