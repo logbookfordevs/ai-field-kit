@@ -24,7 +24,7 @@ Do not use this skill for tiny one-shot edits unless the user asks for tracking.
 
 ## Storage
 
-Create or update one canonical tracking index plus checkpoint files.
+Create or update one canonical tracking index plus the active checkpoint file.
 
 Follow the repo or user artifact convention. If none exists, use the AFK workflow default:
 
@@ -59,7 +59,18 @@ Write or update it when creating or resuming tracking, and when the active check
 }
 ```
 
-The canonical file contains the current snapshot, task ledger, next action, and links to checkpoint files. Open the current checkpoint file by default. Open previous checkpoint files only when the current task references them or code/context is not enough.
+The canonical file contains the current snapshot, task ledger, next action, and links to available checkpoint files. Open the current checkpoint file by default. Open previous checkpoint files only when the current task references them or code/context is not enough.
+
+## Active Slice First
+
+When preparing execution tracking:
+
+- Create the tracking index.
+- Create `.afk/execution-tracking/current.json`.
+- Create a detailed checkpoint file only for the active slice.
+- Keep future slices as index rows until they start.
+- Pre-create future checkpoint files only for scaffold mode, parallel work, locked plans, or known blockers.
+- If future files are created early, keep them skeletal and mark them as placeholders.
 
 ## Statuses
 
@@ -125,7 +136,7 @@ Keep the canonical `.tracking.md` short. It is an index for the current dashboar
 
 - `Resume Context`: what a fresh agent needs to know before continuing
 - `Current Snapshot`: active task, status, review gates, blockers, and whether work is paused
-- `Task Ledger`: compact table with each task, status, last update, one-line notes, and a link to the checkpoint file
+- `Task Ledger`: compact table with each task, status, last update, one-line notes, and a checkpoint link when the file exists
 - `Next Action`: the single next move
 
 Put task-specific detail inside the matching checkpoint file instead of appending it to the canonical index. The invariant is where the information lives, not an exact heading template.
