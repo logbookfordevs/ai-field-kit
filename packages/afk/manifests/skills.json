@@ -275,7 +275,7 @@
         "to-issues",
         "--global"
       ],
-      "default": true,
+      "default": false,
       "autoInvocation": true
     },
     {
