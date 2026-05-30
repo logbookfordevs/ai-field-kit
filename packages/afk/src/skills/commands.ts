@@ -1,6 +1,7 @@
 import { confirm, input, search } from "@inquirer/prompts";
 import { join } from "node:path";
-import { afkPromptTheme, afkSearchTheme, renderPromptStep } from "../prompt-ui.js";
+import { afkPromptTheme, afkSearchableCheckboxTheme, afkSearchTheme, renderPromptStep } from "../prompt-ui.js";
+import { searchableCheckbox } from "../searchable-checkbox.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
@@ -10,7 +11,7 @@ import {
   moveGlobalSkill,
   renameCodexSkillMetadata,
   renameGlobalSkill,
-  trashGlobalSkill,
+  trashGlobalSkills,
   type SkillRecord,
 } from "./catalog.js";
 import { runCodexCategorization } from "./categorization.js";
@@ -21,7 +22,7 @@ import {
   renderSkillMove,
   renderSkillOpen,
   renderSkillRename,
-  renderSkillTrash,
+  renderSkillTrashBatch,
 } from "./render.js";
 import {
   buildSkillUpgradeCommands,
@@ -140,26 +141,6 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
   return 0;
 }
 
-function filterLockedSkillChoices(records: LockedSkillRecord[], term: string | undefined): LockedSkillRecord[] {
-  const tokens = term?.trim().toLowerCase().split(/\s+/).filter(Boolean) ?? [];
-  if (tokens.length === 0) {
-    return records;
-  }
-
-  return records.filter((record) => {
-    const searchable = [
-      record.name,
-      record.scope,
-      record.source,
-      record.sourceType,
-      record.skillPath ?? "",
-      record.updatedAt ?? "",
-    ].join(" ").toLowerCase();
-
-    return tokens.every((token) => searchable.includes(token));
-  });
-}
-
 async function promptLockedSkills(
   records: LockedSkillRecord[],
   scope: string,
@@ -168,42 +149,20 @@ async function promptLockedSkills(
     return [];
   }
 
-  console.log(renderPromptStep("Skill Upgrade", "Type to filter by name, scope, source, or path."));
-  const selected = new Map<string, LockedSkillRecord>();
-
-  while (selected.size < records.length) {
-    const available = records.filter((record) => !selected.has(record.name));
-    const record = await search<LockedSkillRecord>({
-      message: scope === "all" ? "Select a skill to upgrade:" : `Select a ${scope} skill to upgrade:`,
-      source: async (term) => filterLockedSkillChoices(available, term).map((item) => ({
-        name: formatLockedSkillChoice(item),
-        value: item,
-        description: [item.source, item.skillPath].filter(Boolean).join(" · "),
-      })),
-      pageSize: 10,
-      instructions: {
-        navigation: "Use arrow keys to move.",
-        pager: "Type to filter; use arrow keys to reveal more choices.",
-      },
-      theme: afkSearchTheme,
-    });
-    selected.set(record.name, record);
-
-    if (selected.size >= records.length) {
-      break;
-    }
-
-    const addAnother = await confirm({
-      message: "Select another skill?",
-      default: false,
-      theme: afkPromptTheme,
-    });
-    if (!addAnother) {
-      break;
-    }
-  }
-
-  return [...selected.keys()];
+  console.log(renderPromptStep("Skill Upgrade", "Type to filter, use space to select one or more skills, then enter to continue."));
+  return searchableCheckbox<string>({
+    message: scope === "all" ? "Select skills to upgrade:" : `Select ${scope} skills to upgrade:`,
+    choices: records.map((record) => ({
+      name: formatLockedSkillChoice(record),
+      value: record.name,
+      description: [record.scope, record.source, record.skillPath].filter(Boolean).join(" · "),
+      short: record.name,
+    })),
+    pageSize: 10,
+    required: true,
+    instructions: "Use space to toggle, enter to continue.",
+    theme: afkSearchableCheckboxTheme,
+  });
 }
 
 async function runSkillsOpen(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
@@ -362,23 +321,25 @@ async function runSkillsTrash(folder: string | undefined, runtime: Runtime, opti
     agent: options.skillsAgent,
   });
   const candidates = snapshot.records.filter((record) => record.rootKind === "global-library");
-  const record = folder
-    ? findSkillRecord(snapshot.records, folder)
-    : await promptSkillRecord(candidates, "Select a global skill to move to Trash:");
+  const records = folder
+    ? [findSkillRecord(snapshot.records, folder)].filter((record): record is SkillRecord => Boolean(record))
+    : await promptSkillRecords(candidates, "Select a global skill to move to Trash:");
 
-  if (!record) {
+  if (records.length === 0) {
     runtime.io.stderr(folder ? `Skill not found: ${folder}` : "No global skills found.");
     return 1;
   }
 
-  if (record.rootKind !== "global-library") {
-    runtime.io.stderr(`Cannot trash ${record.folder}; ${record.rootLabel} is read-only.`);
+  const readOnlyRecord = records.find((record) => record.rootKind !== "global-library");
+  if (readOnlyRecord) {
+    runtime.io.stderr(`Cannot trash ${readOnlyRecord.folder}; ${readOnlyRecord.rootLabel} is read-only.`);
     return 1;
   }
 
   if (!options.yes && !options.dryRun) {
+    const count = records.length;
     const accepted = await confirm({
-      message: `Move ${record.folder} to Trash?`,
+      message: count === 1 ? `Move ${records[0]?.folder ?? "skill"} to Trash?` : `Move ${count} skills to Trash?`,
       default: false,
       theme: afkPromptTheme,
     });
@@ -388,14 +349,13 @@ async function runSkillsTrash(folder: string | undefined, runtime: Runtime, opti
     }
   }
 
-  const movement = trashGlobalSkill({
+  const movements = trashGlobalSkills({
     homeDir: options.homeDir,
-    folder: record.folder,
+    folders: records.map((record) => record.folder),
     dryRun: options.dryRun,
   });
-  runtime.io.stdout(renderSkillTrash({
-    folder: record.folder,
-    movement,
+  runtime.io.stdout(renderSkillTrashBatch({
+    items: movements,
     dryRun: options.dryRun,
   }));
   return 0;
@@ -475,6 +435,27 @@ async function promptSkillRecord(records: SkillRecord[], message: string): Promi
       pager: "Type to filter; use arrow keys to reveal more choices.",
     },
     theme: afkSearchTheme,
+  });
+}
+
+async function promptSkillRecords(records: SkillRecord[], message: string): Promise<SkillRecord[]> {
+  if (records.length === 0) {
+    return [];
+  }
+
+  console.log(renderPromptStep("Skill", "Type to filter, use space to select one or more skills, then enter to continue."));
+  return searchableCheckbox<SkillRecord>({
+    message,
+    choices: records.map((record) => ({
+      name: renderSkillChoice(record),
+      value: record,
+      description: record.description,
+      short: record.folder,
+    })),
+    pageSize: 10,
+    required: true,
+    instructions: "Use space to toggle, enter to continue.",
+    theme: afkSearchableCheckboxTheme,
   });
 }
 

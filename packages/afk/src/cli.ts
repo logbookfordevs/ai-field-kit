@@ -356,7 +356,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "disable <folder>                  Move a global skill into .disabled",
       "enable <folder>                   Move a disabled global skill back to active",
       "rename <folder> <display-name>    Store an AFK display name in afk-skills.json",
-      "trash <folder>                    Move a global skill to Trash",
+      "trash [folder]                    Move one or more global skills to Trash",
       "upgrade [skills...]               Upgrade selected or all tracked skills",
       "categorize                        Create or update afk-skills.json with Codex",
     ],
@@ -445,13 +445,13 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills trash": {
     title: "AFK skills trash",
-    summary: "Move a global skill folder to the macOS Trash.",
-    usage: "afk skills trash <folder> [options]",
+    summary: "Move one or more global skill folders to the macOS Trash.",
+    usage: "afk skills trash [folder] [options]",
     options: [
       "--dry-run                         Preview the Trash move without applying it",
       "--yes, -y                         Skip confirmation",
     ],
-    examples: ["afk skills trash old-skill --dry-run", "afk skills trash old-skill --yes"],
+    examples: ["afk skills trash", "afk skills trash old-skill --dry-run", "afk skills trash old-skill --yes"],
   },
   "skills upgrade": {
     title: "AFK skills upgrade",

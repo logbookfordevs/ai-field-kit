@@ -136,7 +136,7 @@ When `--yes` is passed to AFK, forward `-y` to upstream. Without `--yes`, preser
 - Global tracked skills are read from `~/.agents/.skill-lock.json`.
 - Project tracked skills are read from `skills-lock.json` in the current working directory.
 - AFK builds explicit `npx --yes skills update ... -g/-p` commands and does not modify skill files, taxonomy metadata, or lockfiles.
-- The interactive path uses searchable selection and asks whether to select another skill after each choice. `--all` remains the scriptable path for updating everything.
+- The interactive path uses AFK's searchable checkbox prompt so users can filter and select multiple skills in one pass. `--all` remains the scriptable path for updating everything.
 
 ## Acceptance Criteria
 

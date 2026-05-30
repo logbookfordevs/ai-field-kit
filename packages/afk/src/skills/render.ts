@@ -90,12 +90,23 @@ export function renderSkillTrash(input: {
   movement: string;
   dryRun: boolean;
 }): string {
+  return renderSkillTrashBatch({
+    items: [{ folder: input.folder, movement: input.movement }],
+    dryRun: input.dryRun,
+  });
+}
+
+export function renderSkillTrashBatch(input: {
+  items: Array<{ folder: string; movement: string }>;
+  dryRun: boolean;
+}): string {
+  const count = input.items.length;
   return [
     sectionTitle(input.dryRun ? "Trash Preview" : "Trash Complete"),
     input.dryRun
-      ? `${muted("Would move")} ${strong(input.folder)} ${muted("to Trash")}`
-      : `${muted("Moved")} ${strong(input.folder)} ${muted("to Trash")}`,
-    muted(input.movement),
+      ? `${muted("Would move")} ${accent(String(count))} ${muted(count === 1 ? "skill to Trash" : "skills to Trash")}`
+      : `${muted("Moved")} ${accent(String(count))} ${muted(count === 1 ? "skill to Trash" : "skills to Trash")}`,
+    ...input.items.map((item) => `${paint(terminalPalette.sienna, "•")} ${strong(item.folder)} ${muted(item.movement)}`),
   ].join("\n");
 }
 

@@ -13,12 +13,13 @@ import {
   renameCodexSkillMetadata,
   renameGlobalSkill,
   trashGlobalSkill,
+  trashGlobalSkills,
   updateOpenAiMetadataDisplayName,
   type SkillRecord,
 } from "./skills/catalog.js";
 import { buildCodexCategorizationCommand, runCodexCategorization } from "./skills/categorization.js";
 import { buildSkillOpenCommand, filterSkillChoices, formatLockedSkillChoice, runSkillsCommand } from "./skills/commands.js";
-import { renderSkillChoice } from "./skills/render.js";
+import { renderSkillChoice, renderSkillTrashBatch } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 
@@ -247,6 +248,25 @@ test("trashGlobalSkill supports dry-run and moves active skills to Trash", () =>
   assert.equal(existsSync(join(homeDir, ".Trash", "demo")), true);
 });
 
+test("trashGlobalSkills supports dry-run and moves multiple skills to Trash", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-many-"));
+  const homeDir = join(root, "home");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
+
+  const preview = trashGlobalSkills({ homeDir, folders: ["alpha", "beta"], dryRun: true, platform: "darwin" });
+  assert.deepEqual(preview.map((item) => item.folder), ["alpha", "beta"]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "alpha")), true);
+  assert.equal(existsSync(join(homeDir, ".Trash", "alpha")), false);
+
+  const moved = trashGlobalSkills({ homeDir, folders: ["alpha", "beta"], dryRun: false, platform: "darwin" });
+  assert.deepEqual(moved.map((item) => item.folder), ["alpha", "beta"]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "alpha")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "beta")), false);
+  assert.equal(existsSync(join(homeDir, ".Trash", "alpha")), true);
+  assert.equal(existsSync(join(homeDir, ".Trash", "beta")), true);
+});
+
 test("trashGlobalSkill rejects unsupported platforms", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-platform-"));
   const homeDir = join(root, "home");
@@ -256,6 +276,21 @@ test("trashGlobalSkill rejects unsupported platforms", () => {
     () => trashGlobalSkill({ homeDir, folder: "demo", dryRun: false, platform: "linux" }),
     /macOS only/,
   );
+});
+
+test("renderSkillTrashBatch summarizes multiple selected skills", () => {
+  assert.equal(renderSkillTrashBatch({
+    dryRun: true,
+    items: [
+      { folder: "alpha", movement: "/skills/alpha -> ~/.Trash/alpha" },
+      { folder: "beta", movement: "/skills/beta -> ~/.Trash/beta" },
+    ],
+  }), [
+    "◆ Trash Preview",
+    "Would move 2 skills to Trash",
+    "• alpha /skills/alpha -> ~/.Trash/alpha",
+    "• beta /skills/beta -> ~/.Trash/beta",
+  ].join("\n"));
 });
 
 test("buildSkillOpenCommand targets files, folders, and supported apps", () => {

@@ -239,25 +239,55 @@ export function trashGlobalSkill(options: {
   dryRun: boolean;
   platform?: NodeJS.Platform;
 }): string {
+  const movement = trashGlobalSkills({
+    homeDir: options.homeDir,
+    folders: [options.folder],
+    dryRun: options.dryRun,
+    ...(options.platform ? { platform: options.platform } : {}),
+  })[0];
+  if (!movement) {
+    throw new Error(`Could not find global skill: ${options.folder}`);
+  }
+
+  return movement.movement;
+}
+
+export function trashGlobalSkills(options: {
+  homeDir: string;
+  folders: string[];
+  dryRun: boolean;
+  platform?: NodeJS.Platform;
+}): Array<{ folder: string; movement: string }> {
   const platform = options.platform ?? process.platform;
   if (platform !== "darwin") {
     throw new Error("Trash is currently supported on macOS only.");
   }
 
-  const source = resolveGlobalSkillPath(options.homeDir, options.folder);
-  if (!source) {
-    throw new Error(`Could not find global skill: ${options.folder}`);
-  }
-
   const trashRoot = join(options.homeDir, ".Trash");
-  const destination = uniqueTrashPath(trashRoot, options.folder);
+  const movements = options.folders.map((folder) => {
+    const source = resolveGlobalSkillPath(options.homeDir, folder);
+    if (!source) {
+      throw new Error(`Could not find global skill: ${folder}`);
+    }
+
+    return {
+      folder,
+      source,
+      destination: uniqueTrashPath(trashRoot, folder),
+    };
+  });
 
   if (!options.dryRun) {
     mkdirSync(trashRoot, { recursive: true });
-    renameSync(source, destination);
+    for (const movement of movements) {
+      renameSync(movement.source, movement.destination);
+    }
   }
 
-  return `${source} -> ${destination}`;
+  return movements.map((movement) => ({
+    folder: movement.folder,
+    movement: `${movement.source} -> ${movement.destination}`,
+  }));
 }
 
 export function renameGlobalSkill(options: {

@@ -92,6 +92,18 @@ export const afkCheckboxTheme = {
   helpMode: "always",
 } as const;
 
+export const afkSearchableCheckboxTheme = {
+  prefix: afkCheckboxTheme.prefix,
+  icon: afkCheckboxTheme.icon,
+  style: {
+    ...afkCheckboxTheme.style,
+    noMatches: (text: string) => muted(text),
+    searchTerm: (text: string) => brass(text),
+    selected: (text: string) => sea(text),
+  },
+  helpMode: "always",
+} as const;
+
 export const afkPromptTheme = {
   prefix: {
     idle: sea("◇"),
