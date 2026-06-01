@@ -7,10 +7,18 @@ import { selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, se
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { ensureLocalManifests } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
+import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
-  runtime.io.stdout(renderBanner({ showRefreshHint: !options.refreshDefaults }));
+  const updateNotice = options.yes || options.refreshDefaults
+    ? null
+    : await resolveUpdateNotice({ currentVersion: packageVersion() });
+
+  runtime.io.stdout(renderBanner({
+    showRefreshHint: !options.refreshDefaults,
+    updateNotice,
+  }));
 
   if (options.refreshDefaults) {
     runtime.io.stdout(

@@ -1,12 +1,11 @@
 import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
 import { runManifestShow } from "./manifest-show.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
+import { packageVersion } from "./update-check.js";
 import type { AgentId, Area, CliOptions, CommandResult, ManifestCategory, Runtime, SetupScope, SkillAgentId } from "./types.js";
 
 export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
@@ -668,12 +667,6 @@ Aliases:
 
 function commandKey(commandPath: string[] = []): string {
   return commandPath.join(" ");
-}
-
-function packageVersion(): string {
-  const packageJsonPath = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: unknown };
-  return typeof packageJson.version === "string" ? packageJson.version : "unknown";
 }
 
 function manifestCategoryFlag(arg: string): ManifestCategory | null {
