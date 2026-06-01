@@ -23,10 +23,6 @@
     "build": "pnpm run clean && tsc",
     "typecheck": "npx tsc --noEmit",
     "prepack": "pnpm run build",
-    "release:bump": "node ../../scripts/bump-afk-version.mjs",
-    "release:bump:patch": "node ../../scripts/bump-afk-version.mjs patch",
-    "release:bump:minor": "node ../../scripts/bump-afk-version.mjs minor",
-    "release:bump:major": "node ../../scripts/bump-afk-version.mjs major",
     "release:pack": "../../scripts/package-afk-release.sh",
     "test": "vitest run"
   },

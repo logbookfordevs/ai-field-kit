@@ -11,7 +11,11 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v0.5.3 - 2026-06-01
+
 - `release:` added a tag-triggered GitHub Actions workflow that publishes `@logbookfordevs/afk` to npm after verifying the tag, `main` tip, AFK typecheck, AFK tests, and package dry run.
+- `release:` replaced the AFK version-bump script with a manual changelog-first release flow using npm version tagging and `git push origin main --follow-tags`.
+- `docs:` removed maintainer-only publish commands from the public README so contributors see install and development guidance instead of private release steps.
 - `cli:` added an interactive setup banner notice when a newer `@logbookfordevs/afk` release is available on npm.
 - `release:` renamed the publishable AFK CLI package to `@logbookfordevs/afk` and made npm the recommended user-facing install path.
 - `docs:` moved the hosted `install.sh` path out of the public setup journey; `scripts/install.sh --local` is now documented as a development helper.

@@ -25,7 +25,6 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 - [The MCP Registry](#the-mcp-registry)
 - [Configuration](#configuration)
 - [Contributing](#contributing)
-- [Releasing AFK CLI](#releasing-afk-cli)
 - [Common Issues](#common-issues)
 - [Agents Supported](#agents-supported)
 - [Acknowledgements](#acknowledgements)
@@ -615,36 +614,6 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use `KEY_YOUR_NAME` 
   }
 }
 ```
-
----
-
-## Releasing AFK CLI
-
-AFK publishes `@logbookfordevs/afk` to npm from GitHub Actions when a `v*` tag
-is pushed on the current `main` tip. The publish job verifies the tag matches
-`packages/afk/package.json`, runs the AFK CLI typecheck and tests, and checks
-the npm package contents with `pnpm --dir packages/afk pack --dry-run` before
-publishing.
-
-Prepare a release commit:
-
-```bash
-pnpm --dir packages/afk run release:bump:patch
-git add packages/afk/package.json CHANGELOG.md
-git commit -m "Release AFK v0.5.3"
-```
-
-After the release commit is on `main`, tag and push it:
-
-```bash
-git tag v0.5.3
-git push --follow-tags origin main
-```
-
-The npm package must have Trusted Publishing configured for
-`@logbookfordevs/afk` with the GitHub Actions workflow filename `publish.yml`.
-
----
 
 ## Common Issues
 
