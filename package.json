@@ -9,5 +9,6 @@
     "site:build": "pnpm --dir apps/site build",
     "site:dev": "pnpm --dir apps/site dev",
     "site:preview": "pnpm --dir apps/site preview"
-  }
+  },
+  "version": "0.0.1"
 }
