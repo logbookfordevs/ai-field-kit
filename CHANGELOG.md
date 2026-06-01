@@ -11,6 +11,7 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+- `repo:` added a shadcn-compatible GitHub registry entrypoint with an `afk-manifests` item that installs the default AFK manifest bundle into project-local `./afk/manifests/`.
 - `cli:` clarified guided setup agent-target prompts so rules, MCPs, and hooks name their destination purpose instead of using a vague shared "agent targets" label.
 - `cli:` added `--verbose` for setup delegation so AFK can keep noisy upstream installer output hidden by default while still exposing raw CLI logs on demand.
 - `cli:` made guided MCP delegation pass `add-mcp -y` after AFK has collected MCP and target-agent choices, and now clearly reports when selected MCPs have no target agents instead of silently doing nothing.
