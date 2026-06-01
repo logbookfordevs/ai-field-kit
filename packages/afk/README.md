@@ -28,7 +28,9 @@ afk setup --dry-run
 ```
 
 `scripts/install.sh` is intended for local development installs from this
-checkout. The user-facing install path is the npm package.
+checkout. The user-facing install path is the npm package. To stop the local
+checkout from shadowing an npm-installed `afk`, run
+`./scripts/install.sh --unlink`.
 
 `afk setup` opens with a branded banner and checkbox prompts. Setup areas,
 setup scope, AFK-owned rule targets, individual AFK skills, recommended external
