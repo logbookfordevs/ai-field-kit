@@ -5,6 +5,16 @@ import { join } from "node:path";
 import { test } from "vitest";
 import { defaultsManifestBaseUrl, defaultsManifestBaseUrls, ensureLocalManifests, localManifestDir, projectManifestDir } from "./manifest.js";
 
+type UtilityManifestFile = {
+  items: Array<{
+    id: string;
+    install: {
+      command: string;
+      args: string[];
+    };
+  }>;
+};
+
 test("ensureLocalManifests migrates the old Stitch header default", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-manifest-"));
   const manifestDir = localManifestDir(homeDir);
@@ -96,6 +106,15 @@ test("ensureLocalManifests migrates existing skills to invocation policy metadat
   const next = JSON.parse(write.content) as { items: Array<{ id: string; autoInvocation?: boolean }> };
   assert.equal(next.items.find((item) => item.id === "afk-note")?.autoInvocation, true);
   assert.equal(next.items.some((item) => item.id === "afk-typecheck"), false);
+});
+
+test("packaged utility manifests keep npx installs non-interactive", () => {
+  const manifest = JSON.parse(readFileSync(new URL("../manifests/utils.json", import.meta.url), "utf8")) as UtilityManifestFile;
+  const interactiveNpxItems = manifest.items
+    .filter((item) => usesNpx(item.install.command, item.install.args) && !usesNonInteractiveNpx(item.install.command, item.install.args))
+    .map((item) => item.id);
+
+  assert.deepEqual(interactiveNpxItems, []);
 });
 
 test("defaultsManifestBaseUrl resolves GitHub shorthand to the AFK manifest convention", () => {
@@ -346,3 +365,19 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
     globalThis.fetch = originalFetch;
   }
 });
+
+function usesNpx(command: string, args: string[]): boolean {
+  return command === "npx" || commandLineIncludesNpx([command, ...args].join(" "));
+}
+
+function usesNonInteractiveNpx(command: string, args: string[]): boolean {
+  if (command === "npx") {
+    return args[0] === "--yes" || args[0] === "-y";
+  }
+
+  return /(^|[\s;&|()])npx\s+(--yes|-y)(\s|$)/.test([command, ...args].join(" "));
+}
+
+function commandLineIncludesNpx(commandLine: string): boolean {
+  return /(^|[\s;&|()])npx(\s|$)/.test(commandLine);
+}

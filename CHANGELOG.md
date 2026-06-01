@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+- `cli:` clarified guided setup agent-target prompts so rules, MCPs, and hooks name their destination purpose instead of using a vague shared "agent targets" label.
+- `cli:` kept utility setup non-interactive for `npx`-backed installers by passing npm's own `--yes` flag before the package name, starting with the Impeccable utility installer.
+- `repo:` added a manifest-level regression test that catches packaged utility installers using interactive `npx` commands without `--yes` or `-y`.
+
 ## v0.5.3 - 2026-06-01
 
 - `release:` added a tag-triggered GitHub Actions workflow that publishes `@logbookfordevs/afk` to npm after verifying the tag, `main` tip, AFK typecheck, AFK tests, and package dry run.
