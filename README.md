@@ -18,7 +18,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 - [What's in the Kit](#whats-in-the-kit)
 - [Quick Start](#quick-start)
   - [Just the skills](#just-the-skills--30-seconds)
-  - [Full setup](#full-setup--rules-and-mcps-too)
+  - [AFK CLI](#afk-cli--full-setup)
 - [The Skills](#the-skills)
 - [The Workflows](#the-workflows)
 - [Skill vs Workflow Rubric](#skill-vs-workflow-rubric)
@@ -57,82 +57,34 @@ npx skills add https://github.com/logbookfordevs/ai-field-kit
 The interactive mode lets you pick which skills to install. Agent-specific
 support is handled by the official `skills` CLI.
 
-### Full setup — rules and MCPs too
+### AFK CLI — full setup
 
-If you want the complete stack, install the AFK CLI from npm:
+If you want the complete stack, use the AFK CLI. It is the setup router for
+rules, skills, MCPs, utilities, hooks, dry-runs, and team-specific manifests.
 
 ```bash
 npm install -g @logbookfordevs/afk
 afk setup --dry-run
 ```
 
-Use the dry run first. The CLI prints the exact rules, skills, MCP, and utility
-setup actions before anything writes to your machine.
+Start with `--dry-run`: AFK prints the exact actions it would take before it
+writes to your machine. The CLI owns AFK rule and hook setup, then delegates
+skills, MCPs, and utilities to the official tools or installer scripts that
+already own those ecosystems.
 
-AFK owns rule setup for a small v1
-target set: Antigravity/Agy, Codex, Claude Code, and OpenCode. Third-party
-installs still route through the official
-`skills` and `add-mcp` CLIs, while optional utilities delegate to their own
-install scripts.
+For the full command reference, flags, manifest format, local-development
+install flow, and custom defaults workflow, read the
+[AFK CLI README](./packages/afk/README.md).
 
-If you want to work from source, clone the repo and run the local CLI package:
+If you want to work from source, clone the repo and run the package directly:
 
 ```bash
 git clone https://github.com/logbookfordevs/ai-field-kit.git ~/codes/ai-field-kit
 cd ~/codes/ai-field-kit
-```
-
-```bash
 pnpm --dir packages/afk install
 pnpm --dir packages/afk run build
 node packages/afk/dist/index.js setup --dry-run
 ```
-
-Install the local checkout as an `afk` command while developing:
-
-```bash
-./scripts/install.sh --local
-afk setup --dry-run
-```
-
-`scripts/install.sh` is for local development installs from this checkout. The
-recommended user-facing install path is the npm package above. To stop the
-local checkout from shadowing an npm-installed `afk`, run
-`./scripts/install.sh --unlink`.
-
-Use the dry run first. The CLI prints the exact rules, skills, MCP, utility, and
-hook setup actions before anything writes to your machine.
-
-`afk setup` asks whether to prepare a global field kit or only the current
-project. Scripted runs stay global by default; pass `--scope project` or
-`--local` when you want AFK-owned files, `skills`, `add-mcp`, and RTK init to
-use project scope.
-
-AFK also works as a personal setup router. Keep convention-compatible manifests
-in your own GitHub repo under `afk/manifests/`, then refresh local defaults from
-that repo:
-
-```bash
-node packages/afk/dist/index.js setup refresh --defaults-source your-org/dev-kit
-```
-
-That gives developers a way to carry their own recommended skills, MCPs,
-utilities, hooks, presets, and rule sources without patching the AFK CLI. For
-rules, their `rules.json` can point directly at their raw GitHub rules file.
-For hooks, their `hooks.json` can point at source scripts in their own repo.
-AFK remembers the chosen defaults source in `presets.json`, so later
-`afk setup refresh` runs can use that source without repeating the flag. Use
-`afk setup refresh --local` to refresh `./afk/manifests` for the current project
-instead of the global manifest store.
-
-To create those manifest files interactively, run:
-
-```bash
-afk manifests configure --local
-```
-
-That writes `./afk/manifests/` in the current repo, ready to publish as a
-personal defaults source.
 
 ---
 
