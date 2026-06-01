@@ -1,4 +1,4 @@
-import { checkbox, select } from "@inquirer/prompts";
+import { checkbox, input, select } from "@inquirer/prompts";
 import { agentIds, hookAgentIds, skillAgentChoices, skillAgentIds, universalSkillAgentLabels } from "./agents.js";
 import { loadHookManifest, loadMcpManifest, loadSkillManifest, loadUtilityManifest } from "./manifest.js";
 import { DEFAULT_CHECKED, afkCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
@@ -93,6 +93,17 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     mcpIds,
     utilIds,
     hookIds,
+  });
+}
+
+export async function selectDefaultsSource(rememberedSource: string): Promise<string> {
+  console.log(renderPromptStep("Source", "Choose which AFK defaults source to use for this setup run."));
+  return input({
+    message: "Which AFK setup source should be used?",
+    ...(rememberedSource ? { default: rememberedSource } : {}),
+    required: true,
+    validate: (value) => value.trim().length > 0 || "Enter a setup source to continue.",
+    theme: afkSelectTheme,
   });
 }
 
