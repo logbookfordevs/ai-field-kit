@@ -1,6 +1,7 @@
 import { ansi, bold, paint, reset, routeGradient, terminalPalette } from "./terminal-theme.js";
+import type { UpdateNotice } from "./update-check.js";
 
-export function renderBanner(): string {
+export function renderBanner(input: { updateNotice?: UpdateNotice | null } = {}): string {
   const title = [
     "    ___     ________ __",
     "   /   |   / ____/ //_/",
@@ -19,6 +20,7 @@ export function renderBanner(): string {
     "",
     `${bold}${brandText(name)}${reset}`,
     muted(subtitle),
+    ...renderUpdateNotice(input.updateNotice),
     gradient(rule),
     "",
   ].join("\n");
@@ -60,6 +62,18 @@ export function muted(value: string): string {
 
 function brandText(value: string): string {
   return paint(terminalPalette.brass, value);
+}
+
+function renderUpdateNotice(notice: UpdateNotice | null | undefined): string[] {
+  if (!notice) {
+    return [];
+  }
+
+  return [
+    "",
+    `${paint(terminalPalette.rust, "Update available")} ${muted(`afk ${notice.currentVersion} -> ${notice.latestVersion}`)}`,
+    muted(`Run: ${notice.command}`),
+  ];
 }
 
 function gradient(value: string): string {
