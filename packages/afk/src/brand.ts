@@ -1,6 +1,6 @@
 import { ansi, bold, paint, reset, routeGradient, terminalPalette } from "./terminal-theme.js";
 
-export function renderBanner(): string {
+export function renderBanner(input: { showRefreshHint?: boolean } = {}): string {
   const title = [
     "    ___     ________ __",
     "   /   |   / ____/ //_/",
@@ -10,6 +10,7 @@ export function renderBanner(): string {
   ];
   const name = "AI FIELD KIT";
   const subtitle = "setup router for agentic dev work";
+  const refreshHint = "Missing something new? Run afk setup refresh to update local manifests.";
   const rule = "─".repeat(54);
 
   return [
@@ -19,6 +20,7 @@ export function renderBanner(): string {
     "",
     `${bold}${brandText(name)}${reset}`,
     muted(subtitle),
+    ...(input.showRefreshHint ? [muted(refreshHint)] : []),
     gradient(rule),
     "",
   ].join("\n");

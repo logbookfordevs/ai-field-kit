@@ -1,6 +1,31 @@
 import assert from "node:assert/strict";
-import { test } from "vitest";
-import { normalizeSetupSelection } from "./interactive.js";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { test, vi } from "vitest";
+import { normalizeSetupSelection, selectSetup, selectUtilsInstall } from "./interactive.js";
+import { localManifestDir } from "./manifest.js";
+import type { CliOptions } from "./types.js";
+
+const promptState = vi.hoisted(() => ({
+  checkboxMessages: [] as string[],
+}));
+
+vi.mock("@inquirer/prompts", () => ({
+  checkbox: vi.fn(async ({ message }: { message: string }) => {
+    promptState.checkboxMessages.push(message);
+    if (message === "Choose what AFK should prepare") {
+      return ["utils"];
+    }
+
+    if (message === "Choose utilities to install") {
+      return ["rtk"];
+    }
+
+    return [];
+  }),
+  select: vi.fn(async () => "global"),
+}));
 
 test("normalizeSetupSelection removes item areas when every item is unselected", () => {
   const selection = normalizeSetupSelection({
@@ -83,3 +108,74 @@ test("normalizeSetupSelection filters hook-only Cursor from general agents", () 
   assert.deepEqual(selection.agents, ["cursor-local"]);
   assert.deepEqual(selection.hookAgents, ["cursor-local"]);
 });
+
+test("selectSetup does not ask for agent targets when only utilities are selected", async () => {
+  promptState.checkboxMessages = [];
+  const selection = await selectSetup(defaultOptions(localHomeWithUtilityManifest()));
+
+  assert.deepEqual(selection.areas, ["utils"]);
+  assert.deepEqual(selection.utilIds, ["rtk"]);
+  assert.deepEqual(selection.agents, []);
+  assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
+});
+
+test("selectUtilsInstall does not ask for agent targets when installing RTK", async () => {
+  promptState.checkboxMessages = [];
+  const selection = await selectUtilsInstall(defaultOptions(localHomeWithUtilityManifest()));
+
+  assert.deepEqual(selection.utilIds, ["rtk"]);
+  assert.deepEqual(selection.agents, []);
+  assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
+});
+
+function defaultOptions(homeDir: string): CliOptions {
+  return {
+    agents: [],
+    setupScope: "global",
+    scopeExplicit: true,
+    dryRun: true,
+    yes: false,
+    includeExternal: false,
+    selectedSkillIds: [],
+    selectedSkillAgentIds: [],
+    selectedMcpIds: [],
+    selectedUtilIds: [],
+    selectedHookIds: [],
+    rulesRef: "main",
+    rulesSource: "local",
+    initOnly: false,
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: "",
+    manifestLocal: false,
+    manifestConfigureLocal: false,
+    manifestConfigureFromCurrent: false,
+    selectedManifestCategories: [],
+    homeDir,
+    repoDir: "/tmp/repo",
+    cwd: "/tmp/project",
+  };
+}
+
+function localHomeWithUtilityManifest(): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(
+    join(manifestDir, "utils.json"),
+    `${JSON.stringify({
+      version: 1,
+      items: [
+        {
+          id: "rtk",
+          label: "RTK",
+          description: "Compress noisy command output for coding agents.",
+          install: { command: "sh", args: ["-c", "install-rtk"] },
+          postInstall: "rtk-init",
+          default: true,
+        },
+      ],
+    }, null, 2)}\n`,
+  );
+  return homeDir;
+}
