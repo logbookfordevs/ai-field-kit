@@ -32,6 +32,9 @@ export type CliOptions = {
   empty: boolean;
   refreshDefaults: boolean;
   defaultsSource: string;
+  defaultsSourceExplicit: boolean;
+  defaultSourceUpdate: string;
+  rememberDefaultsSource?: boolean;
   manifestLocal: boolean;
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;

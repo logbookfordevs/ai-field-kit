@@ -3,13 +3,14 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { normalizeSetupSelection, selectMcpsInstall, selectRulesSync, selectSetup, selectUtilsInstall } from "./interactive.js";
+import { normalizeSetupSelection, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectUtilsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
 const promptState = vi.hoisted(() => ({
   checkboxMessages: [] as string[],
   setupAreas: ["utils"] as string[],
+  inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
 }));
 
 vi.mock("@inquirer/prompts", () => ({
@@ -34,6 +35,14 @@ vi.mock("@inquirer/prompts", () => ({
     return [];
   }),
   select: vi.fn(async () => "global"),
+  input: vi.fn(async ({ default: defaultValue, required, validate }: { default?: string; required?: boolean; validate: (value: string) => true | string }) => {
+    promptState.inputCalls.push({
+      default: defaultValue,
+      required,
+      validateResult: validate(""),
+    });
+    return defaultValue ?? "acme/dev-kit";
+  }),
 }));
 
 test("normalizeSetupSelection removes item areas when every item is unselected", () => {
@@ -169,6 +178,20 @@ test("selectSetup names shared rules and MCP agent targets when both areas are s
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
 
+test("selectDefaultsSource pre-fills the remembered source and requires input", async () => {
+  promptState.inputCalls = [];
+  const source = await selectDefaultsSource("acme/saved-kit");
+
+  assert.equal(source, "acme/saved-kit");
+  assert.deepEqual(promptState.inputCalls, [
+    {
+      default: "acme/saved-kit",
+      required: true,
+      validateResult: "Enter a setup source to continue.",
+    },
+  ]);
+});
+
 function defaultOptions(homeDir: string): CliOptions {
   return {
     agents: [],
@@ -189,6 +212,8 @@ function defaultOptions(homeDir: string): CliOptions {
     empty: false,
     refreshDefaults: false,
     defaultsSource: "",
+    defaultsSourceExplicit: false,
+    defaultSourceUpdate: "",
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,

@@ -98,6 +98,11 @@ type ManifestOptions = Pick<
   "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "defaultsSource" | "dryRun" | "manifestLocal"
 > & {
   cwd?: string;
+  rememberDefaultsSource?: boolean;
+};
+
+type ManifestDirOptions = Pick<CliOptions, "homeDir" | "manifestLocal"> & {
+  cwd?: string;
 };
 
 export function localAfkDir(homeDir: string): string {
@@ -112,10 +117,37 @@ export function projectManifestDir(cwd: string): string {
   return join(cwd, "afk", "manifests");
 }
 
+export function readRememberedDefaultsSource(options: ManifestDirOptions): string {
+  return rememberedDefaultsSource(manifestDirForOptions(options));
+}
+
+export function planRememberedDefaultsSourceUpdate(options: ManifestDirOptions, defaultsSource: string): PathOperation[] {
+  const manifestDir = manifestDirForOptions(options);
+  const presetsPath = join(manifestDir, "presets.json");
+  const operations: PathOperation[] = [];
+
+  if (!existsSync(manifestDir)) {
+    operations.push({ type: "mkdir", path: manifestDir });
+  }
+
+  const trimmedSource = defaultsSource.trim();
+  const existing = readExistingPresetsManifest(presetsPath);
+  const next = {
+    version: existing.version,
+    defaultsSource: trimmedSource,
+    presets: existing.presets,
+  };
+
+  operations.push({ type: "write", path: presetsPath, content: `${JSON.stringify(next, null, 2)}\n` });
+  return operations;
+}
+
 export async function ensureLocalManifests(options: ManifestOptions): Promise<PathOperation[]> {
   const operations: PathOperation[] = [];
   const manifestDir = manifestDirForOptions(options);
-  const effectiveDefaultsSource = options.defaultsSource || rememberedDefaultsSource(manifestDir) || builtInDefaultsSource;
+  const rememberedSource = rememberedDefaultsSource(manifestDir);
+  const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+  const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
   const shouldRefreshDefaults = options.refreshDefaults || Boolean(options.defaultsSource);
 
   if (!existsSync(manifestDir)) {
@@ -134,7 +166,7 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
 
     const content = options.empty
       ? emptyManifestContent(name, options, effectiveDefaultsSource)
-      : await defaultManifestContent(name, options, effectiveDefaultsSource);
+      : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
     if (content) {
       operations.push({ type: "write", path: target, content });
     } else if (existsSync(target)) {
@@ -182,10 +214,15 @@ function parseLocalManifest<T>(homeDir: string, name: ManifestName, guard: (valu
   return parsed;
 }
 
-async function defaultManifestContent(name: ManifestName, options: ManifestOptions, defaultsSource: string): Promise<string | null> {
+async function defaultManifestContent(
+  name: ManifestName,
+  options: ManifestOptions,
+  defaultsSource: string,
+  rememberedSourceForWrite: string,
+): Promise<string | null> {
   if (name === "presets.json") {
     const content = await fetchDefaultManifest(name, options, defaultsSource);
-    return content ? withRememberedDefaultsSource(content, defaultsSource) : null;
+    return content ? withRememberedDefaultsSource(content, rememberedSourceForWrite) : null;
   }
 
   return fetchDefaultManifest(name, options, defaultsSource);
@@ -263,8 +300,39 @@ function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-function manifestDirForOptions(options: ManifestOptions): string {
+function manifestDirForOptions(options: ManifestDirOptions): string {
   return options.manifestLocal ? projectManifestDir(options.cwd ?? process.cwd()) : localManifestDir(options.homeDir);
+}
+
+function readExistingPresetsManifest(path: string): PresetsManifest {
+  if (!existsSync(path)) {
+    return { version: 1, defaultsSource: "", presets: [] };
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    if (isRecord(parsed)) {
+      return {
+        version: typeof parsed.version === "number" ? parsed.version : 1,
+        defaultsSource: typeof parsed.defaultsSource === "string" ? parsed.defaultsSource : "",
+        presets: Array.isArray(parsed.presets) ? parsed.presets.filter(isPresetManifestItem) : [],
+      };
+    }
+  } catch {
+    return { version: 1, defaultsSource: "", presets: [] };
+  }
+
+  return { version: 1, defaultsSource: "", presets: [] };
+}
+
+function isPresetManifestItem(value: unknown): value is PresetsManifest["presets"][number] {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    Array.isArray(value.areas) &&
+    value.areas.every((area) => typeof area === "string")
+  );
 }
 
 function rememberedDefaultsSource(manifestDir: string): string {

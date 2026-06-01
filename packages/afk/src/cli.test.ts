@@ -67,8 +67,9 @@ test("runCli prints contextual setup help", async () => {
   assert.ok(text.includes("afk setup hooks"));
   assert.ok(text.includes("--verbose"));
   assert.ok(!text.includes("afk setup mcps install"));
-  assert.ok(text.includes("--defaults-source <source>"));
-  assert.ok(text.includes("afk setup refresh --defaults-source your-org/dev-kit"));
+  assert.ok(text.includes("--default-source <source>"));
+  assert.ok(text.includes("afk setup --default-source your-org/dev-kit"));
+  assert.ok(!text.includes("afk setup --defaults-source your-org/dev-kit"));
   assert.ok(!text.includes("--refresh-defaults"));
 });
 
@@ -83,8 +84,31 @@ test("runCli prints contextual area help", async () => {
   assert.ok(text.includes("--verbose                         Show delegated installer output"));
   assert.ok(text.includes("--yes, -y                         Accept defaults and skip prompts"));
   assert.ok(text.includes("--agent <agent>                   Limit agent targets; repeatable"));
-  assert.ok(text.includes("--defaults-source <source>        Use and remember a custom remote or local defaults source"));
+  assert.ok(text.includes("--default-source <source>         Save a default setup source and exit"));
   assert.ok(!text.includes("AFK setup skills"));
+});
+
+test("runCli accepts default-source aliases", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-default-source-alias-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(
+    ["setup", "--default-source", "acme/dev-kit"],
+    { HOME: homeDir, AI_RULES_REPO: repoDir },
+  ));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("Default setup source updated to acme/dev-kit"));
+
+  output.length = 0;
+  const aliasCode = await withConsole(output, () => runCli(
+    ["setup", "--defaults-source", "acme/legacy-kit"],
+    { HOME: homeDir, AI_RULES_REPO: repoDir },
+  ));
+
+  assert.equal(aliasCode, 0);
+  assert.ok(output.join("\n").includes("Default setup source updated to acme/legacy-kit"));
 });
 
 test("runCli accepts skills CLI agent targets for noninteractive skill installs", async () => {
@@ -104,7 +128,7 @@ test("runCli accepts skills CLI agent targets for noninteractive skill installs"
       ],
     },
     "mcps.json": { version: 1, items: [] },
-    "presets.json": { version: 1, defaultsSource: "", presets: [] },
+    "presets.json": { version: 1, defaultsSource: "local", presets: [] },
     "rules.json": { version: 1, source: "github", url: "" },
     "utils.json": { version: 1, items: [] },
     "hooks.json": { version: 1, items: [] },

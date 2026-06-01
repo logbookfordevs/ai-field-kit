@@ -118,11 +118,11 @@ const setupOptions = {
   localScope: "--local                           Alias for --scope project",
   localManifest: "--local                           Refresh ./afk/manifests instead of global manifests",
   agent: "--agent <agent>                   Limit agent targets; repeatable",
-  source: "--source github|local             Load default manifests from GitHub or this checkout",
+  source: "--source <source>                 Use a setup source for this run only",
   ref: "--ref <git-ref>                   Git ref for default AFK manifest URLs",
   initOnly: "--init-only                       Create/update local manifests only, then exit",
   empty: "--empty                           Create empty manifests with --init-only or refresh",
-  defaultsSource: "--defaults-source <source>        Use and remember a custom remote or local defaults source",
+  defaultSource: "--default-source <source>         Save a default setup source and exit",
   includeExternal: "--include-external                Include external recommended skills when installing skills",
 };
 
@@ -137,7 +137,7 @@ const setupAreaOptions = [
   setupOptions.ref,
   setupOptions.initOnly,
   setupOptions.empty,
-  setupOptions.defaultsSource,
+  setupOptions.defaultSource,
 ];
 
 const commandHelps: Record<string, CommandHelp> = {
@@ -156,7 +156,7 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.ref,
       setupOptions.initOnly,
       setupOptions.empty,
-      setupOptions.defaultsSource,
+      setupOptions.defaultSource,
     ],
     subcommands: [
       "afk setup refresh                 Refresh global or project-local AFK manifests",
@@ -170,9 +170,9 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup",
       "afk setup --dry-run",
       "afk setup --local",
-      "afk setup refresh --defaults-source your-org/dev-kit",
-      "afk setup --defaults-source your-org/dev-kit",
-      "afk setup --defaults-source ./afk/manifests",
+      "afk setup --source your-org/dev-kit",
+      "afk setup --default-source your-org/dev-kit",
+      "afk setup --default-source ./afk/manifests",
     ],
   },
   "setup refresh": {
@@ -185,12 +185,12 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.source,
       setupOptions.ref,
       setupOptions.empty,
-      setupOptions.defaultsSource,
+      setupOptions.defaultSource,
     ],
     examples: [
       "afk setup refresh",
       "afk setup refresh --local",
-      "afk setup refresh --defaults-source your-org/dev-kit",
+      "afk setup refresh --source your-org/dev-kit",
       "afk setup refresh --source local",
     ],
   },
@@ -384,6 +384,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let empty = false;
   const refreshDefaults = key === "setup refresh";
   let defaultsSource = "";
+  let defaultsSourceExplicit = false;
+  let defaultSourceUpdate = "";
   let manifestLocal = false;
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
@@ -480,12 +482,13 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (arg === "--defaults-source") {
+    if (arg === "--default-source" || arg === "--defaults-source") {
       const value = args[index + 1];
-      if (!value) {
-        return { help: false, kind: "error", error: "Missing --defaults-source value" };
+      const trimmedValue = value?.trim();
+      if (!trimmedValue) {
+        return { help: false, kind: "error", error: `Missing ${arg} value` };
       }
-      defaultsSource = value;
+      defaultSourceUpdate = trimmedValue;
       index += 1;
       continue;
     }
@@ -502,10 +505,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--source") {
       const value = args[index + 1];
-      if (value !== "github" && value !== "local") {
-        return { help: false, kind: "error", error: `Invalid --source value: ${value ?? "(missing)"}` };
+      const trimmedValue = value?.trim();
+      if (!trimmedValue) {
+        return { help: false, kind: "error", error: "Missing --source value" };
       }
-      rulesSource = value;
+      defaultsSource = trimmedValue;
+      defaultsSourceExplicit = true;
+      if (trimmedValue === "github" || trimmedValue === "local") {
+        rulesSource = trimmedValue;
+      }
       index += 1;
       continue;
     }
@@ -564,6 +572,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       empty,
       refreshDefaults,
       defaultsSource,
+      defaultsSourceExplicit,
+      defaultSourceUpdate,
       manifestLocal,
       manifestConfigureLocal,
       manifestConfigureFromCurrent,

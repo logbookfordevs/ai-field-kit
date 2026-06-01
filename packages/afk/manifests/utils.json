@@ -50,7 +50,7 @@
                 "command": "sh",
                 "args": [
                     "-c",
-                    "cd \"$HOME\" && npx impeccable skills install --force -y"
+                    "cd \"$HOME\" && npx --yes impeccable skills install --force -y"
                 ]
             },
             "default": false
