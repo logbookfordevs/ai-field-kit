@@ -175,6 +175,7 @@ function defaultOptions(homeDir: string): CliOptions {
     setupScope: "global",
     scopeExplicit: true,
     dryRun: true,
+    verbose: false,
     yes: false,
     includeExternal: false,
     selectedSkillIds: [],

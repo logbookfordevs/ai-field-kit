@@ -12,6 +12,7 @@ This changelog tracks meaningful updates by version and date.
 ## TBD - TBD
 
 - `cli:` clarified guided setup agent-target prompts so rules, MCPs, and hooks name their destination purpose instead of using a vague shared "agent targets" label.
+- `cli:` added `--verbose` for setup delegation so AFK can keep noisy upstream installer output hidden by default while still exposing raw CLI logs on demand.
 - `cli:` kept utility setup non-interactive for `npx`-backed installers by passing npm's own `--yes` flag before the package name, starting with the Impeccable utility installer.
 - `repo:` added a manifest-level regression test that catches packaged utility installers using interactive `npx` commands without `--yes` or `-y`.
 

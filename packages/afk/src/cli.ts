@@ -112,6 +112,7 @@ type CommandHelp = {
 
 const setupOptions = {
   dryRun: "--dry-run                         Preview changes without applying them",
+  verbose: "--verbose                         Show delegated installer output",
   yes: "--yes, -y                         Accept defaults and skip prompts",
   scope: "--scope global|project            Choose machine-wide or current-project setup",
   localScope: "--local                           Alias for --scope project",
@@ -127,6 +128,7 @@ const setupOptions = {
 
 const setupAreaOptions = [
   setupOptions.dryRun,
+  setupOptions.verbose,
   setupOptions.yes,
   setupOptions.scope,
   setupOptions.localScope,
@@ -145,6 +147,7 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk setup [options]",
     options: [
       setupOptions.dryRun,
+      setupOptions.verbose,
       setupOptions.yes,
       setupOptions.scope,
       setupOptions.localScope,
@@ -370,6 +373,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const agents: AgentId[] = [];
   const selectedSkillAgentIds: SkillAgentId[] = [];
   let dryRun = false;
+  let verbose = false;
   let yes = false;
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
@@ -421,6 +425,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--dry-run") {
       dryRun = true;
+      continue;
+    }
+
+    if (arg === "--verbose") {
+      verbose = true;
       continue;
     }
 
@@ -541,6 +550,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       setupScope,
       scopeExplicit,
       dryRun,
+      verbose,
       yes,
       includeExternal,
       selectedSkillIds: [],
@@ -620,14 +630,16 @@ function readOptionValues(args: string[], startIndex: number): string[] {
   return values;
 }
 
-function spawnCommand(command: string, args: string[], cwd?: string): Promise<CommandResult> {
+function spawnCommand(command: string, args: string[], cwd?: string, behavior: { verbose: boolean } = { verbose: false }): Promise<CommandResult> {
   return new Promise((resolve) => {
     const child = spawn(command, args, {
       cwd,
-      stdio: "inherit",
+      stdio: behavior.verbose ? "inherit" : ["ignore", "pipe", "pipe"],
       shell: false,
     });
 
+    child.stdout?.resume();
+    child.stderr?.resume();
     child.on("close", (code) => resolve({ code: code ?? 1 }));
     child.on("error", () => resolve({ code: 1 }));
   });

@@ -74,6 +74,7 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
     setupScope: "global",
     scopeExplicit: true,
     dryRun: true,
+    verbose: false,
     yes: false,
     includeExternal: false,
     selectedSkillIds: [],

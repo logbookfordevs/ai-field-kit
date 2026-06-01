@@ -61,6 +61,7 @@ const options: CliOptions = {
   setupScope: "global",
   scopeExplicit: true,
   dryRun: true,
+  verbose: false,
   yes: true,
   includeExternal: false,
   selectedSkillIds: [],
@@ -257,6 +258,58 @@ test("runDelegateCommands fails fast by default", async () => {
 
   assert.equal(code, 7);
   assert.deepEqual(calls, ["First"]);
+});
+
+test("runDelegateCommands hides delegated command details by default", async () => {
+  const output: string[] = [];
+  const spawnBehaviors: boolean[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (_command, _args, _cwd, behavior) => {
+      spawnBehaviors.push(Boolean(behavior?.verbose));
+      return { code: 0 };
+    },
+  };
+
+  const code = await runDelegateCommands(runtime, [sampleCommands()[0] as DelegateCommand], {
+    ...options,
+    dryRun: false,
+    verbose: false,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawnBehaviors, [false]);
+  assert.deepEqual(output, ["- First: preparing...", "- First: ready"]);
+});
+
+test("runDelegateCommands shows delegated command details in verbose mode", async () => {
+  const output: string[] = [];
+  const spawnBehaviors: boolean[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (_command, _args, _cwd, behavior) => {
+      spawnBehaviors.push(Boolean(behavior?.verbose));
+      return { code: 0 };
+    },
+  };
+
+  const code = await runDelegateCommands(runtime, [sampleCommands()[0] as DelegateCommand], {
+    ...options,
+    dryRun: false,
+    verbose: true,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawnBehaviors, [true]);
+  assert.ok(output.includes("\nFirst"));
+  assert.ok(output.some((message) => message.startsWith("$ first")));
+  assert.ok(!output.some((message) => message.includes("preparing...")));
 });
 
 test("runDelegateCommands can continue after failures", async () => {
