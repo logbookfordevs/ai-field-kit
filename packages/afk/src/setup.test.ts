@@ -87,6 +87,31 @@ test("runSetup explains selected MCPs without targets", async () => {
   assert.ok(text.includes("No MCP targets selected. Skipping MCP install."));
 });
 
+test("runSetup prepares manifests only once before running selected areas", async () => {
+  const homeDir = localHomeWithManifests();
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  promptState.defaultsSource = "local";
+  promptState.selection = {
+    areas: ["rules", "utils"],
+    agents: ["codex"],
+    hookAgents: [],
+    setupScope: "global",
+    skillIds: [],
+    skillAgents: [],
+    mcpIds: [],
+    utilIds: ["rtk"],
+    hookIds: [],
+  };
+
+  const code = await runSetup(fakeRuntime(output), defaultOptions(homeDir, repoDir));
+  const localManifestHeadings = output.filter((line) => line.includes("Local Manifests"));
+
+  assert.equal(code, 0);
+  assert.equal(localManifestHeadings.length, 1);
+});
+
 test("runSetup prompts for a run-only source without changing the saved default", async () => {
   const homeDir = localHomeWithManifests({
     "presets.json": { version: 1, defaultsSource: "acme/saved-kit", presets: [] },
@@ -166,7 +191,7 @@ test("runArea prompts for a source for every interactive setup area", async () =
 
 test("runSetup with --yes uses a saved default source without prompting", async () => {
   const homeDir = localHomeWithManifests({
-    "presets.json": { version: 1, defaultsSource: "local", presets: [] },
+    "presets.json": { version: 1, defaultsSource: localDefaultsSource(), presets: [] },
   });
   const repoDir = localRepoWithRules();
   const output: string[] = [];
@@ -179,6 +204,7 @@ test("runSetup with --yes uses a saved default source without prompting", async 
 
   assert.equal(code, 0);
   assert.deepEqual(promptState.rememberedSources, []);
+  assert.ok(!output.join("\n").includes("RTK / init"));
 });
 
 function fakeRuntime(output: string[]): Runtime {

@@ -55,6 +55,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     agents: selection.agents,
     setupScope: selection.setupScope,
     scopeExplicit: true,
+    setupManifestsPrepared: true,
     selectedSkillIds: selection.skillIds,
     selectedSkillAgentIds: selection.skillAgents,
     selectedMcpIds: selection.mcpIds,
@@ -165,8 +166,8 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
     return sourceValidationCode;
   }
 
-  const sourceOptions = await resolveSetupSource(options);
-  const manifestCode = await ensureManifestFiles(runtime, sourceOptions);
+  const sourceOptions = options.setupManifestsPrepared ? options : await resolveSetupSource(options);
+  const manifestCode = options.setupManifestsPrepared ? 0 : await ensureManifestFiles(runtime, sourceOptions);
   if (manifestCode !== 0 || sourceOptions.initOnly) {
     return manifestCode;
   }
@@ -239,11 +240,20 @@ function validateNonInteractiveSource(runtime: Runtime, options: CliOptions): nu
 }
 
 async function resolveSetupSource(options: CliOptions): Promise<CliOptions> {
-  if (options.defaultsSourceExplicit || options.yes) {
+  if (options.defaultsSourceExplicit) {
     return { ...options, rememberDefaultsSource: false };
   }
 
   const rememberedSource = readRememberedDefaultsSource(options);
+  if (options.yes) {
+    return {
+      ...options,
+      defaultsSource: rememberedSource,
+      defaultsSourceExplicit: true,
+      rememberDefaultsSource: false,
+    };
+  }
+
   const selectedSource = await selectDefaultsSource(rememberedSource);
   return {
     ...options,

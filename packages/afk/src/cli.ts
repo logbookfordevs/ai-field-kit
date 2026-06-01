@@ -513,6 +513,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       defaultsSourceExplicit = true;
       if (trimmedValue === "github" || trimmedValue === "local") {
         rulesSource = trimmedValue;
+        if (trimmedValue === "github") {
+          defaultsSource = "";
+        }
       }
       index += 1;
       continue;

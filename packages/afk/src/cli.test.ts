@@ -111,6 +111,30 @@ test("runCli accepts default-source aliases", async () => {
   assert.ok(output.join("\n").includes("Default setup source updated to acme/legacy-kit"));
 });
 
+test("runCli keeps --source github mapped to the built-in AFK defaults source", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(String(input));
+    return new Response("missing", { status: 404 });
+  };
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-source-github-"));
+    const output: string[] = [];
+    const code = await withConsole(output, () => runCli(
+      ["setup", "refresh", "--dry-run", "--source", "github"],
+      { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    ));
+
+    assert.equal(code, 0);
+    assert.ok(requestedUrls.length > 0);
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("runCli accepts skills CLI agent targets for noninteractive skill installs", async () => {
   const homeDir = localHomeWithManifests({
     "skills.json": {

@@ -98,6 +98,7 @@ type ManifestOptions = Pick<
   "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "defaultsSource" | "dryRun" | "manifestLocal"
 > & {
   cwd?: string;
+  defaultsSourceExplicit?: boolean;
   rememberDefaultsSource?: boolean;
 };
 
@@ -148,7 +149,7 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
   const rememberedSource = rememberedDefaultsSource(manifestDir);
   const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
-  const shouldRefreshDefaults = options.refreshDefaults || Boolean(options.defaultsSource);
+  const shouldRefreshDefaults = options.refreshDefaults || options.defaultsSourceExplicit || Boolean(options.defaultsSource);
 
   if (!existsSync(manifestDir)) {
     operations.push({ type: "mkdir", path: manifestDir });
