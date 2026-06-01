@@ -18,6 +18,7 @@ export type CliOptions = {
   setupScope: SetupScope;
   scopeExplicit: boolean;
   dryRun: boolean;
+  verbose: boolean;
   yes: boolean;
   includeExternal: boolean;
   selectedSkillIds: string[];
@@ -44,6 +45,10 @@ export type CommandResult = {
   code: number;
 };
 
+export type SpawnBehavior = {
+  verbose: boolean;
+};
+
 export type Io = {
   stdout: (message: string) => void;
   stderr: (message: string) => void;
@@ -51,7 +56,7 @@ export type Io = {
 
 export type Runtime = {
   io: Io;
-  spawn: (command: string, args: string[], cwd?: string) => Promise<CommandResult>;
+  spawn: (command: string, args: string[], cwd?: string, behavior?: SpawnBehavior) => Promise<CommandResult>;
 };
 
 export type PathOperation =

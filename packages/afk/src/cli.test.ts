@@ -65,6 +65,7 @@ test("runCli prints contextual setup help", async () => {
   assert.ok(text.includes("afk setup refresh"));
   assert.ok(text.includes("afk setup mcps"));
   assert.ok(text.includes("afk setup hooks"));
+  assert.ok(text.includes("--verbose"));
   assert.ok(!text.includes("afk setup mcps install"));
   assert.ok(text.includes("--defaults-source <source>"));
   assert.ok(text.includes("afk setup refresh --defaults-source your-org/dev-kit"));
@@ -79,6 +80,7 @@ test("runCli prints contextual area help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("AFK setup MCPs"));
   assert.ok(text.includes("Delegate selected MCP recommendations to add-mcp."));
+  assert.ok(text.includes("--verbose                         Show delegated installer output"));
   assert.ok(text.includes("--yes, -y                         Accept defaults and skip prompts"));
   assert.ok(text.includes("--agent <agent>                   Limit agent targets; repeatable"));
   assert.ok(text.includes("--defaults-source <source>        Use and remember a custom remote or local defaults source"));
@@ -109,7 +111,7 @@ test("runCli accepts skills CLI agent targets for noninteractive skill installs"
   });
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(
-    ["setup", "skills", "--dry-run", "--yes", "--agent", "claude-code"],
+    ["setup", "skills", "--dry-run", "--verbose", "--yes", "--agent", "claude-code"],
     { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
   ));
   const text = output.join("\n");
