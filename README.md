@@ -86,6 +86,7 @@ project before running project-local setup:
 
 ```bash
 pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
+// or npx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
 afk setup --local --dry-run
 ```
 
@@ -97,8 +98,8 @@ delegated skill/MCP installers.
 If you want to work from source, clone the repo and run the package directly:
 
 ```bash
-git clone https://github.com/logbookfordevs/ai-field-kit.git ~/codes/ai-field-kit
-cd ~/codes/ai-field-kit
+git clone https://github.com/logbookfordevs/ai-field-kit.git
+cd ai-field-kit
 pnpm --dir packages/afk install
 pnpm --dir packages/afk run build
 node packages/afk/dist/index.js setup --dry-run
