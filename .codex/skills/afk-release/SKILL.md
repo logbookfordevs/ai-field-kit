@@ -40,7 +40,8 @@ Use `minor` or `major` instead when requested.
 7. Push main and the new tag:
 
 ```bash
-git push origin main --follow-tags
+tag="v$(node -p "require('./packages/afk/package.json').version")"
+git push origin main "$tag"
 ```
 
 8. Report the pushed tag and mention that a GitHub Release can be created from that tag if desired.
