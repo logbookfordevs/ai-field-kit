@@ -12,6 +12,7 @@ This changelog tracks meaningful updates by version and date.
 ## TBD - TBD
 
 - `cli:` clarified guided setup agent-target prompts so rules, MCPs, and hooks name their destination purpose instead of using a vague shared "agent targets" label.
+- `cli:` added interactive setup source selection before manifest loading, with `--source` for one-run overrides, `--default-source` for saving the preselected default, and `--yes` now requiring an explicit or saved source.
 - `cli:` added `--verbose` for setup delegation so AFK can keep noisy upstream installer output hidden by default while still exposing raw CLI logs on demand.
 - `cli:` made guided MCP delegation pass `add-mcp -y` after AFK has collected MCP and target-agent choices, and now clearly reports when selected MCPs have no target agents instead of silently doing nothing.
 - `cli:` kept utility setup non-interactive for `npx`-backed installers by passing npm's own `--yes` flag before the package name, starting with the Impeccable utility installer.
