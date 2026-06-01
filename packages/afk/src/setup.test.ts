@@ -56,6 +56,31 @@ test("runSetup keeps prompted rule targets out of utility defaults", async () =>
   assert.ok(text.includes("RTK / init OpenCode"));
 });
 
+test("runSetup explains selected MCPs without targets", async () => {
+  const homeDir = localHomeWithManifests();
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  promptState.selection = {
+    areas: ["mcps"],
+    agents: [],
+    hookAgents: [],
+    setupScope: "global",
+    skillIds: [],
+    skillAgents: [],
+    mcpIds: ["stitch"],
+    utilIds: [],
+    hookIds: [],
+  };
+
+  const code = await runSetup(fakeRuntime(output), defaultOptions(homeDir, repoDir));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("MCPs"));
+  assert.ok(text.includes("No MCP targets selected. Skipping MCP install."));
+});
+
 function fakeRuntime(output: string[]): Runtime {
   return {
     io: {

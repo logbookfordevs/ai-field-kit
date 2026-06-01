@@ -28,6 +28,11 @@ export function buildSkillCommands(options: CliOptions): DelegateCommand[] {
 
 export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "homeDir" | "selectedMcpIds" | "setupScope">): DelegateCommand[] {
   const manifest = loadMcpManifest(options);
+  const hasAfkSelection = options.selectedMcpIds.length > 0;
+  if (!options.yes && hasAfkSelection && options.agents.length === 0) {
+    return [];
+  }
+
   const agentArgs = buildAddMcpAgentArgs(options.agents, options.yes, options.setupScope);
   if (options.agents.length > 0 && agentArgs.length === 0) {
     return [];
@@ -44,7 +49,7 @@ export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "h
         ...item.args,
         ...(options.setupScope === "global" ? ["-g"] : []),
         ...agentArgs,
-        ...(options.yes ? ["-y"] : []),
+        ...(options.yes || hasAfkSelection ? ["-y"] : []),
       ],
     }));
 }

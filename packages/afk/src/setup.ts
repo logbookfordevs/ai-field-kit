@@ -175,6 +175,11 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         return 0;
       }
 
+      if (!selectedOptions.yes && selectedOptions.selectedMcpIds.length > 0 && selectedOptions.agents.length === 0) {
+        runtime.io.stdout("\nNo MCP targets selected. Skipping MCP install.");
+        return 0;
+      }
+
       return runDelegateCommands(runtime, buildMcpCommands(selectedOptions), selectedOptions);
     }
     case "utils": {

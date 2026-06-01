@@ -165,6 +165,27 @@ test("buildMcpCommands omits global scope for project installs", () => {
   assert.ok(commands[0]?.args.includes("codex"));
 });
 
+test("buildMcpCommands skips upstream confirmation after AFK MCP selection", () => {
+  const commands = buildMcpCommands({
+    ...options,
+    yes: false,
+    selectedMcpIds: ["stitch"],
+  });
+
+  assert.ok(commands[0]?.args.includes("-y"));
+});
+
+test("buildMcpCommands skips guided MCP installs when no AFK targets were selected", () => {
+  const commands = buildMcpCommands({
+    ...options,
+    agents: [],
+    yes: false,
+    selectedMcpIds: ["stitch"],
+  });
+
+  assert.deepEqual(commands, []);
+});
+
 test("buildUtilityCommands installs selected utilities", () => {
   const commands = buildUtilityCommands({ ...options, selectedUtilIds: ["plannotator"] });
   assert.equal(commands.length, 1);
