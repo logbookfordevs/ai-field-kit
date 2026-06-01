@@ -8,6 +8,7 @@ import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils
 import { ensureLocalManifests } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
+import type { SetupSelection } from "./interactive.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
@@ -65,7 +66,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
   runtime.io.stdout(`- Scope: ${scopeLabel(selection.setupScope, options.cwd)}`);
   runtime.io.stdout(`- Areas: ${selection.areas.join(", ")}`);
   if (selection.agents.length > 0) {
-    runtime.io.stdout(`- Agents: ${selection.agents.join(", ")}`);
+    runtime.io.stdout(`- ${agentSummaryLabel(selection.areas)}: ${selection.agents.join(", ")}`);
   }
   if (selection.skillAgents.length > 0) {
     runtime.io.stdout(`- Additional skill agents: ${selection.skillAgents.join(", ")}`);
@@ -75,7 +76,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
 
   for (const area of selection.areas) {
     runtime.io.stdout(`\n${sectionTitle(areaLabel(area))}`);
-    const areaOptions = area === "hooks" ? { ...selectedOptions, agents: selection.hookAgents } : selectedOptions;
+    const areaOptions = areaOptionsForSetupArea(area, options, selectedOptions, selection);
     const code = await runArea(area, runtime, areaOptions);
     if (code !== 0) {
       failures.push({ area, code });
@@ -104,6 +105,42 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     areas: selection.areas.map(areaLabel),
   }));
   return 0;
+}
+
+function areaOptionsForSetupArea(
+  area: Area,
+  originalOptions: CliOptions,
+  selectedOptions: CliOptions,
+  selection: SetupSelection,
+): CliOptions {
+  if (area === "hooks") {
+    return { ...selectedOptions, agents: selection.hookAgents };
+  }
+
+  if (area === "utils") {
+    return { ...selectedOptions, agents: originalOptions.agents };
+  }
+
+  return selectedOptions;
+}
+
+function agentSummaryLabel(areas: Area[]): string {
+  const hasRules = areas.includes("rules");
+  const hasMcps = areas.includes("mcps");
+
+  if (hasRules && hasMcps) {
+    return "Rules/MCP targets";
+  }
+
+  if (hasRules) {
+    return "Rules targets";
+  }
+
+  if (hasMcps) {
+    return "MCP targets";
+  }
+
+  return "Agents";
 }
 
 export async function runArea(area: Area, runtime: Runtime, options: CliOptions): Promise<number> {
@@ -135,6 +172,11 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const selectedOptions = await resolveMcpOptions(options);
       if (!selectedOptions.yes && selectedOptions.selectedMcpIds.length === 0) {
         runtime.io.stdout("\nNo MCPs selected. No changes planned.");
+        return 0;
+      }
+
+      if (!selectedOptions.yes && selectedOptions.selectedMcpIds.length > 0 && selectedOptions.agents.length === 0) {
+        runtime.io.stdout("\nNo MCP targets selected. Skipping MCP install.");
         return 0;
       }
 

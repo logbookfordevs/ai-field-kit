@@ -76,7 +76,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
   const areas = await selectCheckbox("Choose what AFK should prepare", setupAreaChoices);
   const utilIds = areas.includes("utils") ? await selectUtils(options) : [];
   const needsAgents = areas.some((area) => area === "rules" || area === "mcps");
-  const agents = needsAgents ? await selectAgents(options.agents) : options.agents;
+  const agents = needsAgents ? await selectAgents(options.agents, agentPromptMessage(areas)) : options.agents;
   const skillIds = areas.includes("skills") ? await selectSkills(options) : [];
   const skillAgents = skillIds.length > 0 ? await selectSkillAgents(options) : [];
   const mcpIds = areas.includes("mcps") ? await selectMcps(options) : [];
@@ -102,7 +102,7 @@ export async function selectRulesSync(options: CliOptions): Promise<Pick<SetupSe
   }
 
   resetPromptSteps();
-  return { agents: await selectAgents(options.agents) };
+  return { agents: await selectAgents(options.agents, agentPromptMessage(["rules"])) };
 }
 
 export async function selectSkillsInstall(options: CliOptions): Promise<Pick<SetupSelection, "skillIds" | "skillAgents">> {
@@ -131,7 +131,7 @@ export async function selectMcpsInstall(options: CliOptions): Promise<Pick<Setup
 
   resetPromptSteps();
   return {
-    agents: await selectAgents(options.agents),
+    agents: await selectAgents(options.agents, agentPromptMessage(["mcps"])),
     mcpIds: await selectMcps(options),
   };
 }
@@ -216,12 +216,31 @@ async function selectSetupScope(cwd: string): Promise<SetupScope> {
   });
 }
 
-async function selectAgents(preselected: AgentId[]): Promise<AgentId[]> {
-  return selectAgentChoices("Choose agent targets", agentIds, preselected);
+function agentPromptMessage(areas: Area[]): string {
+  const hasRules = areas.includes("rules");
+  const hasMcps = areas.includes("mcps");
+
+  if (hasRules && hasMcps) {
+    return "Choose agents for rules and MCPs";
+  }
+
+  if (hasRules) {
+    return "Choose agents for rules";
+  }
+
+  if (hasMcps) {
+    return "Choose agents for MCPs";
+  }
+
+  return "Choose agents";
+}
+
+async function selectAgents(preselected: AgentId[], message: string): Promise<AgentId[]> {
+  return selectAgentChoices(message, agentIds, preselected);
 }
 
 async function selectHookAgents(preselected: AgentId[]): Promise<AgentId[]> {
-  return selectAgentChoices("Choose hook targets", hookAgentIds, preselected);
+  return selectAgentChoices("Choose agents for hooks", hookAgentIds, preselected);
 }
 
 async function selectAgentChoices(message: string, choices: AgentId[], preselected: AgentId[]): Promise<AgentId[]> {
