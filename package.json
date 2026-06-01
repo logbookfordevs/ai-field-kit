@@ -6,6 +6,7 @@
     "afk:build": "pnpm --dir packages/afk build",
     "afk:test": "pnpm --dir packages/afk test",
     "afk:typecheck": "pnpm --dir packages/afk typecheck",
+    "afk:version": "npm --prefix packages/afk version",
     "site:build": "pnpm --dir apps/site build",
     "site:dev": "pnpm --dir apps/site dev",
     "site:preview": "pnpm --dir apps/site preview"

@@ -32,8 +32,7 @@ git commit -m "Prepare AFK vX.Y.Z release notes"
 6. Let npm own the version commit and tag:
 
 ```bash
-cd packages/afk
-npm version patch
+pnpm afk:version patch
 ```
 
 Use `minor` or `major` instead when requested.
