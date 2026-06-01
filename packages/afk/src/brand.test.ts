@@ -10,6 +10,13 @@ test("renderBanner shows the larger AFK identity", () => {
   assert.ok(banner.includes("/ ____/ //_"));
 });
 
+test("renderBanner can remind setup users to refresh manifests", () => {
+  const banner = renderBanner({ showRefreshHint: true });
+
+  assert.ok(banner.includes("afk setup refresh"));
+  assert.ok(banner.includes("local manifests"));
+});
+
 test("renderSetupOutro closes setup with AFK-owned context", () => {
   const outro = renderSetupOutro({
     dryRun: true,

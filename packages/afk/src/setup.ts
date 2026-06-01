@@ -10,7 +10,7 @@ import { defaultCheckedDetail } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
-  runtime.io.stdout(renderBanner());
+  runtime.io.stdout(renderBanner({ showRefreshHint: !options.refreshDefaults }));
 
   if (options.refreshDefaults) {
     runtime.io.stdout(
