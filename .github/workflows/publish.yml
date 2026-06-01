@@ -1,0 +1,73 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-afk:
+    if: github.repository == 'logbookfordevs/ai-field-kit'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify release tag
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          package_version="$(node -p "require('./packages/afk/package.json').version")"
+
+          if [[ "$tag" != "v$package_version" ]]; then
+            echo "Release tag $tag does not match packages/afk/package.json version $package_version."
+            exit 1
+          fi
+
+          git fetch origin main --depth=1
+          release_sha="$(git rev-list -n 1 "$tag")"
+          main_sha="$(git rev-parse origin/main)"
+
+          if [[ "$release_sha" != "$main_sha" ]]; then
+            echo "Release tag $tag points at $release_sha, but origin/main is $main_sha."
+            exit 1
+          fi
+
+      - name: Typecheck AFK CLI
+        run: pnpm afk:typecheck
+
+      - name: Test AFK CLI
+        run: pnpm afk:test
+
+      - name: Check AFK package contents
+        run: pnpm --dir packages/afk pack --dry-run
+
+      - name: Publish AFK CLI to npm
+        working-directory: packages/afk
+        run: npm publish --access public
