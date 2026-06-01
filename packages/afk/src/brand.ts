@@ -1,7 +1,10 @@
 import { ansi, bold, paint, reset, routeGradient, terminalPalette } from "./terminal-theme.js";
 import type { UpdateNotice } from "./update-check.js";
 
-export function renderBanner(input: { updateNotice?: UpdateNotice | null } = {}): string {
+export function renderBanner(input: {
+  showRefreshHint?: boolean;
+  updateNotice?: UpdateNotice | null;
+} = {}): string {
   const title = [
     "    ___     ________ __",
     "   /   |   / ____/ //_/",
@@ -11,6 +14,7 @@ export function renderBanner(input: { updateNotice?: UpdateNotice | null } = {})
   ];
   const name = "AI FIELD KIT";
   const subtitle = "setup router for agentic dev work";
+  const refreshHint = "Missing something new? Run afk setup refresh to update local manifests.";
   const rule = "─".repeat(54);
 
   return [
@@ -21,6 +25,7 @@ export function renderBanner(input: { updateNotice?: UpdateNotice | null } = {})
     `${bold}${brandText(name)}${reset}`,
     muted(subtitle),
     ...renderUpdateNotice(input.updateNotice),
+    ...(input.showRefreshHint ? [muted(refreshHint)] : []),
     gradient(rule),
     "",
   ].join("\n");

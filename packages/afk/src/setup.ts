@@ -15,7 +15,10 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     ? null
     : await resolveUpdateNotice({ currentVersion: packageVersion() });
 
-  runtime.io.stdout(renderBanner({ updateNotice }));
+  runtime.io.stdout(renderBanner({
+    showRefreshHint: !options.refreshDefaults,
+    updateNotice,
+  }));
 
   if (options.refreshDefaults) {
     runtime.io.stdout(

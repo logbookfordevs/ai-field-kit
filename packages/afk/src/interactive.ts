@@ -75,7 +75,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
   const setupScope = options.scopeExplicit ? options.setupScope : await selectSetupScope(options.cwd);
   const areas = await selectCheckbox("Choose what AFK should prepare", setupAreaChoices);
   const utilIds = areas.includes("utils") ? await selectUtils(options) : [];
-  const needsAgents = areas.some((area) => area === "rules" || area === "mcps") || utilIds.includes("rtk");
+  const needsAgents = areas.some((area) => area === "rules" || area === "mcps");
   const agents = needsAgents ? await selectAgents(options.agents) : options.agents;
   const skillIds = areas.includes("skills") ? await selectSkills(options) : [];
   const skillAgents = skillIds.length > 0 ? await selectSkillAgents(options) : [];
@@ -146,8 +146,7 @@ export async function selectUtilsInstall(options: CliOptions): Promise<Pick<Setu
 
   resetPromptSteps();
   const utilIds = await selectUtils(options);
-  const agents = utilIds.includes("rtk") ? await selectAgents(options.agents) : options.agents;
-  return { agents, utilIds };
+  return { agents: options.agents, utilIds };
 }
 
 export async function selectHooksInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "hookIds">> {

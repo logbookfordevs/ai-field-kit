@@ -15,6 +15,7 @@ This changelog tracks meaningful updates by version and date.
 - `release:` renamed the publishable AFK CLI package to `@logbookfordevs/afk` and made npm the recommended user-facing install path.
 - `docs:` moved the hosted `install.sh` path out of the public setup journey; `scripts/install.sh --local` is now documented as a development helper.
 - `cli:` added a compact additional-agent prompt for skill installs that explains `.agents/skills` as always included, then passes selected Claude Code, Kiro CLI, Kilo Code, Pi, and Droid targets through to the official `skills` CLI with `--agent`, including noninteractive `afk setup skills --yes --agent ...` runs.
+- `cli:` refined guided setup so a utilities-only route no longer asks for agent targets, and the setup banner now points to `afk setup refresh` when local manifests may be stale.
 - `repo:` migrated AFK CLI tests from Node's built-in test runner to Vitest and added GitHub Actions CI for AFK typecheck, AFK tests, and the site production build.
 
 ## v0.5.2 - 2026-05-27
