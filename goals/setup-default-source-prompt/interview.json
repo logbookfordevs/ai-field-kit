@@ -1,0 +1,99 @@
+{
+  "stage": "interview",
+  "title": "Interactive Setup Default Source",
+  "goalSlug": "setup-default-source-prompt",
+  "questions": [
+    {
+      "id": "source_prompt_behavior",
+      "prompt": "What should happen when a user runs an interactive setup command without providing a source flag?",
+      "description": "This applies to afk setup and every setup area subcommand such as rules, skills, mcps, utils, and hooks.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Always ask which defaults source/origin to use. If no saved default exists, require the user to choose or enter one. If a saved default exists, preselect it so Enter continues with that source.",
+      "recommendedOptionIds": ["always_prompt_with_default"],
+      "options": [
+        {
+          "id": "always_prompt_with_default",
+          "label": "Always prompt with default"
+        },
+        {
+          "id": "first_run_only",
+          "label": "First run only"
+        },
+        {
+          "id": "prompt_only_when_missing",
+          "label": "Only when missing"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "saving_default_behavior",
+      "prompt": "When should AFK update the saved default source?",
+      "description": "Choosing a different source during an interactive setup can either be one-run-only or persisted.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Only the explicit default-source flag should persist a new default. Interactive choices and one-off source overrides should affect only the current setup run.",
+      "recommendedOptionIds": ["explicit_flag_only"],
+      "options": [
+        {
+          "id": "explicit_flag_only",
+          "label": "Explicit flag only"
+        },
+        {
+          "id": "interactive_can_save",
+          "label": "Interactive can save"
+        },
+        {
+          "id": "any_source_saves",
+          "label": "Any source saves"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "default_source_flag_name",
+      "prompt": "Which flag name should be the user-facing command for changing the saved default source?",
+      "description": "The current code exposes --defaults-source. Your request said default source in singular terms, so this decides whether to rename, alias, or keep the existing flag.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Introduce --default-source <source> as the preferred flag. Keep --defaults-source <source> as a backwards-compatible alias unless you want a hard rename.",
+      "recommendedOptionIds": ["singular_with_alias"],
+      "options": [
+        {
+          "id": "singular_with_alias",
+          "label": "Singular plus alias"
+        },
+        {
+          "id": "singular_only",
+          "label": "Singular only"
+        },
+        {
+          "id": "keep_existing_plural",
+          "label": "Keep existing plural"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "yes_mode_behavior",
+      "prompt": "How should --yes behave with source selection?",
+      "description": "--yes currently skips prompts, so source choice needs a deterministic rule.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "--yes should not prompt. It should use an explicit one-run source if provided, otherwise the saved default if present, otherwise the built-in AFK source.",
+      "recommendedOptionIds": ["yes_no_prompt"],
+      "options": [
+        {
+          "id": "yes_no_prompt",
+          "label": "--yes skips prompt"
+        },
+        {
+          "id": "yes_can_fail_without_default",
+          "label": "--yes requires default"
+        },
+        {
+          "id": "yes_still_prompts_source",
+          "label": "--yes prompts source"
+        }
+      ],
+      "required": true
+    }
+  ]
+}

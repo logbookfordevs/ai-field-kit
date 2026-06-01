@@ -1,0 +1,45 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "ai-field-kit",
+  "homepage": "https://github.com/logbookfordevs/ai-field-kit",
+  "items": [
+    {
+      "name": "afk-manifests",
+      "type": "registry:item",
+      "title": "AFK Manifests",
+      "description": "Project-local AFK setup manifests for rules, skills, MCPs, utilities, hooks, and presets.",
+      "files": [
+        {
+          "path": "packages/afk/manifests/skills.json",
+          "type": "registry:file",
+          "target": "~/afk/manifests/skills.json"
+        },
+        {
+          "path": "packages/afk/manifests/mcps.json",
+          "type": "registry:file",
+          "target": "~/afk/manifests/mcps.json"
+        },
+        {
+          "path": "packages/afk/manifests/rules.json",
+          "type": "registry:file",
+          "target": "~/afk/manifests/rules.json"
+        },
+        {
+          "path": "packages/afk/manifests/utils.json",
+          "type": "registry:file",
+          "target": "~/afk/manifests/utils.json"
+        },
+        {
+          "path": "packages/afk/manifests/hooks.json",
+          "type": "registry:file",
+          "target": "~/afk/manifests/hooks.json"
+        },
+        {
+          "path": "packages/afk/manifests/presets.json",
+          "type": "registry:file",
+          "target": "~/afk/manifests/presets.json"
+        }
+      ]
+    }
+  ]
+}
