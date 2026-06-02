@@ -176,25 +176,9 @@ For examples, see [notes-and-decisions.md](references/notes-and-decisions.md).
 
 ## Design And Product Review Guides
 
-When a checkpoint includes a `design` or `product` review gate, include a short guided tour for the current task, phase, or checkpoint. Write it as a reviewer journey, not as a generic QA checklist.
+When a checkpoint includes a `design` or `product` review gate, include a short reviewer journey for the current task, phase, or checkpoint.
 
-When handing off a task with `design` or `product` review gates, explicitly say which reviews are needed and name the visual states, behavior, copy, or workflow to check.
-
-Use this shape when helpful:
-
-```markdown
-### Review Guide: <phase or task name>
-
-- Start from: <screen, command, route, state, or fixture>
-- Walkthrough: <the happy-path flow the reviewer should try>
-- Expected: <what should happen and what should feel different or correct>
-- Stress: <edge cases, awkward inputs, slow states, empty states, permission boundaries, or repeated actions>
-- Watch for: <regressions, confusing copy, visual mismatch, broken workflow, or product-fit concerns>
-```
-
-Keep it proportional to the product risk. A small UI copy change may need two bullets. A workflow change that affects user decisions, data integrity, payments, permissions, onboarding, or cross-role behavior should get a fuller tour.
-
-Skip this section for code-only review gates. Code review already has an obvious surface: the diff, validation results, and implementation notes.
+Skip this section for code-only review gates. For guide shape and examples, see [review-guides.md](references/review-guides.md).
 
 ## Operating Loop
 
