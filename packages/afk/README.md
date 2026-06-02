@@ -28,8 +28,8 @@ afk setup
 ```
 
 Interactive setup starts with nothing selected. Use space to choose the areas
-and items you want. Scripted setup can use `--yes` to accept defaults and skip
-prompts.
+and items you want. Scripted setup can use `--yes` to accept defaults after you
+pass `--source` for that run or save a source with `--default-source`.
 
 ## What AFK Sets Up
 
@@ -97,7 +97,7 @@ afk setup
 # Preview first
 afk setup --dry-run
 
-# Non-interactive default setup
+# Non-interactive default setup after a source is saved
 afk setup --yes
 
 # Project-local setup
@@ -136,11 +136,11 @@ These flags apply to `afk setup` and most area commands.
 | `--scope global/project` | Choose machine-wide setup or current-project setup. |
 | `--local` | Alias for `--scope project`, except on `setup refresh`, where it refreshes `./afk/manifests`. |
 | `--agent <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
-| `--source github/local` | Choose whether default AFK rules/manifests come from GitHub or this checkout. |
+| `--source <source>` | Use a setup source for this run only. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK manifests and rules. |
 | `--init-only` | Create or update manifest files, then exit without setup. |
 | `--empty` | With `--init-only` or `setup refresh`, create empty manifest files. |
-| `--defaults-source <source>` | Use and remember a custom defaults source. |
+| `--default-source <source>` | Save a default setup source and exit. |
 
 General setup agent values are:
 
@@ -283,8 +283,9 @@ You can make AFK a setup router for your own team or personal toolkit. Put
 convention-compatible manifests in another repo, then point AFK at it:
 
 ```bash
-afk setup refresh --defaults-source your-org/dev-kit
-afk setup --defaults-source your-org/dev-kit
+afk setup --source your-org/dev-kit
+afk setup --default-source your-org/dev-kit
+afk setup refresh --source your-org/dev-kit
 ```
 
 For a normal GitHub repo, AFK looks in both of these locations:
@@ -294,7 +295,7 @@ afk/manifests/
 packages/afk/manifests/
 ```
 
-`--defaults-source` accepts:
+`--source` and `--default-source` accept:
 
 | Source shape | Example |
 |---|---|
@@ -304,7 +305,8 @@ packages/afk/manifests/
 | Raw GitHub directory URL | `https://raw.githubusercontent.com/your-org/dev-kit/main/afk/manifests` |
 | Local path | `./afk/manifests` |
 
-When you pass a defaults source, AFK remembers it in `presets.json`. Later
+`--source` applies only to the current run. `--default-source` saves the source
+in `presets.json` and exits; later `afk setup`, `afk setup --yes`, and
 `afk setup refresh` runs can reuse the remembered source without repeating the
 flag. `presets.json` is not used for local detected-agent state; custom local
 target evidence belongs in `~/.agents/afk/setup-targets.json`.
@@ -356,7 +358,7 @@ afk manifests configure --local --dry-run
 ```
 
 This writes or previews `./afk/manifests/`, which can be committed to a repo
-and used later with `--defaults-source`.
+and used later with `--source` or `--default-source`.
 
 ## Manifest Examples
 
