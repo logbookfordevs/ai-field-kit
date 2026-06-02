@@ -1,6 +1,5 @@
 # Documentation Instructions
-When the task is explicitly about writing, rewriting, restructuring, or reviewing docs, use the **`afk-doc-craft` skill**.
-
+When the task is explicitly about writing, rewriting, restructuring, or reviewing docs, use the `afk-doc-craft` skill.
 Treat docs as reader-facing product work; let the skill provide the detailed writing doctrine.
 
 # Library Preferences
@@ -36,33 +35,29 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 
 ## Commands
 - Don't run dev server commands (like `npm run dev`) - assume it's already running.
-- Focus on checking commands like typecheck or lint.
 
 ## Worktrees
-- When creating or managing git worktrees, prefer the installed `yggtree` CLI.
-- Use `yggtree --help` to inspect the available workflow before choosing commands.
+- When creating or managing git worktrees, prefer the installed `yggtree` CLI, check `yggtree --help`to inspect available workflow commands.
 
 ## Package Managers
-- Use pnpm if the project already uses it. Prefer pnpm in new projects.
+- Check and follow the current project's package manager. Always chose pnpm in new projects.
 
 ## Tech Stack
-When uncertain, prefer: Tailwind, TypeScript, React.
+For web applications or related React work, use: Tailwind V4, TypeScript, and my preferred libraries where necessary.
 
 ## Frontend UX Defaults
-- UX quality beats avoiding setup. For standard app primitives in React/Tailwind, use the **`afk-ui-registry-preferences` skill** before choosing custom UI or a registry.
+- UX quality beats avoiding setup. For standard app primitives in React/Tailwind, use the `afk-ui-registry-preferences` skill before choosing custom UI or a registry.
 - Prefer mature primitives or registry components when they materially improve UX, accessibility, responsiveness, or interaction quality.
 - Mobile is not degraded desktop; replace cramped, wrapped, clipped, or awkward controls with proper responsive patterns.
 
 ## Coding Style Instructions
 Keep code: Readable, Maintainable, Easy to onboard into. DX is always important.
 When the task is a review/refactor guidance, prefer explicit review.
-
 When evaluating code and thinking between solutions, apply `Truss Evaluation` skill as criteria.
-
-_Remember: your role is to be a critical thinking partner who also values code that's a pleasure to work with. Always question if we're creating something devs will love to use and maintain._
+Remember: your role is to be a critical thinking partner who also values code that's a pleasure to work with. Always question if we're creating something devs will love to use and maintain.
 
 ## Browser
-- For all we browsing, prefer `agent-browser` skill when available.
+- For browser automated tests, prefer `agent-browser` skill when no other option is specified.
 
 ## Comments
 - Do not add comments that merely narrate the code, mention tickets, or explain each line of a solution.
@@ -70,7 +65,7 @@ _Remember: your role is to be a critical thinking partner who also values code t
 - Keep necessary comments short and focused on resolving that ambiguity.
 
 ## AFK Workflow
-- For any non-trivial product or engineering workflow, use the **`afk-workflow` skill**: brainstorming, elicitation, PRDs, specs, RFCs, implementation plans, execution, testing, validation, tracking, or handoff.
+- For any spec-oriented engineering workflow, use the `afk-workflow` skill: brainstorming, elicitation, PRDs, specs, RFCs, implementation plans, execution, testing, validation, tracking, or handoff.
 - Skip it only for quick one-shot operations where no workflow state, artifact, or handoff is needed.
 
 ## Dictionary

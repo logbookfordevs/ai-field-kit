@@ -69,8 +69,8 @@ When preparing execution tracking:
 - Create `.afk/execution-tracking/current.json`.
 - Create a detailed checkpoint file only for the active slice.
 - Keep future slices as index rows until they start.
-- Pre-create future checkpoint files only for scaffold mode, parallel work, locked plans, or known blockers.
-- If future files are created early, keep them skeletal and mark them as placeholders.
+- Create a future checkpoint file early only when it already has useful content to hold: scaffold mode, parallel work, explicitly assigned future checkpoints, a known blocker, or a deferred note from the current slice.
+- If a future file is created early, create only the needed file, keep it skeletal except for the useful content, and link it from the canonical index row. Do not expand the rest of the future tracking set.
 
 ## Statuses
 
@@ -161,6 +161,8 @@ The body can be flexible. The non-negotiable part is that a new agent can open t
 During execution, record task-local notes for deviations, assumptions, trade-offs, scope changes, surprising constraints, and reviewer or next-agent context.
 
 Prefer the active checkpoint file. If notes grow beyond the current checkpoint or need to survive as a standalone handoff, use `docs/<task-slug>/<task-slug>.implementation-notes.md`.
+
+If a note belongs to a later slice, put it in that slice's checkpoint file and link the file from the canonical index. Do not bury future-only context in the active checkpoint unless it also changes the current slice.
 
 If a decision changes architecture, ownership, integration contracts, data model, migration strategy, or long-term maintenance expectations, create or update an ADR under `docs/<task-slug>/decisions/` unless the repo has a stronger convention.
 
