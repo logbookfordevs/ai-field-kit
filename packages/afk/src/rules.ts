@@ -1,6 +1,5 @@
 import { dirname, join } from "node:path";
 import { applyOperation, backupTarget, formatOperation, isSymlink, pathExists, readText, summarizeOperations } from "./fs-utils.js";
-import { filterAgents } from "./agents.js";
 import { loadRulesManifest } from "./manifest.js";
 import type { AgentId, CliOptions, PathOperation, Runtime } from "./types.js";
 
@@ -43,7 +42,7 @@ export function planRulesSync(
     return planProjectRules(options, normalizedRules, timestamp);
   }
 
-  for (const agent of filterAgents(options.agents, globalRulesAgents)) {
+  for (const agent of options.agents.filter((agent) => globalRulesAgents.includes(agent))) {
     operations.push(...removeLegacySidecars(dirname(agentRulesDestination(options.homeDir, agent)), timestamp));
     operations.push(...upsertManagedRulesRegion(agentRulesDestination(options.homeDir, agent), normalizedRules, timestamp));
   }
@@ -61,7 +60,7 @@ function planProjectRules(
   timestamp: string,
 ): PathOperation[] {
   const operations: PathOperation[] = [];
-  const selected = filterAgents(options.agents, ["antigravity", "claude", "codex", "opencode"]);
+  const selected = options.agents.filter((agent) => ["antigravity", "claude", "codex", "opencode"].includes(agent));
   const hostPaths = new Set<string>();
 
   for (const agent of selected) {
@@ -180,7 +179,7 @@ function planClaudeRules(homeDir: string, content: RulesContent, timestamp: stri
 }
 
 function shouldConfigureClaude(agents: AgentId[]): boolean {
-  return agents.length === 0 || agents.includes("claude");
+  return agents.includes("claude");
 }
 
 function removeLegacySidecars(directory: string, timestamp: string): PathOperation[] {

@@ -11,6 +11,9 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+- `cli:` added conservative setup target detection so rules, MCPs, hooks, and additional skill-provider installs use detected compatible agent surfaces by default instead of repeatedly asking for agent targets.
+- `cli:` added `~/.agents/afk/setup-targets.json` for custom local agent target evidence paths, keeping machine-specific target configuration out of `presets.json`.
+- `cli:` changed empty setup target lists to mean "no resolved target" instead of expanding to every supported rules or MCP target; explicit `--agent` flags still override detected targets.
 - `repo:` added a shadcn-compatible GitHub registry entrypoint with an `afk-manifests` item that installs the default AFK manifest bundle into project-local `./afk/manifests/`.
 - `cli:` clarified guided setup agent-target prompts so rules, MCPs, and hooks name their destination purpose instead of using a vague shared "agent targets" label.
 - `cli:` added interactive setup source selection before manifest loading, with `--source` for one-run overrides, `--default-source` for saving the preselected default, and `--yes` now requiring an explicit or saved source.

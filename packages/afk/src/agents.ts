@@ -68,11 +68,3 @@ export function normalizeAgentId(value: string): AgentId | null {
 
   return isAgentId(value) ? value : null;
 }
-
-export function filterAgents(selected: AgentId[], supported: AgentId[]): AgentId[] {
-  if (selected.length === 0) {
-    return supported;
-  }
-
-  return selected.filter((agent) => supported.includes(agent));
-}

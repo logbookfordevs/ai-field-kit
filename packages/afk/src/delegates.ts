@@ -29,7 +29,7 @@ export function buildSkillCommands(options: CliOptions): DelegateCommand[] {
 export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "homeDir" | "selectedMcpIds" | "setupScope">): DelegateCommand[] {
   const manifest = loadMcpManifest(options);
   const hasAfkSelection = options.selectedMcpIds.length > 0;
-  if (!options.yes && hasAfkSelection && options.agents.length === 0) {
+  if (options.agents.length === 0) {
     return [];
   }
 
@@ -156,7 +156,7 @@ function isInteractiveTerminal(): boolean {
 }
 
 function buildAddMcpAgentArgs(agents: AgentId[], nonInteractive: boolean, scope: "global" | "project"): string[] {
-  const selected = agents.length > 0 ? agents : nonInteractive ? defaultMcpAgents(scope) : [];
+  const selected = agents;
   const args: string[] = [];
 
   for (const agent of selected) {
@@ -171,12 +171,6 @@ function buildAddMcpAgentArgs(agents: AgentId[], nonInteractive: boolean, scope:
   }
 
   return args;
-}
-
-function defaultMcpAgents(scope: "global" | "project"): AgentId[] {
-  return scope === "global"
-    ? ["antigravity", "claude", "codex", "opencode"]
-    : ["claude", "codex", "opencode"];
 }
 
 function buildUtilityInstallCommand(item: UtilityManifestItem): DelegateCommand {
