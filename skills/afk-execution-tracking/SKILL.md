@@ -147,7 +147,7 @@ Put task-specific detail inside the matching checkpoint file instead of appendin
 Status: <pending | in_progress | validating | review | blocked | done>
 Updated: <timestamp>
 
-Include enough task-local detail to resume safely. Use only the headings that help the next reader.
+Include enough task-local detail and source links to resume safely. Do not restate the implementation plan. Use only the headings that help the next reader.
 ```
 
 Common task headings include `Scope`, `Changes`, `Validation`, `Review Gates`, `Review Guide`, `Notes / Decisions`, and `Next Action`. Do not force empty sections.
@@ -172,9 +172,7 @@ Before final handoff after implementation or review fixes, run a notes/ADR check
 - If the change establishes a reusable policy, ownership boundary, shared component rule, integration contract, data/model rule, or long-term product decision, create or update an ADR.
 - If neither applies, no note is needed.
 
-Implementation note examples: render/unmount ordering requires delaying submit until a modal is dismissed; a counter has mutually exclusive paths to avoid double-counting; local state must be cleared before back/forward navigation.
-
-ADR examples: shared dialog affordances belong in LexUI primitives, not individual modals; disabled backend states are modeled as availability instead of generic errors; a display surface waits for a confirmed backend contract before shipping metrics.
+For examples, see [notes-and-decisions.md](references/notes-and-decisions.md).
 
 ## Design And Product Review Guides
 
