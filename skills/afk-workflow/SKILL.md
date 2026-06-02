@@ -1,13 +1,13 @@
 ---
 name: afk-workflow
-description: Apply AFK workflow doctrine for spec-oriented engineering work involving PRDs, specs, RFCs, implementation plans, tracking, handoff notes, or generated workflow artifacts. Skip quick one-shot operations with no workflow state, artifact, or handoff.
+description: Apply AFK workflow doctrine for artifact-oriented engineering work involving PRDs, specs, RFCs, implementation plans, tracking, handoff notes, or generated workflow artifacts. Skip quick one-shot operations with no workflow state, artifact, or handoff.
 metadata:
   short-description: Apply AFK workflow doctrine for specs, plans, tracking, and artifact conventions.
 ---
 
 # AFK Workflow
 
-Use this skill as the default behavior lens for spec-oriented engineering work: discovery, brainstorming, elicitation, PRDs, specs, RFCs, implementation planning, execution, testing, validation, tracking, handoff, or generated workflow artifacts.
+Use this skill as the default behavior lens for artifact-oriented engineering work: discovery, brainstorming, elicitation, PRDs, specs, RFCs, implementation planning, execution, testing, validation, tracking, handoff, or generated workflow artifacts.
 
 This skill is not a full ceremony. It keeps artifact boundaries, storage, and handoff expectations consistent while letting the user choose the actual planning or execution method.
 
