@@ -117,7 +117,7 @@ const setupOptions = {
   scope: "--scope global|project            Choose machine-wide or current-project setup",
   localScope: "--local                           Alias for --scope project",
   localManifest: "--local                           Refresh ./afk/manifests instead of global manifests",
-  agent: "--agent <agent>                   Limit agent targets; repeatable",
+  agent: "--agent <agent>                   Override detected targets; repeatable",
   source: "--source github|local             Load default manifests from GitHub or this checkout",
   ref: "--ref <git-ref>                   Git ref for default AFK manifest URLs",
   initOnly: "--init-only                       Create/update local manifests only, then exit",

@@ -1,6 +1,7 @@
 import { syncRules } from "./rules.js";
 import { syncHooks } from "./hooks.js";
 import { syncSkillInvocationPolicy } from "./skills.js";
+import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands } from "./delegates.js";
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
 import { selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall } from "./interactive.js";
@@ -66,10 +67,13 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
   runtime.io.stdout(`- Scope: ${scopeLabel(selection.setupScope, options.cwd)}`);
   runtime.io.stdout(`- Areas: ${selection.areas.join(", ")}`);
   if (selection.agents.length > 0) {
-    runtime.io.stdout(`- ${agentSummaryLabel(selection.areas)}: ${selection.agents.join(", ")}`);
+    runtime.io.stdout(`- ${targetSummaryLabel(selection.agentSource, agentSummaryLabel(selection.areas))}: ${selection.agents.join(", ")}`);
   }
   if (selection.skillAgents.length > 0) {
-    runtime.io.stdout(`- Additional skill agents: ${selection.skillAgents.join(", ")}`);
+    runtime.io.stdout(`- ${targetSummaryLabel(selection.skillAgentSource, "Additional skill agents")}: ${selection.skillAgents.join(", ")}`);
+  }
+  if (selection.hookAgents.length > 0 && !sameTargets(selection.agents, selection.hookAgents)) {
+    runtime.io.stdout(`- ${targetSummaryLabel(selection.hookAgentSource, "Hook targets")}: ${selection.hookAgents.join(", ")}`);
   }
 
   const failures: Array<{ area: Area; code: number }> = [];
@@ -143,6 +147,24 @@ function agentSummaryLabel(areas: Area[]): string {
   return "Agents";
 }
 
+function targetSummaryLabel(source: SetupSelection["agentSource"], fallback: string): string {
+  switch (source) {
+    case "detected":
+      return `Detected ${fallback.toLowerCase()}`;
+    case "manual":
+      return `Manual ${fallback.toLowerCase()}`;
+    case "explicit":
+      return `Explicit ${fallback.toLowerCase()}`;
+    case "none":
+    case undefined:
+      return fallback;
+  }
+}
+
+function sameTargets(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((value, index) => right[index] === value);
+}
+
 export async function runArea(area: Area, runtime: Runtime, options: CliOptions): Promise<number> {
   const manifestCode = await ensureManifestFiles(runtime, options);
   if (manifestCode !== 0 || options.initOnly) {
@@ -207,8 +229,16 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 }
 
 async function resolveRulesOptions(options: CliOptions): Promise<CliOptions> {
-  if (options.yes || options.agents.length > 0) {
+  if (options.agents.length > 0) {
     return options;
+  }
+
+  const detected = detectSetupTargets(options);
+  if (detected.agents.length > 0 || options.yes) {
+    return {
+      ...options,
+      agents: detected.agents,
+    };
   }
 
   const selection = await selectRulesSync(options);
@@ -219,8 +249,16 @@ async function resolveRulesOptions(options: CliOptions): Promise<CliOptions> {
 }
 
 async function resolveSkillOptions(options: CliOptions): Promise<CliOptions> {
-  if (options.yes || options.selectedSkillIds.length > 0) {
+  if (options.selectedSkillIds.length > 0 && (!options.yes || options.selectedSkillAgentIds.length > 0)) {
     return options;
+  }
+
+  if (options.yes) {
+    const detected = detectSetupTargets(options);
+    return {
+      ...options,
+      selectedSkillAgentIds: options.selectedSkillAgentIds.length > 0 ? options.selectedSkillAgentIds : detected.skillAgents,
+    };
   }
 
   const selection = await selectSkillsInstall(options);
@@ -232,7 +270,19 @@ async function resolveSkillOptions(options: CliOptions): Promise<CliOptions> {
 }
 
 async function resolveMcpOptions(options: CliOptions): Promise<CliOptions> {
-  if (options.yes || options.selectedMcpIds.length > 0) {
+  if (options.agents.length > 0 && (options.yes || options.selectedMcpIds.length > 0)) {
+    return options;
+  }
+
+  const detected = detectSetupTargets(options);
+  if (detected.agents.length > 0 || options.yes) {
+    return {
+      ...options,
+      agents: detected.agents,
+    };
+  }
+
+  if (options.selectedMcpIds.length > 0) {
     return options;
   }
 
@@ -258,7 +308,19 @@ async function resolveUtilityOptions(options: CliOptions): Promise<CliOptions> {
 }
 
 async function resolveHookOptions(options: CliOptions): Promise<CliOptions> {
-  if (options.yes || options.selectedHookIds.length > 0) {
+  if (options.agents.length > 0 && (options.yes || options.selectedHookIds.length > 0)) {
+    return options;
+  }
+
+  const detected = detectSetupTargets(options);
+  if (detected.hookAgents.length > 0 || options.yes) {
+    return {
+      ...options,
+      agents: detected.hookAgents,
+    };
+  }
+
+  if (options.selectedHookIds.length > 0) {
     return options;
   }
 

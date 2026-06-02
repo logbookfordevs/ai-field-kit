@@ -44,7 +44,7 @@ test("planRulesSync strips markdown imports from the managed rules region", () =
   assert.ok(!write.content.includes("@RTK.md"));
 });
 
-test("planRulesSync writes all default agent rule hosts when no agent is selected", () => {
+test("planRulesSync does not write broad default rule hosts when no agent is selected", () => {
   const operations = planRulesSync(
     {
       agents: [],
@@ -57,11 +57,7 @@ test("planRulesSync writes all default agent rule hosts when no agent is selecte
     },
   );
 
-  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.codex/AGENTS.md"));
-  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.gemini/GEMINI.md"));
-  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.config/opencode/AGENTS.md"));
-  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.claude/CLAUDE.md"));
-  assert.ok(!operations.some((operation) => operation.type === "symlink"));
+  assert.deepEqual(operations, []);
 });
 
 test("planRulesSync converts an existing global rules symlink into a real merged file", () => {

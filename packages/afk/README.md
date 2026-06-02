@@ -135,7 +135,7 @@ These flags apply to `afk setup` and most area commands.
 | `--yes`, `-y` | Accept defaults and skip prompts. Useful for scripts. |
 | `--scope global/project` | Choose machine-wide setup or current-project setup. |
 | `--local` | Alias for `--scope project`, except on `setup refresh`, where it refreshes `./afk/manifests`. |
-| `--agent <agent>` | Limit setup to selected agents. Repeat the flag for multiple agents. |
+| `--agent <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
 | `--source github/local` | Choose whether default AFK rules/manifests come from GitHub or this checkout. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK manifests and rules. |
 | `--init-only` | Create or update manifest files, then exit without setup. |
@@ -164,6 +164,43 @@ Area support is narrower than the full alias list:
 | Hooks | `codex`, `claude`, `cursor-local`. |
 | Utils | Utility installers run independently; RTK post-install supports `antigravity`, `claude`, `codex`, and `opencode`. |
 
+### Detected Setup Targets
+
+When no `--agent` flag is provided, AFK detects compatible installed agent
+surfaces and uses those targets by default. Setup summaries and dry-runs show
+the resolved targets before AFK writes files or delegates installers.
+
+Detection is intentionally conservative. AFK checks known config files and
+agent directories such as `.codex/config.toml`, `.claude/settings.json`,
+`.gemini/GEMINI.md`, `.config/opencode/opencode.json`, and `.cursor/hooks.json`.
+If a selected target-dependent area has no detected compatible target,
+interactive setup asks for manual targets once.
+
+Utilities are not driven by detected agent targets. They remain global or
+project scoped. Skills always use the shared `.agents/skills` install path;
+detected skill providers only add extra direct `skills` CLI targets.
+
+For custom local evidence paths, create:
+
+```text
+~/.agents/afk/setup-targets.json
+```
+
+Example:
+
+```json
+{
+  "version": 1,
+  "customAgentPaths": {
+    "opencode": ["company/opencode/AGENTS.md"],
+    "kiro-cli": ["company/kiro/skills"]
+  }
+}
+```
+
+Relative paths are resolved from your home directory. AFK does not write
+detected paths into this file automatically.
+
 ### Skills Flags
 
 `afk setup skills` delegates to the official `skills` CLI. It also accepts:
@@ -171,7 +208,7 @@ Area support is narrower than the full alias list:
 | Flag | Meaning |
 |---|---|
 | `--include-external` | Include recommended external skills in addition to default AFK skills. |
-| `--agent <skill-agent>` | Add direct installs for supported skill hosts. Repeatable. |
+| `--agent <skill-agent>` | Override detected skill providers and add direct installs for supported skill hosts. Repeatable. |
 
 Skill-agent values are:
 
@@ -269,7 +306,8 @@ packages/afk/manifests/
 
 When you pass a defaults source, AFK remembers it in `presets.json`. Later
 `afk setup refresh` runs can reuse the remembered source without repeating the
-flag.
+flag. `presets.json` is not used for local detected-agent state; custom local
+target evidence belongs in `~/.agents/afk/setup-targets.json`.
 
 ## Author Manifests Interactively
 

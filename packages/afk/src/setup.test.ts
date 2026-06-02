@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
 import { localManifestDir } from "./manifest.js";
-import { runSetup } from "./setup.js";
+import { runArea, runSetup } from "./setup.js";
 import type { SetupSelection } from "./interactive.js";
 import type { CliOptions, Runtime } from "./types.js";
 
@@ -56,6 +56,31 @@ test("runSetup keeps prompted rule targets out of utility defaults", async () =>
   assert.ok(text.includes("RTK / init OpenCode"));
 });
 
+test("runSetup labels detected targets in the setup summary", async () => {
+  const homeDir = localHomeWithManifests();
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  promptState.selection = {
+    areas: ["rules"],
+    agents: ["codex"],
+    hookAgents: [],
+    setupScope: "global",
+    skillIds: [],
+    skillAgents: [],
+    mcpIds: [],
+    utilIds: [],
+    hookIds: [],
+    agentSource: "detected",
+  };
+
+  const code = await runSetup(fakeRuntime(output), defaultOptions(homeDir, repoDir));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("- Detected rules targets: codex"));
+});
+
 test("runSetup explains selected MCPs without targets", async () => {
   const homeDir = localHomeWithManifests();
   const repoDir = localRepoWithRules();
@@ -79,6 +104,49 @@ test("runSetup explains selected MCPs without targets", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("MCPs"));
   assert.ok(text.includes("No MCP targets selected. Skipping MCP install."));
+});
+
+test("runArea yes mode detects rule targets before syncing", async () => {
+  const homeDir = localHomeWithManifests();
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+  mkdirSync(join(homeDir, ".codex"), { recursive: true });
+  writeFileSync(join(homeDir, ".codex", "config.toml"), "");
+
+  const code = await runArea("rules", fakeRuntime(output), { ...defaultOptions(homeDir, repoDir), yes: true });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("/.codex/AGENTS.md"));
+  assert.ok(!text.includes("/.gemini/GEMINI.md"));
+});
+
+test("runArea yes mode detects MCP targets before delegating", async () => {
+  const homeDir = localHomeWithManifests({
+    "mcps.json": {
+      version: 1,
+      items: [
+        {
+          id: "stitch",
+          label: "Stitch MCP",
+          source: "https://stitch.googleapis.com/mcp",
+          args: ["--name", "stitchmcp"],
+          default: true,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+  mkdirSync(join(homeDir, ".codex"), { recursive: true });
+  writeFileSync(join(homeDir, ".codex", "config.toml"), "");
+
+  const code = await runArea("mcps", fakeRuntime(output), { ...defaultOptions(homeDir, repoDir), yes: true, verbose: true });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("add-mcp"));
+  assert.ok(text.includes("-a codex"));
 });
 
 function fakeRuntime(output: string[]): Runtime {
@@ -123,7 +191,7 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
   };
 }
 
-function localHomeWithManifests(): string {
+function localHomeWithManifests(overrides: Record<string, unknown> = {}): string {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
@@ -147,6 +215,7 @@ function localHomeWithManifests(): string {
       ],
     },
     "hooks.json": { version: 1, items: [] },
+    ...overrides,
   };
 
   for (const [name, content] of Object.entries(manifests)) {

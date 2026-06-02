@@ -147,6 +147,19 @@ test("selectRulesSync asks for rules-specific agent targets", async () => {
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
 
+test("selectRulesSync uses detected targets without asking", async () => {
+  promptState.checkboxMessages = [];
+  const homeDir = localHomeWithUtilityManifest();
+  mkdirSync(join(homeDir, ".codex"), { recursive: true });
+  writeFileSync(join(homeDir, ".codex", "config.toml"), "");
+
+  const selection = await selectRulesSync(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.agents, ["codex"]);
+  assert.equal(selection.agentSource, "detected");
+  assert.ok(!promptState.checkboxMessages.includes("Choose agents for rules"));
+});
+
 test("selectMcpsInstall asks for MCP-specific agent targets", async () => {
   promptState.checkboxMessages = [];
   const selection = await selectMcpsInstall(defaultOptions(localHomeWithMcpManifest()));
@@ -155,6 +168,20 @@ test("selectMcpsInstall asks for MCP-specific agent targets", async () => {
   assert.deepEqual(selection.mcpIds, ["stitch"]);
   assert.ok(promptState.checkboxMessages.includes("Choose agents for MCPs"));
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
+});
+
+test("selectMcpsInstall uses detected targets without asking for agents", async () => {
+  promptState.checkboxMessages = [];
+  const homeDir = localHomeWithMcpManifest();
+  mkdirSync(join(homeDir, ".config", "opencode"), { recursive: true });
+  writeFileSync(join(homeDir, ".config", "opencode", "opencode.json"), "{}\n");
+
+  const selection = await selectMcpsInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.agents, ["opencode"]);
+  assert.deepEqual(selection.mcpIds, ["stitch"]);
+  assert.equal(selection.agentSource, "detected");
+  assert.ok(!promptState.checkboxMessages.includes("Choose agents for MCPs"));
 });
 
 test("selectSetup names shared rules and MCP agent targets when both areas are selected", async () => {
@@ -167,6 +194,35 @@ test("selectSetup names shared rules and MCP agent targets when both areas are s
   assert.deepEqual(selection.mcpIds, ["stitch"]);
   assert.ok(promptState.checkboxMessages.includes("Choose agents for rules and MCPs"));
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
+});
+
+test("selectSetup uses detected rule and MCP targets without repeating agent prompts", async () => {
+  promptState.checkboxMessages = [];
+  promptState.setupAreas = ["rules", "mcps"];
+  const homeDir = localHomeWithMcpManifest();
+  mkdirSync(join(homeDir, ".codex"), { recursive: true });
+  writeFileSync(join(homeDir, ".codex", "AGENTS.md"), "# Codex\n");
+
+  const selection = await selectSetup(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.areas, ["rules", "mcps"]);
+  assert.deepEqual(selection.agents, ["codex"]);
+  assert.equal(selection.agentSource, "detected");
+  assert.ok(!promptState.checkboxMessages.includes("Choose agents for rules and MCPs"));
+});
+
+test("selectSetup yes mode uses detected targets", async () => {
+  promptState.checkboxMessages = [];
+  const homeDir = localHomeWithAllManifests();
+  mkdirSync(join(homeDir, ".codex"), { recursive: true });
+  writeFileSync(join(homeDir, ".codex", "config.toml"), "");
+  const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true });
+
+  assert.deepEqual(selection.agents, ["codex"]);
+  assert.deepEqual(selection.hookAgents, ["codex"]);
+  assert.equal(selection.agentSource, "detected");
+  assert.equal(selection.hookAgentSource, "detected");
+  assert.ok(!promptState.checkboxMessages.includes("Choose agents for rules and MCPs"));
 });
 
 function defaultOptions(homeDir: string): CliOptions {
@@ -241,5 +297,40 @@ function localHomeWithMcpManifest(): string {
       ],
     }, null, 2)}\n`,
   );
+  return homeDir;
+}
+
+function localHomeWithAllManifests(): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  const manifests: Record<string, unknown> = {
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+    "mcps.json": { version: 1, items: [] },
+    "presets.json": { version: 1, defaultsSource: "", presets: [] },
+    "rules.json": { version: 1, source: "local", url: "rules/AGENTS.md" },
+    "utils.json": { version: 1, items: [] },
+    "hooks.json": {
+      version: 1,
+      items: [
+        {
+          id: "afk-execution-tracking-stop-check",
+          label: "AFK execution tracking stop check",
+          description: "Check active AFK tracking before stopping.",
+          source: "hooks/afk-execution-tracking-stop-check.js",
+          command: "node",
+          args: ["${HOOK_FILE}"],
+          events: ["stop"],
+          agents: ["codex", "claude", "cursor-local"],
+          default: true,
+        },
+      ],
+    },
+  };
+
+  for (const [name, content] of Object.entries(manifests)) {
+    writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
+  }
+
   return homeDir;
 }
