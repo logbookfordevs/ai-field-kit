@@ -188,6 +188,16 @@ test("buildMcpCommands skips guided MCP installs when no AFK targets were select
   assert.deepEqual(commands, []);
 });
 
+test("buildMcpCommands does not expand yes mode to broad default agents", () => {
+  const commands = buildMcpCommands({
+    ...options,
+    agents: [],
+    yes: true,
+  });
+
+  assert.deepEqual(commands, []);
+});
+
 test("buildUtilityCommands installs selected utilities", () => {
   const commands = buildUtilityCommands({ ...options, selectedUtilIds: ["plannotator"] });
   assert.equal(commands.length, 1);

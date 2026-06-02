@@ -29,7 +29,7 @@ const kitLayers = [
   {
     index: '04',
     title: 'MCP registry',
-    text: 'A single MCP config source with placeholder keys that the sync script resolves locally.',
+    text: 'Recommended MCP entries that AFK previews, resolves locally, and delegates to the upstream installer.',
   },
 ];
 
@@ -93,7 +93,7 @@ const tabs = [
   {
     id: 'full',
     label: 'Full setup',
-    text: 'Install the AFK CLI from npm, then preview the rules, skills, MCP, utility, and hook setup before anything writes to your machine.',
+    text: 'Install the AFK CLI from npm, then preview detected rules, skills, MCP, utility, and hook targets before anything writes to your machine.',
     command: fullSetupCommand,
     copyLabel: 'Copy full setup commands',
   },
@@ -236,7 +236,7 @@ function App() {
             <dl className="mt-10 grid max-w-[560px] grid-cols-3 gap-px border border-[#d8c7ad] bg-[#d8c7ad] max-[720px]:grid-cols-1">
               {[
                 ['4', 'portable layers'],
-                ['6+', 'agent targets'],
+                ['auto', 'agent targets'],
                 ['30s', 'skills install'],
               ].map(([value, label]) => (
                 <div key={label} className="bg-[#fffaf0c2] p-[18px]">

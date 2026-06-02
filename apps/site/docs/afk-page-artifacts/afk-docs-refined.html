@@ -563,23 +563,23 @@
 
     <section id="commands" class="section section--tight reveal" data-od-id="commands">
       <h2>Command Surface.</h2>
-      <p class="section-lead">The AFK CLI is your primary tool for syncing state and authoring manifests.</p>
+      <p class="section-lead">The AFK CLI is your primary tool for previewing setup, resolving targets, and authoring manifests.</p>
       <div class="cmd-list">
         <div class="cmd-row">
           <code>afk setup</code>
-          <p class="cmd-desc">Full interactive environment initialization</p>
+          <p class="cmd-desc">Full interactive setup for rules, skills, MCPs, utilities, and hooks</p>
         </div>
         <div class="cmd-row">
           <code>afk manifests configure --local</code>
           <p class="cmd-desc">Create a project-local manifest structure</p>
         </div>
         <div class="cmd-row">
-          <code>afk setup rules sync --dry-run</code>
+          <code>afk setup rules --dry-run</code>
           <p class="cmd-desc">Preview what files will be modified before committing</p>
         </div>
         <div class="cmd-row">
-          <code>afk info</code>
-          <p class="cmd-desc">Show your fully resolved environment and active layers</p>
+          <code>afk setup --default-source your-org/dev-kit</code>
+          <p class="cmd-desc">Save a setup source for later dry-runs and scripted setup</p>
         </div>
       </div>
     </section>
@@ -587,7 +587,7 @@
     <section id="setup" class="section section--loose reveal" data-od-id="setup">
       <span class="section-label">Installation</span>
       <h2>Machine Setup.</h2>
-      <p class="section-lead">Designed to be a zero-install experience for most developers. One command, three choices, done.</p>
+      <p class="section-lead">Install the CLI, preview the setup, then apply only the areas and detected targets you want.</p>
       <div class="setup-steps">
         <div class="setup-step">
           <div>

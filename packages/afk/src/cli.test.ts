@@ -83,7 +83,7 @@ test("runCli prints contextual area help", async () => {
   assert.ok(text.includes("Delegate selected MCP recommendations to add-mcp."));
   assert.ok(text.includes("--verbose                         Show delegated installer output"));
   assert.ok(text.includes("--yes, -y                         Accept defaults and skip prompts"));
-  assert.ok(text.includes("--agent <agent>                   Limit agent targets; repeatable"));
+  assert.ok(text.includes("--agent <agent>                   Override detected targets; repeatable"));
   assert.ok(text.includes("--default-source <source>         Save a default setup source and exit"));
   assert.ok(!text.includes("AFK setup skills"));
 });
