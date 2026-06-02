@@ -7,6 +7,7 @@
     "afk:test": "pnpm --dir packages/afk test",
     "afk:typecheck": "pnpm --dir packages/afk typecheck",
     "afk:version": "./scripts/version-afk.sh",
+    "registry:validate": "pnpm dlx shadcn@latest registry validate registry.json",
     "site:build": "pnpm --dir apps/site build",
     "site:dev": "pnpm --dir apps/site dev",
     "site:preview": "pnpm --dir apps/site preview"

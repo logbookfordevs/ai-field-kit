@@ -19,6 +19,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 - [Quick Start](#quick-start)
   - [Just the skills](#just-the-skills--30-seconds)
   - [AFK CLI](#afk-cli--full-setup)
+  - [AFK manifests through the shadcn registry](#afk-manifests-through-the-shadcn-registry)
 - [The Skills](#the-skills)
 - [The Workflows](#the-workflows)
 - [Skill vs Workflow Rubric](#skill-vs-workflow-rubric)
@@ -39,6 +40,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 | `rules/` | Global agent instructions (AGENTS.md) shared across all AI tools |
 | `.agents/skills/` | Reusable capabilities, quality lenses, and explicit workflow-style procedures |
 | `mcps/` | MCP server registry for delegated setup through official tooling |
+| `registry.json` | shadcn-compatible registry entrypoint for installing AFK manifest bundles |
 | `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
 | `apps/site/` | React/Vite marketing and docs site for AI Field Kit |
 
@@ -76,11 +78,28 @@ For the full command reference, flags, manifest format, local-development
 install flow, and custom defaults workflow, read the
 [AFK CLI README](./packages/afk/README.md).
 
+### AFK manifests through the shadcn registry
+
+AI Field Kit also publishes its default AFK manifests as a shadcn-compatible
+registry item. Use this when you want to commit the current AFK defaults into a
+project before running project-local setup:
+
+```bash
+pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
+// or npx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
+afk setup --local --dry-run
+```
+
+The registry item writes the same fragmented manifest files AFK already reads
+under `./afk/manifests/`. shadcn handles distribution; AFK still owns setup
+semantics such as defaults, scopes, managed rules, hooks, utilities, and
+delegated skill/MCP installers.
+
 If you want to work from source, clone the repo and run the package directly:
 
 ```bash
-git clone https://github.com/logbookfordevs/ai-field-kit.git ~/codes/ai-field-kit
-cd ~/codes/ai-field-kit
+git clone https://github.com/logbookfordevs/ai-field-kit.git
+cd ai-field-kit
 pnpm --dir packages/afk install
 pnpm --dir packages/afk run build
 node packages/afk/dist/index.js setup --dry-run

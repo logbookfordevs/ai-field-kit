@@ -1,0 +1,67 @@
+{
+  "facts": [
+    {
+      "id": "fact-1",
+      "text": "Every interactive setup entry point, including `afk setup` and area subcommands such as `afk setup skills`, `afk setup mcps`, `afk setup utils`, `afk setup rules`, and `afk setup hooks`, asks which defaults source/origin to use before loading manifests when no one-run source flag is provided.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-2",
+      "text": "When no saved default source exists, interactive setup requires the user to choose or enter a source before continuing.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-3",
+      "text": "When a saved default source exists, interactive setup still shows the source question with that default preselected so pressing Enter continues with the saved source.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-4",
+      "text": "Selecting a different source during interactive setup affects only that setup run and does not change the saved default source.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-5",
+      "text": "`afk setup --default-source <source>` updates the saved default source, prints a success message, and exits without running setup installation work.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-6",
+      "text": "`--defaults-source <source>` remains supported as a backwards-compatible alias, while help and examples prefer `--default-source <source>`.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-7",
+      "text": "`--source` remains a one-run source override and does not change the saved default source.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-8",
+      "text": "`--yes` skips interactive prompts and fails with an actionable error when neither a one-run source nor a saved default source is available; the error tells users to run interactive `afk setup` or `afk setup --default-source <source>`.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-9",
+      "text": "Setup source resolution avoids silently relying on built-in AFK manifests as the default path for normal setup; the intended default setup origin is a remote or user-provided source.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    }
+  ]
+}

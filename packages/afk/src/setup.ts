@@ -4,9 +4,9 @@ import { syncSkillInvocationPolicy } from "./skills.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands } from "./delegates.js";
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall } from "./interactive.js";
+import { selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
-import { ensureLocalManifests } from "./manifest.js";
+import { ensureLocalManifests, planRememberedDefaultsSourceUpdate, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
@@ -22,6 +22,16 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     updateNotice,
   }));
 
+  const defaultSourceUpdateCode = applyDefaultSourceUpdate(runtime, options);
+  if (defaultSourceUpdateCode !== null) {
+    return defaultSourceUpdateCode;
+  }
+
+  const sourceValidationCode = validateNonInteractiveSource(runtime, options);
+  if (sourceValidationCode !== null) {
+    return sourceValidationCode;
+  }
+
   if (options.refreshDefaults) {
     runtime.io.stdout(
       options.manifestLocal
@@ -34,17 +44,19 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
   runtime.io.stdout("Choose the parts of your AI field setup you want AFK to prepare.");
   runtime.io.stdout(muted(defaultCheckedDetail));
 
-  const manifestCode = await ensureManifestFiles(runtime, options);
-  if (manifestCode !== 0 || options.initOnly) {
+  const sourceOptions = await resolveSetupSource(options);
+  const manifestCode = await ensureManifestFiles(runtime, sourceOptions);
+  if (manifestCode !== 0 || sourceOptions.initOnly) {
     return manifestCode;
   }
 
-  const selection = await selectSetup(options);
+  const selection = await selectSetup(sourceOptions);
   const selectedOptions: CliOptions = {
-    ...options,
+    ...sourceOptions,
     agents: selection.agents,
     setupScope: selection.setupScope,
     scopeExplicit: true,
+    setupManifestsPrepared: true,
     selectedSkillIds: selection.skillIds,
     selectedSkillAgentIds: selection.skillAgents,
     selectedMcpIds: selection.mcpIds,
@@ -166,18 +178,29 @@ function sameTargets(left: string[], right: string[]): boolean {
 }
 
 export async function runArea(area: Area, runtime: Runtime, options: CliOptions): Promise<number> {
-  const manifestCode = await ensureManifestFiles(runtime, options);
-  if (manifestCode !== 0 || options.initOnly) {
+  const defaultSourceUpdateCode = applyDefaultSourceUpdate(runtime, options);
+  if (defaultSourceUpdateCode !== null) {
+    return defaultSourceUpdateCode;
+  }
+
+  const sourceValidationCode = validateNonInteractiveSource(runtime, options);
+  if (sourceValidationCode !== null) {
+    return sourceValidationCode;
+  }
+
+  const sourceOptions = options.setupManifestsPrepared ? options : await resolveSetupSource(options);
+  const manifestCode = options.setupManifestsPrepared ? 0 : await ensureManifestFiles(runtime, sourceOptions);
+  if (manifestCode !== 0 || sourceOptions.initOnly) {
     return manifestCode;
   }
 
   switch (area) {
     case "rules": {
-      const selectedOptions = await resolveRulesOptions(options);
+      const selectedOptions = await resolveRulesOptions(sourceOptions);
       return syncRules(runtime, selectedOptions);
     }
     case "skills": {
-      const selectedOptions = await resolveSkillOptions(options);
+      const selectedOptions = await resolveSkillOptions(sourceOptions);
       if (!selectedOptions.yes && selectedOptions.selectedSkillIds.length === 0) {
         runtime.io.stdout("\nNo skills selected. No changes planned.");
         return 0;
@@ -191,7 +214,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       return code;
     }
     case "mcps": {
-      const selectedOptions = await resolveMcpOptions(options);
+      const selectedOptions = await resolveMcpOptions(sourceOptions);
       if (!selectedOptions.yes && selectedOptions.selectedMcpIds.length === 0) {
         runtime.io.stdout("\nNo MCPs selected. No changes planned.");
         return 0;
@@ -205,7 +228,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       return runDelegateCommands(runtime, buildMcpCommands(selectedOptions), selectedOptions);
     }
     case "utils": {
-      const selectedOptions = await resolveUtilityOptions(options);
+      const selectedOptions = await resolveUtilityOptions(sourceOptions);
       if (!selectedOptions.yes && selectedOptions.selectedUtilIds.length === 0) {
         runtime.io.stdout("\nNo utilities selected. No changes planned.");
         return 0;
@@ -217,7 +240,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       });
     }
     case "hooks": {
-      const selectedOptions = await resolveHookOptions(options);
+      const selectedOptions = await resolveHookOptions(sourceOptions);
       if (!selectedOptions.yes && (selectedOptions.selectedHookIds.length === 0 || selectedOptions.agents.length === 0)) {
         runtime.io.stdout("\nNo hooks selected. No changes planned.");
         return 0;
@@ -226,6 +249,63 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       return syncHooks(runtime, selectedOptions);
     }
   }
+}
+
+function validateNonInteractiveSource(runtime: Runtime, options: CliOptions): number | null {
+  if (!options.yes || options.defaultsSourceExplicit || readRememberedDefaultsSource(options)) {
+    return null;
+  }
+
+  runtime.io.stderr("No default setup source is configured.");
+  runtime.io.stderr("Run afk setup to choose a source interactively, or run afk setup --default-source <source>.");
+  return 1;
+}
+
+async function resolveSetupSource(options: CliOptions): Promise<CliOptions> {
+  if (options.defaultsSourceExplicit) {
+    return { ...options, rememberDefaultsSource: false };
+  }
+
+  const rememberedSource = readRememberedDefaultsSource(options);
+  if (options.yes) {
+    return {
+      ...options,
+      defaultsSource: rememberedSource,
+      defaultsSourceExplicit: true,
+      rememberDefaultsSource: false,
+    };
+  }
+
+  const selectedSource = await selectDefaultsSource(rememberedSource);
+  return {
+    ...options,
+    defaultsSource: selectedSource.trim(),
+    defaultsSourceExplicit: true,
+    rememberDefaultsSource: false,
+  };
+}
+
+function applyDefaultSourceUpdate(runtime: Runtime, options: CliOptions): number | null {
+  if (!options.defaultSourceUpdate) {
+    return null;
+  }
+
+  const operations = planRememberedDefaultsSourceUpdate(options, options.defaultSourceUpdate);
+  if (options.dryRun) {
+    runtime.io.stdout(`\n${sectionTitle("Default Setup Source")}`);
+    for (const operation of operations) {
+      runtime.io.stdout(`- ${formatOperation(operation)}`);
+    }
+    return 0;
+  }
+
+  for (const operation of operations) {
+    applyOperation(operation);
+  }
+
+  runtime.io.stdout(`Default setup source updated to ${options.defaultSourceUpdate.trim()}.`);
+  runtime.io.stdout("Run afk setup again to continue with that source preselected.");
+  return 0;
 }
 
 async function resolveRulesOptions(options: CliOptions): Promise<CliOptions> {

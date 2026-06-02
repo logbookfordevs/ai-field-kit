@@ -14,7 +14,9 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` added conservative setup target detection so rules, MCPs, hooks, and additional skill-provider installs use detected compatible agent surfaces by default instead of repeatedly asking for agent targets.
 - `cli:` added `~/.agents/afk/setup-targets.json` for custom local agent target evidence paths, keeping machine-specific target configuration out of `presets.json`.
 - `cli:` changed empty setup target lists to mean "no resolved target" instead of expanding to every supported rules or MCP target; explicit `--agent` flags still override detected targets.
+- `repo:` added a shadcn-compatible GitHub registry entrypoint with an `afk-manifests` item that installs the default AFK manifest bundle into project-local `./afk/manifests/`.
 - `cli:` clarified guided setup agent-target prompts so rules, MCPs, and hooks name their destination purpose instead of using a vague shared "agent targets" label.
+- `cli:` added interactive setup source selection before manifest loading, with `--source` for one-run overrides, `--default-source` for saving the preselected default, and `--yes` now requiring an explicit or saved source.
 - `cli:` added `--verbose` for setup delegation so AFK can keep noisy upstream installer output hidden by default while still exposing raw CLI logs on demand.
 - `cli:` made guided MCP delegation pass `add-mcp -y` after AFK has collected MCP and target-agent choices, and now clearly reports when selected MCPs have no target agents instead of silently doing nothing.
 - `cli:` kept utility setup non-interactive for `npx`-backed installers by passing npm's own `--yes` flag before the package name, starting with the Impeccable utility installer.

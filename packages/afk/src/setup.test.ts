@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
@@ -10,6 +10,8 @@ import type { CliOptions, Runtime } from "./types.js";
 
 const promptState = vi.hoisted(() => ({
   selection: undefined as SetupSelection | undefined,
+  defaultsSource: "local",
+  rememberedSources: [] as string[],
 }));
 
 vi.mock("./interactive.js", async (importOriginal) => {
@@ -22,6 +24,10 @@ vi.mock("./interactive.js", async (importOriginal) => {
       }
 
       return promptState.selection;
+    }),
+    selectDefaultsSource: vi.fn(async (rememberedSource: string) => {
+      promptState.rememberedSources.push(rememberedSource);
+      return promptState.defaultsSource;
     }),
   };
 });
@@ -113,7 +119,7 @@ test("runArea yes mode detects rule targets before syncing", async () => {
   mkdirSync(join(homeDir, ".codex"), { recursive: true });
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
 
-  const code = await runArea("rules", fakeRuntime(output), { ...defaultOptions(homeDir, repoDir), yes: true });
+  const code = await runArea("rules", fakeRuntime(output), { ...defaultOptions(homeDir, repoDir), yes: true, defaultsSource: "local", defaultsSourceExplicit: true });
   const text = output.join("\n");
 
   assert.equal(code, 0);
@@ -141,12 +147,132 @@ test("runArea yes mode detects MCP targets before delegating", async () => {
   mkdirSync(join(homeDir, ".codex"), { recursive: true });
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
 
-  const code = await runArea("mcps", fakeRuntime(output), { ...defaultOptions(homeDir, repoDir), yes: true, verbose: true });
+  const code = await runArea("mcps", fakeRuntime(output), { ...defaultOptions(homeDir, repoDir), yes: true, verbose: true, defaultsSource: "local", defaultsSourceExplicit: true });
   const text = output.join("\n");
 
   assert.equal(code, 0);
   assert.ok(text.includes("add-mcp"));
   assert.ok(text.includes("-a codex"));
+});
+
+test("runSetup prepares manifests only once before running selected areas", async () => {
+  const homeDir = localHomeWithManifests();
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  promptState.defaultsSource = "local";
+  promptState.selection = {
+    areas: ["rules", "utils"],
+    agents: ["codex"],
+    hookAgents: [],
+    setupScope: "global",
+    skillIds: [],
+    skillAgents: [],
+    mcpIds: [],
+    utilIds: ["rtk"],
+    hookIds: [],
+  };
+
+  const code = await runSetup(fakeRuntime(output), defaultOptions(homeDir, repoDir));
+  const localManifestHeadings = output.filter((line) => line.includes("Local Manifests"));
+
+  assert.equal(code, 0);
+  assert.equal(localManifestHeadings.length, 1);
+});
+
+test("runSetup prompts for a run-only source without changing the saved default", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "acme/saved-kit", presets: [] },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource();
+  const output: string[] = [];
+
+  promptState.defaultsSource = sourceDir;
+  promptState.rememberedSources = [];
+  promptState.selection = {
+    areas: [],
+    agents: [],
+    hookAgents: [],
+    setupScope: "global",
+    skillIds: [],
+    skillAgents: [],
+    mcpIds: [],
+    utilIds: [],
+    hookIds: [],
+  };
+
+  const options = {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    rulesSource: "github" as const,
+  };
+  const code = await runSetup(fakeRuntime(output), options);
+  const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as { defaultsSource: string };
+
+  assert.equal(code, 0);
+  assert.deepEqual(promptState.rememberedSources, ["acme/saved-kit"]);
+  assert.equal(presets.defaultsSource, "acme/saved-kit");
+});
+
+test("runSetup with --yes fails when no source or saved default exists", async () => {
+  const homeDir = localHomeWithManifests();
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  const code = await runSetup(fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    yes: true,
+    rulesSource: "github",
+  });
+  const text = output.join("\n");
+
+  assert.equal(code, 1);
+  assert.ok(text.includes("No default setup source is configured."));
+  assert.ok(text.includes("Run afk setup to choose a source interactively, or run afk setup --default-source <source>."));
+});
+
+test("runArea prompts for a source for every interactive setup area", async () => {
+  const areas = ["rules", "skills", "mcps", "utils", "hooks"] as const;
+
+  for (const area of areas) {
+    const homeDir = localHomeWithManifests();
+    const repoDir = localRepoWithRules();
+    const output: string[] = [];
+
+    promptState.defaultsSource = "local";
+    promptState.rememberedSources = [];
+
+    const code = await runArea(area, fakeRuntime(output), {
+      ...defaultOptions(homeDir, repoDir),
+      agents: ["codex"],
+      selectedSkillIds: area === "skills" ? ["afk-note"] : [],
+      selectedMcpIds: area === "mcps" ? ["stitch"] : [],
+      selectedUtilIds: area === "utils" ? ["rtk"] : [],
+      selectedHookIds: area === "hooks" ? ["afk-execution-tracking-stop-check"] : [],
+    });
+
+    assert.equal(code, 0);
+    assert.deepEqual(promptState.rememberedSources, [""], area);
+  }
+});
+
+test("runSetup with --yes uses a saved default source without prompting", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: localDefaultsSource(), presets: [] },
+  });
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  promptState.rememberedSources = [];
+  const code = await runSetup(fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    yes: true,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(promptState.rememberedSources, []);
+  assert.ok(!output.join("\n").includes("RTK / init"));
 });
 
 function fakeRuntime(output: string[]): Runtime {
@@ -181,6 +307,8 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
     empty: false,
     refreshDefaults: false,
     defaultsSource: "",
+    defaultsSourceExplicit: false,
+    defaultSourceUpdate: "",
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
@@ -218,11 +346,32 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
     ...overrides,
   };
 
-  for (const [name, content] of Object.entries(manifests)) {
+  for (const [name, content] of Object.entries({ ...manifests, ...overrides })) {
     writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
   }
 
   return homeDir;
+}
+
+function localDefaultsSource(): string {
+  const sourceDir = mkdtempSync(join(tmpdir(), "afk-default-source-"));
+  const manifestDir = join(sourceDir, "afk", "manifests");
+  mkdirSync(manifestDir, { recursive: true });
+
+  const manifests: Record<string, unknown> = {
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+    "mcps.json": { version: 1, items: [] },
+    "presets.json": { version: 1, defaultsSource: "", presets: [] },
+    "rules.json": { version: 1, source: "github", url: "" },
+    "utils.json": { version: 1, items: [] },
+    "hooks.json": { version: 1, items: [] },
+  };
+
+  for (const [name, content] of Object.entries(manifests)) {
+    writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
+  }
+
+  return sourceDir;
 }
 
 function localRepoWithRules(): string {

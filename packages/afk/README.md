@@ -309,6 +309,32 @@ When you pass a defaults source, AFK remembers it in `presets.json`. Later
 flag. `presets.json` is not used for local detected-agent state; custom local
 target evidence belongs in `~/.agents/afk/setup-targets.json`.
 
+## Install Manifests From the shadcn Registry
+
+The AI Field Kit repository exposes its default AFK manifests as a
+shadcn-compatible registry item. This is a project-local distribution path for
+the manifest files; AFK still performs the actual setup work.
+
+```bash
+pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
+afk setup --local --dry-run
+```
+
+The registry item writes:
+
+```text
+./afk/manifests/skills.json
+./afk/manifests/mcps.json
+./afk/manifests/rules.json
+./afk/manifests/utils.json
+./afk/manifests/hooks.json
+./afk/manifests/presets.json
+```
+
+Use this when you want AFK defaults committed in a project before running
+`afk setup --local`. Use `afk setup refresh --local` when you want AFK itself to
+refresh those files from a defaults source.
+
 ## Author Manifests Interactively
 
 Create a project-local defaults bundle:
