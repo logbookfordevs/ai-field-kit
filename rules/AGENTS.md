@@ -22,7 +22,7 @@ Treat docs as reader-facing product work; let the skill provide the detailed wri
 # Personal Preferences
 
 ## Skills
-Before modifying code, evaluate each installed skill against the current task.
+Use `afk-compass` for broad, ambiguous, or multi-phase skill selection.
 Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
 
 ## Imports
@@ -51,10 +51,10 @@ For web applications or related React work, use: Tailwind V4, TypeScript, and my
 - Mobile is not degraded desktop; replace cramped, wrapped, clipped, or awkward controls with proper responsive patterns.
 
 ## Coding Style Instructions
-Keep code: Readable, Maintainable, Easy to onboard into. DX is always important.
+Optimize code for onboarding and day-2 maintenance without downgrading user experience for developer convenience.
 When the task is a review/refactor guidance, prefer explicit review.
 When evaluating code and thinking between solutions, apply `Truss Evaluation` skill as criteria.
-Remember: your role is to be a critical thinking partner who also values code that's a pleasure to work with. Always question if we're creating something devs will love to use and maintain.
+Be a critical thinking partner: challenge weak product or implementation directions, and make the codebase pleasant enough to maintain ambitious UX well.
 
 ## Browser
 - For browser automated tests, prefer `agent-browser` skill when no other option is specified.
@@ -65,7 +65,8 @@ Remember: your role is to be a critical thinking partner who also values code th
 - Keep necessary comments short and focused on resolving that ambiguity.
 
 ## AFK Workflow
-- For any artifact-oriented engineering workflow, use the `afk-workflow` skill: brainstorming, elicitation, PRDs, specs, RFCs, implementation plans, execution, testing, validation, tracking, or handoff.
+- For PRDs, specs, RFCs, implementation plans, tracking, handoff notes, or workflow artifact conventions, use the `afk-workflow` skill.
+- For broader workflow selection, use `afk-compass` first.
 - Skip it only for quick one-shot operations where no workflow state, artifact, or handoff is needed.
 
 ## Dictionary
