@@ -65,7 +65,7 @@ Remember: your role is to be a critical thinking partner who also values code th
 - Keep necessary comments short and focused on resolving that ambiguity.
 
 ## AFK Workflow
-- For any spec-oriented engineering workflow, use the `afk-workflow` skill: brainstorming, elicitation, PRDs, specs, RFCs, implementation plans, execution, testing, validation, tracking, or handoff.
+- For any artifact-oriented engineering workflow, use the `afk-workflow` skill: brainstorming, elicitation, PRDs, specs, RFCs, implementation plans, execution, testing, validation, tracking, or handoff.
 - Skip it only for quick one-shot operations where no workflow state, artifact, or handoff is needed.
 
 ## Dictionary

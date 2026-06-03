@@ -11,6 +11,9 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+- `skills:` renamed `ai-companion` to `afk-compass` and expanded it from a taxonomy helper into the AFK entry-point router for AFK-native and recommended external skills.
+- `skills:` removed duplicated "Suggested Next Skills" routing blocks from individual AFK skills so cross-skill routing lives in `afk-compass`.
+- `skills:` hardened `afk-compass` around category-based skill taxonomy, assumption surfacing, confusion handling, pushback, scope discipline, simplicity, and evidence-based verification.
 - `cli:` added conservative setup target detection so rules, MCPs, hooks, and additional skill-provider installs use detected compatible agent surfaces by default instead of repeatedly asking for agent targets.
 - `cli:` added `~/.agents/afk/setup-targets.json` for custom local agent target evidence paths, keeping machine-specific target configuration out of `presets.json`.
 - `cli:` changed empty setup target lists to mean "no resolved target" instead of expanding to every supported rules or MCP target; explicit `--agent` flags still override detected targets.

@@ -14,11 +14,4 @@ Default behavior:
 - preserve meaningful session progress so good work is not trapped in chat alone
 - formalize the outcome at the end, but keep the working session durable throughout
 
-## Suggested Next Skills
-
-These are suggestions, not required steps:
-- `afk-deep-interview` if the work is still too ambiguous to plan safely
-- `afk-doc-craft` if the brainstorming results need to become a polished brief, memo, or guide
-- `afk-note` if important discoveries need to survive handoffs or chat resets
-
 Follow the instructions in ./workflow.md.

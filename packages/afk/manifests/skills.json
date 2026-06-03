@@ -171,12 +171,12 @@
       "autoInvocation": true
     },
     {
-      "id": "ai-companion",
-      "label": "AFK / AI Companion",
+      "id": "afk-compass",
+      "label": "AFK / Compass",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
       "args": [
         "--skill",
-        "ai-companion",
+        "afk-compass",
         "--global"
       ],
       "default": true,

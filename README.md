@@ -137,13 +137,13 @@ The CLI symlinks skill files into the right agent directories — no manual path
 
 ### Install a single skill
 
-If you only want the taxonomy-aware discovery helper, install `ai-companion` directly:
+If you only want the AFK skill-routing entry point, install `afk-compass` directly:
 
 ```bash
-npx skills add https://github.com/logbookfordevs/ai-field-kit --skill ai-companion
+npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-compass
 ```
 
-This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-companion/) and is designed to work with the `skills.json` file generated or maintained by AI Skills Companion.
+This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the right AFK and recommended external skills. When a user's installed skill taxonomy is available, it can use `skills.json` as a ranking hint.
 
 > **What does global vs. agent-specific mean?**
 > Global installs (`--global`) place the skill in `~/.agents/skills/` and make it available to every agent that reads from there.
@@ -159,7 +159,7 @@ This skill lives in the repository under [`skills/ai-companion/`](./skills/ai-co
 | `afk-workflow` | AFK doctrine for specs, plans, tracking, and workflow artifact conventions |
 | `afk-spline-3d-integration` | Spline 3D integration guides for React and vanilla JS |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
-| `ai-companion` | Uses `skills.json` taxonomy to improve native skill discovery |
+| `afk-compass` | Routes work to the right AFK and recommended external skills |
 | `afk-advanced-elicitation` | Structured critique and refinement loops for improving drafts, plans, and decisions |
 | `afk-ask` | Gets a second opinion through Kiro/OpenCode, Codex, or Agy and saves the result as an artifact |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
@@ -402,7 +402,7 @@ Several AFK support skills fit naturally around this flow as specialist companio
 |---|---|
 | `afk-doc-craft` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
 | `afk-structured-debugging` | When the real problem is a bug, failure, or investigation rather than new scoped work |
-| `ai-companion` | When you want help discovering which installed skill best matches the current moment |
+| `afk-compass` | When you want help choosing which AFK or companion skill best matches the current moment |
 | `afk-pickup` | When a previous session created a disposable temp handoff and the new session needs to find it |
 
 These are not required steps in the main flow. They are optional specialists you bring in when the work changes shape.
@@ -411,7 +411,7 @@ These are not required steps in the main flow. They are optional specialists you
 
 - Use `afk-doc-craft` after `afk-deep-interview` or `afk-coding-tradeoffs` when the output needs to become a human-friendly document instead of a working artifact.
 - Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
-- Use `ai-companion` when you're unsure whether you need the main flow, a support skill, or something else already installed.
+- Use `afk-compass` when you're unsure whether you need the main flow, a support skill, or a recommended external companion skill.
 - Use `afk-pickup` after the external `handoff` skill when the previous session kept its handoff note disposable in the OS temp directory.
 
 #### A useful mental model

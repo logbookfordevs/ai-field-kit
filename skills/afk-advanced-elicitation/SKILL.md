@@ -183,10 +183,3 @@ When another skill or workflow invokes this one:
 - return the latest accepted version at the end of the loop
 
 If no interactive loop is possible, choose the single best-fit method, apply it once, and clearly label the result as a suggested revision.
-
-## Suggested Next Skills
-
-These are suggestions, not required steps:
-- move into planning or execution outside this skill once the artifact is strong enough
-- `afk-doc-craft` if the refined artifact should become polished documentation for humans
-- use `afk-note` if important final decisions or caveats should be preserved across handoffs

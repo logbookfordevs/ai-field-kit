@@ -286,11 +286,3 @@ This skill is not for:
 - unconstrained product brainstorming
 
 Those may follow after the context artifact is complete.
-
-## Suggested Next Skills
-
-These are suggestions, not required steps:
-- `afk-advanced-elicitation` if the decision artifact needs a stronger refinement pass
-- `afk-doc-craft` if the decision artifact needs to become cleaner, more readable, or more user-facing
-- `afk-note` if the most important decisions should also be preserved in lightweight durable memory
-*** End of File
