@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+- `skills:` reduced prompt debt by lowering default auto-invocation for guided/session-heavy skills, making the Spline-specific integration skill opt-in, removing false-precision ambiguity scoring from `afk-deep-interview`, and replacing vague "should feel" skill wording with concrete behavior.
+- `cli:` replaced `afk setup skills --include-external` with `--all` so users can install every skill in the manifest instead of only default skills.
 - `skills:` renamed `ai-companion` to `afk-compass` and expanded it from a taxonomy helper into the AFK entry-point router for AFK-native and recommended external skills.
 - `skills:` removed duplicated "Suggested Next Skills" routing blocks from individual AFK skills so cross-skill routing lives in `afk-compass`.
 - `skills:` hardened `afk-compass` around category-based skill taxonomy, assumption surfacing, confusion handling, pushback, scope discipline, simplicity, and evidence-based verification.

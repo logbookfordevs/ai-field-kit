@@ -63,7 +63,7 @@ const options: CliOptions = {
   dryRun: true,
   verbose: false,
   yes: true,
-  includeExternal: false,
+  allSkills: false,
   selectedSkillIds: [],
   selectedSkillAgentIds: [],
   selectedMcpIds: [],
@@ -123,6 +123,43 @@ test("buildSkillCommands omits skill filter for whole-source skill entries", () 
     command.args.includes("https://github.com/example/skill-pack") &&
     !command.args.includes("--skill")
   )));
+});
+
+test("buildSkillCommands all installs default and non-default skills", () => {
+  const homeDir = localHomeWithManifest("skills.json", {
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "afk-default",
+        label: "AFK / Default",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "afk-default", "--global"],
+        default: true,
+      },
+      {
+        id: "afk-spline",
+        label: "AFK / Spline",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "afk-spline", "--global"],
+        default: false,
+      },
+      {
+        id: "external-helper",
+        label: "External / Helper",
+        source: "https://github.com/example/external",
+        args: ["--skill", "external-helper", "--global"],
+        default: false,
+      },
+    ],
+  });
+
+  const commands = buildSkillCommands({ ...options, homeDir, allSkills: true });
+  const text = commands.map((command) => command.args.join(" ")).join("\n");
+
+  assert.ok(text.includes("afk-default"));
+  assert.ok(text.includes("afk-spline"));
+  assert.ok(text.includes("external-helper"));
 });
 
 test("buildSkillCommands does not add a duplicate Claude-only install", () => {

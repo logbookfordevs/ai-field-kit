@@ -123,7 +123,7 @@ const setupOptions = {
   initOnly: "--init-only                       Create/update local manifests only, then exit",
   empty: "--empty                           Create empty manifests with --init-only or refresh",
   defaultSource: "--default-source <source>         Save a default setup source and exit",
-  includeExternal: "--include-external                Include external recommended skills when installing skills",
+  allSkills: "--all                            Include all skills when installing skills",
 };
 
 const setupAreaOptions = [
@@ -157,6 +157,7 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.initOnly,
       setupOptions.empty,
       setupOptions.defaultSource,
+      setupOptions.allSkills,
     ],
     subcommands: [
       "afk setup refresh                 Refresh global or project-local AFK manifests",
@@ -244,7 +245,7 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk setup skills [options]",
     options: [
       ...setupAreaOptions,
-      setupOptions.includeExternal,
+      setupOptions.allSkills,
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -258,7 +259,7 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk setup skills [options]",
     options: [
       ...setupAreaOptions,
-      setupOptions.includeExternal,
+      setupOptions.allSkills,
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -377,7 +378,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let yes = false;
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
-  let includeExternal = false;
+  let allSkills = false;
   let rulesRef = "main";
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
@@ -467,8 +468,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (arg === "--include-external") {
-      includeExternal = true;
+    if (arg === "--all") {
+      allSkills = true;
       continue;
     }
 
@@ -563,7 +564,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       dryRun,
       verbose,
       yes,
-      includeExternal,
+      allSkills,
       selectedSkillIds: [],
       selectedSkillAgentIds,
       selectedMcpIds: [],

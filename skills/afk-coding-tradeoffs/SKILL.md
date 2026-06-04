@@ -44,7 +44,7 @@ If the scope is still broad or the real problem is not yet clear, another skill 
 
 ## Interaction Style
 
-This skill should feel guided, interactive, and easy to respond to: present unresolved areas as choices, discuss one area at a time, preserve freeform escape hatches, and show what remains.
+Present unresolved areas as choices, discuss one area at a time, preserve freeform escape hatches, and show what remains.
 
 Use the host runtime's interactive question UI when available. Use plain-text menus only when the environment requires it or the question genuinely needs an open written answer.
 
@@ -269,11 +269,10 @@ It should:
 - preserve unresolved questions where certainty is not yet possible
 - make the next step obvious
 
-The discussion itself should also feel high quality:
+The discussion should also:
 - the user can usually respond by choosing from clear options
 - freeform responses remain welcome at every stage
 - the skill offers natural opportunities to stop, continue, or deepen
-- the skill feels thoughtful and creative without becoming theatrical or noisy
 - the user can tell what has been decided and what still remains
 
 ## Non-Goals

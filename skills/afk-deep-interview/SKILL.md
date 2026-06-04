@@ -37,30 +37,18 @@ This skill fixes that by applying disciplined questioning before action.
 - The user only wants lightweight brainstorming
 - A strong plan or spec already exists and clarification is no longer the bottleneck
 
-## Core Experience
+## Operating Contract
 
-This skill should feel:
-- rigorous
-- focused
-- transparent
-- slightly demanding in a productive way
-- respectful of the user's time
+This is a deliberate clarification loop, not casual chat.
 
-It is not a casual chat. It is a deliberate clarification loop.
-
-Important behavior to preserve:
+Preserve these behaviors:
 - ask one question per round
-- show progress as ambiguity drops
+- show what is clear, weak, or unresolved
 - revisit weak answers instead of changing topics too quickly
 - pressure-test assumptions before declaring readiness
 - let the user stop, continue, or proceed with warning
-- make the user feel the interview is actively steering toward clarity, not just collecting notes
-
-Preferred user experience:
-- the user can see what the current round is trying to clarify
-- the user can feel when an answer is still weak and why the interview is staying on it
-- the user gets explicit checkpoints instead of being dragged through an invisible process
-- the shift from questioning to crystallized output feels earned
+- explain why the current question matters
+- make checkpoints explicit instead of dragging the user through an invisible process
 
 ## Depth Profiles
 
@@ -70,13 +58,13 @@ Preferred user experience:
 
 If the user does not specify a depth, use `standard`.
 
-Recommended defaults:
+Recommended round caps:
 
-| Profile | Threshold | Max Rounds |
-|---------|-----------|------------|
-| quick | `<= 0.30` | 5 |
-| standard | `<= 0.20` | 12 |
-| deep | `<= 0.15` | 20 |
+| Profile | Max Rounds |
+|---------|------------|
+| quick | 5 |
+| standard | 12 |
+| deep | 20 |
 
 ## Execution Policy
 
@@ -109,23 +97,16 @@ Mandatory readiness gates:
 - `Decision Boundaries` are explicit
 - at least one earlier answer has been revisited with a deeper follow-up
 
-## Ambiguity Scoring
+## Readiness Check
 
-Use a simple weighted ambiguity score to keep progress visible.
+Keep progress visible without pretending to quantify certainty.
 
-Greenfield default:
+Track each relevant dimension as:
+- `clear`: specific enough to guide downstream work
+- `weak`: directionally answered but still likely to cause rework
+- `unresolved`: missing, conflicting, or not yet inspected
 
-`ambiguity = 1 - (intent × 0.30 + outcome × 0.25 + scope × 0.20 + constraints × 0.15 + success × 0.10)`
-
-Brownfield default:
-
-`ambiguity = 1 - (intent × 0.25 + outcome × 0.20 + scope × 0.20 + constraints × 0.15 + success × 0.10 + context × 0.10)`
-
-Each dimension should be scored in `[0.0, 1.0]` with a short explanation of:
-- what is clear
-- what remains weak
-
-This score is a tool, not a fiction of precision. Use it to guide the conversation, not to pretend certainty.
+For weak or unresolved dimensions, include a short reason and use it to choose the next question.
 
 ## Workflow
 
@@ -142,8 +123,8 @@ If the work targets an existing codebase, product, or process, gather enough con
 ### 2. Initialize the Interview
 
 - Choose the depth profile
-- Set the ambiguity threshold and round cap
-- Announce the starting profile and current ambiguity estimate
+- Set the round cap
+- Announce the starting profile
 - Identify the first priority dimension to investigate
 
 Preferred kickoff shape:
@@ -151,7 +132,6 @@ Preferred kickoff shape:
 ```text
 Deep Interview started
 Profile: standard
-Current ambiguity: 1.00
 First focus: intent
 ```
 
@@ -163,8 +143,7 @@ Set expectations clearly:
 ### 3. Run the Socratic Loop
 
 Repeat until:
-- ambiguity is below threshold
-- readiness gates are satisfied
+- all relevant dimensions are clear enough and readiness gates are satisfied
 - the user explicitly stops
 - the round cap is reached
 - the user chooses to proceed with warning
@@ -174,7 +153,7 @@ For each round:
 1. Choose the weakest or highest-leverage dimension
 2. Ask one question
 3. Evaluate the answer
-4. Re-score ambiguity
+4. Update the readiness notes
 5. Show progress
 6. Decide whether to stay on the thread, shift dimensions, or use a challenge mode
 
@@ -183,7 +162,7 @@ Preferred question header:
 ```text
 Round {n}
 Focus: {dimension}
-Ambiguity: {score}
+Status: {clear / weak / unresolved summary}
 
 {question}
 ```
@@ -194,7 +173,7 @@ After the user answers, prefer a visible micro-loop:
 What I heard
 - ...
 
-What still feels weak
+What remains weak
 - ...
 
 Next move
@@ -248,7 +227,7 @@ Use these modes when they would sharpen the interview:
 - `Simplifier`: push toward a smaller, sharper scope
 - `Ontologist`: ask for essence-level reframing when the user keeps describing symptoms
 
-These should feel like useful escalations, not gimmicks.
+Use a challenge mode only when it changes the next question or reveals a hidden assumption.
 
 When entering a challenge mode, signal it explicitly so the user understands the shift:
 
@@ -260,9 +239,8 @@ Reason: scope is expanding faster than clarity
 ### 6. Report Progress Transparently
 
 After each round, show:
-- current ambiguity score
-- strongest dimensions
-- weakest dimensions
+- clear dimensions
+- weak or unresolved dimensions
 - readiness-gate status
 - the likely next focus
 
@@ -271,13 +249,11 @@ Example:
 ```text
 Progress Check
 
-Ambiguity: 0.42
-
-Strong:
+Clear:
 - Outcome
 - Constraints
 
-Still weak:
+Weak or unresolved:
 - Non-goals
 - Decision Boundaries
 
@@ -311,7 +287,7 @@ x. Stop
 Use checkpoints:
 - after a meaningful clarification milestone
 - after a challenge mode
-- when ambiguity drops materially
+- when readiness changes materially
 - when the interview has stayed on one thread for multiple rounds
 
 ### 8. Crystallize the Output
@@ -364,10 +340,10 @@ If the request targets an existing system, repository, or workflow:
 ## Exit Conditions
 
 Stop when one of these is true:
-- the ambiguity threshold is met and readiness gates are satisfied
+- the relevant dimensions are clear enough and readiness gates are satisfied
 - the user explicitly says stop
 - max rounds are reached
-- the user chooses to proceed with warning despite residual ambiguity
+- the user chooses to proceed with warning despite residual uncertainty
 
 If the interview ends before clarity is strong enough, preserve that fact explicitly in the final artifact.
 
@@ -378,7 +354,7 @@ If the user chooses `proceed with warning`, clearly state:
 
 ## Residual-Risk Rule
 
-If the user exits early, ambiguity stays high, or the round cap is reached:
+If the user exits early, important dimensions remain weak, or the round cap is reached:
 - mark the result as partially clarified
 - preserve unresolved assumptions
 - state what downstream work should treat as risky
@@ -398,9 +374,9 @@ The final artifact should:
 
 The interview experience should also meet a quality bar:
 - the user always knows why the current question matters
-- the user can feel progress, not just questioning
-- the interview is persistent without feeling arbitrary
-- the final artifact feels like the result of disciplined pressure, not a lightly reformatted summary
+- progress is visible through concrete readiness changes, not just more questions
+- repeated pressure is tied to a named weak dimension
+- the final artifact is more than a lightly reformatted summary
 
 ## Non-Goals
 

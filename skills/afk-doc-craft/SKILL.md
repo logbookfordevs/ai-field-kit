@@ -5,7 +5,7 @@ description: Write, improve, or critique documentation using a reader-first play
 
 # AFK Doc Craft
 
-Use this skill when documentation should feel useful, clear, and worth reading.
+Use this skill to make documentation useful, clear, and worth reading.
 
 Documentation is a product experience. The job is not only to preserve facts; it is to help a real reader build the right mental model with the least frustration.
 

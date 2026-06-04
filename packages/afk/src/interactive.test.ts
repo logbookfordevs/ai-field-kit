@@ -229,9 +229,27 @@ test("selectSetup yes mode uses detected targets", async () => {
 
   assert.deepEqual(selection.agents, ["codex"]);
   assert.deepEqual(selection.hookAgents, ["codex"]);
+  assert.deepEqual(selection.skillIds, ["afk-default"]);
   assert.equal(selection.agentSource, "detected");
   assert.equal(selection.hookAgentSource, "detected");
   assert.ok(!promptState.checkboxMessages.includes("Choose agents for rules and MCPs"));
+});
+
+test("selectSetup yes mode includes all skills when requested", async () => {
+  const homeDir = localHomeWithAllManifests();
+  const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true, allSkills: true });
+
+  assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
+});
+
+test("selectSetup guided mode includes all skills when requested", async () => {
+  promptState.checkboxMessages = [];
+  promptState.setupAreas = ["skills"];
+  const homeDir = localHomeWithAllManifests();
+  const selection = await selectSetup({ ...defaultOptions(homeDir), allSkills: true });
+
+  assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
+  assert.ok(!promptState.checkboxMessages.includes("Choose skills to install"));
 });
 
 test("selectDefaultsSource pre-fills the remembered source and requires input", async () => {
@@ -256,7 +274,7 @@ function defaultOptions(homeDir: string): CliOptions {
     dryRun: true,
     verbose: false,
     yes: false,
-    includeExternal: false,
+    allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
     selectedMcpIds: [],
@@ -330,7 +348,33 @@ function localHomeWithAllManifests(): string {
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
   const manifests: Record<string, unknown> = {
-    "skills.json": { version: 1, defaultSource: "", items: [] },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "afk-default",
+          label: "AFK / Default",
+          source: "https://github.com/example/afk",
+          args: ["--skill", "afk-default", "--global"],
+          default: true,
+        },
+        {
+          id: "afk-spline",
+          label: "AFK / Spline",
+          source: "https://github.com/example/afk",
+          args: ["--skill", "afk-spline", "--global"],
+          default: false,
+        },
+        {
+          id: "external-helper",
+          label: "External / Helper",
+          source: "https://github.com/example/external",
+          args: ["--skill", "external-helper", "--global"],
+          default: false,
+        },
+      ],
+    },
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "local", url: "rules/AGENTS.md" },

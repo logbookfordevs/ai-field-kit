@@ -74,7 +74,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
       agents: agentSelection.agents,
       hookAgents: hookAgentSelection.agents,
       setupScope: options.setupScope,
-      skillIds: loadSkillManifest(options).items.map((item) => item.id),
+      skillIds: nonInteractiveSkillIds(options),
       skillAgents: skillAgentSelection.agents,
       mcpIds: loadMcpManifest(options).items.map((item) => item.id),
       utilIds: loadUtilityManifest(options).items.map((item) => item.id),
@@ -147,7 +147,7 @@ export async function selectSkillsInstall(options: CliOptions): Promise<Pick<Set
   if (options.yes) {
     const detected = detectSetupTargets(options);
     return {
-      skillIds: loadSkillManifest(options).items.map((item) => item.id),
+      skillIds: nonInteractiveSkillIds(options),
       skillAgents: options.selectedSkillAgentIds.length > 0 ? options.selectedSkillAgentIds : detected.skillAgents,
     };
   }
@@ -322,8 +322,12 @@ async function selectAgentChoices(
   return { agents, source: agents.length > 0 ? "manual" : "none" };
 }
 
-async function selectSkills(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills">): Promise<string[]> {
   const manifest = loadSkillManifest(options);
+  if (options.allSkills) {
+    return manifest.items.map((item) => item.id);
+  }
+
   return selectCheckbox(
     "Choose skills to install",
     manifest.items.map((item) => ({
@@ -333,6 +337,12 @@ async function selectSkills(options: Pick<CliOptions, "homeDir">): Promise<strin
       description: item.args.join(" "),
     })),
   );
+}
+
+function nonInteractiveSkillIds(options: Pick<CliOptions, "homeDir" | "allSkills">): string[] {
+  return loadSkillManifest(options).items
+    .filter((item) => item.default || options.allSkills)
+    .map((item) => item.id);
 }
 
 function selectSkillAgents(
