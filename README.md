@@ -315,11 +315,11 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **To Issues (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill to-issues`  
-  Use after the PRD/spec and implementation plan are shaped. It turns the plan into thin, independently grabbable issue-tracker slices, so Linear or GitHub follows the workflow instead of driving it.
+  Use when you explicitly want to turn a shaped PRD/spec or implementation plan into thin, independently grabbable issue-tracker slices. For one-off use, provide the tracker and label context in the prompt.
 
 - **Setup Matt Pocock Skills (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill setup-matt-pocock-skills`  
-  Run once per repo when Matt's issue-tracker skills need context about where issues live, which triage labels to use, and where domain docs or ADRs are stored. This supports `to-issues` without making setup scaffolding part of the default workflow.
+  Run once per repo when Matt's issue-tracker skills need stored context about where issues live, which triage labels to use, and where domain docs or ADRs are stored. This supports repeated `to-issues` use without making setup scaffolding part of the default workflow.
 
 - **Prototype (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill prototype`  
