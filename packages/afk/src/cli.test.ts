@@ -54,6 +54,14 @@ test("runCli rejects the removed refresh-defaults flag", async () => {
   assert.ok(output.join("\n").includes("Unknown option: --refresh-defaults"));
 });
 
+test("runCli rejects the removed include-external flag", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "skills", "--include-external"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown option: --include-external"));
+});
+
 test("runCli prints contextual setup help", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["setup", "--help"]));
@@ -68,9 +76,11 @@ test("runCli prints contextual setup help", async () => {
   assert.ok(text.includes("--verbose"));
   assert.ok(!text.includes("afk setup mcps install"));
   assert.ok(text.includes("--default-source <source>"));
+  assert.ok(text.includes("--all"));
   assert.ok(text.includes("afk setup --default-source your-org/dev-kit"));
   assert.ok(!text.includes("afk setup --defaults-source your-org/dev-kit"));
   assert.ok(!text.includes("--refresh-defaults"));
+  assert.ok(!text.includes("--include-external"));
 });
 
 test("runCli prints contextual area help", async () => {

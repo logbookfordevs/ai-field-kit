@@ -41,6 +41,7 @@ Task arrives
 +-- Reviewing code or PR quality? ----------------> afk-interactive-code-review
 |   +-- Too complex after review? ----------------> code-simplification
 +-- Frontend primitives or registry choice? ------> afk-ui-registry-preferences
++-- Frontend design, UI quality, or polish? -----> impeccable
 +-- Skill authoring or refinement? ---------------> write-a-skill
 +-- Need a quick throwaway experiment? -----------> prototype
 +-- Need external-model perspective? -------------> afk-ask
@@ -48,7 +49,7 @@ Task arrives
 +-- Need terminal/session coordination? ----------> cmux or tmux
 ```
 
-Only invoke external skills that are installed or clearly available. If a recommended external skill is missing, state the gap and continue with the best available AFK or native workflow.
+Only invoke skills that are installed or clearly available. If a routed skill is missing, state the gap and continue with the best available installed skill or normal workflow.
 
 ## Core Behaviors
 These behaviors apply across every routed skill.

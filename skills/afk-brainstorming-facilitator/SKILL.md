@@ -5,7 +5,7 @@ description: 'Facilitate interactive brainstorming sessions using diverse creati
 
 This skill is experience-sensitive. Preserve the facilitated session feel, the divergence-first bias, and the distinct entry modes.
 
-This skill should feel like a creative thinking partner inside a real facilitated session.
+Act as a creative thinking partner inside a real facilitated session.
 
 Default behavior:
 - run as a live ideation conversation with an active session document behind it

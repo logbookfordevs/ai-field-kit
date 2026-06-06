@@ -20,7 +20,7 @@ export type CliOptions = {
   dryRun: boolean;
   verbose: boolean;
   yes: boolean;
-  includeExternal: boolean;
+  allSkills: boolean;
   selectedSkillIds: string[];
   selectedSkillAgentIds: SkillAgentId[];
   selectedMcpIds: string[];

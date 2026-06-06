@@ -295,7 +295,7 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
     dryRun: true,
     verbose: false,
     yes: false,
-    includeExternal: false,
+    allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
     selectedMcpIds: [],

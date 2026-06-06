@@ -12,7 +12,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "afk-animated-driven-frontend",
@@ -24,7 +24,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "afk-ask",
@@ -36,7 +36,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "afk-brainstorming-facilitator",
@@ -48,7 +48,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "afk-coding-tradeoffs",
@@ -60,7 +60,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "afk-deep-interview",
@@ -72,7 +72,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "afk-doc-craft",
@@ -96,7 +96,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "afk-workflow",
@@ -132,7 +132,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "afk-pickup",
@@ -155,8 +155,8 @@
         "afk-spline-3d-integration",
         "--global"
       ],
-      "default": true,
-      "autoInvocation": true
+      "default": false,
+      "autoInvocation": false
     },
     {
       "id": "afk-structured-debugging",
@@ -252,7 +252,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "grill-with-docs",
@@ -276,7 +276,7 @@
         "--global"
       ],
       "default": false,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "prototype",
@@ -288,7 +288,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "setup-matt-pocock-skills",
@@ -324,7 +324,7 @@
         "--global"
       ],
       "default": false,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "tmux",
@@ -336,7 +336,7 @@
         "--global"
       ],
       "default": false,
-      "autoInvocation": true
+      "autoInvocation": false
     },
     {
       "id": "afk-cinematic-landing-page-builder",

@@ -9,7 +9,7 @@ metadata:
 
 Use this skill when something is broken and guessing would make it worse.
 
-This skill should feel like a careful debugging partner:
+Operate as a careful debugging partner:
 - stop the bleed first
 - preserve evidence
 - explain the current logic clearly
@@ -181,7 +181,7 @@ Ask, implicitly or explicitly:
 
 ### 8. Propose fixes and guards
 
-Always suggest at least 2 ways to fix or mitigate the issue when that is practical.
+When more than one credible fix exists, suggest at least 2 ways to fix or mitigate the issue.
 
 For each option, explain:
 - what it changes

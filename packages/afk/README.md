@@ -207,7 +207,7 @@ detected paths into this file automatically.
 
 | Flag | Meaning |
 |---|---|
-| `--include-external` | Include recommended external skills in addition to default AFK skills. |
+| `--all` | Include every skill in the manifest, not only default skills. |
 | `--agent <skill-agent>` | Override detected skill providers and add direct installs for supported skill hosts. Repeatable. |
 
 Skill-agent values are:
