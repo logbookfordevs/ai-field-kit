@@ -29,9 +29,11 @@ Task arrives
 +-- Need divergent ideas or directions? ----------> afk-brainstorming-facilitator
 +-- Writing, rewriting, or reviewing docs? -------> afk-doc-craft
 +-- PRD/spec/RFC/plan/tracking/handoff artifacts? -> afk-workflow
++-- Need a reviewed /goal package? --------------> plannotator-setup-goal
 +-- Need a formal PRD/spec before code? ----------> spec-driven-development
 +-- Have a spec and need tasks? ------------------> planning-and-task-breakdown
 +-- Need UX or implementation trade-offs settled? -> afk-coding-tradeoffs
++-- Need to challenge a plan against docs/domain? -> grill-with-docs
 +-- Need to pressure-test an existing draft? -----> afk-advanced-elicitation
 +-- Implementing a change? -----------------------> incremental-implementation
 |   +-- Needs checkpoints or parallel handoff? ---> afk-execution-tracking
@@ -77,6 +79,7 @@ A full feature may move through several skills:
 
 ```text
 afk-deep-interview
+-> plannotator-setup-goal
 -> spec-driven-development
 -> planning-and-task-breakdown
 -> afk-coding-tradeoffs
@@ -89,6 +92,8 @@ afk-deep-interview
 ```
 
 Most tasks need only one or two steps. Do not turn AFK Compass into ceremony.
+
+Use `plannotator-setup-goal` when the work should become a durable `/goal` package with reviewed facts and an approved execution plan. It is especially useful for broad objectives, goals with many scope decisions, or work that needs an explicit done condition before implementation. Skip it for narrow one-shot edits, quick bug fixes, or tasks where a lightweight `afk-workflow` artifact is enough.
 
 ## Skill Rules
 - Check for applicable skills before starting meaningful work.

@@ -157,7 +157,6 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-doc-craft` | Reader-first documentation craft: journeys, progressive disclosure, real empathy |
 | `afk-execution-tracking` | Checkpointed implementation state across tasks, reviews, validation, and handoffs |
 | `afk-workflow` | AFK doctrine for specs, plans, tracking, and workflow artifact conventions |
-| `afk-spline-3d-integration` | Spline 3D integration guides for React and vanilla JS |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `afk-compass` | Routes work to the right AFK and recommended external skills |
 | `afk-advanced-elicitation` | Structured critique and refinement loops for improving drafts, plans, and decisions |
@@ -166,7 +165,6 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-deep-interview` | High-rigor, Socratic clarification mode for turning vague requests into execution-ready briefs |
 | `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with ADR-style decision artifacts |
 | `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
-| `afk-note` | Durable lightweight memory in a local notepad file for long sessions and handoffs |
 | `afk-pickup` | Explicitly resumes from disposable handoff notes saved in the OS temp directory |
 
 ### Spec-Driven discussion and planning skills
@@ -183,7 +181,6 @@ They are intentionally similar, but they are not redundant:
 | `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | ADR-style decision record for downstream implementation |
 | `afk-execution-tracking` | You have an implementation plan and want checkpointed execution instead of one long build run | Canonical tracking file with task status, review gates, validation, and next action |
 | `afk-advanced-elicitation` | You already have a draft, brief, plan, or answer and want to pressure-test or improve it | Stronger revised artifact with visible critique/refinement |
-| `afk-note` | You need important context to survive interruptions, compaction, or handoffs | Durable lightweight memory |
 | `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
 
@@ -199,7 +196,7 @@ They are intentionally similar, but they are not redundant:
 | Implementation planning | Flexible for now; use plan modes, external planning skills, or normal prompting depending on the project |
 | Execution control | `afk-execution-tracking` |
 | Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
-| Support | `afk-note`, `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
+| Support | `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
 
 `afk-workflow` defines the default artifact convention: `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
 
@@ -213,7 +210,6 @@ If you're unsure which one to reach for, use this shortcut:
 - "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-coding-tradeoffs`
 - "We have a plan and need checkpointed execution" -> `afk-execution-tracking`
 - "We already have something written, but it needs a stronger pass" -> `afk-advanced-elicitation`
-- "I don't want to lose this context later" -> `afk-note`
 - "A previous agent left a temp handoff for this session" -> `afk-pickup`
 - "I want another model's opinion" -> `afk-ask`
 
@@ -390,7 +386,7 @@ For the fuller comparison that inspired this rule of thumb:
 - `afk-coding-tradeoffs` is narrower than `afk-deep-interview`. It assumes the work is already scoped enough to discuss UX and implementation trade-offs that materially change the result.
 - `afk-execution-tracking` starts after an implementation plan exists. Use it when execution needs checkpoints, resume safety, or parallel coordination.
 - `afk-advanced-elicitation` is not for first-pass discovery. It is best after a draft or direction already exists.
-- `afk-note`, `afk-pickup`, and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
+- `afk-pickup` and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
 
 ### Supporting skills around the flow
 
@@ -431,7 +427,6 @@ Workflow-style AFK procedures are skills for named, repeatable user journeys. Us
 
 | Skill | What it does |
 |---|---|
-| `afk-cinematic-landing-page-builder` | Builds a premium landing page from a fixed creative intake |
 | `afk-interactive-code-review` | Reviews a PR step by step with pauses after each file |
 | `afk-pr-description-generator` | Generates a structured PR description from branch diffs |
 | `afk-pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
@@ -486,7 +481,6 @@ If you're deciding where a new prompt belongs, use this rule first:
 
 - `/afk-interactive-code-review`: a step-by-step review flow with pauses after each file.
 - `/afk-pr-description-generator`: a repeatable artifact generator for PR descriptions.
-- `/afk-cinematic-landing-page-builder`: a fixed creative intake followed by a specific landing-page build process.
 
 ### Quick test
 

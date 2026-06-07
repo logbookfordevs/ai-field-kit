@@ -1,5 +1,0 @@
-display_name: AFK Cinematic Landing Page Builder
-short_description: Build a premium cinematic landing page from a fixed creative intake.
-default_prompt: Follow the AI Field Kit /afk-cinematic-landing-page-builder workflow for this project.
-policy:
-  allow_implicit_invocation: false

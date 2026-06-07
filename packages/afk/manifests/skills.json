@@ -123,18 +123,6 @@
       "autoInvocation": true
     },
     {
-      "id": "afk-note",
-      "label": "AFK / Note",
-      "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": [
-        "--skill",
-        "afk-note",
-        "--global"
-      ],
-      "default": true,
-      "autoInvocation": false
-    },
-    {
       "id": "afk-pickup",
       "label": "AFK / Pickup",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -144,18 +132,6 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
-    },
-    {
-      "id": "afk-spline-3d-integration",
-      "label": "AFK / Spline 3D Integration",
-      "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": [
-        "--skill",
-        "afk-spline-3d-integration",
-        "--global"
-      ],
-      "default": false,
       "autoInvocation": false
     },
     {
@@ -336,18 +312,6 @@
         "--global"
       ],
       "default": false,
-      "autoInvocation": false
-    },
-    {
-      "id": "afk-cinematic-landing-page-builder",
-      "label": "AFK / Cinematic Landing Page Builder",
-      "source": "https://github.com/logbookfordevs/ai-field-kit",
-      "args": [
-        "--skill",
-        "afk-cinematic-landing-page-builder",
-        "--global"
-      ],
-      "default": true,
       "autoInvocation": false
     },
     {
