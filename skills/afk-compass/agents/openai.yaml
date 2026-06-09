@@ -1,4 +1,4 @@
 interface:
   display_name: "AFK Compass"
   short_description: "Route work to the right AFK and companion skills"
-  default_prompt: "Use $afk-compass as the first AFK skill-selection layer when a task may involve planning, docs, implementation, debugging, review, UI, handoff, or workflow coordination. Route to the smallest useful AFK or recommended external skill set, checking ~/.agents/skills/skills.json when the user implies using their installed skill library."
+  default_prompt: "Use $afk-compass to route broad, ambiguous, multi-phase, or explicit AFK workflow/run requests to the right AFK and companion skills. Re-check routing at phase changes such as source gathering -> PRD/spec, draft -> implementation plan, or plan -> execution. In freestyle prompts, choose the smallest useful next skill without forcing workflow artifacts."

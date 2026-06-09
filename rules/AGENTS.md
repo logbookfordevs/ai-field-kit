@@ -22,8 +22,9 @@ Treat docs as reader-facing product work; let the skill provide the detailed wri
 # Personal Preferences
 
 ## Skills
-Use `afk-compass` for broad, ambiguous, or multi-phase skill selection.
+Use `afk-compass` for broad, ambiguous, multi-phase, phase changes, execution-discipline routing, or any non-obvious skill selection.
 Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
+Treat explicit "AFK workflow" or "feature workflow" requests as AFK orchestration: use `afk-compass` at the start and at phase changes, while still choosing the smallest useful next skill and avoiding workflow artifacts unless `afk-artifact-workflow` is selected.
 
 ## Imports
 - Always prioritize absolute imports (e.g. `@/components/...`) over relative paths when available.
@@ -63,11 +64,6 @@ Be a critical thinking partner: challenge weak product or implementation directi
 - Do not add comments that merely narrate the code, mention tickets, or explain each line of a solution.
 - Add a comment only when the code has real ambiguity, a non-obvious constraint, or a meaningful trade-off that future developers need to understand.
 - Keep necessary comments short and focused on resolving that ambiguity.
-
-## AFK Workflow
-- For PRDs, specs, RFCs, implementation plans, tracking, handoff notes, or workflow artifact conventions, use the `afk-workflow` skill.
-- For broader workflow selection, use `afk-compass` first.
-- Skip it only for quick one-shot operations where no workflow state, artifact, or handoff is needed.
 
 ## Dictionary
 - Team of agents/multi agents = spawn sub-agents/child agents

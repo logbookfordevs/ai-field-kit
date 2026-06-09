@@ -11,6 +11,11 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Changed
+
+- `skills:` renamed `afk-workflow` to `afk-artifact-workflow` so AFK workflow requests mean Compass orchestration, while the artifact skill stays focused on boundaries, storage, next-artifact suggestions, and handoff state.
+- `skills:` made skill invocation policy sync both directions so `autoInvocation: true` re-enables model discovery even when an installed skill shipped disabled, while `write-a-skill`, `to-issues`, and `afk-typecheck` remain manual.
+
 ## v0.5.4 - 2026-06-06
 
 ### Added
