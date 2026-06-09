@@ -409,9 +409,7 @@ Workflow-style AFK procedures are skills for named, repeatable user journeys. Us
 | Skill | What it does |
 |---|---|
 | `afk-interactive-code-review` | Reviews a PR step by step with pauses after each file |
-| `afk-pr-description-generator` | Generates a structured PR description from branch diffs |
 | `afk-pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
-| `afk-typecheck` | Runs `tsc`, writes a temporary typecheck report when needed, fixes issues, and asks whether to keep or delete the report |
 | `afk-deep-interview` | Runs a structured interview with follow-up questions based on the initial answer |
 
 These skills are installed through the normal skills flow. Use `autoInvocation: false` only for slash-only or attached-only procedures that should stay hidden from normal model discovery.
@@ -462,7 +460,6 @@ If you're deciding where a new prompt belongs, use this rule first:
 **Good workflow examples in this repo:**
 
 - `/afk-interactive-code-review`: a step-by-step review flow with pauses after each file.
-- `/afk-pr-description-generator`: a repeatable artifact generator for PR descriptions.
 
 ### Quick test
 

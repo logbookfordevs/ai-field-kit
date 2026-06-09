@@ -1,3 +1,0 @@
-display_name: AFK Typecheck
-short_description: Run TypeScript type checking, document failures in a temporary `typecheck.md`, fix the issues, and close the loop with the user before optionally deleting the report.
-default_prompt: Follow the /afk-typecheck workflow for this project.
