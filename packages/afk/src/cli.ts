@@ -4,6 +4,7 @@ import { normalizeAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
 import { runManifestShow } from "./manifest-show.js";
+import { selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import { packageVersion } from "./update-check.js";
 import type { AgentId, Area, CliOptions, CommandResult, ManifestCategory, Runtime, SetupScope, SkillAgentId } from "./types.js";
@@ -21,7 +22,7 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
     return await runCliWithRuntime(argv, env, runtime);
   } catch (error) {
     if (isPromptExit(error)) {
-      runtime.io.stdout("\nAFK setup cancelled. Nothing else was changed from this prompt.");
+      runtime.io.stdout("\nAFK prompt cancelled. Nothing else was changed from this prompt.");
       return 130;
     }
 
@@ -30,6 +31,11 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
 }
 
 async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
+  if (shouldOpenCompassLobby(argv, env)) {
+    const route = await selectCompassLobbyRoute(runtime);
+    return runCliWithRuntime(route, env, runtime);
+  }
+
   const parsed = parseArgs(argv, env);
 
   if (parsed.version) {

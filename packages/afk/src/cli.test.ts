@@ -35,6 +35,15 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes('Run "afk <command> --help"'));
 });
 
+test("runCli keeps plain afk as help in non-interactive output", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli([]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("Guided setup router for AI Field Kit."));
+  assert.ok(output.join("\n").includes("afk setup [options]"));
+});
+
 test("runCli prints contextual setup refresh help", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["setup", "refresh", "--help"]));
