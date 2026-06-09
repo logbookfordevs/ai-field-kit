@@ -1,25 +1,18 @@
 ---
 name: afk-workflow
-description: Apply AFK workflow doctrine for artifact-oriented engineering work involving PRDs, specs, RFCs, implementation plans, tracking, handoff notes, or generated workflow artifacts. Skip quick one-shot operations with no workflow state, artifact, or handoff.
+description: Apply AFK artifact workflow doctrine for PRDs, specs, RFCs, implementation plans, tracking, handoff notes, source references, and generated workflow artifacts. Use when work needs durable artifact boundaries, storage conventions, next-artifact suggestions, or handoff state; skip quick one-shot operations.
 metadata:
-  short-description: Apply AFK workflow doctrine for specs, plans, tracking, and artifact conventions.
+  short-description: Apply AFK artifact workflow for specs, plans, tracking, and conventions.
 ---
 
 # AFK Workflow
 
-Use this skill as the default behavior lens for artifact-oriented engineering work: discovery, brainstorming, elicitation, PRDs, specs, RFCs, implementation planning, execution, testing, validation, tracking, handoff, or generated workflow artifacts.
+Use this skill for artifact-oriented workflow work: PRDs, specs, RFCs, implementation plans, tracking notes, handoff notes, source references, or generated workflow artifacts.
 
-This skill is not a full ceremony. It keeps artifact boundaries, storage, and handoff expectations consistent while letting the user choose the actual planning or execution method.
+This skill owns artifact boundaries, storage, and next-artifact suggestions. It does not choose the full skill sequence; return to `afk-compass` when the next phase needs planning, elicitation, trade-offs, execution discipline, debugging, review, UI, or documentation polish.
 
 Skip quick one-shot operations where no workflow state, artifact, or handoff is needed.
 
-
-## Workflow Framing
-
-- Treat the path from PRD/spec to implementation plan as a **workflow slice**, not the whole delivery lifecycle.
-- Work may start before this slice with brainstorming, discovery, elicitation, deep interview, or similar clarification flows.
-- Work usually continues after this slice with execution, testing, verification, review, and approval gates.
-- A task does not need every workflow stage to qualify; meaningful context, decisions, validation, or handoff is enough.
 
 ## Artifact Boundaries
 
@@ -35,7 +28,7 @@ Skip quick one-shot operations where no workflow state, artifact, or handoff is 
 - Follow the repo or user artifact convention first.
 - If no convention exists, store generated workflow artifacts under `docs/<task-slug>/`.
 - Use a concise kebab-case task slug, such as `smart-filters` or `checkout-retry-flow`.
-- Prefer `docs/<task-slug>/<task-slug>.<type>.md`, using clear suffixes such as `.prd.md`, `.spec.md`, `.rfc.md`, `.plan.md`, `.tracking.md`, `.implementation-notes.md`, `.test-plan.md`, `.test-spec.md`, `.brainstorming.md`, `.interview.md`, `.tradeoffs.md`, `.gemini.md`, and `.notes.md`.
+- Prefer `docs/<task-slug>/<task-slug>.<type>.md`, using clear suffixes such as `.prd.md`, `.spec.md`, `.rfc.md`, `.plan.md`, `.tracking.md`, `.implementation-notes.md`, `.test-plan.md`, `.tradeoffs.md`, `.brainstorming.md`, `.interview.md`, etc.
 - Keep ADR-style decision records under `docs/<task-slug>/decisions/` with sequential filenames such as `0001-shared-modal-ownership.adr.md`, unless the repo has a stronger ADR convention.
 - Keep passive fetched material, screenshots, exports, and source references under `docs/<task-slug>/references/` when they belong to the task.
 - Treat generated workflow artifacts as local working artifacts unless the repo convention or the user says they should be committed.
@@ -54,21 +47,19 @@ Skip quick one-shot operations where no workflow state, artifact, or handoff is 
 
 ## Execution Tracking
 
-- Use `afk-execution-tracking` when explicitly requested, or when execution needs checkpoints, approval gates, handoff notes, parallel agents, interruption recovery, or durable progress state.
-- Skip it for short, single-session implementations where the plan is concrete and final response plus validation are enough.
-- Start tracking after a plan exists and before tracked execution begins.
+- Route to `afk-execution-tracking` when the user requests it or execution needs checkpoints, approval gates, handoff notes, parallel agents, interruption recovery, or durable progress state.
+- Skip tracking for short, single-session implementations where the plan is concrete and final response plus validation are enough.
 
 ## Implementation Notes
 
-- During implementation from a PRD, spec, RFC, or plan, keep running notes for decisions the source artifact did not settle.
-- Record deviations, assumptions, trade-offs, scope changes, surprising constraints, and anything the reviewer or next agent should know.
+- Record only decisions the source artifact did not settle: deviations, assumptions, trade-offs, scope changes, surprising constraints, or reviewer handoff context.
 - Prefer the tracking file when one exists. Otherwise, use `docs/<task-slug>/<task-slug>.implementation-notes.md` when the work needs a handoff trail.
-- If a decision changes architecture, ownership, integration contracts, data model, migration strategy, or long-term maintenance expectations, create or update an ADR under `docs/<task-slug>/decisions/` unless the repo has a stronger convention.
-- Keep notes concise and decision-oriented. Skip them for quick one-shot edits.
+- Use an ADR only for decisions that change architecture, ownership, integration contracts, data model, migration strategy, or long-term maintenance expectations.
 
 ## Behavior
 
 - Do not create workflow artifacts for tiny one-shot edits unless the user asks.
 - Do not turn every coding request into a spec-driven ceremony.
 - If the user already has PRDs, specs, RFCs, plans, or tracking files, read those before inventing new structure.
+- When current sources or artifacts are staged, suggest the next useful workflow artifact, such as PRD/spec, domain grill, implementation plan, tracking, or handoff, and explain why that artifact is the next useful one.
 - If a project uses a different established convention, follow that project convention and preserve AFK as a fallback lens.

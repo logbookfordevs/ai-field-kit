@@ -1,4 +1,4 @@
 interface:
   display_name: "AFK Workflow"
-  short_description: "Apply AFK doctrine for specs, plans, tracking, and workflow artifact conventions."
-  default_prompt: "Use the AFK workflow doctrine for artifact-oriented engineering work: respect existing PRDs/specs/RFCs/plans, follow the repo artifact convention or AFK fallback, keep implementation plans as execution indexes, record implementation notes for unsettled decisions, and use execution tracking when checkpointed implementation is needed."
+  short_description: "Apply AFK artifact workflow for specs, plans, tracking, and conventions."
+  default_prompt: "Use the AFK artifact workflow doctrine for PRDs, specs, RFCs, implementation plans, tracking or handoff notes, source references, and generated workflow artifacts. Respect existing artifacts, follow the repo artifact convention or AFK fallback, suggest the next useful workflow artifact when sources or artifacts are staged, and return to $afk-compass when the next phase needs different skill selection."
