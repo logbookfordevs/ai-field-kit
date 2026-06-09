@@ -19,6 +19,7 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` added Matt Pocock's `teach` skill as an opt-in manifest item for explicit stateful learning workflows.
 - `skills:` added Matt Pocock's `grill-me` skill for plan/design interrogation and retired `afk-deep-interview` from default install and auto-routing.
 - `skills:` made skill invocation policy sync both directions so `autoInvocation: true` re-enables model discovery even when an installed skill shipped disabled, while `write-a-skill` and `to-issues` remain manual.
+- `skills:` tightened `afk-pickup` so temp handoff resumes check direct `/tmp` paths before broader searches and avoid fragile shell search patterns.
 
 ## v0.5.4 - 2026-06-06
 
