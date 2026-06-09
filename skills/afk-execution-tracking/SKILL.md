@@ -172,6 +172,8 @@ Before final handoff after implementation or review fixes, run a notes/ADR check
 - If the change establishes a reusable policy, ownership boundary, shared component rule, integration contract, data/model rule, or long-term product decision, create or update an ADR.
 - If neither applies, no note is needed.
 
+Also look for material simplification opportunities before final handoff. If simplification would clearly reduce risk, duplication, or maintenance cost, record the opportunity in the active checkpoint file and offer `code-simplification`; do not silently refactor outside the current checkpoint scope.
+
 For examples, see [notes-and-decisions.md](references/notes-and-decisions.md).
 
 ## Design And Product Review Guides

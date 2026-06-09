@@ -143,7 +143,7 @@ If you only want the AFK skill-routing entry point, install `afk-compass` direct
 npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-compass
 ```
 
-This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the right AFK and recommended external skills. When a user's installed skill taxonomy is available, it can use `skills.json` as a ranking hint.
+This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the right AFK and recommended external skills. When you ask for an AFK workflow, feature workflow, or AFK run, Compass treats the work as phase-managed orchestration and re-checks routing as the work moves from sources to specs, plans, and execution.
 
 > **What does global vs. agent-specific mean?**
 > Global installs (`--global`) place the skill in `~/.agents/skills/` and make it available to every agent that reads from there.
@@ -227,22 +227,28 @@ Use the smallest useful slice of AFK for the moment you are in.
 
 If the work is already clear, skip straight to the later skill that matches the need. If the work is messy, start earlier. The point is guidance, not bureaucracy.
 
+When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses a stronger orchestration mode: it routes each phase, asks before tracked execution when tracking is optional, defaults to TDD for software behavior changes, and still avoids workflow artifacts unless `afk-workflow` is the right skill for that phase.
+
 ### A practical optional workflow
 
 You do not need every step. Pick the smallest useful path for the moment you are in.
 
 1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
 2. Use `afk-deep-interview` when intent, scope, non-goals, or decision boundaries are still expensive to get wrong.
-3. Write or refine the PRD/spec with your preferred spec skill or normal prompting.
-4. Use `afk-coding-tradeoffs` when a known slice still has UX, behavior, or implementation decisions to lock. It captures those decisions as ADR-style records.
-5. Use `afk-advanced-elicitation` when a draft needs a stronger reasoning/refinement pass.
-6. Create the implementation plan with your preferred planning tool or normal prompting.
-7. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or implementation notes.
+3. Use `afk-workflow` when source material, references, PRDs, specs, plans, tracking, or handoff artifacts need consistent boundaries.
+4. Write or refine the PRD/spec with `spec-driven-development`, another preferred spec skill, or normal prompting.
+5. Use `grill-with-docs` before drafting the PRD/spec only when domain language is already risky. Otherwise use it after a draft to pressure-test terminology, code/docs consistency, and decisions before planning.
+6. Use `afk-coding-tradeoffs` when a known slice still has UX, behavior, or implementation decisions to lock. It captures those decisions as ADR-style records.
+7. Use `afk-advanced-elicitation` when a draft needs a stronger reasoning/refinement pass.
+8. Create the implementation plan with your preferred planning tool or normal prompting.
+9. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or implementation notes.
+10. Default to `test-driven-development` for software behavior changes. Skip only when there is no meaningful behavior risk, or when literal test-first is impractical and another proof mechanism is named first.
+11. Use `incremental-implementation` for multi-file, large, risky, or task-breakdown-driven execution. Skip it for minimal single-file or single-function changes.
 
 Most flows only use a few of these. For example:
 
 ```text
-PRD/spec -> afk-coding-tradeoffs -> implementation plan -> afk-execution-tracking
+references -> PRD/spec -> grill-with-docs -> implementation plan -> tracking when needed -> TDD for behavior changes -> incremental execution when warranted
 ```
 
 ### Framework Pairings
@@ -307,7 +313,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Grill With Docs (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
-  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. It complements `afk-coding-tradeoffs`: use trade-offs first when decisions are fuzzy, and Grill With Docs first when domain language is fuzzy.
+  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. Use it before drafting the PRD/spec only when domain language or documented decisions are already risky; otherwise draft first, then grill before implementation planning. It complements `afk-coding-tradeoffs`: use trade-offs first when decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy.
 
 - **To Issues (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill to-issues`  
@@ -432,7 +438,7 @@ Workflow-style AFK procedures are skills for named, repeatable user journeys. Us
 | `afk-pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
 | `afk-typecheck` | Runs `tsc`, writes a temporary typecheck report when needed, fixes issues, and asks whether to keep or delete the report |
 
-These skills are installed through the normal skills flow with `autoInvocation: false`, so agents can see them without automatically choosing them for broad prompts.
+These skills are installed through the normal skills flow. Use `autoInvocation: false` only for slash-only or attached-only procedures that should stay hidden from normal model discovery.
 
 ### Global Rules Targets
 
@@ -558,8 +564,7 @@ This kit grows with real-world use. If you've built a skill or MCP config that's
 2. Fill in `my-skill/SKILL.md` following the existing patterns in `skills/`
 3. Open a PR with a short description of what the skill does and when to use it
 
-For explicit multi-step procedures, add them as skills with `autoInvocation: false`
-in `packages/afk/manifests/skills.json`.
+For explicit multi-step procedures, use `autoInvocation: true` when normal language should discover the skill, and reserve `autoInvocation: false` for slash-only or attached-only procedures.
 
 **Adding an MCP server:**
 

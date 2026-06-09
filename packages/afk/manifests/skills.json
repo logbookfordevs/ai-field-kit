@@ -12,7 +12,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "afk-animated-driven-frontend",
@@ -24,7 +24,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "afk-ask",
@@ -36,7 +36,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "afk-brainstorming-facilitator",
@@ -48,7 +48,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "afk-coding-tradeoffs",
@@ -60,7 +60,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "afk-deep-interview",
@@ -72,7 +72,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "afk-doc-craft",
@@ -96,7 +96,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "afk-workflow",
@@ -132,7 +132,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "afk-structured-debugging",
@@ -264,7 +264,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "setup-matt-pocock-skills",
@@ -276,7 +276,7 @@
         "--global"
       ],
       "default": false,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "handoff",
@@ -288,7 +288,7 @@
         "--global"
       ],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "cmux",
@@ -300,7 +300,7 @@
         "--global"
       ],
       "default": false,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "tmux",
@@ -312,7 +312,7 @@
         "--global"
       ],
       "default": false,
-      "autoInvocation": false
+      "autoInvocation": true
     },
     {
       "id": "afk-interactive-code-review",

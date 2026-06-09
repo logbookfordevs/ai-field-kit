@@ -216,9 +216,11 @@ Skill-agent values are:
 claude-code, kiro-cli, kilo, pi, droid
 ```
 
-AFK keeps the `skills` CLI default symlink fanout. For AFK skill entries with
+AFK keeps the `skills` CLI default symlink fanout. For skill entries with
 `autoInvocation: false`, AFK adds policy metadata after install so supported
-agents keep the skill available without encouraging implicit invocation.
+agents hide the skill from normal model discovery unless it is explicitly
+attached or invoked. Use `autoInvocation: true` when plain-language requests
+should discover the skill.
 
 ### Manifest Flags
 
