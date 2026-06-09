@@ -156,7 +156,7 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
 | `afk-doc-craft` | Reader-first documentation craft: journeys, progressive disclosure, real empathy |
 | `afk-execution-tracking` | Checkpointed implementation state across tasks, reviews, validation, and handoffs |
-| `afk-workflow` | AFK doctrine for specs, plans, tracking, and workflow artifact conventions |
+| `afk-artifact-workflow` | AFK artifact workflow for specs, plans, tracking, and artifact conventions |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `afk-compass` | Routes work to the right AFK and recommended external skills |
 | `afk-advanced-elicitation` | Structured critique and refinement loops for improving drafts, plans, and decisions |
@@ -175,7 +175,7 @@ They are intentionally similar, but they are not redundant:
 
 | Skill | Use it when | Best output |
 |---|---|---|
-| `afk-workflow` | The task involves PRDs, specs, RFCs, implementation plans, tracking, or workflow artifact conventions | Consistent artifact boundaries, storage defaults, and workflow framing |
+| `afk-artifact-workflow` | The task involves PRDs, specs, RFCs, implementation plans, tracking, handoff notes, source references, or artifact conventions | Consistent artifact boundaries, storage defaults, and next-artifact suggestions |
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
 | `afk-deep-interview` | You want disciplined clarification before planning or execution and you're willing to be questioned one round at a time | Execution-ready brief or spec with clear boundaries |
 | `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | ADR-style decision record for downstream implementation |
@@ -188,7 +188,7 @@ They are intentionally similar, but they are not redundant:
 
 | Stage | AFK position |
 |---|---|
-| Workflow doctrine | `afk-workflow` |
+| Artifact workflow | `afk-artifact-workflow` |
 | Open / clarify | `afk-brainstorming-facilitator`, `afk-deep-interview` |
 | Pressure-test / decide | `afk-coding-tradeoffs`, `afk-advanced-elicitation` |
 | Spec creation | Flexible for now; use a good standalone external spec skill or normal prompting when that fits |
@@ -198,14 +198,14 @@ They are intentionally similar, but they are not redundant:
 | Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
 | Support | `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
 
-`afk-workflow` defines the default artifact convention: `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
+`afk-artifact-workflow` defines the default artifact convention: `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
 
 ### What to choose
 
 If you're unsure which one to reach for, use this shortcut:
 
 - "We need more ideas" -> `afk-brainstorming-facilitator`
-- "We are dealing with PRDs, specs, RFCs, plans, tracking, or workflow artifacts" -> `afk-workflow`
+- "We are dealing with PRDs, specs, RFCs, plans, tracking, or workflow artifacts" -> `afk-artifact-workflow`
 - "We need to interrogate the request before building" -> `afk-deep-interview`
 - "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-coding-tradeoffs`
 - "We have a plan and need checkpointed execution" -> `afk-execution-tracking`
@@ -227,7 +227,7 @@ Use the smallest useful slice of AFK for the moment you are in.
 
 If the work is already clear, skip straight to the later skill that matches the need. If the work is messy, start earlier. The point is guidance, not bureaucracy.
 
-When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses a stronger orchestration mode: it routes each phase, asks before tracked execution when tracking is optional, defaults to TDD for software behavior changes, and still avoids workflow artifacts unless `afk-workflow` is the right skill for that phase.
+When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses a stronger orchestration mode: it routes each phase, asks before tracked execution when tracking is optional, defaults to TDD for software behavior changes, and still avoids workflow artifacts unless `afk-artifact-workflow` is the right skill for that phase.
 
 ### A practical optional workflow
 
@@ -235,7 +235,7 @@ You do not need every step. Pick the smallest useful path for the moment you are
 
 1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
 2. Use `afk-deep-interview` when intent, scope, non-goals, or decision boundaries are still expensive to get wrong.
-3. Use `afk-workflow` when source material, references, PRDs, specs, plans, tracking, or handoff artifacts need consistent boundaries.
+3. Use `afk-artifact-workflow` when source material, references, PRDs, specs, plans, tracking, or handoff artifacts need consistent boundaries.
 4. Write or refine the PRD/spec with `spec-driven-development`, another preferred spec skill, or normal prompting.
 5. Use `grill-with-docs` before drafting the PRD/spec only when domain language is already risky. Otherwise use it after a draft to pressure-test terminology, code/docs consistency, and decisions before planning.
 6. Use `afk-coding-tradeoffs` when a known slice still has UX, behavior, or implementation decisions to lock. It captures those decisions as ADR-style records.

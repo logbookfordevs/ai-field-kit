@@ -245,7 +245,7 @@ This skill should sharpen the current scope, not quietly expand it.
 
 Produce a decision document that is useful for downstream implementation and future chats.
 
-When writing a file, follow the repo or user artifact convention. If none exists, follow the AFK default from `afk-workflow`.
+When writing a file, follow the repo or user artifact convention. If none exists, follow the AFK default from `afk-artifact-workflow`.
 
 This artifact is mandatory, even if the conversation was short.
 

@@ -99,12 +99,12 @@
       "autoInvocation": true
     },
     {
-      "id": "afk-workflow",
-      "label": "AFK / Workflow",
+      "id": "afk-artifact-workflow",
+      "label": "AFK / Artifact Workflow",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
       "args": [
         "--skill",
-        "afk-workflow",
+        "afk-artifact-workflow",
         "--global"
       ],
       "default": true,

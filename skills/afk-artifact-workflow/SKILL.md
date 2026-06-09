@@ -1,11 +1,11 @@
 ---
-name: afk-workflow
+name: afk-artifact-workflow
 description: Apply AFK artifact workflow doctrine for PRDs, specs, RFCs, implementation plans, tracking, handoff notes, source references, and generated workflow artifacts. Use when work needs durable artifact boundaries, storage conventions, next-artifact suggestions, or handoff state; skip quick one-shot operations.
 metadata:
   short-description: Apply AFK artifact workflow for specs, plans, tracking, and conventions.
 ---
 
-# AFK Workflow
+# AFK Artifact Workflow
 
 Use this skill for artifact-oriented workflow work: PRDs, specs, RFCs, implementation plans, tracking notes, handoff notes, source references, or generated workflow artifacts.
 
@@ -28,7 +28,7 @@ Skip quick one-shot operations where no workflow state, artifact, or handoff is 
 - Follow the repo or user artifact convention first.
 - If no convention exists, store generated workflow artifacts under `docs/<task-slug>/`.
 - Use a concise kebab-case task slug, such as `smart-filters` or `checkout-retry-flow`.
-- Prefer `docs/<task-slug>/<task-slug>.<type>.md`, using clear suffixes such as `.prd.md`, `.spec.md`, `.rfc.md`, `.plan.md`, `.tracking.md`, `.implementation-notes.md`, `.test-plan.md`, `.tradeoffs.md`, `.brainstorming.md`, `.interview.md`, etc.
+- Prefer `docs/<task-slug>/<task-slug>.<type>.md`, using clear suffixes such as `.prd.md`, `.spec.md`, `.plan.md`, `.tracking.md`, etc.
 - Keep ADR-style decision records under `docs/<task-slug>/decisions/` with sequential filenames such as `0001-shared-modal-ownership.adr.md`, unless the repo has a stronger ADR convention.
 - Keep passive fetched material, screenshots, exports, and source references under `docs/<task-slug>/references/` when they belong to the task.
 - Treat generated workflow artifacts as local working artifacts unless the repo convention or the user says they should be committed.

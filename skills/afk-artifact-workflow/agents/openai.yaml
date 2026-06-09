@@ -1,4 +1,4 @@
 interface:
-  display_name: "AFK Workflow"
+  display_name: "AFK Artifact Workflow"
   short_description: "Apply AFK artifact workflow for specs, plans, tracking, and conventions."
   default_prompt: "Use the AFK artifact workflow doctrine for PRDs, specs, RFCs, implementation plans, tracking or handoff notes, source references, and generated workflow artifacts. Respect existing artifacts, follow the repo artifact convention or AFK fallback, suggest the next useful workflow artifact when sources or artifacts are staged, and return to $afk-compass when the next phase needs different skill selection."
