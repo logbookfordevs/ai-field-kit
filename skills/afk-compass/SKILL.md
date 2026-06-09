@@ -41,7 +41,7 @@ Use this map to choose the next skill:
 ```text
 Task arrives
 |
-+-- Unsure what the user really wants? -----------> afk-deep-interview
++-- Need relentless plan/design questioning? ----> grill-me
 +-- Need divergent ideas or directions? ----------> afk-brainstorming-facilitator
 +-- Writing, rewriting, or reviewing docs? -------> afk-doc-craft
 +-- PRD/spec/RFC/plan/tracking/handoff artifacts? -> afk-artifact-workflow
@@ -96,6 +96,7 @@ Common phase moves:
 - Source gathering -> PRD/spec: use `afk-artifact-workflow` for artifact boundaries, then `spec-driven-development` when a formal PRD/spec is being created before code.
 - PRD/spec draft -> implementation plan: use `planning-and-task-breakdown` when the spec is ready to become tasks.
 - Draft or plan -> domain pressure: use `grill-with-docs` when terminology, domain boundaries, `CONTEXT.md`, ADRs, or code/docs consistency could change the artifact. Use it before drafting the PRD/spec only when that risk already exists; otherwise draft first, then grill before implementation planning.
+- Plan or design -> decision-tree pressure: use `grill-me` when the user asks to be grilled, wants relentless questioning, or needs a plan/design stress-tested through one-question-at-a-time interrogation.
 - Open product, UX, component, ownership, library, or implementation choices -> use `afk-coding-tradeoffs`, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
 - Implementation -> use `test-driven-development` for behavior changes, `afk-execution-tracking` when checkpoints or durable state are needed, and `incremental-implementation` when the implementation is broad enough.
 - Any draft or workflow artifact -> reader-facing polish: use `afk-doc-craft` only when the artifact needs human-facing documentation quality, not for agent skill content.

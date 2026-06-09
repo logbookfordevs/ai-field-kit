@@ -71,8 +71,8 @@
         "afk-deep-interview",
         "--global"
       ],
-      "default": true,
-      "autoInvocation": true
+      "default": false,
+      "autoInvocation": false
     },
     {
       "id": "afk-doc-craft",
@@ -231,12 +231,36 @@
       "autoInvocation": false
     },
     {
+      "id": "teach",
+      "label": "External / Teach",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "teach",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": false
+    },
+    {
       "id": "grill-with-docs",
       "label": "External / Grill With Docs",
       "source": "https://github.com/mattpocock/skills",
       "args": [
         "--skill",
         "grill-with-docs",
+        "--global"
+      ],
+      "default": false,
+      "autoInvocation": true
+    },
+    {
+      "id": "grill-me",
+      "label": "External / Grill Me",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "grill-me",
         "--global"
       ],
       "default": false,

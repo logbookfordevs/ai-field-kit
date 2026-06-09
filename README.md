@@ -160,9 +160,8 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `afk-compass` | Routes work to the right AFK and recommended external skills |
 | `afk-advanced-elicitation` | Structured critique and refinement loops for improving drafts, plans, and decisions |
-| `afk-ask` | Gets a second opinion through Kiro/OpenCode, Codex, or Agy and saves the result as an artifact |
+| `afk-ask` | Gets a second opinion from another local AI CLI and saves the result as an artifact |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
-| `afk-deep-interview` | High-rigor, Socratic clarification mode for turning vague requests into execution-ready briefs |
 | `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with ADR-style decision artifacts |
 | `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
 | `afk-pickup` | Explicitly resumes from disposable handoff notes saved in the OS temp directory |
@@ -177,7 +176,6 @@ They are intentionally similar, but they are not redundant:
 |---|---|---|
 | `afk-artifact-workflow` | The task involves PRDs, specs, RFCs, implementation plans, tracking, handoff notes, source references, or artifact conventions | Consistent artifact boundaries, storage defaults, and next-artifact suggestions |
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
-| `afk-deep-interview` | You want disciplined clarification before planning or execution and you're willing to be questioned one round at a time | Execution-ready brief or spec with clear boundaries |
 | `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | ADR-style decision record for downstream implementation |
 | `afk-execution-tracking` | You have an implementation plan and want checkpointed execution instead of one long build run | Canonical tracking file with task status, review gates, validation, and next action |
 | `afk-advanced-elicitation` | You already have a draft, brief, plan, or answer and want to pressure-test or improve it | Stronger revised artifact with visible critique/refinement |
@@ -189,8 +187,8 @@ They are intentionally similar, but they are not redundant:
 | Stage | AFK position |
 |---|---|
 | Artifact workflow | `afk-artifact-workflow` |
-| Open / clarify | `afk-brainstorming-facilitator`, `afk-deep-interview` |
-| Pressure-test / decide | `afk-coding-tradeoffs`, `afk-advanced-elicitation` |
+| Open / clarify | `afk-brainstorming-facilitator` |
+| Pressure-test / decide | `grill-me`, `afk-coding-tradeoffs`, `afk-advanced-elicitation` |
 | Spec creation | Flexible for now; use a good standalone external spec skill or normal prompting when that fits |
 | RFC creation | Flexible for now; create a dedicated AFK skill only if the RFC shape becomes worth standardizing |
 | Implementation planning | Flexible for now; use plan modes, external planning skills, or normal prompting depending on the project |
@@ -206,7 +204,7 @@ If you're unsure which one to reach for, use this shortcut:
 
 - "We need more ideas" -> `afk-brainstorming-facilitator`
 - "We are dealing with PRDs, specs, RFCs, plans, tracking, or workflow artifacts" -> `afk-artifact-workflow`
-- "We need to interrogate the request before building" -> `afk-deep-interview`
+- "Grill me on this plan/design before we commit" -> `grill-me`
 - "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-coding-tradeoffs`
 - "We have a plan and need checkpointed execution" -> `afk-execution-tracking`
 - "We already have something written, but it needs a stronger pass" -> `afk-advanced-elicitation`
@@ -220,7 +218,6 @@ AI Field Kit is not meant to be run as a mandatory full ceremony.
 Most of the time, you will not use every discussion or planning skill in one flow. In practice, many sessions only need one or two of them:
 
 - `afk-brainstorming-facilitator` when the idea space is still open
-- `afk-deep-interview` when ambiguity is expensive and you want rigor
 - `afk-coding-tradeoffs` when the scope is already known and only the UX/implementation gray areas need clarification
 
 Use the smallest useful slice of AFK for the moment you are in.
@@ -234,7 +231,7 @@ When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses a s
 You do not need every step. Pick the smallest useful path for the moment you are in.
 
 1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
-2. Use `afk-deep-interview` when intent, scope, non-goals, or decision boundaries are still expensive to get wrong.
+2. Use `grill-me` when a plan or design needs relentless questioning before you commit.
 3. Use `afk-artifact-workflow` when source material, references, PRDs, specs, plans, tracking, or handoff artifacts need consistent boundaries.
 4. Write or refine the PRD/spec with `spec-driven-development`, another preferred spec skill, or normal prompting.
 5. Use `grill-with-docs` before drafting the PRD/spec only when domain language is already risky. Otherwise use it after a draft to pressure-test terminology, code/docs consistency, and decisions before planning.
@@ -257,9 +254,6 @@ AI Field Kit is intentionally compatible with other frameworks and runtimes. It 
 
 Useful pairings:
 
-- **AFK + OpenAgentsControl**
-  AFK shapes the work. OpenAgentsControl is then a strong next layer when you want custom agents or existing OpenAgentsControl agents to enforce approval gates, behavior rules, and subagent orchestration.
-
 - **AFK + OpenSpec**
   AFK helps explore, clarify, and strengthen the work before you formalize it into OpenSpec artifacts. This is the strongest recommendation if you want a clean way to organize specs after discovery.
 
@@ -273,8 +267,6 @@ If you want a practical default stack, the strongest recommendation is:
 
 - use **AFK** for discovery, shaping, and clarification
 - use **OpenSpec** to organize specs and keep the work legible over time
-- use **OpenAgentsControl** when you want behavior control, approval gates, or agent/subagent workflows
-- use **oh-my-openagent** when you want a more autonomous path that can take a detailed plan or PRD, talk to Prometheus, and keep moving while you step away
 
 The clean mental model is:
 
@@ -315,6 +307,10 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
   Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. Use it before drafting the PRD/spec only when domain language or documented decisions are already risky; otherwise draft first, then grill before implementation planning. It complements `afk-coding-tradeoffs`: use trade-offs first when decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy.
 
+- **Grill Me (Matt Pocock Skills)**
+  Install: `npx skills add https://github.com/mattpocock/skills --skill grill-me`
+  Use when you want relentless one-question-at-a-time pressure on a plan or design. It walks the decision tree, recommends answers, and inspects the codebase instead of asking questions the agent can answer directly.
+
 - **To Issues (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill to-issues`  
   Use when you explicitly want to turn a shaped PRD/spec or implementation plan into thin, independently grabbable issue-tracker slices. For one-off use, provide the tracker and label context in the prompt.
@@ -333,7 +329,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Impeccable**  
   Install: `npx impeccable skills install`  
-  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Utilities and handles the Codex-global setup so Codex gets Impeccable's tailored `.agents` build, including nested Codex agent metadata.
+  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Utilities and delegates to its installer.
 
 - **cmux**  
   Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  
@@ -350,27 +346,6 @@ Or check out the [OpenSpec](https://github.com/Fission-AI/OpenSpec/) for lightwe
 
 If more recommended skills require official installers instead of `npx skills add`, revisit whether `skills.json` should support per-skill installer overrides.
 
-#### If you use OpenCode heavily
-
-It is often worth pairing AFK with a stronger agent runtime.
-
-If OpenCode is your main terminal, it is often worth explicitly empowering it with an agent layer that can better coordinate skills, MCPs, and longer-running execution patterns.
-
-- **oh-my-openagent**  
-  Repo: [code-yeongyu/oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)  
-  Good fit when you want autonomous execution with parallel agents, batteries-included orchestration, and an OpenCode setup that leans hard into skills, MCPs, and Asteroids-style tooling. The trade-off is speed over control: just do it and keep going until done.
-
-- **OpenAgentsControl**  
-  Repo: [darrenhinde/OpenAgentsControl](https://github.com/darrenhinde/OpenAgentsControl)  
-  Good fit when you want plan-first execution, approval gates, incremental delivery, or your own set of agents, subagents, and rules via SystemBuilder on top of OpenCode.
-
-Quick rule of thumb:
-- **oh-my-openagent**: need autonomous execution with parallel agents; speed over control
-- **OpenAgentsControl**: plan first, approve, execute incrementally, ship; better for established patterns and tighter control
-
-For the fuller comparison that inspired this rule of thumb:
-- [Discussion #116](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)
-
 #### Honorable mentions
 
 - **oh-my-codex**  
@@ -383,13 +358,13 @@ For the fuller comparison that inspired this rule of thumb:
 
 - **GSD**  
   Repo: [Fission-AI/GetShitDone](https://github.com/Fission-AI/GetShitDone)  
-  A lighter alternative than BMAD and less independently autonomous than oh-my-codex or oh-my-openagent, but still strong when you want a system that discusses, plans, executes, and verifies in one flow without being Codex-only.
+  A lighter alternative than BMAD, but still strong when you want a system that discusses, plans, executes, and verifies in one flow.
 
 ### Practical guidance
 
 - `afk-brainstorming-facilitator` is for divergence. Do not reach for it if you already know what you want and just need tighter requirements.
-- `afk-deep-interview` is the strictest one. Use it when ambiguity is expensive.
-- `afk-coding-tradeoffs` is narrower than `afk-deep-interview`. It assumes the work is already scoped enough to discuss UX and implementation trade-offs that materially change the result.
+- `grill-me` pressures the plan or design through one-question-at-a-time interrogation.
+- `afk-coding-tradeoffs` assumes the work is already scoped enough to lock UX and implementation trade-offs that materially change the result.
 - `afk-execution-tracking` starts after an implementation plan exists. Use it when execution needs checkpoints, resume safety, or parallel coordination.
 - `afk-advanced-elicitation` is not for first-pass discovery. It is best after a draft or direction already exists.
 - `afk-pickup` and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
@@ -411,7 +386,7 @@ These are not required steps in the main flow. They are optional specialists you
 
 #### How they connect
 
-- Use `afk-doc-craft` after `afk-deep-interview` or `afk-coding-tradeoffs` when the output needs to become a human-friendly document instead of a working artifact.
+- Use `afk-doc-craft` after brainstorming, trade-offs, or another shaping pass when the output needs to become a human-friendly document instead of a working artifact.
 - Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
 - Use `afk-compass` when you're unsure whether you need the main flow, a support skill, or a recommended external companion skill.
 - Use `afk-pickup` after the external `handoff` skill when the previous session kept its handoff note disposable in the OS temp directory.
@@ -437,6 +412,7 @@ Workflow-style AFK procedures are skills for named, repeatable user journeys. Us
 | `afk-pr-description-generator` | Generates a structured PR description from branch diffs |
 | `afk-pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
 | `afk-typecheck` | Runs `tsc`, writes a temporary typecheck report when needed, fixes issues, and asks whether to keep or delete the report |
+| `afk-deep-interview` | Runs a structured interview with follow-up questions based on the initial answer |
 
 These skills are installed through the normal skills flow. Use `autoInvocation: false` only for slash-only or attached-only procedures that should stay hidden from normal model discovery.
 
@@ -615,12 +591,11 @@ projects without AFK reimplementing their installers.
 AI Field Kit is heavily inspired by the open-source AI coding community and the people publishing their methods in public. This repo is its own opinionated kit, but it has learned a lot from these projects:
 
 - [OpenSpec](https://github.com/Fission-AI/OpenSpec/)
-- [OpenAgentsControl](https://github.com/darrenhinde/OpenAgentsControl)
 - [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex)
-- [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)
 - [Get Shit Done](https://github.com/gsd-build/get-shit-done?tab=readme-ov-file)
 - [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)
 - [agent-skills](https://github.com/addyosmani/agent-skills)
+- [matt-pocock](https://github.com/mattpocock/skills)
 
 Thanks to the maintainers and contributors behind those repos for sharing ideas, workflows, and techniques in the open. AI Field Kit borrows selectively, adapts heavily, and tries to stay honest about that lineage.
 
