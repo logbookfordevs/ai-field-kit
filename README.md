@@ -156,7 +156,7 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
 | `afk-doc-craft` | Reader-first documentation craft: journeys, progressive disclosure, real empathy |
 | `afk-execution-tracking` | Checkpointed implementation state across tasks, reviews, validation, and handoffs |
-| `afk-artifact-workflow` | AFK artifact workflow for specs, plans, tracking, and artifact conventions |
+| `afk-artifact-workflow` | Durable workflow artifacts, storage, and next-artifact suggestions |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `afk-compass` | Routes work to the right AFK and recommended external skills |
 | `afk-advanced-elicitation` | Structured critique and refinement loops for improving drafts, plans, and decisions |

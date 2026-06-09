@@ -43,7 +43,7 @@ Task arrives
 |
 +-- Need relentless plan/design questioning? ----> grill-me
 +-- Need divergent ideas or directions? ----------> afk-brainstorming-facilitator
-+-- Writing, rewriting, or reviewing docs? -------> afk-doc-craft
++-- Writing, rewriting, or reviewing human-facing docs? -> afk-doc-craft
 +-- PRD/spec/RFC/plan/tracking/handoff artifacts? -> afk-artifact-workflow
 +-- Need a reviewed /goal package? --------------> plannotator-setup-goal
 +-- Need a formal PRD/spec before code? ----------> spec-driven-development
@@ -99,15 +99,12 @@ Common phase moves:
 - Plan or design -> decision-tree pressure: use `grill-me` when the user asks to be grilled, wants relentless questioning, or needs a plan/design stress-tested through one-question-at-a-time interrogation.
 - Open product, UX, component, ownership, library, or implementation choices -> use `afk-coding-tradeoffs`, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
 - Implementation -> use `test-driven-development` for behavior changes, `afk-execution-tracking` when checkpoints or durable state are needed, and `incremental-implementation` when the implementation is broad enough.
-- Any draft or workflow artifact -> reader-facing polish: use `afk-doc-craft` only when the artifact needs human-facing documentation quality, not for agent skill content.
+- Broad objective -> `/goal` package: use `plannotator-setup-goal` when the work needs reviewed facts, explicit done conditions, or an approved execution plan before implementation.
+- Any draft or workflow artifact -> reader-facing polish: use `afk-doc-craft` only when the artifact needs human-facing documentation quality, not for agent-facing instruction surfaces or skill content.
 
 Most freestyle tasks need only one or two steps. Do not turn AFK Compass into ceremony.
-
-Use `plannotator-setup-goal` when the work should become a durable `/goal` package with reviewed facts and an approved execution plan. It is especially useful for broad objectives, goals with many scope decisions, or work that needs an explicit done condition before implementation. Skip it for narrow one-shot edits, quick bug fixes, or tasks where a lightweight `afk-artifact-workflow` artifact is enough.
 
 ## Skill Rules
 - Direct user skill mentions beat routing guesses.
 - Multiple skills can apply, but keep the active set small.
-- AFK-native skills shape the work; external recommendations add specialized process when available.
 - When in doubt on non-trivial product or engineering work, clarify the desired outcome before implementation.
-- Do not present an uninstalled recommended skill as available.

@@ -1,13 +1,11 @@
 ---
 name: afk-artifact-workflow
-description: Apply AFK artifact workflow doctrine for PRDs, specs, RFCs, implementation plans, tracking, handoff notes, source references, and generated workflow artifacts. Use when work needs durable artifact boundaries, storage conventions, next-artifact suggestions, or handoff state; skip quick one-shot operations.
+description: Manage durable workflow artifacts: PRDs, specs, RFCs, implementation plans, tracking, handoff notes, references, storage conventions, and next-artifact suggestions. Use when work needs artifact boundaries or handoff state; skip quick one-shot operations.
 metadata:
-  short-description: Apply AFK artifact workflow for specs, plans, tracking, and conventions.
+  short-description: Manage durable workflow artifacts, storage, and next-artifact suggestions.
 ---
 
 # AFK Artifact Workflow
-
-Use this skill for artifact-oriented workflow work: PRDs, specs, RFCs, implementation plans, tracking notes, handoff notes, source references, or generated workflow artifacts.
 
 This skill owns artifact boundaries, storage, and next-artifact suggestions. It does not choose the full skill sequence; return to `afk-compass` when the next phase needs planning, elicitation, trade-offs, execution discipline, debugging, review, UI, or documentation polish.
 
@@ -47,8 +45,7 @@ Skip quick one-shot operations where no workflow state, artifact, or handoff is 
 
 ## Execution Tracking
 
-- Route to `afk-execution-tracking` when the user requests it or execution needs checkpoints, approval gates, handoff notes, parallel agents, interruption recovery, or durable progress state.
-- Skip tracking for short, single-session implementations where the plan is concrete and final response plus validation are enough.
+- Route to `afk-execution-tracking` when execution needs durable checkpoints, gates, handoff state, interruption recovery or when user requests.
 
 ## Implementation Notes
 

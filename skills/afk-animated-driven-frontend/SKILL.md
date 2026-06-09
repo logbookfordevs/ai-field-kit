@@ -5,10 +5,7 @@ description: Design and implement animated UIs as cinematic, interactive, and im
 
 # Animated-Driven Frontend
 
-Use this skill to turn UIs into directed experiences: clear narrative flow, responsive interactivity, and optional worldbuilding. Motion is not decoration by default. It is a communication layer.
-
-## When to use
-Use this skill when the user requests animated UI direction, interaction choreography, motion systems, playful/creative coding interactions, or immersive UI metaphors.
+Turn the UI into a directed experience: clear narrative flow, responsive interactivity, and optional worldbuilding. Motion is not decoration by default. It is a communication layer.
 
 ## Default preference (with escalation)
 

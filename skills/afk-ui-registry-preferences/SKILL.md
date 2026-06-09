@@ -7,9 +7,7 @@ metadata:
 
 # UI Registry Preferences
 
-Use this skill as a lightweight reference when choosing UI primitives, registry blocks, or headless foundations for React/Tailwind frontend work.
-
-The goal is to pick the best-fit mature source for the UX problem, not to default blindly to one registry.
+Pick the best-fit mature source for the UX problem, not a default registry by habit.
 
 ## Defaults
 
