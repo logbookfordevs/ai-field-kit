@@ -17,7 +17,7 @@ When a request arrives:
 ## Routing Modes
 
 ### Freestyle Routing
-Use this mode by default. Pick the smallest useful skill for the current request, including direct routing to debugging, review, TDD, incremental implementation, UI, docs, or normal execution. Do not create workflow artifacts unless `afk-artifact-workflow` is actually selected.
+Use this mode by default. Pick the smallest useful skill for the current request, including direct routing to debugging, review, TDD/proof loops, source verification, doubt checks, UI, docs, or normal execution. Do not create workflow artifacts unless `afk-artifact-workflow` is actually selected.
 
 ### AFK Orchestration Mode
 Use this mode when the user asks for an "AFK workflow", "feature workflow", "start a workflow", "AFK run", or otherwise signals that they want AFK to coordinate the feature lifecycle across phases.
@@ -30,9 +30,12 @@ In orchestration mode:
 - Use `grill-with-docs` before drafting the PRD/spec only when terminology, domain boundaries, ADRs, `CONTEXT.md`, or code/docs consistency are already risky. If it did not run before the PRD/spec draft, consider it before implementation planning and state why it is being used or skipped.
 - Use `afk-coding-tradeoffs` when meaningful product, UX, component, ownership, library, or implementation choices remain open. Pair it with `afk-ui-registry-preferences` when UI primitives, registry components, or headless foundations are part of the decision.
 - Use `planning-and-task-breakdown` when the user asks for an implementation plan or the spec is ready to become tasks.
+- At implementation or delegation time, select the execution bundle for each task. Multiple disciplines can apply; `afk-execution-tracking` records state and evidence, but does not replace TDD, source verification, or doubt checks.
 - Ask before enabling `afk-execution-tracking`, unless the user explicitly requested tracked execution or the work clearly needs checkpoints, approval gates, handoff notes, parallel agents, interruption recovery, or durable progress state.
 - Default to `test-driven-development` for software behavior changes. Skip only when there is no meaningful behavior risk, such as pure docs, static content, trivial config, generated artifacts, or when literal test-first is impractical; in those cases, state why and choose the nearest proof mechanism before implementation.
-- Use `incremental-implementation` for multi-file, large, risky, or task-breakdown-driven implementation. Skip it for minimal single-file or single-function changes.
+- Use `source-driven-development` when implementation correctness depends on current framework, library, SDK, API, or platform documentation.
+- Use `doubt-driven-development` for non-trivial or risky decisions that need fresh-context adversarial review before they stand.
+- When delegating execution, include the selected execution bundle and expected evidence in the worker prompt; selected skills do not cross agent boundaries automatically.
 - Use `afk-advanced-elicitation` when the user asks for deeper critique, says they are still doubtful or confused, or keeps bouncing between decisions after a draft or direction exists.
 
 ## Skill Routing
@@ -51,9 +54,11 @@ Task arrives
 +-- Need code choices or implementation trade-offs settled? -> afk-coding-tradeoffs
 +-- Need docs/domain/terminology pressure? ------> grill-with-docs
 +-- Need to pressure-test an existing draft? -----> afk-advanced-elicitation
-+-- Implementing a change? -----------------------> incremental-implementation
++-- Implementing or delegating a change? --------> execution bundle selection
 |   +-- Needs checkpoints or parallel handoff? ---> afk-execution-tracking
 |   +-- Needs tests first or proof loop? ---------> test-driven-development
+|   +-- Needs current official docs? ------------> source-driven-development
+|   +-- Needs fresh-context adversarial check? --> doubt-driven-development
 +-- Something broke or behavior is unclear? ------> afk-structured-debugging
 +-- Reviewing code or PR quality? ----------------> normal review workflow
 |   +-- Too complex after review? ----------------> code-simplification
@@ -98,7 +103,7 @@ Common phase moves:
 - Draft or plan -> domain pressure: use `grill-with-docs` when terminology, domain boundaries, `CONTEXT.md`, ADRs, or code/docs consistency could change the artifact. Use it before drafting the PRD/spec only when that risk already exists; otherwise draft first, then grill before implementation planning.
 - Plan or design -> decision-tree pressure: use `grill-me` when the user asks to be grilled, wants relentless questioning, or needs a plan/design stress-tested through one-question-at-a-time interrogation.
 - Open product, UX, component, ownership, library, or implementation choices -> use `afk-coding-tradeoffs`, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
-- Implementation -> use `test-driven-development` for behavior changes, `afk-execution-tracking` when checkpoints or durable state are needed, and `incremental-implementation` when the implementation is broad enough.
+- Implementation -> select an execution bundle: use `test-driven-development` for behavior changes, `source-driven-development` for framework/library/API correctness, `doubt-driven-development` for risky non-trivial decisions, and `afk-execution-tracking` when checkpoints or durable state are needed.
 - Broad objective -> `/goal` package: use `plannotator-setup-goal` when the work needs reviewed facts, explicit done conditions, or an approved execution plan before implementation.
 - Any draft or workflow artifact -> reader-facing polish: use `afk-doc-craft` only when the artifact needs human-facing documentation quality, not for agent-facing instruction surfaces or skill content.
 
