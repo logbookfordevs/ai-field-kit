@@ -121,7 +121,7 @@ function mergeCodexClaudeStopHook(hooks: Record<string, unknown>, command: strin
   const handler = {
     type: "command",
     command,
-    statusMessage: "Checking AFK tracking",
+    statusMessage: item.label,
   };
 
   upsertMatcherHook(entries, "", handler, command, item);
