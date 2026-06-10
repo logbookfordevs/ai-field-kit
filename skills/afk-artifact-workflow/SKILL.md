@@ -42,6 +42,7 @@ Skip quick one-shot operations where no workflow state, artifact, or handoff is 
 - Optimize plans to reduce **context rot** and keep room for the codebase context that implementation will need.
 - Prefer a structure where **1 task can map to 1 clean agent session** when that improves focus, traceability, or parallel work.
 - When prior docs already exist, treat them as the primary planning source of truth.
+- Preserve any selected execution bundle or task discipline notes from planning into tracking and handoff artifacts. Do not decide the bundle here; let `afk-compass` or the user choose it.
 
 ## Execution Tracking
 
@@ -52,6 +53,7 @@ Skip quick one-shot operations where no workflow state, artifact, or handoff is 
 - Record only decisions the source artifact did not settle: deviations, assumptions, trade-offs, scope changes, surprising constraints, or reviewer handoff context.
 - Prefer the tracking file when one exists. Otherwise, use `docs/<task-slug>/<task-slug>.implementation-notes.md` when the work needs a handoff trail.
 - Use an ADR only for decisions that change architecture, ownership, integration contracts, data model, migration strategy, or long-term maintenance expectations.
+- Preserve execution-bundle evidence in tracking or handoff notes when it affects review or resume safety.
 
 ## Behavior
 

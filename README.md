@@ -192,7 +192,7 @@ They are intentionally similar, but they are not redundant:
 | Spec creation | Flexible for now; use a good standalone external spec skill or normal prompting when that fits |
 | RFC creation | Flexible for now; create a dedicated AFK skill only if the RFC shape becomes worth standardizing |
 | Implementation planning | Flexible for now; use plan modes, external planning skills, or normal prompting depending on the project |
-| Execution control | `afk-execution-tracking` |
+| Execution control | `afk-execution-tracking` plus the selected execution bundle |
 | Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
 | Support | `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
 
@@ -224,7 +224,7 @@ Use the smallest useful slice of AFK for the moment you are in.
 
 If the work is already clear, skip straight to the later skill that matches the need. If the work is messy, start earlier. The point is guidance, not bureaucracy.
 
-When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses a stronger orchestration mode: it routes each phase, asks before tracked execution when tracking is optional, defaults to TDD for software behavior changes, and still avoids workflow artifacts unless `afk-artifact-workflow` is the right skill for that phase.
+When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses a stronger orchestration mode: it routes each phase, asks before tracked execution when tracking is optional, selects an execution bundle for each task, and still avoids workflow artifacts unless `afk-artifact-workflow` is the right skill for that phase.
 
 ### A practical optional workflow
 
@@ -239,13 +239,13 @@ You do not need every step. Pick the smallest useful path for the moment you are
 7. Use `afk-advanced-elicitation` when a draft needs a stronger reasoning/refinement pass.
 8. Create the implementation plan with your preferred planning tool or normal prompting.
 9. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or implementation notes.
-10. Default to `test-driven-development` for software behavior changes. Skip only when there is no meaningful behavior risk, or when literal test-first is impractical and another proof mechanism is named first.
-11. Use `incremental-implementation` for multi-file, large, risky, or task-breakdown-driven execution. Skip it for minimal single-file or single-function changes.
+10. Select the execution bundle for each task: use `test-driven-development` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
+11. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
 
 Most flows only use a few of these. For example:
 
 ```text
-references -> PRD/spec -> grill-with-docs -> implementation plan -> tracking when needed -> TDD for behavior changes -> incremental execution when warranted
+references -> PRD/spec -> grill-with-docs -> implementation plan -> tracking when needed -> execution bundle evidence before review
 ```
 
 ### Framework Pairings
@@ -287,13 +287,17 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill planning-and-task-breakdown`  
   Decompose specs into small, verifiable tasks with acceptance criteria and dependency ordering.
 
-- **Incremental Implementation (Agent-Skills)**  
-  Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill incremental-implementation`  
-  Prefer thin vertical slices: implement, test, verify, commit, with safe defaults and rollback-friendly changes.
-
 - **Test Driven Development (Agent-Skills)**  
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill test-driven-development`  
   Use when you want implementation to stay anchored in tests and short feedback loops instead of broad speculative coding.
+
+- **Source Driven Development (Agent-Skills)**
+  Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill source-driven-development`
+  Use when implementation correctness depends on current framework, library, SDK, API, or platform documentation.
+
+- **Doubt Driven Development (Agent-Skills)**
+  Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill doubt-driven-development`
+  Use when a non-trivial decision needs fresh-context adversarial review before it reaches the human review gate.
 
 - **Code Simplification (Agent-Skills)**  
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill code-simplification`  

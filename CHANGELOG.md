@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `skills:` added Plannotator's compound report, `/goal` setup, and visual explainer skills to the default global skill manifest.
+
 ### Changed
 
 - `skills:` renamed `afk-workflow` to `afk-artifact-workflow` so AFK workflow requests mean Compass orchestration, while the artifact skill stays focused on durable workflow artifacts, storage, next-artifact suggestions, and handoff state.
@@ -18,6 +22,9 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` trimmed repeated trigger prose from skill bodies so descriptions own invocation and loaded instructions stay focused on runtime behavior.
 - `skills:` added Matt Pocock's `teach` skill as an opt-in manifest item for explicit stateful learning workflows.
 - `skills:` added Matt Pocock's `grill-me` skill for plan/design interrogation and retired `afk-deep-interview` from default install and auto-routing.
+- `skills:` replaced `incremental-implementation` in the AFK manifest with `source-driven-development` and `doubt-driven-development` for human-gated execution discipline.
+- `skills:` taught `afk-compass` to select execution bundles at implementation or delegation time instead of treating execution tracking as the only execution skill.
+- `skills:` taught `afk-execution-tracking` to record selected execution bundles and discipline evidence before checkpoints move to review.
 - `skills:` made skill invocation policy sync both directions so `autoInvocation: true` re-enables model discovery even when an installed skill shipped disabled, while `write-a-skill` and `to-issues` remain manual.
 - `skills:` tightened `afk-pickup` so temp handoff resumes check direct `/tmp` paths before broader searches and avoid fragile shell search patterns.
 
