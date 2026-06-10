@@ -159,6 +159,18 @@
             "autoInvocation": true
         },
         {
+            "id": "truss-evaluation",
+            "label": "External / Truss Evaluation",
+            "source": "https://github.com/leoreisdias/truss-framework",
+            "args": [
+                "--skill",
+                "truss-evaluation",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
             "id": "plannotator-compound",
             "label": "External / Plannotator Compound",
             "source": "backnotprop/plannotator/apps/skills/extra",

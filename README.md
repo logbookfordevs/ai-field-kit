@@ -248,34 +248,27 @@ Most flows only use a few of these. For example:
 references -> PRD/spec -> grill-with-docs -> implementation plan -> tracking when needed -> execution bundle evidence before review
 ```
 
-### Framework Pairings
-
-AI Field Kit is intentionally compatible with other frameworks and runtimes. It shapes the work before execution; it does not need to own execution.
-
-Useful pairings:
-
-- **AFK + OpenSpec**
-  AFK helps explore, clarify, and strengthen the work before you formalize it into OpenSpec artifacts. This is the strongest recommendation if you want a clean way to organize specs after discovery.
-
-- **AFK + oh-my-codex / oh-my-openagent**
-  AFK can do the human-centered planning first, then hand off to a more autonomous execution harness when you want that mode.
-
-- **AFK + your normal prompting workflow**
-  AFK can stop at the artifact stage. You can then implement manually, prompt directly, or switch to any coding agent you prefer.
-
 If you want a practical default stack, the strongest recommendation is:
 
 - use **AFK** for discovery, shaping, and clarification
-- use **OpenSpec** to organize specs and keep the work legible over time
+- use **Truss** as the always-available decision-quality lens
 
 The clean mental model is:
 
 - **AFK shapes the work**
+- **Truss improves decision quality**
 - **You choose how to execute it**
 
 ### Recommended External Skills
 
 AFK is strongest when it shapes the work first, then hands off to the best external skill or framework for the next job.
+
+#### Baseline recommendation
+
+- **Truss Evaluation (Truss Framework)**
+  Install: `npx skills add https://github.com/leoreisdias/truss-framework --skill truss-evaluation`
+
+  Keep this available as a decision-quality lens across normal prompting, free routing, AFK orchestration, code review, debugging, and architecture discussion. It is not a workflow phase; it is the layer to reach for when the work needs explicit trade-offs, structured critique, or a grounded answer to "which approach is better?" Truss evaluates decisions through Maintainability, Strategy, Clarity, and Performance, with a research whitepaper in progress behind the framework.
 
 #### Optional companion skills
 
@@ -346,23 +339,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
 
-Or check out the [OpenSpec](https://github.com/Fission-AI/OpenSpec/) for lightweight spec-driven organization.
-
 If more recommended skills require official installers instead of `npx skills add`, revisit whether `skills.json` should support per-skill installer overrides.
-
-#### Honorable mentions
-
-- **oh-my-codex**  
-  Repo: [yeachan-heo/oh-my-codex](https://github.com/yeachan-heo/oh-my-codex)  
-  A strong autonomous option when you specifically want that mode inside the Codex CLI, Codex App, or extension.
-
-- **BMAD**  
-  Repo: [bmad-code-org/BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)  
-  A full 360 framework that can replace not only AFK but most of the stack above when you want one integrated system to discuss, plan, execute, and verify end to end.
-
-- **GSD**  
-  Repo: [Fission-AI/GetShitDone](https://github.com/Fission-AI/GetShitDone)  
-  A lighter alternative than BMAD, but still strong when you want a system that discusses, plans, executes, and verifies in one flow.
 
 ### Practical guidance
 
