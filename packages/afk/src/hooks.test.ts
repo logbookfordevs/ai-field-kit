@@ -253,6 +253,20 @@ test("execution tracking hook allows implementation changes when active checkpoi
   assert.equal(result.continue, true);
 });
 
+test("execution tracking hook allows implementation changes when any active parallel checkpoint changed too", () => {
+  const repo = prepareGitRepo();
+  writeActiveMarker(repo, {
+    active_checkpoints: ["docs/demo/tracking/phase-1.md", "docs/demo/tracking/phase-2.md"],
+  });
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-2.md"), "# Phase 2\nUpdated\n");
+  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
+
+  const result = runTrackingHook(repo);
+
+  assert.equal(result.continue, true);
+});
+
 function prepareHome(overrides: Partial<{ id: string; source: string; agents: string[] }> = {}): string {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-hooks-"));
   const manifestDir = localManifestDir(homeDir);
@@ -291,23 +305,31 @@ function prepareGitRepo(): string {
   return repo;
 }
 
-function writeActiveMarker(repo: string): void {
+function writeActiveMarker(repo: string, markerOverrides: Record<string, unknown> = {}): void {
   mkdirSync(join(repo, ".afk", "execution-tracking"), { recursive: true });
   mkdirSync(join(repo, "docs", "demo", "tracking"), { recursive: true });
   writeFileSync(join(repo, "docs", "demo", "demo.tracking.md"), "# Demo Tracking\n");
   writeFileSync(join(repo, "docs", "demo", "tracking", "phase-1.md"), "# Phase 1\n");
+  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-2.md"), "# Phase 2\n");
   writeFileSync(
     join(repo, ".afk", "execution-tracking", "current.json"),
     `${JSON.stringify(
       {
         tracking: "docs/demo/demo.tracking.md",
-        checkpoint: "docs/demo/tracking/phase-1.md",
+        active_checkpoints: ["docs/demo/tracking/phase-1.md"],
+        ...markerOverrides,
       },
       null,
       2,
     )}\n`,
   );
-  git(repo, ["add", "docs/demo/demo.tracking.md", "docs/demo/tracking/phase-1.md", ".afk/execution-tracking/current.json"]);
+  git(repo, [
+    "add",
+    "docs/demo/demo.tracking.md",
+    "docs/demo/tracking/phase-1.md",
+    "docs/demo/tracking/phase-2.md",
+    ".afk/execution-tracking/current.json",
+  ]);
   git(repo, ["commit", "-m", "add active tracking"]);
 }
 

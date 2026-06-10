@@ -135,8 +135,12 @@ function readActiveTrackingMarker(cwd) {
 
   try {
     const parsed = JSON.parse(readFileSync(path, "utf8"));
+    const activeCheckpoints = Array.isArray(parsed.active_checkpoints)
+      ? parsed.active_checkpoints.filter((item) => typeof item === "string")
+      : [];
     const relevantPaths = [
       typeof parsed.tracking === "string" ? parsed.tracking : "",
+      ...activeCheckpoints,
       typeof parsed.checkpoint === "string" ? parsed.checkpoint : "",
       ...(Array.isArray(parsed.related) ? parsed.related.filter((item) => typeof item === "string") : []),
     ]
