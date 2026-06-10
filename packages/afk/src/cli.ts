@@ -370,10 +370,10 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills list": {
     title: "AFK skills list",
-    summary: "List global AFK skills, project skills, and read-only installed-agent skills.",
+    summary: "List shared, project, and agent-specific skill roots.",
     usage: "afk skills list [options]",
     options: [
-      "--scope global|project|agent|all  Choose which skill roots to list",
+      "--scope global|project|all        Choose which skill roots to list",
       "--agent <agent>                   Limit project or agent roots",
       "--category <id-or-label>          Filter by AFK category",
       "--tag <tag>                       Filter by AFK tag",
@@ -384,7 +384,7 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk skills list",
       "afk skills list --scope global",
-      "afk skills list --scope agent --agent codex",
+      "afk skills list --scope global --agent codex",
       "afk skills list --scope project --agent codex",
     ],
   },
@@ -418,17 +418,35 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills disable": {
     title: "AFK skills disable",
-    summary: "Disable a global skill by moving it to ~/.agents/skills/.disabled.",
+    summary: "Disable a shared or agent-specific skill by moving it into .disabled.",
     usage: "afk skills disable <folder> [options]",
-    options: ["--dry-run                         Preview the move without applying it"],
-    examples: ["afk skills disable old-skill --dry-run", "afk skills disable old-skill"],
+    options: [
+      "--scope global|project|all        Choose the target roots when --agent is set",
+      "--agent <agent>                   Target one agent-specific root",
+      "--dry-run                         Preview the move without applying it",
+    ],
+    examples: [
+      "afk skills disable old-skill --dry-run",
+      "afk skills disable old-skill",
+      "afk skills disable --scope global --agent codex",
+      "afk skills disable --scope project --agent claude",
+    ],
   },
   "skills enable": {
     title: "AFK skills enable",
-    summary: "Enable a global skill by moving it out of ~/.agents/skills/.disabled.",
+    summary: "Enable a shared or agent-specific skill by moving it out of .disabled.",
     usage: "afk skills enable <folder> [options]",
-    options: ["--dry-run                         Preview the move without applying it"],
-    examples: ["afk skills enable old-skill --dry-run", "afk skills enable old-skill"],
+    options: [
+      "--scope global|project|all        Choose the target roots when --agent is set",
+      "--agent <agent>                   Target one agent-specific root",
+      "--dry-run                         Preview the move without applying it",
+    ],
+    examples: [
+      "afk skills enable old-skill --dry-run",
+      "afk skills enable old-skill",
+      "afk skills enable --scope global --agent codex",
+      "afk skills enable --scope project --agent claude",
+    ],
   },
   "skills rename": {
     title: "AFK skills rename",
@@ -445,15 +463,19 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills trash": {
     title: "AFK skills trash",
-    summary: "Move one or more global skill folders to the macOS Trash.",
+    summary: "Move one or more shared or agent-specific skill folders to the macOS Trash.",
     usage: "afk skills trash [folder] [options]",
     options: [
+      "--scope global|project|all        Choose the target roots when --agent is set",
+      "--agent <agent>                   Target one agent-specific root",
       "--dry-run                         Preview the Trash move without applying it",
       "--yes, -y                         Skip confirmation",
       "--manifest-only                   Show only skills from AFK skills.json",
     ],
     examples: [
       "afk skills trash",
+      "afk skills trash --scope global --agent codex",
+      "afk skills trash --scope project --agent claude",
       "afk skills trash --manifest-only",
       "afk skills trash old-skill --dry-run",
       "afk skills trash old-skill --yes",
@@ -647,10 +669,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
           continue;
         }
 
-        if (value !== "global" && value !== "project" && value !== "agent" && value !== "all") {
+        if (value !== "global" && value !== "project" && value !== "all") {
           return { help: false, kind: "error", error: `Invalid --scope value: ${value ?? "(missing)"}` };
         }
         skillsListScope = value;
+        scopeExplicit = true;
         index += 1;
         continue;
       }

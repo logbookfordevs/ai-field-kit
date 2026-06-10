@@ -155,7 +155,7 @@ test("runCli prints contextual skills help", async () => {
 
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK skills list"));
-  assert.ok(output.join("\n").includes("--scope global|project|agent|all"));
+  assert.ok(output.join("\n").includes("--scope global|project|all"));
   assert.ok(output.join("\n").includes("--category <id-or-label>"));
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
 });

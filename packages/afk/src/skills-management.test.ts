@@ -7,11 +7,13 @@ import {
   afkSkillsTaxonomyFileName,
   filterSkillRecords,
   loadSkillCatalog,
+  moveSkillRecord,
   moveGlobalSkill,
   normalizeSkillDescription,
   parseSkillFile,
   renameCodexSkillMetadata,
   renameGlobalSkill,
+  trashSkillRecords,
   trashGlobalSkill,
   trashGlobalSkills,
   updateOpenAiMetadataDisplayName,
@@ -117,7 +119,7 @@ test("loadSkillCatalog orders global active, global disabled, then project roots
   ]);
   assert.equal(snapshot.records[0]?.name, "Alpha Active");
   assert.equal(snapshot.records[0]?.category, "Docs");
-  assert.equal(snapshot.records[2]?.readOnly, true);
+  assert.equal(snapshot.records[2]?.readOnly, false);
 });
 
 test("loadSkillCatalog filters project roots by agent", () => {
@@ -132,7 +134,7 @@ test("loadSkillCatalog filters project roots by agent", () => {
   assert.deepEqual(snapshot.records.map((record) => record.folder), ["codex-skill"]);
 });
 
-test("loadSkillCatalog lists read-only installed agent roots with --scope agent", () => {
+test("loadSkillCatalog includes installed agent roots with --scope global", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skills-installed-agent-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
@@ -141,23 +143,39 @@ test("loadSkillCatalog lists read-only installed agent roots with --scope agent"
   writeSkill(join(homeDir, ".agents", "skills"), "shared-global", "Shared Global");
   writeSkill(join(cwd, ".codex", "skills"), "codex-project", "Codex Project");
 
-  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "agent", agent: undefined });
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
 
-  assert.deepEqual(snapshot.records.map((record) => record.folder), ["codex-global", "gemini-global"]);
-  assert.deepEqual(snapshot.records.map((record) => record.rootKind), ["agent-library", "agent-library"]);
-  assert.equal(snapshot.records.every((record) => record.readOnly), true);
+  assert.deepEqual(snapshot.records.map((record) => record.folder), ["shared-global", "codex-global", "gemini-global"]);
+  assert.deepEqual(snapshot.records.map((record) => record.rootKind), ["global-library", "agent-library", "agent-library"]);
+  assert.deepEqual(snapshot.records.map((record) => record.readOnly), [false, false, false]);
 });
 
-test("loadSkillCatalog filters installed agent roots by agent", () => {
+test("loadSkillCatalog filters installed agent roots with --scope global --agent", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skills-installed-agent-filter-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "shared-global", "Shared Global");
   writeSkill(join(homeDir, ".codex", "skills"), "codex-global", "Codex Global");
   writeSkill(join(homeDir, ".gemini", "skills"), "gemini-global", "Gemini Global");
 
-  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "agent", agent: "gemini" });
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: "gemini" });
 
   assert.deepEqual(snapshot.records.map((record) => record.folder), ["gemini-global"]);
+});
+
+test("loadSkillCatalog includes disabled installed agent roots with --scope global --agent", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-installed-agent-disabled-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".codex", "skills"), "active-codex", "Active Codex");
+  writeSkill(join(homeDir, ".codex", "skills", ".disabled"), "disabled-codex", "Disabled Codex");
+
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: "codex" });
+
+  assert.deepEqual(snapshot.records.map((record) => [record.folder, record.storage]), [
+    ["active-codex", "active"],
+    ["disabled-codex", "disabled"],
+  ]);
 });
 
 test("filterSkillChoices searches folders, names, categories, tags, and roots", () => {
@@ -235,6 +253,25 @@ test("moveGlobalSkill rejects destination collisions", () => {
   );
 });
 
+test("moveSkillRecord disables and enables agent-specific global skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-disable-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".codex", "skills"), "demo", "Demo");
+
+  const active = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: "codex" }).records[0];
+  assert.ok(active);
+  moveSkillRecord({ record: active, enabled: false, dryRun: false });
+  assert.equal(existsSync(join(homeDir, ".codex", "skills", "demo")), false);
+  assert.equal(existsSync(join(homeDir, ".codex", "skills", ".disabled", "demo")), true);
+
+  const disabled = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: "codex" }).records[0];
+  assert.ok(disabled);
+  moveSkillRecord({ record: disabled, enabled: true, dryRun: false });
+  assert.equal(existsSync(join(homeDir, ".codex", "skills", "demo")), true);
+  assert.equal(existsSync(join(homeDir, ".codex", "skills", ".disabled", "demo")), false);
+});
+
 test("trashGlobalSkill supports dry-run and moves active skills to Trash", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-"));
   const homeDir = join(root, "home");
@@ -266,6 +303,23 @@ test("trashGlobalSkills supports dry-run and moves multiple skills to Trash", ()
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "beta")), false);
   assert.equal(existsSync(join(homeDir, ".Trash", "alpha")), true);
   assert.equal(existsSync(join(homeDir, ".Trash", "beta")), true);
+});
+
+test("trashSkillRecords moves agent-specific skills to unique Trash destinations", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-trash-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".codex", "skills"), "demo", "Global Demo");
+  writeSkill(join(cwd, ".codex", "skills"), "demo", "Project Demo");
+  const records = loadSkillCatalog({ homeDir, cwd, scope: "all", agent: "codex" }).records;
+
+  const moved = trashSkillRecords({ homeDir, records, dryRun: false, platform: "darwin" });
+
+  assert.deepEqual(moved.map((item) => item.folder), ["demo", "demo"]);
+  assert.equal(existsSync(join(homeDir, ".codex", "skills", "demo")), false);
+  assert.equal(existsSync(join(cwd, ".codex", "skills", "demo")), false);
+  assert.equal(existsSync(join(homeDir, ".Trash", "demo")), true);
+  assert.equal(existsSync(join(homeDir, ".Trash", "demo-1")), true);
 });
 
 test("trashGlobalSkill rejects unsupported platforms", () => {
@@ -307,6 +361,57 @@ test("runSkillsCommand trash --manifest-only rejects explicit skills outside AFK
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Skill not found in skills.json manifest: beta"));
+});
+
+test("runSkillsCommand trashes agent-specific global skills with --agent", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-trash-command-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".claude", "skills"), "frontend-design", "Frontend Design");
+
+  const code = await runSkillsCommand(["skills", "trash", "frontend-design"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+    skillsAgent: "claude",
+  });
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("Trash Preview"));
+  assert.ok(output.join("\n").includes(".claude/skills/frontend-design"));
+});
+
+test("runSkillsCommand disables agent-specific global skills with --agent", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-disable-command-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".codex", "skills"), "demo", "Demo");
+
+  const code = await runSkillsCommand(["skills", "disable", "demo"], outputRuntime(output), {
+    ...baseOptions(root),
+    skillsAgent: "codex",
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(homeDir, ".codex", "skills", "demo")), false);
+  assert.equal(existsSync(join(homeDir, ".codex", "skills", ".disabled", "demo")), true);
+});
+
+test("runSkillsCommand enables agent-specific project skills with --scope project --agent", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-enable-command-"));
+  const cwd = join(root, "project");
+  const output: string[] = [];
+  writeSkill(join(cwd, ".claude", "skills", ".disabled"), "demo", "Demo");
+
+  const code = await runSkillsCommand(["skills", "enable", "demo"], outputRuntime(output), {
+    ...baseOptions(root),
+    scopeExplicit: true,
+    skillsListScope: "project",
+    skillsAgent: "claude",
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(cwd, ".claude", "skills", "demo")), true);
+  assert.equal(existsSync(join(cwd, ".claude", "skills", ".disabled", "demo")), false);
 });
 
 test("renderSkillTrashBatch summarizes multiple selected skills", () => {

@@ -9,10 +9,10 @@ import { loadSkillManifest } from "../manifest.js";
 import {
   filterSkillRecords,
   loadSkillCatalog,
-  moveGlobalSkill,
+  moveSkillRecord,
   renameCodexSkillMetadata,
   renameGlobalSkill,
-  trashGlobalSkills,
+  trashSkillRecords,
   type SkillRecord,
 } from "./catalog.js";
 import { runCodexCategorization } from "./categorization.js";
@@ -227,26 +227,29 @@ async function runSkillsShow(folder: string | undefined, runtime: Runtime, optio
 }
 
 async function runSkillsMove(folder: string | undefined, enabled: boolean, runtime: Runtime, options: CliOptions): Promise<number> {
-  const resolvedFolder = folder ?? await promptGlobalSkillFolder({
-    homeDir: options.homeDir,
-    cwd: options.cwd,
-    enabled,
-  });
+  const candidates = loadMutationSkillRecords(options)
+    .filter((record) => record.storage === (enabled ? "disabled" : "active"));
+  const record = folder
+    ? findSkillRecord(candidates, folder)
+    : await promptSkillRecord(candidates, enabled
+      ? `Select ${mutationTargetLabel(options)} skill to enable:`
+      : `Select ${mutationTargetLabel(options)} skill to disable:`);
 
-  if (!resolvedFolder) {
-    runtime.io.stderr(`No ${enabled ? "disabled" : "active"} global skills found.`);
+  if (!record) {
+    runtime.io.stderr(folder
+      ? `Skill not found: ${folder}`
+      : `No ${enabled ? "disabled" : "active"} ${mutationTargetLabel(options)} skills found.`);
     return 1;
   }
 
-  const movement = moveGlobalSkill({
-    homeDir: options.homeDir,
-    folder: resolvedFolder,
+  const movement = moveSkillRecord({
+    record,
     enabled,
     dryRun: options.dryRun,
   });
 
   runtime.io.stdout(renderSkillMove({
-    folder: resolvedFolder,
+    folder: record.folder,
     enabled,
     dryRun: options.dryRun,
     movement,
@@ -315,28 +318,24 @@ async function runSkillsRename(folder: string | undefined, displayName: string, 
 }
 
 async function runSkillsTrash(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
-  const snapshot = loadSkillCatalog({
-    homeDir: options.homeDir,
-    cwd: options.cwd,
-    scope: "all",
-    agent: options.skillsAgent,
-  });
-  const globalCandidates = snapshot.records.filter((record) => record.rootKind === "global-library");
+  const globalCandidates = loadMutationSkillRecords(options);
   const candidates = options.skillsTrashManifestOnly
     ? filterManifestSkillRecords(globalCandidates, options)
     : globalCandidates;
   const records = folder
     ? [findSkillRecord(candidates, folder)].filter((record): record is SkillRecord => Boolean(record))
-    : await promptSkillRecords(candidates, "Select a global skill to move to Trash:");
+    : await promptSkillRecords(candidates, `Select ${mutationTargetLabel(options)} skill to move to Trash:`);
 
   if (records.length === 0) {
     runtime.io.stderr(folder
       ? options.skillsTrashManifestOnly ? `Skill not found in skills.json manifest: ${folder}` : `Skill not found: ${folder}`
-      : options.skillsTrashManifestOnly ? "No global skills from skills.json manifest found." : "No global skills found.");
+      : options.skillsTrashManifestOnly
+        ? `No ${mutationTargetLabel(options)} skills from skills.json manifest found.`
+        : `No ${mutationTargetLabel(options)} skills found.`);
     return 1;
   }
 
-  const readOnlyRecord = records.find((record) => record.rootKind !== "global-library");
+  const readOnlyRecord = records.find((record) => record.readOnly);
   if (readOnlyRecord) {
     runtime.io.stderr(`Cannot trash ${readOnlyRecord.folder}; ${readOnlyRecord.rootLabel} is read-only.`);
     return 1;
@@ -355,9 +354,9 @@ async function runSkillsTrash(folder: string | undefined, runtime: Runtime, opti
     }
   }
 
-  const movements = trashGlobalSkills({
+  const movements = trashSkillRecords({
     homeDir: options.homeDir,
-    folders: records.map((record) => record.folder),
+    records,
     dryRun: options.dryRun,
   });
   runtime.io.stdout(renderSkillTrashBatch({
@@ -414,23 +413,29 @@ export function filterManifestSkillRecords(records: SkillRecord[], options: Pick
   );
 }
 
-async function promptGlobalSkillFolder(options: {
-  homeDir: string;
-  cwd: string;
-  enabled: boolean;
-}): Promise<string | undefined> {
+function loadMutationSkillRecords(options: CliOptions): SkillRecord[] {
+  const scope = options.scopeExplicit ? options.skillsListScope ?? "global" : "global";
   const snapshot = loadSkillCatalog({
     homeDir: options.homeDir,
     cwd: options.cwd,
-    scope: "global",
-    agent: undefined,
+    scope,
+    agent: options.skillsAgent,
   });
-  const records = snapshot.records.filter((record) => record.storage === (options.enabled ? "disabled" : "active"));
-  const record = await promptSkillRecord(records, options.enabled
-    ? "Select a disabled global skill to enable:"
-    : "Select an active global skill to disable:");
 
-  return record?.folder;
+  if (options.skillsAgent) {
+    return snapshot.records;
+  }
+
+  return snapshot.records.filter((record) => record.rootKind === "global-library");
+}
+
+function mutationTargetLabel(options: CliOptions): string {
+  if (options.skillsAgent) {
+    const scope = options.scopeExplicit ? options.skillsListScope ?? "global" : "global";
+    return `${scope} ${options.skillsAgent}`;
+  }
+
+  return "global";
 }
 
 async function promptSkillRecord(records: SkillRecord[], message: string): Promise<SkillRecord | undefined> {

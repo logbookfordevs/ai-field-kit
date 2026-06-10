@@ -57,6 +57,11 @@ export type SkillCatalogSnapshot = {
   categorization: SkillCategorizationState;
 };
 
+export type SkillMovement = {
+  folder: string;
+  movement: string;
+};
+
 type SkillRoot = {
   kind: SkillRootKind;
   label: string;
@@ -233,6 +238,39 @@ export function moveGlobalSkill(options: {
   return `${source} -> ${destination}`;
 }
 
+export function moveSkillRecord(options: {
+  record: SkillRecord;
+  enabled: boolean;
+  dryRun: boolean;
+}): string {
+  if (options.enabled && options.record.storage !== "disabled") {
+    throw new Error(`Could not enable ${options.record.folder}; skill is not disabled.`);
+  }
+
+  if (!options.enabled && options.record.storage !== "active") {
+    throw new Error(`Could not disable ${options.record.folder}; skill is already disabled.`);
+  }
+
+  const source = join(options.record.rootPath, options.record.folder);
+  const destinationRoot = options.enabled ? dirname(options.record.rootPath) : join(options.record.rootPath, ".disabled");
+  const destination = join(destinationRoot, options.record.folder);
+
+  if (!existsSync(source)) {
+    throw new Error(`Could not find ${options.record.storage} skill: ${options.record.folder}`);
+  }
+
+  if (existsSync(destination)) {
+    throw new Error(`Could not move ${options.record.folder}; destination already exists: ${destination}`);
+  }
+
+  if (!options.dryRun) {
+    mkdirSync(dirname(destination), { recursive: true });
+    renameSync(source, destination);
+  }
+
+  return `${source} -> ${destination}`;
+}
+
 export function trashGlobalSkill(options: {
   homeDir: string;
   folder: string;
@@ -257,23 +295,69 @@ export function trashGlobalSkills(options: {
   folders: string[];
   dryRun: boolean;
   platform?: NodeJS.Platform;
-}): Array<{ folder: string; movement: string }> {
+}): SkillMovement[] {
   const platform = options.platform ?? process.platform;
   if (platform !== "darwin") {
     throw new Error("Trash is currently supported on macOS only.");
   }
 
   const trashRoot = join(options.homeDir, ".Trash");
+  const reservedDestinations = new Set<string>();
   const movements = options.folders.map((folder) => {
     const source = resolveGlobalSkillPath(options.homeDir, folder);
     if (!source) {
       throw new Error(`Could not find global skill: ${folder}`);
     }
 
+    const destination = uniqueTrashPath(trashRoot, folder, reservedDestinations);
+    reservedDestinations.add(destination);
+
     return {
       folder,
       source,
-      destination: uniqueTrashPath(trashRoot, folder),
+      destination,
+    };
+  });
+
+  if (!options.dryRun) {
+    mkdirSync(trashRoot, { recursive: true });
+    for (const movement of movements) {
+      renameSync(movement.source, movement.destination);
+    }
+  }
+
+  return movements.map((movement) => ({
+    folder: movement.folder,
+    movement: `${movement.source} -> ${movement.destination}`,
+  }));
+}
+
+export function trashSkillRecords(options: {
+  homeDir: string;
+  records: SkillRecord[];
+  dryRun: boolean;
+  platform?: NodeJS.Platform;
+}): SkillMovement[] {
+  const platform = options.platform ?? process.platform;
+  if (platform !== "darwin") {
+    throw new Error("Trash is currently supported on macOS only.");
+  }
+
+  const trashRoot = join(options.homeDir, ".Trash");
+  const reservedDestinations = new Set<string>();
+  const movements = options.records.map((record) => {
+    const source = join(record.rootPath, record.folder);
+    if (!existsSync(source)) {
+      throw new Error(`Could not find skill: ${record.folder}`);
+    }
+
+    const destination = uniqueTrashPath(trashRoot, record.folder, reservedDestinations);
+    reservedDestinations.add(destination);
+
+    return {
+      folder: record.folder,
+      source,
+      destination,
     };
   });
 
@@ -501,7 +585,15 @@ function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
       label: "Codex Project",
       path: join(cwd, ".codex", "skills"),
       storage: "active",
-      readOnly: true,
+      readOnly: false,
+      agent: "codex",
+    },
+    {
+      kind: "project-agent",
+      label: "Codex Project / Disabled",
+      path: join(cwd, ".codex", "skills", ".disabled"),
+      storage: "disabled",
+      readOnly: false,
       agent: "codex",
     },
     {
@@ -509,7 +601,15 @@ function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
       label: "Claude Project",
       path: join(cwd, ".claude", "skills"),
       storage: "active",
-      readOnly: true,
+      readOnly: false,
+      agent: "claude",
+    },
+    {
+      kind: "project-agent",
+      label: "Claude Project / Disabled",
+      path: join(cwd, ".claude", "skills", ".disabled"),
+      storage: "disabled",
+      readOnly: false,
       agent: "claude",
     },
     ...agentSkillRoots(homeDir),
@@ -544,14 +644,24 @@ const knownAgentRoots: Array<{
 ];
 
 function agentSkillRoots(homeDir: string): SkillRoot[] {
-  return knownAgentRoots.map((root) => ({
-    kind: "agent-library",
-    label: root.label,
-    path: join(homeDir, root.path),
-    storage: "active",
-    readOnly: true,
-    agent: root.agent,
-  }));
+  return knownAgentRoots.flatMap((root) => [
+    {
+      kind: "agent-library",
+      label: root.label,
+      path: join(homeDir, root.path),
+      storage: "active",
+      readOnly: false,
+      agent: root.agent,
+    },
+    {
+      kind: "agent-library",
+      label: `${root.label} / Disabled`,
+      path: join(homeDir, root.path, ".disabled"),
+      storage: "disabled",
+      readOnly: false,
+      agent: root.agent,
+    },
+  ] satisfies SkillRoot[]);
 }
 
 function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
@@ -560,14 +670,10 @@ function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
   }
 
   if (scope === "global") {
-    return root.kind === "global-library";
+    return root.kind === "global-library" || root.kind === "agent-library";
   }
 
-  if (scope === "project") {
-    return root.kind === "project-agent";
-  }
-
-  return root.kind === "agent-library";
+  return root.kind === "project-agent";
 }
 
 function globalSkillsRoot(homeDir: string): string {
@@ -599,16 +705,16 @@ function resolveGlobalSkillPath(homeDir: string, folder: string): string | undef
   return undefined;
 }
 
-function uniqueTrashPath(trashRoot: string, folder: string): string {
+function uniqueTrashPath(trashRoot: string, folder: string, reserved: Set<string> = new Set()): string {
   const first = join(trashRoot, folder);
-  if (!existsSync(first)) {
+  if (!existsSync(first) && !reserved.has(first)) {
     return first;
   }
 
   let index = 1;
   while (true) {
     const candidate = join(trashRoot, `${folder}-${index}`);
-    if (!existsSync(candidate)) {
+    if (!existsSync(candidate) && !reserved.has(candidate)) {
       return candidate;
     }
     index += 1;

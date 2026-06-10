@@ -18,7 +18,7 @@ This plan intentionally leaves official Hub search, source add/install delegatio
 ## Command Surface
 
 ```bash
-afk skills list [--scope global|project|agent|all] [--agent <id>] [--category <id-or-label>] [--tag <tag>] [--platform <platform>] [--uncategorized] [--json]
+afk skills list [--scope global|project|all] [--agent <id>] [--category <id-or-label>] [--tag <tag>] [--platform <platform>] [--uncategorized] [--json]
 afk skills open [<folder>] [--file|--folder] [--app finder|code|cursor|zed|agy]
 afk skills trash [<folder>] [--dry-run] [--yes]
 ```
@@ -35,9 +35,9 @@ afk skills categorize ...
 
 ## Behavior Decisions
 
-### `list --scope agent`
+### `list --agent <id>`
 
-`--scope agent` lists installed skills from known agent roots outside the AFK shared library. It does not include `~/.agents/skills`, and it does not include current-project roots unless those roots are modeled as agent roots for the current working directory.
+`--agent <id>` narrows list results to the selected agent inside the requested scope. For example, `--scope global --agent codex` lists Codex's global agent skill root, while `--scope project --agent codex` lists the current project's Codex skill root.
 
 Human output should be sectioned by agent/root, for example:
 
@@ -146,7 +146,7 @@ Category matching should accept category id or visible label case-insensitively.
    - Support `--dry-run`.
 
 6. Add tests.
-   - Agent root scanning and `--scope agent` behavior.
+   - Agent root scanning and `--agent` filtering behavior.
    - Section/order behavior for human list rendering.
    - JSON remains flat.
    - Category/tag/platform/uncategorized filtering.
@@ -161,8 +161,8 @@ Category matching should accept category id or visible label case-insensitively.
 
 ## Acceptance Criteria
 
-- `afk skills list --scope agent` shows read-only agent-root skills sectioned by source in human output.
-- `afk skills list --scope agent --json` returns a flat record array.
+- `afk skills list --scope global --agent codex` shows Codex's read-only global agent-root skills.
+- `afk skills list --scope global --agent codex --json` returns a flat record array.
 - `afk skills list` filters work for category, tag, platform, and uncategorized records.
 - `afk skills open` can open a selected skill file or folder with Finder, Code, Cursor, Zed, or Antigravity.
 - `afk skills trash` never affects project or agent roots and never permanently deletes a skill.

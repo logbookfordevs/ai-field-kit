@@ -11,7 +11,7 @@ export type SkillAgentId = "claude-code" | "kiro-cli" | "kilo" | "pi" | "droid";
 
 export type Area = "rules" | "skills" | "mcps" | "utils" | "hooks";
 export type SetupScope = "global" | "project";
-export type SkillsListScope = "global" | "project" | "agent" | "all";
+export type SkillsListScope = "global" | "project" | "all";
 export type SkillsUpgradeScope = "global" | "project" | "all";
 export type ManagedSkillAgent =
   | "codex"
