@@ -68,9 +68,25 @@ When preparing execution tracking:
 - Create the tracking index.
 - Create `.afk/execution-tracking/current.json`.
 - Create a detailed checkpoint file only for the active slice.
+- Record the selected execution bundle for the active slice before execution starts.
 - Keep future slices as index rows until they start.
 - Create a future checkpoint file early only when it already has useful content to hold: scaffold mode, parallel work, explicitly assigned future checkpoints, a known blocker, or a deferred note from the current slice.
 - If a future file is created early, create only the needed file, keep it skeletal except for the useful content, and link it from the canonical index row. Do not expand the rest of the future tracking set.
+
+## Execution Bundle Evidence
+
+An execution bundle is the set of execution disciplines selected for a checkpoint, such as `test-driven-development`, `source-driven-development`, `doubt-driven-development`, or normal project validation. Multiple disciplines can apply to the same checkpoint.
+
+Record the selected bundle in the active checkpoint file before implementation begins. If work is delegated, the worker prompt should include the selected bundle and the evidence expected for each discipline.
+
+Before moving a checkpoint to `review`, record adherence evidence for each selected discipline:
+
+- `test-driven-development`: failing-test evidence before implementation when literal TDD is practical, then the passing run after implementation. If literal test-first was skipped, record the reason and the nearest proof mechanism used.
+- `source-driven-development`: official docs or primary sources consulted, version signals checked, and any source-backed implementation decisions or unresolved source gaps.
+- `doubt-driven-development`: fresh-context adversarial review result, findings reconciled, and any unresolved concerns escalated.
+- Normal validation: tests, typechecks, lint, builds, runtime checks, browser checks, or a clear reason a check could not run.
+
+Do not mark the checkpoint `review` while a selected discipline lacks evidence or an explicit skip reason.
 
 ## Statuses
 
@@ -152,6 +168,8 @@ Include enough task-local detail and source links to resume safely. Do not resta
 
 Common task headings include `Scope`, `Changes`, `Validation`, `Review Gates`, `Review Guide`, `Notes / Decisions`, and `Next Action`. Do not force empty sections.
 
+Use `Execution Bundle` and `Discipline Evidence` headings when the checkpoint has selected execution disciplines.
+
 Preserve completed checkpoint files as historical packets. When updating tracking, refresh the frontmatter, `Current Snapshot`, `Task Ledger`, `Next Action`, and the active checkpoint file. Do not append checkpoint-specific details to the canonical index.
 
 The body can be flexible. The non-negotiable part is that a new agent can open the canonical index, find the current checkpoint file, and resume without guessing what happened, what is current, what is historical, what is safe to touch, and what needs approval.
@@ -188,12 +206,14 @@ Skip this section for code-only review gates. For guide shape and examples, see 
 2. Create the canonical tracking index and active checkpoint file if they do not exist.
 3. Write or update `.afk/execution-tracking/current.json` with the canonical index and active checkpoint paths.
 4. Open the current checkpoint file by default; open previous checkpoint files only when needed.
-5. Mark the active task as `in_progress` before editing.
-6. Record important scope changes, working set changes, and blockers as they happen in the active checkpoint file.
-7. Move to `validating` before running verification.
-8. Move to `review` only when the checkpoint is ready for responsible engineer review.
-9. Before final handoff, run the notes/ADR check and update the active checkpoint file if needed.
-10. Move to `done` only after the checkpoint is accepted.
-11. Update `updated_at` in the canonical index, active checkpoint file, and active marker whenever tracking changes.
+5. Record the selected execution bundle for the active checkpoint.
+6. Mark the active task as `in_progress` before editing.
+7. Record important scope changes, working set changes, and blockers as they happen in the active checkpoint file.
+8. Move to `validating` before running verification.
+9. Record discipline evidence for the selected execution bundle.
+10. Move to `review` only when the checkpoint is ready for responsible engineer review and selected discipline evidence is present or explicitly skipped with a reason.
+11. Before final handoff, run the notes/ADR check and update the active checkpoint file if needed.
+12. Move to `done` only after the checkpoint is accepted.
+13. Update `updated_at` in the canonical index, active checkpoint file, and active marker whenever tracking changes.
 
 If execution changes the implementation plan materially, note the divergence in tracking before continuing.

@@ -219,24 +219,36 @@
             "autoInvocation": true
         },
         {
-            "id": "incremental-implementation",
-            "label": "External / Incremental Implementation",
-            "source": "https://github.com/addyosmani/agent-skills.git",
-            "args": [
-                "--skill",
-                "incremental-implementation",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": true
-        },
-        {
             "id": "test-driven-development",
             "label": "External / Test Driven Development",
             "source": "https://github.com/addyosmani/agent-skills.git",
             "args": [
                 "--skill",
                 "test-driven-development",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": true
+        },
+        {
+            "id": "source-driven-development",
+            "label": "External / Source Driven Development",
+            "source": "https://github.com/addyosmani/agent-skills.git",
+            "args": [
+                "--skill",
+                "source-driven-development",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": true
+        },
+        {
+            "id": "doubt-driven-development",
+            "label": "External / Doubt Driven Development",
+            "source": "https://github.com/addyosmani/agent-skills.git",
+            "args": [
+                "--skill",
+                "doubt-driven-development",
                 "--global"
             ],
             "default": false,
