@@ -48,7 +48,7 @@ Task arrives
 +-- Need a reviewed /goal package? --------------> plannotator-setup-goal
 +-- Need a formal PRD/spec before code? ----------> spec-driven-development
 +-- Have a spec and need tasks? ------------------> planning-and-task-breakdown
-+-- Need UX or implementation trade-offs settled? -> afk-coding-tradeoffs
++-- Need code choices or implementation trade-offs settled? -> afk-coding-tradeoffs
 +-- Need docs/domain/terminology pressure? ------> grill-with-docs
 +-- Need to pressure-test an existing draft? -----> afk-advanced-elicitation
 +-- Implementing a change? -----------------------> incremental-implementation

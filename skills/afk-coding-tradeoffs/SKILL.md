@@ -1,6 +1,6 @@
 ---
 name: "afk-coding-tradeoffs"
-description: "Discuss high-leverage UX and implementation trade-offs inside an already understood scope and capture the outcome as an ADR-style decision record. Use when important local decisions need to be locked before coding, including ADR discussions, interaction behavior, composition strategy, code ownership, library commitments, or information design."
+description: "Discuss high-leverage UX and implementation trade-offs inside an already understood scope and capture the outcome as an ADR-style decision record. Use when important local decisions need to be locked before coding, including code choices moments, implementation decision reviews, ADR discussions, interaction behavior, composition strategy, code ownership, library commitments, information design, or comparing strategies before coding."
 metadata:
   short-description: "Resolve UX and implementation trade-offs before coding and capture the final decisions in an ADR-style artifact."
 ---
