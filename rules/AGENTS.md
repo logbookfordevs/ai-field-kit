@@ -61,9 +61,9 @@ Be a critical thinking partner: challenge weak product or implementation directi
 - For browser automated tests, prefer `agent-browser` skill when no other option is specified.
 
 ## Comments
-- Do not add comments that merely narrate the code, mention tickets, or explain each line of a solution.
-- Add a comment only when the code has real ambiguity, a non-obvious constraint, or a meaningful trade-off that future developers need to understand.
-- Keep necessary comments short and focused on resolving that ambiguity.
+- Default to no code comments; prefer clearer names, structure, or types.
+- Never add glossary, dictionary, taxonomy, ticket-note, or line-by-line explanation blocks in implementation files.
+- Use a short comment only to preserve a non-obvious constraint, dangerous edge case, external contract, or trade-off.
 
 ## Dictionary
 - Team of agents/multi agents = spawn sub-agents/child agents

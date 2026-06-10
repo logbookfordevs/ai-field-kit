@@ -238,7 +238,7 @@ You do not need every step. Pick the smallest useful path for the moment you are
 6. Use `afk-coding-tradeoffs` when a known slice still has UX, behavior, or implementation decisions to lock. It captures those decisions as ADR-style records.
 7. Use `afk-advanced-elicitation` when a draft needs a stronger reasoning/refinement pass.
 8. Create the implementation plan with your preferred planning tool or normal prompting.
-9. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or implementation notes.
+9. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or checkpointed implementation notes.
 10. Select the execution bundle for each task: use `test-driven-development` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
 11. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
 
