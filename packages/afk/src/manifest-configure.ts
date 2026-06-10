@@ -1,7 +1,16 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { checkbox, confirm, input } from "@inquirer/prompts";
-import { localManifestDir, type HookManifest, type McpManifest, type RulesManifest, type SkillManifest, type UtilityManifest } from "./manifest.js";
+import {
+  isHookManifest,
+  loadDefaultManifestContent,
+  localManifestDir,
+  type HookManifest,
+  type McpManifest,
+  type RulesManifest,
+  type SkillManifest,
+  type UtilityManifest,
+} from "./manifest.js";
 import { DEFAULT_CHECKED, afkCheckboxTheme, afkPromptTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
@@ -51,7 +60,7 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
   const drafts: ManifestDrafts = {};
   for (const area of areas) {
     runtime.io.stdout(renderPromptStep(areaTitle(area), areaDescription(area)));
-    drafts[`${area}.json`] = await configureArea(area, existing);
+    drafts[`${area}.json`] = await configureArea(area, existing, options);
   }
 
   runtime.io.stdout("\nManifest preview");
@@ -80,7 +89,7 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
   return 0;
 }
 
-async function configureArea(area: ManifestArea, existing: ExistingManifest): Promise<string> {
+async function configureArea(area: ManifestArea, existing: ExistingManifest, options: CliOptions): Promise<string> {
   switch (area) {
     case "rules":
       return configureRules(existing.rules);
@@ -91,7 +100,7 @@ async function configureArea(area: ManifestArea, existing: ExistingManifest): Pr
     case "utils":
       return configureUtils(existing.utils);
     case "hooks":
-      return configureHooks(existing.hooks);
+      return configureHooks(existing.hooks, options);
   }
 }
 
@@ -199,27 +208,32 @@ async function configureUtils(existing?: UtilityManifest): Promise<string> {
   return json({ version: 1, items });
 }
 
-async function configureHooks(existing?: HookManifest): Promise<string> {
+async function configureHooks(existing: HookManifest | undefined, options: CliOptions): Promise<string> {
   const items = [...(existing?.items ?? [])];
   const shouldAddDefault = items.length === 0
-    ? await askConfirm("Add AFK execution tracking stop check?", true)
+    ? await askConfirm("Add default AFK hooks?", true)
     : false;
 
   if (shouldAddDefault) {
-    items.push({
-      id: "afk-execution-tracking-stop-check",
-      label: "AFK / Execution Tracking Stop Check",
-      description: "Nudge the agent once before final handoff when implementation files changed without tracking, implementation notes, or ADR reconciliation.",
-      source: "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/hooks/afk-execution-tracking-stop-check.js",
-      command: "node",
-      args: ["${HOOK_FILE}", "--agent", "${AGENT}"],
-      events: ["stop"],
-      agents: ["codex", "claude", "cursor-local"],
-      default: true,
-    });
+    const defaultHooks = await loadDefaultHooks(options);
+    items.push(...defaultHooks.items);
   }
 
   return json({ version: 1, items });
+}
+
+async function loadDefaultHooks(options: CliOptions): Promise<HookManifest> {
+  const content = await loadDefaultManifestContent("hooks.json", options);
+  if (!content) {
+    throw new Error("Could not load default hooks manifest from the configured defaults source.");
+  }
+
+  const parsed: unknown = JSON.parse(content);
+  if (!isHookManifest(parsed)) {
+    throw new Error("Default hooks manifest from the configured defaults source is invalid.");
+  }
+
+  return parsed;
 }
 
 type InputConfig = {

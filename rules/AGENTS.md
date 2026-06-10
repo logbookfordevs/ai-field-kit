@@ -30,9 +30,8 @@ Treat explicit "AFK workflow" or "feature workflow" requests as AFK orchestratio
 - Always prioritize absolute imports (e.g. `@/components/...`) over relative paths when available.
 
 ## TypeScript
-- Never use `any` unless 100% necessary or specifically instructed.
-- Any modification in TypeScript files (`.ts`, `.tsx`) requires validation with: `npx tsc --noEmit`
-- If the compilation fails, fix all TypeScript errors before returning the final result.
+- Avoid `any` unless necessary or specifically instructed.
+- TypeScript changes must pass the repo typecheck before final handoff.
 
 ## Commands
 - Don't run dev server commands (like `npm run dev`) - assume it's already running.

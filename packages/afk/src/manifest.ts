@@ -180,6 +180,14 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
   return operations;
 }
 
+export async function loadDefaultManifestContent(name: ManifestName, options: ManifestOptions): Promise<string | null> {
+  const manifestDir = manifestDirForOptions(options);
+  const rememberedSource = rememberedDefaultsSource(manifestDir);
+  const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+  const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
+  return defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
+}
+
 export function loadSkillManifest(options: Pick<CliOptions, "homeDir">): SkillManifest {
   return parseLocalManifest<SkillManifest>(options.homeDir, "skills.json", isSkillManifest);
 }
@@ -641,7 +649,7 @@ function isUtilityPostInstallCommand(value: unknown): value is UtilityPostInstal
   );
 }
 
-function isHookManifest(value: unknown): value is HookManifest {
+export function isHookManifest(value: unknown): value is HookManifest {
   if (!isRecord(value) || typeof value.version !== "number" || !Array.isArray(value.items)) {
     return false;
   }
