@@ -24,7 +24,7 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false
         },
         {
             "id": "afk-ask",
@@ -168,7 +168,7 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false
         },
         {
             "id": "plannotator-setup-goal",
@@ -192,7 +192,7 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false
         },
         {
             "id": "spec-driven-development",
@@ -336,7 +336,7 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": false
         },
         {
             "id": "handoff",
