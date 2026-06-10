@@ -181,6 +181,45 @@ test("runCli prints contextual skills upgrade help", async () => {
   assert.ok(!text.includes("AFK skills check"));
 });
 
+test("runCli prints contextual skills trash help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "trash", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK skills trash"));
+  assert.ok(text.includes("--manifest-only"));
+});
+
+test("runCli accepts skills trash manifest-only flag", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "alpha",
+          label: "Alpha",
+          source: "https://github.com/example/skills",
+          args: ["--skill", "alpha"],
+          default: true,
+        },
+      ],
+    },
+  });
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(
+    ["skills", "trash", "beta", "--manifest-only", "--dry-run"],
+    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+  ));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Skill not found in skills.json manifest: beta"));
+});
+
 test("runCli validates skills upgrade scope", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["skills", "upgrade", "--scope", "agent"]));
@@ -259,4 +298,9 @@ function localHomeWithManifests(manifests: Record<string, unknown>): string {
     writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
   }
   return homeDir;
+}
+
+function writeSkill(root: string, folder: string, name: string): void {
+  mkdirSync(join(root, folder), { recursive: true });
+  writeFileSync(join(root, folder, "SKILL.md"), `---\nname: ${name}\ndescription: ${name} description\n---\n\n# ${name}\n`);
 }

@@ -18,10 +18,11 @@ import {
   type SkillRecord,
 } from "./skills/catalog.js";
 import { buildCodexCategorizationCommand, runCodexCategorization } from "./skills/categorization.js";
-import { buildSkillOpenCommand, filterSkillChoices, formatLockedSkillChoice, runSkillsCommand } from "./skills/commands.js";
+import { buildSkillOpenCommand, filterManifestSkillRecords, filterSkillChoices, formatLockedSkillChoice, runSkillsCommand } from "./skills/commands.js";
 import { renderSkillChoice, renderSkillTrashBatch } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
+import { localManifestDir } from "./manifest.js";
 
 test("parseSkillFile reads frontmatter name and description", () => {
   const metadata = parseSkillFile("---\nname: demo\ndescription: Demo skill\n---\n\n# Demo\n", "fallback");
@@ -276,6 +277,36 @@ test("trashGlobalSkill rejects unsupported platforms", () => {
     () => trashGlobalSkill({ homeDir, folder: "demo", dryRun: false, platform: "linux" }),
     /macOS only/,
   );
+});
+
+test("filterManifestSkillRecords keeps only global skills from AFK skills manifest", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-manifest-filter-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
+  writeSkillManifest(homeDir, ["alpha"]);
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
+
+  assert.deepEqual(filterManifestSkillRecords(snapshot.records, { homeDir }).map((record) => record.folder), ["alpha"]);
+});
+
+test("runSkillsCommand trash --manifest-only rejects explicit skills outside AFK manifest", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-manifest-explicit-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
+  writeSkillManifest(homeDir, ["alpha"]);
+
+  const code = await runSkillsCommand(["skills", "trash", "beta"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+    skillsTrashManifestOnly: true,
+  });
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Skill not found in skills.json manifest: beta"));
 });
 
 test("renderSkillTrashBatch summarizes multiple selected skills", () => {
@@ -637,6 +668,33 @@ function writeProjectSkillLock(cwd: string, skills: Record<string, object>): voi
   writeFileSync(join(cwd, "skills-lock.json"), JSON.stringify({ version: 1, skills }));
 }
 
+function writeSkillManifest(homeDir: string, ids: string[]): void {
+  mkdirSync(localManifestDir(homeDir), { recursive: true });
+  writeFileSync(join(localManifestDir(homeDir), "skills.json"), JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: ids.map((id) => ({
+      id,
+      label: id,
+      source: "https://github.com/example/skills",
+      args: ["--skill", id],
+      default: true,
+    })),
+  }));
+}
+
+function outputRuntime(output: string[]): Runtime {
+  return {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      throw new Error("spawn should not run");
+    },
+  };
+}
+
 function baseOptions(root: string) {
   return {
     agents: [],
@@ -662,6 +720,7 @@ function baseOptions(root: string) {
     skillsListScope: "all" as const,
     skillsUpgradeScope: "global" as const,
     skillsUpgradeAll: false,
+    skillsTrashManifestOnly: false,
     skillsAgent: undefined,
     skillsJson: false,
     skillsCategory: "",

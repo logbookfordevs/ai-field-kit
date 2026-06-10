@@ -450,8 +450,14 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--dry-run                         Preview the Trash move without applying it",
       "--yes, -y                         Skip confirmation",
+      "--manifest-only                   Show only skills from AFK skills.json",
     ],
-    examples: ["afk skills trash", "afk skills trash old-skill --dry-run", "afk skills trash old-skill --yes"],
+    examples: [
+      "afk skills trash",
+      "afk skills trash --manifest-only",
+      "afk skills trash old-skill --dry-run",
+      "afk skills trash old-skill --yes",
+    ],
   },
   "skills upgrade": {
     title: "AFK skills upgrade",
@@ -548,6 +554,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsListScope: SkillsListScope = "all";
   let skillsUpgradeScope: SkillsUpgradeScope = "global";
   let skillsUpgradeAll = false;
+  let skillsTrashManifestOnly = false;
   let skillsAgent: ManagedSkillAgent | undefined;
   let skillsJson = false;
   let skillsCategory = "";
@@ -667,6 +674,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         return { help: false, kind: "error", error: "Unknown option: --all" };
       }
       skillsUpgradeAll = true;
+      continue;
+    }
+
+    if (isAfkSkillsCommand && arg === "--manifest-only") {
+      if (commandPath[1] !== "trash") {
+        return { help: false, kind: "error", error: "Unknown option: --manifest-only" };
+      }
+      skillsTrashManifestOnly = true;
       continue;
     }
 
@@ -873,6 +888,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsListScope,
       skillsUpgradeAll,
       skillsUpgradeScope,
+      skillsTrashManifestOnly,
       skillsAgent,
       skillsJson,
       skillsCategory,

@@ -5,6 +5,7 @@ import { searchableCheckbox } from "../searchable-checkbox.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
+import { loadSkillManifest } from "../manifest.js";
 import {
   filterSkillRecords,
   loadSkillCatalog,
@@ -320,13 +321,18 @@ async function runSkillsTrash(folder: string | undefined, runtime: Runtime, opti
     scope: "all",
     agent: options.skillsAgent,
   });
-  const candidates = snapshot.records.filter((record) => record.rootKind === "global-library");
+  const globalCandidates = snapshot.records.filter((record) => record.rootKind === "global-library");
+  const candidates = options.skillsTrashManifestOnly
+    ? filterManifestSkillRecords(globalCandidates, options)
+    : globalCandidates;
   const records = folder
-    ? [findSkillRecord(snapshot.records, folder)].filter((record): record is SkillRecord => Boolean(record))
+    ? [findSkillRecord(candidates, folder)].filter((record): record is SkillRecord => Boolean(record))
     : await promptSkillRecords(candidates, "Select a global skill to move to Trash:");
 
   if (records.length === 0) {
-    runtime.io.stderr(folder ? `Skill not found: ${folder}` : "No global skills found.");
+    runtime.io.stderr(folder
+      ? options.skillsTrashManifestOnly ? `Skill not found in skills.json manifest: ${folder}` : `Skill not found: ${folder}`
+      : options.skillsTrashManifestOnly ? "No global skills from skills.json manifest found." : "No global skills found.");
     return 1;
   }
 
@@ -395,6 +401,17 @@ export function filterSkillChoices(records: SkillRecord[], term: string | undefi
 
     return tokens.every((token) => searchable.includes(token));
   });
+}
+
+export function filterManifestSkillRecords(records: SkillRecord[], options: Pick<CliOptions, "homeDir">): SkillRecord[] {
+  const manifest = loadSkillManifest(options);
+  const manifestIds = new Set(manifest.items.map((item) => item.id.trim().toLowerCase()).filter(Boolean));
+
+  return records.filter((record) =>
+    manifestIds.has(record.folder.toLowerCase()) ||
+    manifestIds.has(record.name.toLowerCase()) ||
+    manifestIds.has(record.originalName.toLowerCase())
+  );
 }
 
 async function promptGlobalSkillFolder(options: {
