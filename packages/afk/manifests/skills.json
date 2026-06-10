@@ -159,6 +159,42 @@
             "autoInvocation": true
         },
         {
+            "id": "plannotator-compound",
+            "label": "External / Plannotator Compound",
+            "source": "backnotprop/plannotator/apps/skills/extra",
+            "args": [
+                "--skill",
+                "plannotator-compound",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
+            "id": "plannotator-setup-goal",
+            "label": "External / Plannotator Setup Goal",
+            "source": "backnotprop/plannotator/apps/skills/extra",
+            "args": [
+                "--skill",
+                "plannotator-setup-goal",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
+            "id": "plannotator-visual-explainer",
+            "label": "External / Plannotator Visual Explainer",
+            "source": "backnotprop/plannotator/apps/skills/extra",
+            "args": [
+                "--skill",
+                "plannotator-visual-explainer",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
             "id": "spec-driven-development",
             "label": "External / Spec Driven Development",
             "source": "https://github.com/addyosmani/agent-skills.git",
