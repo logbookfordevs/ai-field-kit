@@ -323,6 +323,12 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx skills add https://github.com/mattpocock/skills --skill prototype`  
   Use when a decision needs a throwaway artifact before production work: a tiny terminal prototype for state or business logic, or several UI variations on one route for front-end direction. This can pair with Impeccable for FE work when you want quick prototype learning without opening a separate design tool.
 
+- **Effective HTML (Plannotator)**  
+  Install: `npx skills add https://github.com/plannotator/effective-html --skill html`  
+  Install plan skill: `npx skills add https://github.com/plannotator/effective-html --skill html-plan`  
+  Install diagram skill: `npx skills add https://github.com/plannotator/effective-html --skill html-diagram`  
+  Use when the best deliverable is a self-contained HTML artifact: an explainer, report, comparison, prototype, plan page, or architecture diagram. The `html-plan` and `html-diagram` variants keep the output focused when the user explicitly wants a plan or visual system map.
+
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  
   Create a compact handoff document for a fresh agent when a session needs to continue elsewhere. It saves outside the workspace on purpose, keeping the note disposable. Pair it with `afk-pickup` in the next session to search temp locations, verify referenced paths, and resume from the right handoff.

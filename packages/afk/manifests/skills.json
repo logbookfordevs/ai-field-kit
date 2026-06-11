@@ -219,6 +219,42 @@
             "autoInvocation": false
         },
         {
+            "id": "html",
+            "label": "External / Effective HTML",
+            "source": "https://github.com/plannotator/effective-html",
+            "args": [
+                "--skill",
+                "html",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false
+        },
+        {
+            "id": "html-plan",
+            "label": "External / Effective HTML Plan",
+            "source": "https://github.com/plannotator/effective-html",
+            "args": [
+                "--skill",
+                "html-plan",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false
+        },
+        {
+            "id": "html-diagram",
+            "label": "External / Effective HTML Diagram",
+            "source": "https://github.com/plannotator/effective-html",
+            "args": [
+                "--skill",
+                "html-diagram",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false
+        },
+        {
             "id": "spec-driven-development",
             "label": "External / Spec Driven Development",
             "source": "https://github.com/addyosmani/agent-skills.git",
