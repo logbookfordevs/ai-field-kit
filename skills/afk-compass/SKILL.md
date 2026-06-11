@@ -46,7 +46,7 @@ Task arrives
 |
 +-- Need relentless plan/design questioning? ----> grill-me
 +-- Need divergent ideas or directions? ----------> afk-brainstorming-facilitator
-+-- Resuming an existing AFK workflow? ----------> afk-resume-workflow
++-- Resuming existing feature/workflow work? ---> afk-resume-workflow
 +-- Writing, rewriting, or reviewing human-facing docs? -> afk-doc-craft
 +-- PRD/spec/RFC/plan/tracking/handoff artifacts? -> afk-artifact-workflow
 +-- Need a reviewed /goal package? --------------> plannotator-setup-goal
