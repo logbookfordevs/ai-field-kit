@@ -135,6 +135,18 @@
             "autoInvocation": true
         },
         {
+            "id": "afk-resume-workflow",
+            "label": "AFK / Resume Workflow",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-resume-workflow",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
             "id": "afk-structured-debugging",
             "label": "AFK / Structured Debugging",
             "source": "https://github.com/logbookfordevs/ai-field-kit",

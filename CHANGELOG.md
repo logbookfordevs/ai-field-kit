@@ -14,6 +14,7 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `skills:` added Plannotator's compound report, `/goal` setup, and visual explainer skills to the default global skill manifest.
+- `skills:` added `afk-resume-workflow` to continue AFK workflows from durable repo artifacts after context resets.
 
 ### Changed
 

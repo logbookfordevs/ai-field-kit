@@ -165,6 +165,7 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with ADR-style decision artifacts |
 | `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
 | `afk-pickup` | Explicitly resumes from disposable handoff notes saved in the OS temp directory |
+| `afk-resume-workflow` | Continues an AFK workflow from durable repo artifacts after a context reset |
 
 ### Spec-Driven discussion and planning skills
 
@@ -180,6 +181,7 @@ They are intentionally similar, but they are not redundant:
 | `afk-execution-tracking` | You have an implementation plan and want checkpointed execution instead of one long build run | Canonical tracking file with task status, review gates, validation, and next action |
 | `afk-advanced-elicitation` | You already have a draft, brief, plan, or answer and want to pressure-test or improve it | Stronger revised artifact with visible critique/refinement |
 | `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
+| `afk-resume-workflow` | A fresh session needs to continue an AFK workflow from repo artifacts | Current state, next useful move, and Compass routing |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
 
 ### How the workflow currently maps
@@ -194,7 +196,7 @@ They are intentionally similar, but they are not redundant:
 | Implementation planning | Flexible for now; use plan modes, external planning skills, or normal prompting depending on the project |
 | Execution control | `afk-execution-tracking` plus the selected execution bundle |
 | Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
-| Support | `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
+| Support | `afk-resume-workflow`, `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
 
 `afk-artifact-workflow` defines the default artifact convention: `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
 
@@ -208,6 +210,7 @@ If you're unsure which one to reach for, use this shortcut:
 - "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-coding-tradeoffs`
 - "We have a plan and need checkpointed execution" -> `afk-execution-tracking`
 - "We already have something written, but it needs a stronger pass" -> `afk-advanced-elicitation`
+- "Continue this AFK workflow from repo artifacts" -> `afk-resume-workflow`
 - "A previous agent left a temp handoff for this session" -> `afk-pickup`
 - "I want another model's opinion" -> `afk-ask`
 
