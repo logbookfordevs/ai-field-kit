@@ -13,7 +13,7 @@ Resume from durable artifacts, not chat memory.
 2. Read only the smallest useful set: tracking index, active checkpoints, implementation plan, and directly referenced spec/ADR files.
 3. If active tracking exists or the requested work is part of a tracked flow, use `afk-execution-tracking` before implementing, delegating, or changing checkpoint status.
 4. Report what is done, what is active, what is blocked, and the next useful move.
-5. Re-enter `afk-compass` for execution-bundle selection and the next skill or phase.
+5. Re-enter `afk-compass` for the next skill or phase; before implementation or delegation, it must select `test-driven-development`, `source-driven-development`, `doubt-driven-development`, or an explicit normal-validation fallback.
 
 If multiple workflows or next moves are plausible, ask one clarifying question.
 

@@ -25,7 +25,7 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` added Matt Pocock's `teach` skill as an opt-in manifest item for explicit stateful learning workflows.
 - `skills:` added Matt Pocock's `grill-me` skill for plan/design interrogation and retired `afk-deep-interview` from default install and auto-routing.
 - `skills:` replaced `incremental-implementation` in the AFK manifest with `source-driven-development` and `doubt-driven-development` for human-gated execution discipline.
-- `skills:` taught `afk-compass` to select execution bundles at implementation or delegation time instead of treating execution tracking as the only execution skill.
+- `skills:` taught `afk-compass` and `afk-resume-workflow` to select a named execution discipline before implementation or delegation instead of treating execution tracking as the only execution skill.
 - `skills:` taught `afk-execution-tracking` to record selected execution bundles, discipline evidence, and active checkpoints with an always-array marker before review, while treating commit hashes as receipts and tracking artifacts as explicit-ask commits only.
 - `skills:` made skill invocation policy sync both directions so `autoInvocation: true` re-enables model discovery even when an installed skill shipped disabled, while `write-a-skill` and `to-issues` remain manual.
 - `skills:` tightened `afk-pickup` so temp handoff resumes check direct `/tmp` paths before broader searches and avoid fragile shell search patterns.
