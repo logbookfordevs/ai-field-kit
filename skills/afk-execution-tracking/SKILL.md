@@ -92,9 +92,11 @@ When preparing execution tracking:
 
 ## Commit Boundary
 
-Tracking artifacts are workflow state. Before committing implementation work, inspect staged changes and keep tracking artifacts out of feature code commits unless the user or repo convention explicitly wants them versioned with the branch.
+Tracking may mention commits as receipts, but never as permission to create them. Do not create commits just to mark a checkpoint done.
 
-If tracking artifacts are committed, commit them consistently as workflow/docs changes: include the canonical index plus relevant checkpoint files. Keep `.afk/execution-tracking/current.json` local unless the repo explicitly versions runtime markers.
+Do not commit tracking artifacts unless the user explicitly asks.
+
+When delegating tracked execution, state the commit policy explicitly.
 
 ## Execution Bundle Evidence
 
