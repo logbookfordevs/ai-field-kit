@@ -1,6 +1,6 @@
 ---
 name: afk-artifact-workflow
-description: Manage durable workflow artifacts: PRDs, specs, RFCs, implementation plans, tracking, handoff notes, references, storage conventions, and next-artifact suggestions. Use when work needs artifact boundaries or handoff state; skip quick one-shot operations.
+description: "Manage durable workflow artifacts: PRDs, specs, RFCs, implementation plans, tracking, handoff notes, references, storage conventions, and next-artifact suggestions. Use when work needs artifact boundaries or handoff state; skip quick one-shot operations."
 metadata:
   short-description: Manage durable workflow artifacts, storage, and next-artifact suggestions.
 ---
