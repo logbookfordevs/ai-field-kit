@@ -7,20 +7,13 @@ metadata:
 
 # Execution Tracking
 
-Use this skill after an implementation plan exists and before or during execution.
+Keep implementation state visible without turning the plan into a diary. The tracking file is the shared checkpoint ledger for agents and the responsible engineer.
 
-The goal is to keep implementation state visible without turning the plan into a diary. The tracking file is the shared checkpoint ledger for agents and the responsible engineer.
+## Activation Boundary
 
-## Use When
+Use after an implementation plan exists, when the user requests tracking or execution needs durable checkpoint state across reviews, handoffs, parallel agents, pauses, or later sessions.
 
-- the user explicitly asks for tracked execution
-- execution has visible checkpoints, approval gates, or handoff notes
-- execution should pause for engineer review before continuing
-- work may resume in a later chat
-- parallel agents need a shared status source
-- the user wants divide-and-conquer implementation instead of one long build run
-
-Do not use this skill for tiny one-shot edits unless the user asks for tracking.
+Skip tiny one-shot edits unless the user asks.
 
 ## Storage
 
