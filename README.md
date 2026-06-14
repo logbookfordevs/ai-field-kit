@@ -329,6 +329,10 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install diagram skill: `npx skills add https://github.com/plannotator/effective-html --skill html-diagram`  
   Use when the best deliverable is a self-contained HTML artifact: an explainer, report, comparison, prototype, plan page, or architecture diagram. The `html-plan` and `html-diagram` variants keep the output focused when the user explicitly wants a plan or visual system map.
 
+- **GoalBuddy**
+  Install: `npx goalbuddy`
+  Recommended for high-throughput AFK Turbo work that needs a local live board, PM loop, role-tagged task execution, receipts, and proof pressure around broad goals. AFK exposes GoalBuddy through Utilities and delegates to its installer.
+
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  
   Create a compact handoff document for a fresh agent when a session needs to continue elsewhere. It saves outside the workspace on purpose, keeping the note disposable. Pair it with `afk-pickup` in the next session to search temp locations, verify referenced paths, and resume from the right handoff.
@@ -348,7 +352,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
 
-If more recommended skills require official installers instead of `npx skills add`, revisit whether `skills.json` should support per-skill installer overrides.
+Installer-based companions belong in Utilities. Keep `skills.json` focused on skills installed through `npx skills add`.
 
 ### Practical guidance
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "AFK Compass"
-  short_description: "Route work to the right AFK and companion skills"
-  default_prompt: "Use $afk-compass to route broad, ambiguous, multi-phase, or explicit AFK workflow/run requests to the right AFK and companion skills. Re-check routing at phase changes such as source gathering -> PRD/spec, draft -> implementation plan, or plan -> execution. In freestyle prompts, choose the smallest useful next skill without forcing workflow artifacts."
+  short_description: "Route work through AFK Free Route, Orchestration, Turbo, or Goal Package modes"
+  default_prompt: "Use $afk-compass to route broad, ambiguous, multi-phase, explicit AFK workflow, AFK Turbo, or goal-package requests. Free Route selects the smallest useful skill; Orchestration uses execution tracking; Turbo uses GoalBuddy's local live board; Goal Package prepares native /goal with reviewed facts and Markdown tracking around it. Re-check routing at phase changes and preserve TDD/source/doubt execution discipline."
