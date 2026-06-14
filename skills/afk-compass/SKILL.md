@@ -41,7 +41,7 @@ In orchestration mode:
 ### AFK Turbo Mode
 Use Turbo when the user wants high-throughput progress toward a broad outcome.
 
-Turbo uses GoalBuddy as the execution surface. Do not also use `afk-execution-tracking`; the GoalBuddy board is the continuity surface.
+Turbo uses GoalBuddy's local live board and PM loop as the execution surface. Start or register the local board before execution and include a clickable board URL when available. Do not also use `afk-execution-tracking`; the GoalBuddy board is the continuity surface.
 
 Routes:
 
@@ -129,7 +129,7 @@ Common phase moves:
 - Plan or design -> decision-tree pressure: use `grill-me` when the user asks to be grilled, wants relentless questioning, or needs a plan/design stress-tested through one-question-at-a-time interrogation.
 - Open product, UX, component, ownership, library, or implementation choices -> use `afk-coding-tradeoffs`, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
 - Orchestration -> implementation: `afk-execution-tracking` is active, and each implementation task gets at least one execution discipline: `test-driven-development`, `source-driven-development`, or `doubt-driven-development`.
-- Turbo -> execution: use GoalBuddy as the board and proof loop; do not create parallel AFK execution tracking.
+- Turbo -> execution: use GoalBuddy's local live board and proof loop; do not create parallel AFK execution tracking.
 - Goal package -> execution: hand off native `/goal` and track it with `afk-execution-tracking`.
 - Any draft or workflow artifact -> reader-facing polish: use `afk-doc-craft` only when the artifact needs human-facing documentation quality, not for agent-facing instruction surfaces or skill content.
 

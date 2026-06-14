@@ -15,6 +15,19 @@
             "default": true
         },
         {
+            "id": "goalbuddy",
+            "label": "GoalBuddy",
+            "description": "Install GoalBuddy's goal board, PM loop, receipts, and live local board surface for AFK Turbo.",
+            "install": {
+                "command": "npx",
+                "args": [
+                    "--yes",
+                    "goalbuddy"
+                ]
+            },
+            "default": true
+        },
+        {
             "id": "rtk",
             "label": "RTK",
             "description": "Compress noisy command output for coding agents and add agent hooks or rules that nudge shell commands through RTK.",
