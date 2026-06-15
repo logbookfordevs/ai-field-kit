@@ -216,6 +216,42 @@ test("runManifestConfigureWithPrompts previews dry-run edits without writing", a
   assert.ok(output.join("\n").includes("Dry run complete. No manifests written."));
 });
 
+test("runManifestConfigureWithPrompts preserves existing skill args during no-op edit", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "manifests");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "https://github.com/logbookfordevs/ai-field-kit",
+    items: [
+      {
+        id: "afk-note",
+        label: "AFK / Note",
+        source: "https://github.com/logbookfordevs/ai-field-kit",
+        args: ["--skill", "afk-note", "--global"],
+        default: true,
+        autoInvocation: true,
+      },
+    ],
+  }, null, 2)}\n`);
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: ["skills", "finish"],
+      actions: ["edit", "back"],
+      items: ["afk-note"],
+      inputs: ["https://github.com/logbookfordevs/ai-field-kit", "afk-note", "afk-note", "AFK / Note"],
+      confirms: [true, true, true],
+    }),
+  );
+
+  const written = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as { items: Array<{ args: string[] }> };
+  assert.equal(code, 0);
+  assert.deepEqual(written.items[0]?.args, ["--skill", "afk-note", "--global"]);
+});
+
 test("runManifestConfigureWithPrompts edits project manifests for local configure", async () => {
   const cwd = mkdtempSync(join(tmpdir(), "afk-configure-project-"));
   const manifestDir = join(cwd, "afk", "manifests");

@@ -262,7 +262,7 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
     id,
     label,
     source,
-    args: skill.trim() ? ["--skill", skill.trim()] : [],
+    args: skillArgsFromInput(existing, skill),
     default: isDefault,
     autoInvocation,
   };
@@ -808,6 +808,15 @@ function inferSource(value: string): "github" | "local" {
 function skillIdFromArgs(args: string[]): string | null {
   const index = args.indexOf("--skill");
   return index >= 0 ? args[index + 1] ?? null : null;
+}
+
+function skillArgsFromInput(existing: SkillManifestItem | undefined, value: string): string[] {
+  const skill = value.trim();
+  if (existing && skill === (skillIdFromArgs(existing.args) ?? "")) {
+    return [...existing.args];
+  }
+
+  return skill ? ["--skill", skill] : [];
 }
 
 function splitArgs(value: string): string[] {
