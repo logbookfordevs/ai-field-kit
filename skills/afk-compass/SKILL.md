@@ -30,13 +30,12 @@ In orchestration mode:
 - Use `afk-artifact-workflow` for artifact boundaries, storage, and next-artifact suggestions. Do not treat it as the whole orchestration.
 - Use `spec-driven-development` when no PRD/spec exists or the existing artifact lacks behavior needed for implementation.
 - Use `planning-and-task-breakdown` before implementation.
-- Use `afk-coding-tradeoffs` when meaningful product, UX, component, ownership, library, or implementation choices remain open. Pair it with `afk-ui-registry-preferences` when UI primitives, registry components, or headless foundations are part of the decision.
+- Use `afk-code-grill` to grill meaningful product, UX, component, ownership, library, or implementation choices one decision at a time. Pair it with `afk-ui-registry-preferences` when UI primitives, registry components, or headless foundations are part of the decision.
 - At implementation or delegation time, select one or more execution disciplines for each implementation task: `test-driven-development`, `source-driven-development`, or `doubt-driven-development`. Multiple disciplines can apply; `afk-execution-tracking` records state and evidence, but does not replace TDD, source verification, or doubt checks.
 - Default to `test-driven-development` for software behavior changes. Skip only when there is no meaningful behavior risk, such as pure docs, static content, trivial config, generated artifacts, or when literal test-first is impractical; in those cases, state why and choose the nearest proof mechanism before implementation.
 - Use `source-driven-development` when implementation correctness depends on current framework, library, SDK, API, or platform documentation.
 - Use `doubt-driven-development` for non-trivial or risky decisions that need fresh-context adversarial review before they stand.
 - When delegating execution, include the selected execution bundle and expected evidence in the worker prompt; selected skills do not cross agent boundaries automatically.
-- Use `afk-advanced-elicitation` when the user asks for deeper critique, says they are still doubtful or confused, or keeps bouncing between decisions after a draft or direction exists.
 
 ### AFK Turbo Mode
 Use Turbo when the user wants high-throughput progress toward a broad outcome.
@@ -76,9 +75,8 @@ Task arrives
 +-- Need reviewed facts + native /goal with Markdown tracking? -> Goal Package Mode
 +-- Need a formal PRD/spec before code? ----------> spec-driven-development
 +-- Have a spec and need tasks? ------------------> planning-and-task-breakdown
-+-- Need code choices or implementation trade-offs settled? -> afk-coding-tradeoffs
++-- Need code choices or implementation trade-offs grilled? -> afk-code-grill
 +-- Need docs/domain/terminology pressure? ------> grill-with-docs
-+-- Need to pressure-test an existing draft? -----> afk-advanced-elicitation
 +-- Implementing or delegating a change? --------> execution bundle selection
 |   +-- Needs checkpoints or parallel handoff? ---> afk-execution-tracking
 |   +-- Needs tests first or proof loop? ---------> test-driven-development
@@ -127,7 +125,7 @@ Common phase moves:
 - PRD/spec draft -> implementation plan: use `planning-and-task-breakdown` when the spec is ready to become tasks.
 - Draft or plan -> domain pressure: use `grill-with-docs` when terminology, domain boundaries, `CONTEXT.md`, ADRs, or code/docs consistency could change the artifact. Use it before drafting the PRD/spec only when that risk already exists; otherwise draft first, then grill before implementation planning.
 - Plan or design -> decision-tree pressure: use `grill-me` when the user asks to be grilled, wants relentless questioning, or needs a plan/design stress-tested through one-question-at-a-time interrogation.
-- Open product, UX, component, ownership, library, or implementation choices -> use `afk-coding-tradeoffs`, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
+- Open product, UX, component, ownership, library, or implementation choices -> use `afk-code-grill` as a Grill-style decision pass, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
 - Orchestration -> implementation: `afk-execution-tracking` is active, and each implementation task gets at least one execution discipline: `test-driven-development`, `source-driven-development`, or `doubt-driven-development`.
 - Turbo -> execution: use GoalBuddy's local live board and proof loop; do not create parallel AFK execution tracking.
 - Goal package -> execution: hand off native `/goal` and track it with `afk-execution-tracking`.

@@ -159,10 +159,9 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-artifact-workflow` | Durable workflow artifacts, storage, and next-artifact suggestions |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `afk-compass` | Routes work to the right AFK and recommended external skills |
-| `afk-advanced-elicitation` | Structured critique and refinement loops for improving drafts, plans, and decisions |
 | `afk-ask` | Gets a second opinion from another local AI CLI and saves the result as an artifact |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
-| `afk-coding-tradeoffs` | Focused discussion of UX and implementation trade-offs inside a defined scope, with ADR-style decision artifacts |
+| `afk-code-grill` | Grill-style pressure on UX and implementation choices inside a defined coding scope |
 | `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
 | `afk-pickup` | Explicitly resumes from disposable handoff notes saved in the OS temp directory |
 | `afk-resume-workflow` | Continues an AFK workflow from durable repo artifacts after a context reset |
@@ -177,9 +176,8 @@ They are intentionally similar, but they are not redundant:
 |---|---|---|
 | `afk-artifact-workflow` | The task involves PRDs, specs, RFCs, implementation plans, tracking, handoff notes, source references, or artifact conventions | Consistent artifact boundaries, storage defaults, and next-artifact suggestions |
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
-| `afk-coding-tradeoffs` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | ADR-style decision record for downstream implementation |
+| `afk-code-grill` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | Tiny decision note or ADR only when the decision deserves one |
 | `afk-execution-tracking` | You have an implementation plan and want checkpointed execution instead of one long build run | Canonical tracking file with task status, review gates, validation, and next action |
-| `afk-advanced-elicitation` | You already have a draft, brief, plan, or answer and want to pressure-test or improve it | Stronger revised artifact with visible critique/refinement |
 | `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
 | `afk-resume-workflow` | A fresh session needs to continue an AFK workflow from repo artifacts | Current state, next useful move, and Compass routing |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
@@ -190,7 +188,7 @@ They are intentionally similar, but they are not redundant:
 |---|---|
 | Artifact workflow | `afk-artifact-workflow` |
 | Open / clarify | `afk-brainstorming-facilitator` |
-| Pressure-test / decide | `grill-me`, `afk-coding-tradeoffs`, `afk-advanced-elicitation` |
+| Pressure-test / decide | `grill-me`, `afk-code-grill` |
 | Spec creation | Flexible for now; use a good standalone external spec skill or normal prompting when that fits |
 | RFC creation | Flexible for now; create a dedicated AFK skill only if the RFC shape becomes worth standardizing |
 | Implementation planning | Flexible for now; use plan modes, external planning skills, or normal prompting depending on the project |
@@ -207,9 +205,8 @@ If you're unsure which one to reach for, use this shortcut:
 - "We need more ideas" -> `afk-brainstorming-facilitator`
 - "We are dealing with PRDs, specs, RFCs, plans, tracking, or workflow artifacts" -> `afk-artifact-workflow`
 - "Grill me on this plan/design before we commit" -> `grill-me`
-- "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-coding-tradeoffs`
+- "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-code-grill`
 - "We have a plan and need checkpointed execution" -> `afk-execution-tracking`
-- "We already have something written, but it needs a stronger pass" -> `afk-advanced-elicitation`
 - "Continue this AFK workflow from repo artifacts" -> `afk-resume-workflow`
 - "A previous agent left a temp handoff for this session" -> `afk-pickup`
 - "I want another model's opinion" -> `afk-ask`
@@ -221,7 +218,7 @@ AI Field Kit is not meant to be run as a mandatory full ceremony.
 Most of the time, you will not use every discussion or planning skill in one flow. In practice, many sessions only need one or two of them:
 
 - `afk-brainstorming-facilitator` when the idea space is still open
-- `afk-coding-tradeoffs` when the scope is already known and only the UX/implementation gray areas need clarification
+- `afk-code-grill` when the scope is already known and only the UX/implementation gray areas need clarification
 
 Use the smallest useful slice of AFK for the moment you are in.
 
@@ -238,12 +235,11 @@ You do not need every step. Pick the smallest useful path for the moment you are
 3. Use `afk-artifact-workflow` when source material, references, PRDs, specs, plans, tracking, or handoff artifacts need consistent boundaries.
 4. Write or refine the PRD/spec with `spec-driven-development`, another preferred spec skill, or normal prompting.
 5. Use `grill-with-docs` before drafting the PRD/spec only when domain language is already risky. Otherwise use it after a draft to pressure-test terminology, code/docs consistency, and decisions before planning.
-6. Use `afk-coding-tradeoffs` when a known slice still has UX, behavior, or implementation decisions to lock. It captures those decisions as ADR-style records.
-7. Use `afk-advanced-elicitation` when a draft needs a stronger reasoning/refinement pass.
-8. Create the implementation plan with your preferred planning tool or normal prompting.
-9. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or checkpointed implementation notes.
-10. Select the execution bundle for each task: use `test-driven-development` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
-11. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
+6. Use `afk-code-grill` when a known slice still has UX, behavior, or implementation decisions to lock. It asks one sharp trade-off question at a time.
+7. Create the implementation plan with your preferred planning tool or normal prompting.
+8. Use `afk-execution-tracking` when execution needs checkpoints, resume safety, parallel coordination, review gates, or checkpointed implementation notes.
+9. Select the execution bundle for each task: use `test-driven-development` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
+10. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
 
 Most flows only use a few of these. For example:
 
@@ -305,7 +301,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Grill With Docs (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
-  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. Use it before drafting the PRD/spec only when domain language or documented decisions are already risky; otherwise draft first, then grill before implementation planning. It complements `afk-coding-tradeoffs`: use trade-offs first when decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy.
+  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. Use it before drafting the PRD/spec only when domain language or documented decisions are already risky; otherwise draft first, then grill before implementation planning. It complements `afk-code-grill`: use code grill first when decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy.
 
 - **Grill Me (Matt Pocock Skills)**
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-me`
@@ -358,9 +354,8 @@ Installer-based companions belong in Utilities. Keep `skills.json` focused on sk
 
 - `afk-brainstorming-facilitator` is for divergence. Do not reach for it if you already know what you want and just need tighter requirements.
 - `grill-me` pressures the plan or design through one-question-at-a-time interrogation.
-- `afk-coding-tradeoffs` assumes the work is already scoped enough to lock UX and implementation trade-offs that materially change the result.
+- `afk-code-grill` is Grill for code decisions: one meaningful trade-off at a time, with a recommendation when the evidence is enough.
 - `afk-execution-tracking` starts after an implementation plan exists. Use it when execution needs checkpoints, resume safety, or parallel coordination.
-- `afk-advanced-elicitation` is not for first-pass discovery. It is best after a draft or direction already exists.
 - `afk-pickup` and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
 
 ### Supporting skills around the flow

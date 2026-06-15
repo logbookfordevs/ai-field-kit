@@ -3,18 +3,6 @@
     "defaultSource": "https://github.com/logbookfordevs/ai-field-kit",
     "items": [
         {
-            "id": "afk-advanced-elicitation",
-            "label": "AFK / Advanced Elicitation",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-advanced-elicitation",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": true
-        },
-        {
             "id": "afk-animated-driven-frontend",
             "label": "AFK / Animated Driven Frontend",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -51,12 +39,12 @@
             "autoInvocation": true
         },
         {
-            "id": "afk-coding-tradeoffs",
-            "label": "AFK / Coding Tradeoffs",
+            "id": "afk-code-grill",
+            "label": "AFK / Code Grill",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-coding-tradeoffs",
+                "afk-code-grill",
                 "--global"
             ],
             "default": true,

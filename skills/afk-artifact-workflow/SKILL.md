@@ -7,7 +7,7 @@ metadata:
 
 # AFK Artifact Workflow
 
-This skill owns artifact boundaries, storage, and next-artifact suggestions. It does not choose the full skill sequence; return to `afk-compass` when the next phase needs planning, elicitation, trade-offs, execution discipline, debugging, review, UI, or documentation polish.
+This skill owns artifact boundaries, storage, and next-artifact suggestions. It does not choose the full skill sequence; return to `afk-compass` when the next phase needs planning, trade-offs, execution discipline, debugging, review, UI, or documentation polish.
 
 Skip quick one-shot operations where no workflow state, artifact, or handoff is needed.
 
