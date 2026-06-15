@@ -30,6 +30,10 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk setup refresh [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
   assert.ok(output.join("\n").includes("afk setup hooks [options]"));
+  assert.ok(output.join("\n").includes("afk configure [options]"));
+  assert.ok(output.join("\n").includes("afk show [options]"));
+  assert.ok(!output.join("\n").includes("afk manifests configure [options]"));
+  assert.ok(!output.join("\n").includes("afk manifests show [options]"));
   assert.ok(!output.join("\n").includes("afk setup mcps install [options]"));
   assert.ok(output.join("\n").includes("afk --version"));
   assert.ok(output.join("\n").includes('Run "afk <command> --help"'));
@@ -141,24 +145,70 @@ test("runCli prints contextual hooks help", async () => {
 
 test("runCli prints contextual manifest configure help", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["manifests", "configure", "--help"]));
+  const code = await withConsole(output, () => runCli(["configure", "--help"]));
 
   assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("AFK manifests configure"));
-  assert.ok(output.join("\n").includes("afk manifests configure --local"));
+  assert.ok(output.join("\n").includes("AFK configure"));
+  assert.ok(output.join("\n").includes("afk configure --local"));
+  assert.ok(!output.join("\n").includes("afk manifests configure --local"));
   assert.ok(!output.join("\n").includes("AFK setup\n"));
 });
 
 test("runCli prints contextual manifest show help", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["manifests", "show", "--help"]));
+  const code = await withConsole(output, () => runCli(["show", "--help"]));
 
   assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("AFK manifests show"));
+  assert.ok(output.join("\n").includes("AFK show"));
   assert.ok(output.join("\n").includes("--local"));
   assert.ok(output.join("\n").includes("--rules"));
   assert.ok(output.join("\n").includes("--hooks"));
+  assert.ok(output.join("\n").includes("afk show --rules --skills"));
+  assert.ok(!output.join("\n").includes("afk manifests show --rules --skills"));
   assert.ok(!output.join("\n").includes("AFK setup\n"));
+});
+
+test("runCli keeps old manifest command forms as aliases", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["manifests", "show", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK show"));
+  assert.ok(text.includes("Usage:\n  afk show [options]"));
+});
+
+test("runCli shows manifests from direct top-level show command", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "afk-note",
+          label: "AFK / Note",
+          source: "https://github.com/logbookfordevs/ai-field-kit",
+          args: ["--skill", "afk-note"],
+          default: true,
+          autoInvocation: true,
+        },
+      ],
+    },
+    "mcps.json": { version: 1, items: [] },
+    "presets.json": { version: 1, defaultsSource: "", presets: [] },
+    "rules.json": { version: 1, source: "github", url: "" },
+    "utils.json": { version: 1, items: [] },
+    "hooks.json": { version: 1, items: [] },
+  });
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["show", "--skills"], { HOME: homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK manifests"));
+  assert.ok(text.includes("Skills"));
+  assert.ok(text.includes("afk-note"));
+  assert.ok(!text.includes("Rules"));
 });
 
 test("isPromptExit detects Inquirer Ctrl-C exits", () => {

@@ -56,11 +56,11 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
     return runSetup(runtime, options);
   }
 
-  if (key === "manifests configure") {
+  if (isManifestConfigureCommand(key)) {
     return runManifestConfigure(runtime, options);
   }
 
-  if (key === "manifests show" || key === "manifest show") {
+  if (isManifestShowCommand(key)) {
     return runManifestShow(runtime, options);
   }
 
@@ -308,25 +308,60 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup utils --local --agent opencode",
     ],
   },
-  "manifests configure": {
-    title: "AFK manifests configure",
+  configure: {
+    title: "AFK configure",
     summary: "Interactively author AFK manifest JSON files.",
-    usage: "afk manifests configure [options]",
+    usage: "afk configure [options]",
     options: [
       "--local                          Write to ./afk/manifests for a defaults repo",
       "--from-current                   Start from existing manifests when present",
       "--dry-run                        Preview generated files without writing",
     ],
     examples: [
-      "afk manifests configure",
-      "afk manifests configure --local",
-      "afk manifests configure --from-current",
+      "afk configure",
+      "afk configure --local",
+      "afk configure --from-current",
+    ],
+  },
+  "manifests configure": {
+    title: "AFK configure",
+    summary: "Alias for afk configure.",
+    usage: "afk configure [options]",
+    options: [
+      "--local                          Write to ./afk/manifests for a defaults repo",
+      "--from-current                   Start from existing manifests when present",
+      "--dry-run                        Preview generated files without writing",
+    ],
+    examples: [
+      "afk configure",
+      "afk configure --local",
+      "afk configure --from-current",
+    ],
+  },
+  show: {
+    title: "AFK show",
+    summary: "Show the current local AFK manifest configuration.",
+    usage: "afk show [options]",
+    options: [
+      "--local                          Show ./afk/manifests instead of global manifests",
+      "--rules                          Show rules manifest",
+      "--skills                         Show skills manifest",
+      "--mcp, --mcps                    Show MCP manifest",
+      "--utils                          Show utilities manifest",
+      "--hooks                          Show hooks manifest",
+      "--presets                        Show presets manifest",
+    ],
+    examples: [
+      "afk show",
+      "afk show --local",
+      "afk show --rules --skills",
+      "afk show --mcp --utils",
     ],
   },
   "manifests show": {
-    title: "AFK manifests show",
-    summary: "Show the current local AFK manifest configuration.",
-    usage: "afk manifests show [options]",
+    title: "AFK show",
+    summary: "Alias for afk show.",
+    usage: "afk show [options]",
     options: [
       "--local                          Show ./afk/manifests instead of global manifests",
       "--rules                          Show rules manifest",
@@ -337,16 +372,16 @@ const commandHelps: Record<string, CommandHelp> = {
       "--presets                        Show presets manifest",
     ],
     examples: [
-      "afk manifests show",
-      "afk manifests show --local",
-      "afk manifests show --rules --skills",
-      "afk manifest show --mcp --utils",
+      "afk show",
+      "afk show --local",
+      "afk show --rules --skills",
+      "afk show --mcp --utils",
     ],
   },
   "manifest show": {
-    title: "AFK manifest show",
-    summary: "Alias for afk manifests show.",
-    usage: "afk manifest show [options]",
+    title: "AFK show",
+    summary: "Alias for afk show.",
+    usage: "afk show [options]",
     options: [
       "--local                          Show ./afk/manifests instead of global manifests",
       "--rules                          Show rules manifest",
@@ -357,9 +392,9 @@ const commandHelps: Record<string, CommandHelp> = {
       "--presets                        Show presets manifest",
     ],
     examples: [
-      "afk manifest show",
-      "afk manifest show --local",
-      "afk manifest show --rules --skills",
+      "afk show",
+      "afk show --local",
+      "afk show --rules --skills",
     ],
   },
 };
@@ -407,12 +442,12 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (key === "manifests configure" && arg === "--from-current") {
+    if (isManifestConfigureCommand(key) && arg === "--from-current") {
       manifestConfigureFromCurrent = true;
       continue;
     }
 
-    if ((key === "manifests show" || key === "manifest show") && manifestCategoryFlag(arg)) {
+    if (isManifestShowCommand(key) && manifestCategoryFlag(arg)) {
       const category = manifestCategoryFlag(arg);
       if (category && !selectedManifestCategories.includes(category)) {
         selectedManifestCategories.push(category);
@@ -436,7 +471,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         continue;
       }
 
-      if (key === "manifests configure") {
+      if (isManifestConfigureCommand(key)) {
         manifestConfigureLocal = true;
         continue;
       }
@@ -604,6 +639,14 @@ function isSkillsCommand(key: string): boolean {
   return key === "setup skills" || key === "setup skills install";
 }
 
+function isManifestConfigureCommand(key: string): boolean {
+  return key === "configure" || key === "manifests configure";
+}
+
+function isManifestShowCommand(key: string): boolean {
+  return key === "show" || key === "manifests show" || key === "manifest show";
+}
+
 function isSkillAgentId(value: string): value is SkillAgentId {
   return value === "claude-code" || value === "kiro-cli" || value === "kilo" || value === "pi" || value === "droid";
 }
@@ -653,8 +696,8 @@ Usage:
   afk setup mcps [options]
   afk setup utils [options]
   afk setup hooks [options]
-  afk manifests configure [options]
-  afk manifests show [options]
+  afk configure [options]
+  afk show [options]
 
 Run "afk <command> --help" for command-specific options.
 

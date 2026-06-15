@@ -82,7 +82,7 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
   const touched = new Set<ManifestArea>();
 
   resetPromptSteps();
-  runtime.io.stdout("\nAFK manifests configure");
+  runtime.io.stdout("\nAFK configure");
   runtime.io.stdout(`Writing to: ${outputDir}`);
   runtime.io.stdout(renderPromptStep("Manifest editor", "Choose a manifest, make changes, and finish to review the JSON before writing."));
 
