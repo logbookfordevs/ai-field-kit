@@ -26,9 +26,9 @@ In orchestration mode:
 
 - Treat the work as phase-managed. Re-enter Compass after source gathering, user answers, drafts, plans, and execution gates.
 - Use `afk-execution-tracking` as the continuity surface.
-- Use `grill-with-docs` for brownfield work and `grill-me` for greenfield work before implementation planning. Use `afk-brainstorming-facilitator` first only when the target is not clear enough to pressure-test.
+- Use `grill-with-docs` for brownfield work and `grill-me` for greenfield work before PRD/spec work and before implementation planning. Use `afk-brainstorming-facilitator` first only when the target is not clear enough to pressure-test.
 - Use `afk-artifact-workflow` for artifact boundaries, storage, and next-artifact suggestions. Do not treat it as the whole orchestration.
-- Use `spec-driven-development` when no PRD/spec exists or the existing artifact lacks behavior needed for implementation.
+- Use `afk-to-prd-spec` when no PRD/spec exists or the existing artifact lacks behavior needed for implementation.
 - Use `planning-and-task-breakdown` before implementation.
 - Use `afk-code-grill` to grill meaningful product, UX, component, ownership, library, or implementation choices one decision at a time. Pair it with `afk-ui-registry-preferences` when UI primitives, registry components, or headless foundations are part of the decision.
 - At implementation or delegation time, select one or more execution disciplines for each implementation task: `test-driven-development`, `source-driven-development`, or `doubt-driven-development`. Multiple disciplines can apply; `afk-execution-tracking` records state and evidence, but does not replace TDD, source verification, or doubt checks.
@@ -73,7 +73,7 @@ Task arrives
 +-- Writing, rewriting, or reviewing human-facing docs? -> afk-doc-craft
 +-- PRD/spec/RFC/plan/tracking/handoff artifacts? -> afk-artifact-workflow
 +-- Need reviewed facts + native /goal with Markdown tracking? -> Goal Package Mode
-+-- Need a formal PRD/spec before code? ----------> spec-driven-development
++-- Need an agent-ready PRD/spec before code? ---> afk-to-prd-spec
 +-- Have a spec and need tasks? ------------------> planning-and-task-breakdown
 +-- Need code choices or implementation trade-offs grilled? -> afk-code-grill
 +-- Need docs/domain/terminology pressure? ------> grill-with-docs
@@ -121,9 +121,9 @@ Re-check routing when the work changes phase. Do not keep using the previous ski
 
 Common phase moves:
 
-- Source gathering -> PRD/spec: use `afk-artifact-workflow` for artifact boundaries, then `spec-driven-development` when a formal PRD/spec is being created before code.
+- Source gathering -> PRD/spec: use `afk-artifact-workflow` for artifact boundaries, then `grill-me` for greenfield work or `grill-with-docs` for brownfield work, then `afk-to-prd-spec` when an agent-ready PRD/spec is being created before code.
 - PRD/spec draft -> implementation plan: use `planning-and-task-breakdown` when the spec is ready to become tasks.
-- Draft or plan -> domain pressure: use `grill-with-docs` when terminology, domain boundaries, `CONTEXT.md`, ADRs, or code/docs consistency could change the artifact. Use it before drafting the PRD/spec only when that risk already exists; otherwise draft first, then grill before implementation planning.
+- Draft or plan -> domain pressure: use `grill-with-docs` when terminology, domain boundaries, `CONTEXT.md`, ADRs, or code/docs consistency could change the artifact. In AFK Orchestration, run the relevant grill pass before PRD/spec work and before implementation planning.
 - Plan or design -> decision-tree pressure: use `grill-me` when the user asks to be grilled, wants relentless questioning, or needs a plan/design stress-tested through one-question-at-a-time interrogation.
 - Open product, UX, component, ownership, library, or implementation choices -> use `afk-code-grill` as a Grill-style decision pass, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
 - Orchestration -> implementation: `afk-execution-tracking` is active, and each implementation task gets at least one execution discipline: `test-driven-development`, `source-driven-development`, or `doubt-driven-development`.

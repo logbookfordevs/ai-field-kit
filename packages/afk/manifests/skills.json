@@ -51,6 +51,18 @@
             "autoInvocation": true
         },
         {
+            "id": "afk-to-prd-spec",
+            "label": "AFK / To PRD Spec",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-to-prd-spec",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
             "id": "afk-deep-interview",
             "label": "AFK / Deep Interview",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -241,18 +253,6 @@
             ],
             "default": false,
             "autoInvocation": false
-        },
-        {
-            "id": "spec-driven-development",
-            "label": "External / Spec Driven Development",
-            "source": "https://github.com/addyosmani/agent-skills.git",
-            "args": [
-                "--skill",
-                "spec-driven-development",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": true
         },
         {
             "id": "planning-and-task-breakdown",
