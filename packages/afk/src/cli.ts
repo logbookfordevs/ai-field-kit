@@ -1,12 +1,12 @@
 import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
 import { runManifestConfigure } from "./manifest-configure.js";
 import { runManifestShow } from "./manifest-show.js";
+import { selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
+import { packageVersion } from "./update-check.js";
 import type { AgentId, Area, CliOptions, CommandResult, ManifestCategory, Runtime, SetupScope, SkillAgentId } from "./types.js";
 
 export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
@@ -22,7 +22,7 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
     return await runCliWithRuntime(argv, env, runtime);
   } catch (error) {
     if (isPromptExit(error)) {
-      runtime.io.stdout("\nAFK setup cancelled. Nothing else was changed from this prompt.");
+      runtime.io.stdout("\nAFK prompt cancelled. Nothing else was changed from this prompt.");
       return 130;
     }
 
@@ -31,6 +31,11 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
 }
 
 async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
+  if (shouldOpenCompassLobby(argv, env)) {
+    const route = await selectCompassLobbyRoute(runtime);
+    return runCliWithRuntime(route, env, runtime);
+  }
+
   const parsed = parseArgs(argv, env);
 
   if (parsed.version) {
@@ -113,21 +118,23 @@ type CommandHelp = {
 
 const setupOptions = {
   dryRun: "--dry-run                         Preview changes without applying them",
+  verbose: "--verbose                         Show delegated installer output",
   yes: "--yes, -y                         Accept defaults and skip prompts",
   scope: "--scope global|project            Choose machine-wide or current-project setup",
   localScope: "--local                           Alias for --scope project",
   localManifest: "--local                           Refresh ./afk/manifests instead of global manifests",
-  agent: "--agent <agent>                   Limit agent targets; repeatable",
-  source: "--source github|local             Load default manifests from GitHub or this checkout",
+  agent: "--agent <agent>                   Override detected targets; repeatable",
+  source: "--source <source>                 Use a setup source for this run only",
   ref: "--ref <git-ref>                   Git ref for default AFK manifest URLs",
   initOnly: "--init-only                       Create/update local manifests only, then exit",
   empty: "--empty                           Create empty manifests with --init-only or refresh",
-  defaultsSource: "--defaults-source <source>        Use and remember a custom remote or local defaults source",
-  includeExternal: "--include-external                Include external recommended skills when installing skills",
+  defaultSource: "--default-source <source>         Save a default setup source and exit",
+  allSkills: "--all                            Include all skills when installing skills",
 };
 
 const setupAreaOptions = [
   setupOptions.dryRun,
+  setupOptions.verbose,
   setupOptions.yes,
   setupOptions.scope,
   setupOptions.localScope,
@@ -136,7 +143,7 @@ const setupAreaOptions = [
   setupOptions.ref,
   setupOptions.initOnly,
   setupOptions.empty,
-  setupOptions.defaultsSource,
+  setupOptions.defaultSource,
 ];
 
 const commandHelps: Record<string, CommandHelp> = {
@@ -146,6 +153,7 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk setup [options]",
     options: [
       setupOptions.dryRun,
+      setupOptions.verbose,
       setupOptions.yes,
       setupOptions.scope,
       setupOptions.localScope,
@@ -154,7 +162,8 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.ref,
       setupOptions.initOnly,
       setupOptions.empty,
-      setupOptions.defaultsSource,
+      setupOptions.defaultSource,
+      setupOptions.allSkills,
     ],
     subcommands: [
       "afk setup refresh                 Refresh global or project-local AFK manifests",
@@ -168,9 +177,9 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup",
       "afk setup --dry-run",
       "afk setup --local",
-      "afk setup refresh --defaults-source your-org/dev-kit",
-      "afk setup --defaults-source your-org/dev-kit",
-      "afk setup --defaults-source ./afk/manifests",
+      "afk setup --source your-org/dev-kit",
+      "afk setup --default-source your-org/dev-kit",
+      "afk setup --default-source ./afk/manifests",
     ],
   },
   "setup refresh": {
@@ -183,12 +192,12 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.source,
       setupOptions.ref,
       setupOptions.empty,
-      setupOptions.defaultsSource,
+      setupOptions.defaultSource,
     ],
     examples: [
       "afk setup refresh",
       "afk setup refresh --local",
-      "afk setup refresh --defaults-source your-org/dev-kit",
+      "afk setup refresh --source your-org/dev-kit",
       "afk setup refresh --source local",
     ],
   },
@@ -242,7 +251,7 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk setup skills [options]",
     options: [
       ...setupAreaOptions,
-      setupOptions.includeExternal,
+      setupOptions.allSkills,
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -256,7 +265,7 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk setup skills [options]",
     options: [
       ...setupAreaOptions,
-      setupOptions.includeExternal,
+      setupOptions.allSkills,
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -406,16 +415,19 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const agents: AgentId[] = [];
   const selectedSkillAgentIds: SkillAgentId[] = [];
   let dryRun = false;
+  let verbose = false;
   let yes = false;
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
-  let includeExternal = false;
+  let allSkills = false;
   let rulesRef = "main";
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
   let empty = false;
   const refreshDefaults = key === "setup refresh";
   let defaultsSource = "";
+  let defaultsSourceExplicit = false;
+  let defaultSourceUpdate = "";
   let manifestLocal = false;
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
@@ -460,6 +472,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (arg === "--verbose") {
+      verbose = true;
+      continue;
+    }
+
     if (arg === "--yes" || arg === "-y") {
       yes = true;
       continue;
@@ -492,8 +509,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (arg === "--include-external") {
-      includeExternal = true;
+    if (arg === "--all") {
+      allSkills = true;
       continue;
     }
 
@@ -507,12 +524,13 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (arg === "--defaults-source") {
+    if (arg === "--default-source" || arg === "--defaults-source") {
       const value = args[index + 1];
-      if (!value) {
-        return { help: false, kind: "error", error: "Missing --defaults-source value" };
+      const trimmedValue = value?.trim();
+      if (!trimmedValue) {
+        return { help: false, kind: "error", error: `Missing ${arg} value` };
       }
-      defaultsSource = value;
+      defaultSourceUpdate = trimmedValue;
       index += 1;
       continue;
     }
@@ -529,10 +547,18 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--source") {
       const value = args[index + 1];
-      if (value !== "github" && value !== "local") {
-        return { help: false, kind: "error", error: `Invalid --source value: ${value ?? "(missing)"}` };
+      const trimmedValue = value?.trim();
+      if (!trimmedValue) {
+        return { help: false, kind: "error", error: "Missing --source value" };
       }
-      rulesSource = value;
+      defaultsSource = trimmedValue;
+      defaultsSourceExplicit = true;
+      if (trimmedValue === "github" || trimmedValue === "local") {
+        rulesSource = trimmedValue;
+        if (trimmedValue === "github") {
+          defaultsSource = "";
+        }
+      }
       index += 1;
       continue;
     }
@@ -577,8 +603,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       setupScope,
       scopeExplicit,
       dryRun,
+      verbose,
       yes,
-      includeExternal,
+      allSkills,
       selectedSkillIds: [],
       selectedSkillAgentIds,
       selectedMcpIds: [],
@@ -590,6 +617,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       empty,
       refreshDefaults,
       defaultsSource,
+      defaultsSourceExplicit,
+      defaultSourceUpdate,
       manifestLocal,
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
@@ -664,14 +693,16 @@ function readOptionValues(args: string[], startIndex: number): string[] {
   return values;
 }
 
-function spawnCommand(command: string, args: string[], cwd?: string): Promise<CommandResult> {
+function spawnCommand(command: string, args: string[], cwd?: string, behavior: { verbose: boolean } = { verbose: false }): Promise<CommandResult> {
   return new Promise((resolve) => {
     const child = spawn(command, args, {
       cwd,
-      stdio: "inherit",
+      stdio: behavior.verbose ? "inherit" : ["ignore", "pipe", "pipe"],
       shell: false,
     });
 
+    child.stdout?.resume();
+    child.stderr?.resume();
     child.on("close", (code) => resolve({ code: code ?? 1 }));
     child.on("error", () => resolve({ code: 1 }));
   });
@@ -711,12 +742,6 @@ Aliases:
 
 function commandKey(commandPath: string[] = []): string {
   return commandPath.join(" ");
-}
-
-function packageVersion(): string {
-  const packageJsonPath = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: unknown };
-  return typeof packageJson.version === "string" ? packageJson.version : "unknown";
 }
 
 function manifestCategoryFlag(arg: string): ManifestCategory | null {

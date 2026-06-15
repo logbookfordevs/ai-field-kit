@@ -281,6 +281,59 @@ test("runManifestConfigureWithPrompts edits project manifests for local configur
   assert.ok(output.join("\n").includes("Manifest preview"));
 });
 
+test("runManifestConfigureWithPrompts loads default hooks from the configured defaults source", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(String(input));
+    return new Response(
+      JSON.stringify({
+        version: 1,
+        items: [
+          {
+            id: "remote-hook",
+            label: "Remote Hook",
+            description: "Loaded from defaults source.",
+            source: "https://example.com/hooks/remote-hook.js",
+            command: "node",
+            args: ["${HOOK_FILE}"],
+            events: ["stop"],
+            agents: ["codex"],
+            default: true,
+          },
+        ],
+      }),
+      { status: 200 },
+    );
+  };
+
+  try {
+    const output: string[] = [];
+    const code = await runManifestConfigureWithPrompts(
+      { io: captureIo(output), spawn: async () => ({ code: 0 }) },
+      cliOptions({
+        dryRun: true,
+        rulesSource: "github",
+        defaultsSource: "acme/dev-kit",
+        defaultsSourceExplicit: true,
+      }),
+      scriptedPrompts({
+        areas: ["hooks", "finish"],
+        actions: ["add", "back"],
+        confirms: [true],
+      }),
+    );
+
+    const text = output.join("\n");
+    assert.equal(code, 0);
+    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/hooks.json"));
+    assert.ok(text.includes("remote-hook"));
+    assert.ok(!text.includes("afk-execution-tracking-stop-check"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("runManifestConfigureWithPrompts shows boolean state in toggle choices", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
   const manifestDir = join(homeDir, ".agents", "afk", "manifests");
@@ -365,8 +418,9 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
     setupScope: "global",
     scopeExplicit: false,
     dryRun: false,
+    verbose: false,
     yes: false,
-    includeExternal: false,
+    allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
     selectedMcpIds: [],
@@ -378,6 +432,8 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
     empty: false,
     refreshDefaults: false,
     defaultsSource: "",
+    defaultsSourceExplicit: false,
+    defaultSourceUpdate: "",
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,

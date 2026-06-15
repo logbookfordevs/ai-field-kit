@@ -11,13 +11,13 @@ Use this skill to route a focused prompt to another locally installed AI CLI and
 
 This is inspired by `omc ask`, but it is standalone AFK behavior. Do not require OMC, Claude-specific paths, or framework-specific wrappers.
 
-## Usage
+## Invocation
 
 ```text
 Ask <provider> <question or task>
 ```
 
-Supported providers and routes:
+Providers:
 
 - `claude` (Claude-family model through Kiro first, then OpenCode Zen)
 - `kiro`
@@ -34,53 +34,9 @@ Use local non-interactive CLI execution in read-only advisor mode. Do not switch
 
 Never use Claude Code for this skill. Do not run `claude -p`, `claude --print`, or other `claude` CLI advisor commands. Claude Code print mode is API-billed and is not recommended for AFK Ask.
 
-Check availability with:
+Use the provider command map in [references/providers.md](references/providers.md), and inspect the installed CLI help/model list when a requested model is not the default.
 
-```bash
-kiro-cli chat --list-models --format json-pretty
-opencode models
-codex --version
-agy --help
-```
-
-Use the matching non-interactive command:
-
-```bash
-kiro-cli chat --no-interactive --model claude-sonnet-4.5 --wrap never "{{PROMPT}}"
-opencode run -m opencode/claude-sonnet-4-6 "{{PROMPT}}"
-codex exec --sandbox read-only --ask-for-approval never "{{PROMPT}}"
-agy --sandbox --print "{{PROMPT}}"
-```
-
-For `gemini`, use the same `agy --sandbox --print "{{PROMPT}}"` command. Do not call the deprecated `gemini` binary.
-
-### Claude And Model Routing
-
-When the user asks for `claude`, prefer Kiro with Sonnet 4.5:
-
-```bash
-kiro-cli chat --no-interactive --model claude-sonnet-4.5 --wrap never "{{PROMPT}}"
-```
-
-If Kiro is unavailable, or Kiro does not list the requested model, try OpenCode Zen:
-
-```bash
-opencode run -m opencode/claude-sonnet-4-6 "{{PROMPT}}"
-```
-
-If the user specifies another model, honor that model when one of the available routers lists a matching model. Examples:
-
-- `claude sonnet`, `sonnet 4.5` -> prefer `claude-sonnet-4.5` in Kiro.
-- `claude haiku`, `haiku 4.5` -> prefer `claude-haiku-4.5` in Kiro.
-- `deepseek` -> prefer the matching Kiro or OpenCode model, such as `deepseek-3.2`, when listed.
-- `minimax` -> prefer a listed Minimax model, such as `minimax-m2.5`.
-- `glm` -> prefer a listed GLM model, such as `glm-5`.
-- `qwen` or `qwen coder` -> prefer a listed Qwen model, such as `qwen3-coder-next`.
-- `kimi` or `kimik2` -> prefer a listed Kimi model when either router exposes one.
-
-Do not invent model IDs. Inspect `kiro-cli chat --list-models --format json-pretty` and/or `opencode models` before choosing a non-default model. If neither router exposes the requested model, do not silently substitute another model; tell the user the requested model is unavailable through the local routers and recommend setting up Kiro or OpenCode Zen with that model.
-
-When neither Kiro nor OpenCode Zen can provide a Claude-family model because of missing auth, missing provider setup, payment limits, or model unavailability, stop and explain that Claude Code is intentionally not used because of API-billed `claude -p` limitations. Recommend setting up `kiro-cli` or OpenCode Zen.
+For Claude-family requests, prefer Kiro, then OpenCode Zen. If neither can provide the requested Claude-family model because of missing auth, provider setup, payment limits, or model availability, stop and explain that Claude Code is intentionally not used for AFK Ask.
 
 If the installed CLI has different flags, inspect `--help` and adapt while keeping the same principle: local, non-interactive, transparent, and read-only.
 
@@ -101,9 +57,9 @@ Do not dump unrelated repo context into the advisor. Keep the prompt focused eno
 
 After local execution, save a markdown artifact.
 
-Follow the repo or user artifact convention. If none exists, follow the AFK default from `afk-workflow`.
+Follow the repo or user artifact convention. If none exists, follow the AFK default from `afk-artifact-workflow`.
 
-Minimum artifact sections:
+Minimum artifact sections for substantial asks:
 
 1. Original user task
 2. Provider used
@@ -111,6 +67,8 @@ Minimum artifact sections:
 4. Raw advisor output
 5. Concise summary
 6. Human review notes / decision
+
+For tiny asks, a compact artifact is acceptable if it still preserves the prompt, provider, raw output, and decision.
 
 ## Behavior
 

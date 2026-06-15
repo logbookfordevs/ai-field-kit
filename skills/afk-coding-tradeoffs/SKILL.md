@@ -1,6 +1,6 @@
 ---
 name: "afk-coding-tradeoffs"
-description: "Discuss high-leverage UX and implementation trade-offs inside an already understood scope and capture the outcome as an ADR-style decision record. Use when important local decisions need to be locked before coding, including ADR discussions, interaction behavior, composition strategy, code ownership, library commitments, or information design."
+description: "Discuss high-leverage UX and implementation trade-offs inside an already understood scope and capture the outcome as an ADR-style decision record. Use when important local decisions need to be locked before coding, including code choices moments, implementation decision reviews, ADR discussions, interaction behavior, composition strategy, code ownership, library commitments, information design, or comparing strategies before coding."
 metadata:
   short-description: "Resolve UX and implementation trade-offs before coding and capture the final decisions in an ADR-style artifact."
 ---
@@ -44,40 +44,11 @@ If the scope is still broad or the real problem is not yet clear, another skill 
 
 ## Interaction Style
 
-This skill should feel guided, interactive, and easy to respond to.
+Present unresolved areas as choices, discuss one area at a time, preserve freeform escape hatches, and show what remains.
 
-Prefer:
-- offering multiple concrete choices instead of only open-ended questions
-- including a freeform option so the user can override the menu
-- checking whether to continue, go deeper, move on, or stop
-- making progress visible as decisions accumulate
-- using lightweight visual formatting, including simple ASCII-style layouts, when that makes options easier to scan
-- using the host runtime's interactive question UI when it exists, with plain-text menus as fallback only
+Use the host runtime's interactive question UI when available. Use plain-text menus only when the environment requires it or the question genuinely needs an open written answer.
 
-The interaction should feel like a thoughtful engineering and UX trade-off discussion, not interrogation.
-
-Important behavior to preserve:
-- present unresolved areas as choices, not just prompts
-- allow the user to choose, skip, go deeper, or stop
-- keep the discussion moving in rounds
-- show what remains unvisited so the user knows the shape of the session
-- use simple visual layouts when they improve scanability
-- discuss one trade-off area at a time by default
-- avoid turning the session into a homework-style survey or matrix unless the user explicitly asks for a batched pass
-
-What this skill is intentionally not:
-- not broad ideation
-- not macro architecture design
-- not a power-user bulk questionnaire
-- not a full implementation plan
-- not a worksheet that asks the user to answer every gray area in one reply
-
-The intended feel is:
-- collaborative
-- paced
-- engineering-minded
-- product-aware
-- easy to answer in the moment
+For pacing details and menu examples, see [interaction-flow.md](references/interaction-flow.md).
 
 ## Strong Dependency: Truss
 
@@ -159,24 +130,7 @@ Do not ask about:
 
 ## Interaction Mechanism
 
-When the host environment provides an interactive question mechanism, use it by default for:
-- choosing the next trade-off area to discuss
-- option-based decision questions inside a selected area
-- checkpoints such as go deeper / move on / stop
-
-Examples of acceptable host-native mechanisms:
-- Codex CLI: use `request_user_input` for structured multiple-choice questions
-- Claude Code: use `AskUserQuestion` for equivalent structured prompts
-- equivalent runtime-native interactive question tools in other hosts
-
-Use plain-text numbered menus only when:
-- no interactive question mechanism is available
-- the environment is explicitly text-only
-- the user has already switched into a freeform explanation and forcing a menu would be awkward
-- the question genuinely needs an open written answer instead of a menu choice
-
-Do not silently drift from interactive prompts into plain-text menus just because one answer was freeform.
-After a freeform reply, return to the interactive question mechanism for the next option-based choice when the tool is available.
+Use the host runtime's interactive question mechanism by default for area selection, option decisions, and continue/deepen/stop checkpoints. After freeform replies, return to the interactive mechanism for the next option-based choice when available.
 
 ## Workflow
 
@@ -227,53 +181,9 @@ Good trade-off areas are concrete and relevant to the current slice of work, for
 
 Avoid generic buckets if the current scope suggests more specific questions.
 
-This step is for identifying candidate areas, not fully expanding them yet.
-Do not attach full option trees to every area at this stage.
-The purpose here is to help the user choose what to discuss first.
+This step identifies candidate areas, not full option trees. Present a compact picker, let the user choose one or more areas, and discuss selected areas one by one. If the user says "all", interpret that as "all in sequence", not "all at once".
 
-When presenting trade-off areas, prefer a compact initial picker that lets the user choose one or more areas to cover without turning the session into a worksheet.
-
-Example initial picker:
-
-```text
-Coding Trade-off Areas
-(Select one or more. We will discuss them one by one.)
-
-[ ] Interaction behavior
-    Should this flow be modal, drawer-based, inline, or something else?
-
-[ ] Component ownership
-    Should this behavior live in one shared controller or stay composable per item?
-
-[ ] Data / state strategy
-    What actually needs to be reactive, and what can stay outside render state?
-
-[ ] Library commitment
-    Do we want a library here, and if so, which style of usage keeps the code clearer?
-
-[ ] Custom trade-off area: ________________________
-[ ] Stop discussion and create context with current decisions
-```
-
-Preferred behavior:
-- if the user adds a custom area, include it in the selected set before discussion starts
-- if multiple areas are selected, discuss them one by one in sequence
-- if only one area is selected, start there directly
-
-You may recommend one area to start with only when the best next topic is genuinely obvious and there is a concrete reason to say so.
-If you recommend a starting area:
-- keep it to one short sentence
-- tie it to an actual dependency, risk, or sequencing reason
-- do not present a broad opinionated analysis before the user chooses
-
-If there is no strong reason, present the areas neutrally and let the user choose.
-
-When an interactive question tool exists, present these candidate areas through that tool by default instead of plain text.
-
-Important interpretation rule:
-- if the user says "discuss all", "cover all", or "go through all of them", interpret that as "discuss all areas in sequence"
-- do not interpret that as "ask about all areas in one message"
-- only switch to a true batched worksheet when the user explicitly asks for all-at-once, one-message, matrix, worksheet, or single-reply mode
+Recommend a starting area only when there is a concrete sequencing, dependency, or risk reason. Otherwise present the areas neutrally.
 
 ### 5. Discuss selected trade-off areas with Truss
 
@@ -287,9 +197,6 @@ This is the core pacing rule:
 - identify several trade-off areas
 - expand only one area at a time
 - summarize that area before moving on
-
-Do not expand all areas in parallel unless the user explicitly asks for a matrix, worksheet, batch pass, or all-at-once comparison.
-Do not pre-solve the whole session before the first area is chosen.
 
 Suggested probing pattern:
 - name the trade-off clearly
@@ -321,148 +228,9 @@ Prefer concise, conditional recommendations such as:
 
 When the chosen direction depends on an external library, add the follow-up check immediately after the recommendation instead of leaving it implicit.
 
-Do not present a full decision survey across all unresolved areas unless the user explicitly asks for a matrix, scorecard, or all-at-once comparison.
+Do not present a full decision survey across all unresolved areas unless the user explicitly asks for a matrix, scorecard, worksheet, batch pass, or all-at-once comparison.
 
-If the user chooses "all", the correct behavior is:
-1. acknowledge that all areas will be covered
-2. pick the first area or ask which one to start with
-3. discuss that one area only
-4. checkpoint
-5. continue to the next remaining area
-
-The incorrect behavior is:
-- expanding every area immediately
-- asking for compact coded answers like `1a, 2b, 3c`
-- turning "all" into "all at once"
-
-Default rhythm:
-- Start with up to 4 targeted questions for the selected area.
-- Then pause and offer a checkpoint.
-- If the user wants to go deeper, continue with another short round.
-- If the user wants to move on, show the remaining unvisited areas.
-
-Good question shape for a selected area:
-- concrete
-- contrastive when helpful
-- easy to answer with a choice or short freeform reply
-- informed by prior context or codebase reality when available
-- high leverage according to the Interesting Trade-off Filter
-
-Bad question shape:
-- long survey pages
-- asking for answers to multiple unrelated areas at once
-- dumping every option for every unresolved topic before the user has chosen a direction
-- giving your opinion on every gray area before the user has selected one
-- bikeshedding style or syntax
-- asking about choices already settled by conventions
-
-When helpful, present question options like this:
-
-```text
-Choose the closest fit:
-
-1. Compact and fast
-   Fewer steps, lighter UI, minimal guidance
-
-2. Guided and explicit
-   Clear progress, more prompts, safer defaults
-
-3. Power-user oriented
-   More flexibility, more configuration, less hand-holding
-
-f. None of these - I want something different
-x. Stop here for now
-```
-
-After each area, use a checkpoint. Preferred pattern:
-
-```text
-Current status: Interaction model is mostly clear.
-
-What next?
-1. Go one level deeper on this area
-2. Move to the next trade-off area
-3. Capture this and create the context artifact
-f. Something else
-x. Stop
-```
-
-If the user wants to continue, deepen the same area with sharper questions. If the user wants to move on, carry forward the decisions already made.
-
-When the current step is still an option-based choice, return to the interactive question UI if available.
-Do not keep the rest of the session in plain text unless the environment requires it.
-
-When moving on, prefer showing the remaining areas explicitly. For example:
-
-```text
-Remaining areas:
-- Error behavior
-- State strategy
-- Library usage style
-```
-
-Good default shape:
-1. show the candidate gray areas
-2. choose one
-3. discuss that one area only
-4. summarize what is now decided
-5. ask whether to go deeper, move to the next area, or stop
-
-Avoid this shape by default:
-- defining all decision areas in detail
-- providing options for all of them at once
-- asking the user to respond with a full numbered matrix
-
-Bad example:
-
-```text
-1. Runtime: pick 1/2/3
-2. Visual style: pick 1/2/3
-3. Architecture: pick 1/2/3
-4. Rewrite scope: pick 1/2/3
-Reply like 1-2, 2-1, 3-3, 4-2
-```
-
-That is a batched worksheet, not the default AFK discussion experience.
-
-Better example:
-
-```text
-Coding Trade-off Areas
-(Select one or more. We will cover them in sequence.)
-
-[ ] Runtime and pacing
-[ ] Visual treatment of V1
-[ ] Rewrite scope
-[ ] Custom trade-off area: ________________________
-[ ] Stop and capture current decisions
-```
-
-Then, after the user picks one or more:
-
-```text
-Selected:
-- Runtime and pacing
-- Rewrite scope
-
-Let's talk about runtime and pacing first.
-
-Choose the closest fit:
-1. Full-length version
-2. Tightened but still legible
-3. Condensed product-demo cut
-f. Something else
-x. Stop here
-```
-
-Bad recommendation style:
-- "I recommend we start with X" with no concrete reason
-- "Best next area" when the user has not asked for steering
-- giving recommendations for several areas before any one is selected
-
-Better recommendation style:
-- "If you want, we can start with runtime because it affects the pacing of every later scene."
-- or no recommendation at all when the areas are equally discussable
+For picker shapes, checkpoint prompts, and good/bad interaction examples, see [interaction-flow.md](references/interaction-flow.md).
 
 ### 6. Guard against scope creep
 
@@ -477,37 +245,16 @@ This skill should sharpen the current scope, not quietly expand it.
 
 Produce a decision document that is useful for downstream implementation and future chats.
 
-When writing a file, follow the repo or user artifact convention. If none exists, follow the AFK default from `afk-workflow`.
-
-Use sequential ADR filenames under `docs/<task-slug>/decisions/`, such as `0001-shared-modal-ownership.adr.md`. Scan existing files in that folder and increment the highest number.
+When writing a file, follow the repo or user artifact convention. If none exists, follow the AFK default from `afk-artifact-workflow`.
 
 This artifact is mandatory, even if the conversation was short.
-
-Keep ADRs focused. A decision deserves its own ADR when it is:
-- hard enough to reverse that changing it later would matter
-- surprising without context, so a future reader may wonder why it was done this way
-- the result of a real trade-off with plausible alternatives
-
-If the discussion resolves several unrelated decisions, create one ADR per meaningful decision area. Update an existing ADR only when the new information belongs to the same decision and does not reverse it. If an accepted decision changes direction, create a new ADR that supersedes the old one instead of rewriting history.
-
-Recommended sections:
-- `Status`
-- `Context`
-- `Decision`
-- `Gray Areas Discussed`
-- `Options Considered`
-- `Truss Evaluation`
-- `Trade-offs Accepted`
-- `Consequences`
-- `Open Questions`
-- `Next Step`
-
-Adapt section names to the repository’s conventions when needed.
 
 When the discussion was interactive, preserve that value in the artifact:
 - record the final decisions, not every conversational branch
 - include notable rejected options only when they explain an important boundary
 - reflect where the user explicitly chose one direction over another
+
+For ADR filename, split/update, and section guidance, see [decision-artifact.md](references/decision-artifact.md).
 
 ## Output Quality Bar
 
@@ -522,11 +269,10 @@ It should:
 - preserve unresolved questions where certainty is not yet possible
 - make the next step obvious
 
-The discussion itself should also feel high quality:
+The discussion should also:
 - the user can usually respond by choosing from clear options
 - freeform responses remain welcome at every stage
 - the skill offers natural opportunities to stop, continue, or deepen
-- the skill feels thoughtful and creative without becoming theatrical or noisy
 - the user can tell what has been decided and what still remains
 
 ## Non-Goals
@@ -539,11 +285,3 @@ This skill is not for:
 - unconstrained product brainstorming
 
 Those may follow after the context artifact is complete.
-
-## Suggested Next Skills
-
-These are suggestions, not required steps:
-- `afk-advanced-elicitation` if the decision artifact needs a stronger refinement pass
-- `afk-doc-craft` if the decision artifact needs to become cleaner, more readable, or more user-facing
-- `afk-note` if the most important decisions should also be preserved in lightweight durable memory
-*** End of File

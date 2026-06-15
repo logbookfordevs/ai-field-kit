@@ -1,0 +1,157 @@
+{
+  "stage": "interview",
+  "title": "Auto-detect AFK setup agent targets",
+  "goalSlug": "auto-detect-setup-agents",
+  "questions": [
+    {
+      "id": "default_behavior",
+      "prompt": "What should AFK do by default when a setup command needs agent targets?",
+      "description": "This decides whether detection replaces repeated agent prompts or only narrows their options.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Auto-detect installed compatible agent surfaces and use those detected targets by default, showing the detected targets once in the setup summary.",
+      "recommendedOptionIds": ["detect_use"],
+      "options": [
+        {
+          "id": "detect_use",
+          "label": "Detect and use"
+        },
+        {
+          "id": "detect_preselect",
+          "label": "Detect and preselect"
+        },
+        {
+          "id": "ask_filtered",
+          "label": "Ask filtered prompt"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "confirmation_escape_hatch",
+      "prompt": "How much interactive confirmation should remain after detection?",
+      "description": "The goal is to reduce repeated prompts while keeping setup behavior understandable.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Do not ask a separate agent-selection question in the normal path. Show detected targets in the final plan/summary and keep explicit CLI overrides such as --agent for manual control.",
+      "recommendedOptionIds": ["summary_only"],
+      "options": [
+        {
+          "id": "summary_only",
+          "label": "Summary only"
+        },
+        {
+          "id": "edit_once",
+          "label": "Edit once"
+        },
+        {
+          "id": "always_confirm",
+          "label": "Always confirm"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "surface_scope",
+      "prompt": "Which setup surfaces should use detection for target selection?",
+      "description": "Rules, MCPs, hooks, utilities, and skill-specific installs have slightly different target models.",
+      "answerMode": "multi-custom",
+      "recommendedAnswer": "Use detection for rules, MCPs, hooks, and utilities. Keep universal skills always installed to .agents/skills, and use detection only for additional agent-specific skill providers.",
+      "recommendedOptionIds": ["rules", "mcps", "hooks", "utils", "skill_providers"],
+      "options": [
+        {
+          "id": "rules",
+          "label": "Rules"
+        },
+        {
+          "id": "mcps",
+          "label": "MCPs"
+        },
+        {
+          "id": "hooks",
+          "label": "Hooks"
+        },
+        {
+          "id": "utils",
+          "label": "Utilities"
+        },
+        {
+          "id": "skill_providers",
+          "label": "Skill providers"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "missing_targets",
+      "prompt": "What should happen when no compatible agent target is detected for a selected setup area?",
+      "description": "This affects first-time users, machines with unusual config paths, and noninteractive setup.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Skip that target-dependent area with a clear note explaining that no compatible agent config was detected, while still allowing explicit --agent overrides.",
+      "recommendedOptionIds": ["skip_note"],
+      "options": [
+        {
+          "id": "skip_note",
+          "label": "Skip with note"
+        },
+        {
+          "id": "ask_manual",
+          "label": "Ask manually"
+        },
+        {
+          "id": "use_current_defaults",
+          "label": "Use current defaults"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "detection_confidence",
+      "prompt": "What should count as an installed agent surface?",
+      "description": "A broad directory check is lower friction but may hit stale residue; a config-file check is safer but may miss valid installs.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Use conservative config-file or known directory checks per agent, and keep the detection rules centralized so each supported agent has explicit evidence paths.",
+      "recommendedOptionIds": ["conservative"],
+      "options": [
+        {
+          "id": "conservative",
+          "label": "Conservative evidence"
+        },
+        {
+          "id": "broad_dirs",
+          "label": "Broad directories"
+        },
+        {
+          "id": "hybrid",
+          "label": "Hybrid confidence"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "success",
+      "prompt": "What should success look like for this change?",
+      "description": "This will drive facts and verification later.",
+      "answerMode": "multi-custom",
+      "recommendedAnswer": "Setup no longer asks repeated agent target questions in the default interactive flow; dry-run output shows detected targets; --agent still narrows or overrides targets; tests cover detected, missing, and explicit-target paths.",
+      "recommendedOptionIds": ["fewer_prompts", "visible_plan", "override", "tests"],
+      "options": [
+        {
+          "id": "fewer_prompts",
+          "label": "Fewer prompts"
+        },
+        {
+          "id": "visible_plan",
+          "label": "Visible plan"
+        },
+        {
+          "id": "override",
+          "label": "CLI override"
+        },
+        {
+          "id": "tests",
+          "label": "Tests"
+        }
+      ],
+      "required": true
+    }
+  ]
+}

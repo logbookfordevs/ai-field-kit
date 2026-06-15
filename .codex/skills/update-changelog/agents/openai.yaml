@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update Changelog"
+  short_description: "Keep Yggtree changelog release-ready"
+  default_prompt: "Use $update-changelog to add or clean a product-facing changelog entry."

@@ -55,6 +55,36 @@ test("planHooksSync installs hook source and merges Codex Stop hook into existin
   assert.match(readFileSync(join(homeDir, ".codex", "hooks", "afk-execution-tracking-stop-check.js"), "utf8"), /Implementation files changed/);
 });
 
+test("planHooksSync installs the TypeScript typecheck hook with a matching status message", async () => {
+  const homeDir = prepareHome({
+    id: "afk-typescript-typecheck-stop-check",
+    label: "AFK / TypeScript Typecheck Stop Check",
+    source: "hooks/afk-typescript-typecheck-stop-check.js",
+  });
+
+  const operations = await planHooksSync({
+    agents: ["codex"],
+    homeDir,
+    cwd: "/tmp/project",
+    repoDir: repoRoot,
+    selectedHookIds: ["afk-typescript-typecheck-stop-check"],
+    setupScope: "global",
+  });
+
+  for (const operation of operations) {
+    applyOperation(operation);
+  }
+
+  const next = JSON.parse(readFileSync(join(homeDir, ".codex", "hooks.json"), "utf8")) as {
+    hooks: { Stop: Array<{ matcher: string; hooks: Array<{ command: string; statusMessage: string }> }> };
+  };
+  const hooks = next.hooks.Stop.flatMap((entry) => entry.hooks);
+  const typecheckHook = hooks.find((hook) => hook.command.includes("afk-typescript-typecheck-stop-check.js"));
+  assert.ok(typecheckHook);
+  assert.equal(typecheckHook.statusMessage, "AFK / TypeScript Typecheck Stop Check");
+  assert.match(readFileSync(join(homeDir, ".codex", "hooks", "afk-typescript-typecheck-stop-check.js"), "utf8"), /TypeScript files changed/);
+});
+
 test("planHooksSync updates the AFK hook without duplicating Cursor hooks", async () => {
   const homeDir = prepareHome();
   const cursorConfig = join(homeDir, ".cursor", "hooks.json");
@@ -253,7 +283,71 @@ test("execution tracking hook allows implementation changes when active checkpoi
   assert.equal(result.continue, true);
 });
 
-function prepareHome(overrides: Partial<{ id: string; source: string; agents: string[] }> = {}): string {
+test("execution tracking hook allows implementation changes when any active parallel checkpoint changed too", () => {
+  const repo = prepareGitRepo();
+  writeActiveMarker(repo, {
+    active_checkpoints: ["docs/demo/tracking/phase-1.md", "docs/demo/tracking/phase-2.md"],
+  });
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-2.md"), "# Phase 2\nUpdated\n");
+  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
+
+  const result = runTrackingHook(repo);
+
+  assert.equal(result.continue, true);
+});
+
+test("TypeScript typecheck hook allows when no TypeScript files changed", () => {
+  const repo = prepareGitRepo();
+  writeFileSync(join(repo, "README.md"), "# Demo\n");
+
+  const result = runTypecheckHook(repo);
+
+  assert.equal(result.continue, true);
+});
+
+test("TypeScript typecheck hook blocks when TypeScript changed without a typecheck command", () => {
+  const repo = prepareGitRepo();
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
+
+  const result = runTypecheckHook(repo);
+
+  assert.equal(result.decision, "block");
+  assert.match(String(result.reason), /no typecheck command was found/);
+});
+
+test("TypeScript typecheck hook runs nearest package typecheck and caches a passing signature", () => {
+  const repo = prepareGitRepo();
+  const packageDir = join(repo, "packages", "demo");
+  mkdirSync(join(packageDir, "src"), { recursive: true });
+  writeFileSync(join(packageDir, "package.json"), `${JSON.stringify({ scripts: { typecheck: "node check.js" } }, null, 2)}\n`);
+  writeFileSync(join(packageDir, "check.js"), "process.exit(0);\n");
+  writeFileSync(join(packageDir, "src", "index.ts"), "export const value = 1;\n");
+
+  const first = runTypecheckHook(repo);
+  writeFileSync(join(packageDir, "check.js"), "process.exit(1);\n");
+  const second = runTypecheckHook(repo);
+
+  assert.equal(first.continue, true);
+  assert.equal(second.continue, true);
+});
+
+test("TypeScript typecheck hook blocks with command output when typecheck fails", () => {
+  const repo = prepareGitRepo();
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "package.json"), `${JSON.stringify({ scripts: { typecheck: "node check.js" } }, null, 2)}\n`);
+  writeFileSync(join(repo, "check.js"), "console.error('typecheck exploded'); process.exit(1);\n");
+  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
+
+  const result = runTypecheckHook(repo);
+
+  assert.equal(result.decision, "block");
+  assert.match(String(result.reason), /npm run typecheck/);
+  assert.match(String(result.reason), /typecheck exploded/);
+});
+
+function prepareHome(overrides: Partial<{ id: string; label: string; source: string; agents: string[] }> = {}): string {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-hooks-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
@@ -265,7 +359,7 @@ function prepareHome(overrides: Partial<{ id: string; source: string; agents: st
         items: [
           {
             id: overrides.id ?? "afk-execution-tracking-stop-check",
-            label: "AFK / Execution Tracking Stop Check",
+            label: overrides.label ?? "AFK / Execution Tracking Stop Check",
             description: "Nudge the agent once before final handoff.",
             source: overrides.source ?? "hooks/afk-execution-tracking-stop-check.js",
             command: "node",
@@ -291,28 +385,46 @@ function prepareGitRepo(): string {
   return repo;
 }
 
-function writeActiveMarker(repo: string): void {
+function writeActiveMarker(repo: string, markerOverrides: Record<string, unknown> = {}): void {
   mkdirSync(join(repo, ".afk", "execution-tracking"), { recursive: true });
   mkdirSync(join(repo, "docs", "demo", "tracking"), { recursive: true });
   writeFileSync(join(repo, "docs", "demo", "demo.tracking.md"), "# Demo Tracking\n");
   writeFileSync(join(repo, "docs", "demo", "tracking", "phase-1.md"), "# Phase 1\n");
+  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-2.md"), "# Phase 2\n");
   writeFileSync(
     join(repo, ".afk", "execution-tracking", "current.json"),
     `${JSON.stringify(
       {
         tracking: "docs/demo/demo.tracking.md",
-        checkpoint: "docs/demo/tracking/phase-1.md",
+        active_checkpoints: ["docs/demo/tracking/phase-1.md"],
+        ...markerOverrides,
       },
       null,
       2,
     )}\n`,
   );
-  git(repo, ["add", "docs/demo/demo.tracking.md", "docs/demo/tracking/phase-1.md", ".afk/execution-tracking/current.json"]);
+  git(repo, [
+    "add",
+    "docs/demo/demo.tracking.md",
+    "docs/demo/tracking/phase-1.md",
+    "docs/demo/tracking/phase-2.md",
+    ".afk/execution-tracking/current.json",
+  ]);
   git(repo, ["commit", "-m", "add active tracking"]);
 }
 
 function runTrackingHook(cwd: string): { continue?: boolean; decision?: string; reason?: string } {
   const scriptPath = join(repoRoot, "hooks", "afk-execution-tracking-stop-check.js");
+  const output = execFileSync("node", [scriptPath], {
+    cwd,
+    input: JSON.stringify({ cwd }),
+    encoding: "utf8",
+  });
+  return JSON.parse(output) as { continue?: boolean; decision?: string; reason?: string };
+}
+
+function runTypecheckHook(cwd: string): { continue?: boolean; decision?: string; reason?: string } {
+  const scriptPath = join(repoRoot, "hooks", "afk-typescript-typecheck-stop-check.js");
   const output = execFileSync("node", [scriptPath], {
     cwd,
     input: JSON.stringify({ cwd }),

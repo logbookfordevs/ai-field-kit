@@ -61,8 +61,9 @@ const options: CliOptions = {
   setupScope: "global",
   scopeExplicit: true,
   dryRun: true,
+  verbose: false,
   yes: true,
-  includeExternal: false,
+  allSkills: false,
   selectedSkillIds: [],
   selectedSkillAgentIds: [],
   selectedMcpIds: [],
@@ -73,8 +74,10 @@ const options: CliOptions = {
   initOnly: false,
   empty: false,
   refreshDefaults: false,
-    manifestLocal: false,
   defaultsSource: "",
+  defaultsSourceExplicit: false,
+  defaultSourceUpdate: "",
+  manifestLocal: false,
   manifestConfigureLocal: false,
   manifestConfigureFromCurrent: false,
   selectedManifestCategories: [],
@@ -122,6 +125,43 @@ test("buildSkillCommands omits skill filter for whole-source skill entries", () 
   )));
 });
 
+test("buildSkillCommands all installs default and non-default skills", () => {
+  const homeDir = localHomeWithManifest("skills.json", {
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "afk-default",
+        label: "AFK / Default",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "afk-default", "--global"],
+        default: true,
+      },
+      {
+        id: "afk-spline",
+        label: "AFK / Spline",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "afk-spline", "--global"],
+        default: false,
+      },
+      {
+        id: "external-helper",
+        label: "External / Helper",
+        source: "https://github.com/example/external",
+        args: ["--skill", "external-helper", "--global"],
+        default: false,
+      },
+    ],
+  });
+
+  const commands = buildSkillCommands({ ...options, homeDir, allSkills: true });
+  const text = commands.map((command) => command.args.join(" ")).join("\n");
+
+  assert.ok(text.includes("afk-default"));
+  assert.ok(text.includes("afk-spline"));
+  assert.ok(text.includes("external-helper"));
+});
+
 test("buildSkillCommands does not add a duplicate Claude-only install", () => {
   const commands = buildSkillCommands({ ...options, agents: ["codex", "claude"] });
   assert.equal(commands.length, 1);
@@ -162,6 +202,37 @@ test("buildMcpCommands omits global scope for project installs", () => {
   assert.ok(!commands[0]?.args.includes("-g"));
   assert.ok(commands[0]?.args.includes("-a"));
   assert.ok(commands[0]?.args.includes("codex"));
+});
+
+test("buildMcpCommands skips upstream confirmation after AFK MCP selection", () => {
+  const commands = buildMcpCommands({
+    ...options,
+    yes: false,
+    selectedMcpIds: ["stitch"],
+  });
+
+  assert.ok(commands[0]?.args.includes("-y"));
+});
+
+test("buildMcpCommands skips guided MCP installs when no AFK targets were selected", () => {
+  const commands = buildMcpCommands({
+    ...options,
+    agents: [],
+    yes: false,
+    selectedMcpIds: ["stitch"],
+  });
+
+  assert.deepEqual(commands, []);
+});
+
+test("buildMcpCommands does not expand yes mode to broad default agents", () => {
+  const commands = buildMcpCommands({
+    ...options,
+    agents: [],
+    yes: true,
+  });
+
+  assert.deepEqual(commands, []);
 });
 
 test("buildUtilityCommands installs selected utilities", () => {
@@ -257,6 +328,58 @@ test("runDelegateCommands fails fast by default", async () => {
 
   assert.equal(code, 7);
   assert.deepEqual(calls, ["First"]);
+});
+
+test("runDelegateCommands hides delegated command details by default", async () => {
+  const output: string[] = [];
+  const spawnBehaviors: boolean[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (_command, _args, _cwd, behavior) => {
+      spawnBehaviors.push(Boolean(behavior?.verbose));
+      return { code: 0 };
+    },
+  };
+
+  const code = await runDelegateCommands(runtime, [sampleCommands()[0] as DelegateCommand], {
+    ...options,
+    dryRun: false,
+    verbose: false,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawnBehaviors, [false]);
+  assert.deepEqual(output, ["- First: preparing...", "- First: ready"]);
+});
+
+test("runDelegateCommands shows delegated command details in verbose mode", async () => {
+  const output: string[] = [];
+  const spawnBehaviors: boolean[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (_command, _args, _cwd, behavior) => {
+      spawnBehaviors.push(Boolean(behavior?.verbose));
+      return { code: 0 };
+    },
+  };
+
+  const code = await runDelegateCommands(runtime, [sampleCommands()[0] as DelegateCommand], {
+    ...options,
+    dryRun: false,
+    verbose: true,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawnBehaviors, [true]);
+  assert.ok(output.includes("\nFirst"));
+  assert.ok(output.some((message) => message.startsWith("$ first")));
+  assert.ok(!output.some((message) => message.includes("preparing...")));
 });
 
 test("runDelegateCommands can continue after failures", async () => {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "AFK Resume Workflow"
+  short_description: "Resume feature or AFK workflow work from repo artifacts and route the next move."
+  default_prompt: "Use $afk-resume-workflow to continue the current feature or AFK workflow from durable repo artifacts, honor active execution tracking, and route the next phase plus execution-discipline selection through $afk-compass."

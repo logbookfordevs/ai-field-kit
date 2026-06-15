@@ -9,13 +9,13 @@ export function planSkillInvocationPolicy(options: Pick<CliOptions, "homeDir" | 
   const selected = options.selectedSkillIds.length > 0
     ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))
     : manifest.items.filter((item) => item.default);
-  const manualSkills = selected.filter((item) => item.autoInvocation === false);
   const operations: PathOperation[] = [];
   const plannedRealPaths = new Set<string>();
 
-  for (const item of manualSkills) {
+  for (const item of selected) {
+    const allowInvocation = item.autoInvocation !== false;
     for (const skillDir of skillDirectories(options, item)) {
-      operations.push(...planManualSkillInvocation(skillDir, plannedRealPaths));
+      operations.push(...planSkillInvocation(skillDir, plannedRealPaths, allowInvocation));
     }
   }
 
@@ -52,7 +52,7 @@ function skillDirectories(options: Pick<CliOptions, "homeDir" | "cwd" | "setupSc
   ];
 }
 
-function planManualSkillInvocation(skillDir: string, plannedRealPaths: Set<string>): PathOperation[] {
+function planSkillInvocation(skillDir: string, plannedRealPaths: Set<string>, allowInvocation: boolean): PathOperation[] {
   const skillMd = join(skillDir, "SKILL.md");
   const openaiYaml = join(skillDir, "agents", "openai.yaml");
   const operations: PathOperation[] = [];
@@ -64,7 +64,7 @@ function planManualSkillInvocation(skillDir: string, plannedRealPaths: Set<strin
   const skillMdRealPath = realPathOrSelf(skillMd);
   if (!plannedRealPaths.has(skillMdRealPath)) {
     plannedRealPaths.add(skillMdRealPath);
-    const nextSkillMd = upsertFrontmatterBoolean(readText(skillMd), "disable-model-invocation", true);
+    const nextSkillMd = upsertFrontmatterBoolean(readText(skillMd), "disable-model-invocation", !allowInvocation);
     if (nextSkillMd !== readText(skillMd)) {
       operations.push({ type: "write", path: skillMd, content: nextSkillMd });
     }
@@ -74,7 +74,7 @@ function planManualSkillInvocation(skillDir: string, plannedRealPaths: Set<strin
   if (!plannedRealPaths.has(openaiYamlRealPath)) {
     plannedRealPaths.add(openaiYamlRealPath);
     const currentOpenAiYaml = pathExists(openaiYaml) ? readText(openaiYaml) : "";
-    const nextOpenAiYaml = upsertOpenAiImplicitInvocation(currentOpenAiYaml, false);
+    const nextOpenAiYaml = upsertOpenAiImplicitInvocation(currentOpenAiYaml, allowInvocation);
     if (nextOpenAiYaml !== currentOpenAiYaml) {
       operations.push({ type: "write", path: openaiYaml, content: nextOpenAiYaml });
     }

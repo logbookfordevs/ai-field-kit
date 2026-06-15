@@ -9,7 +9,7 @@ metadata:
 
 Use this skill when something is broken and guessing would make it worse.
 
-This skill should feel like a careful debugging partner:
+Operate as a careful debugging partner:
 - stop the bleed first
 - preserve evidence
 - explain the current logic clearly
@@ -181,7 +181,7 @@ Ask, implicitly or explicitly:
 
 ### 8. Propose fixes and guards
 
-Always suggest at least 2 ways to fix or mitigate the issue when that is practical.
+When more than one credible fix exists, suggest at least 2 ways to fix or mitigate the issue.
 
 For each option, explain:
 - what it changes
@@ -207,39 +207,7 @@ Prefer checks such as:
 
 ## Error Patterns
 
-### Test failures
-
-Look for:
-- outdated assertions
-- hidden shared state
-- order dependence
-- timing issues
-- incorrect test setup
-
-### Build failures
-
-Look for:
-- cited type errors
-- broken imports or exports
-- config drift
-- dependency issues
-- environment mismatches
-
-### Runtime errors
-
-Look for:
-- null or undefined assumptions
-- broken data flow
-- request/response mismatch
-- auth or permission gaps
-- unexpected external service responses
-
-### “No error, but behavior is wrong”
-
-Prefer:
-- logging at key transitions
-- value tracing across the relevant path
-- comparison between expected data shape and actual data shape
+For failure-type checklists, see [error-patterns.md](references/error-patterns.md).
 
 ## Safe Fallbacks
 
@@ -266,25 +234,8 @@ When timing or sequencing matters, put the ASCII diagrams before the plain-langu
 
 ## Red Flags
 
-- proposing fixes before understanding the failure
-- suggesting broad rewrites without localizing the issue
-- treating a symptom patch as the root-cause fix
-- ignoring reproducibility confidence
-- skipping verification after the proposed fix
-- explaining async bugs without showing the sequence
+For red flags and anti-rationalizations, see [debugging-guardrails.md](references/debugging-guardrails.md).
 
 ## Anti-Rationalizations
 
-| Rationalization | Better move |
-|---|---|
-| "I'll just patch the symptom for now" | State whether the patch is mitigation or root-cause fix, and prefer the real cause when possible. |
-| "The error message is enough to know the bug" | Reproduce and localize before claiming confidence. |
-| "The build is broken, but I can keep coding" | Stop the line and restore a trustworthy state first. |
-| "I already know the fix, so I don't need to explain the logic" | Explain expected vs actual behavior so the user can validate the reasoning. |
-| "This bug is random" | Classify the uncertainty and capture the most likely non-repro paths instead of shrugging. |
-
-## Suggested Next Skills
-
-These are suggestions, not required steps:
-- use `afk-note` if key findings, hypotheses, or repro steps should survive chat resets
-- use `afk-advanced-elicitation` if a proposed fix or incident summary needs a stronger critique pass
+Use the guardrails reference when tempted to keep coding without a clear cause.

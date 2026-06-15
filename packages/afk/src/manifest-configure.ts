@@ -18,7 +18,10 @@ import {
   type EditableManifestItem,
 } from "./manifest-editor.js";
 import {
+  isHookManifest,
+  loadDefaultManifestContent,
   localManifestDir,
+  type HookManifest,
   type HookManifestItem,
   type McpManifestItem,
   type RulesManifest,
@@ -92,7 +95,7 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
       break;
     }
 
-    await editManifestArea(runtime, prompts, drafts, touched, area);
+    await editManifestArea(runtime, prompts, drafts, touched, area, options);
   }
 
   const validationErrors = validationErrorsFor(drafts, touched);
@@ -142,6 +145,7 @@ async function editManifestArea(
   drafts: Drafts,
   touched: Set<ManifestArea>,
   area: ManifestArea,
+  options: CliOptions,
 ): Promise<void> {
   runtime.io.stdout(renderPromptStep(areaTitle(area), areaDescriptions[area]));
 
@@ -163,7 +167,7 @@ async function editManifestArea(
     }
 
     try {
-      drafts[area] = await applyItemAction(prompts, area, drafts[area], action);
+      drafts[area] = await applyItemAction(prompts, area, drafts[area], action, options);
       touched.add(area);
     } catch (error) {
       runtime.io.stderr(`\n${error instanceof Error ? error.message : String(error)}`);
@@ -176,8 +180,17 @@ async function applyItemAction(
   area: Exclude<ManifestArea, "rules">,
   manifest: EditableManifest,
   action: ManifestAction,
+  options: CliOptions,
 ): Promise<EditableManifest> {
   if (action === "add") {
+    if (area === "hooks" && entryCount(manifest) === 0) {
+      const shouldAddDefaultHooks = await prompts.confirm("Add default AFK hooks?", true);
+      if (shouldAddDefaultHooks) {
+        const defaultHooks = await loadDefaultHooks(options);
+        return defaultHooks;
+      }
+    }
+
     const item = await promptItem(prompts, area);
     const next = addManifestItem(area, manifest, item);
     return area === "skills" ? ensureSkillDefaultSource(next as SkillManifest, item as SkillManifestItem) : next;
@@ -330,6 +343,20 @@ async function promptHook(prompts: ManifestConfigurePrompts, existing?: HookMani
     agents: parseHookAgents(agents),
     default: isDefault,
   };
+}
+
+async function loadDefaultHooks(options: CliOptions): Promise<HookManifest> {
+  const content = await loadDefaultManifestContent("hooks.json", options);
+  if (!content) {
+    throw new Error("Could not load default hooks manifest from the configured defaults source.");
+  }
+
+  const parsed: unknown = JSON.parse(content);
+  if (!isHookManifest(parsed)) {
+    throw new Error("Default hooks manifest from the configured defaults source is invalid.");
+  }
+
+  return parsed;
 }
 
 function readEditableManifests(outputDir: string): Drafts {

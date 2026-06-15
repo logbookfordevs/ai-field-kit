@@ -8,6 +8,8 @@ If the skill changes posture, keep it tiny.
 If the skill coordinates a process, add structure.
 If the skill must produce a durable artifact with invariants, be explicit.
 If the skill compensates for model weakness or fragile tooling, use scripts/references instead of prose.
+Do not overfit prompts for weak-model failure modes as workflow uses frontier or recent models.
+Do not spend context on instructions the model can already infer, and do not bury the trigger/behavior signal under prose.
 
 ## Glossary
 

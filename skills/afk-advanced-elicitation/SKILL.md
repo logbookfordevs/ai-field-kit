@@ -9,7 +9,7 @@ Use this skill to pressure-test, deepen, and improve a draft, answer, plan, sect
 
 The skill is interactive by default: recommend a few critique methods, let the user choose, apply the method to the current artifact, show the result, and keep iterating until the user is satisfied.
 
-The experience should feel like a guided improvement lab: structured, iterative, and easy to steer without losing momentum.
+Keep the loop structured, iterative, and easy to steer without losing momentum.
 
 ## Inputs
 
@@ -164,7 +164,7 @@ When applying a method, prefer this structure:
 4. `Key Changes`: the most meaningful improvements or concerns
 5. `Next Options`: continue, accept, try another method, or stop
 
-The output should feel iterative and comparative. Users should be able to see what changed from the previous version and decide whether the new pass is worth keeping.
+Make each pass comparative: show what changed from the previous version so the user can decide whether the new pass is worth keeping.
 
 ## Artifact Handoff
 
@@ -183,10 +183,3 @@ When another skill or workflow invokes this one:
 - return the latest accepted version at the end of the loop
 
 If no interactive loop is possible, choose the single best-fit method, apply it once, and clearly label the result as a suggested revision.
-
-## Suggested Next Skills
-
-These are suggestions, not required steps:
-- move into planning or execution outside this skill once the artifact is strong enough
-- `afk-doc-craft` if the refined artifact should become polished documentation for humans
-- use `afk-note` if important final decisions or caveats should be preserved across handoffs

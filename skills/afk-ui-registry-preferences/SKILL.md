@@ -7,9 +7,7 @@ metadata:
 
 # UI Registry Preferences
 
-Use this skill as a lightweight reference when choosing UI primitives, registry blocks, or headless foundations for React/Tailwind frontend work.
-
-The goal is to pick the best-fit mature source for the UX problem, not to default blindly to one registry.
+Pick the best-fit mature source for the UX problem, not a default registry by habit.
 
 ## Defaults
 
@@ -21,13 +19,15 @@ The goal is to pick the best-fit mature source for the UX problem, not to defaul
 ## Preferred Sources
 
 - `shadcn/ui`: app primitives, forms, tables, dialogs, sheets, sidebars, command menus, and dashboard surfaces.
-- `Kibo UI`: richer shadcn-compatible app components when the base primitive is too plain.
+- `Shadcn IO - AI`: AI-focused shadcn component references.
+- `AI Elements`, `Assistant UI`: AI chat, assistant, and generative interface components.
+- `KiboUI`: richer shadcn-compatible app components when the base primitive is too plain, especially kanban and data-table surfaces.
 - `COSS`: scroll areas and mixed app primitives.
-- `Magic UI`, `Aceternity UI`, `React Bits`, `Animate UI`, `Eldora UI`, `Pace UI`, `Watermelon`, `Hover`: expressive sections, motion-heavy UI, animated interactions, and visual delight.
+- `MagicUI`, `Aceternity UI`, `React Bits`, `Animate UI`, `EldoraUI`, `PaceUI`, `Watermelon`, `Hover`, `Neobrutalism`: expressive sections, motion-heavy UI, animated interactions, and visual delight.
 - `Motion Examples`: React animation reference when the interaction depends on Motion patterns.
 - `Remocn`: Remotion-related UI and video composition references.
 - `Soundcn`: sound-effect references when audio feedback is part of the UX.
-- `Headless UI`: headless component reference when it fits the existing project foundation.
+- `HeadlessUI`: headless component reference when it fits the existing project foundation.
 - `Lucide React`: default icon family unless the repo already uses another one.
 
 ## Selection Heuristic
