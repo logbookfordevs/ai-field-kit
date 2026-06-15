@@ -258,9 +258,10 @@ utils.json
 hooks.json
 ```
 
-On first run, AFK seeds missing manifests from the default AFK source. After
-that, setup reads your local manifest files so you can add, remove, or replace
-recommendations without patching the CLI.
+AFK setup is source-backed. It reads recommendations from an explicit
+`--source`, a saved `--default-source`, or the built-in AFK source. Local
+manifest files are materialized setup inputs and inspection artifacts, not the
+primary authoring surface.
 
 Use these commands to prepare manifest files without running setup:
 
@@ -271,7 +272,8 @@ afk setup refresh
 afk setup refresh --local
 ```
 
-If a new AFK default does not show up locally, refresh the manifests:
+If you need to update materialized manifest files, refresh them from the active
+source:
 
 ```bash
 afk setup refresh
@@ -544,7 +546,13 @@ afk --version
 
 ### A new manifest item does not appear
 
-AFK reads local manifests after they exist. Refresh them:
+AFK reads the active setup source by default. Inspect that source first:
+
+```bash
+afk show
+```
+
+If you need to update materialized local files, refresh them:
 
 ```bash
 afk setup refresh

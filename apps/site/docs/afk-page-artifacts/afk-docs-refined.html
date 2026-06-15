@@ -444,7 +444,7 @@
         <div class="nav-pill" id="nav-pill" aria-hidden="true"></div>
         <li><a href="#hero"       class="nav-link is-active" data-section="hero">The Kit</a></li>
         <li><a href="#resolution" class="nav-link" data-section="resolution">Resolution Engine</a></li>
-        <li><a href="#manifest"   class="nav-link" data-section="manifest">Manifest Authoring</a></li>
+        <li><a href="#manifest"   class="nav-link" data-section="manifest">Setup Sources</a></li>
         <li><a href="#defaults"   class="nav-link" data-section="defaults">Built-in Defaults</a></li>
         <li><a href="#commands"   class="nav-link" data-section="commands">Command Surface</a></li>
         <li><a href="#setup"      class="nav-link" data-section="setup">Machine Setup</a></li>
@@ -472,29 +472,29 @@
     <section id="resolution" class="section section--loose reveal" data-od-id="resolution">
       <span class="section-label">Core Logic</span>
       <h2>The Resolution Engine.</h2>
-      <p class="section-lead">AFK merges manifest files from three distinct layers. Global defaults, user preferences, and project-local rules — each overriding the last.</p>
+      <p class="section-lead">AFK resolves setup from an explicit source, a saved default source, or the built-in AFK defaults. Local manifest files are materialized setup inputs, not the primary authoring surface.</p>
       <div class="flow-list">
         <div class="flow-item">
           <span class="flow-num">1</span>
-          <div><strong>Local Layer</strong><span class="flow-path">./.afk/manifests/</span></div>
+          <div><strong>Explicit Source</strong><span class="flow-path">afk setup --source</span></div>
         </div>
         <div class="flow-item">
           <span class="flow-num">2</span>
-          <div><strong>User Layer</strong><span class="flow-path">~/.afk/manifests/</span></div>
+          <div><strong>Saved Source</strong><span class="flow-path">afk setup --default-source</span></div>
         </div>
         <div class="flow-item">
           <span class="flow-num">3</span>
-          <div><strong>Global Layer</strong><span class="flow-path">@logbookfordevs/ai-field-kit</span></div>
+          <div><strong>Built-in Source</strong><span class="flow-path">logbookfordevs/ai-field-kit</span></div>
         </div>
       </div>
-      <h3>Precedence Rule</h3>
-      <p>The <strong>Local Layer</strong> always wins. A rule in your project's <code>.afk/</code> folder completely overrides any matching rule in your home directory or the AFK defaults. This is how you enforce project-specific architectures without polluting your global setup.</p>
+      <h3>Source Rule</h3>
+      <p>The active setup source wins. Use <code>afk show</code> to inspect what AFK will read, and use <code>afk show --local</code> only when you need to inspect materialized local manifest files.</p>
     </section>
 
     <section id="manifest" class="section section--tight reveal" data-od-id="manifest">
-      <span class="section-label">Masterclass</span>
-      <h2>Authoring your first manifest.</h2>
-      <p class="section-lead">A manifest is a JSON object that declares four types of assets: rules, skills, MCPs, and utilities.</p>
+      <span class="section-label">Source Model</span>
+      <h2>Shape your setup source.</h2>
+      <p class="section-lead">A setup source is a repository or directory with convention-compatible manifests for rules, skills, MCPs, utilities, hooks, and presets.</p>
       <div class="code-tabs" id="manifest-tabs" role="tablist">
         <button class="code-tab is-active" role="tab" aria-selected="true"  aria-controls="panel-rules"  data-panel="rules">rules.json</button>
         <button class="code-tab"           role="tab" aria-selected="false" aria-controls="panel-skills" data-panel="skills">skills.json</button>
@@ -563,15 +563,15 @@
 
     <section id="commands" class="section section--tight reveal" data-od-id="commands">
       <h2>Command Surface.</h2>
-      <p class="section-lead">The AFK CLI is your primary tool for previewing setup, resolving targets, and authoring manifests.</p>
+      <p class="section-lead">The AFK CLI is your primary tool for previewing setup, resolving targets, and inspecting the source AFK will use.</p>
       <div class="cmd-list">
         <div class="cmd-row">
           <code>afk setup</code>
           <p class="cmd-desc">Full interactive setup for rules, skills, MCPs, utilities, and hooks</p>
         </div>
         <div class="cmd-row">
-          <code>afk manifests configure --local</code>
-          <p class="cmd-desc">Create a project-local manifest structure</p>
+          <code>afk show</code>
+          <p class="cmd-desc">Inspect the active setup source</p>
         </div>
         <div class="cmd-row">
           <code>afk setup rules --dry-run</code>
