@@ -31,8 +31,8 @@ In orchestration mode:
 - Use `afk-to-prd-spec` when no PRD/spec exists or the existing artifact lacks behavior needed for implementation.
 - Use `afk-to-issues` before implementation to create executable checkpoint packets from the PRD/spec, plan, goal package, tracker issue, or current context.
 - Use `afk-code-grill` to grill meaningful product, UX, component, ownership, library, or implementation choices one decision at a time. Pair it with `afk-ui-registry-preferences` when UI primitives, registry components, or headless foundations are part of the decision.
-- At implementation or delegation time, select one or more execution disciplines for each implementation task: `test-driven-development`, `source-driven-development`, or `doubt-driven-development`. Multiple disciplines can apply; `afk-execution-tracking` records state and evidence, but does not replace TDD, source verification, or doubt checks.
-- Default to `test-driven-development` for software behavior changes. Skip only when there is no meaningful behavior risk, such as pure docs, static content, trivial config, generated artifacts, or when literal test-first is impractical; in those cases, state why and choose the nearest proof mechanism before implementation.
+- At implementation or delegation time, select one or more execution disciplines for each implementation task: `tdd`, `source-driven-development`, or `doubt-driven-development`. Multiple disciplines can apply; `afk-execution-tracking` records state and evidence, but does not replace TDD, source verification, or doubt checks.
+- Default to `tdd` for software behavior changes. Skip only when there is no meaningful behavior risk, such as pure docs, static content, trivial config, generated artifacts, or when literal test-first is impractical; in those cases, state why and choose the nearest proof mechanism before implementation.
 - Use `source-driven-development` when implementation correctness depends on current framework, library, SDK, API, or platform documentation.
 - Use `doubt-driven-development` for non-trivial or risky decisions that need fresh-context adversarial review before they stand.
 - When delegating execution, include the selected execution bundle and expected evidence in the worker prompt; selected skills do not cross agent boundaries automatically.
@@ -80,7 +80,7 @@ Task arrives
 +-- Implementing or delegating a change? --------> execution bundle selection
 |   +-- Needs checkpoint packets first? ---------> afk-to-issues
 |   +-- Needs tracked checkpoint execution? -----> afk-execution-tracking
-|   +-- Needs tests first or proof loop? ---------> test-driven-development
+|   +-- Needs tests first or proof loop? ---------> tdd
 |   +-- Needs current official docs? ------------> source-driven-development
 |   +-- Needs fresh-context adversarial check? --> doubt-driven-development
 +-- Something broke or behavior is unclear? ------> afk-structured-debugging
@@ -127,7 +127,7 @@ Common phase moves:
 - Draft or plan -> domain pressure: use `grill-with-docs` when terminology, domain boundaries, `CONTEXT.md`, ADRs, or code/docs consistency could change the artifact. In AFK Orchestration, run the relevant grill pass before PRD/spec work and before executable slicing.
 - Plan or design -> decision-tree pressure: use `grill-me` when the user asks to be grilled, wants relentless questioning, or needs a plan/design stress-tested through one-question-at-a-time interrogation.
 - Open product, UX, component, ownership, library, or implementation choices -> use `afk-code-grill` as a Grill-style decision pass, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
-- Orchestration -> implementation: `afk-to-issues` creates checkpoint packets, `afk-execution-tracking` tracks their execution, and each implementation task gets at least one execution discipline: `test-driven-development`, `source-driven-development`, or `doubt-driven-development`.
+- Orchestration -> implementation: `afk-to-issues` creates checkpoint packets, `afk-execution-tracking` tracks their execution, and each implementation task gets at least one execution discipline: `tdd`, `source-driven-development`, or `doubt-driven-development`.
 - Turbo -> execution: use GoalBuddy's local live board and proof loop; do not create parallel AFK execution tracking.
 - Goal package -> execution: hand off native `/goal` and track it with `afk-execution-tracking`.
 - Any draft or workflow artifact -> reader-facing polish: use `afk-doc-craft` only when the artifact needs human-facing documentation quality, not for agent-facing instruction surfaces or skill content.

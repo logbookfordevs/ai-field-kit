@@ -57,11 +57,11 @@ Allowed review gates are `code`, `design`, and `product`. Every implementation c
 Do not name gates after evidence sources such as tests, lint, Figma, or backend contracts. Record those under validation or discipline evidence.
 
 ## Execution Evidence
-Record the selected execution bundle before implementation begins: `test-driven-development`, `source-driven-development`, `doubt-driven-development`, normal project validation, or a combination.
+Record the selected execution bundle before implementation begins: `tdd`, `source-driven-development`, `doubt-driven-development`, normal project validation, or a combination.
 
 Before moving a checkpoint to `review`, record evidence for each selected discipline:
 
-- `test-driven-development`: failing-test evidence before implementation when practical, then the passing run after implementation. If literal test-first was skipped, record why and the nearest proof used.
+- `tdd`: failing-test evidence before implementation when practical, then the passing run after implementation. If literal test-first was skipped, record why and the nearest proof used.
 - `source-driven-development`: official docs or primary sources consulted, version signals checked, and source-backed implementation decisions or unresolved gaps.
 - `doubt-driven-development`: fresh-context adversarial review result, findings reconciled, and unresolved concerns escalated.
 - Normal validation: tests, typechecks, lint, builds, runtime checks, browser checks, or a clear reason a check could not run.

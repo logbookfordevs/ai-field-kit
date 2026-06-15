@@ -244,7 +244,7 @@ You do not need every step. Pick the smallest useful path for the moment you are
 6. Use `afk-code-grill` when a known slice still has UX, behavior, or implementation decisions to lock. It asks one sharp trade-off question at a time.
 7. Create executable slices with `afk-to-issues`. It turns the PRD/spec, plan, goal package, tracker issue, or current context into AFK checkpoint packets.
 8. Use `afk-execution-tracking` when execution needs status, resume safety, parallel coordination, review gates, or checkpointed implementation notes.
-9. Select the execution bundle for each task: use `test-driven-development` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
+9. Select the execution bundle for each task: use `tdd` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
 10. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
 
 Most flows only use a few of these. For example:
@@ -277,9 +277,9 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 #### Optional companion skills
 
-- **Test Driven Development (Agent-Skills)**  
-  Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill test-driven-development`  
-  Use when you want implementation to stay anchored in tests and short feedback loops instead of broad speculative coding.
+- **TDD (Matt Pocock Skills)**
+  Install: `npx skills add https://github.com/mattpocock/skills --skill tdd`
+  Use when you want red-green-refactor on behavior through public interfaces, one vertical slice at a time, without testing implementation details for their own sake.
 
 - **Source Driven Development (Agent-Skills)**
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill source-driven-development`

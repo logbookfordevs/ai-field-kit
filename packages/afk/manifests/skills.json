@@ -267,12 +267,12 @@
             "autoInvocation": false
         },
         {
-            "id": "test-driven-development",
-            "label": "External / Test Driven Development",
-            "source": "https://github.com/addyosmani/agent-skills.git",
+            "id": "tdd",
+            "label": "External / TDD",
+            "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
-                "test-driven-development",
+                "tdd",
                 "--global"
             ],
             "default": false,

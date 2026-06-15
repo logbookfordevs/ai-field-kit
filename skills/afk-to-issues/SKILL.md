@@ -81,7 +81,7 @@ Describe the end-to-end behavior, not layer-by-layer implementation. Avoid speci
 - None - can start immediately
 
 ## Execution Bundle
-- test-driven-development | source-driven-development | doubt-driven-development | normal validation
+- tdd | source-driven-development | doubt-driven-development | normal validation
 
 ## Verification
 - [ ] Expected proof before review
