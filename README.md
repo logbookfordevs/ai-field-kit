@@ -143,7 +143,7 @@ If you only want the AFK skill-routing entry point, install `afk-compass` direct
 npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-compass
 ```
 
-This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the right AFK and recommended external skills. When you ask for an AFK workflow, feature workflow, or AFK run, Compass treats the work as phase-managed orchestration and re-checks routing as the work moves from sources to specs, plans, and execution.
+This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the right AFK and recommended external skills. When you ask for an AFK workflow, feature workflow, or AFK run, Compass treats the work as AFK Flow and re-checks routing as the work moves from sources to specs, checkpoint packets, and execution.
 
 > **What does global vs. agent-specific mean?**
 > Global installs (`--global`) place the skill in `~/.agents/skills/` and make it available to every agent that reads from there.
@@ -230,7 +230,7 @@ Use the smallest useful slice of AFK for the moment you are in.
 
 If the work is already clear, skip straight to the later skill that matches the need. If the work is messy, start earlier. The point is guidance, not bureaucracy.
 
-When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses a stronger orchestration mode: it routes each phase, uses execution tracking, requires Grill or Grill With Docs before PRD/spec work, selects an execution bundle for each task, and still avoids workflow artifacts unless `afk-artifact-workflow` is the right skill for that phase.
+When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses a stronger Flow mode: it routes each phase, uses execution tracking, requires Grill or Grill With Docs before PRD/spec work, selects an execution bundle for each task, and still avoids workflow artifacts unless `afk-artifact-workflow` is the right skill for that phase.
 
 ### A practical optional workflow
 
@@ -273,7 +273,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 - **Truss Evaluation (Truss Framework)**
   Install: `npx skills add https://github.com/leoreisdias/truss-framework --skill truss-evaluation`
 
-  Keep this available as a decision-quality lens across normal prompting, free routing, AFK orchestration, code review, debugging, and architecture discussion. It is not a workflow phase; it is the layer to reach for when the work needs explicit trade-offs, structured critique, or a grounded answer to "which approach is better?" Truss evaluates decisions through Maintainability, Strategy, Clarity, and Performance, with a research whitepaper in progress behind the framework.
+  Keep this available as a decision-quality lens across normal prompting, free routing, AFK Flow, code review, debugging, and architecture discussion. It is not a workflow phase; it is the layer to reach for when the work needs explicit trade-offs, structured critique, or a grounded answer to "which approach is better?" Truss evaluates decisions through Maintainability, Strategy, Clarity, and Performance, with a research whitepaper in progress behind the framework.
 
 #### Optional companion skills
 
@@ -299,7 +299,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Grill With Docs (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
-  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. In AFK Orchestration, use it for brownfield work before PRD/spec creation and before executable slicing. It complements `afk-code-grill`: use code grill when implementation decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy.
+  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. In AFK Flow, use it for brownfield work before PRD/spec creation and before executable slicing. It complements `afk-code-grill`: use code grill when implementation decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy.
 
 - **Grill Me (Matt Pocock Skills)**
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-me`
@@ -318,6 +318,12 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 - **GoalBuddy**
   Install: `npx goalbuddy`
   Recommended for high-throughput AFK Turbo work that needs a local live board, PM loop, role-tagged task execution, receipts, and proof pressure around broad goals. AFK exposes GoalBuddy through Utilities and delegates to its installer.
+
+AFK's fast execution ladder is:
+
+- **AFK Flow**: granular AFK workflow with checkpoint packets and execution tracking.
+- **AFK Sprint**: Plannotator goal package, AFK checkpoint packets, native `/goal`, and execution tracking.
+- **AFK Turbo**: Plannotator goal package plus GoalBuddy's local live board and PM loop.
 
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  

@@ -1,6 +1,6 @@
 ---
 name: afk-compass
-description: Route broad, ambiguous, multi-phase, explicit AFK workflow, AFK Turbo, or goal-package requests to the right AFK and companion skills. Use at the start and at phase changes; Free Route routes, Orchestration tracks, and Turbo boards.
+description: Route broad, ambiguous, multi-phase, explicit AFK workflow, AFK Sprint, or AFK Turbo requests to the right AFK and companion skills. Use at the start and at phase changes; Free Route routes, Flow tracks, Sprint goals, and Turbo boards.
 ---
 
 # AFK Compass
@@ -19,15 +19,15 @@ When a request arrives:
 ### AFK Free Route
 Use this mode by default. Pick the smallest useful skill for the current request, including direct routing to debugging, review, TDD/proof loops, source verification, doubt checks, UI, docs, or normal execution. Do not create workflow artifacts or tracking unless the selected route needs them.
 
-### AFK Orchestration Mode
+### AFK Flow Mode
 Use this mode when the user asks for an "AFK workflow", "feature workflow", "start a workflow", "AFK run", or otherwise signals that they want AFK to coordinate the feature lifecycle across phases.
 
-In orchestration mode:
+In Flow mode:
 
 - Treat the work as phase-managed. Re-enter Compass after source gathering, user answers, drafts, plans, and execution gates.
 - Use `afk-execution-tracking` as the continuity surface.
 - Use `grill-with-docs` for brownfield work and `grill-me` for greenfield work before PRD/spec work and before executable slicing. Use `afk-brainstorming-facilitator` first only when the target is not clear enough to pressure-test.
-- Use `afk-artifact-workflow` for artifact boundaries, storage, and next-artifact suggestions. Do not treat it as the whole orchestration.
+- Use `afk-artifact-workflow` for artifact boundaries, storage, and next-artifact suggestions. Do not treat it as the whole Flow.
 - Use `afk-to-prd-spec` when no PRD/spec exists or the existing artifact lacks behavior needed for implementation.
 - Use `afk-to-issues` before implementation to create executable checkpoint packets from the PRD/spec, plan, goal package, tracker issue, or current context.
 - Use `afk-code-grill` to grill meaningful product, UX, component, ownership, library, or implementation choices one decision at a time. Pair it with `afk-ui-registry-preferences` when UI primitives, registry components, or headless foundations are part of the decision.
@@ -40,23 +40,27 @@ In orchestration mode:
 ### AFK Turbo Mode
 Use Turbo when the user wants high-throughput progress toward a broad outcome.
 
-Turbo uses GoalBuddy's local live board and PM loop as the execution surface. Start or register the local board before execution and include a clickable board URL when available. Do not also use `afk-execution-tracking`; the GoalBuddy board is the continuity surface.
-
-Routes:
-
-- **Turbo Board:** use targeted AFK preflight only where it removes a blocker, then run GoalBuddy.
-- **Turbo Facts:** use `plannotator-setup-goal` when the target needs reviewed facts, accepted done conditions, or sharper scope before execution, then run GoalBuddy from those artifacts.
-
-Preserve AFK execution discipline in GoalBuddy tasks: TDD for behavior, source checks for APIs/libs, doubt checks for risky decisions, and concrete validation.
-
-### Goal Package Mode
-Use when the user wants reviewed facts, context, and native `/goal` execution with Markdown-based AFK execution tracking instead of a visual board and PM loop.
+Turbo uses `plannotator-setup-goal` plus GoalBuddy's local live board and PM loop as one AFK execution package. Existing AFK artifacts can sharpen Plannotator input; if they do not exist, Plannotator handles discovery.
 
 Route:
-1. Use one targeted AFK preflight only if it materially sharpens Plannotator input.
+1. Use existing AFK artifacts as Plannotator input when present.
 2. Use `plannotator-setup-goal` to create reviewed facts, plan, and `goal.md`.
-3. Hand off the native `/goal` command for the prepared `goal.md`.
-4. Track the native `/goal` execution with `afk-execution-tracking`.
+3. Run GoalBuddy from that goal package.
+4. Start or register the local board before execution and include a clickable board URL when available.
+
+Do not also use `afk-execution-tracking`; the GoalBuddy board is the continuity surface.
+
+Preserve AFK execution discipline in GoalBuddy tasks: `tdd` for behavior, source checks for APIs/libs, doubt checks for risky decisions, and concrete validation.
+
+### AFK Sprint Mode
+Use Sprint when the user wants a fast goal-driven run with Markdown checkpoint packets instead of a visual board and PM loop.
+
+Route:
+1. Use existing AFK artifacts as Plannotator input when present.
+2. Use `plannotator-setup-goal` to create reviewed facts, plan, and `goal.md`.
+3. Use `afk-to-issues` to fragment the plan or goal package into executable checkpoint packets.
+4. Run native `/goal` for the prepared `goal.md`.
+5. Track execution with `afk-execution-tracking`.
 
 ## Skill Routing
 Use this map to choose the next skill:
@@ -68,11 +72,11 @@ Task arrives
 |
 +-- Need relentless plan/design questioning? ----> grill-me
 +-- Need divergent ideas or directions? ----------> afk-brainstorming-facilitator
-+-- Need high-throughput outcome execution? -----> AFK Turbo Mode
++-- Need high-throughput visual-board execution? -> AFK Turbo Mode
++-- Need fast goal execution with Markdown tracking? -> AFK Sprint Mode
 +-- Resuming existing feature/workflow work? ---> afk-resume-workflow
 +-- Writing, rewriting, or reviewing human-facing docs? -> afk-doc-craft
 +-- PRD/spec/RFC/plan/tracking/handoff artifacts? -> afk-artifact-workflow
-+-- Need reviewed facts + native /goal with Markdown tracking? -> Goal Package Mode
 +-- Need an agent-ready PRD/spec before code? ---> afk-to-prd-spec
 +-- Need executable slices/checkpoints? ---------> afk-to-issues
 +-- Need code choices or implementation trade-offs grilled? -> afk-code-grill
@@ -124,12 +128,12 @@ Common phase moves:
 
 - Source gathering -> PRD/spec: use `afk-artifact-workflow` for artifact boundaries, then `grill-me` for greenfield work or `grill-with-docs` for brownfield work, then `afk-to-prd-spec` when an agent-ready PRD/spec is being created before code.
 - PRD/spec draft -> executable slices: use `afk-to-issues` when the source artifact is ready to become independently grabbable checkpoint packets.
-- Draft or plan -> domain pressure: use `grill-with-docs` when terminology, domain boundaries, `CONTEXT.md`, ADRs, or code/docs consistency could change the artifact. In AFK Orchestration, run the relevant grill pass before PRD/spec work and before executable slicing.
+- Draft or plan -> domain pressure: use `grill-with-docs` when terminology, domain boundaries, `CONTEXT.md`, ADRs, or code/docs consistency could change the artifact. In AFK Flow, run the relevant grill pass before PRD/spec work and before executable slicing.
 - Plan or design -> decision-tree pressure: use `grill-me` when the user asks to be grilled, wants relentless questioning, or needs a plan/design stress-tested through one-question-at-a-time interrogation.
 - Open product, UX, component, ownership, library, or implementation choices -> use `afk-code-grill` as a Grill-style decision pass, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
-- Orchestration -> implementation: `afk-to-issues` creates checkpoint packets, `afk-execution-tracking` tracks their execution, and each implementation task gets at least one execution discipline: `tdd`, `source-driven-development`, or `doubt-driven-development`.
-- Turbo -> execution: use GoalBuddy's local live board and proof loop; do not create parallel AFK execution tracking.
-- Goal package -> execution: hand off native `/goal` and track it with `afk-execution-tracking`.
+- Flow -> implementation: `afk-to-issues` creates checkpoint packets, `afk-execution-tracking` tracks their execution, and each implementation task gets at least one execution discipline: `tdd`, `source-driven-development`, or `doubt-driven-development`.
+- Sprint -> execution: use Plannotator, fragment the goal package with `afk-to-issues`, run native `/goal`, and track checkpoint packets with `afk-execution-tracking`.
+- Turbo -> execution: use Plannotator plus GoalBuddy's local live board and proof loop; do not create parallel AFK execution tracking.
 - Any draft or workflow artifact -> reader-facing polish: use `afk-doc-craft` only when the artifact needs human-facing documentation quality, not for agent-facing instruction surfaces or skill content.
 
 Most Free Route tasks need only one or two steps. Do not turn AFK Compass into ceremony.
