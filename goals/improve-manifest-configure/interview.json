@@ -1,0 +1,206 @@
+{
+  "stage": "interview",
+  "title": "Improve AFK Manifest Configure",
+  "goalSlug": "improve-manifest-configure",
+  "questions": [
+    {
+      "id": "interaction_model",
+      "prompt": "What should the interactive configure experience feel like?",
+      "description": "The current flow asks for new entries linearly and then rewrites selected files. The goal implies a real editor-like session.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "A manifest editor session: choose a manifest type, see existing entries, then choose add, edit, remove, duplicate, or finish, with a final preview before writing.",
+      "options": [
+        {
+          "id": "editor-session",
+          "label": "Editor session"
+        },
+        {
+          "id": "wizard-plus",
+          "label": "Wizard plus actions"
+        },
+        {
+          "id": "separate-subcommands",
+          "label": "Separate subcommands"
+        }
+      ],
+      "recommendedOptionIds": [
+        "editor-session"
+      ],
+      "required": true
+    },
+    {
+      "id": "manifest_scope",
+      "prompt": "Which manifest types should be editable in this goal?",
+      "description": "The repo currently has rules, skills, MCPs, utils, hooks, and presets. Presets are shown but not part of configure today.",
+      "answerMode": "multi-custom",
+      "recommendedAnswer": "Support full editing for rules, skills, MCPs, utils, and hooks. Include presets if the same shared editor model makes it low-risk; otherwise leave presets as a follow-up.",
+      "options": [
+        {
+          "id": "rules",
+          "label": "Rules"
+        },
+        {
+          "id": "skills",
+          "label": "Skills"
+        },
+        {
+          "id": "mcps",
+          "label": "MCPs"
+        },
+        {
+          "id": "utils",
+          "label": "Utils"
+        },
+        {
+          "id": "hooks",
+          "label": "Hooks"
+        },
+        {
+          "id": "presets",
+          "label": "Presets"
+        }
+      ],
+      "recommendedOptionIds": [
+        "rules",
+        "skills",
+        "mcps",
+        "utils",
+        "hooks"
+      ],
+      "required": true
+    },
+    {
+      "id": "operations",
+      "prompt": "What operations must the first version support?",
+      "description": "This decides whether the feature is only append/remove or a more complete editor.",
+      "answerMode": "multi-custom",
+      "recommendedAnswer": "Add, edit, remove, toggle default fields, toggle autoInvocation where applicable, preview all changes, and confirm before writing.",
+      "options": [
+        {
+          "id": "add",
+          "label": "Add"
+        },
+        {
+          "id": "edit",
+          "label": "Edit"
+        },
+        {
+          "id": "remove",
+          "label": "Remove"
+        },
+        {
+          "id": "duplicate",
+          "label": "Duplicate"
+        },
+        {
+          "id": "toggle-default",
+          "label": "Toggle defaults"
+        },
+        {
+          "id": "preview-confirm",
+          "label": "Preview confirm"
+        }
+      ],
+      "recommendedOptionIds": [
+        "add",
+        "edit",
+        "remove",
+        "toggle-default",
+        "preview-confirm"
+      ],
+      "required": true
+    },
+    {
+      "id": "ui_stack",
+      "prompt": "How open should we be to changing the prompt/UI stack?",
+      "description": "The project already uses @inquirer/prompts and custom themes. A richer TUI could help, but adds dependency and maintenance cost.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Start with the existing @inquirer/prompts stack and design a better menu loop first. Only add a new TUI library if we find a specific UX requirement that inquirer cannot satisfy cleanly.",
+      "options": [
+        {
+          "id": "inquirer-first",
+          "label": "Inquirer first"
+        },
+        {
+          "id": "new-tui-ok",
+          "label": "New TUI ok"
+        },
+        {
+          "id": "minimal-deps",
+          "label": "Minimal deps"
+        }
+      ],
+      "recommendedOptionIds": [
+        "inquirer-first"
+      ],
+      "required": true
+    },
+    {
+      "id": "safety_validation",
+      "prompt": "What safety and validation should the editor guarantee?",
+      "description": "This feature writes setup manifests that later execute commands, fetch URLs, and merge hooks.",
+      "answerMode": "multi-custom",
+      "recommendedAnswer": "Never write without preview and confirmation; validate manifest shape before writing; protect against duplicate ids; make removals explicit; preserve existing valid fields when editing; support --dry-run.",
+      "options": [
+        {
+          "id": "preview",
+          "label": "Preview before write"
+        },
+        {
+          "id": "schema-validation",
+          "label": "Schema validation"
+        },
+        {
+          "id": "duplicate-protection",
+          "label": "Duplicate protection"
+        },
+        {
+          "id": "explicit-removal",
+          "label": "Explicit removal"
+        },
+        {
+          "id": "preserve-fields",
+          "label": "Preserve fields"
+        },
+        {
+          "id": "dry-run",
+          "label": "Dry run support"
+        }
+      ],
+      "recommendedOptionIds": [
+        "preview",
+        "schema-validation",
+        "duplicate-protection",
+        "explicit-removal",
+        "preserve-fields",
+        "dry-run"
+      ],
+      "required": true
+    },
+    {
+      "id": "compatibility",
+      "prompt": "What should happen to the current configure behavior and flags?",
+      "description": "Today --from-current changes append behavior and --local chooses project manifests.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Keep command names and flags compatible, but make the default configure flow load existing manifests when present. Treat creating from scratch as an explicit option inside the session or behind a new flag.",
+      "options": [
+        {
+          "id": "compatible-load-existing",
+          "label": "Compatible, load existing"
+        },
+        {
+          "id": "preserve-exact-default",
+          "label": "Preserve exact default"
+        },
+        {
+          "id": "new-command",
+          "label": "Add new command"
+        }
+      ],
+      "recommendedOptionIds": [
+        "compatible-load-existing"
+      ],
+      "required": true
+    }
+  ]
+}

@@ -30,6 +30,10 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk setup refresh [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
   assert.ok(output.join("\n").includes("afk setup hooks [options]"));
+  assert.ok(output.join("\n").includes("afk show [options]"));
+  assert.ok(!output.join("\n").includes("afk configure [options]"));
+  assert.ok(!output.join("\n").includes("afk manifests configure [options]"));
+  assert.ok(!output.join("\n").includes("afk manifests show [options]"));
   assert.ok(!output.join("\n").includes("afk setup mcps install [options]"));
   assert.ok(output.join("\n").includes("afk --version"));
   assert.ok(output.join("\n").includes('Run "afk <command> --help"'));
@@ -208,26 +212,104 @@ test("runCli prints contextual hooks help", async () => {
   assert.ok(!output.join("\n").includes("AFK setup skills"));
 });
 
-test("runCli prints contextual manifest configure help", async () => {
+test("runCli explains configure is not available for source-backed setup yet", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["configure"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("AFK configure is not available for source-backed setup yet."));
+  assert.ok(output.join("\n").includes("Use afk show to inspect the active setup source."));
+  assert.ok(!output.join("\n").includes("afk configure --local"));
+});
+
+test("runCli explains configure retirement instead of showing command help", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["manifests", "configure", "--help"]));
 
-  assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("AFK manifests configure"));
-  assert.ok(output.join("\n").includes("afk manifests configure --local"));
-  assert.ok(!output.join("\n").includes("AFK setup\n"));
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("AFK configure is not available for source-backed setup yet."));
+  assert.ok(!output.join("\n").includes("Usage:\n  afk configure"));
 });
 
 test("runCli prints contextual manifest show help", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["manifests", "show", "--help"]));
+  const code = await withConsole(output, () => runCli(["show", "--help"]));
 
   assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("AFK manifests show"));
+  assert.ok(output.join("\n").includes("AFK show"));
   assert.ok(output.join("\n").includes("--local"));
   assert.ok(output.join("\n").includes("--rules"));
   assert.ok(output.join("\n").includes("--hooks"));
+  assert.ok(output.join("\n").includes("afk show --rules --skills"));
+  assert.ok(!output.join("\n").includes("afk manifests show --rules --skills"));
   assert.ok(!output.join("\n").includes("AFK setup\n"));
+});
+
+test("runCli keeps old manifest command forms as aliases", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["manifests", "show", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK show"));
+  assert.ok(text.includes("Usage:\n  afk show [options]"));
+});
+
+test("runCli shows manifests from the remembered setup source", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(String(input));
+    return new Response(
+      JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "remote-skill",
+            label: "Remote Skill",
+            source: "https://github.com/acme/dev-kit",
+            args: ["--skill", "remote-skill"],
+            default: true,
+            autoInvocation: true,
+          },
+        ],
+      }),
+      { status: 200 },
+    );
+  };
+
+  try {
+    const homeDir = localHomeWithManifests({
+      "presets.json": { version: 1, defaultsSource: "acme/dev-kit", presets: [] },
+      "skills.json": {
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "local-skill",
+            label: "Local Skill",
+            source: "https://github.com/acme/local-kit",
+            args: ["--skill", "local-skill"],
+            default: true,
+            autoInvocation: true,
+          },
+        ],
+      },
+    });
+    const output: string[] = [];
+    const code = await withConsole(output, () => runCli(["show", "--skills"], { HOME: homeDir }));
+    const text = output.join("\n");
+
+    assert.equal(code, 0);
+    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/skills.json"));
+    assert.ok(text.includes("AFK manifests"));
+    assert.ok(text.includes("Source"));
+    assert.ok(text.includes("remote-skill"));
+    assert.ok(!text.includes("local-skill"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("isPromptExit detects Inquirer Ctrl-C exits", () => {

@@ -1,10 +1,10 @@
-import { select } from "@inquirer/prompts";
+import { input, select } from "@inquirer/prompts";
 import { renderBanner, muted, sectionTitle } from "./brand.js";
-import { afkSelectTheme } from "./prompt-ui.js";
+import { afkPromptTheme, afkSelectTheme } from "./prompt-ui.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { Runtime } from "./types.js";
 
-export type LobbyChoiceValue = "setup" | "refresh" | "skills" | "mcps" | "utils" | "hooks" | "configure" | "inspect" | "help";
+export type LobbyChoiceValue = "setup" | "source" | "skills" | "mcps" | "utils" | "hooks" | "inspect" | "help";
 
 type TtyState = {
   stdin: boolean;
@@ -24,9 +24,9 @@ export const compassLobbyChoices: LobbyChoice[] = [
     description: "Route: afk setup",
   },
   {
-    name: "Refresh manifests",
-    value: "refresh",
-    description: "Route: afk setup refresh",
+    name: "Change default setup source",
+    value: "source",
+    description: "Route: afk setup --default-source <source>",
   },
   {
     name: "Add or update skills",
@@ -49,14 +49,9 @@ export const compassLobbyChoices: LobbyChoice[] = [
     description: "Route: afk setup hooks",
   },
   {
-    name: "Build or edit a custom field kit",
-    value: "configure",
-    description: "Route: afk manifests configure",
-  },
-  {
     name: "Inspect what AFK knows",
     value: "inspect",
-    description: "Route: afk manifests show",
+    description: "Route: afk show",
   },
   {
     name: "Show command help",
@@ -90,17 +85,19 @@ export async function selectCompassLobbyRoute(runtime: Runtime): Promise<string[
     loop: false,
     theme: afkSelectTheme,
   });
-  const route = routeForLobbyChoice(selected);
+  const route = selected === "source"
+    ? routeForLobbyChoice(selected, await promptDefaultSource())
+    : routeForLobbyChoice(selected);
   runtime.io.stdout(renderRoutePreview(route));
   return route;
 }
 
-export function routeForLobbyChoice(value: LobbyChoiceValue): string[] {
+export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: string): string[] {
   switch (value) {
     case "setup":
       return ["setup"];
-    case "refresh":
-      return ["setup", "refresh"];
+    case "source":
+      return defaultSource ? ["setup", "--default-source", defaultSource] : ["setup", "--default-source"];
     case "skills":
       return ["setup", "skills"];
     case "mcps":
@@ -109,13 +106,19 @@ export function routeForLobbyChoice(value: LobbyChoiceValue): string[] {
       return ["setup", "utils"];
     case "hooks":
       return ["setup", "hooks"];
-    case "configure":
-      return ["manifests", "configure"];
     case "inspect":
-      return ["manifests", "show"];
+      return ["show"];
     case "help":
       return ["--help"];
   }
+}
+
+async function promptDefaultSource(): Promise<string> {
+  return input({
+    message: "Default setup source",
+    required: true,
+    theme: afkPromptTheme,
+  });
 }
 
 function renderRoutePreview(route: string[]): string {
