@@ -1,6 +1,6 @@
 ---
 name: afk-compass
-description: Route broad, ambiguous, multi-phase, or explicit AFK workflow/run requests to the right AFK and recommended external skills. Use at the start and at phase changes to choose the smallest useful next skill; Compass does not imply workflow artifacts unless `afk-artifact-workflow` is selected.
+description: Route broad, ambiguous, multi-phase, explicit AFK workflow, AFK Turbo, or goal-package requests to the right AFK and companion skills. Use at the start and at phase changes; Free Route routes, Orchestration tracks, and Turbo boards.
 ---
 
 # AFK Compass
@@ -16,8 +16,8 @@ When a request arrives:
 
 ## Routing Modes
 
-### Freestyle Routing
-Use this mode by default. Pick the smallest useful skill for the current request, including direct routing to debugging, review, TDD/proof loops, source verification, doubt checks, UI, docs, or normal execution. Do not create workflow artifacts unless `afk-artifact-workflow` is actually selected.
+### AFK Free Route
+Use this mode by default. Pick the smallest useful skill for the current request, including direct routing to debugging, review, TDD/proof loops, source verification, doubt checks, UI, docs, or normal execution. Do not create workflow artifacts or tracking unless the selected route needs them.
 
 ### AFK Orchestration Mode
 Use this mode when the user asks for an "AFK workflow", "feature workflow", "start a workflow", "AFK run", or otherwise signals that they want AFK to coordinate the feature lifecycle across phases.
@@ -25,31 +25,55 @@ Use this mode when the user asks for an "AFK workflow", "feature workflow", "sta
 In orchestration mode:
 
 - Treat the work as phase-managed. Re-enter Compass after source gathering, user answers, drafts, plans, and execution gates.
-- Use `afk-artifact-workflow` for artifact boundaries, storage, and suggesting the next useful workflow artifact once current sources or artifacts are staged. Do not treat it as the whole orchestration.
-- Use `spec-driven-development` when a PRD/spec is being created before code.
-- Use `grill-with-docs` before drafting the PRD/spec only when terminology, domain boundaries, ADRs, `CONTEXT.md`, or code/docs consistency are already risky. If it did not run before the PRD/spec draft, consider it before implementation planning and state why it is being used or skipped.
+- Use `afk-execution-tracking` as the continuity surface.
+- Use `grill-with-docs` for brownfield work and `grill-me` for greenfield work before implementation planning. Use `afk-brainstorming-facilitator` first only when the target is not clear enough to pressure-test.
+- Use `afk-artifact-workflow` for artifact boundaries, storage, and next-artifact suggestions. Do not treat it as the whole orchestration.
+- Use `spec-driven-development` when no PRD/spec exists or the existing artifact lacks behavior needed for implementation.
+- Use `planning-and-task-breakdown` before implementation.
 - Use `afk-coding-tradeoffs` when meaningful product, UX, component, ownership, library, or implementation choices remain open. Pair it with `afk-ui-registry-preferences` when UI primitives, registry components, or headless foundations are part of the decision.
-- Use `planning-and-task-breakdown` when the user asks for an implementation plan or the spec is ready to become tasks.
-- At implementation or delegation time, select at least one execution discipline for each task: `test-driven-development`, `source-driven-development`, `doubt-driven-development`, or an explicit normal-validation fallback when none fit. Multiple disciplines can apply; `afk-execution-tracking` records state and evidence, but does not replace TDD, source verification, or doubt checks.
-- Ask before enabling `afk-execution-tracking`, unless the user explicitly requested tracked execution or the work clearly needs checkpoints, approval gates, handoff notes, parallel agents, interruption recovery, or durable progress state.
+- At implementation or delegation time, select one or more execution disciplines for each implementation task: `test-driven-development`, `source-driven-development`, or `doubt-driven-development`. Multiple disciplines can apply; `afk-execution-tracking` records state and evidence, but does not replace TDD, source verification, or doubt checks.
 - Default to `test-driven-development` for software behavior changes. Skip only when there is no meaningful behavior risk, such as pure docs, static content, trivial config, generated artifacts, or when literal test-first is impractical; in those cases, state why and choose the nearest proof mechanism before implementation.
 - Use `source-driven-development` when implementation correctness depends on current framework, library, SDK, API, or platform documentation.
 - Use `doubt-driven-development` for non-trivial or risky decisions that need fresh-context adversarial review before they stand.
 - When delegating execution, include the selected execution bundle and expected evidence in the worker prompt; selected skills do not cross agent boundaries automatically.
 - Use `afk-advanced-elicitation` when the user asks for deeper critique, says they are still doubtful or confused, or keeps bouncing between decisions after a draft or direction exists.
 
+### AFK Turbo Mode
+Use Turbo when the user wants high-throughput progress toward a broad outcome.
+
+Turbo uses GoalBuddy's local live board and PM loop as the execution surface. Start or register the local board before execution and include a clickable board URL when available. Do not also use `afk-execution-tracking`; the GoalBuddy board is the continuity surface.
+
+Routes:
+
+- **Turbo Board:** use targeted AFK preflight only where it removes a blocker, then run GoalBuddy.
+- **Turbo Facts:** use `plannotator-setup-goal` when the target needs reviewed facts, accepted done conditions, or sharper scope before execution, then run GoalBuddy from those artifacts.
+
+Preserve AFK execution discipline in GoalBuddy tasks: TDD for behavior, source checks for APIs/libs, doubt checks for risky decisions, and concrete validation.
+
+### Goal Package Mode
+Use when the user wants reviewed facts, context, and native `/goal` execution with Markdown-based AFK execution tracking instead of a visual board and PM loop.
+
+Route:
+1. Use one targeted AFK preflight only if it materially sharpens Plannotator input.
+2. Use `plannotator-setup-goal` to create reviewed facts, plan, and `goal.md`.
+3. Hand off the native `/goal` command for the prepared `goal.md`.
+4. Track the native `/goal` execution with `afk-execution-tracking`.
+
 ## Skill Routing
 Use this map to choose the next skill:
+
+Route by user intent, not by literal tool names. Tool names below identify the current implementation for the agent.
 
 ```text
 Task arrives
 |
 +-- Need relentless plan/design questioning? ----> grill-me
 +-- Need divergent ideas or directions? ----------> afk-brainstorming-facilitator
++-- Need high-throughput outcome execution? -----> AFK Turbo Mode
 +-- Resuming existing feature/workflow work? ---> afk-resume-workflow
 +-- Writing, rewriting, or reviewing human-facing docs? -> afk-doc-craft
 +-- PRD/spec/RFC/plan/tracking/handoff artifacts? -> afk-artifact-workflow
-+-- Need a reviewed /goal package? --------------> plannotator-setup-goal
++-- Need reviewed facts + native /goal with Markdown tracking? -> Goal Package Mode
 +-- Need a formal PRD/spec before code? ----------> spec-driven-development
 +-- Have a spec and need tasks? ------------------> planning-and-task-breakdown
 +-- Need code choices or implementation trade-offs settled? -> afk-coding-tradeoffs
@@ -104,11 +128,12 @@ Common phase moves:
 - Draft or plan -> domain pressure: use `grill-with-docs` when terminology, domain boundaries, `CONTEXT.md`, ADRs, or code/docs consistency could change the artifact. Use it before drafting the PRD/spec only when that risk already exists; otherwise draft first, then grill before implementation planning.
 - Plan or design -> decision-tree pressure: use `grill-me` when the user asks to be grilled, wants relentless questioning, or needs a plan/design stress-tested through one-question-at-a-time interrogation.
 - Open product, UX, component, ownership, library, or implementation choices -> use `afk-coding-tradeoffs`, pairing `afk-ui-registry-preferences` when UI primitives or registries matter.
-- Implementation -> select at least one execution discipline: use `test-driven-development` for behavior changes, `source-driven-development` for framework/library/API correctness, `doubt-driven-development` for risky non-trivial decisions, or an explicit normal-validation fallback when none fit; add `afk-execution-tracking` when checkpoints or durable state are needed.
-- Broad objective -> `/goal` package: use `plannotator-setup-goal` when the work needs reviewed facts, explicit done conditions, or an approved execution plan before implementation.
+- Orchestration -> implementation: `afk-execution-tracking` is active, and each implementation task gets at least one execution discipline: `test-driven-development`, `source-driven-development`, or `doubt-driven-development`.
+- Turbo -> execution: use GoalBuddy's local live board and proof loop; do not create parallel AFK execution tracking.
+- Goal package -> execution: hand off native `/goal` and track it with `afk-execution-tracking`.
 - Any draft or workflow artifact -> reader-facing polish: use `afk-doc-craft` only when the artifact needs human-facing documentation quality, not for agent-facing instruction surfaces or skill content.
 
-Most freestyle tasks need only one or two steps. Do not turn AFK Compass into ceremony.
+Most Free Route tasks need only one or two steps. Do not turn AFK Compass into ceremony.
 
 ## Skill Rules
 - Direct user skill mentions beat routing guesses.

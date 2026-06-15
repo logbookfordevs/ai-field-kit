@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { sectionTitle, muted } from "./brand.js";
-import { localManifestDir } from "./manifest.js";
+import { loadDefaultManifestContent, localManifestDir, readRememberedDefaultsSource, type ManifestName } from "./manifest.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, ManifestCategory, Runtime } from "./types.js";
 
@@ -20,17 +20,21 @@ const categories: ManifestShowCategory[] = [
   { id: "presets", label: "Presets", filename: "presets.json" },
 ];
 
-export function runManifestShow(runtime: Runtime, options: CliOptions): number {
+export async function runManifestShow(runtime: Runtime, options: CliOptions): Promise<number> {
   const selected = selectedCategories(options);
-  const manifestDir = manifestShowDir(options);
-  const scopeLabel = options.setupScope === "project" ? "Project" : "Global";
+  const localDir = manifestShowDir(options);
+  const sourceLabel = manifestShowSourceLabel(options);
 
   runtime.io.stdout("");
   runtime.io.stdout(sectionTitle("AFK manifests"));
-  runtime.io.stdout(`${muted("Scope")} ${scopeBadge(scopeLabel)}  ${muted("Directory")} ${manifestDir}`);
+  runtime.io.stdout(options.manifestLocal
+    ? `${muted("Source")} ${sourceBadge("Local")}  ${muted("Directory")} ${localDir}`
+    : `${muted("Source")} ${sourceBadge("Setup")}  ${muted("Defaults")} ${sourceLabel}`);
 
   for (const category of selected) {
-    const loaded = loadManifest(manifestDir, category.filename);
+    const loaded = options.manifestLocal
+      ? loadLocalManifest(localDir, category.filename)
+      : await loadSourceManifest(category.filename, options);
     runtime.io.stdout(renderCardHeader(category.label, loaded));
 
     if (!loaded.content) {
@@ -54,32 +58,59 @@ function selectedCategories(options: CliOptions): ManifestShowCategory[] {
 }
 
 function manifestShowDir(options: CliOptions): string {
-  return options.setupScope === "project" ? join(options.cwd, "afk", "manifests") : localManifestDir(options.homeDir);
+  return options.setupScope === "project" || options.manifestLocal ? join(options.cwd, "afk", "manifests") : localManifestDir(options.homeDir);
 }
 
-function loadManifest(manifestDir: string, filename: string): { source: "local" | "missing"; path: string; content: unknown | null } {
+function loadLocalManifest(manifestDir: string, filename: string): LoadedManifest {
   const localPath = join(manifestDir, filename);
   if (existsSync(localPath)) {
     return {
       source: "local",
-      path: localPath,
+      location: localPath,
       content: JSON.parse(readFileSync(localPath, "utf8")) as unknown,
     };
   }
 
   return {
     source: "missing",
-    path: localPath,
+    location: localPath,
     content: null,
   };
 }
 
-function renderCardHeader(label: string, loaded: { source: string; path: string }): string {
+async function loadSourceManifest(filename: ManifestShowCategory["filename"], options: CliOptions): Promise<LoadedManifest> {
+  const content = await loadDefaultManifestContent(filename as ManifestName, options);
+  if (!content) {
+    return {
+      source: "missing",
+      location: manifestShowSourceLabel(options),
+      content: null,
+    };
+  }
+
+  return {
+    source: "source",
+    location: manifestShowSourceLabel(options),
+    content: JSON.parse(content) as unknown,
+  };
+}
+
+function manifestShowSourceLabel(options: CliOptions): string {
+  return options.defaultsSource || readRememberedDefaultsSource(options) || "logbookfordevs/ai-field-kit";
+}
+
+type LoadedManifest = {
+  source: "source" | "local" | "missing";
+  location: string;
+  content: unknown | null;
+};
+
+function renderCardHeader(label: string, loaded: LoadedManifest): string {
   const status = loaded.source === "missing" ? paint(terminalPalette.ember, "missing") : paint(terminalPalette.harbor, "ready");
   return [
     "",
     `${paint(terminalPalette.brass, "┌")} ${bold}${label}${reset} ${muted(`(${loaded.source})`)} ${status}`,
-    `${muted("  file")} ${loaded.path}`,
+    `${muted(`  ${loaded.source === "local" ? "file" : "source"}`)} ${loaded.location}`,
   ].join("\n");
 }
 
@@ -220,8 +251,8 @@ function sourceItemLine(title: string, source: string): string {
   return `${title}\n${muted(`    ${truncateMiddle(trimmed, 96)}`)}`;
 }
 
-function scopeBadge(value: "Project" | "Global"): string {
-  return paint(value === "Project" ? terminalPalette.harbor : terminalPalette.brass, value);
+function sourceBadge(value: "Setup" | "Local"): string {
+  return paint(value === "Setup" ? terminalPalette.harbor : terminalPalette.brass, value);
 }
 
 function valueOrUnknown(value: unknown): string {

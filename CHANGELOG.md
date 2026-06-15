@@ -29,6 +29,7 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` taught `afk-execution-tracking` to record selected execution bundles, discipline evidence, and active checkpoints with an always-array marker before review, while treating commit hashes as receipts and tracking artifacts as explicit-ask commits only.
 - `skills:` made skill invocation policy sync both directions so `autoInvocation: true` re-enables model discovery even when an installed skill shipped disabled, while `write-a-skill` and `to-issues` remain manual.
 - `skills:` tightened `afk-pickup` so temp handoff resumes check direct `/tmp` paths before broader searches and avoid fragile shell search patterns.
+- `cli:` made `afk show` inspect the active setup source by default, retired the local manifest editor route from `afk configure`, and changed the plain `afk` lobby source action to save a new `--default-source`.
 
 ## v0.5.4 - 2026-06-06
 

@@ -113,9 +113,8 @@ afk setup hooks --dry-run
 # Refresh local manifest files from defaults
 afk setup refresh
 
-# Author or inspect manifests
-afk manifests configure
-afk manifests show
+# Inspect the active setup source
+afk show
 ```
 
 Compatibility aliases such as `afk setup skills install` and
@@ -226,14 +225,13 @@ should discover the skill.
 
 | Command | Flags |
 |---|---|
-| `afk manifests configure` | `--local`, `--from-current`, `--dry-run` |
-| `afk manifests show` | `--local`, `--rules`, `--skills`, `--mcp`/`--mcps`, `--utils`, `--hooks`, `--presets` |
-| `afk manifest show` | Alias for `afk manifests show`. |
+| `afk show` | `--source`, `--local`, `--rules`, `--skills`, `--mcp`/`--mcps`, `--utils`, `--hooks`, `--presets` |
+| `afk manifests show` | Alias for `afk show`. |
+| `afk manifest show` | Alias for `afk show`. |
 
-`afk manifests configure` writes selected manifest files. Without
-`--from-current`, selected files are authored from a fresh prompt flow. With
-`--from-current`, AFK loads existing manifests first and appends new entries
-through the prompts.
+`afk show` reads the active setup source by default: an explicit `--source`, a
+remembered `--default-source`, or the built-in AFK source. Use `--local` only
+when you need to inspect materialized `./afk/manifests` files.
 
 ## Manifest Model
 
@@ -260,9 +258,10 @@ utils.json
 hooks.json
 ```
 
-On first run, AFK seeds missing manifests from the default AFK source. After
-that, setup reads your local manifest files so you can add, remove, or replace
-recommendations without patching the CLI.
+AFK setup is source-backed. It reads recommendations from an explicit
+`--source`, a saved `--default-source`, or the built-in AFK source. Local
+manifest files are materialized setup inputs and inspection artifacts, not the
+primary authoring surface.
 
 Use these commands to prepare manifest files without running setup:
 
@@ -273,7 +272,8 @@ afk setup refresh
 afk setup refresh --local
 ```
 
-If a new AFK default does not show up locally, refresh the manifests:
+If you need to update materialized manifest files, refresh them from the active
+source:
 
 ```bash
 afk setup refresh
@@ -339,28 +339,19 @@ Use this when you want AFK defaults committed in a project before running
 `afk setup --local`. Use `afk setup refresh --local` when you want AFK itself to
 refresh those files from a defaults source.
 
-## Author Manifests Interactively
+## Author Manifests
 
-Create a project-local defaults bundle:
-
-```bash
-afk manifests configure --local
-```
-
-Start from existing files and append entries:
+Setup is source-backed. To change what AFK installs, edit the configured source
+repository or directory, then point setup at it with `--source` or
+`--default-source`.
 
 ```bash
-afk manifests configure --local --from-current
+afk show --source your-org/dev-kit
+afk setup --default-source your-org/dev-kit
 ```
 
-Preview without writing:
-
-```bash
-afk manifests configure --local --dry-run
-```
-
-This writes or previews `./afk/manifests/`, which can be committed to a repo
-and used later with `--source` or `--default-source`.
+`afk configure` is intentionally retired until AFK can edit a writable setup
+source directly, for example by creating a branch or patch in the source repo.
 
 ## Manifest Examples
 
@@ -555,7 +546,13 @@ afk --version
 
 ### A new manifest item does not appear
 
-AFK reads local manifests after they exist. Refresh them:
+AFK reads the active setup source by default. Inspect that source first:
+
+```bash
+afk show
+```
+
+If you need to update materialized local files, refresh them:
 
 ```bash
 afk setup refresh
@@ -574,7 +571,7 @@ Use dry-run on the full setup or an individual area:
 ```bash
 afk setup --dry-run
 afk setup hooks --dry-run
-afk manifests show
+afk show
 ```
 
 ### A delegated installer failed
