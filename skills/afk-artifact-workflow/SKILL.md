@@ -1,6 +1,6 @@
 ---
 name: afk-artifact-workflow
-description: "Manage durable workflow artifacts: PRDs, specs, RFCs, implementation plans, tracking, handoff notes, references, storage conventions, and next-artifact suggestions. Use when work needs artifact boundaries or handoff state; skip quick one-shot operations."
+description: "Manage durable workflow artifacts: PRDs, specs, RFCs, executable checkpoint packets, tracking, handoff notes, references, storage conventions, and next-artifact suggestions. Use when work needs artifact boundaries or handoff state; skip quick one-shot operations."
 metadata:
   short-description: Manage durable workflow artifacts, storage, and next-artifact suggestions.
 ---
@@ -16,37 +16,38 @@ Skip quick one-shot operations where no workflow state, artifact, or handoff is 
 
 - **PRD** explains product intent: user problem, goals, scope, non-goals, success criteria, and stakeholder context.
 - **Spec** explains behavior and design decisions: user flow, expected behavior, acceptance criteria, edge cases, constraints, and relevant design references. In small or solo contexts, PRD and spec can be combined when one artifact covers both responsibilities.
-- If the PRD or combined artifact lacks behavior needed for implementation, create or update a spec before writing the implementation plan.
-- **RFC** explains a proposed direction and invites review and feedback before implementation planning.
-- **Implementation Plan** is the technical execution artifact: files, types, interfaces, pseudocode, tasks, and build strategy.
-- **Tracking** follows the implementation plan and records execution status, checkpoints, validation, and handoff notes.
+- If the PRD or combined artifact lacks behavior needed for implementation, create or update a spec before executable slicing.
+- **RFC** explains a proposed direction and invites review and feedback before executable slicing.
+- **Checkpoint Packets** are the technical execution artifacts: thin vertical slices, dependencies, acceptance criteria, execution bundle, verification, handoff notes, and review gates.
+- **Tracking** follows checkpoint packets and records execution status, validation, review, and handoff state.
 
 ## Artifact Storage
 
 - Follow the repo or user artifact convention first.
 - If no convention exists, store generated workflow artifacts under `docs/<task-slug>/`.
 - Use a concise kebab-case task slug, such as `smart-filters` or `checkout-retry-flow`.
-- Prefer `docs/<task-slug>/<task-slug>.<type>.md`, using clear suffixes such as `.prd.md`, `.spec.md`, `.plan.md`, `.tracking.md`, etc.
+- Prefer `docs/<task-slug>/<task-slug>.<type>.md`, using clear suffixes such as `.prd.md`, `.spec.md`, `.plan.md`, etc. Keep executable checkpoint packets under `docs/<task-slug>/tracking/`.
 - Keep ADR-style decision records under `docs/<task-slug>/decisions/` with sequential filenames such as `0001-shared-modal-ownership.adr.md`, unless the repo has a stronger ADR convention.
 - Keep passive fetched material, screenshots, exports, and source references under `docs/<task-slug>/references/` when they belong to the task.
 - Treat generated workflow artifacts as local working artifacts unless the repo convention or the user says they should be committed.
 
 ## RFC Positioning
 
-- Create an RFC only when the user asks for one or confirms that team review is needed before implementation planning.
+- Create an RFC only when the user asks for one or confirms that team review is needed before executable slicing.
 
-## Implementation Planning Doctrine
+## Executable Slicing Doctrine
 
-- An implementation plan should act as an **execution index**, not a restatement of every prior document.
-- Prefer task-oriented plans with **on-demand references** to the exact prior docs, sections, or snippets needed for that task.
-- Optimize plans to reduce **context rot** and keep room for the codebase context that implementation will need.
-- Prefer a structure where **1 task can map to 1 clean agent session** when that improves focus, traceability, or parallel work.
+- Executable slices should act as **checkpoint packets**, not a restatement of every prior document.
+- Prefer checkpoint packets with **on-demand references** to the exact prior docs, sections, or snippets needed for that slice.
+- Optimize slices to reduce **context rot** and keep room for the codebase context that implementation will need.
+- Prefer a structure where **1 checkpoint can map to 1 clean agent session** when that improves focus, traceability, or parallel work.
 - When prior docs already exist, treat them as the primary planning source of truth.
-- Preserve any selected execution bundle or task discipline notes from planning into tracking and handoff artifacts. Do not decide the bundle here; let `afk-compass` or the user choose it.
+- Preserve any selected execution bundle or task discipline notes from slicing into tracking and handoff artifacts. Do not decide the bundle here; let `afk-compass` or the user choose it.
 
 ## Execution Tracking
 
-- Route to `afk-execution-tracking` when execution needs durable checkpoints, gates, handoff state, interruption recovery or when user requests.
+- Route to `afk-to-issues` when source artifacts need executable checkpoint packets.
+- Route to `afk-execution-tracking` when checkpoint packets exist and execution needs durable status, gates, handoff state, interruption recovery, or when user requests.
 
 ## Implementation Notes
 
@@ -60,5 +61,5 @@ Skip quick one-shot operations where no workflow state, artifact, or handoff is 
 - Do not create workflow artifacts for tiny one-shot edits unless the user asks.
 - Do not turn every coding request into a spec-driven ceremony.
 - If the user already has PRDs, specs, RFCs, plans, or tracking files, read those before inventing new structure.
-- When current sources or artifacts are staged, suggest the next useful workflow artifact, such as PRD/spec, domain grill, implementation plan, tracking, or handoff, and explain why that artifact is the next useful one.
+- When current sources or artifacts are staged, suggest the next useful workflow artifact, such as PRD/spec, domain grill, checkpoint packets, tracking, or handoff, and explain why that artifact is the next useful one.
 - If a project uses a different established convention, follow that project convention and preserve AFK as a fallback lens.

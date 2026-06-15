@@ -63,6 +63,18 @@
             "autoInvocation": true
         },
         {
+            "id": "afk-to-issues",
+            "label": "AFK / To Issues",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-to-issues",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
             "id": "afk-deep-interview",
             "label": "AFK / Deep Interview",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -255,18 +267,6 @@
             "autoInvocation": false
         },
         {
-            "id": "planning-and-task-breakdown",
-            "label": "External / Planning and Task Breakdown",
-            "source": "https://github.com/addyosmani/agent-skills.git",
-            "args": [
-                "--skill",
-                "planning-and-task-breakdown",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": true
-        },
-        {
             "id": "test-driven-development",
             "label": "External / Test Driven Development",
             "source": "https://github.com/addyosmani/agent-skills.git",
@@ -363,18 +363,6 @@
             "autoInvocation": true
         },
         {
-            "id": "to-issues",
-            "label": "External / To Issues",
-            "source": "https://github.com/mattpocock/skills",
-            "args": [
-                "--skill",
-                "to-issues",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": false
-        },
-        {
             "id": "prototype",
             "label": "External / Prototype",
             "source": "https://github.com/mattpocock/skills",
@@ -385,18 +373,6 @@
             ],
             "default": true,
             "autoInvocation": true
-        },
-        {
-            "id": "setup-matt-pocock-skills",
-            "label": "External / Setup Matt Pocock Skills",
-            "source": "https://github.com/mattpocock/skills",
-            "args": [
-                "--skill",
-                "setup-matt-pocock-skills",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": false
         },
         {
             "id": "handoff",

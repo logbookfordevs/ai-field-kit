@@ -1,4 +1,4 @@
 interface:
   display_name: "AFK Artifact Workflow"
   short_description: "Manage durable workflow artifacts, storage, and next-artifact suggestions."
-  default_prompt: "Use the artifact workflow for PRDs, specs, RFCs, implementation plans, tracking or handoff notes, source references, and generated workflow artifacts. Respect existing artifacts, follow the repo artifact convention or AFK fallback, suggest the next useful workflow artifact when sources or artifacts are staged, and return to $afk-compass when the next phase needs different skill selection."
+  default_prompt: "Use the artifact workflow for PRDs, specs, RFCs, executable checkpoint packets, tracking or handoff notes, source references, and generated workflow artifacts. Respect existing artifacts, follow the repo artifact convention or AFK fallback, suggest the next useful workflow artifact when sources or artifacts are staged, and return to $afk-compass when the next phase needs different skill selection."

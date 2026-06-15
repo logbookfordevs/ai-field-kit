@@ -1,4 +1,4 @@
 interface:
   display_name: "Execution Tracking"
   short_description: "Track checkpointed implementation state across tasks, reviews, validation, and agent handoffs."
-  default_prompt: "Track this implementation using the AFK execution tracking workflow: create or update the canonical tracking file, keep task status current, record validation and review gates, note material simplification opportunities before final handoff, and preserve a clear next action for resume."
+  default_prompt: "Track this implementation using AFK execution tracking: resume from existing checkpoint packet files, keep packet statuses current, record validation evidence and review gates, preserve handoff notes, and keep implementation notes clear."
