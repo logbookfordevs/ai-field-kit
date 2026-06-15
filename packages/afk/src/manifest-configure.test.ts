@@ -38,7 +38,7 @@ test("emptyEditableManifest creates typed empty manifests", () => {
   assert.deepEqual(emptyEditableManifest("rules"), { version: 1, source: "github", url: "" });
   assert.deepEqual(emptyEditableManifest("skills"), { version: 1, defaultSource: "", items: [] });
   assert.deepEqual(emptyEditableManifest("mcps"), { version: 1, items: [] });
-  assert.deepEqual(emptyEditableManifest("utils"), { version: 1, items: [] });
+  assert.deepEqual(emptyEditableManifest("plugins"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("hooks"), { version: 1, items: [] });
 });
 
@@ -424,7 +424,7 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
     selectedMcpIds: [],
-    selectedUtilIds: [],
+    selectedPluginIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "manifest",
@@ -446,7 +446,7 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
 }
 
 function scriptedPrompts(script: {
-  areas: Array<"rules" | "skills" | "mcps" | "utils" | "hooks" | "finish">;
+  areas: Array<"rules" | "skills" | "mcps" | "plugins" | "hooks" | "finish">;
   actions: ManifestAction[];
   items?: string[];
   inputs?: string[];

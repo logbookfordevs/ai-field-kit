@@ -62,7 +62,7 @@ support is handled by the official `skills` CLI.
 ### AFK CLI — full setup
 
 If you want the complete stack, use the AFK CLI. It is the setup router for
-rules, skills, MCPs, utilities, hooks, dry-runs, and team-specific manifests.
+rules, skills, MCPs, plugins, hooks, dry-runs, and team-specific manifests.
 
 ```bash
 npm install -g @logbookfordevs/afk
@@ -71,7 +71,7 @@ afk setup --dry-run
 
 Start with `--dry-run`: AFK prints the exact actions it would take before it
 writes to your machine. The CLI owns AFK rule and hook setup, then delegates
-skills, MCPs, and utilities to the official tools or installer scripts that
+skills, MCPs, and plugins to the official tools or installer scripts that
 already own those ecosystems.
 
 For the full command reference, flags, manifest format, local-development
@@ -92,7 +92,7 @@ afk setup --local --dry-run
 
 The registry item writes the same fragmented manifest files AFK already reads
 under `./afk/manifests/`. shadcn handles distribution; AFK still owns setup
-semantics such as defaults, scopes, managed rules, hooks, utilities, and
+semantics such as defaults, scopes, managed rules, hooks, plugins, and
 delegated skill/MCP installers.
 
 If you want to work from source, clone the repo and run the package directly:
@@ -331,7 +331,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **GoalBuddy**
   Install: `npx goalbuddy`
-  Recommended for high-throughput AFK Turbo work that needs a local live board, PM loop, role-tagged task execution, receipts, and proof pressure around broad goals. AFK exposes GoalBuddy through Utilities and delegates to its installer.
+  Recommended for high-throughput AFK Turbo work that needs a local live board, PM loop, role-tagged task execution, receipts, and proof pressure around broad goals. AFK exposes GoalBuddy through Plugins and delegates to its installer.
 
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  
@@ -339,7 +339,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Impeccable**  
   Install: `npx impeccable skills install`  
-  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Utilities and delegates to its installer.
+  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Plugins and delegates to its installer.
 
 - **cmux**  
   Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  
@@ -352,7 +352,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
 
-Installer-based companions belong in Utilities. Keep `skills.json` focused on skills installed through `npx skills add`.
+Installer-based companions belong in Plugins. Keep `skills.json` focused on skills installed through `npx skills add`.
 
 ### Practical guidance
 
@@ -516,7 +516,7 @@ Use `add-mcp` or the agent's official setup flow for the actual install.
 ### AFK manifests
 
 AFK setup is driven by manifests under `packages/afk/manifests/`. Use them to
-define recommended rules, skills, MCPs, utilities, and presets while keeping
+define recommended rules, skills, MCPs, plugins, and presets while keeping
 installation delegated to the right upstream CLI.
 
 ---

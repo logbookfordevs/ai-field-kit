@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
+import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions, Runtime } from "./types.js";
 
@@ -34,7 +34,7 @@ const defaultHomeDir = localHomeWithManifests({
       },
     ],
   },
-  "utils.json": {
+  "plugins.json": {
     version: 1,
     items: [
       {
@@ -67,7 +67,7 @@ const options: CliOptions = {
   selectedSkillIds: [],
   selectedSkillAgentIds: [],
   selectedMcpIds: [],
-  selectedUtilIds: [],
+  selectedPluginIds: [],
   selectedHookIds: [],
   rulesRef: "main",
   rulesSource: "local",
@@ -235,8 +235,8 @@ test("buildMcpCommands does not expand yes mode to broad default agents", () => 
   assert.deepEqual(commands, []);
 });
 
-test("buildUtilityCommands installs selected utilities", () => {
-  const commands = buildUtilityCommands({ ...options, selectedUtilIds: ["plannotator"] });
+test("buildPluginCommands installs selected plugins", () => {
+  const commands = buildPluginCommands({ ...options, selectedPluginIds: ["plannotator"] });
   assert.equal(commands.length, 1);
   assert.equal(commands[0]?.command, "bash");
   assert.deepEqual(commands[0]?.args, ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"]);
@@ -254,8 +254,8 @@ test("buildMcpCommands skips project-scoped Antigravity installs", () => {
   assert.deepEqual(commands, []);
 });
 
-test("buildUtilityCommands adds RTK init commands for selected agents", () => {
-  const commands = buildUtilityCommands({ ...options, agents: ["antigravity", "claude", "codex", "opencode"], selectedUtilIds: ["rtk"] });
+test("buildPluginCommands adds RTK init commands for selected agents", () => {
+  const commands = buildPluginCommands({ ...options, agents: ["antigravity", "claude", "codex", "opencode"], selectedPluginIds: ["rtk"] });
 
   assert.deepEqual(
     commands.map((command) => [command.command, command.args]),
@@ -270,8 +270,8 @@ test("buildUtilityCommands adds RTK init commands for selected agents", () => {
   assert.equal(commands[3]?.cwd, join(defaultHomeDir, ".codex"));
 });
 
-test("buildUtilityCommands ignores Cursor local because it is hook-only", () => {
-  const commands = buildUtilityCommands({ ...options, agents: ["cursor-local"], selectedUtilIds: ["rtk"] });
+test("buildPluginCommands ignores Cursor local because it is hook-only", () => {
+  const commands = buildPluginCommands({ ...options, agents: ["cursor-local"], selectedPluginIds: ["rtk"] });
 
   assert.deepEqual(
     commands.map((command) => [command.command, command.args]),
@@ -280,8 +280,8 @@ test("buildUtilityCommands ignores Cursor local because it is hook-only", () => 
 });
 
 
-test("buildUtilityCommands runs RTK init locally for project scope", () => {
-  const commands = buildUtilityCommands({ ...options, setupScope: "project", agents: ["antigravity", "claude", "codex", "opencode"], selectedUtilIds: ["rtk"] });
+test("buildPluginCommands runs RTK init locally for project scope", () => {
+  const commands = buildPluginCommands({ ...options, setupScope: "project", agents: ["antigravity", "claude", "codex", "opencode"], selectedPluginIds: ["rtk"] });
 
   assert.deepEqual(
     commands.map((command) => [command.command, command.args]),
@@ -296,27 +296,27 @@ test("buildUtilityCommands runs RTK init locally for project scope", () => {
   assert.equal(commands[3]?.cwd, undefined);
 });
 
-test("buildUtilityCommands supports generic post-install commands", () => {
-  const homeDir = localHomeWithManifest("utils.json", {
+test("buildPluginCommands supports generic post-install commands", () => {
+  const homeDir = localHomeWithManifest("plugins.json", {
     version: 1,
     items: [
       {
         id: "custom-postinstall",
-        label: "Custom Utility",
-        description: "Custom utility.",
+        label: "Custom Plugin",
+        description: "Custom plugin.",
         install: { command: "sh", args: ["-c", "install-custom"] },
         postInstall: { command: "sh", args: ["-c", "custom init"] },
         default: true,
       },
     ],
   });
-  const commands = buildUtilityCommands({ ...options, homeDir, selectedUtilIds: ["custom-postinstall"] });
+  const commands = buildPluginCommands({ ...options, homeDir, selectedPluginIds: ["custom-postinstall"] });
 
   assert.deepEqual(
     commands.map((command) => [command.label, command.command, command.args]),
     [
-      ["Custom Utility / install", "sh", ["-c", "install-custom"]],
-      ["Custom Utility / post-install", "sh", ["-c", "custom init"]],
+      ["Custom Plugin / install", "sh", ["-c", "install-custom"]],
+      ["Custom Plugin / post-install", "sh", ["-c", "custom init"]],
     ],
   );
 });

@@ -43,8 +43,14 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
   }
 
   if (parsed.help) {
-    if (isManifestConfigureCommand(commandKey(parsed.commandPath))) {
+    const key = commandKey(parsed.commandPath);
+    if (isManifestConfigureCommand(key)) {
       return unavailableManifestConfigure(runtime);
+    }
+    if (parsed.commandPath && !commandHelps[key]) {
+      runtime.io.stderr(`Unknown command: ${key}`);
+      runtime.io.stderr(helpText());
+      return 1;
     }
     runtime.io.stdout(helpText(parsed.commandPath));
     return 0;
@@ -151,7 +157,7 @@ const setupAreaOptions = [
 const commandHelps: Record<string, CommandHelp> = {
   setup: {
     title: "AFK setup",
-    summary: "Guided setup for rules, skills, MCPs, utilities, and hooks.",
+    summary: "Guided setup for rules, skills, MCPs, plugins, and hooks.",
     usage: "afk setup [options]",
     options: [
       setupOptions.dryRun,
@@ -172,7 +178,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup rules                   Sync AFK rules into managed agent rule regions",
       "afk setup skills                  Delegate skill installation to the official skills CLI",
       "afk setup mcps                    Delegate MCP installation to add-mcp",
-      "afk setup utils                   Install optional developer utilities",
+      "afk setup plugins                   Install optional developer plugins",
       "afk setup hooks                   Merge AFK lifecycle hooks into agent hook configs",
     ],
     examples: [
@@ -297,26 +303,15 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup mcps --local --agent codex",
     ],
   },
-  "setup utils": {
-    title: "AFK setup utils",
-    summary: "Install optional developer utilities and run supported post-install setup.",
-    usage: "afk setup utils [options]",
+  "setup plugins": {
+    title: "AFK setup plugins",
+    summary: "Install optional developer plugins and run supported post-install setup.",
+    usage: "afk setup plugins [options]",
     options: setupAreaOptions,
     examples: [
-      "afk setup utils --dry-run",
-      "afk setup utils --yes",
-      "afk setup utils --local --agent opencode",
-    ],
-  },
-  "setup utils install": {
-    title: "AFK setup utils",
-    summary: "Install optional developer utilities and run supported post-install setup.",
-    usage: "afk setup utils [options]",
-    options: setupAreaOptions,
-    examples: [
-      "afk setup utils --dry-run",
-      "afk setup utils --yes",
-      "afk setup utils --local --agent opencode",
+      "afk setup plugins --dry-run",
+      "afk setup plugins --yes",
+      "afk setup plugins --local --agent opencode",
     ],
   },
   show: {
@@ -329,7 +324,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--rules                          Show rules manifest",
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
-      "--utils                          Show utilities manifest",
+      "--plugins                          Show plugins manifest",
       "--hooks                          Show hooks manifest",
       "--presets                        Show presets manifest",
     ],
@@ -337,7 +332,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk show",
       "afk show --local",
       "afk show --rules --skills",
-      "afk show --mcp --utils",
+      "afk show --mcp --plugins",
     ],
   },
   "manifests show": {
@@ -350,7 +345,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--rules                          Show rules manifest",
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
-      "--utils                          Show utilities manifest",
+      "--plugins                          Show plugins manifest",
       "--hooks                          Show hooks manifest",
       "--presets                        Show presets manifest",
     ],
@@ -358,7 +353,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk show",
       "afk show --local",
       "afk show --rules --skills",
-      "afk show --mcp --utils",
+      "afk show --mcp --plugins",
     ],
   },
   "manifest show": {
@@ -371,7 +366,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--rules                          Show rules manifest",
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
-      "--utils                          Show utilities manifest",
+      "--plugins                          Show plugins manifest",
       "--hooks                          Show hooks manifest",
       "--presets                        Show presets manifest",
     ],
@@ -589,7 +584,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       selectedSkillIds: [],
       selectedSkillAgentIds,
       selectedMcpIds: [],
-      selectedUtilIds: [],
+      selectedPluginIds: [],
       selectedHookIds: [],
       rulesRef,
       rulesSource,
@@ -633,8 +628,8 @@ function commandToArea(commandPath: string[]): Area | null {
     return "mcps";
   }
 
-  if (key === "setup utils" || key === "setup utils install") {
-    return "utils";
+  if (key === "setup plugins") {
+    return "plugins";
   }
 
   if (key === "setup hooks" || key === "setup hooks install") {
@@ -711,7 +706,7 @@ Usage:
   afk setup rules [options]
   afk setup skills [options]
   afk setup mcps [options]
-  afk setup utils [options]
+  afk setup plugins [options]
   afk setup hooks [options]
   afk show [options]
 
@@ -739,9 +734,8 @@ function manifestCategoryFlag(arg: string): ManifestCategory | null {
     case "--mcp":
     case "--mcps":
       return "mcps";
-    case "--util":
-    case "--utils":
-      return "utils";
+    case "--plugins":
+      return "plugins";
     case "--hook":
     case "--hooks":
       return "hooks";
