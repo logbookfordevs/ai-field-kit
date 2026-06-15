@@ -2,11 +2,11 @@
 
 AFK is the setup router for AI Field Kit. It gives developers one place to
 preview and apply the parts of the kit they want: shared rules, skills, MCPs,
-utilities, hooks, and custom setup manifests.
+plugins, hooks, and custom setup manifests.
 
 The CLI is intentionally a router, not a replacement for every ecosystem tool.
 AFK owns the AFK-specific rule and hook behavior. It delegates skills to the
-official `skills` CLI, MCPs to `add-mcp`, and utilities to their own installer
+official `skills` CLI, MCPs to `add-mcp`, and plugins to their own installer
 commands.
 
 ## Quick Start
@@ -18,7 +18,7 @@ npm install -g @logbookfordevs/afk
 afk setup --dry-run
 ```
 
-Start with `--dry-run`. AFK prints the exact rules, skills, MCP, utility, and
+Start with `--dry-run`. AFK prints the exact rules, skills, MCP, plugin, and
 hook actions it would run before anything writes to your machine.
 
 When the preview looks right, run the same command without `--dry-run`:
@@ -38,7 +38,7 @@ pass `--source` for that run or save a source with `--default-source`.
 | Rules | `afk setup rules` | Syncs AFK rules into managed regions of supported agent rule files. |
 | Skills | `afk setup skills` | Delegates selected skill installs to `npx skills add`. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `npx add-mcp`. |
-| Utils | `afk setup utils` | Runs curated utility installer commands and supported post-install setup. |
+| Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |
 | Hooks | `afk setup hooks` | Copies hook scripts and merges hook commands into supported agent configs. |
 
 `afk setup` can run all of those areas in one guided flow. Each area runs
@@ -107,7 +107,7 @@ afk setup --local
 afk setup rules --dry-run
 afk setup skills --dry-run
 afk setup mcps --dry-run
-afk setup utils --dry-run
+afk setup plugins --dry-run
 afk setup hooks --dry-run
 
 # Refresh local manifest files from defaults
@@ -161,7 +161,7 @@ Area support is narrower than the full alias list:
 | Rules | `antigravity`, `claude`, `codex`, `opencode`; project scope also supports `cursor-local`. |
 | MCPs | `antigravity`, `claude`, `codex`, `opencode`; project scope skips Antigravity because `add-mcp` does not support that target locally. |
 | Hooks | `codex`, `claude`, `cursor-local`. |
-| Utils | Utility installers run independently; RTK post-install supports `antigravity`, `claude`, `codex`, and `opencode`. |
+| Plugins | Plugin installers run independently; RTK post-install supports `antigravity`, `claude`, `codex`, and `opencode`. |
 
 ### Detected Setup Targets
 
@@ -175,7 +175,7 @@ agent directories such as `.codex/config.toml`, `.claude/settings.json`,
 If a selected target-dependent area has no detected compatible target,
 interactive setup asks for manual targets once.
 
-Utilities are not driven by detected agent targets. They remain global or
+Plugins are not driven by detected agent targets. They remain global or
 project scoped. Skills always use the shared `.agents/skills` install path;
 detected skill providers only add extra direct `skills` CLI targets.
 
@@ -225,7 +225,7 @@ should discover the skill.
 
 | Command | Flags |
 |---|---|
-| `afk show` | `--source`, `--local`, `--rules`, `--skills`, `--mcp`/`--mcps`, `--utils`, `--hooks`, `--presets` |
+| `afk show` | `--source`, `--local`, `--rules`, `--skills`, `--mcp`/`--mcps`, `--plugins`, `--hooks`, `--presets` |
 | `afk manifests show` | Alias for `afk show`. |
 | `afk manifest show` | Alias for `afk show`. |
 
@@ -254,7 +254,7 @@ skills.json
 mcps.json
 presets.json
 rules.json
-utils.json
+plugins.json
 hooks.json
 ```
 
@@ -330,7 +330,7 @@ The registry item writes:
 ./afk/manifests/skills.json
 ./afk/manifests/mcps.json
 ./afk/manifests/rules.json
-./afk/manifests/utils.json
+./afk/manifests/plugins.json
 ./afk/manifests/hooks.json
 ./afk/manifests/presets.json
 ```
@@ -415,7 +415,7 @@ is also installed by default.
 AFK passes the source and args to `add-mcp`, then adds scope and agent flags
 based on the setup command.
 
-### Utilities
+### Plugins
 
 ```json
 {
@@ -424,7 +424,7 @@ based on the setup command.
     {
       "id": "example-tool",
       "label": "Example Tool",
-      "description": "Install the example developer utility.",
+      "description": "Install the example developer plugin.",
       "install": {
         "command": "sh",
         "args": ["-c", "curl -fsSL https://example.com/install.sh | sh"]
@@ -435,8 +435,8 @@ based on the setup command.
 }
 ```
 
-Utilities are delegated commands. If one utility install fails, AFK reports the
-failure and continues with the remaining selected utilities.
+Plugins are delegated commands. If one plugin install fails, AFK reports the
+failure and continues with the remaining selected plugins.
 
 AFK also supports object-style post-install commands:
 
@@ -517,13 +517,13 @@ Global setup writes under the user home directory. Project setup writes under
 the current project. Cursor Cloud lifecycle hooks are intentionally out of
 scope.
 
-### Utilities
+### Plugins
 
-The bundled utility manifest currently includes Plannotator, RTK, Yggtree, and
-Impeccable. Utility setup is best-effort because these installers are owned by
+The bundled plugin manifest currently includes Plannotator, RTK, Yggtree, and
+Impeccable. Plugin setup is best-effort because these installers are owned by
 their upstream tools.
 
-RTK post-install follows the selected AFK targets. With no explicit utility
+RTK post-install follows the selected AFK targets. With no explicit plugin
 agent selection, AFK uses the RTK defaults: `antigravity`, `claude`, `codex`,
 and `opencode`.
 
@@ -579,11 +579,11 @@ afk show
 Rerun with `--verbose` so the delegated command prints its own output:
 
 ```bash
-afk setup utils --verbose
+afk setup plugins --verbose
 ```
 
 AFK can show which delegated command it planned with:
 
 ```bash
-afk setup utils --dry-run
+afk setup plugins --dry-run
 ```

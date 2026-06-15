@@ -3,13 +3,13 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { normalizeSetupSelection, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectUtilsInstall } from "./interactive.js";
+import { normalizeSetupSelection, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
 const promptState = vi.hoisted(() => ({
   checkboxMessages: [] as string[],
-  setupAreas: ["utils"] as string[],
+  setupAreas: ["plugins"] as string[],
   inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
 }));
 
@@ -28,7 +28,7 @@ vi.mock("@inquirer/prompts", () => ({
       return ["stitch"];
     }
 
-    if (message === "Choose utilities to install") {
+    if (message === "Choose plugins to install") {
       return ["rtk"];
     }
 
@@ -54,7 +54,7 @@ test("normalizeSetupSelection removes item areas when every item is unselected",
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    utilIds: [],
+    pluginIds: [],
     hookIds: [],
   });
 
@@ -63,18 +63,18 @@ test("normalizeSetupSelection removes item areas when every item is unselected",
 
 test("normalizeSetupSelection keeps item areas when at least one item is selected", () => {
   const selection = normalizeSetupSelection({
-    areas: ["skills", "mcps", "utils"],
+    areas: ["skills", "mcps", "plugins"],
     agents: [],
     hookAgents: [],
     setupScope: "project",
     skillIds: ["afk-note"],
     skillAgents: ["kiro-cli"],
     mcpIds: ["stitch"],
-    utilIds: ["rtk"],
+    pluginIds: ["rtk"],
     hookIds: [],
   });
 
-  assert.deepEqual(selection.areas, ["skills", "mcps", "utils"]);
+  assert.deepEqual(selection.areas, ["skills", "mcps", "plugins"]);
   assert.deepEqual(selection.skillAgents, ["kiro-cli"]);
 });
 
@@ -87,7 +87,7 @@ test("normalizeSetupSelection keeps hooks when at least one hook is selected", (
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    utilIds: [],
+    pluginIds: [],
     hookIds: ["afk-execution-tracking-stop-check"],
   });
 
@@ -103,7 +103,7 @@ test("normalizeSetupSelection removes hooks when every hook target is unselected
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    utilIds: [],
+    pluginIds: [],
     hookIds: ["afk-execution-tracking-stop-check"],
   });
 
@@ -119,7 +119,7 @@ test("normalizeSetupSelection filters hook-only Cursor from general agents", () 
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    utilIds: [],
+    pluginIds: [],
     hookIds: ["afk-execution-tracking-stop-check"],
   });
 
@@ -127,29 +127,29 @@ test("normalizeSetupSelection filters hook-only Cursor from general agents", () 
   assert.deepEqual(selection.hookAgents, ["cursor-local"]);
 });
 
-test("selectSetup does not ask for agent targets when only utilities are selected", async () => {
+test("selectSetup does not ask for agent targets when only plugins are selected", async () => {
   promptState.checkboxMessages = [];
-  promptState.setupAreas = ["utils"];
-  const selection = await selectSetup(defaultOptions(localHomeWithUtilityManifest()));
+  promptState.setupAreas = ["plugins"];
+  const selection = await selectSetup(defaultOptions(localHomeWithPluginManifest()));
 
-  assert.deepEqual(selection.areas, ["utils"]);
-  assert.deepEqual(selection.utilIds, ["rtk"]);
+  assert.deepEqual(selection.areas, ["plugins"]);
+  assert.deepEqual(selection.pluginIds, ["rtk"]);
   assert.deepEqual(selection.agents, []);
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
 
-test("selectUtilsInstall does not ask for agent targets when installing RTK", async () => {
+test("selectPluginsInstall does not ask for agent targets when installing RTK", async () => {
   promptState.checkboxMessages = [];
-  const selection = await selectUtilsInstall(defaultOptions(localHomeWithUtilityManifest()));
+  const selection = await selectPluginsInstall(defaultOptions(localHomeWithPluginManifest()));
 
-  assert.deepEqual(selection.utilIds, ["rtk"]);
+  assert.deepEqual(selection.pluginIds, ["rtk"]);
   assert.deepEqual(selection.agents, []);
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
 
 test("selectRulesSync asks for rules-specific agent targets", async () => {
   promptState.checkboxMessages = [];
-  const selection = await selectRulesSync(defaultOptions(localHomeWithUtilityManifest()));
+  const selection = await selectRulesSync(defaultOptions(localHomeWithPluginManifest()));
 
   assert.deepEqual(selection.agents, ["codex"]);
   assert.ok(promptState.checkboxMessages.includes("Choose agents for rules"));
@@ -158,7 +158,7 @@ test("selectRulesSync asks for rules-specific agent targets", async () => {
 
 test("selectRulesSync uses detected targets without asking", async () => {
   promptState.checkboxMessages = [];
-  const homeDir = localHomeWithUtilityManifest();
+  const homeDir = localHomeWithPluginManifest();
   mkdirSync(join(homeDir, ".codex"), { recursive: true });
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
 
@@ -278,7 +278,7 @@ function defaultOptions(homeDir: string): CliOptions {
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
     selectedMcpIds: [],
-    selectedUtilIds: [],
+    selectedPluginIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "local",
@@ -298,12 +298,12 @@ function defaultOptions(homeDir: string): CliOptions {
   };
 }
 
-function localHomeWithUtilityManifest(): string {
+function localHomeWithPluginManifest(): string {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
   writeFileSync(
-    join(manifestDir, "utils.json"),
+    join(manifestDir, "plugins.json"),
     `${JSON.stringify({
       version: 1,
       items: [
@@ -378,7 +378,7 @@ function localHomeWithAllManifests(): string {
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "local", url: "rules/AGENTS.md" },
-    "utils.json": { version: 1, items: [] },
+    "plugins.json": { version: 1, items: [] },
     "hooks.json": {
       version: 1,
       items: [

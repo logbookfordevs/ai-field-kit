@@ -20,7 +20,7 @@ Do not spend context on instructions the model can already infer, and do not bur
 - **Agents / multi agents / team of agents**: child agents or sub-agents spawned to work in parallel, not the single agent currently reading this file.
 - **AFK / AI Field Kit**: the product and ecosystem as a whole, not only a subset of skills.
 - **Skill**: an instruction package for an agent. Keep it tiny unless it coordinates a process or must produce durable artifacts with invariants.
-- **CLI**: an executable command and the preferred owner for install/setup orchestration when AFK needs to configure skills, MCPs, hooks, rules, or utils.
+- **CLI**: an executable command and the preferred owner for install/setup orchestration when AFK needs to configure skills, MCPs, hooks, rules, or plugins.
 - **MCP**: a tool-server integration surface. Do not treat it as interchangeable with a CLI; compare capability, automation behavior, and token overhead.
 - **Hook**: deterministic background automation. When the goal is low-context, low-token behavior, prefer hooks over always-present instructions or MCP layers.
 - **App / connector**: a Codex-style connector backed by app metadata and tools. It is not just another name for a skill bundle, plugin, or CLI.

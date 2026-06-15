@@ -32,20 +32,20 @@ vi.mock("./interactive.js", async (importOriginal) => {
   };
 });
 
-test("runSetup keeps prompted rule targets out of utility defaults", async () => {
+test("runSetup keeps prompted rule targets out of plugin defaults", async () => {
   const homeDir = localHomeWithManifests();
   const repoDir = localRepoWithRules();
   const output: string[] = [];
 
   promptState.selection = {
-    areas: ["rules", "utils"],
+    areas: ["rules", "plugins"],
     agents: ["codex"],
     hookAgents: [],
     setupScope: "global",
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    utilIds: ["rtk"],
+    pluginIds: ["rtk"],
     hookIds: [],
   };
 
@@ -75,7 +75,7 @@ test("runSetup labels detected targets in the setup summary", async () => {
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    utilIds: [],
+    pluginIds: [],
     hookIds: [],
     agentSource: "detected",
   };
@@ -100,7 +100,7 @@ test("runSetup explains selected MCPs without targets", async () => {
     skillIds: [],
     skillAgents: [],
     mcpIds: ["stitch"],
-    utilIds: [],
+    pluginIds: [],
     hookIds: [],
   };
 
@@ -162,14 +162,14 @@ test("runSetup prepares manifests only once before running selected areas", asyn
 
   promptState.defaultsSource = "local";
   promptState.selection = {
-    areas: ["rules", "utils"],
+    areas: ["rules", "plugins"],
     agents: ["codex"],
     hookAgents: [],
     setupScope: "global",
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    utilIds: ["rtk"],
+    pluginIds: ["rtk"],
     hookIds: [],
   };
 
@@ -198,7 +198,7 @@ test("runSetup prompts for a run-only source without changing the saved default"
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    utilIds: [],
+    pluginIds: [],
     hookIds: [],
   };
 
@@ -233,7 +233,7 @@ test("runSetup with --yes fails when no source or saved default exists", async (
 });
 
 test("runArea prompts for a source for every interactive setup area", async () => {
-  const areas = ["rules", "skills", "mcps", "utils", "hooks"] as const;
+  const areas = ["rules", "skills", "mcps", "plugins", "hooks"] as const;
 
   for (const area of areas) {
     const homeDir = localHomeWithManifests();
@@ -248,7 +248,7 @@ test("runArea prompts for a source for every interactive setup area", async () =
       agents: ["codex"],
       selectedSkillIds: area === "skills" ? ["afk-note"] : [],
       selectedMcpIds: area === "mcps" ? ["stitch"] : [],
-      selectedUtilIds: area === "utils" ? ["rtk"] : [],
+      selectedPluginIds: area === "plugins" ? ["rtk"] : [],
       selectedHookIds: area === "hooks" ? ["afk-execution-tracking-stop-check"] : [],
     });
 
@@ -299,7 +299,7 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
     selectedMcpIds: [],
-    selectedUtilIds: [],
+    selectedPluginIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "local",
@@ -329,7 +329,7 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "local", url: "rules/AGENTS.md" },
-    "utils.json": {
+    "plugins.json": {
       version: 1,
       items: [
         {
@@ -363,7 +363,7 @@ function localDefaultsSource(): string {
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "github", url: "" },
-    "utils.json": { version: 1, items: [] },
+    "plugins.json": { version: 1, items: [] },
     "hooks.json": { version: 1, items: [] },
   };
 

@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { addMcpAgentNames } from "./agents.js";
-import { loadMcpManifest, loadSkillManifest, loadUtilityManifest, type SkillManifestItem, type UtilityManifestItem } from "./manifest.js";
+import { loadMcpManifest, loadSkillManifest, loadPluginManifest, type SkillManifestItem, type PluginManifestItem } from "./manifest.js";
 import type { AgentId, CliOptions, Runtime, SkillAgentId } from "./types.js";
 
 export type DelegateCommand = {
@@ -54,16 +54,16 @@ export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "h
     }));
 }
 
-export function buildUtilityCommands(options: Pick<CliOptions, "agents" | "homeDir" | "selectedUtilIds" | "setupScope">): DelegateCommand[] {
-  const manifest = loadUtilityManifest(options);
+export function buildPluginCommands(options: Pick<CliOptions, "agents" | "homeDir" | "selectedPluginIds" | "setupScope">): DelegateCommand[] {
+  const manifest = loadPluginManifest(options);
   const selected =
-    options.selectedUtilIds.length > 0
-      ? manifest.items.filter((item) => options.selectedUtilIds.includes(item.id))
+    options.selectedPluginIds.length > 0
+      ? manifest.items.filter((item) => options.selectedPluginIds.includes(item.id))
       : manifest.items.filter((item) => item.default);
 
   return selected.flatMap((item) => [
-    buildUtilityInstallCommand(item),
-    ...buildUtilityPostInstallCommands(item, options),
+    buildPluginInstallCommand(item),
+    ...buildPluginPostInstallCommands(item, options),
   ]);
 }
 
@@ -173,7 +173,7 @@ function buildAddMcpAgentArgs(agents: AgentId[], nonInteractive: boolean, scope:
   return args;
 }
 
-function buildUtilityInstallCommand(item: UtilityManifestItem): DelegateCommand {
+function buildPluginInstallCommand(item: PluginManifestItem): DelegateCommand {
   return {
     label: `${item.label} / install`,
     command: item.install.command,
@@ -181,7 +181,7 @@ function buildUtilityInstallCommand(item: UtilityManifestItem): DelegateCommand 
   };
 }
 
-function buildUtilityPostInstallCommands(item: UtilityManifestItem, options: Pick<CliOptions, "agents" | "homeDir" | "setupScope">): DelegateCommand[] {
+function buildPluginPostInstallCommands(item: PluginManifestItem, options: Pick<CliOptions, "agents" | "homeDir" | "setupScope">): DelegateCommand[] {
   if (typeof item.postInstall === "object") {
     return [{
       label: item.postInstall.label ?? `${item.label} / post-install`,
@@ -194,7 +194,7 @@ function buildUtilityPostInstallCommands(item: UtilityManifestItem, options: Pic
     return [];
   }
 
-  const selectedAgents = filterUtilityAgents(options.agents);
+  const selectedAgents = filterPluginAgents(options.agents);
   return selectedAgents.map((agent) => ({
     label: `RTK / init ${agentLabel(agent)}`,
     command: "rtk",
@@ -203,16 +203,16 @@ function buildUtilityPostInstallCommands(item: UtilityManifestItem, options: Pic
   }));
 }
 
-function defaultUtilityAgents(): AgentId[] {
+function defaultPluginAgents(): AgentId[] {
   return ["antigravity", "claude", "codex", "opencode"];
 }
 
-function filterUtilityAgents(agents: AgentId[]): AgentId[] {
+function filterPluginAgents(agents: AgentId[]): AgentId[] {
   if (agents.length === 0) {
-    return defaultUtilityAgents();
+    return defaultPluginAgents();
   }
 
-  return agents.filter((agent) => defaultUtilityAgents().includes(agent));
+  return agents.filter((agent) => defaultPluginAgents().includes(agent));
 }
 
 function rtkInitArgs(agent: AgentId, scope: "global" | "project"): string[] {

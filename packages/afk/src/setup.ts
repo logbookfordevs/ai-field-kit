@@ -2,9 +2,9 @@ import { syncRules } from "./rules.js";
 import { syncHooks } from "./hooks.js";
 import { syncSkillInvocationPolicy } from "./skills.js";
 import { detectSetupTargets } from "./agent-detection.js";
-import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands } from "./delegates.js";
+import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectUtilsInstall } from "./interactive.js";
+import { selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { ensureLocalManifests, planRememberedDefaultsSourceUpdate, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
@@ -60,7 +60,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     selectedSkillIds: selection.skillIds,
     selectedSkillAgentIds: selection.skillAgents,
     selectedMcpIds: selection.mcpIds,
-    selectedUtilIds: selection.utilIds,
+    selectedPluginIds: selection.pluginIds,
     selectedHookIds: selection.hookIds,
   };
 
@@ -133,7 +133,7 @@ function areaOptionsForSetupArea(
     return { ...selectedOptions, agents: selection.hookAgents };
   }
 
-  if (area === "utils") {
+  if (area === "plugins") {
     return { ...selectedOptions, agents: originalOptions.agents };
   }
 
@@ -227,14 +227,14 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 
       return runDelegateCommands(runtime, buildMcpCommands(selectedOptions), selectedOptions);
     }
-    case "utils": {
-      const selectedOptions = await resolveUtilityOptions(sourceOptions);
-      if (!selectedOptions.yes && selectedOptions.selectedUtilIds.length === 0) {
-        runtime.io.stdout("\nNo utilities selected. No changes planned.");
+    case "plugins": {
+      const selectedOptions = await resolvePluginOptions(sourceOptions);
+      if (!selectedOptions.yes && selectedOptions.selectedPluginIds.length === 0) {
+        runtime.io.stdout("\nNo plugins selected. No changes planned.");
         return 0;
       }
 
-      return runDelegateCommands(runtime, buildUtilityCommands(selectedOptions), {
+      return runDelegateCommands(runtime, buildPluginCommands(selectedOptions), {
         ...options,
         continueOnError: true,
       });
@@ -374,16 +374,16 @@ async function resolveMcpOptions(options: CliOptions): Promise<CliOptions> {
   };
 }
 
-async function resolveUtilityOptions(options: CliOptions): Promise<CliOptions> {
-  if (options.yes || options.selectedUtilIds.length > 0) {
+async function resolvePluginOptions(options: CliOptions): Promise<CliOptions> {
+  if (options.yes || options.selectedPluginIds.length > 0) {
     return options;
   }
 
-  const selection = await selectUtilsInstall(options);
+  const selection = await selectPluginsInstall(options);
   return {
     ...options,
     agents: selection.agents,
-    selectedUtilIds: selection.utilIds,
+    selectedPluginIds: selection.pluginIds,
   };
 }
 
@@ -442,8 +442,8 @@ function areaLabel(area: Area): string {
       return "Skills";
     case "mcps":
       return "MCPs";
-    case "utils":
-      return "Utils";
+    case "plugins":
+      return "Plugins";
     case "hooks":
       return "Hooks";
   }

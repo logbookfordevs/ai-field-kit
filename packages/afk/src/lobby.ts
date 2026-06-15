@@ -4,7 +4,7 @@ import { afkPromptTheme, afkSelectTheme } from "./prompt-ui.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { Runtime } from "./types.js";
 
-export type LobbyChoiceValue = "setup" | "source" | "skills" | "mcps" | "utils" | "hooks" | "inspect" | "help";
+export type LobbyChoiceValue = "setup" | "source" | "skills" | "mcps" | "plugins" | "hooks" | "inspect" | "help";
 
 type TtyState = {
   stdin: boolean;
@@ -39,9 +39,9 @@ export const compassLobbyChoices: LobbyChoice[] = [
     description: "Route: afk setup mcps",
   },
   {
-    name: "Install optional utilities",
-    value: "utils",
-    description: "Route: afk setup utils",
+    name: "Install optional plugins",
+    value: "plugins",
+    description: "Route: afk setup plugins",
   },
   {
     name: "Add lifecycle hooks",
@@ -102,8 +102,8 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
       return ["setup", "skills"];
     case "mcps":
       return ["setup", "mcps"];
-    case "utils":
-      return ["setup", "utils"];
+    case "plugins":
+      return ["setup", "plugins"];
     case "hooks":
       return ["setup", "hooks"];
     case "inspect":

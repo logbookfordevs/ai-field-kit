@@ -6,14 +6,14 @@ import type {
   RulesManifest,
   SkillManifest,
   SkillManifestItem,
-  UtilityManifest,
-  UtilityManifestItem,
+  PluginManifest,
+  PluginManifestItem,
 } from "./manifest.js";
 import type { Area } from "./types.js";
 
 export type EditableManifestArea = Area;
-export type EditableManifest = RulesManifest | SkillManifest | McpManifest | UtilityManifest | HookManifest | Record<string, unknown>;
-export type EditableManifestItem = SkillManifestItem | McpManifestItem | UtilityManifestItem | HookManifestItem;
+export type EditableManifest = RulesManifest | SkillManifest | McpManifest | PluginManifest | HookManifest | Record<string, unknown>;
+export type EditableManifestItem = SkillManifestItem | McpManifestItem | PluginManifestItem | HookManifestItem;
 
 type ItemManifest = {
   version: number;
@@ -21,7 +21,7 @@ type ItemManifest = {
   items: EditableManifestItem[];
 };
 
-export function emptyEditableManifest(area: EditableManifestArea): RulesManifest | SkillManifest | McpManifest | UtilityManifest | HookManifest {
+export function emptyEditableManifest(area: EditableManifestArea): RulesManifest | SkillManifest | McpManifest | PluginManifest | HookManifest {
   switch (area) {
     case "rules":
       return { version: 1, source: "github", url: "" };
@@ -29,7 +29,7 @@ export function emptyEditableManifest(area: EditableManifestArea): RulesManifest
       return { version: 1, defaultSource: "", items: [] };
     case "mcps":
       return { version: 1, items: [] };
-    case "utils":
+    case "plugins":
       return { version: 1, items: [] };
     case "hooks":
       return { version: 1, items: [] };
@@ -201,8 +201,8 @@ function isManifestForArea(area: EditableManifestArea, manifest: EditableManifes
       return isSkillManifest(manifest);
     case "mcps":
       return isMcpManifest(manifest);
-    case "utils":
-      return isUtilityManifest(manifest);
+    case "plugins":
+      return isPluginManifest(manifest);
     case "hooks":
       return isHookManifest(manifest);
   }
@@ -262,7 +262,7 @@ function isMcpManifest(value: EditableManifest): value is McpManifest {
   );
 }
 
-function isUtilityManifest(value: EditableManifest): value is UtilityManifest {
+function isPluginManifest(value: EditableManifest): value is PluginManifest {
   const record = toRecord(value);
   return (
     Boolean(record) &&
@@ -276,13 +276,13 @@ function isUtilityManifest(value: EditableManifest): value is UtilityManifest {
       isRecord(item.install) &&
       typeof item.install.command === "string" &&
       isStringArray(item.install.args) &&
-      (item.postInstall === undefined || item.postInstall === "rtk-init" || isUtilityPostInstallCommand(item.postInstall)) &&
+      (item.postInstall === undefined || item.postInstall === "rtk-init" || isPluginPostInstallCommand(item.postInstall)) &&
       typeof item.default === "boolean"
     ))
   );
 }
 
-function isUtilityPostInstallCommand(value: unknown): boolean {
+function isPluginPostInstallCommand(value: unknown): boolean {
   return (
     isRecord(value) &&
     (value.label === undefined || typeof value.label === "string") &&
