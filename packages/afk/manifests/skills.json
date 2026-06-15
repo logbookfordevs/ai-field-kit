@@ -111,18 +111,6 @@
             "autoInvocation": true
         },
         {
-            "id": "afk-artifact-workflow",
-            "label": "AFK / Artifact Workflow",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-artifact-workflow",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": true
-        },
-        {
             "id": "afk-ui-registry-preferences",
             "label": "AFK / UI Registry Preferences",
             "source": "https://github.com/logbookfordevs/ai-field-kit",

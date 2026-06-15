@@ -5,7 +5,7 @@ description: Route broad, ambiguous, multi-phase, explicit AFK workflow, AFK Spr
 
 # AFK Compass
 
-AFK Compass chooses which skill should guide the next move. It does not replace native skill discovery or force workflow artifacts; it sharpens discovery by mapping the user's request to AFK's workflow skills and recommended external companion skills.
+AFK Compass chooses which skill should guide the next move. It does not replace native skill discovery or force workflow artifacts; it sharpens discovery by mapping the user's request to AFK's workflow skills, references, and recommended external companion skills.
 
 ## First Move
 When a request arrives:
@@ -48,7 +48,7 @@ Task arrives
 +-- Need fast goal execution with Markdown tracking? -> AFK Sprint Mode
 +-- Resuming existing feature/workflow work? ---> afk-resume-workflow
 +-- Writing, rewriting, or reviewing human-facing docs? -> afk-doc-craft
-+-- PRD/spec/RFC/plan/tracking/handoff artifacts? -> afk-artifact-workflow
++-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
 +-- Need an agent-ready PRD/spec before code? ---> afk-to-prd-spec
 +-- Need executable slices/checkpoints? ---------> afk-to-issues
 +-- Need code choices or implementation trade-offs grilled? -> afk-code-grill

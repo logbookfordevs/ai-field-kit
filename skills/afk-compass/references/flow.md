@@ -8,7 +8,7 @@ Use existing accepted artifacts as the output of their matching phase. Do not re
 
 ## Required Phases
 
-1. **Orient:** use `afk-artifact-workflow` to locate or establish artifact boundaries, source references, and storage.
+1. **Orient:** apply [artifacts.md](artifacts.md) to locate or establish artifact boundaries, source references, and storage.
 2. **Pressure:** use `grill-with-docs` for brownfield work or `grill-me` for greenfield work before PRD/spec work and before executable slicing.
 3. **Specify:** use `afk-to-prd-spec` when no agent-ready PRD/spec exists or the existing artifact lacks behavior needed for implementation.
 4. **Slice:** use `afk-to-issues` to create executable checkpoint packets from the PRD/spec, plan, goal package, tracker issue, or current context.

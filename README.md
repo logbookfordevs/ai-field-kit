@@ -156,7 +156,6 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
 | `afk-doc-craft` | Reader-first documentation craft: journeys, progressive disclosure, real empathy |
 | `afk-execution-tracking` | Checkpointed implementation state across tasks, reviews, validation, and handoffs |
-| `afk-artifact-workflow` | Durable workflow artifacts, storage, and next-artifact suggestions |
 | `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `afk-compass` | Routes work to the right AFK and recommended external skills |
 | `afk-ask` | Gets a second opinion from another local AI CLI and saves the result as an artifact |
@@ -176,7 +175,6 @@ They are intentionally similar, but they are not redundant:
 
 | Skill | Use it when | Best output |
 |---|---|---|
-| `afk-artifact-workflow` | The task involves PRDs, specs, RFCs, checkpoint packets, tracking, handoff notes, source references, or artifact conventions | Consistent artifact boundaries, storage defaults, and next-artifact suggestions |
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
 | `afk-code-grill` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | Tiny decision note or ADR only when the decision deserves one |
 | `afk-to-prd-spec` | You need to create or normalize a PRD/spec after Grill or Grill With Docs | Agent-ready PRD/spec with behavior, acceptance criteria, implementation decisions, and testing seams |
@@ -190,7 +188,7 @@ They are intentionally similar, but they are not redundant:
 
 | Stage | AFK position |
 |---|---|
-| Artifact workflow | `afk-artifact-workflow` |
+| Artifact conventions | `afk-compass/references/artifacts.md` |
 | Open / clarify | `afk-brainstorming-facilitator` |
 | Pressure-test / decide | `grill-me`, `afk-code-grill` |
 | PRD/spec creation | `afk-to-prd-spec` |
@@ -200,14 +198,14 @@ They are intentionally similar, but they are not redundant:
 | Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
 | Support | `afk-resume-workflow`, `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
 
-`afk-artifact-workflow` defines the default artifact convention: `docs/<task-slug>/<task-slug>.<type>.md`, with task-specific references under `docs/<task-slug>/references/`.
+Compass defines the default artifact convention in `skills/afk-compass/references/artifacts.md`: `docs/<task-slug>/<task-slug>.<type>.md`, with checkpoint packets under `docs/<task-slug>/tracking/` and task-specific references under `docs/<task-slug>/references/`.
 
 ### What to choose
 
 If you're unsure which one to reach for, use this shortcut:
 
 - "We need more ideas" -> `afk-brainstorming-facilitator`
-- "We are dealing with PRDs, specs, RFCs, plans, tracking, or workflow artifacts" -> `afk-artifact-workflow`
+- "We need AFK artifact boundaries or storage conventions" -> `afk-compass`
 - "We need to create or normalize a PRD/spec after grilling" -> `afk-to-prd-spec`
 - "We need to split this into executable slices/checkpoints" -> `afk-to-issues`
 - "Grill me on this plan/design before we commit" -> `grill-me`
@@ -230,7 +228,7 @@ Use the smallest useful slice of AFK for the moment you are in.
 
 If the work is already clear, skip straight to the later skill that matches the need. If the work is messy, start earlier. The point is guidance, not bureaucracy.
 
-When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses a stronger Flow mode: it routes each phase, uses execution tracking, requires Grill or Grill With Docs before PRD/spec work, selects an execution bundle for each task, and still avoids workflow artifacts unless `afk-artifact-workflow` is the right skill for that phase.
+When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses Flow mode: it routes each phase, applies AFK artifact conventions, uses execution tracking, requires Grill or Grill With Docs before PRD/spec work, and selects an execution bundle for each task.
 
 ### A practical optional workflow
 
@@ -238,14 +236,13 @@ You do not need every step. Pick the smallest useful path for the moment you are
 
 1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
 2. Use `grill-me` when a plan or design needs relentless questioning before you commit.
-3. Use `afk-artifact-workflow` when source material, references, PRDs, specs, plans, tracking, or handoff artifacts need consistent boundaries.
-4. Use `grill-me` for greenfield work or `grill-with-docs` for brownfield work before PRD/spec creation.
-5. Write or refine the PRD/spec with `afk-to-prd-spec`.
-6. Use `afk-code-grill` when a known slice still has UX, behavior, or implementation decisions to lock. It asks one sharp trade-off question at a time.
-7. Create executable slices with `afk-to-issues`. It turns the PRD/spec, plan, goal package, tracker issue, or current context into AFK checkpoint packets.
-8. Use `afk-execution-tracking` when execution needs status, resume safety, parallel coordination, review gates, or checkpointed implementation notes.
-9. Select the execution bundle for each task: use `tdd` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
-10. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
+3. Use `grill-me` for greenfield work or `grill-with-docs` for brownfield work before PRD/spec creation.
+4. Write or refine the PRD/spec with `afk-to-prd-spec`.
+5. Use `afk-code-grill` when a known slice still has UX, behavior, or implementation decisions to lock. It asks one sharp trade-off question at a time.
+6. Create executable slices with `afk-to-issues`. It turns the PRD/spec, plan, goal package, tracker issue, or current context into AFK checkpoint packets.
+7. Use `afk-execution-tracking` when execution needs status, resume safety, parallel coordination, review gates, or checkpointed implementation notes.
+8. Select the execution bundle for each task: use `tdd` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
+9. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
 
 Most flows only use a few of these. For example:
 
