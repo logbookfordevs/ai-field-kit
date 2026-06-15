@@ -41,7 +41,7 @@ const defaultHomeDir = localHomeWithManifests({
         id: "plannotator",
         label: "Plannotator",
         description: "Review and annotate plans before implementation.",
-        install: { command: "bash", args: ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash"] },
+        install: { command: "bash", args: ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"] },
         default: true,
       },
       {
@@ -239,7 +239,7 @@ test("buildUtilityCommands installs selected utilities", () => {
   const commands = buildUtilityCommands({ ...options, selectedUtilIds: ["plannotator"] });
   assert.equal(commands.length, 1);
   assert.equal(commands[0]?.command, "bash");
-  assert.deepEqual(commands[0]?.args, ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash"]);
+  assert.deepEqual(commands[0]?.args, ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"]);
 });
 
 test("buildMcpCommands maps Antigravity to the add-mcp antigravity target", () => {

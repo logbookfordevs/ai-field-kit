@@ -9,7 +9,7 @@
                 "command": "bash",
                 "args": [
                     "-c",
-                    "curl -fsSL https://plannotator.ai/install.sh | bash"
+                    "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"
                 ]
             },
             "default": true
