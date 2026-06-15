@@ -113,9 +113,8 @@ afk setup hooks --dry-run
 # Refresh local manifest files from defaults
 afk setup refresh
 
-# Author or inspect manifests
-afk manifests configure
-afk manifests show
+# Inspect the active setup source
+afk show
 ```
 
 Compatibility aliases such as `afk setup skills install` and
@@ -226,14 +225,13 @@ should discover the skill.
 
 | Command | Flags |
 |---|---|
-| `afk manifests configure` | `--local`, `--from-current`, `--dry-run` |
-| `afk manifests show` | `--local`, `--rules`, `--skills`, `--mcp`/`--mcps`, `--utils`, `--hooks`, `--presets` |
-| `afk manifest show` | Alias for `afk manifests show`. |
+| `afk show` | `--source`, `--local`, `--rules`, `--skills`, `--mcp`/`--mcps`, `--utils`, `--hooks`, `--presets` |
+| `afk manifests show` | Alias for `afk show`. |
+| `afk manifest show` | Alias for `afk show`. |
 
-`afk manifests configure` writes selected manifest files. Without
-`--from-current`, selected files are authored from a fresh prompt flow. With
-`--from-current`, AFK loads existing manifests first and appends new entries
-through the prompts.
+`afk show` reads the active setup source by default: an explicit `--source`, a
+remembered `--default-source`, or the built-in AFK source. Use `--local` only
+when you need to inspect materialized `./afk/manifests` files.
 
 ## Manifest Model
 
@@ -339,28 +337,19 @@ Use this when you want AFK defaults committed in a project before running
 `afk setup --local`. Use `afk setup refresh --local` when you want AFK itself to
 refresh those files from a defaults source.
 
-## Author Manifests Interactively
+## Author Manifests
 
-Create a project-local defaults bundle:
-
-```bash
-afk manifests configure --local
-```
-
-Start from existing files and append entries:
+Setup is source-backed. To change what AFK installs, edit the configured source
+repository or directory, then point setup at it with `--source` or
+`--default-source`.
 
 ```bash
-afk manifests configure --local --from-current
+afk show --source your-org/dev-kit
+afk setup --default-source your-org/dev-kit
 ```
 
-Preview without writing:
-
-```bash
-afk manifests configure --local --dry-run
-```
-
-This writes or previews `./afk/manifests/`, which can be committed to a repo
-and used later with `--source` or `--default-source`.
+`afk configure` is intentionally retired until AFK can edit a writable setup
+source directly, for example by creating a branch or patch in the source repo.
 
 ## Manifest Examples
 
@@ -574,7 +563,7 @@ Use dry-run on the full setup or an individual area:
 ```bash
 afk setup --dry-run
 afk setup hooks --dry-run
-afk manifests show
+afk show
 ```
 
 ### A delegated installer failed

@@ -2,7 +2,6 @@ import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
-import { runManifestConfigure } from "./manifest-configure.js";
 import { runManifestShow } from "./manifest-show.js";
 import { selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
@@ -44,6 +43,9 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
   }
 
   if (parsed.help) {
+    if (isManifestConfigureCommand(commandKey(parsed.commandPath))) {
+      return unavailableManifestConfigure(runtime);
+    }
     runtime.io.stdout(helpText(parsed.commandPath));
     return 0;
   }
@@ -62,7 +64,7 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
   }
 
   if (isManifestConfigureCommand(key)) {
-    return runManifestConfigure(runtime, options);
+    return unavailableManifestConfigure(runtime);
   }
 
   if (isManifestShowCommand(key)) {
@@ -317,42 +319,13 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup utils --local --agent opencode",
     ],
   },
-  configure: {
-    title: "AFK configure",
-    summary: "Interactively author AFK manifest JSON files.",
-    usage: "afk configure [options]",
-    options: [
-      "--local                          Write to ./afk/manifests for a defaults repo",
-      "--from-current                   Start from existing manifests when present",
-      "--dry-run                        Preview generated files without writing",
-    ],
-    examples: [
-      "afk configure",
-      "afk configure --local",
-      "afk configure --from-current",
-    ],
-  },
-  "manifests configure": {
-    title: "AFK configure",
-    summary: "Alias for afk configure.",
-    usage: "afk configure [options]",
-    options: [
-      "--local                          Write to ./afk/manifests for a defaults repo",
-      "--from-current                   Start from existing manifests when present",
-      "--dry-run                        Preview generated files without writing",
-    ],
-    examples: [
-      "afk configure",
-      "afk configure --local",
-      "afk configure --from-current",
-    ],
-  },
   show: {
     title: "AFK show",
-    summary: "Show the current local AFK manifest configuration.",
+    summary: "Show the active AFK setup source manifests.",
     usage: "afk show [options]",
     options: [
-      "--local                          Show ./afk/manifests instead of global manifests",
+      "--source <source>                Show manifests from this setup source",
+      "--local                          Show ./afk/manifests instead of the setup source",
       "--rules                          Show rules manifest",
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
@@ -372,7 +345,8 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Alias for afk show.",
     usage: "afk show [options]",
     options: [
-      "--local                          Show ./afk/manifests instead of global manifests",
+      "--source <source>                Show manifests from this setup source",
+      "--local                          Show ./afk/manifests instead of the setup source",
       "--rules                          Show rules manifest",
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
@@ -392,7 +366,8 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Alias for afk show.",
     usage: "afk show [options]",
     options: [
-      "--local                          Show ./afk/manifests instead of global manifests",
+      "--source <source>                Show manifests from this setup source",
+      "--local                          Show ./afk/manifests instead of the setup source",
       "--rules                          Show rules manifest",
       "--skills                         Show skills manifest",
       "--mcp, --mcps                    Show MCP manifest",
@@ -484,6 +459,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--local") {
       if (key === "setup refresh") {
+        manifestLocal = true;
+        continue;
+      }
+
+      if (isManifestShowCommand(key)) {
         manifestLocal = true;
         continue;
       }
@@ -676,6 +656,12 @@ function isManifestShowCommand(key: string): boolean {
   return key === "show" || key === "manifests show" || key === "manifest show";
 }
 
+function unavailableManifestConfigure(runtime: Runtime): number {
+  runtime.io.stderr("AFK configure is not available for source-backed setup yet.");
+  runtime.io.stderr("Use afk show to inspect the active setup source. To change manifests, edit the configured source repository directly for now.");
+  return 1;
+}
+
 function isSkillAgentId(value: string): value is SkillAgentId {
   return value === "claude-code" || value === "kiro-cli" || value === "kilo" || value === "pi" || value === "droid";
 }
@@ -727,7 +713,6 @@ Usage:
   afk setup mcps [options]
   afk setup utils [options]
   afk setup hooks [options]
-  afk configure [options]
   afk show [options]
 
 Run "afk <command> --help" for command-specific options.

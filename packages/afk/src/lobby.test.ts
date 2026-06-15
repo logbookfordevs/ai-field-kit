@@ -26,8 +26,7 @@ test("compass lobby choices route intents to existing command paths", () => {
   assert.deepEqual(routeForLobbyChoice("mcps"), ["setup", "mcps"]);
   assert.deepEqual(routeForLobbyChoice("utils"), ["setup", "utils"]);
   assert.deepEqual(routeForLobbyChoice("hooks"), ["setup", "hooks"]);
-  assert.deepEqual(routeForLobbyChoice("configure"), ["manifests", "configure"]);
-  assert.deepEqual(routeForLobbyChoice("inspect"), ["manifests", "show"]);
+  assert.deepEqual(routeForLobbyChoice("inspect"), ["show"]);
   assert.deepEqual(routeForLobbyChoice("help"), ["--help"]);
 });
 
@@ -36,8 +35,8 @@ test("compass lobby labels stay intent-oriented while descriptions teach command
   const descriptions = compassLobbyChoices.map((choice) => choice.description ?? "");
 
   assert.ok(labels.includes("Prepare this machine for agent work"));
-  assert.ok(labels.includes("Build or edit a custom field kit"));
+  assert.ok(!labels.includes("Build or edit a custom field kit"));
   assert.ok(labels.includes("Refresh manifests"));
   assert.ok(descriptions.some((description) => description.includes("afk setup skills")));
-  assert.ok(descriptions.some((description) => description.includes("afk manifests show")));
+  assert.ok(descriptions.some((description) => description.includes("afk show")));
 });
