@@ -1,7 +1,7 @@
 import { checkbox, input, select } from "@inquirer/prompts";
 import { detectSetupTargets, type TargetSelectionSource } from "./agent-detection.js";
 import { agentIds, hookAgentIds, skillAgentIds } from "./agents.js";
-import { loadHookManifest, loadMcpManifest, loadSkillManifest, loadUtilityManifest } from "./manifest.js";
+import { loadHookManifest, loadMcpManifest, loadSkillManifest, loadPluginManifest } from "./manifest.js";
 import { DEFAULT_CHECKED, afkCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { AgentId, Area, CliOptions, SetupScope, SkillAgentId } from "./types.js";
 
@@ -20,7 +20,7 @@ export type SetupSelection = {
   skillIds: string[];
   skillAgents: SkillAgentId[];
   mcpIds: string[];
-  utilIds: string[];
+  pluginIds: string[];
   hookIds: string[];
   agentSource?: TargetSelectionSource;
   hookAgentSource?: TargetSelectionSource;
@@ -47,10 +47,10 @@ const setupAreaChoices: Choice<Area>[] = [
     description: "Delegate recommended MCP installs to add-mcp.",
   },
   {
-    name: "Utils",
-    value: "utils",
+    name: "Plugins",
+    value: "plugins",
     checked: DEFAULT_CHECKED,
-    description: "Install optional developer utilities AFK recommends.",
+    description: "Install optional developer plugins AFK recommends.",
   },
   {
     name: "Hooks",
@@ -77,7 +77,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
       skillIds: nonInteractiveSkillIds(options),
       skillAgents: skillAgentSelection.agents,
       mcpIds: loadMcpManifest(options).items.map((item) => item.id),
-      utilIds: loadUtilityManifest(options).items.map((item) => item.id),
+      pluginIds: loadPluginManifest(options).items.map((item) => item.id),
       hookIds: loadHookManifest(options).items.map((item) => item.id),
       agentSource: agentSelection.agentSource,
       hookAgentSource: hookAgentSelection.agentSource,
@@ -89,7 +89,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
   const setupScope = options.scopeExplicit ? options.setupScope : await selectSetupScope(options.cwd);
   const detected = detectSetupTargets({ ...options, setupScope });
   const areas = await selectCheckbox("Choose what AFK should prepare", setupAreaChoices);
-  const utilIds = areas.includes("utils") ? await selectUtils(options) : [];
+  const pluginIds = areas.includes("plugins") ? await selectPlugins(options) : [];
   const needsAgents = areas.some((area) => area === "rules" || area === "mcps");
   const agentSelection = needsAgents
     ? await selectAgents(options.agents, detected.agents, agentPromptMessage(areas))
@@ -112,7 +112,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     skillIds,
     skillAgents: skillAgentSelection.agents,
     mcpIds,
-    utilIds,
+    pluginIds,
     hookIds,
     agentSource: agentSelection.source,
     hookAgentSource: hookAgentSelection.source,
@@ -182,17 +182,17 @@ export async function selectMcpsInstall(options: CliOptions): Promise<Pick<Setup
   };
 }
 
-export async function selectUtilsInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "utilIds">> {
+export async function selectPluginsInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "pluginIds">> {
   if (options.yes) {
     return {
       agents: options.agents,
-      utilIds: loadUtilityManifest(options).items.map((item) => item.id),
+      pluginIds: loadPluginManifest(options).items.map((item) => item.id),
     };
   }
 
   resetPromptSteps();
-  const utilIds = await selectUtils(options);
-  return { agents: options.agents, utilIds };
+  const pluginIds = await selectPlugins(options);
+  return { agents: options.agents, pluginIds };
 }
 
 export async function selectHooksInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "hookIds">> {
@@ -228,8 +228,8 @@ export function normalizeSetupSelection(selection: SetupSelection): SetupSelecti
         return selection.mcpIds.length > 0;
       }
 
-      if (area === "utils") {
-        return selection.utilIds.length > 0;
+      if (area === "plugins") {
+        return selection.pluginIds.length > 0;
       }
 
       if (area === "hooks") {
@@ -388,10 +388,10 @@ async function selectMcps(options: Pick<CliOptions, "homeDir">): Promise<string[
   );
 }
 
-async function selectUtils(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
-  const manifest = loadUtilityManifest(options);
+async function selectPlugins(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+  const manifest = loadPluginManifest(options);
   return selectCheckbox(
-    "Choose utilities to install",
+    "Choose plugins to install",
     manifest.items.map((item) => ({
       name: item.label,
       value: item.id,

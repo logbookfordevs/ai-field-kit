@@ -7,7 +7,7 @@
       "name": "afk-manifests",
       "type": "registry:item",
       "title": "AFK Manifests",
-      "description": "Project-local AFK setup manifests for rules, skills, MCPs, utilities, hooks, and presets.",
+      "description": "Project-local AFK setup manifests for rules, skills, MCPs, plugins, hooks, and presets.",
       "files": [
         {
           "path": "packages/afk/manifests/skills.json",
@@ -25,9 +25,9 @@
           "target": "~/afk/manifests/rules.json"
         },
         {
-          "path": "packages/afk/manifests/utils.json",
+          "path": "packages/afk/manifests/plugins.json",
           "type": "registry:file",
-          "target": "~/afk/manifests/utils.json"
+          "target": "~/afk/manifests/plugins.json"
         },
         {
           "path": "packages/afk/manifests/hooks.json",

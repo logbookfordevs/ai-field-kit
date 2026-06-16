@@ -29,7 +29,9 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` taught `afk-execution-tracking` to record selected execution bundles, discipline evidence, and active checkpoints with an always-array marker before review, while treating commit hashes as receipts and tracking artifacts as explicit-ask commits only.
 - `skills:` made skill invocation policy sync both directions so `autoInvocation: true` re-enables model discovery even when an installed skill shipped disabled, while `write-a-skill` and `to-issues` remain manual.
 - `skills:` tightened `afk-pickup` so temp handoff resumes check direct `/tmp` paths before broader searches and avoid fragile shell search patterns.
+- `skills:` moved Impeccable back to the skills manifest as a normal `npx skills add pbakaus/impeccable --global` install instead of the plugin installer surface.
 - `cli:` made `afk show` inspect the active setup source by default, retired the local manifest editor route from `afk configure`, and changed the plain `afk` lobby source action to save a new `--default-source`.
+- `cli:` renamed the setup plugins surface from utils to plugins, including `plugins.json`, `afk setup plugins`, `afk show --plugins`, and setup selection labels.
 
 ## v0.5.4 - 2026-06-06
 
@@ -51,12 +53,12 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` moved cross-skill routing out of individual AFK skills and into `afk-compass`.
 - `skills:` tightened default activation, routing, and ambiguity handling across AFK skills so guided workflows stay opt-in unless the task clearly calls for them.
 - `skills:` tightened `afk-ask` around stable advisor behavior while moving volatile provider and model details into a reference file.
-- `skills:` taught `afk-compass` to route frontend design and UI-quality work to utility-installed Impeccable skills when available.
+- `skills:` taught `afk-compass` to route frontend design and UI-quality work to plugin-installed Impeccable skills when available.
 
 ### Fixed
 
 - `cli:` made guided MCP delegation pass `add-mcp -y` after AFK has collected MCP and target-agent choices, and now clearly reports when selected MCPs have no target agents instead of silently doing nothing.
-- `cli:` kept utility setup non-interactive for `npx`-backed installers by passing npm's own `--yes` flag before the package name, starting with the Impeccable utility installer.
+- `cli:` kept plugin setup non-interactive for `npx`-backed installers by passing npm's own `--yes` flag before the package name, starting with the Impeccable plugin installer.
 
 ## v0.5.3 - 2026-06-01
 
@@ -71,7 +73,7 @@ This changelog tracks meaningful updates by version and date.
 
 - `release:` renamed the publishable AFK CLI package to `@logbookfordevs/afk` and made npm the recommended user-facing install path.
 - `release:` replaced the AFK version-bump script with a manual changelog-first release flow using npm version tagging and an exact tag push.
-- `cli:` refined guided setup so a utilities-only route no longer asks for agent targets, and the setup banner now points to `afk setup refresh` when local manifests may be stale.
+- `cli:` refined guided setup so a plugins-only route no longer asks for agent targets, and the setup banner now points to `afk setup refresh` when local manifests may be stale.
 - `docs:` moved the hosted `install.sh` path out of the public setup journey; `scripts/install.sh --local` is now documented as a development helper.
 - `docs:` removed maintainer-only publish commands from the public README so contributors see install and development guidance instead of private release steps.
 
@@ -91,8 +93,8 @@ This changelog tracks meaningful updates by version and date.
 
 - `cli:` changed global rules sync to merge the AFK managed region into each agent's own rule file instead of replacing Codex, Antigravity/Agy, or OpenCode hosts with symlinks.
 - `cli:` replaced the setup refresh flag with `afk setup refresh`, including `--local` support for refreshing project-level `./afk/manifests`.
-- `cli:` added Cursor aliases for local hook setup while keeping Cursor out of general rule/MCP/utility agent targeting.
-- `cli:` made `afk setup rules`, `afk setup skills`, `afk setup mcps`, `afk setup utils`, and `afk setup hooks` the canonical area commands while keeping the older `sync`/`install` forms as compatibility aliases.
+- `cli:` added Cursor aliases for local hook setup while keeping Cursor out of general rule/MCP/plugin agent targeting.
+- `cli:` made `afk setup rules`, `afk setup skills`, `afk setup mcps`, `afk setup plugins`, and `afk setup hooks` the canonical area commands while keeping older `sync`/`install` forms as compatibility aliases where still supported.
 - `cli:` expanded setup help so `afk setup --help` lists setup subcommands and each setup area help screen explains shared options instead of showing bare flags.
 - `cli:` refined the AFK terminal banner colors for a warmer, more legible setup experience.
 - `release:` added an AFK version bump helper that promotes the current changelog TBD section, updates the CLI package version, and refreshes the pinned install example.
@@ -117,16 +119,16 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
-- `cli:` added the initial AFK CLI package under `packages/afk`, centered on `afk setup` as an inspect-first setup router for rules, skills, MCPs, and utilities.
-- `cli:` added a warm guided setup experience with an AFK banner, scope selection, and granular checkboxes for setup areas, agents, skills, MCPs, and utilities.
-- `cli:` added remote-owned JSON manifests for skills, MCPs, utilities, rules, and presets so recommendations can evolve without patching the CLI.
+- `cli:` added the initial AFK CLI package under `packages/afk`, centered on `afk setup` as an inspect-first setup router for rules, skills, MCPs, and plugins.
+- `cli:` added a warm guided setup experience with an AFK banner, scope selection, and granular checkboxes for setup areas, agents, skills, MCPs, and plugins.
+- `cli:` added remote-owned JSON manifests for skills, MCPs, plugins, rules, and presets so recommendations can evolve without patching the CLI.
 - `cli:` added editable local manifest storage under `~/.agents/afk/manifests`, plus `--init-only`, `--empty`, `--refresh-defaults`, and `--defaults-source` setup modes.
 - `cli:` added `afk manifests configure` for authoring global or repo-local manifest files and `afk manifests show` for inspecting global or project-local manifest state.
 - `cli:` added rules setup that injects AFK rules into managed regions inside host rule files without replacing user-owned content.
 - `cli:` added non-interactive delegated skill installs through `skills add --global --yes`, letting the official `skills` CLI handle agent target fanout.
 - `cli:` added initial AFK-owned rule support for Codex, Claude Code, Gemini, and OpenCode; skills and MCP coverage remains owned by their upstream CLIs.
-- `cli:` added `afk setup utils install` for curated utilities, starting with Plannotator and RTK delegated installs plus RTK initialization for selected agents.
-- `cli:` added best-effort utility installation and grouped setup summaries so one utility failure does not block the rest of the selected setup route.
+- `cli:` added `afk setup plugins` for curated plugins, starting with Plannotator and RTK delegated installs plus RTK initialization for selected agents.
+- `cli:` added best-effort plugin installation and grouped setup summaries so one plugin failure does not block the rest of the selected setup route.
 - `cli:` added release-asset packaging and install scripts for GitHub Releases while keeping `--source local` available as an explicit development escape hatch.
 - `skills:` added `afk-workflow` as the activatable doctrine skill for artifact boundaries, RFC positioning, implementation planning, execution tracking handoff, and default artifact conventions.
 - `skills:` added `afk-execution-tracking` for checkpointed implementation after a plan exists, including task status, validation, engineer/product review gates, resume context, and parallel-agent coordination.

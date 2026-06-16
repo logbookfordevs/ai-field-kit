@@ -29,7 +29,9 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk setup [options]"));
   assert.ok(output.join("\n").includes("afk setup refresh [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
+  assert.ok(output.join("\n").includes("afk setup plugins [options]"));
   assert.ok(output.join("\n").includes("afk setup hooks [options]"));
+  assert.ok(!output.join("\n").includes("afk setup utils"));
   assert.ok(output.join("\n").includes("afk show [options]"));
   assert.ok(!output.join("\n").includes("afk configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests configure [options]"));
@@ -85,7 +87,9 @@ test("runCli prints contextual setup help", async () => {
   assert.ok(text.includes("Subcommands:"));
   assert.ok(text.includes("afk setup refresh"));
   assert.ok(text.includes("afk setup mcps"));
+  assert.ok(text.includes("afk setup plugins"));
   assert.ok(text.includes("afk setup hooks"));
+  assert.ok(!text.includes("afk setup utils"));
   assert.ok(text.includes("--verbose"));
   assert.ok(!text.includes("afk setup mcps install"));
   assert.ok(text.includes("--default-source <source>"));
@@ -109,6 +113,22 @@ test("runCli prints contextual area help", async () => {
   assert.ok(text.includes("--agent <agent>                   Override detected targets; repeatable"));
   assert.ok(text.includes("--default-source <source>         Save a default setup source and exit"));
   assert.ok(!text.includes("AFK setup skills"));
+});
+
+test("runCli rejects the removed setup utils command", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "utils", "--help"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown command: setup utils"));
+});
+
+test("runCli rejects the removed util manifest flag", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["show", "--util"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown option: --util"));
 });
 
 test("runCli accepts default-source aliases", async () => {
@@ -177,7 +197,7 @@ test("runCli accepts skills CLI agent targets for noninteractive skill installs"
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "local", presets: [] },
     "rules.json": { version: 1, source: "github", url: "" },
-    "utils.json": { version: 1, items: [] },
+    "plugins.json": { version: 1, items: [] },
     "hooks.json": { version: 1, items: [] },
   });
   const output: string[] = [];

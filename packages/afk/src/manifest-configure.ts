@@ -27,8 +27,8 @@ import {
   type RulesManifest,
   type SkillManifest,
   type SkillManifestItem,
-  type UtilityManifestItem,
-  type UtilityPostInstallCommand,
+  type PluginManifestItem,
+  type PluginPostInstallCommand,
 } from "./manifest.js";
 import { afkPromptTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
@@ -64,13 +64,13 @@ export type ManifestConfigurePrompts = {
   confirm: (message: string, defaultValue: boolean) => Promise<boolean>;
 };
 
-const manifestAreas: ManifestArea[] = ["rules", "skills", "mcps", "utils", "hooks"];
+const manifestAreas: ManifestArea[] = ["rules", "skills", "mcps", "plugins", "hooks"];
 
 const areaDescriptions: Record<ManifestArea, string> = {
   rules: "Point rules sync at one AGENTS.md source.",
   skills: "Add, edit, remove, and toggle skills.",
   mcps: "Add, edit, remove, and toggle MCP recommendations.",
-  utils: "Add, edit, remove, and toggle utility installers.",
+  plugins: "Add, edit, remove, and toggle plugin installers.",
   hooks: "Add, edit, remove, and toggle lifecycle hooks.",
 };
 
@@ -253,8 +253,8 @@ async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<Manif
       return promptSkill(prompts, existing as SkillManifestItem | undefined);
     case "mcps":
       return promptMcp(prompts, existing as McpManifestItem | undefined);
-    case "utils":
-      return promptUtility(prompts, existing as UtilityManifestItem | undefined);
+    case "plugins":
+      return promptPlugin(prompts, existing as PluginManifestItem | undefined);
     case "hooks":
       return promptHook(prompts, existing as HookManifestItem | undefined);
   }
@@ -298,13 +298,13 @@ async function promptMcp(prompts: ManifestConfigurePrompts, existing?: McpManife
   };
 }
 
-async function promptUtility(prompts: ManifestConfigurePrompts, existing?: UtilityManifestItem): Promise<UtilityManifestItem> {
+async function promptPlugin(prompts: ManifestConfigurePrompts, existing?: PluginManifestItem): Promise<PluginManifestItem> {
   const installLine = installLineFromCommand(existing?.install);
   const existingPostInstallLine = postInstallLine(existing?.postInstall);
-  const id = await prompts.input({ message: "Utility id", default: existing?.id ?? inferId(installLine || "utility"), required: true });
-  const label = await prompts.input({ message: "Utility label", default: existing?.label ?? inferLabel(id), required: true });
-  const description = await prompts.input({ message: "Utility description", default: existing?.description ?? `${label} install script.`, required: true });
-  const nextInstallLine = await prompts.input({ message: "Utility install command", default: installLine, required: true });
+  const id = await prompts.input({ message: "Plugin id", default: existing?.id ?? inferId(installLine || "plugin"), required: true });
+  const label = await prompts.input({ message: "Plugin label", default: existing?.label ?? inferLabel(id), required: true });
+  const description = await prompts.input({ message: "Plugin description", default: existing?.description ?? `${label} install script.`, required: true });
+  const nextInstallLine = await prompts.input({ message: "Plugin install command", default: installLine, required: true });
   const nextPostInstallLine = await prompts.input({ message: "Post-install command (optional, or rtk-init)", default: existingPostInstallLine });
   const defaultValue = existing?.default ?? true;
   const isDefault = await prompts.confirm(booleanPrompt("Selected by default?", defaultValue, existing ? "current" : "default"), defaultValue);
@@ -364,7 +364,7 @@ function readEditableManifests(outputDir: string): Drafts {
     rules: readManifestOrEmpty(outputDir, "rules"),
     skills: readManifestOrEmpty(outputDir, "skills"),
     mcps: readManifestOrEmpty(outputDir, "mcps"),
-    utils: readManifestOrEmpty(outputDir, "utils"),
+    plugins: readManifestOrEmpty(outputDir, "plugins"),
     hooks: readManifestOrEmpty(outputDir, "hooks"),
   };
 }
@@ -383,7 +383,7 @@ function cloneDrafts(drafts: Drafts): Drafts {
     rules: cloneDraft(drafts.rules),
     skills: cloneDraft(drafts.skills),
     mcps: cloneDraft(drafts.mcps),
-    utils: cloneDraft(drafts.utils),
+    plugins: cloneDraft(drafts.plugins),
     hooks: cloneDraft(drafts.hooks),
   };
 }
@@ -554,8 +554,8 @@ function areaTitle(area: ManifestArea): string {
       return "Skills";
     case "mcps":
       return "MCPs";
-    case "utils":
-      return "Utils";
+    case "plugins":
+      return "Plugins";
     case "hooks":
       return "Hooks";
   }
@@ -567,14 +567,14 @@ function singularArea(area: Exclude<ManifestArea, "rules">): string {
       return "skill";
     case "mcps":
       return "MCP";
-    case "utils":
-      return "utility";
+    case "plugins":
+      return "plugin";
     case "hooks":
       return "hook";
   }
 }
 
-function installLineFromCommand(install?: UtilityManifestItem["install"]): string {
+function installLineFromCommand(install?: PluginManifestItem["install"]): string {
   if (!install) {
     return "";
   }
@@ -586,7 +586,7 @@ function installLineFromCommand(install?: UtilityManifestItem["install"]): strin
   return [install.command, ...install.args].join(" ");
 }
 
-function postInstallLine(postInstall?: UtilityManifestItem["postInstall"]): string {
+function postInstallLine(postInstall?: PluginManifestItem["postInstall"]): string {
   if (!postInstall) {
     return "";
   }
@@ -602,7 +602,7 @@ function postInstallLine(postInstall?: UtilityManifestItem["postInstall"]): stri
   return [postInstall.command, ...postInstall.args].join(" ");
 }
 
-function postInstallFromLine(line: string, existing?: UtilityManifestItem["postInstall"]): "rtk-init" | UtilityPostInstallCommand {
+function postInstallFromLine(line: string, existing?: PluginManifestItem["postInstall"]): "rtk-init" | PluginPostInstallCommand {
   if (line === "rtk-init") {
     return "rtk-init";
   }

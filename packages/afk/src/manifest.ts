@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, PathOperation } from "./types.js";
 
-const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "utils.json", "hooks.json"] as const;
+const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -43,12 +43,12 @@ export type RulesManifest = {
   url: string;
 };
 
-export type UtilityManifest = {
+export type PluginManifest = {
   version: number;
-  items: UtilityManifestItem[];
+  items: PluginManifestItem[];
 };
 
-export type UtilityManifestItem = {
+export type PluginManifestItem = {
   id: string;
   label: string;
   description: string;
@@ -56,11 +56,11 @@ export type UtilityManifestItem = {
     command: string;
     args: string[];
   };
-  postInstall?: "rtk-init" | UtilityPostInstallCommand;
+  postInstall?: "rtk-init" | PluginPostInstallCommand;
   default: boolean;
 };
 
-export type UtilityPostInstallCommand = {
+export type PluginPostInstallCommand = {
   label?: string;
   command: string;
   args: string[];
@@ -200,8 +200,8 @@ export function loadRulesManifest(options: Pick<CliOptions, "homeDir">): RulesMa
   return parseLocalManifest<RulesManifest>(options.homeDir, "rules.json", isRulesManifest);
 }
 
-export function loadUtilityManifest(options: Pick<CliOptions, "homeDir">): UtilityManifest {
-  return parseLocalManifest<UtilityManifest>(options.homeDir, "utils.json", isUtilityManifest);
+export function loadPluginManifest(options: Pick<CliOptions, "homeDir">): PluginManifest {
+  return parseLocalManifest<PluginManifest>(options.homeDir, "plugins.json", isPluginManifest);
 }
 
 export function loadHookManifest(options: Pick<CliOptions, "homeDir">): HookManifest {
@@ -420,7 +420,7 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
     return `${JSON.stringify({ version: 1, source: "github", url: "" }, null, 2)}\n`;
   }
 
-  if (name === "utils.json") {
+  if (name === "plugins.json") {
     return `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`;
   }
 
@@ -618,7 +618,7 @@ function isRulesManifest(value: unknown): value is RulesManifest {
   return typeof value.url === "string";
 }
 
-function isUtilityManifest(value: unknown): value is UtilityManifest {
+function isPluginManifest(value: unknown): value is PluginManifest {
   if (!isRecord(value) || typeof value.version !== "number" || !Array.isArray(value.items)) {
     return false;
   }
@@ -634,13 +634,13 @@ function isUtilityManifest(value: unknown): value is UtilityManifest {
       typeof item.description === "string" &&
       typeof item.install.command === "string" &&
       isStringArray(item.install.args) &&
-      (item.postInstall === undefined || item.postInstall === "rtk-init" || isUtilityPostInstallCommand(item.postInstall)) &&
+      (item.postInstall === undefined || item.postInstall === "rtk-init" || isPluginPostInstallCommand(item.postInstall)) &&
       typeof item.default === "boolean"
     );
   });
 }
 
-function isUtilityPostInstallCommand(value: unknown): value is UtilityPostInstallCommand {
+function isPluginPostInstallCommand(value: unknown): value is PluginPostInstallCommand {
   return (
     isRecord(value) &&
     (value.label === undefined || typeof value.label === "string") &&

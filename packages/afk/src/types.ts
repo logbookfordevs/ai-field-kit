@@ -9,9 +9,9 @@ export type AgentId =
 
 export type SkillAgentId = "claude-code" | "kiro-cli" | "kilo" | "pi" | "droid";
 
-export type Area = "rules" | "skills" | "mcps" | "utils" | "hooks";
+export type Area = "rules" | "skills" | "mcps" | "plugins" | "hooks";
 export type SetupScope = "global" | "project";
-export type ManifestCategory = "rules" | "skills" | "mcps" | "utils" | "hooks" | "presets";
+export type ManifestCategory = "rules" | "skills" | "mcps" | "plugins" | "hooks" | "presets";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -24,7 +24,7 @@ export type CliOptions = {
   selectedSkillIds: string[];
   selectedSkillAgentIds: SkillAgentId[];
   selectedMcpIds: string[];
-  selectedUtilIds: string[];
+  selectedPluginIds: string[];
   selectedHookIds: string[];
   rulesRef: string;
   rulesSource: "manifest" | "github" | "local";
