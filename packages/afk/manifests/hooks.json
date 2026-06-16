@@ -2,17 +2,6 @@
   "version": 1,
   "items": [
     {
-      "id": "afk-execution-tracking-stop-check",
-      "label": "AFK / Execution Tracking Stop Check",
-      "description": "Nudge the agent once before final handoff when implementation files changed without tracking, implementation notes, or ADR reconciliation.",
-      "source": "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/hooks/afk-execution-tracking-stop-check.js",
-      "command": "node",
-      "args": ["${HOOK_FILE}", "--agent", "${AGENT}"],
-      "events": ["stop"],
-      "agents": ["codex", "claude", "cursor-local"],
-      "default": true
-    },
-    {
       "id": "afk-typescript-typecheck-stop-check",
       "label": "AFK / TypeScript Typecheck Stop Check",
       "description": "Run the inferred repo typecheck before final handoff when TypeScript files changed.",

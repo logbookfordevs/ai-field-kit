@@ -88,7 +88,7 @@ test("normalizeSetupSelection keeps hooks when at least one hook is selected", (
     skillAgents: [],
     mcpIds: [],
     pluginIds: [],
-    hookIds: ["afk-execution-tracking-stop-check"],
+    hookIds: ["afk-typescript-typecheck-stop-check"],
   });
 
   assert.deepEqual(selection.areas, ["hooks"]);
@@ -104,7 +104,7 @@ test("normalizeSetupSelection removes hooks when every hook target is unselected
     skillAgents: [],
     mcpIds: [],
     pluginIds: [],
-    hookIds: ["afk-execution-tracking-stop-check"],
+    hookIds: ["afk-typescript-typecheck-stop-check"],
   });
 
   assert.deepEqual(selection.areas, []);
@@ -120,7 +120,7 @@ test("normalizeSetupSelection filters hook-only Cursor from general agents", () 
     skillAgents: [],
     mcpIds: [],
     pluginIds: [],
-    hookIds: ["afk-execution-tracking-stop-check"],
+    hookIds: ["afk-typescript-typecheck-stop-check"],
   });
 
   assert.deepEqual(selection.agents, ["cursor-local"]);
@@ -383,10 +383,10 @@ function localHomeWithAllManifests(): string {
       version: 1,
       items: [
         {
-          id: "afk-execution-tracking-stop-check",
-          label: "AFK execution tracking stop check",
-          description: "Check active AFK tracking before stopping.",
-          source: "hooks/afk-execution-tracking-stop-check.js",
+          id: "afk-typescript-typecheck-stop-check",
+          label: "AFK TypeScript typecheck stop check",
+          description: "Run TypeScript typecheck before stopping.",
+          source: "hooks/afk-typescript-typecheck-stop-check.js",
           command: "node",
           args: ["${HOOK_FILE}"],
           events: ["stop"],

@@ -328,7 +328,6 @@ test("runManifestConfigureWithPrompts loads default hooks from the configured de
     assert.equal(code, 0);
     assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/hooks.json"));
     assert.ok(text.includes("remote-hook"));
-    assert.ok(!text.includes("afk-execution-tracking-stop-check"));
   } finally {
     globalThis.fetch = originalFetch;
   }

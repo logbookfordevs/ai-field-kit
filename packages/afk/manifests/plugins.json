@@ -54,19 +54,6 @@
                 ]
             },
             "default": true
-        },
-        {
-            "id": "impeccable",
-            "label": "Impeccable",
-            "description": "Install Impeccable's frontend design skills globally through its official installer.",
-            "install": {
-                "command": "sh",
-                "args": [
-                    "-c",
-                    "cd \"$HOME\" && npx --yes impeccable skills install --force -y"
-                ]
-            },
-            "default": false
         }
     ]
 }

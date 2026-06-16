@@ -3,18 +3,6 @@
     "defaultSource": "https://github.com/logbookfordevs/ai-field-kit",
     "items": [
         {
-            "id": "afk-advanced-elicitation",
-            "label": "AFK / Advanced Elicitation",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-advanced-elicitation",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": true
-        },
-        {
             "id": "afk-animated-driven-frontend",
             "label": "AFK / Animated Driven Frontend",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -51,28 +39,40 @@
             "autoInvocation": true
         },
         {
-            "id": "afk-coding-tradeoffs",
-            "label": "AFK / Coding Tradeoffs",
+            "id": "afk-code-grill",
+            "label": "AFK / Code Grill",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-coding-tradeoffs",
+                "afk-code-grill",
                 "--global"
             ],
             "default": true,
             "autoInvocation": true
         },
         {
-            "id": "afk-deep-interview",
-            "label": "AFK / Deep Interview",
+            "id": "afk-to-prd-spec",
+            "label": "AFK / To PRD Spec",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-deep-interview",
+                "afk-to-prd-spec",
                 "--global"
             ],
-            "default": false,
-            "autoInvocation": false
+            "default": true,
+            "autoInvocation": true
+        },
+        {
+            "id": "afk-to-issues",
+            "label": "AFK / To Issues",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-to-issues",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
         },
         {
             "id": "afk-doc-craft",
@@ -93,18 +93,6 @@
             "args": [
                 "--skill",
                 "afk-execution-tracking",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": true
-        },
-        {
-            "id": "afk-artifact-workflow",
-            "label": "AFK / Artifact Workflow",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-artifact-workflow",
                 "--global"
             ],
             "default": true,
@@ -132,7 +120,7 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false
         },
         {
             "id": "afk-resume-workflow",
@@ -141,18 +129,6 @@
             "args": [
                 "--skill",
                 "afk-resume-workflow",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": true
-        },
-        {
-            "id": "afk-structured-debugging",
-            "label": "AFK / Structured Debugging",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-structured-debugging",
                 "--global"
             ],
             "default": true,
@@ -171,12 +147,48 @@
             "autoInvocation": true
         },
         {
+            "id": "afk-sprint",
+            "label": "AFK / Sprint",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-sprint",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
+            "id": "afk-turbo",
+            "label": "AFK / Turbo",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-turbo",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
             "id": "truss-evaluation",
             "label": "External / Truss Evaluation",
             "source": "https://github.com/leoreisdias/truss-framework",
             "args": [
                 "--skill",
                 "truss-evaluation",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
+            "id": "diagnose",
+            "label": "External / Diagnose",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "diagnose",
                 "--global"
             ],
             "default": true,
@@ -219,6 +231,16 @@
             "autoInvocation": false
         },
         {
+            "id": "impeccable",
+            "label": "External / Impeccable",
+            "source": "pbakaus/impeccable",
+            "args": [
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": true
+        },
+        {
             "id": "html",
             "label": "External / Effective HTML",
             "source": "https://github.com/plannotator/effective-html",
@@ -255,36 +277,12 @@
             "autoInvocation": false
         },
         {
-            "id": "spec-driven-development",
-            "label": "External / Spec Driven Development",
-            "source": "https://github.com/addyosmani/agent-skills.git",
+            "id": "tdd",
+            "label": "External / TDD",
+            "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
-                "spec-driven-development",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": true
-        },
-        {
-            "id": "planning-and-task-breakdown",
-            "label": "External / Planning and Task Breakdown",
-            "source": "https://github.com/addyosmani/agent-skills.git",
-            "args": [
-                "--skill",
-                "planning-and-task-breakdown",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": true
-        },
-        {
-            "id": "test-driven-development",
-            "label": "External / Test Driven Development",
-            "source": "https://github.com/addyosmani/agent-skills.git",
-            "args": [
-                "--skill",
-                "test-driven-development",
+                "tdd",
                 "--global"
             ],
             "default": false,
@@ -375,18 +373,6 @@
             "autoInvocation": true
         },
         {
-            "id": "to-issues",
-            "label": "External / To Issues",
-            "source": "https://github.com/mattpocock/skills",
-            "args": [
-                "--skill",
-                "to-issues",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": false
-        },
-        {
             "id": "prototype",
             "label": "External / Prototype",
             "source": "https://github.com/mattpocock/skills",
@@ -399,18 +385,6 @@
             "autoInvocation": true
         },
         {
-            "id": "setup-matt-pocock-skills",
-            "label": "External / Setup Matt Pocock Skills",
-            "source": "https://github.com/mattpocock/skills",
-            "args": [
-                "--skill",
-                "setup-matt-pocock-skills",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": false
-        },
-        {
             "id": "handoff",
             "label": "External / Handoff",
             "source": "https://github.com/mattpocock/skills",
@@ -420,7 +394,7 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false
         },
         {
             "id": "cmux",

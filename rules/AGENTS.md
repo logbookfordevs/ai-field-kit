@@ -24,7 +24,7 @@ Treat docs as reader-facing product work; let the skill provide the detailed wri
 ## Skills
 Use `afk-compass` for broad, ambiguous, multi-phase, phase changes, execution-discipline routing, or any non-obvious skill selection.
 Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
-Treat explicit "AFK workflow" or "feature workflow" requests as AFK orchestration: use `afk-compass` at the start and at phase changes, with `afk-execution-tracking` as the continuity surface. Treat explicit "AFK Turbo" requests as high-throughput outcome execution routed by Compass.
+Treat explicit "AFK workflow" or "feature workflow" requests as composable AFK work: use `afk-compass` to choose the next useful skill, not to force a lifecycle. Treat explicit "AFK Sprint" or "AFK Turbo" requests as named execution packages.
 
 ## Imports
 - Always prioritize absolute imports (e.g. `@/components/...`) over relative paths when available.

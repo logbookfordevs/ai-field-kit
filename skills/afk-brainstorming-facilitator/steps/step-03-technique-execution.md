@@ -332,7 +332,7 @@ After final technique element:
 
 [K] **Keep exploring this technique** - We're just getting warmed up!
 [T] **Try a different technique** - Fresh perspective on the same topic
-[A] **Go deeper on a specific idea** - Develop a promising concept further (Advanced Elicitation)
+[A] **Go deeper on a specific idea** - Develop a promising concept further
 [B] **Take a quick break** - Pause and return with fresh energy
 [C] **Move to organization** - Only when you feel we've thoroughly explored
 
@@ -351,7 +351,7 @@ After final technique element:
 #### If 'K', 'T', 'A', or 'B' (Continue Exploring):
 
 - **Stay in Step 3** and restart the facilitation loop for the chosen path (or pause if break requested).
-- For option A: Invoke the `afk-advanced-elicitation` skill
+- For option A: narrow to the selected idea and continue the brainstorming loop with deeper prompts.
 
 ### 9. Update Documentation
 

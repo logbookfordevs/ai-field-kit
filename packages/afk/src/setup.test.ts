@@ -249,7 +249,7 @@ test("runArea prompts for a source for every interactive setup area", async () =
       selectedSkillIds: area === "skills" ? ["afk-note"] : [],
       selectedMcpIds: area === "mcps" ? ["stitch"] : [],
       selectedPluginIds: area === "plugins" ? ["rtk"] : [],
-      selectedHookIds: area === "hooks" ? ["afk-execution-tracking-stop-check"] : [],
+      selectedHookIds: area === "hooks" ? ["afk-typescript-typecheck-stop-check"] : [],
     });
 
     assert.equal(code, 0);

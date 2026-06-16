@@ -29,6 +29,8 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` taught `afk-execution-tracking` to record selected execution bundles, discipline evidence, and active checkpoints with an always-array marker before review, while treating commit hashes as receipts and tracking artifacts as explicit-ask commits only.
 - `skills:` made skill invocation policy sync both directions so `autoInvocation: true` re-enables model discovery even when an installed skill shipped disabled, while `write-a-skill` and `to-issues` remain manual.
 - `skills:` tightened `afk-pickup` so temp handoff resumes check direct `/tmp` paths before broader searches and avoid fragile shell search patterns.
+- `skills:` moved Impeccable back to the skills manifest as a normal `npx skills add pbakaus/impeccable --global` install instead of the plugin installer surface.
+- `hooks:` removed the AFK execution-tracking stop hook from the default hook manifest.
 - `cli:` made `afk show` inspect the active setup source by default, retired the local manifest editor route from `afk configure`, and changed the plain `afk` lobby source action to save a new `--default-source`.
 - `cli:` renamed the setup plugins surface from utils to plugins, including `plugins.json`, `afk setup plugins`, `afk show --plugins`, and setup selection labels.
 
