@@ -143,7 +143,7 @@ If you only want the AFK skill-routing entry point, install `afk-compass` direct
 npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-compass
 ```
 
-This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the right AFK and recommended external skills. When you ask for an AFK workflow, feature workflow, or AFK run, Compass treats the work as AFK Flow and re-checks routing as the work moves from sources to specs, checkpoint packets, and execution.
+This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the next useful AFK or recommended external skill. Compass is a selector, not a workflow runner: it helps choose the current tool and then gets out of the way.
 
 > **What does global vs. agent-specific mean?**
 > Global installs (`--global`) place the skill in `~/.agents/skills/` and make it available to every agent that reads from there.
@@ -157,6 +157,8 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-doc-craft` | Reader-first documentation craft: journeys, progressive disclosure, real empathy |
 | `afk-execution-tracking` | Checkpointed implementation state across tasks, reviews, validation, and handoffs |
 | `afk-compass` | Routes work to the right AFK and recommended external skills |
+| `afk-sprint` | Fast goal execution with Plannotator, native `/goal`, and Markdown checkpoint tracking |
+| `afk-turbo` | High-throughput goal execution with Plannotator and GoalBuddy's live board |
 | `afk-ask` | Gets a second opinion from another local AI CLI and saves the result as an artifact |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-code-grill` | Grill-style pressure on UX and implementation choices inside a defined coding scope |
@@ -204,6 +206,8 @@ Compass defines the default artifact convention in `skills/afk-compass/reference
 If you're unsure which one to reach for, use this shortcut:
 
 - "We need more ideas" -> `afk-brainstorming-facilitator`
+- "Run AFK Sprint" -> `afk-sprint`
+- "Run AFK Turbo" -> `afk-turbo`
 - "We need AFK artifact boundaries or storage conventions" -> `afk-compass`
 - "We need to create or normalize a PRD/spec after grilling" -> `afk-to-prd-spec`
 - "We need to split this into executable slices/checkpoints" -> `afk-to-issues`
@@ -227,11 +231,11 @@ Use the smallest useful slice of AFK for the moment you are in.
 
 If the work is already clear, skip straight to the later skill that matches the need. If the work is messy, start earlier. The point is guidance, not bureaucracy.
 
-When you ask for an AFK workflow, feature workflow, or AFK run, Compass uses Flow mode: it routes each phase, applies AFK artifact conventions, uses execution tracking, requires Grill or Grill With Docs before PRD/spec work, and selects an execution bundle for each task.
+When you ask for an AFK workflow, feature workflow, or AFK run, Compass should help select the next useful skill for the current phase. It should not force the whole sequence below.
 
-### A practical optional workflow
+### Recommended AFK Flow
 
-You do not need every step. Pick the smallest useful path for the moment you are in.
+AFK Flow is a human-facing recommendation, not a required agent pipeline. Use the pieces that fit the work.
 
 1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
 2. Use `grill-me` when a plan or design needs relentless questioning before you commit.
@@ -319,11 +323,11 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx goalbuddy`
   Recommended for high-throughput AFK Turbo work that needs a local live board, PM loop, role-tagged task execution, receipts, and proof pressure around broad goals. AFK exposes GoalBuddy through Utilities and delegates to its installer.
 
-AFK's fast execution ladder is:
+AFK's fast execution packages are:
 
-- **AFK Flow**: granular AFK workflow with checkpoint packets and execution tracking.
-- **AFK Sprint**: Plannotator goal package, AFK checkpoint packets, native `/goal`, and execution tracking.
-- **AFK Turbo**: Plannotator goal package plus GoalBuddy's local live board and PM loop.
+- **AFK Flow**: recommended human-facing composition with optional checkpoint packets and execution tracking.
+- **AFK Sprint**: `afk-sprint`, a Plannotator goal package plus AFK checkpoint packets, native `/goal`, and execution tracking.
+- **AFK Turbo**: `afk-turbo`, a Plannotator goal package plus GoalBuddy's local live board and PM loop.
 
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  

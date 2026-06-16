@@ -159,6 +159,30 @@
             "autoInvocation": true
         },
         {
+            "id": "afk-sprint",
+            "label": "AFK / Sprint",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-sprint",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
+            "id": "afk-turbo",
+            "label": "AFK / Turbo",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-turbo",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
             "id": "truss-evaluation",
             "label": "External / Truss Evaluation",
             "source": "https://github.com/leoreisdias/truss-framework",

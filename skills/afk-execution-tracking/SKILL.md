@@ -9,7 +9,7 @@ metadata:
 Keep implementation state visible in the checkpoint packet itself. The packet is the source of truth for its slice.
 
 ## Activation
-Use after executable checkpoint packets exist. If there is only a PRD/spec, plan, goal package, tracker issue, or rough implementation context, use `afk-to-issues` first.
+Use after executable checkpoint packets exist. If there is only a PRD/spec, plan, goal package, tracker issue, or rough implementation context, create checkpoint packets first, typically with `afk-to-issues` or another approved slicing source.
 
 Skip tiny one-shot edits unless the user asks.
 
@@ -69,7 +69,9 @@ Before moving a checkpoint to `review`, record evidence for each selected discip
 Do not mark the checkpoint `review` while selected discipline evidence is missing without an explicit skip reason.
 
 ## Packet Body
-Keep task-local state in the packet. Common headings include `What To Build`, `Acceptance Criteria`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, `Handoff Notes`, and `Notes / Decisions`.
+Keep task-local state in the packet. Use this body shape when creating or normalizing a checkpoint packet: `What To Build`, `Acceptance Criteria`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, and `Handoff Notes`.
+
+If an existing packet uses a different shape, preserve useful content and add missing standard sections as they become relevant.
 
 Record material deviations, assumptions, trade-offs, scope changes, surprising constraints, reviewer context, and next-agent context in the relevant checkpoint file. If a note belongs to a later slice, put it in that later slice's `Handoff Notes`.
 

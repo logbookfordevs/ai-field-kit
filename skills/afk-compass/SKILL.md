@@ -1,11 +1,13 @@
 ---
 name: afk-compass
-description: Route broad, ambiguous, multi-phase, explicit AFK workflow, AFK Sprint, or AFK Turbo requests to the right AFK and companion skills. Use at the start and at phase changes; Free Route routes, Flow tracks, Sprint goals, and Turbo boards.
+description: Route broad, ambiguous, phase-change, explicit AFK workflow, AFK Sprint, AFK Turbo, or non-obvious skill-selection requests to the smallest useful AFK or companion skill. Use when the next skill is unclear; Compass is a selector, not a workflow runner.
 ---
 
 # AFK Compass
 
-AFK Compass chooses which skill should guide the next move. It does not replace native skill discovery or force workflow artifacts; it sharpens discovery by mapping the user's request to AFK's workflow skills, references, and recommended external companion skills.
+AFK Compass chooses the next useful tool. It is a road sign, not the road.
+
+Do not run a multi-step lifecycle from Compass. Route the current moment to one skill, reference, or named execution package, then let that selected tool work.
 
 ## First Move
 When a request arrives:
@@ -14,38 +16,18 @@ When a request arrives:
 3. Choose the smallest useful skill set.
 4. Move into the working skill immediately.
 
-## Routing Modes
+## Routing
 
-### AFK Free Route
-Use this mode by default. Pick the smallest useful skill for the current request, including direct routing to debugging, review, TDD/proof loops, source verification, doubt checks, UI, docs, or normal execution. Do not create workflow artifacts or tracking unless the selected route needs them.
-
-### AFK Flow Mode
-Use this mode when the user asks for an "AFK workflow", "feature workflow", "start a workflow", "AFK run", or otherwise signals that they want AFK to coordinate the feature lifecycle across phases.
-
-Before executing Flow, read [flow.md](references/flow.md).
-
-### AFK Turbo Mode
-Use Turbo when the user wants high-throughput progress toward a broad outcome.
-
-Before executing Turbo, read [turbo.md](references/turbo.md).
-
-### AFK Sprint Mode
-Use Sprint when the user wants a fast goal-driven run with Markdown checkpoint packets instead of a visual board and PM loop.
-
-Before executing Sprint, read [sprint.md](references/sprint.md).
-
-## Skill Routing
-Use this map to choose the next skill:
-
-Route by user intent, not by literal tool names. Tool names below identify the current implementation for the agent.
+Route by user intent, not by literal tool names. Tool names below identify the current implementation.
 
 ```text
 Task arrives
 |
 +-- Need relentless plan/design questioning? ----> grill-me
 +-- Need divergent ideas or directions? ----------> afk-brainstorming-facilitator
-+-- Need high-throughput visual-board execution? -> AFK Turbo Mode
-+-- Need fast goal execution with Markdown tracking? -> AFK Sprint Mode
++-- Explicit AFK Turbo or visual-board execution package? -> afk-turbo
++-- Explicit AFK Sprint or goal run with Markdown tracking? -> afk-sprint
++-- Explicit AFK workflow / Flow / run? --------> route only the current phase
 +-- Resuming existing feature/workflow work? ---> afk-resume-workflow
 +-- Writing, rewriting, or reviewing human-facing docs? -> afk-doc-craft
 +-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
@@ -71,6 +53,8 @@ Task arrives
 ```
 
 Only invoke skills that are installed or clearly available. If a routed skill is missing, state the gap and continue with the best available installed skill or normal workflow.
+
+For explicit AFK workflow / Flow requests, explain that AFK is composable and route the current phase only. Do not require Grill, PRD/spec, issues, tracking, or execution discipline unless that is the current need.
 
 ## Core Behaviors
 These behaviors apply across every routed skill.

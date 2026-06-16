@@ -9,7 +9,7 @@ metadata:
 
 This skill takes the current conversation context and codebase understanding and produces an agent-ready PRD/spec. Do NOT interview the user by default — synthesize what you already know.
 
-In AFK Flow, `grill-me` for greenfield work or `grill-with-docs` for brownfield work should already have run. This skill turns that sharpened context into the artifact; it does not replace the grilling pass.
+If `grill-me` or `grill-with-docs` already sharpened the context, use that output. This skill turns available context into the artifact; it does not replace grilling when the user still wants that pressure step.
 
 The artifact location should follow the repo convention or AFK artifact conventions. If no convention exists, write to `docs/<task-slug>/<task-slug>.prd-spec.md`. If issue tracker context exists and the user expects tracker publication, publish or prepare tracker-ready markdown instead.
 
