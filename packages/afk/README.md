@@ -519,9 +519,9 @@ scope.
 
 ### Plugins
 
-The bundled plugin manifest currently includes Plannotator, GoalBuddy, RTK,
-Yggtree, and Impeccable. Plugin setup is best-effort because these installers
-are owned by their upstream tools.
+The bundled plugin manifest currently includes Plannotator, GoalBuddy,
+Plannotator Tot, RTK, Yggtree, and Impeccable. Plugin setup is best-effort
+because these installers are owned by their upstream tools.
 
 RTK post-install follows the selected AFK targets. With no explicit plugin
 agent selection, AFK uses the RTK defaults: `antigravity`, `claude`, `codex`,

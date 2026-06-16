@@ -28,6 +28,20 @@
             "default": true
         },
         {
+            "id": "plannotator-tot",
+            "label": "Plannotator Tot",
+            "description": "Install Tot's git-backed Markdown and HTML publishing CLI for living tot.page URLs with immutable snapshots.",
+            "install": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "@plannotator/tot"
+                ]
+            },
+            "default": false
+        },
+        {
             "id": "rtk",
             "label": "RTK",
             "description": "Compress noisy command output for coding agents and add agent hooks or rules that nudge shell commands through RTK.",
