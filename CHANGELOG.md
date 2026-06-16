@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v0.6.0 - 2026-06-16
+
 ### Added
 
 - `skills:` added Plannotator's compound report, `/goal` setup, and visual explainer skills to the default global skill manifest.
