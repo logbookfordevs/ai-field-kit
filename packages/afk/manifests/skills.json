@@ -75,18 +75,6 @@
             "autoInvocation": true
         },
         {
-            "id": "afk-deep-interview",
-            "label": "AFK / Deep Interview",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-deep-interview",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": false
-        },
-        {
             "id": "afk-doc-craft",
             "label": "AFK / Doc Craft",
             "source": "https://github.com/logbookfordevs/ai-field-kit",

@@ -400,7 +400,6 @@ Workflow-style AFK procedures are skills for named, repeatable user journeys. Us
 |---|---|
 | `afk-interactive-code-review` | Reviews a PR step by step with pauses after each file |
 | `afk-pr-story-flow-mermaid` | Generates a Mermaid PR story flow from branch diffs |
-| `afk-deep-interview` | Runs a structured interview with follow-up questions based on the initial answer |
 
 These skills are installed through the normal skills flow. Use `autoInvocation: false` only for slash-only or attached-only procedures that should stay hidden from normal model discovery.
 
