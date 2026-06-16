@@ -231,16 +231,6 @@
             "autoInvocation": false
         },
         {
-            "id": "impeccable",
-            "label": "External / Impeccable",
-            "source": "pbakaus/impeccable",
-            "args": [
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": true
-        },
-        {
             "id": "html",
             "label": "External / Effective HTML",
             "source": "https://github.com/plannotator/effective-html",

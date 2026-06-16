@@ -334,8 +334,8 @@ AFK's fast execution packages are:
   Create a compact handoff document for a fresh agent when a session needs to continue elsewhere. It saves outside the workspace on purpose, keeping the note disposable. Pair it with `afk-pickup` in the next session to search temp locations, verify referenced paths, and resume from the right handoff.
 
 - **Impeccable**
-  Install: `npx skills add pbakaus/impeccable --global`
-  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context.
+  Install: `npx impeccable install --global`
+  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Plugins and delegates to its installer, including Impeccable's design hook.
 
 - **cmux**  
   Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  
