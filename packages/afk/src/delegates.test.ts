@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { buildMcpCommands, buildSkillCommands, buildUtilityCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
+import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions, Runtime } from "./types.js";
 
@@ -34,14 +34,14 @@ const defaultHomeDir = localHomeWithManifests({
       },
     ],
   },
-  "utils.json": {
+  "plugins.json": {
     version: 1,
     items: [
       {
         id: "plannotator",
         label: "Plannotator",
         description: "Review and annotate plans before implementation.",
-        install: { command: "bash", args: ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash"] },
+        install: { command: "bash", args: ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"] },
         default: true,
       },
       {
@@ -61,20 +61,23 @@ const options: CliOptions = {
   setupScope: "global",
   scopeExplicit: true,
   dryRun: true,
+  verbose: false,
   yes: true,
-  includeExternal: false,
+  allSkills: false,
   selectedSkillIds: [],
   selectedSkillAgentIds: [],
   selectedMcpIds: [],
-  selectedUtilIds: [],
+  selectedPluginIds: [],
   selectedHookIds: [],
   rulesRef: "main",
   rulesSource: "local",
   initOnly: false,
   empty: false,
   refreshDefaults: false,
-    manifestLocal: false,
   defaultsSource: "",
+  defaultsSourceExplicit: false,
+  defaultSourceUpdate: "",
+  manifestLocal: false,
   manifestConfigureLocal: false,
   manifestConfigureFromCurrent: false,
   selectedManifestCategories: [],
@@ -122,6 +125,43 @@ test("buildSkillCommands omits skill filter for whole-source skill entries", () 
   )));
 });
 
+test("buildSkillCommands all installs default and non-default skills", () => {
+  const homeDir = localHomeWithManifest("skills.json", {
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "afk-default",
+        label: "AFK / Default",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "afk-default", "--global"],
+        default: true,
+      },
+      {
+        id: "afk-spline",
+        label: "AFK / Spline",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "afk-spline", "--global"],
+        default: false,
+      },
+      {
+        id: "external-helper",
+        label: "External / Helper",
+        source: "https://github.com/example/external",
+        args: ["--skill", "external-helper", "--global"],
+        default: false,
+      },
+    ],
+  });
+
+  const commands = buildSkillCommands({ ...options, homeDir, allSkills: true });
+  const text = commands.map((command) => command.args.join(" ")).join("\n");
+
+  assert.ok(text.includes("afk-default"));
+  assert.ok(text.includes("afk-spline"));
+  assert.ok(text.includes("external-helper"));
+});
+
 test("buildSkillCommands does not add a duplicate Claude-only install", () => {
   const commands = buildSkillCommands({ ...options, agents: ["codex", "claude"] });
   assert.equal(commands.length, 1);
@@ -164,11 +204,42 @@ test("buildMcpCommands omits global scope for project installs", () => {
   assert.ok(commands[0]?.args.includes("codex"));
 });
 
-test("buildUtilityCommands installs selected utilities", () => {
-  const commands = buildUtilityCommands({ ...options, selectedUtilIds: ["plannotator"] });
+test("buildMcpCommands skips upstream confirmation after AFK MCP selection", () => {
+  const commands = buildMcpCommands({
+    ...options,
+    yes: false,
+    selectedMcpIds: ["stitch"],
+  });
+
+  assert.ok(commands[0]?.args.includes("-y"));
+});
+
+test("buildMcpCommands skips guided MCP installs when no AFK targets were selected", () => {
+  const commands = buildMcpCommands({
+    ...options,
+    agents: [],
+    yes: false,
+    selectedMcpIds: ["stitch"],
+  });
+
+  assert.deepEqual(commands, []);
+});
+
+test("buildMcpCommands does not expand yes mode to broad default agents", () => {
+  const commands = buildMcpCommands({
+    ...options,
+    agents: [],
+    yes: true,
+  });
+
+  assert.deepEqual(commands, []);
+});
+
+test("buildPluginCommands installs selected plugins", () => {
+  const commands = buildPluginCommands({ ...options, selectedPluginIds: ["plannotator"] });
   assert.equal(commands.length, 1);
   assert.equal(commands[0]?.command, "bash");
-  assert.deepEqual(commands[0]?.args, ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash"]);
+  assert.deepEqual(commands[0]?.args, ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"]);
 });
 
 test("buildMcpCommands maps Antigravity to the add-mcp antigravity target", () => {
@@ -183,8 +254,8 @@ test("buildMcpCommands skips project-scoped Antigravity installs", () => {
   assert.deepEqual(commands, []);
 });
 
-test("buildUtilityCommands adds RTK init commands for selected agents", () => {
-  const commands = buildUtilityCommands({ ...options, agents: ["antigravity", "claude", "codex", "opencode"], selectedUtilIds: ["rtk"] });
+test("buildPluginCommands adds RTK init commands for selected agents", () => {
+  const commands = buildPluginCommands({ ...options, agents: ["antigravity", "claude", "codex", "opencode"], selectedPluginIds: ["rtk"] });
 
   assert.deepEqual(
     commands.map((command) => [command.command, command.args]),
@@ -199,8 +270,8 @@ test("buildUtilityCommands adds RTK init commands for selected agents", () => {
   assert.equal(commands[3]?.cwd, join(defaultHomeDir, ".codex"));
 });
 
-test("buildUtilityCommands ignores Cursor local because it is hook-only", () => {
-  const commands = buildUtilityCommands({ ...options, agents: ["cursor-local"], selectedUtilIds: ["rtk"] });
+test("buildPluginCommands ignores Cursor local because it is hook-only", () => {
+  const commands = buildPluginCommands({ ...options, agents: ["cursor-local"], selectedPluginIds: ["rtk"] });
 
   assert.deepEqual(
     commands.map((command) => [command.command, command.args]),
@@ -209,8 +280,8 @@ test("buildUtilityCommands ignores Cursor local because it is hook-only", () => 
 });
 
 
-test("buildUtilityCommands runs RTK init locally for project scope", () => {
-  const commands = buildUtilityCommands({ ...options, setupScope: "project", agents: ["antigravity", "claude", "codex", "opencode"], selectedUtilIds: ["rtk"] });
+test("buildPluginCommands runs RTK init locally for project scope", () => {
+  const commands = buildPluginCommands({ ...options, setupScope: "project", agents: ["antigravity", "claude", "codex", "opencode"], selectedPluginIds: ["rtk"] });
 
   assert.deepEqual(
     commands.map((command) => [command.command, command.args]),
@@ -225,27 +296,27 @@ test("buildUtilityCommands runs RTK init locally for project scope", () => {
   assert.equal(commands[3]?.cwd, undefined);
 });
 
-test("buildUtilityCommands supports generic post-install commands", () => {
-  const homeDir = localHomeWithManifest("utils.json", {
+test("buildPluginCommands supports generic post-install commands", () => {
+  const homeDir = localHomeWithManifest("plugins.json", {
     version: 1,
     items: [
       {
         id: "custom-postinstall",
-        label: "Custom Utility",
-        description: "Custom utility.",
+        label: "Custom Plugin",
+        description: "Custom plugin.",
         install: { command: "sh", args: ["-c", "install-custom"] },
         postInstall: { command: "sh", args: ["-c", "custom init"] },
         default: true,
       },
     ],
   });
-  const commands = buildUtilityCommands({ ...options, homeDir, selectedUtilIds: ["custom-postinstall"] });
+  const commands = buildPluginCommands({ ...options, homeDir, selectedPluginIds: ["custom-postinstall"] });
 
   assert.deepEqual(
     commands.map((command) => [command.label, command.command, command.args]),
     [
-      ["Custom Utility / install", "sh", ["-c", "install-custom"]],
-      ["Custom Utility / post-install", "sh", ["-c", "custom init"]],
+      ["Custom Plugin / install", "sh", ["-c", "install-custom"]],
+      ["Custom Plugin / post-install", "sh", ["-c", "custom init"]],
     ],
   );
 });
@@ -257,6 +328,58 @@ test("runDelegateCommands fails fast by default", async () => {
 
   assert.equal(code, 7);
   assert.deepEqual(calls, ["First"]);
+});
+
+test("runDelegateCommands hides delegated command details by default", async () => {
+  const output: string[] = [];
+  const spawnBehaviors: boolean[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (_command, _args, _cwd, behavior) => {
+      spawnBehaviors.push(Boolean(behavior?.verbose));
+      return { code: 0 };
+    },
+  };
+
+  const code = await runDelegateCommands(runtime, [sampleCommands()[0] as DelegateCommand], {
+    ...options,
+    dryRun: false,
+    verbose: false,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawnBehaviors, [false]);
+  assert.deepEqual(output, ["- First: preparing...", "- First: ready"]);
+});
+
+test("runDelegateCommands shows delegated command details in verbose mode", async () => {
+  const output: string[] = [];
+  const spawnBehaviors: boolean[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (_command, _args, _cwd, behavior) => {
+      spawnBehaviors.push(Boolean(behavior?.verbose));
+      return { code: 0 };
+    },
+  };
+
+  const code = await runDelegateCommands(runtime, [sampleCommands()[0] as DelegateCommand], {
+    ...options,
+    dryRun: false,
+    verbose: true,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawnBehaviors, [true]);
+  assert.ok(output.includes("\nFirst"));
+  assert.ok(output.some((message) => message.startsWith("$ first")));
+  assert.ok(!output.some((message) => message.includes("preparing...")));
 });
 
 test("runDelegateCommands can continue after failures", async () => {

@@ -9,7 +9,7 @@ export type AgentId =
 
 export type SkillAgentId = "claude-code" | "kiro-cli" | "kilo" | "pi" | "droid";
 
-export type Area = "rules" | "skills" | "mcps" | "utils" | "hooks";
+export type Area = "rules" | "skills" | "mcps" | "plugins" | "hooks";
 export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "all";
 export type SkillsUpgradeScope = "global" | "project" | "all";
@@ -34,19 +34,20 @@ export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
 export type SkillOpenApp = "finder" | "code" | "cursor" | "zed" | "agy";
 export type SkillAgentMetadata = "codex";
-export type ManifestCategory = "rules" | "skills" | "mcps" | "utils" | "hooks" | "presets";
+export type ManifestCategory = "rules" | "skills" | "mcps" | "plugins" | "hooks" | "presets";
 
 export type CliOptions = {
   agents: AgentId[];
   setupScope: SetupScope;
   scopeExplicit: boolean;
   dryRun: boolean;
+  verbose: boolean;
   yes: boolean;
-  includeExternal: boolean;
+  allSkills: boolean;
   selectedSkillIds: string[];
   selectedSkillAgentIds: SkillAgentId[];
   selectedMcpIds: string[];
-  selectedUtilIds: string[];
+  selectedPluginIds: string[];
   selectedHookIds: string[];
   rulesRef: string;
   rulesSource: "manifest" | "github" | "local";
@@ -54,6 +55,10 @@ export type CliOptions = {
   empty: boolean;
   refreshDefaults: boolean;
   defaultsSource: string;
+  defaultsSourceExplicit: boolean;
+  defaultSourceUpdate: string;
+  rememberDefaultsSource?: boolean;
+  setupManifestsPrepared?: boolean;
   manifestLocal: boolean;
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
@@ -83,6 +88,10 @@ export type CommandResult = {
   code: number;
 };
 
+export type SpawnBehavior = {
+  verbose: boolean;
+};
+
 export type Io = {
   stdout: (message: string) => void;
   stderr: (message: string) => void;
@@ -90,7 +99,7 @@ export type Io = {
 
 export type Runtime = {
   io: Io;
-  spawn: (command: string, args: string[], cwd?: string) => Promise<CommandResult>;
+  spawn: (command: string, args: string[], cwd?: string, behavior?: SpawnBehavior) => Promise<CommandResult>;
 };
 
 export type PathOperation =

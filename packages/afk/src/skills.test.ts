@@ -67,3 +67,40 @@ test("planSkillInvocationPolicy updates installed manual skills", () => {
   assert.match(readFileSync(join(skillDir, "SKILL.md"), "utf8"), /disable-model-invocation: true/);
   assert.match(readFileSync(join(skillDir, "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
 });
+
+test("planSkillInvocationPolicy re-enables installed automatic skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-policy-"));
+  const homeDir = join(root, "home");
+  const skillDir = join(homeDir, ".agents", "skills", "auto-skill");
+  mkdirSync(join(skillDir, "agents"), { recursive: true });
+  mkdirSync(localManifestDir(homeDir), { recursive: true });
+  writeFileSync(join(skillDir, "SKILL.md"), "---\nname: auto-skill\ndisable-model-invocation: true\n---\n\n# Auto\n");
+  writeFileSync(join(skillDir, "agents", "openai.yaml"), "policy:\n  allow_implicit_invocation: false\n");
+  writeFileSync(join(localManifestDir(homeDir), "skills.json"), JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "auto-skill",
+        label: "Auto Skill",
+        source: "https://github.com/example/skills",
+        args: ["--skill", "auto-skill"],
+        default: true,
+        autoInvocation: true,
+      },
+    ],
+  }));
+
+  const operations = planSkillInvocationPolicy({
+    homeDir,
+    cwd: join(root, "project"),
+    setupScope: "global",
+    selectedSkillIds: ["auto-skill"],
+  });
+  for (const operation of operations) {
+    applyOperation(operation);
+  }
+
+  assert.match(readFileSync(join(skillDir, "SKILL.md"), "utf8"), /disable-model-invocation: false/);
+  assert.match(readFileSync(join(skillDir, "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: true/);
+});

@@ -8,6 +8,7 @@ INSTALL_ROOT="${AFK_INSTALL_ROOT:-$HOME/.local/share/afk}"
 BIN_DIR="${AFK_BIN_DIR:-$HOME/.local/bin}"
 BIN_PATH="$BIN_DIR/afk"
 LOCAL_MODE=0
+UNLINK_MODE=0
 
 info() {
   printf '\033[1;36m%s\033[0m %s\n' "afk" "$1"
@@ -22,7 +23,9 @@ usage() {
   cat <<'USAGE'
 Usage: install.sh [options]
 
-Installs AFK from a GitHub Release asset without cloning the repository.
+Development helper for linking this checkout as a local afk command.
+Remote release options are retained for maintainers, but npm is the
+recommended user-facing install path.
 
 Options:
   --version <tag>         Release tag to install. Defaults to latest.
@@ -31,6 +34,7 @@ Options:
   --install-root <path>   Directory where AFK releases are stored.
   --bin-dir <path>        Directory where the afk symlink is written.
   --local                 Link the current checkout's packages/afk/dist/index.js.
+  --unlink                Remove the afk symlink written by this installer.
   -h, --help              Show this help and exit.
 
 Environment:
@@ -41,9 +45,8 @@ Environment:
   AFK_BIN_DIR             Same as --bin-dir.
 
 Examples:
-  curl -fsSL https://raw.githubusercontent.com/leoreisdias/ai-rules-workflows/main/scripts/install.sh | bash
-  curl -fsSL https://raw.githubusercontent.com/leoreisdias/ai-rules-workflows/main/scripts/install.sh | bash -s -- --version v0.5.2
   ./scripts/install.sh --local
+  ./scripts/install.sh --unlink
 USAGE
 }
 
@@ -105,6 +108,10 @@ while [[ $# -gt 0 ]]; do
       LOCAL_MODE=1
       shift
       ;;
+    --unlink)
+      UNLINK_MODE=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -145,6 +152,7 @@ link_entrypoint() {
   ln -sfn "$entry_path" "$BIN_PATH"
 
   info "linked $BIN_PATH -> $entry_path"
+  info "to restore an npm-installed afk on PATH, run: $0 --unlink"
 
   case ":$PATH:" in
     *":$BIN_DIR:"*) ;;
@@ -156,6 +164,34 @@ link_entrypoint() {
 
   info "ready: $(command -v afk 2>/dev/null || printf '%s' "$BIN_PATH")"
 }
+
+unlink_entrypoint() {
+  if [[ ! -e "$BIN_PATH" && ! -L "$BIN_PATH" ]]; then
+    info "no afk symlink found at $BIN_PATH"
+    return 0
+  fi
+
+  if [[ ! -L "$BIN_PATH" ]]; then
+    fail "$BIN_PATH exists but is not a symlink; refusing to remove it"
+  fi
+
+  local target
+  target="$(readlink "$BIN_PATH")"
+  case "$target" in
+    *node_modules/@logbookfordevs/afk*)
+      fail "$BIN_PATH points to an npm-managed AFK install; refusing to remove it"
+      ;;
+  esac
+
+  rm "$BIN_PATH"
+  info "removed $BIN_PATH -> $target"
+  info "ready: $(command -v afk 2>/dev/null || printf 'afk is not on PATH')"
+}
+
+if [[ "$UNLINK_MODE" -eq 1 ]]; then
+  unlink_entrypoint
+  exit 0
+fi
 
 if [[ "$LOCAL_MODE" -eq 1 ]]; then
   LOCAL_ROOT="$(find_local_root)" || fail "--local must be run from this repository checkout"

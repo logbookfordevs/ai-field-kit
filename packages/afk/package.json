@@ -1,23 +1,28 @@
 {
-  "name": "@logbook/afk",
-  "version": "0.5.2",
+  "name": "@logbookfordevs/afk",
+  "version": "0.6.0",
   "description": "AI Field Kit setup router CLI.",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logbookfordevs/ai-field-kit.git",
+    "directory": "packages/afk"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
-    "afk": "./dist/index.js"
+    "afk": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist/**/*.js",
+    "!dist/**/*.test.js"
   ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "pnpm run clean && tsc",
     "typecheck": "npx tsc --noEmit",
     "prepack": "pnpm run build",
-    "release:bump": "node ../../scripts/bump-afk-version.mjs",
-    "release:bump:patch": "node ../../scripts/bump-afk-version.mjs patch",
-    "release:bump:minor": "node ../../scripts/bump-afk-version.mjs minor",
-    "release:bump:major": "node ../../scripts/bump-afk-version.mjs major",
     "release:pack": "../../scripts/package-afk-release.sh",
     "test": "vitest run"
   },

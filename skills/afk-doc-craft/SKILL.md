@@ -1,13 +1,15 @@
 ---
 name: afk-doc-craft
-description: Write, improve, or critique documentation using a reader-first playbook. Use when the user asks to create, rewrite, restructure, polish, or critique documentation as a deliverable, including READMEs, guides, API docs, onboarding, troubleshooting, runbooks, implementation docs, and PR descriptions. Do not use for read-only documentation lookup, summarization, or context gathering unless the user asks for documentation changes or a docs review.
+description: Write, improve, or critique documentation using a reader-first playbook. Use when the user asks to create, rewrite, restructure, polish, or critique human-facing docs such as READMEs, guides, API docs, onboarding, troubleshooting, runbooks, implementation docs, and PR descriptions. Do not use for agent-facing instruction surfaces such as AGENTS.md, CLAUDE.md, SKILL.md, prompts, agent rules/policies, or skill content; also skip read-only documentation lookup, summarization, or context gathering.
 ---
 
 # AFK Doc Craft
 
-Use this skill when documentation should feel useful, clear, and worth reading.
+Use this skill to make documentation useful, clear, and worth reading.
 
 Documentation is a product experience. The job is not only to preserve facts; it is to help a real reader build the right mental model with the least frustration.
+
+If this skill loads for an agent-facing instruction surface, stop and switch to prompt or skill design work.
 
 Do not activate this skill for read-only documentation tasks. If the user only asks to read docs, inspect docs, find facts, summarize existing docs, or gather context from docs, use normal reading and analysis first. Activate this skill only when the expected output is authored documentation, documentation critique, or an edit to a documentation artifact.
 

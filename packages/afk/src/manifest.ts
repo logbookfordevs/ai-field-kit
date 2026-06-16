@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, PathOperation } from "./types.js";
 
-const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "utils.json", "hooks.json"] as const;
+const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -43,12 +43,12 @@ export type RulesManifest = {
   url: string;
 };
 
-export type UtilityManifest = {
+export type PluginManifest = {
   version: number;
-  items: UtilityManifestItem[];
+  items: PluginManifestItem[];
 };
 
-export type UtilityManifestItem = {
+export type PluginManifestItem = {
   id: string;
   label: string;
   description: string;
@@ -56,11 +56,11 @@ export type UtilityManifestItem = {
     command: string;
     args: string[];
   };
-  postInstall?: "rtk-init" | UtilityPostInstallCommand;
+  postInstall?: "rtk-init" | PluginPostInstallCommand;
   default: boolean;
 };
 
-export type UtilityPostInstallCommand = {
+export type PluginPostInstallCommand = {
   label?: string;
   command: string;
   args: string[];
@@ -98,6 +98,12 @@ type ManifestOptions = Pick<
   "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "defaultsSource" | "dryRun" | "manifestLocal"
 > & {
   cwd?: string;
+  defaultsSourceExplicit?: boolean;
+  rememberDefaultsSource?: boolean;
+};
+
+type ManifestDirOptions = Pick<CliOptions, "homeDir" | "manifestLocal"> & {
+  cwd?: string;
 };
 
 export function localAfkDir(homeDir: string): string {
@@ -112,11 +118,38 @@ export function projectManifestDir(cwd: string): string {
   return join(cwd, "afk", "manifests");
 }
 
+export function readRememberedDefaultsSource(options: ManifestDirOptions): string {
+  return rememberedDefaultsSource(manifestDirForOptions(options));
+}
+
+export function planRememberedDefaultsSourceUpdate(options: ManifestDirOptions, defaultsSource: string): PathOperation[] {
+  const manifestDir = manifestDirForOptions(options);
+  const presetsPath = join(manifestDir, "presets.json");
+  const operations: PathOperation[] = [];
+
+  if (!existsSync(manifestDir)) {
+    operations.push({ type: "mkdir", path: manifestDir });
+  }
+
+  const trimmedSource = defaultsSource.trim();
+  const existing = readExistingPresetsManifest(presetsPath);
+  const next = {
+    version: existing.version,
+    defaultsSource: trimmedSource,
+    presets: existing.presets,
+  };
+
+  operations.push({ type: "write", path: presetsPath, content: `${JSON.stringify(next, null, 2)}\n` });
+  return operations;
+}
+
 export async function ensureLocalManifests(options: ManifestOptions): Promise<PathOperation[]> {
   const operations: PathOperation[] = [];
   const manifestDir = manifestDirForOptions(options);
-  const effectiveDefaultsSource = options.defaultsSource || rememberedDefaultsSource(manifestDir) || builtInDefaultsSource;
-  const shouldRefreshDefaults = options.refreshDefaults || Boolean(options.defaultsSource);
+  const rememberedSource = rememberedDefaultsSource(manifestDir);
+  const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+  const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
+  const shouldRefreshDefaults = options.refreshDefaults || options.defaultsSourceExplicit || Boolean(options.defaultsSource);
 
   if (!existsSync(manifestDir)) {
     operations.push({ type: "mkdir", path: manifestDir });
@@ -134,7 +167,7 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
 
     const content = options.empty
       ? emptyManifestContent(name, options, effectiveDefaultsSource)
-      : await defaultManifestContent(name, options, effectiveDefaultsSource);
+      : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
     if (content) {
       operations.push({ type: "write", path: target, content });
     } else if (existsSync(target)) {
@@ -145,6 +178,14 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
   }
 
   return operations;
+}
+
+export async function loadDefaultManifestContent(name: ManifestName, options: ManifestOptions): Promise<string | null> {
+  const manifestDir = manifestDirForOptions(options);
+  const rememberedSource = rememberedDefaultsSource(manifestDir);
+  const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+  const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
+  return defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
 }
 
 export function loadSkillManifest(options: Pick<CliOptions, "homeDir">): SkillManifest {
@@ -159,8 +200,8 @@ export function loadRulesManifest(options: Pick<CliOptions, "homeDir">): RulesMa
   return parseLocalManifest<RulesManifest>(options.homeDir, "rules.json", isRulesManifest);
 }
 
-export function loadUtilityManifest(options: Pick<CliOptions, "homeDir">): UtilityManifest {
-  return parseLocalManifest<UtilityManifest>(options.homeDir, "utils.json", isUtilityManifest);
+export function loadPluginManifest(options: Pick<CliOptions, "homeDir">): PluginManifest {
+  return parseLocalManifest<PluginManifest>(options.homeDir, "plugins.json", isPluginManifest);
 }
 
 export function loadHookManifest(options: Pick<CliOptions, "homeDir">): HookManifest {
@@ -182,10 +223,15 @@ function parseLocalManifest<T>(homeDir: string, name: ManifestName, guard: (valu
   return parsed;
 }
 
-async function defaultManifestContent(name: ManifestName, options: ManifestOptions, defaultsSource: string): Promise<string | null> {
+async function defaultManifestContent(
+  name: ManifestName,
+  options: ManifestOptions,
+  defaultsSource: string,
+  rememberedSourceForWrite: string,
+): Promise<string | null> {
   if (name === "presets.json") {
     const content = await fetchDefaultManifest(name, options, defaultsSource);
-    return content ? withRememberedDefaultsSource(content, defaultsSource) : null;
+    return content ? withRememberedDefaultsSource(content, rememberedSourceForWrite) : null;
   }
 
   return fetchDefaultManifest(name, options, defaultsSource);
@@ -263,8 +309,39 @@ function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-function manifestDirForOptions(options: ManifestOptions): string {
+function manifestDirForOptions(options: ManifestDirOptions): string {
   return options.manifestLocal ? projectManifestDir(options.cwd ?? process.cwd()) : localManifestDir(options.homeDir);
+}
+
+function readExistingPresetsManifest(path: string): PresetsManifest {
+  if (!existsSync(path)) {
+    return { version: 1, defaultsSource: "", presets: [] };
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    if (isRecord(parsed)) {
+      return {
+        version: typeof parsed.version === "number" ? parsed.version : 1,
+        defaultsSource: typeof parsed.defaultsSource === "string" ? parsed.defaultsSource : "",
+        presets: Array.isArray(parsed.presets) ? parsed.presets.filter(isPresetManifestItem) : [],
+      };
+    }
+  } catch {
+    return { version: 1, defaultsSource: "", presets: [] };
+  }
+
+  return { version: 1, defaultsSource: "", presets: [] };
+}
+
+function isPresetManifestItem(value: unknown): value is PresetsManifest["presets"][number] {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    Array.isArray(value.areas) &&
+    value.areas.every((area) => typeof area === "string")
+  );
 }
 
 function rememberedDefaultsSource(manifestDir: string): string {
@@ -343,7 +420,7 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
     return `${JSON.stringify({ version: 1, source: "github", url: "" }, null, 2)}\n`;
   }
 
-  if (name === "utils.json") {
+  if (name === "plugins.json") {
     return `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`;
   }
 
@@ -541,7 +618,7 @@ function isRulesManifest(value: unknown): value is RulesManifest {
   return typeof value.url === "string";
 }
 
-function isUtilityManifest(value: unknown): value is UtilityManifest {
+function isPluginManifest(value: unknown): value is PluginManifest {
   if (!isRecord(value) || typeof value.version !== "number" || !Array.isArray(value.items)) {
     return false;
   }
@@ -557,13 +634,13 @@ function isUtilityManifest(value: unknown): value is UtilityManifest {
       typeof item.description === "string" &&
       typeof item.install.command === "string" &&
       isStringArray(item.install.args) &&
-      (item.postInstall === undefined || item.postInstall === "rtk-init" || isUtilityPostInstallCommand(item.postInstall)) &&
+      (item.postInstall === undefined || item.postInstall === "rtk-init" || isPluginPostInstallCommand(item.postInstall)) &&
       typeof item.default === "boolean"
     );
   });
 }
 
-function isUtilityPostInstallCommand(value: unknown): value is UtilityPostInstallCommand {
+function isPluginPostInstallCommand(value: unknown): value is PluginPostInstallCommand {
   return (
     isRecord(value) &&
     (value.label === undefined || typeof value.label === "string") &&
@@ -572,7 +649,7 @@ function isUtilityPostInstallCommand(value: unknown): value is UtilityPostInstal
   );
 }
 
-function isHookManifest(value: unknown): value is HookManifest {
+export function isHookManifest(value: unknown): value is HookManifest {
   if (!isRecord(value) || typeof value.version !== "number" || !Array.isArray(value.items)) {
     return false;
   }

@@ -1,0 +1,87 @@
+{
+  "stage": "facts",
+  "title": "Improve AFK Manifest Configure",
+  "goalSlug": "improve-manifest-configure",
+  "facts": [
+    {
+      "id": "fact-1",
+      "text": "`afk manifests configure` becomes an editor-style interactive session where the user can choose a manifest type, review existing entries, choose an action, and return to the menu until they finish.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-2",
+      "text": "The first version supports editing the rules, skills, MCPs, utils, and hooks manifests; presets are out of scope for this goal.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-3",
+      "text": "For item-based manifests, the session supports adding new items, editing existing items, removing existing items, and toggling default-style fields such as `default` and skill `autoInvocation` where those fields exist.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-4",
+      "text": "The editor does not include a duplicate or clone operation in this goal.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-5",
+      "text": "The implementation starts with the existing `@inquirer/prompts` stack and AFK prompt themes; a new TUI dependency is added only if a specific required interaction cannot be built cleanly with Inquirer.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": false,
+      "automatedVerification": false
+    },
+    {
+      "id": "fact-6",
+      "text": "The configure flow loads existing manifests by default when they are present, preserving current fields unless the user explicitly edits or removes them.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-7",
+      "text": "The existing `--local`, `--from-current`, and `--dry-run` flags remain compatible with the new configure behavior.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-8",
+      "text": "Before writing any manifest file, the session shows a preview of the changed JSON and requires explicit confirmation unless `--dry-run` is active.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-9",
+      "text": "The editor validates manifest shape before writing, prevents duplicate item ids, and makes removals explicit rather than accidental.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-10",
+      "text": "The command remains a manifest editor, not a setup executor: it changes manifest JSON only and does not run skill, MCP, utility, rule, or hook setup commands.",
+      "accepted": false,
+      "removed": false,
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    }
+  ]
+}

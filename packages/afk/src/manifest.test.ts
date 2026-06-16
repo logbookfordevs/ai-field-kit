@@ -3,7 +3,25 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { defaultsManifestBaseUrl, defaultsManifestBaseUrls, ensureLocalManifests, localManifestDir, projectManifestDir } from "./manifest.js";
+import {
+  defaultsManifestBaseUrl,
+  defaultsManifestBaseUrls,
+  ensureLocalManifests,
+  localManifestDir,
+  planRememberedDefaultsSourceUpdate,
+  projectManifestDir,
+  readRememberedDefaultsSource,
+} from "./manifest.js";
+
+type PluginManifestFile = {
+  items: Array<{
+    id: string;
+    install: {
+      command: string;
+      args: string[];
+    };
+  }>;
+};
 
 test("ensureLocalManifests migrates the old Stitch header default", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-manifest-"));
@@ -98,6 +116,15 @@ test("ensureLocalManifests migrates existing skills to invocation policy metadat
   assert.equal(next.items.some((item) => item.id === "afk-typecheck"), false);
 });
 
+test("packaged plugin manifests keep npx installs non-interactive", () => {
+  const manifest = JSON.parse(readFileSync(new URL("../manifests/plugins.json", import.meta.url), "utf8")) as PluginManifestFile;
+  const interactiveNpxItems = manifest.items
+    .filter((item) => usesNpx(item.install.command, item.install.args) && !usesNonInteractiveNpx(item.install.command, item.install.args))
+    .map((item) => item.id);
+
+  assert.deepEqual(interactiveNpxItems, []);
+});
+
 test("defaultsManifestBaseUrl resolves GitHub shorthand to the AFK manifest convention", () => {
   assert.equal(
     defaultsManifestBaseUrl("acme/dev-kit", "main"),
@@ -122,6 +149,47 @@ test("defaultsManifestBaseUrl preserves GitHub tree paths as manifest directorie
   );
 });
 
+test("readRememberedDefaultsSource reads global and project-local presets", () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-read-defaults-home-"));
+  const globalManifestDir = localManifestDir(homeDir);
+  mkdirSync(globalManifestDir, { recursive: true });
+  writeFileSync(join(globalManifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "acme/global-kit", presets: [] }, null, 2)}\n`);
+
+  const cwd = mkdtempSync(join(tmpdir(), "afk-read-defaults-project-"));
+  const localProjectManifestDir = projectManifestDir(cwd);
+  mkdirSync(localProjectManifestDir, { recursive: true });
+  writeFileSync(join(localProjectManifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "acme/project-kit", presets: [] }, null, 2)}\n`);
+
+  assert.equal(readRememberedDefaultsSource({ homeDir, manifestLocal: false }), "acme/global-kit");
+  assert.equal(readRememberedDefaultsSource({ homeDir, cwd, manifestLocal: true }), "acme/project-kit");
+});
+
+test("planRememberedDefaultsSourceUpdate creates and preserves presets manifest shape", () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-save-defaults-"));
+  const operations = planRememberedDefaultsSourceUpdate({ homeDir, manifestLocal: false }, "acme/dev-kit");
+  const manifestDir = localManifestDir(homeDir);
+  const write = operations.find((operation) => operation.type === "write" && operation.path === join(manifestDir, "presets.json"));
+
+  assert.ok(operations.some((operation) => operation.type === "mkdir" && operation.path === manifestDir));
+  assert.ok(write && write.type === "write");
+  assert.deepEqual(JSON.parse(write.content), { version: 1, defaultsSource: "acme/dev-kit", presets: [] });
+
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(
+    join(manifestDir, "presets.json"),
+    `${JSON.stringify({ version: 2, defaultsSource: "old/source", presets: [{ id: "all", label: "All", areas: ["rules"] }] }, null, 2)}\n`,
+  );
+
+  const updateOperations = planRememberedDefaultsSourceUpdate({ homeDir, manifestLocal: false }, "acme/next-kit");
+  const updateWrite = updateOperations.find((operation) => operation.type === "write" && operation.path === join(manifestDir, "presets.json"));
+  assert.ok(updateWrite && updateWrite.type === "write");
+  assert.deepEqual(JSON.parse(updateWrite.content), {
+    version: 2,
+    defaultsSource: "acme/next-kit",
+    presets: [{ id: "all", label: "All", areas: ["rules"] }],
+  });
+});
+
 test("ensureLocalManifests can refresh defaults from a custom source", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
@@ -134,7 +202,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "plugins.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": hookManifest,
     };
 
@@ -180,7 +248,7 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "plugins.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": hookManifest,
     };
 
@@ -222,7 +290,7 @@ test("ensureLocalManifests can refresh project-local manifests", async () => {
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "plugins.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -270,7 +338,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "utils.json": JSON.stringify({ version: 1, items: [] }),
+      "plugins.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": hookManifest,
     };
 
@@ -291,7 +359,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
       dryRun: true,
     });
 
-    assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("utils.json")));
+    assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("plugins.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/afk/manifests/skills.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/packages/afk/manifests/skills.json")));
   } finally {
@@ -308,7 +376,7 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
     const manifestDir = localManifestDir(homeDir);
     mkdirSync(manifestDir, { recursive: true });
     writeFileSync(
-      join(manifestDir, "utils.json"),
+      join(manifestDir, "plugins.json"),
       `${JSON.stringify(
         {
           version: 1,
@@ -316,7 +384,7 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
             {
               id: "keep-me",
               label: "Keep Me",
-              description: "Keep existing utility manifest.",
+              description: "Keep existing plugin manifest.",
               install: { command: "sh", args: ["-c", "keep-me"] },
               default: true,
             },
@@ -339,10 +407,26 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
       dryRun: true,
     });
 
-    const utilityOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("utils.json"));
-    assert.equal(utilityOperation?.type, "skip");
-    assert.equal(readFileSync(join(manifestDir, "utils.json"), "utf8").includes("keep-me"), true);
+    const pluginOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("plugins.json"));
+    assert.equal(pluginOperation?.type, "skip");
+    assert.equal(readFileSync(join(manifestDir, "plugins.json"), "utf8").includes("keep-me"), true);
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
+
+function usesNpx(command: string, args: string[]): boolean {
+  return command === "npx" || commandLineIncludesNpx([command, ...args].join(" "));
+}
+
+function usesNonInteractiveNpx(command: string, args: string[]): boolean {
+  if (command === "npx") {
+    return args[0] === "--yes" || args[0] === "-y";
+  }
+
+  return /(^|[\s;&|()])npx\s+(--yes|-y)(\s|$)/.test([command, ...args].join(" "));
+}
+
+function commandLineIncludesNpx(commandLine: string): boolean {
+  return /(^|[\s;&|()])npx(\s|$)/.test(commandLine);
+}

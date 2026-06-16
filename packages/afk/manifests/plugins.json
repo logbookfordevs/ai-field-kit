@@ -1,0 +1,59 @@
+{
+    "version": 1,
+    "items": [
+        {
+            "id": "plannotator",
+            "label": "Plannotator",
+            "description": "Review and annotate plans before implementation, so agents get clearer feedback loops instead of vague handoff notes.",
+            "install": {
+                "command": "bash",
+                "args": [
+                    "-c",
+                    "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"
+                ]
+            },
+            "default": true
+        },
+        {
+            "id": "goalbuddy",
+            "label": "GoalBuddy",
+            "description": "Install GoalBuddy's goal board, PM loop, receipts, and live local board surface for AFK Turbo.",
+            "install": {
+                "command": "npx",
+                "args": [
+                    "--yes",
+                    "goalbuddy"
+                ]
+            },
+            "default": true
+        },
+        {
+            "id": "rtk",
+            "label": "RTK",
+            "description": "Compress noisy command output for coding agents and add agent hooks or rules that nudge shell commands through RTK.",
+            "install": {
+                "command": "sh",
+                "args": [
+                    "-c",
+                    "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"
+                ]
+            },
+            "postInstall": "rtk-init",
+            "default": true
+        },
+        {
+            "id": "yggtree",
+            "label": "Yggtree",
+            "description": "Create and manage git worktrees with a focused CLI workflow for agent-friendly branch and workspace handling.",
+            "install": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "yggtree"
+                ]
+            },
+            "default": true
+        }
+    ]
+}
