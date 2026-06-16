@@ -8,7 +8,7 @@ Use these conventions when AFK work creates or resumes durable workflow artifact
 - **Spec** captures behavior and design decisions: flows, acceptance criteria, edge cases, constraints, and relevant references.
 - If the PRD or combined artifact lacks behavior needed for implementation, recommend the user to create/update a spec before writing the implementation plan.
 - **RFC** captures a proposed direction for review before executable slicing.
-- **Checkpoint packets** (a.k.a. implementation plan fragmented) are execution artifacts: thin vertical slices, dependencies, acceptance criteria, execution bundle, verification, handoff notes, and review gates
+- **Checkpoint packets** are execution artifacts: thin vertical slices, dependencies, acceptance criteria, execution bundle, verification, handoff notes, and review gates (a.k.a implementation plan fragmented)
 - **Tracking** updates checkpoint packets with status, validation, review, implementation notes, and handoff state.
 
 Create or update the smallest artifact that removes the current ambiguity. If a PRD already covers behavior well enough, do not split out a separate spec just for ceremony.

@@ -1,12 +1,12 @@
 ---
 name: afk-to-issues
-description: Break a PRD/spec, plan, goal package, tracker issue, or implementation context into AFK executable checkpoint packets using tracer-bullet vertical slices. Use when AFK needs planning output as local tracking checkpoints, implementation tickets, or slices before execution tracking.
+description: Create an implementation plan as AFK execution checkpoint packets from a PRD/spec, existing implementation plan, goal package, tracker issue, or rough context using tracer-bullet vertical slices. Use when AFK needs planning output as local tracking checkpoints, implementation tickets, or slices before execution tracking.
 metadata:
-  short-description: Create executable AFK issue/checkpoint packets.
+  short-description: Create AFK execution checkpoint packets.
 ---
 
 # To Issues
-Break a plan into independently-grabbable AFK issues using vertical slices (tracer bullets).
+Create an implementation plan as independently-grabbable AFK execution checkpoint packets using vertical slices (tracer bullets).
 
 AFK issues are local checkpoint packets by default. They may be mirrored to an external tracker, but the local tracking files are the AFK execution source of truth unless the user chooses another destination.
 
@@ -15,13 +15,13 @@ AFK issues are local checkpoint packets by default. They may be mirrored to an e
 ### 1. Gather context
 Work from whatever is already in the conversation context. If the user passes an issue reference (issue number, URL, or path) as an argument, fetch it from the issue tracker and read its full body and comments.
 
-Use any available source artifact: PRD/spec, implementation plan, goal package, tracker issue, handoff, prototype notes, or rough feature context. The gap this skill fills is executable fragmentation.
+Use any available source artifact: PRD/spec, existing implementation plan, goal package, tracker issue, handoff, prototype notes, or rough feature context. The gap this skill fills is executable implementation planning.
 
 ### 2. Explore the codebase (optional)
 If you have not already explored the codebase, do so to understand the current state of the code. Issue titles and descriptions should use the project's domain glossary vocabulary, and respect ADRs in the area you're touching.
 
 ### 3. Draft vertical slices
-Break the plan into **tracer bullet** issues. Each issue is a thin vertical slice that cuts through all required integration layers end-to-end, not a horizontal slice of one layer.
+Draft the implementation plan directly as **tracer bullet** checkpoint packets. Each packet is a thin vertical slice that cuts through all required integration layers end-to-end, not a horizontal slice of one layer.
 
 Classify each slice by execution autonomy:
 

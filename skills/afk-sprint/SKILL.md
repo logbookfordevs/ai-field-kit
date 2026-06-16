@@ -13,7 +13,7 @@ AFK Sprint is a named execution package. Use it only when the user asks for Spri
 
 1. Use existing AFK artifacts as Plannotator input when present.
 2. Use `plannotator-setup-goal` to create reviewed facts, plan, and `goal.md`.
-3. Use `afk-to-issues` to fragment the plan or goal package into executable checkpoint packets.
+3. Use `afk-to-issues` to create the implementation plan as executable checkpoint packets from the goal package.
 4. Run native `/goal` for the prepared `goal.md`.
 5. Track execution with `afk-execution-tracking`.
 

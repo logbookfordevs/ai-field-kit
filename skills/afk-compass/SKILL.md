@@ -1,6 +1,6 @@
 ---
 name: afk-compass
-description: Route broad, ambiguous, phase-change, explicit AFK workflow, AFK Sprint, AFK Turbo, or non-obvious skill-selection requests to the smallest useful AFK or companion skill. Use when the next skill is unclear; Compass is a selector, not a workflow runner.
+description: Route broad, ambiguous, phase-change, artifact-boundary, storage-convention, explicit AFK workflow, AFK Sprint, AFK Turbo, or non-obvious skill-selection requests to the smallest useful AFK or companion skill. Use when the next skill is unclear; Compass is a selector, not a workflow runner.
 ---
 
 # AFK Compass

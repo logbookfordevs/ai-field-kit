@@ -1,4 +1,4 @@
 interface:
   display_name: "AFK To Issues"
-  short_description: "Create executable AFK issue/checkpoint packets"
-  default_prompt: "Use $afk-to-issues to turn a PRD/spec, plan, goal package, tracker issue, or rough implementation context into thin vertical slices as local AFK tracking checkpoint files, external tracker issues, or both."
+  short_description: "Create AFK execution checkpoint packets"
+  default_prompt: "Use $afk-to-issues to create an implementation plan as thin vertical-slice AFK execution checkpoint packets from a PRD/spec, existing implementation plan, goal package, tracker issue, or rough context."

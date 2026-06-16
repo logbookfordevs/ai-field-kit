@@ -1,4 +1,4 @@
 interface:
   display_name: "AFK Compass"
-  short_description: "Route broad or ambiguous work to the next useful AFK or companion skill"
-  default_prompt: "Use $afk-compass to route broad, ambiguous, phase-change, explicit AFK workflow, AFK Sprint, AFK Turbo, or non-obvious skill-selection requests. Choose the smallest useful next skill or named package, then move into it; Compass is a selector, not a workflow runner."
+  short_description: "Route broad work, artifact conventions, or skill selection"
+  default_prompt: "Use $afk-compass to route broad, ambiguous, phase-change, artifact-boundary, storage-convention, explicit AFK workflow, AFK Sprint, AFK Turbo, or non-obvious skill-selection requests. Choose the smallest useful next skill, reference, or named package, then move into it; Compass is a selector, not a workflow runner."
