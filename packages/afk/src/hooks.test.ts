@@ -38,7 +38,7 @@ test("planHooksSync installs hook source and merges Codex Stop hook into existin
     homeDir,
     cwd: "/tmp/project",
     repoDir: repoRoot,
-    selectedHookIds: ["afk-execution-tracking-stop-check"],
+    selectedHookIds: ["afk-typescript-typecheck-stop-check"],
     setupScope: "global",
   });
 
@@ -51,8 +51,8 @@ test("planHooksSync installs hook source and merges Codex Stop hook into existin
   };
   const commands = next.hooks.Stop.flatMap((entry) => entry.hooks.map((hook) => hook.command));
   assert.ok(commands.includes("node existing.js"));
-  assert.equal(commands.filter((command) => command.includes("afk-execution-tracking-stop-check.js")).length, 1);
-  assert.match(readFileSync(join(homeDir, ".codex", "hooks", "afk-execution-tracking-stop-check.js"), "utf8"), /Implementation files changed/);
+  assert.equal(commands.filter((command) => command.includes("afk-typescript-typecheck-stop-check.js")).length, 1);
+  assert.match(readFileSync(join(homeDir, ".codex", "hooks", "afk-typescript-typecheck-stop-check.js"), "utf8"), /TypeScript files changed/);
 });
 
 test("planHooksSync installs the TypeScript typecheck hook with a matching status message", async () => {
@@ -97,7 +97,7 @@ test("planHooksSync updates the AFK hook without duplicating Cursor hooks", asyn
         hooks: {
           stop: [
             { command: "python .cursor/hooks/keep.py" },
-            { command: "node \"/old/path/afk-execution-tracking-stop-check.js\" --agent cursor-local" },
+            { command: "node \"/old/path/afk-typescript-typecheck-stop-check.js\" --agent cursor-local" },
           ],
         },
       },
@@ -111,7 +111,7 @@ test("planHooksSync updates the AFK hook without duplicating Cursor hooks", asyn
     homeDir,
     cwd: "/tmp/project",
     repoDir: repoRoot,
-    selectedHookIds: ["afk-execution-tracking-stop-check"],
+    selectedHookIds: ["afk-typescript-typecheck-stop-check"],
     setupScope: "global",
   });
 
@@ -121,8 +121,7 @@ test("planHooksSync updates the AFK hook without duplicating Cursor hooks", asyn
 
   const next = JSON.parse(readFileSync(cursorConfig, "utf8")) as { hooks: { stop: Array<{ command: string }> } };
   assert.ok(next.hooks.stop.some((hook) => hook.command === "python .cursor/hooks/keep.py"));
-  assert.equal(next.hooks.stop.filter((hook) => hook.command.includes("afk-execution-tracking-stop-check.js")).length, 1);
-  assert.ok(next.hooks.stop.some((hook) => hook.command.includes("--agent cursor-local")));
+  assert.equal(next.hooks.stop.filter((hook) => hook.command.includes("afk-typescript-typecheck-stop-check.js")).length, 1);
 });
 
 test("planHooksSync preserves empty hook target selection as a no-op", async () => {
@@ -133,7 +132,7 @@ test("planHooksSync preserves empty hook target selection as a no-op", async () 
     homeDir,
     cwd: "/tmp/project",
     repoDir: repoRoot,
-    selectedHookIds: ["afk-execution-tracking-stop-check"],
+    selectedHookIds: ["afk-typescript-typecheck-stop-check"],
     setupScope: "global",
   });
 
@@ -233,70 +232,6 @@ test("planHooksSync can install hook source from a remote manifest URL", async (
   }
 });
 
-test("execution tracking hook allows implementation changes when tracking was not started", () => {
-  const repo = prepareGitRepo();
-  mkdirSync(join(repo, "src"), { recursive: true });
-  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
-
-  const result = runTrackingHook(repo);
-
-  assert.equal(result.continue, true);
-});
-
-test("execution tracking hook allows implementation changes when old tracking exists without an active marker", () => {
-  const repo = prepareGitRepo();
-  mkdirSync(join(repo, "docs", "demo"), { recursive: true });
-  writeFileSync(join(repo, "docs", "demo", "demo.tracking.md"), "# Demo Tracking\n");
-  git(repo, ["add", "docs/demo/demo.tracking.md"]);
-  git(repo, ["commit", "-m", "add tracking"]);
-  mkdirSync(join(repo, "src"), { recursive: true });
-  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
-
-  const result = runTrackingHook(repo);
-
-  assert.equal(result.continue, true);
-});
-
-test("execution tracking hook blocks once when active marker exists and implementation changes lack reconciliation", () => {
-  const repo = prepareGitRepo();
-  writeActiveMarker(repo);
-  mkdirSync(join(repo, "src"), { recursive: true });
-  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
-
-  const first = runTrackingHook(repo);
-  const second = runTrackingHook(repo);
-
-  assert.equal(first.decision, "block");
-  assert.match(String(first.reason), /AFK execution-tracking marker is active/);
-  assert.equal(second.continue, true);
-});
-
-test("execution tracking hook allows implementation changes when active checkpoint changed too", () => {
-  const repo = prepareGitRepo();
-  writeActiveMarker(repo);
-  mkdirSync(join(repo, "src"), { recursive: true });
-  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-1.md"), "# Phase 1\nUpdated\n");
-  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
-
-  const result = runTrackingHook(repo);
-
-  assert.equal(result.continue, true);
-});
-
-test("execution tracking hook allows implementation changes when any active parallel checkpoint changed too", () => {
-  const repo = prepareGitRepo();
-  writeActiveMarker(repo, {
-    active_checkpoints: ["docs/demo/tracking/phase-1.md", "docs/demo/tracking/phase-2.md"],
-  });
-  mkdirSync(join(repo, "src"), { recursive: true });
-  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-2.md"), "# Phase 2\nUpdated\n");
-  writeFileSync(join(repo, "src", "index.ts"), "export const value = 1;\n");
-
-  const result = runTrackingHook(repo);
-
-  assert.equal(result.continue, true);
-});
-
 test("TypeScript typecheck hook allows when no TypeScript files changed", () => {
   const repo = prepareGitRepo();
   writeFileSync(join(repo, "README.md"), "# Demo\n");
@@ -358,12 +293,12 @@ function prepareHome(overrides: Partial<{ id: string; label: string; source: str
         version: 1,
         items: [
           {
-            id: overrides.id ?? "afk-execution-tracking-stop-check",
-            label: overrides.label ?? "AFK / Execution Tracking Stop Check",
+            id: overrides.id ?? "afk-typescript-typecheck-stop-check",
+            label: overrides.label ?? "AFK / TypeScript Typecheck Stop Check",
             description: "Nudge the agent once before final handoff.",
-            source: overrides.source ?? "hooks/afk-execution-tracking-stop-check.js",
+            source: overrides.source ?? "hooks/afk-typescript-typecheck-stop-check.js",
             command: "node",
-            args: ["${HOOK_FILE}", "--agent", "${AGENT}"],
+            args: ["${HOOK_FILE}"],
             events: ["stop"],
             agents: overrides.agents ?? ["codex", "claude", "cursor-local"],
             default: true,
@@ -383,44 +318,6 @@ function prepareGitRepo(): string {
   git(repo, ["config", "user.email", "test@example.com"]);
   git(repo, ["config", "user.name", "Test User"]);
   return repo;
-}
-
-function writeActiveMarker(repo: string, markerOverrides: Record<string, unknown> = {}): void {
-  mkdirSync(join(repo, ".afk", "execution-tracking"), { recursive: true });
-  mkdirSync(join(repo, "docs", "demo", "tracking"), { recursive: true });
-  writeFileSync(join(repo, "docs", "demo", "demo.tracking.md"), "# Demo Tracking\n");
-  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-1.md"), "# Phase 1\n");
-  writeFileSync(join(repo, "docs", "demo", "tracking", "phase-2.md"), "# Phase 2\n");
-  writeFileSync(
-    join(repo, ".afk", "execution-tracking", "current.json"),
-    `${JSON.stringify(
-      {
-        tracking: "docs/demo/demo.tracking.md",
-        active_checkpoints: ["docs/demo/tracking/phase-1.md"],
-        ...markerOverrides,
-      },
-      null,
-      2,
-    )}\n`,
-  );
-  git(repo, [
-    "add",
-    "docs/demo/demo.tracking.md",
-    "docs/demo/tracking/phase-1.md",
-    "docs/demo/tracking/phase-2.md",
-    ".afk/execution-tracking/current.json",
-  ]);
-  git(repo, ["commit", "-m", "add active tracking"]);
-}
-
-function runTrackingHook(cwd: string): { continue?: boolean; decision?: string; reason?: string } {
-  const scriptPath = join(repoRoot, "hooks", "afk-execution-tracking-stop-check.js");
-  const output = execFileSync("node", [scriptPath], {
-    cwd,
-    input: JSON.stringify({ cwd }),
-    encoding: "utf8",
-  });
-  return JSON.parse(output) as { continue?: boolean; decision?: string; reason?: string };
 }
 
 function runTypecheckHook(cwd: string): { continue?: boolean; decision?: string; reason?: string } {
