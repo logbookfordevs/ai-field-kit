@@ -132,7 +132,7 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false
         },
         {
             "id": "afk-resume-workflow",
@@ -141,18 +141,6 @@
             "args": [
                 "--skill",
                 "afk-resume-workflow",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": true
-        },
-        {
-            "id": "afk-structured-debugging",
-            "label": "AFK / Structured Debugging",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-structured-debugging",
                 "--global"
             ],
             "default": true,
@@ -177,6 +165,18 @@
             "args": [
                 "--skill",
                 "truss-evaluation",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true
+        },
+        {
+            "id": "diagnose",
+            "label": "External / Diagnose",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "diagnose",
                 "--global"
             ],
             "default": true,
@@ -217,6 +217,16 @@
             ],
             "default": true,
             "autoInvocation": false
+        },
+        {
+            "id": "impeccable",
+            "label": "External / Impeccable",
+            "source": "pbakaus/impeccable",
+            "args": [
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": true
         },
         {
             "id": "html",
@@ -372,7 +382,7 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false
         },
         {
             "id": "cmux",

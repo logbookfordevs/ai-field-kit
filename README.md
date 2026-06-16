@@ -156,7 +156,6 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-animated-driven-frontend` | Motion choreography, microinteractions, cinematic UI |
 | `afk-doc-craft` | Reader-first documentation craft: journeys, progressive disclosure, real empathy |
 | `afk-execution-tracking` | Checkpointed implementation state across tasks, reviews, validation, and handoffs |
-| `afk-structured-debugging` | Root cause analysis with expected vs. actual timelines |
 | `afk-compass` | Routes work to the right AFK and recommended external skills |
 | `afk-ask` | Gets a second opinion from another local AI CLI and saves the result as an artifact |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
@@ -195,8 +194,8 @@ They are intentionally similar, but they are not redundant:
 | RFC creation | Flexible for now; create a dedicated AFK skill only if the RFC shape becomes worth standardizing |
 | Executable slicing | `afk-to-issues` |
 | Execution control | `afk-execution-tracking` plus the selected execution bundle |
-| Validation / testing | Flexible for now; use project checks directly, with `afk-structured-debugging` when something fails |
-| Support | `afk-resume-workflow`, `afk-pickup`, `afk-ask`, `afk-doc-craft`, `afk-structured-debugging` |
+| Validation / testing | Flexible for now; use project checks directly, with `diagnose` when something fails |
+| Support | `afk-resume-workflow`, `afk-pickup`, `afk-ask`, `afk-doc-craft`, `diagnose` |
 
 Compass defines the default artifact convention in `skills/afk-compass/references/artifacts.md`: `docs/<task-slug>/<task-slug>.<type>.md`, with checkpoint packets under `docs/<task-slug>/tracking/` and task-specific references under `docs/<task-slug>/references/`.
 
@@ -278,6 +277,10 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx skills add https://github.com/mattpocock/skills --skill tdd`
   Use when you want red-green-refactor on behavior through public interfaces, one vertical slice at a time, without testing implementation details for their own sake.
 
+- **Diagnose (Matt Pocock Skills)**
+  Install: `npx skills add https://github.com/mattpocock/skills --skill diagnose`
+  Use when something is broken, throwing, failing, or regressing. It prioritizes a deterministic feedback loop before hypotheses, instrumentation, fixes, and regression tests.
+
 - **Source Driven Development (Agent-Skills)**
   Install: `npx skills add https://github.com/addyosmani/agent-skills.git --skill source-driven-development`
   Use when implementation correctness depends on current framework, library, SDK, API, or platform documentation.
@@ -326,9 +329,9 @@ AFK's fast execution ladder is:
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  
   Create a compact handoff document for a fresh agent when a session needs to continue elsewhere. It saves outside the workspace on purpose, keeping the note disposable. Pair it with `afk-pickup` in the next session to search temp locations, verify referenced paths, and resume from the right handoff.
 
-- **Impeccable**  
-  Install: `npx impeccable skills install`  
-  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Utilities and delegates to its installer.
+- **Impeccable**
+  Install: `npx skills add pbakaus/impeccable --global`
+  Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context.
 
 - **cmux**  
   Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  
@@ -361,7 +364,7 @@ Several AFK support skills fit naturally around this flow as specialist companio
 | Skill | Where it fits |
 |---|---|
 | `afk-doc-craft` | When a brief, context doc, decision memo, or guide needs to become polished, readable documentation |
-| `afk-structured-debugging` | When the real problem is a bug, failure, or investigation rather than new scoped work |
+| `diagnose` | When the real problem is a bug, failure, or investigation rather than new scoped work |
 | `afk-compass` | When you want help choosing which AFK or companion skill best matches the current moment |
 | `afk-pickup` | When a previous session created a disposable temp handoff and the new session needs to find it |
 
@@ -370,7 +373,7 @@ These are not required steps in the main flow. They are optional specialists you
 #### How they connect
 
 - Use `afk-doc-craft` after brainstorming, trade-offs, or another shaping pass when the output needs to become a human-friendly document instead of a working artifact.
-- Use `afk-structured-debugging` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
+- Use `diagnose` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
 - Use `afk-compass` when you're unsure whether you need the main flow, a support skill, or a recommended external companion skill.
 - Use `afk-pickup` after the external `handoff` skill when the previous session kept its handoff note disposable in the OS temp directory.
 
@@ -427,9 +430,9 @@ If you're deciding where a new prompt belongs, use this rule first:
 - The task is broad, adaptive, or composable with other skills.
 - You want the behavior to activate naturally from plain-English requests.
 
-**Good skill examples in this repo:**
+**Good skill examples in this stack:**
 
-- `afk-structured-debugging`: a debugging approach that works across many bug reports and log investigations.
+- `diagnose`: a disciplined feedback-loop approach for hard bugs and performance regressions.
 - `afk-animated-driven-frontend`: motion strategy and interaction direction that can shape many different UI tasks.
 
 ### Choose a workflow when
