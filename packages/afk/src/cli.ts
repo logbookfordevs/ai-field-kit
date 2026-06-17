@@ -5,6 +5,7 @@ import { runSetup, runArea } from "./setup.js";
 import { runManifestShow } from "./manifest-show.js";
 import { runSkillsCommand } from "./skills/commands.js";
 import { managedSkillAgents } from "./skills/catalog.js";
+import { runUiCommand } from "./ui.js";
 import { selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import { packageVersion } from "./update-check.js";
@@ -93,6 +94,10 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (commandPath[0] === "skills") {
     return runSkillsCommand(commandPath, runtime, options);
+  }
+
+  if (commandPath[0] === "ui") {
+    return runUiCommand(commandPath, runtime, options);
   }
 
   if (isManifestShowCommand(key)) {
@@ -380,6 +385,55 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills categorize --mode append-missing --dry-run",
     ],
   },
+  ui: {
+    title: "AFK UI",
+    summary: "Delegate UI-focused skill routing to UI Skills.",
+    usage: "afk ui [command] [options]",
+    options: [
+      "start                             Print the UI Skills routing skill",
+      "categories                        List UI Skills categories",
+      "list [--category <category>]      List UI Skills entries",
+      "get <skill>                       Print full skill markdown",
+      "--dry-run                         Print the delegated npx command",
+    ],
+    examples: [
+      "afk ui start",
+      "afk ui categories",
+      "afk ui list --category motion",
+      "afk ui get baseline-ui",
+    ],
+  },
+  "ui start": {
+    title: "AFK UI start",
+    summary: "Delegate to UI Skills and print the routing skill.",
+    usage: "afk ui start [options]",
+    options: ["--dry-run                         Print the delegated npx command"],
+    examples: ["afk ui start", "afk ui start --dry-run"],
+  },
+  "ui categories": {
+    title: "AFK UI categories",
+    summary: "Delegate to UI Skills and list available categories.",
+    usage: "afk ui categories [options]",
+    options: ["--dry-run                         Print the delegated npx command"],
+    examples: ["afk ui categories"],
+  },
+  "ui list": {
+    title: "AFK UI list",
+    summary: "Delegate to UI Skills and list available UI skills.",
+    usage: "afk ui list [options]",
+    options: [
+      "--category <category>             Limit UI Skills entries by category",
+      "--dry-run                         Print the delegated npx command",
+    ],
+    examples: ["afk ui list", "afk ui list --category motion"],
+  },
+  "ui get": {
+    title: "AFK UI get",
+    summary: "Delegate to UI Skills and print full skill markdown.",
+    usage: "afk ui get <skill> [options]",
+    options: ["--dry-run                         Print the delegated npx command"],
+    examples: ["afk ui get baseline-ui"],
+  },
   "skills list": {
     title: "AFK skills list",
     summary: "List shared, project, and agent-specific skill roots.",
@@ -606,11 +660,13 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillCategorizationMode: SkillCategorizationMode | undefined;
   let skillCategorizationRunner: SkillCategorizationRunner = "codex-exec";
   let skillCategorizationInstruction = "";
+  let uiCategory = "";
   const selectedManifestCategories: ManifestCategory[] = [];
   const homeDir = resolveHome(env);
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
   const isAfkSkillsCommand = commandPath[0] === "skills";
+  const isAfkUiCommand = commandPath[0] === "ui";
 
   if (args.includes("--version") || args.includes("-v")) {
     return { version: true, help: false };
@@ -831,6 +887,20 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (isAfkUiCommand && arg === "--category") {
+      if (commandPath[1] !== "list") {
+        return { help: false, kind: "error", error: "Unknown option: --category" };
+      }
+
+      const value = args[index + 1];
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --category value" };
+      }
+      uiCategory = value;
+      index += 1;
+      continue;
+    }
+
     if (isAfkSkillsCommand && arg === "--tag") {
       const value = args[index + 1];
       if (!value) {
@@ -963,6 +1033,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillCategorizationMode,
       skillCategorizationRunner,
       skillCategorizationInstruction,
+      uiCategory,
       selectedManifestCategories,
       homeDir,
       repoDir,
@@ -1083,6 +1154,7 @@ Usage:
   afk setup plugins [options]
   afk setup hooks [options]
   afk skills <command> [options]
+  afk ui <command> [options]
   afk show [options]
 
 Run "afk <command> --help" for command-specific options.
@@ -1101,6 +1173,10 @@ function commandKey(commandPath: string[] = []): string {
 
 function helpKey(commandPath: string[] = []): string {
   if (commandPath[0] === "skills" && commandPath[1]) {
+    return commandPath.slice(0, 2).join(" ");
+  }
+
+  if (commandPath[0] === "ui" && commandPath[1]) {
     return commandPath.slice(0, 2).join(" ");
   }
 

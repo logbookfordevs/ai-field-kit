@@ -78,6 +78,7 @@ export type CliOptions = {
   skillCategorizationMode?: SkillCategorizationMode | undefined;
   skillCategorizationRunner?: SkillCategorizationRunner;
   skillCategorizationInstruction?: string;
+  uiCategory?: string;
   selectedManifestCategories: ManifestCategory[];
   homeDir: string;
   repoDir: string;

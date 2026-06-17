@@ -115,11 +115,34 @@ afk setup refresh
 
 # Inspect the active setup source
 afk show
+
+# Route UI work through UI Skills
+afk ui start
+afk ui list --category motion
+afk ui get baseline-ui
 ```
 
 Compatibility aliases such as `afk setup skills install` and
 `afk setup rules sync` still work, but the shorter forms above are the
 preferred command shape.
+
+## UI Skills Delegation
+
+`afk ui` is a thin convenience wrapper around the MIT-licensed
+[UI Skills](https://github.com/ibelick/ui-skills) CLI by Ibelick. AFK keeps the
+command shorter and consistent with the rest of the CLI, while UI Skills remains
+the source of truth for its registry and skill markdown.
+
+| AFK command | Delegates to |
+|---|---|
+| `afk ui` | `npx --yes ui-skills` |
+| `afk ui start` | `npx --yes ui-skills start` |
+| `afk ui categories` | `npx --yes ui-skills categories` |
+| `afk ui list --category motion` | `npx --yes ui-skills list --category motion` |
+| `afk ui get baseline-ui` | `npx --yes ui-skills get baseline-ui` |
+
+`afk ui get` prints the upstream skill markdown; it does not install the skill.
+Use `--dry-run` to inspect the delegated command without running `npx`.
 
 ## Flag Reference
 

@@ -31,6 +31,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
   assert.ok(output.join("\n").includes("afk setup plugins [options]"));
   assert.ok(output.join("\n").includes("afk setup hooks [options]"));
+  assert.ok(output.join("\n").includes("afk ui <command> [options]"));
   assert.ok(!output.join("\n").includes("afk setup utils"));
   assert.ok(output.join("\n").includes("afk show [options]"));
   assert.ok(!output.join("\n").includes("afk configure [options]"));
@@ -260,6 +261,33 @@ test("runCli prints contextual skills help", async () => {
   assert.ok(output.join("\n").includes("--scope global|project|all"));
   assert.ok(output.join("\n").includes("--category <id-or-label>"));
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
+});
+
+test("runCli prints contextual ui help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["ui", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK UI"));
+  assert.ok(text.includes("Delegate UI-focused skill routing to UI Skills."));
+  assert.ok(text.includes("afk ui list --category motion"));
+});
+
+test("runCli dry-runs ui-skills list delegation", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["ui", "list", "--category", "motion", "--dry-run"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("$ npx --yes ui-skills list --category motion"));
+});
+
+test("runCli validates ui category usage", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["ui", "get", "baseline-ui", "--category", "motion"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown option: --category"));
 });
 
 test("runCli prints contextual skills open help", async () => {
