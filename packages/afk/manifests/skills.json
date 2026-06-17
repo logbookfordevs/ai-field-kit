@@ -183,12 +183,12 @@
             "autoInvocation": true
         },
         {
-            "id": "diagnose",
-            "label": "External / Diagnose",
+            "id": "diagnosing-bugs",
+            "label": "External / Diagnosing Bugs",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
-                "diagnose",
+                "diagnosing-bugs",
                 "--global"
             ],
             "default": true,
@@ -315,12 +315,12 @@
             "autoInvocation": true
         },
         {
-            "id": "write-a-skill",
-            "label": "External / Write a Skill",
+            "id": "writing-great-skills",
+            "label": "External / Writing Great Skills",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
-                "write-a-skill",
+                "writing-great-skills",
                 "--global"
             ],
             "default": true,

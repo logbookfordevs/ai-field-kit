@@ -41,7 +41,7 @@ Task arrives
 |   +-- Needs tests first or proof loop? ---------> tdd
 |   +-- Needs current official docs? ------------> source-driven-development
 |   +-- Needs fresh-context adversarial check? --> doubt-driven-development
-+-- Something broke, fails, throws, or regressed? -> diagnose
++-- Something broke, fails, throws, or regressed? -> diagnosing-bugs
 +-- Reviewing code or PR quality? ----------------> normal review workflow
 |   +-- Too complex after review? ----------------> code-simplification
 +-- Frontend primitives or registry choice? ------> afk-ui-registry-preferences
