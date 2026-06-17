@@ -4,7 +4,7 @@
     "items": [
         {
             "id": "afk-animated-driven-frontend",
-            "label": "AFK / Animated Driven Frontend",
+            "label": "AFK - Animated Driven Frontend",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -19,7 +19,7 @@
         },
         {
             "id": "afk-ask",
-            "label": "AFK / Ask",
+            "label": "AFK - Ask",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -34,7 +34,7 @@
         },
         {
             "id": "afk-brainstorming-facilitator",
-            "label": "AFK / Brainstorming Facilitator",
+            "label": "AFK - Brainstorming Facilitator",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -49,7 +49,7 @@
         },
         {
             "id": "afk-code-grill",
-            "label": "AFK / Code Grill",
+            "label": "AFK - Code Grill",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -68,7 +68,7 @@
         },
         {
             "id": "afk-to-prd-spec",
-            "label": "AFK / To PRD Spec",
+            "label": "AFK - To PRD Spec",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -83,7 +83,7 @@
         },
         {
             "id": "afk-to-issues",
-            "label": "AFK / To Issues",
+            "label": "AFK - To Issues",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -98,7 +98,7 @@
         },
         {
             "id": "afk-doc-craft",
-            "label": "AFK / Doc Craft",
+            "label": "AFK - Doc Craft",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -113,7 +113,7 @@
         },
         {
             "id": "afk-execution-tracking",
-            "label": "AFK / Execution Tracking",
+            "label": "AFK - Execution Tracking",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -128,7 +128,7 @@
         },
         {
             "id": "afk-ui-registry-preferences",
-            "label": "AFK / UI Registry Preferences",
+            "label": "AFK - UI Registry Preferences",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -143,7 +143,7 @@
         },
         {
             "id": "afk-pickup",
-            "label": "AFK / Pickup",
+            "label": "AFK - Pickup",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -158,7 +158,7 @@
         },
         {
             "id": "afk-resume-workflow",
-            "label": "AFK / Resume Workflow",
+            "label": "AFK - Resume Workflow",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -173,7 +173,7 @@
         },
         {
             "id": "afk-compass",
-            "label": "AFK / Compass",
+            "label": "AFK - Compass",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -188,7 +188,7 @@
         },
         {
             "id": "afk-sprint",
-            "label": "AFK / Sprint",
+            "label": "AFK - Sprint",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -207,7 +207,7 @@
         },
         {
             "id": "afk-turbo",
-            "label": "AFK / Turbo",
+            "label": "AFK - Turbo",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -224,7 +224,7 @@
         },
         {
             "id": "truss-evaluation",
-            "label": "External / Truss Evaluation",
+            "label": "Truss Evaluation",
             "source": "https://github.com/leoreisdias/truss-framework",
             "args": [
                 "--skill",
@@ -239,7 +239,7 @@
         },
         {
             "id": "diagnosing-bugs",
-            "label": "External / Diagnosing Bugs",
+            "label": "Diagnosing Bugs",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -254,7 +254,7 @@
         },
         {
             "id": "plannotator-compound",
-            "label": "External / Plannotator Compound",
+            "label": "Plannotator Compound",
             "source": "backnotprop/plannotator/apps/skills/extra",
             "args": [
                 "--skill",
@@ -269,7 +269,7 @@
         },
         {
             "id": "plannotator-setup-goal",
-            "label": "External / Plannotator Setup Goal",
+            "label": "Plannotator Setup Goal",
             "source": "backnotprop/plannotator/apps/skills/extra",
             "args": [
                 "--skill",
@@ -284,7 +284,7 @@
         },
         {
             "id": "plannotator-visual-explainer",
-            "label": "External / Plannotator Visual Explainer",
+            "label": "Plannotator Visual Explainer",
             "source": "backnotprop/plannotator/apps/skills/extra",
             "args": [
                 "--skill",
@@ -299,7 +299,7 @@
         },
         {
             "id": "html",
-            "label": "External / Effective HTML",
+            "label": "Effective HTML",
             "source": "https://github.com/plannotator/effective-html",
             "args": [
                 "--skill",
@@ -314,7 +314,7 @@
         },
         {
             "id": "html-plan",
-            "label": "External / Effective HTML Plan",
+            "label": "Effective HTML Plan",
             "source": "https://github.com/plannotator/effective-html",
             "args": [
                 "--skill",
@@ -329,7 +329,7 @@
         },
         {
             "id": "html-diagram",
-            "label": "External / Effective HTML Diagram",
+            "label": "Effective HTML Diagram",
             "source": "https://github.com/plannotator/effective-html",
             "args": [
                 "--skill",
@@ -344,7 +344,7 @@
         },
         {
             "id": "tdd",
-            "label": "External / TDD",
+            "label": "TDD",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -361,7 +361,7 @@
         },
         {
             "id": "source-driven-development",
-            "label": "External / Source Driven Development",
+            "label": "Source Driven Development",
             "source": "https://github.com/addyosmani/agent-skills.git",
             "args": [
                 "--skill",
@@ -376,7 +376,7 @@
         },
         {
             "id": "doubt-driven-development",
-            "label": "External / Doubt Driven Development",
+            "label": "Doubt Driven Development",
             "source": "https://github.com/addyosmani/agent-skills.git",
             "args": [
                 "--skill",
@@ -391,7 +391,7 @@
         },
         {
             "id": "code-simplification",
-            "label": "External / Code Simplification",
+            "label": "Code Simplification",
             "source": "https://github.com/addyosmani/agent-skills.git",
             "args": [
                 "--skill",
@@ -406,7 +406,7 @@
         },
         {
             "id": "writing-great-skills",
-            "label": "External / Writing Great Skills",
+            "label": "Writing Great Skills",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -421,7 +421,7 @@
         },
         {
             "id": "teach",
-            "label": "External / Teach",
+            "label": "Teach",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -436,7 +436,7 @@
         },
         {
             "id": "grill-with-docs",
-            "label": "External / Grill With Docs",
+            "label": "Grill With Docs",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -454,7 +454,7 @@
         },
         {
             "id": "grill-me",
-            "label": "External / Grill Me",
+            "label": "Grill Me",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -471,7 +471,7 @@
         },
         {
             "id": "prototype",
-            "label": "External / Prototype",
+            "label": "Prototype",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -486,7 +486,7 @@
         },
         {
             "id": "handoff",
-            "label": "External / Handoff",
+            "label": "Handoff",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -501,7 +501,7 @@
         },
         {
             "id": "cmux",
-            "label": "External / cmux",
+            "label": "cmux",
             "source": "https://github.com/manaflow-ai/cmux",
             "args": [
                 "--skill",
@@ -516,7 +516,7 @@
         },
         {
             "id": "tmux",
-            "label": "External / tmux",
+            "label": "tmux",
             "source": "https://github.com/steipete/clawdis",
             "args": [
                 "--skill",
@@ -531,7 +531,7 @@
         },
         {
             "id": "afk-interactive-code-review",
-            "label": "AFK / Interactive Code Review",
+            "label": "AFK - Interactive Code Review",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -546,7 +546,7 @@
         },
         {
             "id": "afk-pr-story-flow-mermaid",
-            "label": "AFK / PR Story Flow Mermaid",
+            "label": "AFK - PR Story Flow Mermaid",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -561,7 +561,7 @@
         },
         {
             "id": "grilling",
-            "label": "External / Grilling",
+            "label": "Grilling",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -576,7 +576,7 @@
         },
         {
             "id": "domain-modeling",
-            "label": "External / Domain Modeling",
+            "label": "Domain Modeling",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -591,7 +591,7 @@
         },
         {
             "id": "codebase-design",
-            "label": "External / Codebase Design",
+            "label": "Codebase Design",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",

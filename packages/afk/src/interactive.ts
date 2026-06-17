@@ -332,11 +332,12 @@ async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills">):
     "Choose skills to install",
     skillChoices(manifest.items),
   ));
-  const composed = expandComposedSkillIds(manifest.items, selected).filter((id) => !selected.includes(id));
-  if (composed.length === 0) {
+  const expanded = expandComposedSkillIds(manifest.items, selected);
+  if (expanded.length === selected.length) {
     return selected;
   }
 
+  const composed = expanded.filter((id) => !selected.includes(id));
   const composedSelection = await selectCheckbox(
     "Choose composed skills to include",
     composed.map((id) => {
@@ -362,69 +363,19 @@ function nonInteractiveSkillIds(options: Pick<CliOptions, "homeDir" | "allSkills
 }
 
 function skillChoices(items: SkillManifestItem[]): Choice<string>[] {
-  const choices: Choice<string>[] = [];
-  const rendered = new Set<string>();
-  for (const item of orderedSkillItems(items)) {
-    if (rendered.has(item.id)) {
-      continue;
-    }
-
-    choices.push(skillChoice(item));
-    rendered.add(item.id);
-
-    for (const composedId of item.composes ?? []) {
-      if (rendered.has(composedId)) {
-        continue;
-      }
-
-      const composed = items.find((candidate) => candidate.id === composedId);
-      if (!composed) {
-        continue;
-      }
-
-      choices.push(skillChoice(composed, item.id));
-      rendered.add(composed.id);
-    }
-  }
-
-  return choices;
-}
-
-function skillChoice(item: SkillManifestItem, parentId?: string): Choice<string> {
-  const prefix = parentId ? "  -> " : "";
-  return {
-    name: `${prefix}${item.label} ${autoInvocationLabel(item)}`,
+  return items.map((item) => ({
+    name: item.label,
     value: item.id,
     checked: DEFAULT_CHECKED,
-    description: parentId ? `Composed by ${parentId}. ${skillChoiceDetail(item)}` : skillChoiceDetail(item),
-  };
-}
-
-function orderedSkillItems(items: SkillManifestItem[]): SkillManifestItem[] {
-  const roleOrder = new Map([
-    ["router", 0],
-    ["wrapper", 1],
-    ["flow", 2],
-    ["primitive", 3],
-    ["utility", 4],
-    ["reference", 5],
-  ]);
-
-  return [...items].sort((left, right) => {
-    const leftRank = roleOrder.get(left.role ?? "primitive") ?? 99;
-    const rightRank = roleOrder.get(right.role ?? "primitive") ?? 99;
-    return leftRank - rightRank || left.label.localeCompare(right.label);
-  });
-}
-
-function autoInvocationLabel(item: SkillManifestItem): string {
-  return item.autoInvocation === false ? "[manual]" : "[auto]";
+    description: skillChoiceDetail(item),
+  }));
 }
 
 function skillChoiceDetail(item: SkillManifestItem): string {
   const role = item.role ?? "primitive";
+  const invocation = item.autoInvocation === false ? "manual" : "auto";
   const composes = item.composes && item.composes.length > 0 ? ` · composes ${item.composes.join(", ")}` : "";
-  return `${role}${composes} · ${item.args.join(" ")}`;
+  return `${role} · ${invocation}${composes} · ${item.args.join(" ")}`;
 }
 
 function expandComposedSkillIds(items: SkillManifestItem[], selectedIds: string[]): string[] {
@@ -453,7 +404,7 @@ function expandComposedSkillIds(items: SkillManifestItem[], selectedIds: string[
 }
 
 function composedSkillDescription(items: SkillManifestItem[], id: string): string {
-  const parents = items.filter((item) => item.composes?.includes(id)).map((item) => item.id);
+  const parents = items.filter((item) => item.composes?.includes(id)).map((item) => `${item.label} (${item.role ?? "primitive"})`);
   const parentDetail = parents.length > 0 ? `Composed by ${parents.join(", ")}. ` : "";
   const item = items.find((candidate) => candidate.id === id);
   return `${parentDetail}${item ? skillChoiceDetail(item) : "Composed skill"}`;

@@ -276,6 +276,10 @@ test("selectSkillsInstall presents composed skills for selected wrappers", async
     promptState.checkboxChoices["Choose composed skills to include"]?.map((choice) => [choice.value, choice.checked]),
     [["grilling", true], ["truss-evaluation", true]],
   );
+  assert.match(
+    promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
+    /Composed by AFK - Code Grill \(wrapper\)/,
+  );
 });
 
 test("selectSetup yes mode includes composed skills for default wrappers", async () => {
@@ -285,6 +289,20 @@ test("selectSetup yes mode includes composed skills for default wrappers", async
   const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true });
 
   assert.deepEqual(selection.skillIds, ["afk-code-grill", "grilling", "truss-evaluation"]);
+});
+
+test("selectSkillsInstall keeps the skill list flat", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxChoices = {};
+  promptState.checkboxResponses = {
+    "Choose skills to install": [],
+  };
+  const homeDir = localHomeWithRepeatedComposedChildrenManifest();
+  await selectSkillsInstall(defaultOptions(homeDir));
+
+  const names = promptState.checkboxChoices["Choose skills to install"]?.map((choice) => choice.name) ?? [];
+  assert.ok(!names.some((name) => name?.includes("->")));
+  assert.equal(names.filter((name) => name === "Grilling").length, 1);
 });
 
 test("selectDefaultsSource pre-fills the remembered source and requires input", async () => {
@@ -389,21 +407,21 @@ function localHomeWithAllManifests(): string {
       items: [
         {
           id: "afk-default",
-          label: "AFK / Default",
+          label: "AFK - Default",
           source: "https://github.com/example/afk",
           args: ["--skill", "afk-default", "--global"],
           default: true,
         },
         {
           id: "afk-spline",
-          label: "AFK / Spline",
+          label: "AFK - Spline",
           source: "https://github.com/example/afk",
           args: ["--skill", "afk-spline", "--global"],
           default: false,
         },
         {
           id: "external-helper",
-          label: "External / Helper",
+          label: "Helper",
           source: "https://github.com/example/external",
           args: ["--skill", "external-helper", "--global"],
           default: false,
@@ -451,7 +469,7 @@ function localHomeWithComposedSkillManifest(): string {
       items: [
         {
           id: "afk-code-grill",
-          label: "AFK / Code Grill",
+          label: "AFK - Code Grill",
           source: "https://github.com/example/afk",
           args: ["--skill", "afk-code-grill", "--global"],
           default: true,
@@ -462,7 +480,7 @@ function localHomeWithComposedSkillManifest(): string {
         },
         {
           id: "grilling",
-          label: "External / Grilling",
+          label: "Grilling",
           source: "https://github.com/example/external",
           args: ["--skill", "grilling", "--global"],
           default: false,
@@ -473,7 +491,7 @@ function localHomeWithComposedSkillManifest(): string {
         },
         {
           id: "truss-evaluation",
-          label: "External / Truss Evaluation",
+          label: "Truss Evaluation",
           source: "https://github.com/example/truss",
           args: ["--skill", "truss-evaluation", "--global"],
           default: false,
@@ -490,5 +508,65 @@ function localHomeWithComposedSkillManifest(): string {
   writeFileSync(join(manifestDir, "hooks.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
   writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({ version: 1, source: "local", url: "rules/AGENTS.md" }, null, 2)}\n`);
   writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "", presets: [] }, null, 2)}\n`);
+  return homeDir;
+}
+
+function localHomeWithRepeatedComposedChildrenManifest(): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(
+    join(manifestDir, "skills.json"),
+    `${JSON.stringify({
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "grill-me",
+          label: "Grill Me",
+          source: "https://github.com/example/external",
+          args: ["--skill", "grill-me", "--global"],
+          default: false,
+          autoInvocation: false,
+          role: "wrapper",
+          composes: ["grilling"],
+          profiles: [],
+        },
+        {
+          id: "grill-with-docs",
+          label: "Grill With Docs",
+          source: "https://github.com/example/external",
+          args: ["--skill", "grill-with-docs", "--global"],
+          default: false,
+          autoInvocation: false,
+          role: "wrapper",
+          composes: ["grilling", "domain-modeling"],
+          profiles: [],
+        },
+        {
+          id: "grilling",
+          label: "Grilling",
+          source: "https://github.com/example/external",
+          args: ["--skill", "grilling", "--global"],
+          default: false,
+          autoInvocation: true,
+          role: "primitive",
+          composes: [],
+          profiles: [],
+        },
+        {
+          id: "domain-modeling",
+          label: "Domain Modeling",
+          source: "https://github.com/example/external",
+          args: ["--skill", "domain-modeling", "--global"],
+          default: false,
+          autoInvocation: true,
+          role: "primitive",
+          composes: [],
+          profiles: [],
+        },
+      ],
+    }, null, 2)}\n`,
+  );
   return homeDir;
 }
