@@ -74,7 +74,7 @@ function planProjectRules(
   return operations;
 }
 
-async function loadRulesContent(options: Pick<CliOptions, "homeDir" | "repoDir" | "rulesRef" | "rulesSource">): Promise<RulesContent> {
+async function loadRulesContent(options: Pick<CliOptions, "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "manifestContents">): Promise<RulesContent> {
   const manifest = loadRulesManifest(options);
   if (!manifest.url) {
     return { afk: "" };

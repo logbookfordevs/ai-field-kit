@@ -280,6 +280,14 @@ test("selectSkillsInstall presents composed skills for selected wrappers", async
     promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
     /Composed by AFK - Code Grill \(wrapper\)/,
   );
+  assert.match(
+    promptState.checkboxChoices["Choose skills to install"]?.find((choice) => choice.value === "afk-code-grill")?.description ?? "",
+    /role: wrapper · auto-invocation: off/,
+  );
+  assert.match(
+    promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
+    /role: primitive · auto-invocation: on/,
+  );
 });
 
 test("selectSetup yes mode includes composed skills for default wrappers", async () => {

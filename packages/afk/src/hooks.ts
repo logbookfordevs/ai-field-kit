@@ -27,7 +27,7 @@ export async function syncHooks(runtime: Runtime, options: CliOptions): Promise<
   return 0;
 }
 
-export async function planHooksSync(options: Pick<CliOptions, "agents" | "homeDir" | "cwd" | "repoDir" | "selectedHookIds" | "setupScope">): Promise<PathOperation[]> {
+export async function planHooksSync(options: Pick<CliOptions, "agents" | "homeDir" | "cwd" | "repoDir" | "selectedHookIds" | "setupScope" | "manifestContents">): Promise<PathOperation[]> {
   const manifest = loadHookManifest(options);
   const selected = selectHookItems(manifest.items, options.selectedHookIds);
   const operations: PathOperation[] = [];

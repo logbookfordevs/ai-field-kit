@@ -292,6 +292,9 @@ test("runCli shows manifests from the remembered setup source", async () => {
             args: ["--skill", "remote-skill"],
             default: true,
             autoInvocation: true,
+            role: "wrapper",
+            composes: ["grilling", "truss-evaluation"],
+            profiles: ["engineering"],
           },
         ],
       }),
@@ -326,6 +329,10 @@ test("runCli shows manifests from the remembered setup source", async () => {
     assert.ok(text.includes("AFK manifests"));
     assert.ok(text.includes("Source"));
     assert.ok(text.includes("remote-skill"));
+    assert.ok(text.includes("role: wrapper"));
+    assert.ok(text.includes("auto-invocation: on"));
+    assert.ok(text.includes("composes: grilling, truss-evaluation"));
+    assert.ok(text.includes("profiles: engineering"));
     assert.ok(!text.includes("local-skill"));
   } finally {
     globalThis.fetch = originalFetch;

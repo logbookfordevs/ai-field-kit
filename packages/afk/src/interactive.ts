@@ -322,7 +322,7 @@ async function selectAgentChoices(
   return { agents, source: agents.length > 0 ? "manual" : "none" };
 }
 
-async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills">): Promise<string[]> {
+async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills" | "manifestContents">): Promise<string[]> {
   const manifest = loadSkillManifest(options);
   if (options.allSkills) {
     return manifest.items.map((item) => item.id);
@@ -354,7 +354,7 @@ async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills">):
   return uniqueStrings([...selected, ...composedSelection]);
 }
 
-function nonInteractiveSkillIds(options: Pick<CliOptions, "homeDir" | "allSkills">): string[] {
+function nonInteractiveSkillIds(options: Pick<CliOptions, "homeDir" | "allSkills" | "manifestContents">): string[] {
   const manifest = loadSkillManifest(options);
   const selected = manifest.items
     .filter((item) => item.default || options.allSkills)
@@ -373,9 +373,9 @@ function skillChoices(items: SkillManifestItem[]): Choice<string>[] {
 
 function skillChoiceDetail(item: SkillManifestItem): string {
   const role = item.role ?? "primitive";
-  const invocation = item.autoInvocation === false ? "manual" : "auto";
+  const autoInvocation = item.autoInvocation === false ? "off" : "on";
   const composes = item.composes && item.composes.length > 0 ? ` · composes ${item.composes.join(", ")}` : "";
-  return `${role} · ${invocation}${composes} · ${item.args.join(" ")}`;
+  return `role: ${role} · auto-invocation: ${autoInvocation}${composes} · ${item.args.join(" ")}`;
 }
 
 function expandComposedSkillIds(items: SkillManifestItem[], selectedIds: string[]): string[] {
@@ -444,7 +444,7 @@ function resolveNonInteractiveAgentSelection(
   return { agents: [], agentSource: "none" };
 }
 
-async function selectMcps(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+async function selectMcps(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string[]> {
   const manifest = loadMcpManifest(options);
   return selectCheckbox(
     "Choose MCPs to install",
@@ -457,7 +457,7 @@ async function selectMcps(options: Pick<CliOptions, "homeDir">): Promise<string[
   );
 }
 
-async function selectPlugins(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+async function selectPlugins(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string[]> {
   const manifest = loadPluginManifest(options);
   return selectCheckbox(
     "Choose plugins to install",
@@ -470,7 +470,7 @@ async function selectPlugins(options: Pick<CliOptions, "homeDir">): Promise<stri
   );
 }
 
-async function selectHooks(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+async function selectHooks(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string[]> {
   const manifest = loadHookManifest(options);
   return selectCheckbox(
     "Choose hooks to install",

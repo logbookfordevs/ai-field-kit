@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
-import type { CliOptions, PathOperation } from "./types.js";
+import type { CliOptions, ManifestFilename, PathOperation } from "./types.js";
 
 const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
@@ -193,28 +193,42 @@ export async function loadDefaultManifestContent(name: ManifestName, options: Ma
   return defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
 }
 
-export function loadSkillManifest(options: Pick<CliOptions, "homeDir">): SkillManifest {
-  return parseLocalManifest<SkillManifest>(options.homeDir, "skills.json", isSkillManifest);
+export function loadSkillManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): SkillManifest {
+  return parseManifest<SkillManifest>(options, "skills.json", isSkillManifest);
 }
 
-export function loadMcpManifest(options: Pick<CliOptions, "homeDir">): McpManifest {
-  return parseLocalManifest<McpManifest>(options.homeDir, "mcps.json", isMcpManifest);
+export function loadMcpManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): McpManifest {
+  return parseManifest<McpManifest>(options, "mcps.json", isMcpManifest);
 }
 
-export function loadRulesManifest(options: Pick<CliOptions, "homeDir">): RulesManifest {
-  return parseLocalManifest<RulesManifest>(options.homeDir, "rules.json", isRulesManifest);
+export function loadRulesManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): RulesManifest {
+  return parseManifest<RulesManifest>(options, "rules.json", isRulesManifest);
 }
 
-export function loadPluginManifest(options: Pick<CliOptions, "homeDir">): PluginManifest {
-  return parseLocalManifest<PluginManifest>(options.homeDir, "plugins.json", isPluginManifest);
+export function loadPluginManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): PluginManifest {
+  return parseManifest<PluginManifest>(options, "plugins.json", isPluginManifest);
 }
 
-export function loadHookManifest(options: Pick<CliOptions, "homeDir">): HookManifest {
-  return parseLocalManifest<HookManifest>(options.homeDir, "hooks.json", isHookManifest);
+export function loadHookManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): HookManifest {
+  return parseManifest<HookManifest>(options, "hooks.json", isHookManifest);
 }
 
-function parseLocalManifest<T>(homeDir: string, name: ManifestName, guard: (value: unknown) => value is T): T {
-  const path = join(localManifestDir(homeDir), name);
+function parseManifest<T>(
+  options: Pick<CliOptions, "homeDir" | "manifestContents">,
+  name: ManifestName,
+  guard: (value: unknown) => value is T,
+): T {
+  const content = options.manifestContents?.[name as ManifestFilename];
+  if (content !== undefined) {
+    const parsed: unknown = JSON.parse(content);
+    if (!guard(parsed)) {
+      throw new Error(`Invalid AFK manifest from setup source: ${name}`);
+    }
+
+    return parsed;
+  }
+
+  const path = join(localManifestDir(options.homeDir), name);
   if (!existsSync(path)) {
     throw new Error(`Missing AFK manifest: ${path}. Run "afk setup refresh" to prepare local manifests.`);
   }

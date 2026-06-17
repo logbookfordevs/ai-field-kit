@@ -12,6 +12,7 @@ export type SkillAgentId = "claude-code" | "kiro-cli" | "kilo" | "pi" | "droid";
 export type Area = "rules" | "skills" | "mcps" | "plugins" | "hooks";
 export type SetupScope = "global" | "project";
 export type ManifestCategory = "rules" | "skills" | "mcps" | "plugins" | "hooks" | "presets";
+export type ManifestFilename = "skills.json" | "mcps.json" | "presets.json" | "rules.json" | "plugins.json" | "hooks.json";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -36,6 +37,7 @@ export type CliOptions = {
   defaultSourceUpdate: string;
   rememberDefaultsSource?: boolean;
   setupManifestsPrepared?: boolean;
+  manifestContents?: Partial<Record<ManifestFilename, string>>;
   manifestLocal: boolean;
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;

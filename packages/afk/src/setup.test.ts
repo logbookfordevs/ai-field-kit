@@ -240,6 +240,113 @@ test("runArea prompts for a source for every interactive setup area", async () =
   }
 });
 
+test("runArea refreshes explicit source manifests before installing selected skills", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Stale Skill",
+          source: "stale/source",
+          args: ["--skill", "stale-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Remote Skill",
+          source: "remote/source",
+          args: ["--skill", "remote-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const output: string[] = [];
+  const commands: Array<{ command: string; args: string[] }> = [];
+
+  const code = await runArea("skills", {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      commands.push({ command, args });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["remote-skill"],
+  });
+
+  assert.equal(code, 0);
+  assert.equal(commands[0]?.command, "npx");
+  assert.deepEqual(commands[0]?.args, ["skills", "add", "remote/source", "--global", "--yes", "--skill", "remote-skill"]);
+  assert.ok(output.join("\n").includes("Local manifests prepared: 6 wrote files."));
+});
+
+test("runArea dry-run uses explicit source manifests without cache writes", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Stale Skill",
+          source: "stale/source",
+          args: ["--skill", "stale-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Remote Skill",
+          source: "remote/source",
+          args: ["--skill", "remote-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const output: string[] = [];
+
+  const code = await runArea("skills", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["remote-skill"],
+  });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("$ npx skills add remote/source --global --yes --skill remote-skill"));
+  assert.ok(!text.includes("stale/source"));
+});
+
 test("runSetup with --yes uses a saved default source without prompting", async () => {
   const homeDir = localHomeWithManifests({
     "presets.json": { version: 1, defaultsSource: localDefaultsSource(), presets: [] },
@@ -336,7 +443,7 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
   return homeDir;
 }
 
-function localDefaultsSource(): string {
+function localDefaultsSource(overrides: Record<string, unknown> = {}): string {
   const sourceDir = mkdtempSync(join(tmpdir(), "afk-default-source-"));
   const manifestDir = join(sourceDir, "afk", "manifests");
   mkdirSync(manifestDir, { recursive: true });
@@ -348,6 +455,7 @@ function localDefaultsSource(): string {
     "rules.json": { version: 1, source: "github", url: "" },
     "plugins.json": { version: 1, items: [] },
     "hooks.json": { version: 1, items: [] },
+    ...overrides,
   };
 
   for (const [name, content] of Object.entries(manifests)) {

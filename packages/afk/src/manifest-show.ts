@@ -162,8 +162,14 @@ function renderSkills(manifest: Record<string, unknown>): string {
     summaryLine("default source", typeof manifest.defaultSource === "string" && manifest.defaultSource ? manifest.defaultSource : "(none)"),
     ...renderItemList(manifest.items, "skill", (item) => {
       const args = Array.isArray(item.args) && item.args.length > 0 ? item.args.filter((value) => typeof value === "string").join(" ") : "";
-      const auto = item.autoInvocation === false ? ` ${paint(terminalPalette.ember, "auto:off")}` : "";
-      return sourceItemLine(`${labelFor(item)}${defaultSuffix(item.default)}${auto}`, args);
+      const details = [
+        `role: ${stringValue(item.role, "primitive")}`,
+        `auto-invocation: ${item.autoInvocation === false ? "off" : "on"}`,
+        ...stringListDetail("composes", item.composes),
+        ...stringListDetail("profiles", item.profiles),
+        ...(args ? [`args: ${args}`] : []),
+      ];
+      return detailItemLine(`${labelFor(item)}${defaultSuffix(item.default)}`, details);
     }),
   ].join("\n");
 }
@@ -251,12 +257,36 @@ function sourceItemLine(title: string, source: string): string {
   return `${title}\n${muted(`    ${truncateMiddle(trimmed, 96)}`)}`;
 }
 
+function detailItemLine(title: string, details: string[]): string {
+  if (details.length === 0) {
+    return title;
+  }
+
+  return [
+    title,
+    ...details.map((detail) => muted(`    ${truncateMiddle(detail, 96)}`)),
+  ].join("\n");
+}
+
 function sourceBadge(value: "Setup" | "Local"): string {
   return paint(value === "Setup" ? terminalPalette.harbor : terminalPalette.brass, value);
 }
 
 function valueOrUnknown(value: unknown): string {
   return value === undefined || value === null ? "unknown" : String(value);
+}
+
+function stringValue(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.trim() ? value : fallback;
+}
+
+function stringListDetail(label: string, value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const values = value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  return values.length > 0 ? [`${label}: ${values.join(", ")}`] : [];
 }
 
 function pluralize(value: string): string {

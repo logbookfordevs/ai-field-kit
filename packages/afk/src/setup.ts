@@ -10,7 +10,8 @@ import { builtInDefaultsSource, ensureLocalManifests, planRememberedDefaultsSour
 import { defaultCheckedDetail } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
-import type { Area, CliOptions, Runtime } from "./types.js";
+import { basename } from "node:path";
+import type { Area, CliOptions, ManifestFilename, PathOperation, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
   const updateNotice = options.yes || options.refreshDefaults
@@ -40,14 +41,14 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
   runtime.io.stdout(muted(defaultCheckedDetail));
 
   const sourceOptions = await resolveSetupSource(options);
-  const manifestCode = await ensureManifestFiles(runtime, sourceOptions);
-  if (manifestCode !== 0 || sourceOptions.initOnly) {
-    return manifestCode;
+  const prepared = await prepareManifestFiles(runtime, sourceOptions);
+  if (prepared.code !== 0 || prepared.options.initOnly) {
+    return prepared.code;
   }
 
-  const selection = await selectSetup(sourceOptions);
+  const selection = await selectSetup(prepared.options);
   const selectedOptions: CliOptions = {
-    ...sourceOptions,
+    ...prepared.options,
     agents: selection.agents,
     setupScope: selection.setupScope,
     scopeExplicit: true,
@@ -179,18 +180,18 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
   }
 
   const sourceOptions = options.setupManifestsPrepared ? options : await resolveSetupSource(options);
-  const manifestCode = options.setupManifestsPrepared ? 0 : await ensureManifestFiles(runtime, sourceOptions);
-  if (manifestCode !== 0 || sourceOptions.initOnly) {
-    return manifestCode;
+  const prepared = options.setupManifestsPrepared ? { code: 0, options: sourceOptions } : await prepareManifestFiles(runtime, sourceOptions);
+  if (prepared.code !== 0 || prepared.options.initOnly) {
+    return prepared.code;
   }
 
   switch (area) {
     case "rules": {
-      const selectedOptions = await resolveRulesOptions(sourceOptions);
+      const selectedOptions = await resolveRulesOptions(prepared.options);
       return syncRules(runtime, selectedOptions);
     }
     case "skills": {
-      const selectedOptions = await resolveSkillOptions(sourceOptions);
+      const selectedOptions = await resolveSkillOptions(prepared.options);
       if (!selectedOptions.yes && selectedOptions.selectedSkillIds.length === 0) {
         runtime.io.stdout("\nNo skills selected. No changes planned.");
         return 0;
@@ -204,7 +205,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       return code;
     }
     case "mcps": {
-      const selectedOptions = await resolveMcpOptions(sourceOptions);
+      const selectedOptions = await resolveMcpOptions(prepared.options);
       if (!selectedOptions.yes && selectedOptions.selectedMcpIds.length === 0) {
         runtime.io.stdout("\nNo MCPs selected. No changes planned.");
         return 0;
@@ -218,7 +219,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       return runDelegateCommands(runtime, buildMcpCommands(selectedOptions), selectedOptions);
     }
     case "plugins": {
-      const selectedOptions = await resolvePluginOptions(sourceOptions);
+      const selectedOptions = await resolvePluginOptions(prepared.options);
       if (!selectedOptions.yes && selectedOptions.selectedPluginIds.length === 0) {
         runtime.io.stdout("\nNo plugins selected. No changes planned.");
         return 0;
@@ -230,7 +231,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       });
     }
     case "hooks": {
-      const selectedOptions = await resolveHookOptions(sourceOptions);
+      const selectedOptions = await resolveHookOptions(prepared.options);
       if (!selectedOptions.yes && (selectedOptions.selectedHookIds.length === 0 || selectedOptions.agents.length === 0)) {
         runtime.io.stdout("\nNo hooks selected. No changes planned.");
         return 0;
@@ -412,6 +413,58 @@ async function ensureManifestFiles(runtime: Runtime, options: CliOptions): Promi
 
   runtime.io.stdout(`\nLocal manifests prepared: ${summarizeOperations(operations)}.`);
   return 0;
+}
+
+async function prepareManifestFiles(runtime: Runtime, options: CliOptions): Promise<{ code: number; options: CliOptions }> {
+  const operations = await ensureLocalManifests(options);
+  const manifestContents = manifestContentsFromOperations(operations);
+
+  if (operations.length === 0) {
+    return { code: 0, options };
+  }
+
+  if (options.dryRun) {
+    runtime.io.stdout(`\n${sectionTitle("Local Manifests")}`);
+    for (const operation of operations) {
+      runtime.io.stdout(`- ${formatOperation(operation)}`);
+    }
+    return { code: 0, options: { ...options, manifestContents } };
+  }
+
+  for (const operation of operations) {
+    applyOperation(operation);
+  }
+
+  runtime.io.stdout(`\nLocal manifests prepared: ${summarizeOperations(operations)}.`);
+  return { code: 0, options: { ...options, manifestContents } };
+}
+
+function manifestContentsFromOperations(operations: PathOperation[]): Partial<Record<ManifestFilename, string>> {
+  const contents: Partial<Record<ManifestFilename, string>> = {};
+
+  for (const operation of operations) {
+    if (operation.type !== "write") {
+      continue;
+    }
+
+    const filename = basename(operation.path);
+    if (!isManifestFilename(filename)) {
+      continue;
+    }
+
+    contents[filename] = operation.content;
+  }
+
+  return contents;
+}
+
+function isManifestFilename(value: string | undefined): value is ManifestFilename {
+  return value === "skills.json" ||
+    value === "mcps.json" ||
+    value === "presets.json" ||
+    value === "rules.json" ||
+    value === "plugins.json" ||
+    value === "hooks.json";
 }
 
 function areaLabel(area: Area): string {
