@@ -221,11 +221,13 @@ agents hide the skill from normal model discovery unless it is explicitly
 attached or invoked. Use `autoInvocation: true` when plain-language requests
 should discover the skill.
 
-### Manifest Flags
+### Manifest Show
 
-| Command | Flags |
+| Command | Shows |
 |---|---|
-| `afk show` | `--source`, `--local`, `--rules`, `--skills`, `--mcp`/`--mcps`, `--plugins`, `--hooks`, `--presets` |
+| `afk show` | Active setup source overview. |
+| `afk show skills` | Skills manifest. |
+| `afk show skills mcps` | Multiple manifests in one run. |
 | `afk manifests show` | Alias for `afk show`. |
 | `afk manifest show` | Alias for `afk show`. |
 
@@ -346,7 +348,7 @@ repository or directory, then point setup at it with `--source` or
 `--default-source`.
 
 ```bash
-afk show --source your-org/dev-kit
+afk show skills --source your-org/dev-kit
 afk setup --default-source your-org/dev-kit
 ```
 

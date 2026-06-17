@@ -317,63 +317,49 @@ const commandHelps: Record<string, CommandHelp> = {
   show: {
     title: "AFK show",
     summary: "Show the active AFK setup source manifests.",
-    usage: "afk show [options]",
+    usage: "afk show [category...] [options]",
     options: [
       "--source <source>                Show manifests from this setup source",
       "--local                          Show ./afk/manifests instead of the setup source",
-      "--rules                          Show rules manifest",
-      "--skills                         Show skills manifest",
-      "--mcp, --mcps                    Show MCP manifest",
-      "--plugins                          Show plugins manifest",
-      "--hooks                          Show hooks manifest",
-      "--presets                        Show presets manifest",
     ],
     examples: [
       "afk show",
+      "afk show skills",
+      "afk show skills mcps",
       "afk show --local",
-      "afk show --rules --skills",
-      "afk show --mcp --plugins",
+      "afk show skills --source your-org/dev-kit",
     ],
   },
   "manifests show": {
     title: "AFK show",
     summary: "Alias for afk show.",
-    usage: "afk show [options]",
+    usage: "afk show [category...] [options]",
     options: [
       "--source <source>                Show manifests from this setup source",
       "--local                          Show ./afk/manifests instead of the setup source",
-      "--rules                          Show rules manifest",
-      "--skills                         Show skills manifest",
-      "--mcp, --mcps                    Show MCP manifest",
-      "--plugins                          Show plugins manifest",
-      "--hooks                          Show hooks manifest",
-      "--presets                        Show presets manifest",
     ],
     examples: [
       "afk show",
+      "afk show skills",
+      "afk show skills mcps",
       "afk show --local",
-      "afk show --rules --skills",
-      "afk show --mcp --plugins",
+      "afk show skills --source your-org/dev-kit",
     ],
   },
   "manifest show": {
     title: "AFK show",
     summary: "Alias for afk show.",
-    usage: "afk show [options]",
+    usage: "afk show [category...] [options]",
     options: [
       "--source <source>                Show manifests from this setup source",
       "--local                          Show ./afk/manifests instead of the setup source",
-      "--rules                          Show rules manifest",
-      "--skills                         Show skills manifest",
-      "--mcp, --mcps                    Show MCP manifest",
-      "--plugins                          Show plugins manifest",
-      "--hooks                          Show hooks manifest",
-      "--presets                        Show presets manifest",
     ],
     examples: [
       "afk show",
+      "afk show skills",
+      "afk show skills mcps",
       "afk show --local",
-      "afk show --rules --skills",
+      "afk show skills --source your-org/dev-kit",
     ],
   },
 };
@@ -401,7 +387,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let manifestLocal = false;
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
-  const selectedManifestCategories: ManifestCategory[] = [];
+  const manifestCategories = manifestCategoriesFromCommandPath(commandPath);
+  if (manifestCategories.kind === "error") {
+    return { help: false, kind: "error", error: manifestCategories.error };
+  }
+  const selectedManifestCategories: ManifestCategory[] = manifestCategories.categories;
   const homeDir = resolveHome(env);
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
@@ -415,7 +405,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   }
 
   if (args.includes("--help") || args.includes("-h")) {
-    return { help: true, commandPath };
+    return { help: true, commandPath: isManifestShowCommand(key) ? ["show"] : commandPath };
   }
 
   for (let index = 0; index < args.length; index += 1) {
@@ -426,14 +416,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (isManifestConfigureCommand(key) && arg === "--from-current") {
       manifestConfigureFromCurrent = true;
-      continue;
-    }
-
-    if (isManifestShowCommand(key) && manifestCategoryFlag(arg)) {
-      const category = manifestCategoryFlag(arg);
-      if (category && !selectedManifestCategories.includes(category)) {
-        selectedManifestCategories.push(category);
-      }
       continue;
     }
 
@@ -648,7 +630,12 @@ function isManifestConfigureCommand(key: string): boolean {
 }
 
 function isManifestShowCommand(key: string): boolean {
-  return key === "show" || key === "manifests show" || key === "manifest show";
+  return key === "show" ||
+    key.startsWith("show ") ||
+    key === "manifests show" ||
+    key.startsWith("manifests show ") ||
+    key === "manifest show" ||
+    key.startsWith("manifest show ");
 }
 
 function unavailableManifestConfigure(runtime: Runtime): number {
@@ -708,7 +695,7 @@ Usage:
   afk setup mcps [options]
   afk setup plugins [options]
   afk setup hooks [options]
-  afk show [options]
+  afk show [category...] [options]
 
 Run "afk <command> --help" for command-specific options.
 
@@ -724,23 +711,61 @@ function commandKey(commandPath: string[] = []): string {
   return commandPath.join(" ");
 }
 
-function manifestCategoryFlag(arg: string): ManifestCategory | null {
+function manifestCategoriesFromCommandPath(commandPath: string[]): { kind: "ok"; categories: ManifestCategory[] } | { kind: "error"; error: string } {
+  const args = manifestCategoryArgs(commandPath);
+  if (!args) {
+    return { kind: "ok", categories: [] };
+  }
+
+  const categories: ManifestCategory[] = [];
+  for (const arg of args) {
+    const category = manifestCategory(arg);
+    if (!category) {
+      return { kind: "error", error: `Unknown show category: ${arg}` };
+    }
+    if (!categories.includes(category)) {
+      categories.push(category);
+    }
+  }
+
+  return { kind: "ok", categories };
+}
+
+function manifestCategoryArgs(commandPath: string[]): string[] | null {
+  if (commandPath[0] === "show") {
+    return commandPath.slice(1);
+  }
+
+  if (commandPath[0] === "manifests" && commandPath[1] === "show") {
+    return commandPath.slice(2);
+  }
+
+  if (commandPath[0] === "manifest" && commandPath[1] === "show") {
+    return commandPath.slice(2);
+  }
+
+  return null;
+}
+
+function manifestCategory(arg: string): ManifestCategory | null {
   switch (arg) {
-    case "--rules":
+    case "rule":
+    case "rules":
       return "rules";
-    case "--skill":
-    case "--skills":
+    case "skill":
+    case "skills":
       return "skills";
-    case "--mcp":
-    case "--mcps":
+    case "mcp":
+    case "mcps":
       return "mcps";
-    case "--plugins":
+    case "plugin":
+    case "plugins":
       return "plugins";
-    case "--hook":
-    case "--hooks":
+    case "hook":
+    case "hooks":
       return "hooks";
-    case "--preset":
-    case "--presets":
+    case "preset":
+    case "presets":
       return "presets";
     default:
       return null;

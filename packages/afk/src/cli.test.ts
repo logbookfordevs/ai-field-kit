@@ -32,7 +32,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk setup plugins [options]"));
   assert.ok(output.join("\n").includes("afk setup hooks [options]"));
   assert.ok(!output.join("\n").includes("afk setup utils"));
-  assert.ok(output.join("\n").includes("afk show [options]"));
+  assert.ok(output.join("\n").includes("afk show [category...] [options]"));
   assert.ok(!output.join("\n").includes("afk configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests show [options]"));
@@ -129,6 +129,14 @@ test("runCli rejects the removed util manifest flag", async () => {
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Unknown option: --util"));
+});
+
+test("runCli rejects old manifest category flags", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["show", "--skills"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown option: --skills"));
 });
 
 test("runCli accepts default-source aliases", async () => {
@@ -258,10 +266,11 @@ test("runCli prints contextual manifest show help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK show"));
   assert.ok(output.join("\n").includes("--local"));
-  assert.ok(output.join("\n").includes("--rules"));
-  assert.ok(output.join("\n").includes("--hooks"));
-  assert.ok(output.join("\n").includes("afk show --rules --skills"));
-  assert.ok(!output.join("\n").includes("afk manifests show --rules --skills"));
+  assert.ok(!output.join("\n").includes("--rules"));
+  assert.ok(!output.join("\n").includes("--hooks"));
+  assert.ok(output.join("\n").includes("afk show skills"));
+  assert.ok(output.join("\n").includes("afk show skills mcps"));
+  assert.ok(!output.join("\n").includes("afk show --rules --skills"));
   assert.ok(!output.join("\n").includes("AFK setup\n"));
 });
 
@@ -272,7 +281,7 @@ test("runCli keeps old manifest command forms as aliases", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK show"));
-  assert.ok(text.includes("Usage:\n  afk show [options]"));
+  assert.ok(text.includes("Usage:\n  afk show [category...] [options]"));
 });
 
 test("runCli shows manifests from the remembered setup source", async () => {
@@ -321,7 +330,7 @@ test("runCli shows manifests from the remembered setup source", async () => {
       },
     });
     const output: string[] = [];
-    const code = await withConsole(output, () => runCli(["show", "--skills"], { HOME: homeDir }));
+    const code = await withConsole(output, () => runCli(["show", "skills"], { HOME: homeDir }));
     const text = output.join("\n");
 
     assert.equal(code, 0);
@@ -334,6 +343,37 @@ test("runCli shows manifests from the remembered setup source", async () => {
     assert.ok(text.includes("composes: grilling, truss-evaluation"));
     assert.ok(text.includes("profiles: engineering"));
     assert.ok(!text.includes("local-skill"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("runCli shows multiple manifest categories from command nouns", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(String(input));
+    const name = String(input).split("/").pop();
+    const manifests: Record<string, unknown> = {
+      "skills.json": { version: 1, defaultSource: "", items: [] },
+      "mcps.json": { version: 1, items: [] },
+    };
+    return new Response(JSON.stringify(manifests[name ?? ""] ?? { version: 1, items: [] }), { status: 200 });
+  };
+
+  try {
+    const homeDir = localHomeWithManifests({
+      "presets.json": { version: 1, defaultsSource: "acme/dev-kit", presets: [] },
+    });
+    const output: string[] = [];
+    const code = await withConsole(output, () => runCli(["show", "skill", "mcp"], { HOME: homeDir }));
+    const text = output.join("\n");
+
+    assert.equal(code, 0);
+    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/skills.json"));
+    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/mcps.json"));
+    assert.ok(text.includes("Skills"));
+    assert.ok(text.includes("MCPs"));
   } finally {
     globalThis.fetch = originalFetch;
   }
