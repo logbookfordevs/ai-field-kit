@@ -3,19 +3,26 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { normalizeSetupSelection, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall } from "./interactive.js";
+import { normalizeSetupSelection, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall, selectSkillsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
 const promptState = vi.hoisted(() => ({
   checkboxMessages: [] as string[],
+  checkboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string }>>,
+  checkboxResponses: {} as Record<string, string[]>,
   setupAreas: ["plugins"] as string[],
   inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
 }));
 
 vi.mock("@inquirer/prompts", () => ({
-  checkbox: vi.fn(async ({ message }: { message: string }) => {
+  checkbox: vi.fn(async ({ message, choices }: { message: string; choices?: Array<{ name?: string; value?: string; checked?: boolean; description?: string }> }) => {
     promptState.checkboxMessages.push(message);
+    promptState.checkboxChoices[message] = choices ?? [];
+    if (message in promptState.checkboxResponses) {
+      return promptState.checkboxResponses[message];
+    }
+
     if (message === "Choose what AFK should prepare") {
       return promptState.setupAreas;
     }
@@ -244,12 +251,40 @@ test("selectSetup yes mode includes all skills when requested", async () => {
 
 test("selectSetup guided mode includes all skills when requested", async () => {
   promptState.checkboxMessages = [];
+  promptState.checkboxResponses = {};
   promptState.setupAreas = ["skills"];
   const homeDir = localHomeWithAllManifests();
   const selection = await selectSetup({ ...defaultOptions(homeDir), allSkills: true });
 
   assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
   assert.ok(!promptState.checkboxMessages.includes("Choose skills to install"));
+});
+
+test("selectSkillsInstall presents composed skills for selected wrappers", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxChoices = {};
+  promptState.checkboxResponses = {
+    "Choose skills to install": ["afk-code-grill"],
+    "Choose composed skills to include": ["grilling", "truss-evaluation"],
+  };
+  const homeDir = localHomeWithComposedSkillManifest();
+  const selection = await selectSkillsInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.skillIds, ["afk-code-grill", "grilling", "truss-evaluation"]);
+  assert.ok(promptState.checkboxMessages.includes("Choose composed skills to include"));
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose composed skills to include"]?.map((choice) => [choice.value, choice.checked]),
+    [["grilling", true], ["truss-evaluation", true]],
+  );
+});
+
+test("selectSetup yes mode includes composed skills for default wrappers", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxResponses = {};
+  const homeDir = localHomeWithComposedSkillManifest();
+  const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true });
+
+  assert.deepEqual(selection.skillIds, ["afk-code-grill", "grilling", "truss-evaluation"]);
 });
 
 test("selectDefaultsSource pre-fills the remembered source and requires input", async () => {
@@ -401,5 +436,59 @@ function localHomeWithAllManifests(): string {
     writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
   }
 
+  return homeDir;
+}
+
+function localHomeWithComposedSkillManifest(): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(
+    join(manifestDir, "skills.json"),
+    `${JSON.stringify({
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "afk-code-grill",
+          label: "AFK / Code Grill",
+          source: "https://github.com/example/afk",
+          args: ["--skill", "afk-code-grill", "--global"],
+          default: true,
+          autoInvocation: false,
+          role: "wrapper",
+          composes: ["grilling", "truss-evaluation"],
+          profiles: [],
+        },
+        {
+          id: "grilling",
+          label: "External / Grilling",
+          source: "https://github.com/example/external",
+          args: ["--skill", "grilling", "--global"],
+          default: false,
+          autoInvocation: true,
+          role: "primitive",
+          composes: [],
+          profiles: [],
+        },
+        {
+          id: "truss-evaluation",
+          label: "External / Truss Evaluation",
+          source: "https://github.com/example/truss",
+          args: ["--skill", "truss-evaluation", "--global"],
+          default: false,
+          autoInvocation: true,
+          role: "primitive",
+          composes: [],
+          profiles: [],
+        },
+      ],
+    }, null, 2)}\n`,
+  );
+  writeFileSync(join(manifestDir, "mcps.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "plugins.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "hooks.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({ version: 1, source: "local", url: "rules/AGENTS.md" }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "", presets: [] }, null, 2)}\n`);
   return homeDir;
 }

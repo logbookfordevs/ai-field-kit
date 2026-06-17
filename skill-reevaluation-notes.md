@@ -15,6 +15,23 @@ This should later be reflected in the README narrative and, eventually, the AFK 
 
 ## Decisions So Far
 
+### Manifest Architecture
+
+Decision: keep `autoInvocation` as the installation/discovery control and add architecture metadata beside it.
+
+- `autoInvocation` stays because it precisely means whether the skill is exposed to automatic model discovery. Model-invoked skills can still be invoked by the user.
+- Add `role` to describe the skill's compositional shape: primitive, wrapper, flow, utility, reference, or router.
+- Add `composes` to describe the primitives or supporting skills a wrapper or flow is built from.
+- Add `profiles` now as an empty array for every skill; profile behavior will be implemented later.
+- Setup/installation should keep working from selected skill ids as it does today.
+- Skill management features such as richer configure, profile activation, and role-oriented management belong under the future `afk skills ...` surface.
+
+Setup behavior to implement now:
+
+- Render skill choices with role and auto/manual labels.
+- Show composed skills under their wrappers/flows.
+- When a selected skill composes other skills, include those composed skills in the install plan, with a review step so the user can unselect them.
+
 ### Grilling Split
 
 Follow Matt Pocock's composability perspective for the grilling family:
@@ -49,16 +66,16 @@ For `afk-to-issues`:
 - Proposed AFK framing: look for opportunities to prefactor the code to make implementation easier. "Make the change easy, then make the easy change." Any prefactoring should be planned before dependent vertical slices.
 - Keep the wording tight. Do not add defensive constraints that the surrounding tracer-bullet context already implies.
 
-Open decision:
+Decision:
 
-- Reevaluate whether AFK should keep explicit `AFK` / `HITL` slice labels now that Matt removed them from `to-issues`.
+- Remove explicit `AFK` / `HITL` slice labels from checkpoint packets.
+- Keep review gates independent from autonomy.
+- Represent human decisions, missing context, dependencies, and external blockers through explicit `blocked_by` entries or packet notes instead of a top-level slice type.
 - Think forward from AFK's desired execution model, not backward from compatibility.
-- Current concern: if `AFK` / `HITL` labels do not drive review gates or execution behavior, they may be cosmetic.
-- Possible replacement: represent human decisions as explicit blockers, assumptions, decision gates, or unresolved questions instead of a top-level slice type.
 
 ### Codebase Design
 
-Strong leaning: include `codebase-design` somehow.
+Decision: include `codebase-design` as a model-invoked primitive.
 
 Reason:
 
@@ -66,14 +83,20 @@ Reason:
 - It connects naturally to the Truss Evaluation pillars: Maintainability, Strategy, Clarity, and Performance.
 - It also connects to `afk-code-grill`, which was originally shaped around architecture and implementation trade-off pressure.
 
-Unresolved options:
+Composition model:
 
-- Bring `codebase-design` in raw as its own skill.
-- Fork/adapt `codebase-design` into an AFK-native skill.
-- Merge its vocabulary and criteria into `afk-code-grill`.
-- Keep both `codebase-design` and `afk-code-grill`, with `codebase-design` acting as the architecture vocabulary primitive and `afk-code-grill` acting as the decision/interview wrapper.
+- `codebase-design` is the architecture vocabulary primitive: deep modules, interfaces, seams, adapters, test surfaces, leverage, and locality.
+- `truss-evaluation` is the decision-quality primitive: Maintainability, Strategy, Clarity, and Performance.
+- `grilling` is the interview primitive: one sharp question at a time, code exploration before asking, and recommended defaults.
+- `afk-code-grill` becomes the wrapper for bounded code/UX/architecture trade-off decisions. It should compose `grilling`, `truss-evaluation`, and `codebase-design` instead of duplicating their full content.
 
-Current instinct:
+Invocation:
 
-- The fourth option may fit the emerging house style best: primitive plus wrapper.
-- Do not decide yet.
+- Keep `codebase-design` model-invoked so the agent can use it directly when module/interface/seam/testability design is the topic.
+- Make/keep `afk-code-grill` as the manually invoked wrapper for Leonardo's focused code-decision workflow.
+- `afk-code-grill` can invoke `codebase-design` when the trade-off is architectural, while `codebase-design` can also be invoked independently by the model in ordinary architecture/design conversations.
+
+Implementation direction:
+
+- Prefer bringing `codebase-design` raw or lightly adapted first.
+- Update `afk-code-grill` later to reference the primitives it composes instead of carrying duplicated behavior.

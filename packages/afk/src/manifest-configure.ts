@@ -278,6 +278,9 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
     args: skillArgsFromInput(existing, skill),
     default: isDefault,
     autoInvocation,
+    role: existing?.role ?? "primitive",
+    composes: existing?.composes ?? [],
+    profiles: existing?.profiles ?? [],
   };
 }
 

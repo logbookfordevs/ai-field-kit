@@ -40,7 +40,6 @@ Use packet frontmatter as the current-state dashboard:
 ---
 id: I001
 title: Short Title
-type: AFK
 status: in_progress
 blocked_by: []
 source: docs/<task-slug>/<source-artifact>.md
@@ -55,6 +54,8 @@ Statuses: `pending`, `in_progress`, `validating`, `review`, `blocked`, `done`.
 Allowed review gates are `code`, `design`, and `product`. Every implementation checkpoint has a `code` gate. Add `design` for visual parity against an explicit reference, and `product` for user-facing behavior, copy, workflow, or product-fit validation.
 
 Do not name gates after evidence sources such as tests, lint, Figma, or backend contracts. Record those under validation or discipline evidence.
+
+Use `blocked_by` for checkpoint dependencies, human decisions, missing context, or external blockers.
 
 ## Execution Evidence
 Record the selected execution bundle before implementation begins: `tdd`, `source-driven-development`, `doubt-driven-development`, normal project validation, or a combination.

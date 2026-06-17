@@ -22,7 +22,12 @@ export type SkillManifestItem = {
   args: string[];
   default: boolean;
   autoInvocation?: boolean;
+  role?: SkillManifestItemRole;
+  composes?: string[];
+  profiles?: string[];
 };
+
+export type SkillManifestItemRole = "primitive" | "wrapper" | "flow" | "utility" | "reference" | "router";
 
 export type McpManifest = {
   version: number;
@@ -508,12 +513,18 @@ function migrateSkillsManifest(content: string): string | null {
 
   let changed = false;
   const items = parsed.items.map((item) => {
-    if (item.autoInvocation !== undefined) {
-      return item;
+    const next = { ...item };
+    if (next.autoInvocation === undefined) {
+      next.autoInvocation = true;
+      changed = true;
     }
 
-    changed = true;
-    return { ...item, autoInvocation: true };
+    if (next.profiles === undefined) {
+      next.profiles = [];
+      changed = true;
+    }
+
+    return next;
   });
 
   if (!changed) {
@@ -585,9 +596,16 @@ function isSkillManifest(value: unknown): value is SkillManifest {
       typeof item.source === "string" &&
       isStringArray(item.args) &&
       typeof item.default === "boolean" &&
-      (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean")
+      (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean") &&
+      (item.role === undefined || isSkillManifestItemRole(item.role)) &&
+      (item.composes === undefined || isStringArray(item.composes)) &&
+      (item.profiles === undefined || isStringArray(item.profiles))
     );
   });
+}
+
+function isSkillManifestItemRole(value: unknown): value is SkillManifestItemRole {
+  return value === "primitive" || value === "wrapper" || value === "flow" || value === "utility" || value === "reference" || value === "router";
 }
 
 function isMcpManifest(value: unknown): value is McpManifest {

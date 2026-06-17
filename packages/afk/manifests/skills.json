@@ -12,7 +12,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-ask",
@@ -24,7 +27,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-brainstorming-facilitator",
@@ -36,7 +42,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-code-grill",
@@ -48,7 +57,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [
+                "grilling",
+                "truss-evaluation",
+                "codebase-design"
+            ],
+            "profiles": []
         },
         {
             "id": "afk-to-prd-spec",
@@ -60,7 +76,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-to-issues",
@@ -72,7 +91,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-doc-craft",
@@ -84,7 +106,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-execution-tracking",
@@ -96,7 +121,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "flow",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-ui-registry-preferences",
@@ -108,7 +136,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "reference",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-pickup",
@@ -120,7 +151,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-resume-workflow",
@@ -132,7 +166,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-compass",
@@ -144,7 +181,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "router",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-sprint",
@@ -156,7 +196,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "flow",
+            "composes": [
+                "plannotator-setup-goal",
+                "afk-to-issues",
+                "afk-execution-tracking"
+            ],
+            "profiles": []
         },
         {
             "id": "afk-turbo",
@@ -168,7 +215,12 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "flow",
+            "composes": [
+                "plannotator-setup-goal"
+            ],
+            "profiles": []
         },
         {
             "id": "truss-evaluation",
@@ -180,7 +232,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "diagnosing-bugs",
@@ -192,7 +247,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "plannotator-compound",
@@ -204,7 +262,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "plannotator-setup-goal",
@@ -216,7 +277,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "plannotator-visual-explainer",
@@ -228,7 +292,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "html",
@@ -240,7 +307,10 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "html-plan",
@@ -252,7 +322,10 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "html-diagram",
@@ -264,7 +337,10 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "tdd",
@@ -276,7 +352,12 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [
+                "codebase-design"
+            ],
+            "profiles": []
         },
         {
             "id": "source-driven-development",
@@ -288,7 +369,10 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "doubt-driven-development",
@@ -300,7 +384,10 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "code-simplification",
@@ -312,7 +399,10 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "writing-great-skills",
@@ -324,7 +414,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "reference",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "teach",
@@ -336,7 +429,10 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "grill-with-docs",
@@ -348,7 +444,13 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [
+                "grilling",
+                "domain-modeling"
+            ],
+            "profiles": []
         },
         {
             "id": "grill-me",
@@ -360,7 +462,12 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [
+                "grilling"
+            ],
+            "profiles": []
         },
         {
             "id": "prototype",
@@ -372,7 +479,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "handoff",
@@ -384,7 +494,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "cmux",
@@ -396,7 +509,10 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "tmux",
@@ -408,7 +524,10 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-interactive-code-review",
@@ -420,7 +539,10 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-pr-story-flow-mermaid",
@@ -432,7 +554,55 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
+        },
+        {
+            "id": "grilling",
+            "label": "External / Grilling",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "grilling",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
+        },
+        {
+            "id": "domain-modeling",
+            "label": "External / Domain Modeling",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "domain-modeling",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
+        },
+        {
+            "id": "codebase-design",
+            "label": "External / Codebase Design",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "codebase-design",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         }
     ]
 }
