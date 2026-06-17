@@ -6,7 +6,7 @@ import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateC
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
 import { selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
-import { ensureLocalManifests, planRememberedDefaultsSourceUpdate, readRememberedDefaultsSource } from "./manifest.js";
+import { builtInDefaultsSource, ensureLocalManifests, planRememberedDefaultsSourceUpdate, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
@@ -25,11 +25,6 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
   const defaultSourceUpdateCode = applyDefaultSourceUpdate(runtime, options);
   if (defaultSourceUpdateCode !== null) {
     return defaultSourceUpdateCode;
-  }
-
-  const sourceValidationCode = validateNonInteractiveSource(runtime, options);
-  if (sourceValidationCode !== null) {
-    return sourceValidationCode;
   }
 
   if (options.refreshDefaults) {
@@ -183,11 +178,6 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
     return defaultSourceUpdateCode;
   }
 
-  const sourceValidationCode = validateNonInteractiveSource(runtime, options);
-  if (sourceValidationCode !== null) {
-    return sourceValidationCode;
-  }
-
   const sourceOptions = options.setupManifestsPrepared ? options : await resolveSetupSource(options);
   const manifestCode = options.setupManifestsPrepared ? 0 : await ensureManifestFiles(runtime, sourceOptions);
   if (manifestCode !== 0 || sourceOptions.initOnly) {
@@ -251,22 +241,12 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
   }
 }
 
-function validateNonInteractiveSource(runtime: Runtime, options: CliOptions): number | null {
-  if (!options.yes || options.defaultsSourceExplicit || readRememberedDefaultsSource(options)) {
-    return null;
-  }
-
-  runtime.io.stderr("No default setup source is configured.");
-  runtime.io.stderr("Run afk setup to choose a source interactively, or run afk setup --default-source <source>.");
-  return 1;
-}
-
 async function resolveSetupSource(options: CliOptions): Promise<CliOptions> {
   if (options.defaultsSourceExplicit) {
     return { ...options, rememberDefaultsSource: false };
   }
 
-  const rememberedSource = readRememberedDefaultsSource(options);
+  const rememberedSource = readRememberedDefaultsSource(options) || builtInDefaultsSource;
   if (options.yes) {
     return {
       ...options,

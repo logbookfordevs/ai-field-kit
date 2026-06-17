@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Changed
+
+- `cli:` made guided setup prefill the official `logbookfordevs/ai-field-kit` source when no saved default source exists yet, while keeping explicit `--default-source` as the way to persist a different default.
+
 ## v0.6.0 - 2026-06-16
 
 ### Added

@@ -5,7 +5,7 @@ import type { CliOptions, PathOperation } from "./types.js";
 
 const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
-const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
+export const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
 export type ManifestName = (typeof manifestNames)[number];
 

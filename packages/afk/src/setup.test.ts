@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { localManifestDir } from "./manifest.js";
+import { builtInDefaultsSource, localManifestDir } from "./manifest.js";
 import { runArea, runSetup } from "./setup.js";
 import type { SetupSelection } from "./interactive.js";
 import type { CliOptions, Runtime } from "./types.js";
@@ -215,23 +215,6 @@ test("runSetup prompts for a run-only source without changing the saved default"
   assert.equal(presets.defaultsSource, "acme/saved-kit");
 });
 
-test("runSetup with --yes fails when no source or saved default exists", async () => {
-  const homeDir = localHomeWithManifests();
-  const repoDir = localRepoWithRules();
-  const output: string[] = [];
-
-  const code = await runSetup(fakeRuntime(output), {
-    ...defaultOptions(homeDir, repoDir),
-    yes: true,
-    rulesSource: "github",
-  });
-  const text = output.join("\n");
-
-  assert.equal(code, 1);
-  assert.ok(text.includes("No default setup source is configured."));
-  assert.ok(text.includes("Run afk setup to choose a source interactively, or run afk setup --default-source <source>."));
-});
-
 test("runArea prompts for a source for every interactive setup area", async () => {
   const areas = ["rules", "skills", "mcps", "plugins", "hooks"] as const;
 
@@ -253,7 +236,7 @@ test("runArea prompts for a source for every interactive setup area", async () =
     });
 
     assert.equal(code, 0);
-    assert.deepEqual(promptState.rememberedSources, [""], area);
+    assert.deepEqual(promptState.rememberedSources, [builtInDefaultsSource], area);
   }
 });
 
