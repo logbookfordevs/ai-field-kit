@@ -348,11 +348,13 @@ const commandHelps: Record<string, CommandHelp> = {
       "--source <source>                Show manifests from this source",
       "--local                          Show ./afk/manifests instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
+      "--visualize                      Write a self-contained skills composition HTML file",
     ],
     examples: [
       "afk show",
       "afk show skills",
       "afk show skills --react",
+      "afk show skills --visualize",
       "afk show skills mcps",
       "afk show --local",
       "afk show skills --source your-org/dev-kit",
@@ -366,11 +368,13 @@ const commandHelps: Record<string, CommandHelp> = {
       "--source <source>                Show manifests from this source",
       "--local                          Show ./afk/manifests instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
+      "--visualize                      Write a self-contained skills composition HTML file",
     ],
     examples: [
       "afk show",
       "afk show skills",
       "afk show skills --react",
+      "afk show skills --visualize",
       "afk show skills mcps",
       "afk show --local",
       "afk show skills --source your-org/dev-kit",
@@ -384,11 +388,13 @@ const commandHelps: Record<string, CommandHelp> = {
       "--source <source>                Show manifests from this source",
       "--local                          Show ./afk/manifests instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
+      "--visualize                      Write a self-contained skills composition HTML file",
     ],
     examples: [
       "afk show",
       "afk show skills",
       "afk show skills --react",
+      "afk show skills --visualize",
       "afk show skills mcps",
       "afk show --local",
       "afk show skills --source your-org/dev-kit",
@@ -420,6 +426,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
   let manifestShowReact = false;
+  let manifestShowVisualize = false;
   const manifestCategories = manifestCategoriesFromCommandPath(commandPath);
   if (manifestCategories.kind === "error") {
     return { help: false, kind: "error", error: manifestCategories.error };
@@ -523,6 +530,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (arg === "--visualize") {
+      if (!isManifestShowCommand(key)) {
+        return { help: false, kind: "error", error: "Unknown option: --visualize" };
+      }
+
+      manifestShowVisualize = true;
+      continue;
+    }
+
     if (arg === "--default-source" || arg === "--defaults-source") {
       const value = args[index + 1];
       const trimmedValue = value?.trim();
@@ -622,6 +638,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
       manifestShowReact,
+      manifestShowVisualize,
       selectedManifestCategories,
       homeDir,
       repoDir,

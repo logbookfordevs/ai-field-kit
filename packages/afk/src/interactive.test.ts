@@ -353,6 +353,7 @@ function defaultOptions(homeDir: string): CliOptions {
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
     manifestShowReact: false,
+    manifestShowVisualize: false,
     selectedManifestCategories: [],
     homeDir,
     repoDir: "/tmp/repo",

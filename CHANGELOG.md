@@ -14,6 +14,7 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `cli:` added `afk show skills --react` to render the skills manifest as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
+- `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills manifest.
 
 ### Changed
 

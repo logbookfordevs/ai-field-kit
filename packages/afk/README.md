@@ -258,6 +258,7 @@ are usually manual, and composition makes the relationship explicit.
 | `afk show` | Cached global AFK manifests. |
 | `afk show skills` | Cached skills manifest. |
 | `afk show skills --react` | Cached skills as a React-style composition tree. |
+| `afk show skills --visualize` | Write `afk-skills.html`, a self-contained skills composition page. |
 | `afk show skills mcps` | Multiple cached manifests in one run. |
 | `afk show --source <source>` | Inspect a source directly without changing the cache. |
 | `afk show --local` | Inspect project-local `./afk/manifests`. |
@@ -274,6 +275,10 @@ AFK's React-inspired architecture: auto-discoverable skills under
 `<ModelDiscovery>`, explicit skills under `<ExplicitInvocation>`, and composed
 skills as nested primitive, wrapper, flow, router, utility, or reference
 components.
+
+Use `afk show skills --visualize` when you want the same composition story as a
+local HTML artifact. AFK writes `afk-skills.html` in the current directory; the
+file is self-contained and does not start a server.
 
 ## Manifest Model
 

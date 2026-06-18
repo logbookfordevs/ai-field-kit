@@ -404,6 +404,7 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
     manifestShowReact: false,
+    manifestShowVisualize: false,
     selectedManifestCategories: [],
     homeDir,
     repoDir,

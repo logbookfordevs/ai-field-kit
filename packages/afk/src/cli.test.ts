@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "vitest";
@@ -273,10 +273,12 @@ test("runCli prints contextual manifest show help", async () => {
   assert.ok(output.join("\n").includes("AFK show"));
   assert.ok(output.join("\n").includes("--local"));
   assert.ok(output.join("\n").includes("--react"));
+  assert.ok(output.join("\n").includes("--visualize"));
   assert.ok(!output.join("\n").includes("--rules"));
   assert.ok(!output.join("\n").includes("--hooks"));
   assert.ok(output.join("\n").includes("afk show skills"));
   assert.ok(output.join("\n").includes("afk show skills --react"));
+  assert.ok(output.join("\n").includes("afk show skills --visualize"));
   assert.ok(output.join("\n").includes("afk show skills mcps"));
   assert.ok(!output.join("\n").includes("afk show --rules --skills"));
   assert.ok(!output.join("\n").includes("AFK setup\n"));
@@ -440,6 +442,88 @@ test("runCli rejects the React skill view for non-skill manifests", async () => 
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("The React skill view only supports skills."));
+});
+
+test("runCli writes a skills visualization HTML file", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "acme/dev-kit", presets: [] },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "afk-code-grill",
+          label: "AFK - Code Grill",
+          source: "https://github.com/acme/local-kit",
+          args: ["--skill", "afk-code-grill"],
+          default: true,
+          autoInvocation: false,
+          role: "wrapper",
+          composes: ["grilling"],
+        },
+        {
+          id: "grilling",
+          label: "Grilling",
+          source: "https://github.com/acme/local-kit",
+          args: ["--skill", "grilling"],
+          default: true,
+          autoInvocation: true,
+          role: "primitive",
+        },
+      ],
+    },
+  });
+  const cwd = mkdtempSync(join(tmpdir(), "afk-visualize-"));
+  const previousCwd = process.cwd();
+  const output: string[] = [];
+
+  try {
+    process.chdir(cwd);
+    const code = await withConsole(output, () => runCli(["show", "skills", "--visualize"], { HOME: homeDir }));
+    const htmlPath = join(cwd, "afk-skills.html");
+    const html = readFileSync(htmlPath, "utf8");
+
+    assert.equal(code, 0);
+    assert.ok(output.join("\n").includes("Skill visualization written:"));
+    assert.ok(existsSync(htmlPath));
+    assert.ok(html.includes("Skills as a component system."));
+    assert.ok(html.includes("afk-code-grill"));
+    assert.ok(html.includes("AFKSkillTree"));
+    assert.ok(html.includes("jsx-wrapper"));
+  } finally {
+    process.chdir(previousCwd);
+  }
+});
+
+test("runCli treats show --visualize as the skills visualization", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "acme/dev-kit", presets: [] },
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  });
+  const cwd = mkdtempSync(join(tmpdir(), "afk-visualize-shortcut-"));
+  const previousCwd = process.cwd();
+  const output: string[] = [];
+
+  try {
+    process.chdir(cwd);
+    const code = await withConsole(output, () => runCli(["show", "--visualize"], { HOME: homeDir }));
+
+    assert.equal(code, 0);
+    assert.ok(existsSync(join(cwd, "afk-skills.html")));
+  } finally {
+    process.chdir(previousCwd);
+  }
+});
+
+test("runCli rejects the skills visualization for non-skill manifests", async () => {
+  const homeDir = localHomeWithManifests({
+    "mcps.json": { version: 1, items: [] },
+  });
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["show", "mcps", "--visualize"], { HOME: homeDir }));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("The skills visualization only supports skills."));
 });
 
 test("runCli shows source manifests when source is explicit", async () => {

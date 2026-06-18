@@ -42,6 +42,7 @@ export type CliOptions = {
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
   manifestShowReact: boolean;
+  manifestShowVisualize: boolean;
   selectedManifestCategories: ManifestCategory[];
   homeDir: string;
   repoDir: string;
