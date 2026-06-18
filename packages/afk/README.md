@@ -9,7 +9,7 @@ AFK owns the AFK-specific rule and hook behavior. It delegates skills to the
 official `skills` CLI, MCPs to `add-mcp`, and plugins to their own installer
 commands.
 
-AFK skills are modeled as composable parts: primitives, wrappers, flows,
+AFK skills are modeled as composable parts: primitives, wrappers, workflows,
 utilities, references, and routers. That shape keeps automatic model discovery
 small while still giving people named workflows to invoke directly. See
 [Skill Composition](docs/skill-composition.md) for the full mental model, or
@@ -247,11 +247,11 @@ Skill catalog entries can also describe architecture metadata:
 
 | Field | Meaning |
 |---|---|
-| `role` | The skill's compositional shape: `primitive`, `wrapper`, `flow`, `utility`, `reference`, or `router`. |
-| `composes` | Skills that a wrapper or flow is built from. Setup can suggest these when the parent is selected. |
+| `role` | The skill's compositional shape: `primitive`, `wrapper`, `workflow`, `utility`, `reference`, or `router`. |
+| `composes` | Skills that a wrapper or workflow is built from. Setup can suggest these when the parent is selected. |
 | `profiles` | Future activation groups. Present now as metadata, often empty until profile support lands. |
 
-The short version: primitives are usually model-discoverable, wrappers and flows
+The short version: primitives are usually model-discoverable, wrappers and workflows
 are usually manual, and composition makes the relationship explicit.
 
 ### Catalog Show
@@ -276,7 +276,7 @@ cache.
 Use `afk show skills --react` when you want the skills catalog rendered as
 AFK's React-inspired architecture: auto-discoverable skills under
 `<ModelDiscovery>`, explicit skills under `<ExplicitInvocation>`, and composed
-skills as nested primitive, wrapper, flow, router, utility, or reference
+skills as nested primitive, wrapper, workflow, router, utility, or reference
 components.
 
 Use `afk show skills --visualize` when you want the same composition story as a

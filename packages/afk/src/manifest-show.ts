@@ -295,7 +295,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
     --line: #d6cec0;
     --primitive: #c75a49;
     --wrapper: #247268;
-    --flow: #50508f;
+    --workflow: #50508f;
     --utility: #8a612c;
     --reference: #395f85;
     --router: #8d3b64;
@@ -315,7 +315,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
       --line: #5a4f40;
       --primitive: #ff7b62;
       --wrapper: #69c7b5;
-      --flow: #a79cff;
+      --workflow: #a79cff;
       --utility: #ebb15e;
       --reference: #7db7f2;
       --router: #f078ad;
@@ -356,7 +356,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
   .skill span, .composition-card span { display: block; color: var(--muted); font-family: var(--mono); font-size: 11px; margin-top: 3px; }
   .primitive { --role-color: var(--primitive); }
   .wrapper { --role-color: var(--wrapper); }
-  .flow { --role-color: var(--flow); }
+  .workflow { --role-color: var(--workflow); }
   .utility { --role-color: var(--utility); }
   .reference { --role-color: var(--reference); }
   .router { --role-color: var(--router); }
@@ -369,7 +369,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
   .jsx-root, .jsx-primitive { color: #9de0cf; }
   .jsx-group, .jsx-string { color: #f8ead7; }
   .jsx-wrapper { color: #f3bf68; }
-  .jsx-flow { color: #b6adff; }
+  .jsx-workflow { color: #b6adff; }
   .jsx-utility { color: #dca85e; }
   .jsx-reference { color: #86b9ed; }
   .jsx-router { color: #ff8fbd; }
@@ -391,7 +391,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
       <div>
         <div class="eyebrow">AFK skills / composition visualization</div>
         <h1>Skills as a component system.</h1>
-        <p class="subhead">A static snapshot of the current skills catalog: primitives stay discoverable, wrappers become named experiences, and flows carry larger execution motion.</p>
+        <p class="subhead">A static snapshot of the current skills catalog: primitives stay discoverable, wrappers become named experiences, and workflows carry larger execution motion.</p>
       </div>
       <div class="meta">
         <div>${escapeHtml(context.sourceKind)} source</div>
@@ -427,7 +427,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
     <section>
       <div class="section-head">
         <h2>Composed skills.</h2>
-        <p>These are the wrappers and flows with children. This is where the React analogy becomes concrete: role becomes component, composes becomes children.</p>
+        <p>These are the wrappers and workflows with children. This is where the React analogy becomes concrete: role becomes component, composes becomes children.</p>
       </div>
       <div class="composition-grid">${composed.map((item) => renderCompositionCardHtml(item, items)).join("")}</div>
     </section>
@@ -557,7 +557,7 @@ function roleSummary(items: Record<string, unknown>[]): Array<[string, number]> 
 }
 
 function roleClass(role: string): string {
-  return ["primitive", "wrapper", "flow", "utility", "reference", "router"].includes(role) ? role : "primitive";
+  return ["primitive", "wrapper", "workflow", "utility", "reference", "router"].includes(role) ? role : "primitive";
 }
 
 function highlightJsxForHtml(source: string): string {
@@ -610,7 +610,7 @@ function jsxTagClass(tag: string): string {
   if (tag === "ModelDiscovery" || tag === "ExplicitInvocation") return "jsx-group";
   if (tag === "PrimitiveSkill") return "jsx-primitive";
   if (tag === "WrapperSkill") return "jsx-wrapper";
-  if (tag === "FlowSkill") return "jsx-flow";
+  if (tag === "WorkflowSkill") return "jsx-workflow";
   if (tag === "UtilitySkill") return "jsx-utility";
   if (tag === "ReferenceSkill") return "jsx-reference";
   if (tag === "RouterSkill") return "jsx-router";
@@ -724,7 +724,7 @@ function tagColor(tag: string): typeof terminalPalette[keyof typeof terminalPale
   switch (tag) {
     case "WrapperSkill":
       return terminalPalette.brass;
-    case "FlowSkill":
+    case "WorkflowSkill":
       return terminalPalette.rust;
     case "UtilitySkill":
       return terminalPalette.sienna;
@@ -775,8 +775,8 @@ function componentTag(role: unknown): string {
   switch (role) {
     case "wrapper":
       return "WrapperSkill";
-    case "flow":
-      return "FlowSkill";
+    case "workflow":
+      return "WorkflowSkill";
     case "utility":
       return "UtilitySkill";
     case "reference":

@@ -4,7 +4,7 @@ AFK treats skills less like a flat list of prompts and more like a small compone
 
 For a visual companion to this page, open [`skill-composition.html`](skill-composition.html).
 
-That shape comes from the same instinct that makes React pleasant at scale: keep the reusable pieces small, compose them into named experiences, and let larger flows assemble the pieces without hiding what they depend on.
+That shape comes from the same instinct that makes React pleasant at scale: keep the reusable pieces small, compose them into named experiences, and let larger workflows assemble the pieces without hiding what they depend on.
 
 The goal is not to make skills abstract for its own sake. The goal is to make agent behavior easier to reason about. When a skill is tiny, the model can use it without dragging a whole workflow into context. When a wrapper is explicit, a person can ask for the named experience without remembering every primitive behind it.
 
@@ -16,12 +16,12 @@ AFK skills use `role` to describe why a skill exists in the system.
 |---|---|
 | `primitive` | A small reusable behavior unit. It should be useful on its own and safe to compose. |
 | `wrapper` | A named user-facing experience that combines primitives into a focused workflow. |
-| `flow` | A larger repeatable workflow that coordinates several skills or phases. |
+| `workflow` | A larger repeatable workflow that coordinates several skills or phases. |
 | `utility` | A direct helper for a specific operational job. |
 | `reference` | A knowledge map or preference surface that agents can consult. |
 | `router` | A skill-selection or workflow-routing layer. |
 
-This keeps the manifest readable as a system map. A primitive answers, "What reusable behavior exists?" A wrapper answers, "What experience should I ask for?" A flow answers, "What larger motion can AFK run?"
+This keeps the manifest readable as a system map. A primitive answers, "What reusable behavior exists?" A wrapper answers, "What experience should I ask for?" A workflow answers, "What larger motion can AFK run?"
 
 ## Auto Invocation
 
@@ -49,12 +49,12 @@ The usual AFK pattern is:
 
 - primitives are often `autoInvocation: true`
 - wrappers are often `autoInvocation: false`
-- flows are usually `autoInvocation: false`
+- workflows are usually `autoInvocation: false`
 - references depend on whether they are broadly useful or highly situational
 
 ## Composition
 
-`composes` names the skills that a wrapper or flow is built from.
+`composes` names the skills that a wrapper or workflow is built from.
 
 ```json
 {

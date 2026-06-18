@@ -15,7 +15,7 @@
     --line: #d6cec0;
     --primitive: #c75a49;
     --wrapper: #247268;
-    --flow: #50508f;
+    --workflow: #50508f;
     --utility: #8a612c;
     --reference: #395f85;
     --router: #8d3b64;
@@ -35,7 +35,7 @@
       --line: #5a4f40;
       --primitive: #ff7b62;
       --wrapper: #69c7b5;
-      --flow: #a79cff;
+      --workflow: #a79cff;
       --utility: #ebb15e;
       --reference: #7db7f2;
       --router: #f078ad;
@@ -76,7 +76,7 @@
   .skill span, .composition-card span { display: block; color: var(--muted); font-family: var(--mono); font-size: 11px; margin-top: 3px; }
   .primitive { --role-color: var(--primitive); }
   .wrapper { --role-color: var(--wrapper); }
-  .flow { --role-color: var(--flow); }
+  .workflow { --role-color: var(--workflow); }
   .utility { --role-color: var(--utility); }
   .reference { --role-color: var(--reference); }
   .router { --role-color: var(--router); }
@@ -89,7 +89,7 @@
   .jsx-root, .jsx-primitive { color: #9de0cf; }
   .jsx-group, .jsx-string { color: #f8ead7; }
   .jsx-wrapper { color: #f3bf68; }
-  .jsx-flow { color: #b6adff; }
+  .jsx-workflow { color: #b6adff; }
   .jsx-utility { color: #dca85e; }
   .jsx-reference { color: #86b9ed; }
   .jsx-router { color: #ff8fbd; }
@@ -111,20 +111,20 @@
       <div>
         <div class="eyebrow">AFK skills / composition visualization</div>
         <h1>Skills as a component system.</h1>
-        <p class="subhead">A static snapshot of the current skills catalog: primitives stay discoverable, wrappers become named experiences, and flows carry larger execution motion.</p>
+        <p class="subhead">A static snapshot of the current skills catalog: primitives stay discoverable, wrappers become named experiences, and workflows carry larger execution motion.</p>
       </div>
       <div class="meta">
-        <div>local source</div>
-        <div>/Users/leonardo/.agents/afk/catalog/skills.json</div>
-        <div>2026-06-18T03:07:30.514Z</div>
+        <div>source source</div>
+        <div>packages/afk/catalog</div>
+        <div>2026-06-18T16:32:56.063Z</div>
       </div>
     </header>
 
     <div class="metrics">
-      <div class="metric"><b>skills</b><span>0</span></div>
-      <div class="metric"><b>auto-discoverable</b><span>0</span></div>
-      <div class="metric"><b>explicit</b><span>0</span></div>
-      <div class="metric"><b>composed</b><span>0</span></div>
+      <div class="metric"><b>skills</b><span>39</span></div>
+      <div class="metric"><b>auto-discoverable</b><span>15</span></div>
+      <div class="metric"><b>explicit</b><span>24</span></div>
+      <div class="metric"><b>composed</b><span>6</span></div>
     </div>
 
     <section>
@@ -135,11 +135,11 @@
       <div class="lanes">
         <div class="lane">
           <h3>Model discovery</h3>
-          <div class="skill-grid"></div>
+          <div class="skill-grid"><article class="skill primitive"><b>AFK - Doc Craft</b><span>primitive · default</span></article><article class="skill reference"><b>AFK - UI Registry Preferences</b><span>reference · default</span></article><article class="skill router"><b>AFK - Compass</b><span>router · default</span></article><article class="skill primitive"><b>Truss Evaluation</b><span>primitive · default</span></article><article class="skill primitive"><b>Diagnosing Bugs</b><span>primitive · default</span></article><article class="skill primitive"><b>Plannotator Setup Goal</b><span>primitive · default</span></article><article class="skill primitive"><b>TDD</b><span>primitive · optional</span></article><article class="skill primitive"><b>Source Driven Development</b><span>primitive · optional</span></article><article class="skill primitive"><b>Doubt Driven Development</b><span>primitive · optional</span></article><article class="skill primitive"><b>Code Simplification</b><span>primitive · optional</span></article><article class="skill utility"><b>cmux</b><span>utility · optional</span></article><article class="skill utility"><b>tmux</b><span>utility · optional</span></article><article class="skill primitive"><b>Grilling</b><span>primitive · default</span></article><article class="skill primitive"><b>Domain Modeling</b><span>primitive · default</span></article><article class="skill primitive"><b>Codebase Design</b><span>primitive · default</span></article></div>
         </div>
         <div class="lane">
           <h3>Explicit invocation</h3>
-          <div class="skill-grid"></div>
+          <div class="skill-grid"><article class="skill wrapper"><b>AFK - Animated Driven Frontend</b><span>wrapper · default</span></article><article class="skill utility"><b>AFK - Ask</b><span>utility · default</span></article><article class="skill wrapper"><b>AFK - Brainstorming Facilitator</b><span>wrapper · default</span></article><article class="skill wrapper"><b>AFK - Code Grill</b><span>wrapper · default</span></article><article class="skill wrapper"><b>AFK - To PRD Spec</b><span>wrapper · default</span></article><article class="skill wrapper"><b>AFK - To Issues</b><span>wrapper · default</span></article><article class="skill workflow"><b>AFK - Execution Tracking</b><span>workflow · default</span></article><article class="skill utility"><b>AFK - Pickup</b><span>utility · default</span></article><article class="skill utility"><b>AFK - Resume Workflow</b><span>utility · default</span></article><article class="skill workflow"><b>AFK - Sprint</b><span>workflow · default</span></article><article class="skill workflow"><b>AFK - Turbo</b><span>workflow · default</span></article><article class="skill utility"><b>Plannotator Compound</b><span>utility · default</span></article><article class="skill utility"><b>Plannotator Visual Explainer</b><span>utility · default</span></article><article class="skill utility"><b>Effective HTML</b><span>utility · optional</span></article><article class="skill utility"><b>Effective HTML Plan</b><span>utility · optional</span></article><article class="skill utility"><b>Effective HTML Diagram</b><span>utility · optional</span></article><article class="skill reference"><b>Writing Great Skills</b><span>reference · default</span></article><article class="skill wrapper"><b>Teach</b><span>wrapper · optional</span></article><article class="skill wrapper"><b>Grill With Docs</b><span>wrapper · optional</span></article><article class="skill wrapper"><b>Grill Me</b><span>wrapper · optional</span></article><article class="skill wrapper"><b>Prototype</b><span>wrapper · default</span></article><article class="skill utility"><b>Handoff</b><span>utility · default</span></article><article class="skill wrapper"><b>AFK - Interactive Code Review</b><span>wrapper · default</span></article><article class="skill wrapper"><b>AFK - PR Story Flow Mermaid</b><span>wrapper · default</span></article></div>
         </div>
       </div>
     </section>
@@ -147,9 +147,9 @@
     <section>
       <div class="section-head">
         <h2>Composed skills.</h2>
-        <p>These are the wrappers and flows with children. This is where the React analogy becomes concrete: role becomes component, composes becomes children.</p>
+        <p>These are the wrappers and workflows with children. This is where the React analogy becomes concrete: role becomes component, composes becomes children.</p>
       </div>
-      <div class="composition-grid"></div>
+      <div class="composition-grid"><article class="composition-card wrapper"><b>afk-code-grill</b><span>wrapper · 3 children</span><div class="children"><span class="pill">grilling</span><span class="pill">truss-evaluation</span><span class="pill">codebase-design</span></div></article><article class="composition-card workflow"><b>afk-sprint</b><span>workflow · 3 children</span><div class="children"><span class="pill">plannotator-setup-goal</span><span class="pill">afk-to-issues</span><span class="pill">afk-execution-tracking</span></div></article><article class="composition-card workflow"><b>afk-turbo</b><span>workflow · 1 child</span><div class="children"><span class="pill">plannotator-setup-goal</span></div></article><article class="composition-card primitive"><b>tdd</b><span>primitive · 1 child</span><div class="children"><span class="pill">codebase-design</span></div></article><article class="composition-card wrapper"><b>grill-with-docs</b><span>wrapper · 2 children</span><div class="children"><span class="pill">grilling</span><span class="pill">domain-modeling</span></div></article><article class="composition-card wrapper"><b>grill-me</b><span>wrapper · 1 child</span><div class="children"><span class="pill">grilling</span></div></article></div>
     </section>
 
     <section>
@@ -158,8 +158,66 @@
         <p>The tree below is not runtime code. It is a readable projection of <code>role</code>, <code>autoInvocation</code>, and <code>composes</code>.</p>
       </div>
       <pre class="code-window"><span class="jsx-punct">&lt;</span><span class="jsx-root">AFKSkillTree</span><span class="jsx-punct">&gt;</span>
-  <span class="jsx-punct">&lt;</span><span class="jsx-group">ModelDiscovery</span><span class="jsx-punct"> /&gt;</span>
-  <span class="jsx-punct">&lt;</span><span class="jsx-group">ExplicitInvocation</span><span class="jsx-punct"> /&gt;</span>
+  <span class="jsx-punct">&lt;</span><span class="jsx-group">ModelDiscovery</span><span class="jsx-punct">&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-doc-craft</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-reference">ReferenceSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-ui-registry-preferences</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-router">RouterSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-compass</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">truss-evaluation</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">diagnosing-bugs</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">plannotator-setup-goal</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">tdd</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">codebase-design</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;/</span><span class="jsx-primitive">PrimitiveSkill</span><span class="jsx-punct">&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">source-driven-development</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">doubt-driven-development</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">code-simplification</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">cmux</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">tmux</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">grilling</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">domain-modeling</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">codebase-design</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+  <span class="jsx-punct">&lt;/</span><span class="jsx-group">ModelDiscovery</span><span class="jsx-punct">&gt;</span>
+  <span class="jsx-punct">&lt;</span><span class="jsx-group">ExplicitInvocation</span><span class="jsx-punct">&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-animated-driven-frontend</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-ask</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-brainstorming-facilitator</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-code-grill</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct">&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">grilling</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">truss-evaluation</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">codebase-design</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;/</span><span class="jsx-wrapper">WrapperSkill</span><span class="jsx-punct">&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-to-prd-spec</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-to-issues</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-workflow">WorkflowSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-execution-tracking</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-pickup</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-resume-workflow</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-workflow">WorkflowSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-sprint</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct">&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">plannotator-setup-goal</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">afk-to-issues</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-workflow">WorkflowSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">afk-execution-tracking</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;/</span><span class="jsx-workflow">WorkflowSkill</span><span class="jsx-punct">&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-workflow">WorkflowSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-turbo</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct">&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">plannotator-setup-goal</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;/</span><span class="jsx-workflow">WorkflowSkill</span><span class="jsx-punct">&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">plannotator-compound</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">plannotator-visual-explainer</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">html</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">html-plan</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">html-diagram</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-reference">ReferenceSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">writing-great-skills</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">teach</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">grill-with-docs</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span><span class="jsx-punct">&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">grilling</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">domain-modeling</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;/</span><span class="jsx-wrapper">WrapperSkill</span><span class="jsx-punct">&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">grill-me</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span><span class="jsx-punct">&gt;</span>
+      <span class="jsx-punct">&lt;</span><span class="jsx-primitive">PrimitiveSkill</span> <span class="jsx-prop">ref</span><span class="jsx-punct">="</span><span class="jsx-string">grilling</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;/</span><span class="jsx-wrapper">WrapperSkill</span><span class="jsx-punct">&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">prototype</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-utility">UtilitySkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">handoff</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-interactive-code-review</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+    <span class="jsx-punct">&lt;</span><span class="jsx-wrapper">WrapperSkill</span> <span class="jsx-prop">id</span><span class="jsx-punct">="</span><span class="jsx-string">afk-pr-story-flow-mermaid</span><span class="jsx-punct">"</span> <span class="jsx-prop">autoDiscovery</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span> <span class="jsx-prop">defaultInstalled</span><span class="jsx-punct"> /&gt;</span>
+  <span class="jsx-punct">&lt;/</span><span class="jsx-group">ExplicitInvocation</span><span class="jsx-punct">&gt;</span>
 <span class="jsx-punct">&lt;/</span><span class="jsx-root">AFKSkillTree</span><span class="jsx-punct">&gt;</span></pre>
     </section>
 
@@ -168,7 +226,7 @@
         <h2>Role counts.</h2>
         <p>The catalog doubles as a small architecture map.</p>
       </div>
-      <div class="skill-grid"></div>
+      <div class="skill-grid"><div class="skill primitive"><b>primitive</b><span>11 skills</span></div><div class="skill reference"><b>reference</b><span>2 skills</span></div><div class="skill router"><b>router</b><span>1 skill</span></div><div class="skill utility"><b>utility</b><span>11 skills</span></div><div class="skill workflow"><b>workflow</b><span>3 skills</span></div><div class="skill wrapper"><b>wrapper</b><span>11 skills</span></div></div>
     </section>
 
     <footer>

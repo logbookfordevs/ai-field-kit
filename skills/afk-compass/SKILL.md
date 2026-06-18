@@ -17,7 +17,7 @@ When a request arrives:
 ## Selection Modes
 
 ### Recommend
-Use this mode when the user asks what AFK skill, flow, or command fits.
+Use this mode when the user asks what AFK skill, workflow, or command fits.
 
 Output:
 - The recommended skill or package.
@@ -101,11 +101,11 @@ Task arrives
 
 Only invoke skills that are installed or clearly available. If a routed skill is missing, state the gap and continue with the best available installed skill or normal workflow.
 
-For explicit AFK workflow / Flow requests, explain that AFK is composable and route the current phase. Add Grill, PRD/spec, issues, tracking, or execution discipline only when that is the current need.
+For explicit AFK workflow requests, explain that AFK is composable and route the current phase. Add Grill, PRD/spec, issues, tracking, or execution discipline only when that is the current need.
 
 ## Manual Wrappers
 
-Many AFK wrappers and flows are intentionally manual. Compass may still recommend them by name when the request clearly fits.
+Many AFK wrappers and workflows are intentionally manual. Compass may still recommend them by name when the request clearly fits.
 
 When recommending a manual skill, give the invocation string and the reason. When routing into it from an active work request, announce the skill and continue.
 

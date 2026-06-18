@@ -233,9 +233,9 @@ If the work is already clear, skip straight to the later skill that matches the 
 
 When you ask for an AFK workflow, feature workflow, or AFK run, Compass should help select the next useful skill for the current phase. It should not force the whole sequence below.
 
-### Recommended AFK Flow
+### Recommended AFK Workflow
 
-AFK Flow is a human-facing recommendation, not a required agent pipeline. Use the pieces that fit the work.
+AFK Workflow is a human-facing recommendation, not a required agent pipeline. Use the pieces that fit the work.
 
 1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
 2. Use `grill-me` when a plan or design needs relentless questioning before you commit.
@@ -247,7 +247,7 @@ AFK Flow is a human-facing recommendation, not a required agent pipeline. Use th
 8. Select the execution bundle for each task: use `tdd` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
 9. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
 
-Most flows only use a few of these. For example:
+Most workflows only use a few of these. For example:
 
 ```text
 references -> grill-me/grill-with-docs -> PRD/spec -> checkpoint packets -> tracked execution -> execution bundle evidence before review
@@ -273,7 +273,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 - **Truss Evaluation (Truss Framework)**
   Install: `npx skills add https://github.com/leoreisdias/truss-framework --skill truss-evaluation`
 
-  Keep this available as a decision-quality lens across normal prompting, free routing, AFK Flow, code review, debugging, and architecture discussion. It is not a workflow phase; it is the layer to reach for when the work needs explicit trade-offs, structured critique, or a grounded answer to "which approach is better?" Truss evaluates decisions through Maintainability, Strategy, Clarity, and Performance, with a research whitepaper in progress behind the framework.
+  Keep this available as a decision-quality lens across normal prompting, free routing, AFK Workflow, code review, debugging, and architecture discussion. It is not a workflow phase; it is the layer to reach for when the work needs explicit trade-offs, structured critique, or a grounded answer to "which approach is better?" Truss evaluates decisions through Maintainability, Strategy, Clarity, and Performance, with a research whitepaper in progress behind the framework.
 
 #### Optional companion skills
 
@@ -303,7 +303,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Grill With Docs (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
-  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. In AFK Flow, use it for brownfield work before PRD/spec creation and before executable slicing. It complements `afk-code-grill`: use code grill when implementation decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy. Matt's current version relies on `codebase-design` and `domain-modeling`, so install those alongside it.
+  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. In AFK Workflow, use it for brownfield work before PRD/spec creation and before executable slicing. It complements `afk-code-grill`: use code grill when implementation decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy. Matt's current version relies on `codebase-design` and `domain-modeling`, so install those alongside it.
 
 - **Grill Me (Matt Pocock Skills)**
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-me`
@@ -325,7 +325,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 AFK's fast execution packages are:
 
-- **AFK Flow**: recommended human-facing composition with optional checkpoint packets and execution tracking.
+- **AFK Workflow**: recommended human-facing composition with optional checkpoint packets and execution tracking.
 - **AFK Sprint**: `afk-sprint`, a Plannotator goal package plus AFK checkpoint packets, native `/goal`, and execution tracking.
 - **AFK Turbo**: `afk-turbo`, a Plannotator goal package plus GoalBuddy's local live board and PM loop.
 
@@ -359,11 +359,11 @@ Installer-based companions belong in Plugins. Keep `skills.json` focused on skil
 - `afk-execution-tracking` starts after checkpoint packets exist. Use it when execution needs status, resume safety, review gates, or parallel coordination.
 - `afk-pickup` and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
 
-### Supporting skills around the flow
+### Supporting skills around the workflow
 
-The spec-shaping flow is the core lane, but it is not the whole story of AI Field Kit.
+The spec-shaping workflow is the core lane, but it is not the whole story of AI Field Kit.
 
-Several AFK support skills fit naturally around this flow as specialist companions rather than main stages:
+Several AFK support skills fit naturally around this workflow as specialist companions rather than main stages:
 
 | Skill | Where it fits |
 |---|---|
@@ -372,23 +372,23 @@ Several AFK support skills fit naturally around this flow as specialist companio
 | `afk-compass` | When you want help choosing which AFK or companion skill best matches the current moment |
 | `afk-pickup` | When a previous session created a disposable temp handoff and the new session needs to find it |
 
-These are not required steps in the main flow. They are optional specialists you bring in when the work changes shape.
+These are not required steps in the main workflow. They are optional specialists you bring in when the work changes shape.
 
 #### How they connect
 
 - Use `afk-doc-craft` after brainstorming, trade-offs, or another shaping pass when the output needs to become a human-friendly document instead of a working artifact.
-- Use `diagnosing-bugs` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
-- Use `afk-compass` when you're unsure whether you need the main flow, a support skill, or a recommended external companion skill.
+- Use `diagnosing-bugs` instead of the spec-shaping workflow when the task is really about understanding a defect, incident, or failure timeline.
+- Use `afk-compass` when you're unsure whether you need the main workflow, a support skill, or a recommended external companion skill.
 - Use `afk-pickup` after the external `handoff` skill when the previous session kept its handoff note disposable in the OS temp directory.
 
 #### A useful mental model
 
 Think of AI Field Kit in two layers:
 
-- **Core flow:** shape the work before execution
+- **Core workflow:** shape the work before execution
 - **Support layer:** polish, debug, document, or route the work more intelligently
 
-That keeps the main flow coherent without pretending every skill belongs in the same sequence.
+That keeps the main workflow coherent without pretending every skill belongs in the same sequence.
 
 ---
 

@@ -122,7 +122,7 @@
             ],
             "default": true,
             "autoInvocation": false,
-            "role": "flow",
+            "role": "workflow",
             "composes": [],
             "profiles": []
         },
@@ -197,7 +197,7 @@
             ],
             "default": true,
             "autoInvocation": false,
-            "role": "flow",
+            "role": "workflow",
             "composes": [
                 "plannotator-setup-goal",
                 "afk-to-issues",
@@ -216,7 +216,7 @@
             ],
             "default": true,
             "autoInvocation": false,
-            "role": "flow",
+            "role": "workflow",
             "composes": [
                 "plannotator-setup-goal"
             ],

@@ -22,7 +22,7 @@
     --line: #cbc5b8;
     --primitive: #c75a49;
     --wrapper: #247268;
-    --flow: #50508f;
+    --workflow: #50508f;
     --utility: #755a32;
     --reference: #395f85;
     --router: #8d3b64;
@@ -50,7 +50,7 @@
     --line: #5a4f40;
     --primitive: #ff7b62;
     --wrapper: #69c7b5;
-    --flow: #a79cff;
+    --workflow: #a79cff;
     --utility: #ebb15e;
     --reference: #7db7f2;
     --router: #f078ad;
@@ -282,7 +282,7 @@
 
   .node.primitive { --node-color: var(--primitive); }
   .node.wrapper { --node-color: var(--wrapper); }
-  .node.flow { --node-color: var(--flow); }
+  .node.workflow { --node-color: var(--workflow); }
   .node.reference { --node-color: var(--reference); }
 
   .n-grilling { left: 6%; top: 13%; }
@@ -479,7 +479,7 @@
   .code-window .jsx-group { color: #f8ead7; }
   .code-window .jsx-primitive { color: #9de0cf; }
   .code-window .jsx-wrapper { color: #f3bf68; }
-  .code-window .jsx-flow { color: #b6adff; }
+  .code-window .jsx-workflow { color: #b6adff; }
   .code-window .jsx-utility { color: #dca85e; }
   .code-window .jsx-reference { color: #86b9ed; }
   .code-window .jsx-router { color: #ff8fbd; }
@@ -555,7 +555,7 @@
 
   .primitive-color { --role-color: var(--primitive); }
   .wrapper-color { --role-color: var(--wrapper); }
-  .flow-color { --role-color: var(--flow); }
+  .workflow-color { --role-color: var(--workflow); }
   .utility-color { --role-color: var(--utility); }
   .reference-color { --role-color: var(--reference); }
   .router-color { --role-color: var(--router); }
@@ -750,7 +750,7 @@
           <h1 id="title">Skills compose like interfaces.</h1>
           <p>
             AFK keeps the small things small: primitives stay discoverable, wrappers become named experiences,
-            and flows carry the larger run shape.
+            and workflows carry the larger run shape.
           </p>
           <div class="actions">
             <a class="action primary" href="#react-analogy">see the React analogy</a>
@@ -803,8 +803,8 @@
               <div class="desc">one named experience</div>
             </article>
 
-            <article class="node flow n-sprint">
-              <div class="kind">flow</div>
+            <article class="node workflow n-sprint">
+              <div class="kind">workflow</div>
               <div class="name">afk-sprint</div>
               <div class="desc">larger execution package</div>
             </article>
@@ -876,7 +876,7 @@
           </div>
           <div class="translation-item">
             <b>app route</b>
-            <span>A flow assembles skills into a larger run.</span>
+            <span>A workflow assembles skills into a larger run.</span>
           </div>
         </div>
       </section>
@@ -897,8 +897,8 @@
             <h3>Named experience</h3>
             <p>A user-facing skill that bundles primitives into a focused workflow.</p>
           </article>
-          <article class="role-row flow-color">
-            <span class="role-token">flow</span>
+          <article class="role-row workflow-color">
+            <span class="role-token">workflow</span>
             <h3>Repeatable motion</h3>
             <p>A larger run shape that coordinates phases, packets, tracking, or execution.</p>
           </article>
@@ -939,17 +939,17 @@
               </div>
               <div class="switch-row off">
                 <span class="dot"></span>
-                <div><b>autoInvocation: false</b><span>Keep this as a manually invoked wrapper, flow, or specialist surface.</span></div>
+                <div><b>autoInvocation: false</b><span>Keep this as a manually invoked wrapper, workflow, or specialist surface.</span></div>
               </div>
             </div>
           </div>
           <div class="panel">
             <h3>The usual AFK instinct</h3>
-            <p>Primitives are often model-discoverable. Wrappers and flows are usually manual. References depend on how broad they are.</p>
+            <p>Primitives are often model-discoverable. Wrappers and workflows are usually manual. References depend on how broad they are.</p>
             <div class="steps">
               <div class="step"><div class="num">primitive</div><b>Small context</b><span>Good to discover automatically when the topic appears.</span></div>
               <div class="step"><div class="num">wrapper</div><b>Named intent</b><span>Better when a person asks for the experience directly.</span></div>
-              <div class="step"><div class="num">flow</div><b>High agency</b><span>Usually too much motion to trigger from a casual phrase.</span></div>
+              <div class="step"><div class="num">workflow</div><b>High agency</b><span>Usually too much motion to trigger from a casual phrase.</span></div>
               <div class="step"><div class="num">reference</div><b>Judgment call</b><span>Auto when broadly helpful, manual when situational.</span></div>
             </div>
           </div>
@@ -1017,7 +1017,7 @@
           <h2>Current AFK, rendered as composition.</h2>
           <p>
             This is the same mental model turned back onto the real catalog. The CLI can print this view with
-            <code>afk show skills --react</code>: discoverable pieces first, explicit wrappers and flows second,
+            <code>afk show skills --react</code>: discoverable pieces first, explicit wrappers and workflows second,
             and composed children nested where they belong.
           </p>
         </div>
@@ -1059,17 +1059,17 @@
     &lt;/WrapperSkill&gt;
     &lt;WrapperSkill id="afk-to-prd-spec" autoDiscovery={false} defaultInstalled /&gt;
     &lt;WrapperSkill id="afk-to-issues" autoDiscovery={false} defaultInstalled /&gt;
-    &lt;FlowSkill id="afk-execution-tracking" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;WorkflowSkill id="afk-execution-tracking" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="afk-pickup" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="afk-resume-workflow" autoDiscovery={false} defaultInstalled /&gt;
-    &lt;FlowSkill id="afk-sprint" autoDiscovery={false} defaultInstalled&gt;
+    &lt;WorkflowSkill id="afk-sprint" autoDiscovery={false} defaultInstalled&gt;
       &lt;PrimitiveSkill ref="plannotator-setup-goal" autoDiscovery defaultInstalled /&gt;
       &lt;WrapperSkill ref="afk-to-issues" autoDiscovery={false} defaultInstalled /&gt;
-      &lt;FlowSkill ref="afk-execution-tracking" autoDiscovery={false} defaultInstalled /&gt;
-    &lt;/FlowSkill&gt;
-    &lt;FlowSkill id="afk-turbo" autoDiscovery={false} defaultInstalled&gt;
+      &lt;WorkflowSkill ref="afk-execution-tracking" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;/WorkflowSkill&gt;
+    &lt;WorkflowSkill id="afk-turbo" autoDiscovery={false} defaultInstalled&gt;
       &lt;PrimitiveSkill ref="plannotator-setup-goal" autoDiscovery defaultInstalled /&gt;
-    &lt;/FlowSkill&gt;
+    &lt;/WorkflowSkill&gt;
     &lt;UtilitySkill id="plannotator-compound" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="plannotator-visual-explainer" autoDiscovery={false} defaultInstalled /&gt;
     &lt;PrimitiveSkill id="html" autoDiscovery={false} /&gt;
@@ -1168,7 +1168,7 @@ function tagClass(tag) {
   if (tag === "ModelDiscovery" || tag === "ExplicitInvocation") return "jsx-group";
   if (tag === "PrimitiveSkill") return "jsx-primitive";
   if (tag === "WrapperSkill") return "jsx-wrapper";
-  if (tag === "FlowSkill") return "jsx-flow";
+  if (tag === "WorkflowSkill") return "jsx-workflow";
   if (tag === "UtilitySkill") return "jsx-utility";
   if (tag === "ReferenceSkill") return "jsx-reference";
   if (tag === "RouterSkill") return "jsx-router";

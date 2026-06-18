@@ -27,7 +27,7 @@ export type SkillManifestItem = {
   profiles?: string[];
 };
 
-export type SkillManifestItemRole = "primitive" | "wrapper" | "flow" | "utility" | "reference" | "router";
+export type SkillManifestItemRole = "primitive" | "wrapper" | "workflow" | "utility" | "reference" | "router";
 
 export type McpManifest = {
   version: number;
@@ -659,7 +659,7 @@ function isSkillManifest(value: unknown): value is SkillManifest {
 }
 
 function isSkillManifestItemRole(value: unknown): value is SkillManifestItemRole {
-  return value === "primitive" || value === "wrapper" || value === "flow" || value === "utility" || value === "reference" || value === "router";
+  return value === "primitive" || value === "wrapper" || value === "workflow" || value === "utility" || value === "reference" || value === "router";
 }
 
 function isMcpManifest(value: unknown): value is McpManifest {
