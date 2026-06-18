@@ -94,7 +94,36 @@ async function runSkillsVisualization(runtime: Runtime, options: CliOptions, sel
     sourceLabel: loaded.location,
   }));
   runtime.io.stdout(`Skill visualization written: ${outputPath}`);
+  await openVisualizationWhenInteractive(runtime, outputPath);
   return 0;
+}
+
+async function openVisualizationWhenInteractive(runtime: Runtime, outputPath: string): Promise<void> {
+  if (!shouldAutoOpenVisualization()) {
+    return;
+  }
+
+  const command = openFileCommand(outputPath);
+  const result = await runtime.spawn(command.command, command.args, undefined, { verbose: false });
+  if (result.code === 0) {
+    runtime.io.stdout("Skill visualization opened in your browser.");
+  }
+}
+
+function shouldAutoOpenVisualization(): boolean {
+  return Boolean(process.stdout.isTTY) && process.env.CI !== "true" && process.env.AFK_NO_OPEN !== "1";
+}
+
+function openFileCommand(path: string): { command: string; args: string[] } {
+  if (process.platform === "darwin") {
+    return { command: "open", args: [path] };
+  }
+
+  if (process.platform === "win32") {
+    return { command: "cmd", args: ["/c", "start", "", path] };
+  }
+
+  return { command: "xdg-open", args: [path] };
 }
 
 function manifestShowDir(options: CliOptions): string {
@@ -493,13 +522,13 @@ function renderSkillReferencePlain(id: string, byId: Map<string, Record<string, 
   const indent = "  ".repeat(indentLevel);
   const item = byId.get(id);
   const tag = item ? componentTag(item.role) : "ExternalSkill";
-  const attrs = item ? skillAttributesPlain(item, "ref") : `ref="${escapeAttribute(id)}" external`;
+  const attrs = item ? skillAttributesPlain(item, "ref") : `ref="${escapeJsxAttribute(id)}" external`;
   return `${indent}<${tag} ${attrs} />`;
 }
 
 function skillAttributesPlain(item: Record<string, unknown>, idProp: "id" | "ref"): string {
   const attrs = [
-    `${idProp}="${escapeAttribute(stringValue(item.id, "unnamed"))}"`,
+    `${idProp}="${escapeJsxAttribute(stringValue(item.id, "unnamed"))}"`,
     item.autoInvocation === false ? "autoDiscovery={false}" : "autoDiscovery",
   ];
   if (item.default === true) {
@@ -507,6 +536,10 @@ function skillAttributesPlain(item: Record<string, unknown>, idProp: "id" | "ref
   }
 
   return attrs.join(" ");
+}
+
+function escapeJsxAttribute(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll("\"", "\\\"");
 }
 
 function skillItems(manifest: Record<string, unknown>): Record<string, unknown>[] {
@@ -555,8 +588,21 @@ function highlightJsxAttributesForHtml(attrs: string): string {
       return `<span class="jsx-prop">${escapeHtml(stringMatch[1] ?? "")}</span><span class="jsx-punct">="</span><span class="jsx-string">${escapeHtml(stringMatch[2] ?? "")}</span><span class="jsx-punct">"</span>`;
     }
 
+    const escapedStringMatch = attr.match(/^([^=]+)=&quot;(.+)&quot;$/);
+    if (escapedStringMatch) {
+      return `<span class="jsx-prop">${escapeHtml(escapedStringMatch[1] ?? "")}</span><span class="jsx-punct">="</span><span class="jsx-string">${escapeHtml(unescapeHtmlAttribute(escapedStringMatch[2] ?? ""))}</span><span class="jsx-punct">"</span>`;
+    }
+
     return `<span class="jsx-prop">${escapeHtml(attr)}</span>`;
   }).join(" ");
+}
+
+function unescapeHtmlAttribute(value: string): string {
+  return value
+    .replaceAll("&quot;", "\"")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&amp;", "&");
 }
 
 function jsxTagClass(tag: string): string {

@@ -30,6 +30,14 @@
     --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
     --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+    --text-xs: 0.6875rem;
+    --text-sm: 0.8125rem;
+    --text-base: 1rem;
+    --text-lead: 1.0625rem;
+    --text-panel-title: 1.0625rem;
+    --text-section: clamp(1.625rem, 2.6vw, 2.25rem);
+    --text-display: clamp(2.25rem, 4.6vw, 3.75rem);
+    --text-quote: clamp(1.35rem, 2.45vw, 2rem);
   }
 
   html.dark {
@@ -87,7 +95,7 @@
     gap: 10px;
     color: var(--muted);
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: var(--text-xs);
   }
 
   .mark {
@@ -106,7 +114,7 @@
     border-radius: 999px;
     padding: 8px 12px;
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: var(--text-xs);
     cursor: pointer;
   }
 
@@ -132,7 +140,7 @@
     width: fit-content;
     color: var(--muted);
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: var(--text-xs);
     margin-bottom: 14px;
   }
 
@@ -145,19 +153,22 @@
 
   h1 {
     font-family: var(--serif);
-    font-size: clamp(40px, 6vw, 72px);
-    line-height: 0.98;
-    letter-spacing: -0.015em;
+    font-size: var(--text-display);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
     margin: 0;
-    max-width: 10ch;
+    max-width: 12ch;
     font-weight: 520;
+    text-wrap: balance;
   }
 
   .hero-copy p {
-    max-width: 34rem;
+    max-width: 38rem;
     color: var(--muted);
-    font-size: 17px;
-    margin: 22px 0 0;
+    font-size: var(--text-lead);
+    line-height: 1.62;
+    margin: 18px 0 0;
+    text-wrap: pretty;
   }
 
   .actions {
@@ -175,7 +186,7 @@
     color: var(--ink);
     text-decoration: none;
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: var(--text-xs);
   }
 
   .action.primary {
@@ -208,7 +219,12 @@
   .studio-title {
     font-family: var(--mono);
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--text-xs);
+  }
+
+  .studio-head strong {
+    font-size: var(--text-panel-title);
+    line-height: 1.25;
   }
 
   .pulse-toggle {
@@ -218,7 +234,7 @@
     border-radius: 999px;
     padding: 7px 10px;
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: var(--text-xs);
     cursor: pointer;
   }
 
@@ -246,7 +262,7 @@
 
   .node .kind {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: var(--text-xs);
     color: var(--node-color);
     margin-bottom: 4px;
   }
@@ -254,11 +270,13 @@
   .node .name {
     font-weight: 720;
     letter-spacing: -0.01em;
+    font-size: 0.96rem;
+    line-height: 1.2;
   }
 
   .node .desc {
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--text-sm);
     margin-top: 5px;
   }
 
@@ -341,17 +359,17 @@
   .readout b {
     display: block;
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: var(--text-xs);
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 2px;
   }
 
-  .readout span { font-size: 13px; }
+  .readout span { font-size: var(--text-sm); }
 
   section {
-    margin-top: 70px;
+    margin-top: 58px;
     scroll-margin-top: 86px;
   }
 
@@ -367,17 +385,21 @@
 
   h2 {
     font-family: var(--serif);
-    font-size: clamp(28px, 4vw, 44px);
-    line-height: 1.04;
+    font-size: var(--text-section);
+    line-height: 1.08;
     margin: 0;
     font-weight: 520;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
+    text-wrap: balance;
   }
 
   .section-head p {
     margin: 0;
     color: var(--muted);
     max-width: 42rem;
+    font-size: var(--text-base);
+    line-height: 1.62;
+    text-wrap: pretty;
   }
 
   .role-list {
@@ -401,13 +423,15 @@
 
   .code-card h3 {
     margin: 0 0 10px;
-    font-size: 18px;
+    font-size: var(--text-panel-title);
+    line-height: 1.25;
   }
 
   .code-card p {
     margin: 0 0 14px;
     color: var(--muted);
-    font-size: 14px;
+    font-size: var(--text-sm);
+    line-height: 1.58;
   }
 
   .code-window {
@@ -419,7 +443,7 @@
     border-radius: 8px;
     padding: 16px;
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.68;
     overflow-x: auto;
   }
@@ -440,6 +464,8 @@
     color: var(--muted);
     margin: 0 0 16px;
     max-width: 54rem;
+    font-size: var(--text-base);
+    line-height: 1.62;
   }
 
   .current-tree-window {
@@ -482,7 +508,7 @@
     display: block;
     font-family: var(--mono);
     color: var(--muted);
-    font-size: 10px;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 4px;
@@ -490,7 +516,7 @@
 
   .translation-item span {
     display: block;
-    font-size: 14px;
+    font-size: var(--text-sm);
   }
 
   .role-row {
@@ -510,19 +536,21 @@
     border-radius: 999px;
     padding: 4px 8px;
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: var(--text-xs);
   }
 
   .role-row h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--text-base);
+    line-height: 1.28;
     letter-spacing: -0.01em;
   }
 
   .role-row p {
     margin: 0;
     color: var(--muted);
-    font-size: 14px;
+    font-size: var(--text-sm);
+    line-height: 1.58;
   }
 
   .primitive-color { --role-color: var(--primitive); }
@@ -545,12 +573,15 @@
 
   .panel h3 {
     margin: 0 0 10px;
-    font-size: 19px;
+    font-size: var(--text-panel-title);
+    line-height: 1.25;
   }
 
   .panel p {
     margin: 0 0 12px;
     color: var(--muted);
+    font-size: var(--text-base);
+    line-height: 1.62;
   }
 
   .invocation-switch {
@@ -583,7 +614,7 @@
   }
 
   .switch-row b { display: block; }
-  .switch-row span { color: var(--muted); font-size: 13px; }
+  .switch-row span { color: var(--muted); font-size: var(--text-sm); line-height: 1.55; }
 
   .catalog {
     background: #15130f;
@@ -591,7 +622,7 @@
     border-radius: 8px;
     padding: 18px;
     font-family: var(--mono);
-    font-size: 13px;
+    font-size: var(--text-sm);
     line-height: 1.7;
     overflow-x: auto;
     border: 1px solid rgba(255,255,255,0.08);
@@ -618,12 +649,12 @@
   .step .num {
     font-family: var(--mono);
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--text-xs);
     margin-bottom: 12px;
   }
 
   .step b { display: block; margin-bottom: 8px; }
-  .step span { color: var(--muted); font-size: 13px; }
+  .step span { color: var(--muted); font-size: var(--text-sm); line-height: 1.55; }
 
   .quote {
     border-top: 1px solid var(--ink);
@@ -639,8 +670,9 @@
   .quote p {
     margin: 0;
     font-family: var(--serif);
-    font-size: clamp(24px, 3.5vw, 42px);
-    line-height: 1.08;
+    font-size: var(--text-quote);
+    line-height: 1.16;
+    text-wrap: balance;
   }
 
   .quote code {
@@ -650,7 +682,7 @@
   footer {
     margin-top: 80px;
     color: var(--muted);
-    font-size: 13px;
+    font-size: var(--text-sm);
     border-top: 1px solid var(--line);
     padding-top: 22px;
     display: flex;
@@ -676,6 +708,7 @@
     .wrap { width: min(100% - 22px, 1180px); }
     .topbar { position: static; }
     .hero { padding-top: 12px; }
+    h1 { max-width: 13ch; }
     .studio { min-height: 720px; }
     .composition-stage { min-height: 570px; }
     .node { min-width: min(82vw, 260px); position: relative; left: auto; right: auto; top: auto; bottom: auto; transform: none; margin: 12px auto; }

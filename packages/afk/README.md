@@ -258,7 +258,7 @@ are usually manual, and composition makes the relationship explicit.
 | `afk show` | Cached global AFK catalog. |
 | `afk show skills` | Cached skills catalog. |
 | `afk show skills --react` | Cached skills as a React-style composition tree. |
-| `afk show skills --visualize` | Write `afk-skills.html`, a self-contained skills composition page. |
+| `afk show skills --visualize` | Write `afk-skills.html`, a self-contained skills composition page, and open it in interactive terminals. |
 | `afk show skills mcps` | Multiple cached catalog files in one run. |
 | `afk show --source <source>` | Inspect a source directly without changing the cache. |
 | `afk show --local` | Inspect project-local `./afk/catalog`. |
@@ -278,7 +278,9 @@ components.
 
 Use `afk show skills --visualize` when you want the same composition story as a
 local HTML artifact. AFK writes `afk-skills.html` in the current directory; the
-file is self-contained and does not start a server.
+file is self-contained and does not start a server. In an interactive terminal,
+AFK opens the file automatically after writing it. Set `AFK_NO_OPEN=1` to skip
+that browser handoff.
 
 ## Catalog Model
 

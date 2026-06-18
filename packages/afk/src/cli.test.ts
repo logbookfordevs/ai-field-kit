@@ -490,6 +490,8 @@ test("runCli writes a skills visualization HTML file", async () => {
     assert.ok(html.includes("afk-code-grill"));
     assert.ok(html.includes("AFKSkillTree"));
     assert.ok(html.includes("jsx-wrapper"));
+    assert.ok(html.includes("afk-code-grill"));
+    assert.ok(!html.includes("&amp;quot;"));
   } finally {
     process.chdir(previousCwd);
   }

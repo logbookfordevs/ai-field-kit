@@ -154,6 +154,15 @@ test("selectPluginsInstall does not ask for agent targets when installing RTK", 
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
 
+test("selectPluginsInstall returns no plugins when the catalog has no plugin choices", async () => {
+  promptState.checkboxMessages = [];
+  const selection = await selectPluginsInstall(defaultOptions(localHomeWithEmptyPluginManifest()));
+
+  assert.deepEqual(selection.pluginIds, []);
+  assert.deepEqual(selection.agents, []);
+  assert.ok(!promptState.checkboxMessages.includes("Choose plugins to install"));
+});
+
 test("selectRulesSync asks for rules-specific agent targets", async () => {
   promptState.checkboxMessages = [];
   const selection = await selectRulesSync(defaultOptions(localHomeWithPluginManifest()));
@@ -381,6 +390,14 @@ function localHomeWithPluginManifest(): string {
       ],
     }, null, 2)}\n`,
   );
+  return homeDir;
+}
+
+function localHomeWithEmptyPluginManifest(): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "plugins.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
   return homeDir;
 }
 

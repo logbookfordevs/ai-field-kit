@@ -485,6 +485,11 @@ async function selectHooks(options: Pick<CliOptions, "homeDir" | "manifestConten
 
 async function selectCheckbox<Value extends string>(message: string, choices: Choice<Value>[]): Promise<Value[]> {
   console.log(renderPromptStep(message, defaultCheckedDetail));
+  if (choices.length === 0) {
+    console.log("No choices available in the current catalog.");
+    return [];
+  }
+
   return checkbox<Value>({
     message,
     choices,
