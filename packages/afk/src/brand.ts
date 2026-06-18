@@ -14,7 +14,7 @@ export function renderBanner(input: {
   ];
   const name = "AI FIELD KIT";
   const subtitle = "setup router for agentic dev work";
-  const refreshHint = "Missing something new? Run afk setup refresh to update local manifests.";
+  const refreshHint = "Missing something new? Run afk refresh to update the local catalog.";
   const rule = "─".repeat(54);
 
   return [

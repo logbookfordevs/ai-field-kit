@@ -117,7 +117,7 @@ test("ensureLocalManifests migrates existing skills to invocation policy metadat
 });
 
 test("packaged plugin manifests keep npx installs non-interactive", () => {
-  const manifest = JSON.parse(readFileSync(new URL("../manifests/plugins.json", import.meta.url), "utf8")) as PluginManifestFile;
+  const manifest = JSON.parse(readFileSync(new URL("../catalog/plugins.json", import.meta.url), "utf8")) as PluginManifestFile;
   const interactiveNpxItems = manifest.items
     .filter((item) => usesNpx(item.install.command, item.install.args) && !usesNonInteractiveNpx(item.install.command, item.install.args))
     .map((item) => item.id);
@@ -128,7 +128,7 @@ test("packaged plugin manifests keep npx installs non-interactive", () => {
 test("defaultsManifestBaseUrl resolves GitHub shorthand to the AFK manifest convention", () => {
   assert.equal(
     defaultsManifestBaseUrl("acme/dev-kit", "main"),
-    "https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests",
+    "https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog",
   );
 });
 
@@ -136,8 +136,8 @@ test("defaultsManifestBaseUrls falls back to the package manifest convention", (
   assert.deepEqual(
     defaultsManifestBaseUrls("acme/dev-kit", "main"),
     [
-      "https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests",
-      "https://raw.githubusercontent.com/acme/dev-kit/main/packages/afk/manifests",
+      "https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog",
+      "https://raw.githubusercontent.com/acme/dev-kit/main/packages/afk/catalog",
     ],
   );
 });
@@ -227,7 +227,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     const presetsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("presets.json"));
     assert.ok(presetsWrite && presetsWrite.type === "write");
     assert.ok(presetsWrite.content.includes("\"defaultsSource\": \"acme/dev-kit\""));
-    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/rules.json")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/hooks.json")));
     assert.ok(!requestedUrls.some((url) => url.endsWith("/workflows.json")));
@@ -273,13 +273,13 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
       dryRun: true,
     });
 
-    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test("ensureLocalManifests can refresh project-local manifests", async () => {
+test("ensureLocalManifests can refresh project-local catalog", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
   globalThis.fetch = async (input) => {
@@ -315,7 +315,7 @@ test("ensureLocalManifests can refresh project-local manifests", async () => {
 
     assert.ok(operations.some((operation) => operation.type === "mkdir" && operation.path === manifestDir));
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path === join(manifestDir, "skills.json")));
-    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -328,7 +328,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
   globalThis.fetch = async (input) => {
     const url = String(input);
     requestedUrls.push(url);
-    if (url.includes("/afk/manifests/")) {
+    if (url.includes("/afk/catalog/")) {
       return new Response("missing", { status: 404 });
     }
 
@@ -360,8 +360,8 @@ test("ensureLocalManifests falls back to remote package manifest convention when
     });
 
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("plugins.json")));
-    assert.ok(requestedUrls.some((url) => url.includes("/afk/manifests/skills.json")));
-    assert.ok(requestedUrls.some((url) => url.includes("/packages/afk/manifests/skills.json")));
+    assert.ok(requestedUrls.some((url) => url.includes("/afk/catalog/skills.json")));
+    assert.ok(requestedUrls.some((url) => url.includes("/packages/afk/catalog/skills.json")));
   } finally {
     globalThis.fetch = originalFetch;
   }

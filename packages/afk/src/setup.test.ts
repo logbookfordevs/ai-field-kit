@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { localManifestDir } from "./manifest.js";
+import { builtInDefaultsSource, localManifestDir } from "./manifest.js";
 import { runArea, runSetup } from "./setup.js";
 import { skillCatalogPath } from "./skills/catalog.js";
 import type { SetupSelection } from "./interactive.js";
@@ -175,7 +175,7 @@ test("runSetup prepares manifests only once before running selected areas", asyn
   };
 
   const code = await runSetup(fakeRuntime(output), defaultOptions(homeDir, repoDir));
-  const localManifestHeadings = output.filter((line) => line.includes("Local Manifests"));
+  const localManifestHeadings = output.filter((line) => line.includes("Local Catalog"));
 
   assert.equal(code, 0);
   assert.equal(localManifestHeadings.length, 1);
@@ -239,15 +239,13 @@ test("runArea skills adds selected setup skills to AFK skill catalog after insta
   assert.deepEqual(catalog.skills, [{ folder: "beta", scope: "uncategorized" }]);
 });
 
-test("runSetup prompts for a run-only source without changing the saved default", async () => {
+test("runSetup skips the source prompt when a default source is saved", async () => {
   const homeDir = localHomeWithManifests({
     "presets.json": { version: 1, defaultsSource: "acme/saved-kit", presets: [] },
   });
   const repoDir = localRepoWithRules();
-  const sourceDir = localDefaultsSource();
   const output: string[] = [];
 
-  promptState.defaultsSource = sourceDir;
   promptState.rememberedSources = [];
   promptState.selection = {
     areas: [],
@@ -270,28 +268,11 @@ test("runSetup prompts for a run-only source without changing the saved default"
   const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as { defaultsSource: string };
 
   assert.equal(code, 0);
-  assert.deepEqual(promptState.rememberedSources, ["acme/saved-kit"]);
+  assert.deepEqual(promptState.rememberedSources, []);
   assert.equal(presets.defaultsSource, "acme/saved-kit");
 });
 
-test("runSetup with --yes fails when no source or saved default exists", async () => {
-  const homeDir = localHomeWithManifests();
-  const repoDir = localRepoWithRules();
-  const output: string[] = [];
-
-  const code = await runSetup(fakeRuntime(output), {
-    ...defaultOptions(homeDir, repoDir),
-    yes: true,
-    rulesSource: "github",
-  });
-  const text = output.join("\n");
-
-  assert.equal(code, 1);
-  assert.ok(text.includes("No default setup source is configured."));
-  assert.ok(text.includes("Run afk setup to choose a source interactively, or run afk setup --default-source <source>."));
-});
-
-test("runArea prompts for a source for every interactive setup area", async () => {
+test("runArea prompts for a source only on first-run interactive setup areas", async () => {
   const areas = ["rules", "skills", "mcps", "plugins", "hooks"] as const;
 
   for (const area of areas) {
@@ -312,8 +293,118 @@ test("runArea prompts for a source for every interactive setup area", async () =
     });
 
     assert.equal(code, 0);
-    assert.deepEqual(promptState.rememberedSources, [""], area);
+    assert.deepEqual(promptState.rememberedSources, [builtInDefaultsSource], area);
   }
+});
+
+test("runArea uses explicit source manifests without writing cache before installing selected skills", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Stale Skill",
+          source: "stale/source",
+          args: ["--skill", "stale-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Remote Skill",
+          source: "remote/source",
+          args: ["--skill", "remote-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const output: string[] = [];
+  const commands: Array<{ command: string; args: string[] }> = [];
+
+  const code = await runArea("skills", {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      commands.push({ command, args });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["remote-skill"],
+  });
+
+  assert.equal(code, 0);
+  assert.equal(commands[0]?.command, "npx");
+  assert.deepEqual(commands[0]?.args, ["skills", "add", "remote/source", "--global", "--yes", "--skill", "remote-skill"]);
+  assert.ok(!output.join("\n").includes("Local catalog prepared"));
+  const cached = readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8");
+  assert.ok(cached.includes("stale/source"));
+  assert.ok(!cached.includes("remote/source"));
+});
+
+test("runArea dry-run uses explicit source manifests without cache writes", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Stale Skill",
+          source: "stale/source",
+          args: ["--skill", "stale-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Remote Skill",
+          source: "remote/source",
+          args: ["--skill", "remote-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const output: string[] = [];
+
+  const code = await runArea("skills", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["remote-skill"],
+  });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("$ npx skills add remote/source --global --yes --skill remote-skill"));
+  assert.ok(!text.includes("stale/source"));
 });
 
 test("runSetup with --yes uses a saved default source without prompting", async () => {
@@ -371,6 +462,8 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
+    manifestShowReact: false,
+    manifestShowVisualize: false,
     selectedManifestCategories: [],
     homeDir,
     repoDir,
@@ -412,9 +505,9 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
   return homeDir;
 }
 
-function localDefaultsSource(): string {
+function localDefaultsSource(overrides: Record<string, unknown> = {}): string {
   const sourceDir = mkdtempSync(join(tmpdir(), "afk-default-source-"));
-  const manifestDir = join(sourceDir, "afk", "manifests");
+  const manifestDir = join(sourceDir, "afk", "catalog");
   mkdirSync(manifestDir, { recursive: true });
 
   const manifests: Record<string, unknown> = {
@@ -424,6 +517,7 @@ function localDefaultsSource(): string {
     "rules.json": { version: 1, source: "github", url: "" },
     "plugins.json": { version: 1, items: [] },
     "hooks.json": { version: 1, items: [] },
+    ...overrides,
   };
 
   for (const [name, content] of Object.entries(manifests)) {

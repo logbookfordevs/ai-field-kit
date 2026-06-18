@@ -34,6 +34,7 @@ export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
 export type SkillOpenApp = "finder" | "code" | "cursor" | "zed" | "agy";
 export type ManifestCategory = "rules" | "skills" | "mcps" | "plugins" | "hooks" | "presets";
+export type ManifestFilename = "skills.json" | "mcps.json" | "presets.json" | "rules.json" | "plugins.json" | "hooks.json";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -58,6 +59,7 @@ export type CliOptions = {
   defaultSourceUpdate: string;
   rememberDefaultsSource?: boolean;
   setupManifestsPrepared?: boolean;
+  manifestContents?: Partial<Record<ManifestFilename, string>>;
   manifestLocal: boolean;
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
@@ -77,6 +79,8 @@ export type CliOptions = {
   skillCategorizationRunner?: SkillCategorizationRunner;
   skillCategorizationInstruction?: string;
   uiCategory?: string;
+  manifestShowReact: boolean;
+  manifestShowVisualize: boolean;
   selectedManifestCategories: ManifestCategory[];
   homeDir: string;
   repoDir: string;

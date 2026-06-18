@@ -21,7 +21,7 @@ test("renderCompassLobbyIntro frames the root command as a compact field check",
 
 test("compass lobby choices route intents to existing command paths", () => {
   assert.deepEqual(routeForLobbyChoice("setup"), ["setup"]);
-  assert.deepEqual(routeForLobbyChoice("source", "acme/dev-kit"), ["setup", "--default-source", "acme/dev-kit"]);
+  assert.deepEqual(routeForLobbyChoice("source", "acme/dev-kit"), ["refresh", "--default-source", "acme/dev-kit"]);
   assert.deepEqual(routeForLobbyChoice("skills"), ["setup", "skills"]);
   assert.deepEqual(routeForLobbyChoice("mcps"), ["setup", "mcps"]);
   assert.deepEqual(routeForLobbyChoice("plugins"), ["setup", "plugins"]);
@@ -36,8 +36,8 @@ test("compass lobby labels stay intent-oriented while descriptions teach command
 
   assert.ok(labels.includes("Prepare this machine for agent work"));
   assert.ok(!labels.includes("Build or edit a custom field kit"));
-  assert.ok(labels.includes("Change default setup source"));
+  assert.ok(labels.includes("Change default catalog source"));
   assert.ok(descriptions.some((description) => description.includes("afk setup skills")));
-  assert.ok(descriptions.some((description) => description.includes("afk setup --default-source")));
+  assert.ok(descriptions.some((description) => description.includes("afk refresh --default-source")));
   assert.ok(descriptions.some((description) => description.includes("afk show")));
 });

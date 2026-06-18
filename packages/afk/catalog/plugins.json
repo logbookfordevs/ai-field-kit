@@ -28,6 +28,20 @@
             "default": true
         },
         {
+            "id": "plannotator-tot",
+            "label": "Plannotator Tot",
+            "description": "Install Tot's git-backed Markdown and HTML publishing CLI for living tot.page URLs with immutable snapshots.",
+            "install": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "@plannotator/tot"
+                ]
+            },
+            "default": false
+        },
+        {
             "id": "rtk",
             "label": "RTK",
             "description": "Compress noisy command output for coding agents and add agent hooks or rules that nudge shell commands through RTK.",
@@ -54,6 +68,19 @@
                 ]
             },
             "default": true
+        },
+        {
+            "id": "impeccable",
+            "label": "Impeccable",
+            "description": "Install Impeccable's frontend design skills and design hook globally through its official installer.",
+            "install": {
+                "command": "sh",
+                "args": [
+                    "-c",
+                    "cd \"$HOME\" && npx --yes impeccable install --global --force -y"
+                ]
+            },
+            "default": false
         }
     ]
 }

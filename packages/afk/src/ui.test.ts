@@ -114,6 +114,8 @@ function baseOptions(cwd: string): CliOptions {
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
+    manifestShowReact: false,
+    manifestShowVisualize: false,
     selectedManifestCategories: [],
     homeDir: "/tmp/home",
     repoDir: "/tmp/repo",

@@ -18,5 +18,5 @@ export function resolveRepoDir(input: NodeJS.ProcessEnv = process.env): string {
 }
 
 export function manifestPath(name: string): string {
-  return resolve(packageRoot(), "manifests", name);
+  return resolve(packageRoot(), "catalog", name);
 }

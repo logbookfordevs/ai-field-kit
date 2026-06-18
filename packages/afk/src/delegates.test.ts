@@ -80,6 +80,8 @@ const options: CliOptions = {
   manifestLocal: false,
   manifestConfigureLocal: false,
   manifestConfigureFromCurrent: false,
+  manifestShowReact: false,
+  manifestShowVisualize: false,
   selectedManifestCategories: [],
   homeDir: defaultHomeDir,
   repoDir: "/tmp/repo",

@@ -4,7 +4,7 @@
     "items": [
         {
             "id": "afk-animated-driven-frontend",
-            "label": "AFK / Animated Driven Frontend",
+            "label": "AFK - Animated Driven Frontend",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -12,11 +12,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-ask",
-            "label": "AFK / Ask",
+            "label": "AFK - Ask",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -24,11 +27,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-brainstorming-facilitator",
-            "label": "AFK / Brainstorming Facilitator",
+            "label": "AFK - Brainstorming Facilitator",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -36,11 +42,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-code-grill",
-            "label": "AFK / Code Grill",
+            "label": "AFK - Code Grill",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -48,11 +57,18 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [
+                "grilling",
+                "truss-evaluation",
+                "codebase-design"
+            ],
+            "profiles": []
         },
         {
             "id": "afk-to-prd-spec",
-            "label": "AFK / To PRD Spec",
+            "label": "AFK - To PRD Spec",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -60,11 +76,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-to-issues",
-            "label": "AFK / To Issues",
+            "label": "AFK - To Issues",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -72,11 +91,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-doc-craft",
-            "label": "AFK / Doc Craft",
+            "label": "AFK - Doc Craft",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -84,11 +106,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-execution-tracking",
-            "label": "AFK / Execution Tracking",
+            "label": "AFK - Execution Tracking",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -96,11 +121,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "flow",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-ui-registry-preferences",
-            "label": "AFK / UI Registry Preferences",
+            "label": "AFK - UI Registry Preferences",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -108,11 +136,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "reference",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-pickup",
-            "label": "AFK / Pickup",
+            "label": "AFK - Pickup",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -120,11 +151,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-resume-workflow",
-            "label": "AFK / Resume Workflow",
+            "label": "AFK - Resume Workflow",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -132,11 +166,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-compass",
-            "label": "AFK / Compass",
+            "label": "AFK - Compass",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -144,11 +181,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "router",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-sprint",
-            "label": "AFK / Sprint",
+            "label": "AFK - Sprint",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -156,11 +196,18 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "flow",
+            "composes": [
+                "plannotator-setup-goal",
+                "afk-to-issues",
+                "afk-execution-tracking"
+            ],
+            "profiles": []
         },
         {
             "id": "afk-turbo",
-            "label": "AFK / Turbo",
+            "label": "AFK - Turbo",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -168,11 +215,16 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "flow",
+            "composes": [
+                "plannotator-setup-goal"
+            ],
+            "profiles": []
         },
         {
             "id": "truss-evaluation",
-            "label": "External / Truss Evaluation",
+            "label": "Truss Evaluation",
             "source": "https://github.com/leoreisdias/truss-framework",
             "args": [
                 "--skill",
@@ -180,23 +232,29 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
-            "id": "diagnose",
-            "label": "External / Diagnose",
+            "id": "diagnosing-bugs",
+            "label": "Diagnosing Bugs",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
-                "diagnose",
+                "diagnosing-bugs",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "plannotator-compound",
-            "label": "External / Plannotator Compound",
+            "label": "Plannotator Compound",
             "source": "backnotprop/plannotator/apps/skills/extra",
             "args": [
                 "--skill",
@@ -204,11 +262,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "plannotator-setup-goal",
-            "label": "External / Plannotator Setup Goal",
+            "label": "Plannotator Setup Goal",
             "source": "backnotprop/plannotator/apps/skills/extra",
             "args": [
                 "--skill",
@@ -216,11 +277,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "plannotator-visual-explainer",
-            "label": "External / Plannotator Visual Explainer",
+            "label": "Plannotator Visual Explainer",
             "source": "backnotprop/plannotator/apps/skills/extra",
             "args": [
                 "--skill",
@@ -228,21 +292,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
-        },
-        {
-            "id": "impeccable",
-            "label": "External / Impeccable",
-            "source": "pbakaus/impeccable",
-            "args": [
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "html",
-            "label": "External / Effective HTML",
+            "label": "Effective HTML",
             "source": "https://github.com/plannotator/effective-html",
             "args": [
                 "--skill",
@@ -250,11 +307,14 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "html-plan",
-            "label": "External / Effective HTML Plan",
+            "label": "Effective HTML Plan",
             "source": "https://github.com/plannotator/effective-html",
             "args": [
                 "--skill",
@@ -262,11 +322,14 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "html-diagram",
-            "label": "External / Effective HTML Diagram",
+            "label": "Effective HTML Diagram",
             "source": "https://github.com/plannotator/effective-html",
             "args": [
                 "--skill",
@@ -274,11 +337,14 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "tdd",
-            "label": "External / TDD",
+            "label": "TDD",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -286,11 +352,16 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [
+                "codebase-design"
+            ],
+            "profiles": []
         },
         {
             "id": "source-driven-development",
-            "label": "External / Source Driven Development",
+            "label": "Source Driven Development",
             "source": "https://github.com/addyosmani/agent-skills.git",
             "args": [
                 "--skill",
@@ -298,11 +369,14 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "doubt-driven-development",
-            "label": "External / Doubt Driven Development",
+            "label": "Doubt Driven Development",
             "source": "https://github.com/addyosmani/agent-skills.git",
             "args": [
                 "--skill",
@@ -310,11 +384,14 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "code-simplification",
-            "label": "External / Code Simplification",
+            "label": "Code Simplification",
             "source": "https://github.com/addyosmani/agent-skills.git",
             "args": [
                 "--skill",
@@ -322,23 +399,29 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         },
         {
-            "id": "write-a-skill",
-            "label": "External / Write a Skill",
+            "id": "writing-great-skills",
+            "label": "Writing Great Skills",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
-                "write-a-skill",
+                "writing-great-skills",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "reference",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "teach",
-            "label": "External / Teach",
+            "label": "Teach",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -346,11 +429,14 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "grill-with-docs",
-            "label": "External / Grill With Docs",
+            "label": "Grill With Docs",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -358,11 +444,17 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [
+                "grilling",
+                "domain-modeling"
+            ],
+            "profiles": []
         },
         {
             "id": "grill-me",
-            "label": "External / Grill Me",
+            "label": "Grill Me",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -370,11 +462,16 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [
+                "grilling"
+            ],
+            "profiles": []
         },
         {
             "id": "prototype",
-            "label": "External / Prototype",
+            "label": "Prototype",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -382,11 +479,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "handoff",
-            "label": "External / Handoff",
+            "label": "Handoff",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
@@ -394,11 +494,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "cmux",
-            "label": "External / cmux",
+            "label": "cmux",
             "source": "https://github.com/manaflow-ai/cmux",
             "args": [
                 "--skill",
@@ -406,11 +509,14 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "tmux",
-            "label": "External / tmux",
+            "label": "tmux",
             "source": "https://github.com/steipete/clawdis",
             "args": [
                 "--skill",
@@ -418,11 +524,14 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true
+            "autoInvocation": true,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-interactive-code-review",
-            "label": "AFK / Interactive Code Review",
+            "label": "AFK - Interactive Code Review",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -430,11 +539,14 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
         },
         {
             "id": "afk-pr-story-flow-mermaid",
-            "label": "AFK / PR Story Flow Mermaid",
+            "label": "AFK - PR Story Flow Mermaid",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
@@ -442,7 +554,55 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [],
+            "profiles": []
+        },
+        {
+            "id": "grilling",
+            "label": "Grilling",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "grilling",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
+        },
+        {
+            "id": "domain-modeling",
+            "label": "Domain Modeling",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "domain-modeling",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
+        },
+        {
+            "id": "codebase-design",
+            "label": "Codebase Design",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "codebase-design",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true,
+            "role": "primitive",
+            "composes": [],
+            "profiles": []
         }
     ]
 }

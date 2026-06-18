@@ -17,7 +17,7 @@ The artifact location should follow the repo convention or AFK artifact conventi
 
 1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD/spec, and respect any ADRs in the area you're touching.
 
-2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can.
+2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest meaningful seam possible. The fewer seams across the codebase, the better; one honest high-level seam is ideal when it covers the behavior.
 
 Check with the user that these seams match their expectations.
 

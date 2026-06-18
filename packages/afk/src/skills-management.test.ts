@@ -888,6 +888,8 @@ function baseOptions(root: string) {
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
+    manifestShowReact: false,
+    manifestShowVisualize: false,
     skillsListScope: "all" as const,
     skillsUpgradeScope: "global" as const,
     skillsUpgradeAll: false,

@@ -146,7 +146,7 @@ test("serializeEditableManifest formats JSON with trailing newline", () => {
 
 test("runManifestConfigureWithPrompts loads existing manifests by default and writes confirmed settings-style toggles", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
-  const manifestDir = join(homeDir, ".agents", "afk", "manifests");
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
   mkdirSync(manifestDir, { recursive: true });
   writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
     version: 1,
@@ -178,12 +178,12 @@ test("runManifestConfigureWithPrompts loads existing manifests by default and wr
   const written = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as { items: Array<{ id: string; default: boolean }> };
   assert.equal(code, 0);
   assert.equal(written.items[0]?.default, false);
-  assert.ok(output.join("\n").includes("Manifest preview"));
+  assert.ok(output.join("\n").includes("Catalog preview"));
 });
 
 test("runManifestConfigureWithPrompts previews dry-run edits without writing", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
-  const manifestDir = join(homeDir, ".agents", "afk", "manifests");
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
   mkdirSync(manifestDir, { recursive: true });
   writeFileSync(join(manifestDir, "mcps.json"), `${JSON.stringify({
     version: 1,
@@ -213,12 +213,12 @@ test("runManifestConfigureWithPrompts previews dry-run edits without writing", a
   const written = JSON.parse(readFileSync(join(manifestDir, "mcps.json"), "utf8")) as { items: Array<{ id: string }> };
   assert.equal(code, 0);
   assert.equal(written.items.length, 1);
-  assert.ok(output.join("\n").includes("Dry run complete. No manifests written."));
+  assert.ok(output.join("\n").includes("Dry run complete. No catalog files written."));
 });
 
 test("runManifestConfigureWithPrompts preserves existing skill args during no-op edit", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
-  const manifestDir = join(homeDir, ".agents", "afk", "manifests");
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
   mkdirSync(manifestDir, { recursive: true });
   writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
     version: 1,
@@ -254,7 +254,7 @@ test("runManifestConfigureWithPrompts preserves existing skill args during no-op
 
 test("runManifestConfigureWithPrompts edits project manifests for local configure", async () => {
   const cwd = mkdtempSync(join(tmpdir(), "afk-configure-project-"));
-  const manifestDir = join(cwd, "afk", "manifests");
+  const manifestDir = join(cwd, "afk", "catalog");
   mkdirSync(manifestDir, { recursive: true });
   writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({
     version: 1,
@@ -278,7 +278,7 @@ test("runManifestConfigureWithPrompts edits project manifests for local configur
   assert.equal(code, 0);
   assert.equal(written.source, "local");
   assert.equal(written.url, "./AGENTS.md");
-  assert.ok(output.join("\n").includes("Manifest preview"));
+  assert.ok(output.join("\n").includes("Catalog preview"));
 });
 
 test("runManifestConfigureWithPrompts loads default hooks from the configured defaults source", async () => {
@@ -326,7 +326,7 @@ test("runManifestConfigureWithPrompts loads default hooks from the configured de
 
     const text = output.join("\n");
     assert.equal(code, 0);
-    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/hooks.json"));
+    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/hooks.json"));
     assert.ok(text.includes("remote-hook"));
   } finally {
     globalThis.fetch = originalFetch;
@@ -335,7 +335,7 @@ test("runManifestConfigureWithPrompts loads default hooks from the configured de
 
 test("runManifestConfigureWithPrompts shows boolean state in toggle choices", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
-  const manifestDir = join(homeDir, ".agents", "afk", "manifests");
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
   mkdirSync(manifestDir, { recursive: true });
   writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
     version: 1,
@@ -372,7 +372,7 @@ test("runManifestConfigureWithPrompts shows boolean state in toggle choices", as
 
 test("runManifestConfigureWithPrompts shows current boolean state in edit prompts", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
-  const manifestDir = join(homeDir, ".agents", "afk", "manifests");
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
   mkdirSync(manifestDir, { recursive: true });
   writeFileSync(join(manifestDir, "mcps.json"), `${JSON.stringify({
     version: 1,
@@ -436,6 +436,8 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
+    manifestShowReact: false,
+    manifestShowVisualize: false,
     selectedManifestCategories: [],
     homeDir: mkdtempSync(join(tmpdir(), "afk-configure-home-")),
     repoDir: process.cwd(),

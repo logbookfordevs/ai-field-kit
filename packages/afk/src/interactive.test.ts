@@ -3,19 +3,26 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { normalizeSetupSelection, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall } from "./interactive.js";
+import { normalizeSetupSelection, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall, selectSkillsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
 const promptState = vi.hoisted(() => ({
   checkboxMessages: [] as string[],
+  checkboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string }>>,
+  checkboxResponses: {} as Record<string, string[]>,
   setupAreas: ["plugins"] as string[],
   inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
 }));
 
 vi.mock("@inquirer/prompts", () => ({
-  checkbox: vi.fn(async ({ message }: { message: string }) => {
+  checkbox: vi.fn(async ({ message, choices }: { message: string; choices?: Array<{ name?: string; value?: string; checked?: boolean; description?: string }> }) => {
     promptState.checkboxMessages.push(message);
+    promptState.checkboxChoices[message] = choices ?? [];
+    if (message in promptState.checkboxResponses) {
+      return promptState.checkboxResponses[message];
+    }
+
     if (message === "Choose what AFK should prepare") {
       return promptState.setupAreas;
     }
@@ -147,6 +154,15 @@ test("selectPluginsInstall does not ask for agent targets when installing RTK", 
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
 
+test("selectPluginsInstall returns no plugins when the catalog has no plugin choices", async () => {
+  promptState.checkboxMessages = [];
+  const selection = await selectPluginsInstall(defaultOptions(localHomeWithEmptyPluginManifest()));
+
+  assert.deepEqual(selection.pluginIds, []);
+  assert.deepEqual(selection.agents, []);
+  assert.ok(!promptState.checkboxMessages.includes("Choose plugins to install"));
+});
+
 test("selectRulesSync asks for rules-specific agent targets", async () => {
   promptState.checkboxMessages = [];
   const selection = await selectRulesSync(defaultOptions(localHomeWithPluginManifest()));
@@ -244,12 +260,66 @@ test("selectSetup yes mode includes all skills when requested", async () => {
 
 test("selectSetup guided mode includes all skills when requested", async () => {
   promptState.checkboxMessages = [];
+  promptState.checkboxResponses = {};
   promptState.setupAreas = ["skills"];
   const homeDir = localHomeWithAllManifests();
   const selection = await selectSetup({ ...defaultOptions(homeDir), allSkills: true });
 
   assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
   assert.ok(!promptState.checkboxMessages.includes("Choose skills to install"));
+});
+
+test("selectSkillsInstall presents composed skills for selected wrappers", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxChoices = {};
+  promptState.checkboxResponses = {
+    "Choose skills to install": ["afk-code-grill"],
+    "Choose composed skills to include": ["grilling", "truss-evaluation"],
+  };
+  const homeDir = localHomeWithComposedSkillManifest();
+  const selection = await selectSkillsInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.skillIds, ["afk-code-grill", "grilling", "truss-evaluation"]);
+  assert.ok(promptState.checkboxMessages.includes("Choose composed skills to include"));
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose composed skills to include"]?.map((choice) => [choice.value, choice.checked]),
+    [["grilling", true], ["truss-evaluation", true]],
+  );
+  assert.match(
+    promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
+    /Composed by AFK - Code Grill \(wrapper\)/,
+  );
+  assert.match(
+    promptState.checkboxChoices["Choose skills to install"]?.find((choice) => choice.value === "afk-code-grill")?.description ?? "",
+    /role: wrapper · auto-invocation: off/,
+  );
+  assert.match(
+    promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
+    /role: primitive · auto-invocation: on/,
+  );
+});
+
+test("selectSetup yes mode includes composed skills for default wrappers", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxResponses = {};
+  const homeDir = localHomeWithComposedSkillManifest();
+  const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true });
+
+  assert.deepEqual(selection.skillIds, ["afk-code-grill", "grilling", "truss-evaluation"]);
+});
+
+test("selectSkillsInstall keeps the skill list flat", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxChoices = {};
+  promptState.checkboxResponses = {
+    "Choose skills to install": [],
+  };
+  const homeDir = localHomeWithRepeatedComposedChildrenManifest();
+  await selectSkillsInstall(defaultOptions(homeDir));
+
+  const names = promptState.checkboxChoices["Choose skills to install"]?.map((choice) => choice.name) ?? [];
+  assert.ok(!names.some((name) => name?.includes("->")));
+  assert.equal(names.filter((name) => name === "Grilling").length, 1);
 });
 
 test("selectDefaultsSource pre-fills the remembered source and requires input", async () => {
@@ -291,6 +361,8 @@ function defaultOptions(homeDir: string): CliOptions {
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
+    manifestShowReact: false,
+    manifestShowVisualize: false,
     selectedManifestCategories: [],
     homeDir,
     repoDir: "/tmp/repo",
@@ -318,6 +390,14 @@ function localHomeWithPluginManifest(): string {
       ],
     }, null, 2)}\n`,
   );
+  return homeDir;
+}
+
+function localHomeWithEmptyPluginManifest(): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "plugins.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
   return homeDir;
 }
 
@@ -354,21 +434,21 @@ function localHomeWithAllManifests(): string {
       items: [
         {
           id: "afk-default",
-          label: "AFK / Default",
+          label: "AFK - Default",
           source: "https://github.com/example/afk",
           args: ["--skill", "afk-default", "--global"],
           default: true,
         },
         {
           id: "afk-spline",
-          label: "AFK / Spline",
+          label: "AFK - Spline",
           source: "https://github.com/example/afk",
           args: ["--skill", "afk-spline", "--global"],
           default: false,
         },
         {
           id: "external-helper",
-          label: "External / Helper",
+          label: "Helper",
           source: "https://github.com/example/external",
           args: ["--skill", "external-helper", "--global"],
           default: false,
@@ -401,5 +481,119 @@ function localHomeWithAllManifests(): string {
     writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
   }
 
+  return homeDir;
+}
+
+function localHomeWithComposedSkillManifest(): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(
+    join(manifestDir, "skills.json"),
+    `${JSON.stringify({
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "afk-code-grill",
+          label: "AFK - Code Grill",
+          source: "https://github.com/example/afk",
+          args: ["--skill", "afk-code-grill", "--global"],
+          default: true,
+          autoInvocation: false,
+          role: "wrapper",
+          composes: ["grilling", "truss-evaluation"],
+          profiles: [],
+        },
+        {
+          id: "grilling",
+          label: "Grilling",
+          source: "https://github.com/example/external",
+          args: ["--skill", "grilling", "--global"],
+          default: false,
+          autoInvocation: true,
+          role: "primitive",
+          composes: [],
+          profiles: [],
+        },
+        {
+          id: "truss-evaluation",
+          label: "Truss Evaluation",
+          source: "https://github.com/example/truss",
+          args: ["--skill", "truss-evaluation", "--global"],
+          default: false,
+          autoInvocation: true,
+          role: "primitive",
+          composes: [],
+          profiles: [],
+        },
+      ],
+    }, null, 2)}\n`,
+  );
+  writeFileSync(join(manifestDir, "mcps.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "plugins.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "hooks.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({ version: 1, source: "local", url: "rules/AGENTS.md" }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "", presets: [] }, null, 2)}\n`);
+  return homeDir;
+}
+
+function localHomeWithRepeatedComposedChildrenManifest(): string {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(
+    join(manifestDir, "skills.json"),
+    `${JSON.stringify({
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "grill-me",
+          label: "Grill Me",
+          source: "https://github.com/example/external",
+          args: ["--skill", "grill-me", "--global"],
+          default: false,
+          autoInvocation: false,
+          role: "wrapper",
+          composes: ["grilling"],
+          profiles: [],
+        },
+        {
+          id: "grill-with-docs",
+          label: "Grill With Docs",
+          source: "https://github.com/example/external",
+          args: ["--skill", "grill-with-docs", "--global"],
+          default: false,
+          autoInvocation: false,
+          role: "wrapper",
+          composes: ["grilling", "domain-modeling"],
+          profiles: [],
+        },
+        {
+          id: "grilling",
+          label: "Grilling",
+          source: "https://github.com/example/external",
+          args: ["--skill", "grilling", "--global"],
+          default: false,
+          autoInvocation: true,
+          role: "primitive",
+          composes: [],
+          profiles: [],
+        },
+        {
+          id: "domain-modeling",
+          label: "Domain Modeling",
+          source: "https://github.com/example/external",
+          args: ["--skill", "domain-modeling", "--global"],
+          default: false,
+          autoInvocation: true,
+          role: "primitive",
+          composes: [],
+          profiles: [],
+        },
+      ],
+    }, null, 2)}\n`,
+  );
   return homeDir;
 }
