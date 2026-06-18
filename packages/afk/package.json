@@ -15,6 +15,7 @@
     "afk": "dist/index.js"
   },
   "files": [
+    "docs/**/*",
     "dist/**/*.js",
     "!dist/**/*.test.js"
   ],

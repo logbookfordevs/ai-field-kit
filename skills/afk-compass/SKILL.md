@@ -5,18 +5,74 @@ description: Route broad, ambiguous, phase-change, artifact-boundary, storage-co
 
 # AFK Compass
 
-AFK Compass chooses the next useful tool. It is a road sign, not the road.
-
-Do not run a multi-step lifecycle from Compass. Route the current moment to one skill, reference, or named execution package, then let that selected tool work.
+AFK Compass maps the current situation to the smallest useful skill, reference, or named execution package.
 
 ## First Move
 When a request arrives:
-1. Identify the user's actual phase.
-2. Check for a directly named skill and honor it first.
-3. Choose the smallest useful skill set.
-4. Move into the working skill immediately.
+1. Identify the user's phase: choose, clarify, decide, specify, slice, execute, resume, review, or debug.
+2. Honor directly named skills first.
+3. If the user is asking what to use, recommend the smallest useful command or lane and stop.
+4. If the user is asking for work to happen, route into the selected skill immediately.
 
-## Routing
+## Selection Modes
+
+### Recommend
+Use this mode when the user asks what AFK skill, flow, or command fits.
+
+Output:
+- The recommended skill or package.
+- Why it fits this moment.
+- One useful alternative only when the choice is real.
+- The exact invocation when the skill is manual.
+
+Stop after the recommendation unless the user also asked you to proceed.
+
+### Route
+Use this mode when the user is trying to do the work and Compass is only deciding the next tool.
+
+Output one short routing sentence, then move into the selected skill. Do not re-explain every available option.
+
+### Reference
+Use this mode when the user needs AFK conventions, storage boundaries, or setup semantics rather than a workflow.
+
+Read the relevant reference and answer from it.
+
+## AFK Lanes
+
+AFK stays composable. A lane names the likely path, but only the current phase should run.
+
+### Idea to implementation
+
+Use when a feature, product change, or technical slice needs to become code.
+
+1. `grill-me`, `grill-with-docs`, or `afk-code-grill` when the idea or trade-offs are not settled.
+2. `afk-to-prd-spec` when the conversation needs an agent-ready PRD/spec.
+3. `afk-to-issues` when the spec needs executable slices.
+4. `afk-execution-tracking`, `afk-sprint`, or `afk-turbo` when checkpointed execution begins.
+
+### Existing-work continuation
+
+Use when the user is resuming a feature, workflow, branch, packet, or previous session.
+
+- `afk-resume-workflow` for durable repo artifacts.
+- `afk-pickup` for disposable handoff notes.
+- `afk-execution-tracking` when checkpoint packets already exist and need status, validation, or handoff updates.
+
+### Design and frontend judgment
+
+Use when the task is UI, frontend architecture, or interaction quality.
+
+- `prototype` when a runnable experiment is the fastest way to answer a design or behavior question.
+- `afk-animated-driven-frontend` for motion-heavy frontend direction.
+
+### Skill and workflow meta
+
+Use when the task is about AFK itself, skill selection, or external-model perspective.
+
+- `afk-ask` for an outside model's opinion.
+- `handoff` or `afk-pickup` for session crossing.
+
+## Routing Map
 
 Route by user intent, not by literal tool names. Tool names below identify the current implementation.
 
@@ -29,7 +85,6 @@ Task arrives
 +-- Explicit AFK Sprint or goal run with Markdown tracking? -> afk-sprint
 +-- Explicit AFK workflow / Flow / run? --------> route only the current phase
 +-- Resuming existing feature/workflow work? ---> afk-resume-workflow
-+-- Writing, rewriting, or reviewing human-facing docs? -> afk-doc-craft
 +-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
 +-- Need an agent-ready PRD/spec before code? ---> afk-to-prd-spec
 +-- Need executable slices/checkpoints? ---------> afk-to-issues
@@ -38,23 +93,23 @@ Task arrives
 +-- Implementing or delegating a change? --------> execution bundle selection
 |   +-- Needs checkpoint packets first? ---------> afk-to-issues
 |   +-- Needs tracked checkpoint execution? -----> afk-execution-tracking
-|   +-- Needs tests first or proof loop? ---------> tdd
-|   +-- Needs current official docs? ------------> source-driven-development
-|   +-- Needs fresh-context adversarial check? --> doubt-driven-development
-+-- Something broke, fails, throws, or regressed? -> diagnosing-bugs
 +-- Reviewing code or PR quality? ----------------> normal review workflow
-|   +-- Too complex after review? ----------------> code-simplification
-+-- Frontend primitives or registry choice? ------> afk-ui-registry-preferences
-+-- Frontend design, UI quality, or polish? -----> impeccable
 +-- Need a quick throwaway experiment? -----------> prototype
 +-- Need external-model perspective? -------------> afk-ask
 +-- Need disposable session handoff? -------------> handoff, then afk-pickup
-+-- Need terminal/session coordination? ----------> cmux or tmux
 ```
 
 Only invoke skills that are installed or clearly available. If a routed skill is missing, state the gap and continue with the best available installed skill or normal workflow.
 
-For explicit AFK workflow / Flow requests, explain that AFK is composable and route the current phase only. Do not require Grill, PRD/spec, issues, tracking, or execution discipline unless that is the current need.
+For explicit AFK workflow / Flow requests, explain that AFK is composable and route the current phase. Add Grill, PRD/spec, issues, tracking, or execution discipline only when that is the current need.
+
+## Manual Wrappers
+
+Many AFK wrappers and flows are intentionally manual. Compass may still recommend them by name when the request clearly fits.
+
+When recommending a manual skill, give the invocation string and the reason. When routing into it from an active work request, announce the skill and continue.
+
+Keep Compass output to selection: recommendation, invocation, or routing sentence.
 
 ## Core Behaviors
 These behaviors apply across every routed skill.

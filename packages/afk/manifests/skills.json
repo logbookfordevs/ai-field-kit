@@ -308,7 +308,7 @@
             ],
             "default": false,
             "autoInvocation": false,
-            "role": "primitive",
+            "role": "utility",
             "composes": [],
             "profiles": []
         },
@@ -323,7 +323,7 @@
             ],
             "default": false,
             "autoInvocation": false,
-            "role": "primitive",
+            "role": "utility",
             "composes": [],
             "profiles": []
         },
@@ -338,7 +338,7 @@
             ],
             "default": false,
             "autoInvocation": false,
-            "role": "primitive",
+            "role": "utility",
             "composes": [],
             "profiles": []
         },
@@ -510,7 +510,7 @@
             ],
             "default": false,
             "autoInvocation": true,
-            "role": "primitive",
+            "role": "utility",
             "composes": [],
             "profiles": []
         },
@@ -525,7 +525,7 @@
             ],
             "default": false,
             "autoInvocation": true,
-            "role": "primitive",
+            "role": "utility",
             "composes": [],
             "profiles": []
         },

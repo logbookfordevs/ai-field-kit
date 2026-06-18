@@ -9,6 +9,12 @@ AFK owns the AFK-specific rule and hook behavior. It delegates skills to the
 official `skills` CLI, MCPs to `add-mcp`, and plugins to their own installer
 commands.
 
+AFK skills are modeled as composable parts: primitives, wrappers, flows,
+utilities, references, and routers. That shape keeps automatic model discovery
+small while still giving people named workflows to invoke directly. See
+[Skill Composition](docs/skill-composition.md) for the full mental model, or
+open the visual companion in [Skill Composition Studio](docs/skill-composition.html).
+
 ## Quick Start
 
 Install the published CLI from npm:
@@ -221,6 +227,17 @@ agents hide the skill from normal model discovery unless it is explicitly
 attached or invoked. Use `autoInvocation: true` when plain-language requests
 should discover the skill.
 
+Skill manifests can also describe architecture metadata:
+
+| Field | Meaning |
+|---|---|
+| `role` | The skill's compositional shape: `primitive`, `wrapper`, `flow`, `utility`, `reference`, or `router`. |
+| `composes` | Skills that a wrapper or flow is built from. Setup can suggest these when the parent is selected. |
+| `profiles` | Future activation groups. Present now as metadata, often empty until profile support lands. |
+
+The short version: primitives are usually model-discoverable, wrappers and flows
+are usually manual, and composition makes the relationship explicit.
+
 ### Manifest Show
 
 | Command | Shows |
@@ -387,7 +404,10 @@ project scope it writes project host files.
       "source": "https://github.com/your-org/dev-kit",
       "args": ["--skill", "review-pr"],
       "default": true,
-      "autoInvocation": false
+      "autoInvocation": false,
+      "role": "wrapper",
+      "composes": ["source-driven-development"],
+      "profiles": []
     }
   ]
 }
@@ -396,6 +416,11 @@ project scope it writes project host files.
 `default: true` means non-interactive setup includes the skill. If the skill
 depends on another setup helper, keep it `default: false` until the dependency
 is also installed by default.
+
+`role`, `autoInvocation`, and `composes` make the manifest readable as a skill
+system instead of a flat install list. For example, a wrapper can stay manually
+invoked while composing smaller primitives that remain available to automatic
+model discovery.
 
 ### MCPs
 

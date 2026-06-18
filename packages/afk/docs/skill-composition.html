@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AFK Skill Composition Studio</title>
+<script>
+(() => {
+  const saved = localStorage.getItem("afk-skill-composition-theme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (saved === "dark" || (!saved && prefersDark)) document.documentElement.classList.add("dark");
+})();
+</script>
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --paper: #ffffff;
+    --paper-2: #f0eee8;
+    --ink: #171512;
+    --muted: #5f5b52;
+    --soft: #ded9ce;
+    --line: #cbc5b8;
+    --primitive: #c75a49;
+    --wrapper: #247268;
+    --flow: #50508f;
+    --utility: #755a32;
+    --reference: #395f85;
+    --router: #8d3b64;
+    --shadow: rgba(23, 21, 18, 0.08);
+    --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+  }
+
+  html.dark {
+    --bg: #141414;
+    --paper: #1e1e1d;
+    --paper-2: #292724;
+    --ink: #f7f0e3;
+    --muted: #b8ad9b;
+    --soft: #4a4134;
+    --line: #5a4f40;
+    --primitive: #ff7b62;
+    --wrapper: #69c7b5;
+    --flow: #a79cff;
+    --utility: #ebb15e;
+    --reference: #7db7f2;
+    --router: #f078ad;
+    --shadow: rgba(0, 0, 0, 0.22);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font: inherit; }
+  a { color: inherit; }
+  code { font-family: var(--mono); font-size: 0.92em; }
+
+  .wrap {
+    width: min(1080px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 18px 0 80px;
+  }
+
+  .topbar {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .mark {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--line);
+    background: linear-gradient(135deg, var(--primitive) 0 50%, var(--wrapper) 50% 100%);
+  }
+
+  .mark span { display: none; }
+
+  .theme-toggle {
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--paper), transparent 6%);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 0.68fr) minmax(420px, 1.32fr);
+    gap: clamp(22px, 4vw, 54px);
+    align-items: start;
+    padding: clamp(34px, 6vw, 72px) 0 44px;
+  }
+
+  .hero-copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    min-width: 0;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 34px;
+    height: 1px;
+    background: var(--primitive);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 0.98;
+    letter-spacing: -0.015em;
+    margin: 0;
+    max-width: 10ch;
+    font-weight: 520;
+  }
+
+  .hero-copy p {
+    max-width: 34rem;
+    color: var(--muted);
+    font-size: 17px;
+    margin: 22px 0 0;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .action {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 14px;
+    background: var(--paper);
+    color: var(--ink);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .action.primary {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+
+  .studio {
+    border: 1px solid var(--line);
+    background: var(--paper);
+    border-radius: 8px;
+    min-height: 520px;
+    padding: 16px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 18px;
+    overflow: hidden;
+  }
+
+  .studio-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+  }
+
+  .studio-title {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .pulse-toggle {
+    border: 1px solid var(--line);
+    background: var(--paper-2);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .composition-stage {
+    position: relative;
+    min-height: 410px;
+    border: 1px solid color-mix(in srgb, var(--line), transparent 18%);
+    background:
+      linear-gradient(color-mix(in srgb, var(--line), transparent 82%) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--line), transparent 82%) 1px, transparent 1px);
+    background-size: 40px 40px;
+    border-radius: 8px;
+    padding: 18px;
+  }
+
+  .node {
+    position: absolute;
+    border: 1px solid color-mix(in srgb, var(--node-color), var(--line) 58%);
+    background: var(--paper);
+    border-radius: 8px;
+    padding: 12px;
+    min-width: 158px;
+    z-index: 2;
+  }
+
+  .node .kind {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--node-color);
+    margin-bottom: 4px;
+  }
+
+  .node .name {
+    font-weight: 720;
+    letter-spacing: -0.01em;
+  }
+
+  .node .desc {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 5px;
+  }
+
+  .node.primitive { --node-color: var(--primitive); }
+  .node.wrapper { --node-color: var(--wrapper); }
+  .node.flow { --node-color: var(--flow); }
+  .node.reference { --node-color: var(--reference); }
+
+  .n-grilling { left: 6%; top: 13%; }
+  .n-truss { left: 7%; bottom: 12%; }
+  .n-design { right: 6%; top: 13%; }
+  .n-code-grill { left: 50%; top: 45%; transform: translate(-50%, -50%); min-width: 190px; }
+  .n-sprint { right: 8%; bottom: 12%; }
+
+  .connector-map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: visible;
+  }
+
+  .connector {
+    fill: none;
+    stroke: color-mix(in srgb, var(--wrapper), transparent 12%);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-dasharray: 7 8;
+    opacity: 0.78;
+  }
+
+  .connector-a { stroke: color-mix(in srgb, var(--primitive), var(--wrapper) 28%); }
+  .connector-b { stroke: color-mix(in srgb, var(--primitive), var(--line) 18%); }
+  .connector-c { stroke: color-mix(in srgb, var(--wrapper), var(--primitive) 18%); }
+
+  .connector-dot {
+    fill: var(--paper);
+    stroke: color-mix(in srgb, var(--wrapper), transparent 12%);
+    stroke-width: 2;
+  }
+
+  .studio.pulsing .connector {
+    animation: current 1.8s linear infinite;
+  }
+
+  .studio.pulsing .node {
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+
+  .studio.pulsing .n-truss { animation-delay: 0.18s; }
+  .studio.pulsing .n-design { animation-delay: 0.36s; }
+  .studio.pulsing .n-code-grill { animation-delay: 0.54s; }
+  .studio.pulsing .n-sprint { animation-delay: 0.72s; }
+
+  @keyframes current {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: -30; }
+  }
+
+  @keyframes breathe {
+    0%, 100% { background: var(--paper); }
+    50% { background: color-mix(in srgb, var(--node-color), var(--paper) 88%); }
+  }
+
+  .studio-foot {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .readout {
+    border-top: 1px solid var(--line);
+    background: var(--paper-2);
+    border-radius: 0;
+    padding: 10px;
+  }
+
+  .readout b {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+
+  .readout span { font-size: 13px; }
+
+  section {
+    margin-top: 70px;
+    scroll-margin-top: 86px;
+  }
+
+  .section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(280px, 1fr);
+    gap: 28px;
+    align-items: end;
+    border-top: 1px solid var(--line);
+    padding-top: 22px;
+    margin-bottom: 24px;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.04;
+    margin: 0;
+    font-weight: 520;
+    letter-spacing: -0.01em;
+  }
+
+  .section-head p {
+    margin: 0;
+    color: var(--muted);
+    max-width: 42rem;
+  }
+
+  .role-list {
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .role-row {
+    display: grid;
+    grid-template-columns: 160px minmax(180px, 0.52fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: baseline;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .role-token {
+    width: fit-content;
+    border: 1px solid color-mix(in srgb, var(--role-color), var(--line) 38%);
+    color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color), transparent 88%);
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .role-row h3 {
+    margin: 0;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  .role-row p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .primitive-color { --role-color: var(--primitive); }
+  .wrapper-color { --role-color: var(--wrapper); }
+  .flow-color { --role-color: var(--flow); }
+  .utility-color { --role-color: var(--utility); }
+  .reference-color { --role-color: var(--reference); }
+  .router-color { --role-color: var(--router); }
+
+  .split {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 18px;
+  }
+
+  .panel {
+    border-top: 1px solid var(--line);
+    padding: 18px 0 0;
+  }
+
+  .panel h3 {
+    margin: 0 0 10px;
+    font-size: 19px;
+  }
+
+  .panel p {
+    margin: 0 0 12px;
+    color: var(--muted);
+  }
+
+  .invocation-switch {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .switch-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: start;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .switch-row .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    margin-top: 4px;
+    background: var(--primitive);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--primitive), transparent 84%);
+  }
+
+  .switch-row.off .dot {
+    background: var(--wrapper);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--wrapper), transparent 84%);
+  }
+
+  .switch-row b { display: block; }
+  .switch-row span { color: var(--muted); font-size: 13px; }
+
+  .manifest {
+    background: #15130f;
+    color: #f8ead7;
+    border-radius: 8px;
+    padding: 18px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .manifest .key { color: #ffb07c; }
+  .manifest .str { color: #9de0cf; }
+  .manifest .bool { color: #b6adff; }
+  .manifest .punct { color: #8c8374; }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0 22px;
+    border-top: 1px solid var(--line);
+  }
+
+  .step {
+    border-bottom: 1px solid var(--line);
+    padding: 16px 0;
+    min-height: 0;
+  }
+
+  .step .num {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+
+  .step b { display: block; margin-bottom: 8px; }
+  .step span { color: var(--muted); font-size: 13px; }
+
+  .quote {
+    border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    padding: 22px 0;
+    color: var(--ink);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .quote p {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: clamp(24px, 3.5vw, 42px);
+    line-height: 1.08;
+  }
+
+  .quote code {
+    color: var(--wrapper);
+  }
+
+  footer {
+    margin-top: 80px;
+    color: var(--muted);
+    font-size: 13px;
+    border-top: 1px solid var(--line);
+    padding-top: 22px;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 980px) {
+    .hero,
+    .split {
+      grid-template-columns: 1fr;
+    }
+
+    .role-row { grid-template-columns: 130px minmax(160px, 0.5fr) minmax(0, 1fr); }
+  }
+
+  @media (max-width: 680px) {
+    .wrap { width: min(100% - 22px, 1180px); }
+    .topbar { position: static; }
+    .hero { padding-top: 12px; }
+    .studio { min-height: 720px; }
+    .composition-stage { min-height: 570px; }
+    .node { min-width: min(82vw, 260px); position: relative; left: auto; right: auto; top: auto; bottom: auto; transform: none; margin: 12px auto; }
+    .connector-map { display: none; }
+    .studio-foot { grid-template-columns: 1fr; }
+    .section-head { grid-template-columns: 1fr; gap: 8px; }
+    .role-row { grid-template-columns: 1fr; gap: 6px; }
+    .steps { grid-template-columns: 1fr; }
+    .quote { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="crumb">
+        <span class="mark" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span>
+        <span>AFK docs / skill composition studio</span>
+      </div>
+      <button class="theme-toggle" type="button" id="themeToggle">toggle theme</button>
+    </div>
+
+    <main>
+      <section class="hero" aria-labelledby="title">
+        <div class="hero-copy">
+          <div class="eyebrow">From prompt pile to component system</div>
+          <h1 id="title">Skills compose like interfaces.</h1>
+          <p>
+            AFK keeps the small things small: primitives stay discoverable, wrappers become named experiences,
+            and flows carry the larger run shape.
+          </p>
+          <div class="actions">
+            <a class="action primary" href="#composition">see composition</a>
+            <a class="action" href="skill-composition.md">read the markdown</a>
+          </div>
+        </div>
+
+        <div class="studio" id="studio">
+          <div class="studio-head">
+            <div>
+              <div class="studio-title">live composition sketch</div>
+              <strong>AFK - Code Grill as a wrapper</strong>
+            </div>
+            <button class="pulse-toggle" type="button" id="pulseToggle">animate current</button>
+          </div>
+
+          <div class="composition-stage" aria-label="Skill composition diagram">
+            <svg class="connector-map" viewBox="0 0 1000 520" aria-hidden="true" focusable="false">
+              <path class="connector connector-a" d="M 258 150 C 330 168 374 218 426 250"></path>
+              <path class="connector connector-b" d="M 258 390 C 332 356 376 304 426 278"></path>
+              <path class="connector connector-c" d="M 766 150 C 690 168 626 216 574 250"></path>
+              <circle class="connector-dot" cx="426" cy="250" r="5"></circle>
+              <circle class="connector-dot" cx="426" cy="278" r="5"></circle>
+              <circle class="connector-dot" cx="574" cy="250" r="5"></circle>
+            </svg>
+
+            <article class="node primitive n-grilling">
+              <div class="kind">primitive</div>
+              <div class="name">grilling</div>
+              <div class="desc">the interview loop</div>
+            </article>
+
+            <article class="node primitive n-truss">
+              <div class="kind">primitive</div>
+              <div class="name">truss-evaluation</div>
+              <div class="desc">decision quality</div>
+            </article>
+
+            <article class="node primitive n-design">
+              <div class="kind">primitive</div>
+              <div class="name">codebase-design</div>
+              <div class="desc">architecture vocabulary</div>
+            </article>
+
+            <article class="node wrapper n-code-grill">
+              <div class="kind">wrapper</div>
+              <div class="name">afk-code-grill</div>
+              <div class="desc">one named experience</div>
+            </article>
+
+            <article class="node flow n-sprint">
+              <div class="kind">flow</div>
+              <div class="name">afk-sprint</div>
+              <div class="desc">larger execution package</div>
+            </article>
+          </div>
+
+          <div class="studio-foot">
+            <div class="readout"><b>role</b><span>wrapper</span></div>
+            <div class="readout"><b>auto-invocation</b><span>off</span></div>
+            <div class="readout"><b>composes</b><span>3 primitives</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="roles">
+        <div class="section-head">
+          <h2>Six roles. One decision.</h2>
+          <p>Each skill should reveal whether it is a reusable part, a named experience, or a larger operating mode.</p>
+        </div>
+        <div class="role-list">
+          <article class="role-row primitive-color">
+            <span class="role-token">primitive</span>
+            <h3>Reusable behavior</h3>
+            <p>Small enough to compose. Useful on its own. Good candidate for model discovery.</p>
+          </article>
+          <article class="role-row wrapper-color">
+            <span class="role-token">wrapper</span>
+            <h3>Named experience</h3>
+            <p>A user-facing skill that bundles primitives into a focused workflow.</p>
+          </article>
+          <article class="role-row flow-color">
+            <span class="role-token">flow</span>
+            <h3>Repeatable motion</h3>
+            <p>A larger run shape that coordinates phases, packets, tracking, or execution.</p>
+          </article>
+          <article class="role-row utility-color">
+            <span class="role-token">utility</span>
+            <h3>Specific helper</h3>
+            <p>Direct operational support for pickup, handoff, session work, or terminal coordination.</p>
+          </article>
+          <article class="role-row reference-color">
+            <span class="role-token">reference</span>
+            <h3>Knowledge surface</h3>
+            <p>A preference map, registry guide, or lookup surface that informs another action.</p>
+          </article>
+          <article class="role-row router-color">
+            <span class="role-token">router</span>
+            <h3>Skill selection</h3>
+            <p>A compass that chooses the smallest useful next skill without becoming the workflow.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="invocation">
+        <div class="section-head">
+          <h2><code>autoInvocation</code> says the real thing.</h2>
+          <p>The field is about discovery, not permission. A discoverable skill can still be invoked manually.</p>
+        </div>
+        <div class="split">
+          <div class="panel">
+            <h3>Not "model vs user"</h3>
+            <p>
+              A model-discoverable skill can still be invoked by a person. A manual skill is not forbidden
+              to the model forever. It just stays out of automatic discovery until someone asks for it.
+            </p>
+            <div class="invocation-switch">
+              <div class="switch-row">
+                <span class="dot"></span>
+                <div><b>autoInvocation: true</b><span>Expose this skill to automatic model discovery.</span></div>
+              </div>
+              <div class="switch-row off">
+                <span class="dot"></span>
+                <div><b>autoInvocation: false</b><span>Keep this as a manually invoked wrapper, flow, or specialist surface.</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>The usual AFK instinct</h3>
+            <p>Primitives are often model-discoverable. Wrappers and flows are usually manual. References depend on how broad they are.</p>
+            <div class="steps">
+              <div class="step"><div class="num">primitive</div><b>Small context</b><span>Good to discover automatically when the topic appears.</span></div>
+              <div class="step"><div class="num">wrapper</div><b>Named intent</b><span>Better when a person asks for the experience directly.</span></div>
+              <div class="step"><div class="num">flow</div><b>High agency</b><span>Usually too much motion to trigger from a casual phrase.</span></div>
+              <div class="step"><div class="num">reference</div><b>Judgment call</b><span>Auto when broadly helpful, manual when situational.</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="composition">
+        <div class="section-head">
+          <h2>Wrappers are the UX. Primitives are the leverage.</h2>
+          <p>The person asks for one experience. The skill can still be built from smaller pieces.</p>
+        </div>
+        <div class="quote">
+          <p>Ask for <code>afk-code-grill</code>. Get the interview loop, the Truss lens, and the architecture vocabulary.</p>
+          <a class="action" href="#manifest">inspect JSON</a>
+        </div>
+      </section>
+
+      <section id="manifest">
+        <div class="section-head">
+          <h2>A skill entry should explain itself.</h2>
+          <p>The manifest becomes a system map: shape, discovery, composition, future profile membership.</p>
+        </div>
+        <div class="split">
+          <div class="panel">
+            <h3>Four questions</h3>
+            <p>A well-shaped entry should answer these quickly.</p>
+            <div class="steps">
+              <div class="step"><div class="num">01</div><b>What is it?</b><span>`role` gives the compositional shape.</span></div>
+              <div class="step"><div class="num">02</div><b>Can it auto-discover?</b><span>`autoInvocation` controls model discovery.</span></div>
+              <div class="step"><div class="num">03</div><b>What does it build on?</b><span>`composes` names the dependency story.</span></div>
+              <div class="step"><div class="num">04</div><b>Where will it live?</b><span>`profiles` prepares future activation sets.</span></div>
+            </div>
+          </div>
+          <pre class="manifest" aria-label="Example skill manifest entry"><span class="punct">{</span>
+  <span class="key">"id"</span><span class="punct">:</span> <span class="str">"afk-code-grill"</span><span class="punct">,</span>
+  <span class="key">"label"</span><span class="punct">:</span> <span class="str">"AFK - Code Grill"</span><span class="punct">,</span>
+  <span class="key">"role"</span><span class="punct">:</span> <span class="str">"wrapper"</span><span class="punct">,</span>
+  <span class="key">"autoInvocation"</span><span class="punct">:</span> <span class="bool">false</span><span class="punct">,</span>
+  <span class="key">"composes"</span><span class="punct">:</span> <span class="punct">[</span>
+    <span class="str">"grilling"</span><span class="punct">,</span>
+    <span class="str">"truss-evaluation"</span><span class="punct">,</span>
+    <span class="str">"codebase-design"</span>
+  <span class="punct">],</span>
+  <span class="key">"profiles"</span><span class="punct">:</span> <span class="punct">[],</span>
+  <span class="key">"default"</span><span class="punct">:</span> <span class="bool">true</span>
+<span class="punct">}</span></pre>
+        </div>
+      </section>
+
+      <section id="setup">
+        <div class="section-head">
+          <h2>Setup makes composition visible.</h2>
+          <p>The CLI can keep selection simple while still showing the composed children before install.</p>
+        </div>
+        <div class="steps">
+          <div class="step"><div class="num">step 01</div><b>Select wrapper</b><span>The main list stays flat so every skill remains a real selectable item.</span></div>
+          <div class="step"><div class="num">step 02</div><b>Review composed skills</b><span>AFK shows the primitives the wrapper is built from in a second prompt.</span></div>
+          <div class="step"><div class="num">step 03</div><b>Install the set</b><span>The user can keep or remove suggested children before installation.</span></div>
+          <div class="step"><div class="num">step 04</div><b>Sync invocation</b><span>AFK writes policy metadata so auto-discovery follows the manifest.</span></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Companion artifact for <code>skill-composition.md</code>.</span>
+      <span>Small pieces. Named compositions. Explicit discovery.</span>
+    </footer>
+  </div>
+
+<script>
+const themeToggle = document.getElementById("themeToggle");
+themeToggle.addEventListener("click", () => {
+  document.documentElement.classList.toggle("dark");
+  localStorage.setItem("afk-skill-composition-theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
+});
+
+const studio = document.getElementById("studio");
+const pulseToggle = document.getElementById("pulseToggle");
+pulseToggle.addEventListener("click", () => {
+  studio.classList.toggle("pulsing");
+  pulseToggle.textContent = studio.classList.contains("pulsing") ? "pause current" : "animate current";
+});
+</script>
+</body>
+</html>
