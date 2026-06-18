@@ -436,6 +436,7 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
+    manifestShowReact: false,
     selectedManifestCategories: [],
     homeDir: mkdtempSync(join(tmpdir(), "afk-configure-home-")),
     repoDir: process.cwd(),

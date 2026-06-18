@@ -347,10 +347,12 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--source <source>                Show manifests from this source",
       "--local                          Show ./afk/manifests instead of the global cache",
+      "--react                          Show skills as a React-style composition tree",
     ],
     examples: [
       "afk show",
       "afk show skills",
+      "afk show skills --react",
       "afk show skills mcps",
       "afk show --local",
       "afk show skills --source your-org/dev-kit",
@@ -363,10 +365,12 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--source <source>                Show manifests from this source",
       "--local                          Show ./afk/manifests instead of the global cache",
+      "--react                          Show skills as a React-style composition tree",
     ],
     examples: [
       "afk show",
       "afk show skills",
+      "afk show skills --react",
       "afk show skills mcps",
       "afk show --local",
       "afk show skills --source your-org/dev-kit",
@@ -379,10 +383,12 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--source <source>                Show manifests from this source",
       "--local                          Show ./afk/manifests instead of the global cache",
+      "--react                          Show skills as a React-style composition tree",
     ],
     examples: [
       "afk show",
       "afk show skills",
+      "afk show skills --react",
       "afk show skills mcps",
       "afk show --local",
       "afk show skills --source your-org/dev-kit",
@@ -413,6 +419,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let manifestLocal = false;
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
+  let manifestShowReact = false;
   const manifestCategories = manifestCategoriesFromCommandPath(commandPath);
   if (manifestCategories.kind === "error") {
     return { help: false, kind: "error", error: manifestCategories.error };
@@ -504,6 +511,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--empty") {
       empty = true;
+      continue;
+    }
+
+    if (arg === "--react") {
+      if (!isManifestShowCommand(key)) {
+        return { help: false, kind: "error", error: "Unknown option: --react" };
+      }
+
+      manifestShowReact = true;
       continue;
     }
 
@@ -605,6 +621,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       manifestLocal,
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
+      manifestShowReact,
       selectedManifestCategories,
       homeDir,
       repoDir,

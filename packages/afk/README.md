@@ -257,6 +257,7 @@ are usually manual, and composition makes the relationship explicit.
 |---|---|
 | `afk show` | Cached global AFK manifests. |
 | `afk show skills` | Cached skills manifest. |
+| `afk show skills --react` | Cached skills as a React-style composition tree. |
 | `afk show skills mcps` | Multiple cached manifests in one run. |
 | `afk show --source <source>` | Inspect a source directly without changing the cache. |
 | `afk show --local` | Inspect project-local `./afk/manifests`. |
@@ -267,6 +268,12 @@ are usually manual, and composition makes the relationship explicit.
 will use for normal setup. Add `--source` when you want to inspect a repo,
 branch, raw URL, or local source path without writing that source into the
 cache.
+
+Use `afk show skills --react` when you want the skills manifest rendered as
+AFK's React-inspired architecture: auto-discoverable skills under
+`<ModelDiscovery>`, explicit skills under `<ExplicitInvocation>`, and composed
+skills as nested primitive, wrapper, flow, router, utility, or reference
+components.
 
 ## Manifest Model
 

@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `cli:` added `afk show skills --react` to render the skills manifest as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
+
 ### Changed
 
 - `cli:` moved manifest cache updates to top-level `afk refresh`, made `afk setup` consume the cache by default, and made `afk show` inspect the cache unless `--source` is passed.

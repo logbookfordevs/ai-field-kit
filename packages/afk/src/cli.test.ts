@@ -272,9 +272,11 @@ test("runCli prints contextual manifest show help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK show"));
   assert.ok(output.join("\n").includes("--local"));
+  assert.ok(output.join("\n").includes("--react"));
   assert.ok(!output.join("\n").includes("--rules"));
   assert.ok(!output.join("\n").includes("--hooks"));
   assert.ok(output.join("\n").includes("afk show skills"));
+  assert.ok(output.join("\n").includes("afk show skills --react"));
   assert.ok(output.join("\n").includes("afk show skills mcps"));
   assert.ok(!output.join("\n").includes("afk show --rules --skills"));
   assert.ok(!output.join("\n").includes("AFK setup\n"));
@@ -349,6 +351,95 @@ test("runCli shows cached manifests by default", async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("runCli shows skills as a React-style composition tree", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(String(input));
+    return new Response("missing", { status: 404 });
+  };
+
+  try {
+    const homeDir = localHomeWithManifests({
+      "presets.json": { version: 1, defaultsSource: "acme/dev-kit", presets: [] },
+      "skills.json": {
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "afk-code-grill",
+            label: "AFK - Code Grill",
+            source: "https://github.com/acme/local-kit",
+            args: ["--skill", "afk-code-grill"],
+            default: true,
+            autoInvocation: false,
+            role: "wrapper",
+            composes: ["grilling", "truss-evaluation", "codebase-design"],
+          },
+          {
+            id: "grilling",
+            label: "Grilling",
+            source: "https://github.com/acme/local-kit",
+            args: ["--skill", "grilling"],
+            default: true,
+            autoInvocation: true,
+            role: "primitive",
+          },
+          {
+            id: "truss-evaluation",
+            label: "Truss Evaluation",
+            source: "https://github.com/acme/local-kit",
+            args: ["--skill", "truss-evaluation"],
+            default: true,
+            autoInvocation: true,
+            role: "primitive",
+          },
+        ],
+      },
+    });
+    const output: string[] = [];
+    const code = await withConsole(output, () => runCli(["show", "skills", "--react"], { HOME: homeDir }));
+    const text = output.join("\n");
+
+    assert.equal(code, 0);
+    assert.deepEqual(requestedUrls, []);
+    assert.ok(text.includes("components 3 (2 auto-discoverable, 1 explicit)"));
+    assert.ok(text.includes("<AFKSkillTree>"));
+    assert.ok(text.includes("<ModelDiscovery>"));
+    assert.ok(text.includes("<ExplicitInvocation>"));
+    assert.ok(text.includes("<WrapperSkill id=\"afk-code-grill\" autoDiscovery={false} defaultInstalled>"));
+    assert.ok(text.includes("<PrimitiveSkill ref=\"grilling\" autoDiscovery defaultInstalled />"));
+    assert.ok(text.includes("<ExternalSkill ref=\"codebase-design\" external />"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("runCli treats show --react as the skills React view", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "acme/dev-kit", presets: [] },
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  });
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["show", "--react"], { HOME: homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("Skills"));
+  assert.ok(!text.includes("MCPs"));
+});
+
+test("runCli rejects the React skill view for non-skill manifests", async () => {
+  const homeDir = localHomeWithManifests({
+    "mcps.json": { version: 1, items: [] },
+  });
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["show", "mcps", "--react"], { HOME: homeDir }));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("The React skill view only supports skills."));
 });
 
 test("runCli shows source manifests when source is explicit", async () => {

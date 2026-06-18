@@ -431,6 +431,37 @@
   .code-window .bool { color: #d9c9ff; }
   .code-window .comment { color: #8c8374; }
 
+  .current-tree-card {
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+  }
+
+  .current-tree-note {
+    color: var(--muted);
+    margin: 0 0 16px;
+    max-width: 54rem;
+  }
+
+  .current-tree-window {
+    max-height: 620px;
+    min-height: 420px;
+    line-height: 1.62;
+  }
+
+  .code-window .jsx-punct { color: #8c8374; }
+  .code-window .jsx-root { color: #9de0cf; }
+  .code-window .jsx-group { color: #f8ead7; }
+  .code-window .jsx-primitive { color: #9de0cf; }
+  .code-window .jsx-wrapper { color: #f3bf68; }
+  .code-window .jsx-flow { color: #b6adff; }
+  .code-window .jsx-utility { color: #dca85e; }
+  .code-window .jsx-reference { color: #86b9ed; }
+  .code-window .jsx-router { color: #ff8fbd; }
+  .code-window .jsx-external { color: #ff987d; }
+  .code-window .jsx-prop { color: #ffb07c; }
+  .code-window .jsx-string { color: #f8ead7; }
+  .code-window .jsx-false { color: #ff987d; }
+
   .translation {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -691,6 +722,7 @@
           <div class="actions">
             <a class="action primary" href="#react-analogy">see the React analogy</a>
             <a class="action" href="#composition">see composition</a>
+            <a class="action" href="#current-tree">current AFK tree</a>
             <a class="action" href="skill-composition.md">read the markdown</a>
           </div>
         </div>
@@ -946,6 +978,87 @@
           <div class="step"><div class="num">step 04</div><b>Sync invocation</b><span>AFK writes policy metadata so auto-discovery follows the manifest.</span></div>
         </div>
       </section>
+
+      <section id="current-tree">
+        <div class="section-head">
+          <h2>Current AFK, rendered as composition.</h2>
+          <p>
+            This is the same mental model turned back onto the real manifest. The CLI can print this view with
+            <code>afk show skills --react</code>: discoverable pieces first, explicit wrappers and flows second,
+            and composed children nested where they belong.
+          </p>
+        </div>
+
+        <div class="current-tree-card">
+          <p class="current-tree-note">
+            The code is not runtime React. It is a readable projection of AFK's skill architecture: roles become
+            component names, <code>autoInvocation</code> becomes <code>autoDiscovery</code>, and <code>composes</code>
+            becomes children.
+          </p>
+          <pre class="code-window current-tree-window" aria-label="Current AFK skills rendered as React-style composition" data-jsx-tree>&lt;AFKSkillTree&gt;
+  &lt;ModelDiscovery&gt;
+    &lt;PrimitiveSkill id="afk-doc-craft" autoDiscovery defaultInstalled /&gt;
+    &lt;ReferenceSkill id="afk-ui-registry-preferences" autoDiscovery defaultInstalled /&gt;
+    &lt;RouterSkill id="afk-compass" autoDiscovery defaultInstalled /&gt;
+    &lt;PrimitiveSkill id="truss-evaluation" autoDiscovery defaultInstalled /&gt;
+    &lt;PrimitiveSkill id="diagnosing-bugs" autoDiscovery defaultInstalled /&gt;
+    &lt;PrimitiveSkill id="plannotator-setup-goal" autoDiscovery defaultInstalled /&gt;
+    &lt;PrimitiveSkill id="tdd" autoDiscovery&gt;
+      &lt;PrimitiveSkill ref="codebase-design" autoDiscovery defaultInstalled /&gt;
+    &lt;/PrimitiveSkill&gt;
+    &lt;PrimitiveSkill id="source-driven-development" autoDiscovery /&gt;
+    &lt;PrimitiveSkill id="doubt-driven-development" autoDiscovery /&gt;
+    &lt;PrimitiveSkill id="code-simplification" autoDiscovery /&gt;
+    &lt;PrimitiveSkill id="cmux" autoDiscovery /&gt;
+    &lt;PrimitiveSkill id="tmux" autoDiscovery /&gt;
+    &lt;PrimitiveSkill id="grilling" autoDiscovery defaultInstalled /&gt;
+    &lt;PrimitiveSkill id="domain-modeling" autoDiscovery defaultInstalled /&gt;
+    &lt;PrimitiveSkill id="codebase-design" autoDiscovery defaultInstalled /&gt;
+  &lt;/ModelDiscovery&gt;
+  &lt;ExplicitInvocation&gt;
+    &lt;WrapperSkill id="afk-animated-driven-frontend" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;UtilitySkill id="afk-ask" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;WrapperSkill id="afk-brainstorming-facilitator" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;WrapperSkill id="afk-code-grill" autoDiscovery={false} defaultInstalled&gt;
+      &lt;PrimitiveSkill ref="grilling" autoDiscovery defaultInstalled /&gt;
+      &lt;PrimitiveSkill ref="truss-evaluation" autoDiscovery defaultInstalled /&gt;
+      &lt;PrimitiveSkill ref="codebase-design" autoDiscovery defaultInstalled /&gt;
+    &lt;/WrapperSkill&gt;
+    &lt;WrapperSkill id="afk-to-prd-spec" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;WrapperSkill id="afk-to-issues" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;FlowSkill id="afk-execution-tracking" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;UtilitySkill id="afk-pickup" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;UtilitySkill id="afk-resume-workflow" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;FlowSkill id="afk-sprint" autoDiscovery={false} defaultInstalled&gt;
+      &lt;PrimitiveSkill ref="plannotator-setup-goal" autoDiscovery defaultInstalled /&gt;
+      &lt;WrapperSkill ref="afk-to-issues" autoDiscovery={false} defaultInstalled /&gt;
+      &lt;FlowSkill ref="afk-execution-tracking" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;/FlowSkill&gt;
+    &lt;FlowSkill id="afk-turbo" autoDiscovery={false} defaultInstalled&gt;
+      &lt;PrimitiveSkill ref="plannotator-setup-goal" autoDiscovery defaultInstalled /&gt;
+    &lt;/FlowSkill&gt;
+    &lt;UtilitySkill id="plannotator-compound" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;UtilitySkill id="plannotator-visual-explainer" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;PrimitiveSkill id="html" autoDiscovery={false} /&gt;
+    &lt;PrimitiveSkill id="html-plan" autoDiscovery={false} /&gt;
+    &lt;PrimitiveSkill id="html-diagram" autoDiscovery={false} /&gt;
+    &lt;ReferenceSkill id="writing-great-skills" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;WrapperSkill id="teach" autoDiscovery={false} /&gt;
+    &lt;WrapperSkill id="grill-with-docs" autoDiscovery={false}&gt;
+      &lt;PrimitiveSkill ref="grilling" autoDiscovery defaultInstalled /&gt;
+      &lt;PrimitiveSkill ref="domain-modeling" autoDiscovery defaultInstalled /&gt;
+    &lt;/WrapperSkill&gt;
+    &lt;WrapperSkill id="grill-me" autoDiscovery={false}&gt;
+      &lt;PrimitiveSkill ref="grilling" autoDiscovery defaultInstalled /&gt;
+    &lt;/WrapperSkill&gt;
+    &lt;WrapperSkill id="prototype" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;UtilitySkill id="handoff" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;WrapperSkill id="afk-interactive-code-review" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;WrapperSkill id="afk-pr-story-flow-mermaid" autoDiscovery={false} defaultInstalled /&gt;
+  &lt;/ExplicitInvocation&gt;
+&lt;/AFKSkillTree&gt;</pre>
+        </div>
+      </section>
     </main>
 
     <footer>
@@ -967,6 +1080,74 @@ pulseToggle.addEventListener("click", () => {
   studio.classList.toggle("pulsing");
   pulseToggle.textContent = studio.classList.contains("pulsing") ? "pause current" : "animate current";
 });
+
+for (const block of document.querySelectorAll("[data-jsx-tree]")) {
+  block.innerHTML = highlightJsx(block.textContent);
+}
+
+function highlightJsx(source) {
+  return escapeHtml(source)
+    .replace(/&lt;[^\n]*?&gt;/g, highlightJsxTag);
+}
+
+function highlightJsxTag(token) {
+  const closing = token.startsWith("&lt;/");
+  const selfClosing = token.endsWith("/&gt;");
+  const open = closing ? "&lt;/" : "&lt;";
+  const close = selfClosing ? " /&gt;" : "&gt;";
+  const inner = token
+    .slice(open.length, token.length - (selfClosing ? 5 : 4))
+    .trim();
+  const firstSpace = inner.indexOf(" ");
+  const tag = firstSpace === -1 ? inner : inner.slice(0, firstSpace);
+  const attrs = closing || firstSpace === -1 ? "" : inner.slice(firstSpace + 1);
+
+  return [
+    `<span class="jsx-punct">${open}</span>`,
+    `<span class="${tagClass(tag)}">${tag}</span>`,
+    attrs ? ` ${highlightJsxAttributes(attrs)}` : "",
+    `<span class="jsx-punct">${close}</span>`,
+  ].join("");
+}
+
+function highlightJsxAttributes(attrs) {
+  return attrs
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((attr) => {
+      if (attr.includes("={false}")) {
+        const [name] = attr.split("=");
+        return `<span class="jsx-prop">${name}</span><span class="jsx-punct">={</span><span class="jsx-false">false</span><span class="jsx-punct">}</span>`;
+      }
+
+      const stringMatch = attr.match(/^([^=]+)="(.+)"$/);
+      if (stringMatch) {
+        return `<span class="jsx-prop">${stringMatch[1]}</span><span class="jsx-punct">="</span><span class="jsx-string">${stringMatch[2]}</span><span class="jsx-punct">"</span>`;
+      }
+
+      return `<span class="jsx-prop">${attr}</span>`;
+    })
+    .join(" ");
+}
+
+function tagClass(tag) {
+  if (tag === "AFKSkillTree") return "jsx-root";
+  if (tag === "ModelDiscovery" || tag === "ExplicitInvocation") return "jsx-group";
+  if (tag === "PrimitiveSkill") return "jsx-primitive";
+  if (tag === "WrapperSkill") return "jsx-wrapper";
+  if (tag === "FlowSkill") return "jsx-flow";
+  if (tag === "UtilitySkill") return "jsx-utility";
+  if (tag === "ReferenceSkill") return "jsx-reference";
+  if (tag === "RouterSkill") return "jsx-router";
+  return "jsx-external";
+}
+
+function escapeHtml(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
 </script>
 </body>
 </html>
