@@ -15,6 +15,7 @@ This changelog tracks meaningful updates by version and date.
 
 - `cli:` added `afk show skills --react` to render the skills catalog as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
 - `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills catalog and open it automatically in interactive terminals.
+- `cli:` added `afk catalog import` to backfill missing skills catalog entries from installed skills when the official `skills` CLI lockfile can recover the original source.
 
 ### Changed
 

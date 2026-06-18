@@ -123,6 +123,9 @@ afk refresh
 
 # Inspect the local catalog cache
 afk show
+
+# Backfill skills catalog entries from installed skills
+afk catalog import --dry-run
 ```
 
 Compatibility aliases such as `afk setup skills install` and
@@ -282,6 +285,45 @@ file is self-contained and does not start a server. In an interactive terminal,
 AFK opens the file automatically after writing it. Set `AFK_NO_OPEN=1` to skip
 that browser handoff.
 
+### Catalog Import
+
+Use `afk catalog import` when skills are already installed through the official
+`skills` CLI and you want AFK's local catalog to catch up.
+
+```bash
+afk catalog import --dry-run
+afk catalog import
+afk catalog import --local
+```
+
+The command scans installed skill folders, reads the `skills` CLI lockfile, and
+adds only missing entries to `skills.json`. It does not remove or overwrite
+existing catalog entries.
+
+| Flag | Meaning |
+|---|---|
+| `--dry-run` | Preview the catalog write without applying it. |
+| `--local` | Write `./afk/catalog/skills.json`; read `./.agents/skills` and `./.agents/.skill-lock.json` when present, then fall back to the home directory. |
+
+Imported skills are conservative by default:
+
+```json
+{
+  "id": "some-skill",
+  "label": "Some Skill",
+  "source": "owner/repo",
+  "args": ["--skill", "some-skill"],
+  "default": false,
+  "autoInvocation": true,
+  "role": "utility",
+  "profiles": []
+}
+```
+
+AFK only imports skills that have matching `skills` CLI lock metadata. Skills
+without lock metadata are skipped because AFK cannot recover their original
+portable source safely.
+
 ## Catalog Model
 
 AFK reads setup recommendations from JSON catalog files. The global catalog lives here:
@@ -310,6 +352,7 @@ hooks.json
 AFK has a small cache/source split:
 
 - `afk refresh` updates local catalog cache files.
+- `afk catalog import` backfills `skills.json` from installed skills with lock metadata.
 - `afk show` inspects the cache by default.
 - `afk setup` applies the cache by default.
 - `--source` reads a source for one command without changing the cache or saved default.

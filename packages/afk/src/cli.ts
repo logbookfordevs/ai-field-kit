@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
+import { runCatalogImport } from "./catalog-import.js";
 import { runSetup, runArea } from "./setup.js";
 import { runRefresh } from "./refresh.js";
 import { runManifestShow } from "./manifest-show.js";
@@ -68,6 +69,10 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (isRefreshCommand(key)) {
     return runRefresh(runtime, options);
+  }
+
+  if (isCatalogImportCommand(key)) {
+    return runCatalogImport(runtime, options);
   }
 
   if (options.defaultSourceUpdate) {
@@ -142,6 +147,7 @@ const setupOptions = {
   scope: "--scope global|project            Choose machine-wide or current-project setup",
   localScope: "--local                           Alias for --scope project",
   localManifest: "--local                           Refresh ./afk/catalog instead of the global catalog",
+  localCatalog: "--local                           Write ./afk/catalog and prefer ./.agents/skills when available",
   agent: "--agent <agent>                   Override detected targets; repeatable",
   source: "--source <source>                 Use a catalog source for this run only",
   ref: "--ref <git-ref>                   Git ref for default AFK catalog URLs",
@@ -400,6 +406,20 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk show skills --source your-org/dev-kit",
     ],
   },
+  "catalog import": {
+    title: "AFK catalog import",
+    summary: "Backfill missing skills catalog entries from installed skills with skills CLI lock metadata.",
+    usage: "afk catalog import [options]",
+    options: [
+      setupOptions.dryRun,
+      setupOptions.localCatalog,
+    ],
+    examples: [
+      "afk catalog import",
+      "afk catalog import --dry-run",
+      "afk catalog import --local",
+    ],
+  },
 };
 
 function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
@@ -480,7 +500,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         continue;
       }
 
-      if (isManifestShowCommand(key)) {
+      if (isManifestShowCommand(key) || isCatalogImportCommand(key)) {
         manifestLocal = true;
         continue;
       }
@@ -702,6 +722,10 @@ function isRefreshCommand(key: string): boolean {
   return key === "refresh" || key.startsWith("refresh ") || key === "setup refresh";
 }
 
+function isCatalogImportCommand(key: string): boolean {
+  return key === "catalog import";
+}
+
 function unavailableManifestConfigure(runtime: Runtime): number {
   runtime.io.stderr("AFK configure is not available for source-backed setup yet.");
   runtime.io.stderr("Use afk show to inspect the local catalog, or afk show --source <source> to inspect a source directly.");
@@ -759,6 +783,7 @@ Usage:
   afk setup mcps [options]
   afk setup plugins [options]
   afk setup hooks [options]
+  afk catalog import [options]
   afk show [category...] [options]
 
 Run "afk <command> --help" for command-specific options.

@@ -31,6 +31,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
   assert.ok(output.join("\n").includes("afk setup plugins [options]"));
   assert.ok(output.join("\n").includes("afk setup hooks [options]"));
+  assert.ok(output.join("\n").includes("afk catalog import [options]"));
   assert.ok(!output.join("\n").includes("afk setup utils"));
   assert.ok(output.join("\n").includes("afk show [category...] [options]"));
   assert.ok(!output.join("\n").includes("afk configure [options]"));
@@ -59,6 +60,17 @@ test("runCli prints contextual refresh help", async () => {
   assert.ok(output.join("\n").includes("afk refresh skills"));
   assert.ok(output.join("\n").includes("Refresh cached AFK catalog"));
   assert.ok(!output.join("\n").includes("--refresh-defaults"));
+});
+
+test("runCli prints contextual catalog import help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["catalog", "import", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK catalog import"));
+  assert.ok(text.includes("afk catalog import --local"));
+  assert.ok(text.includes("Backfill missing skills catalog entries"));
 });
 
 test("runCli rejects the removed refresh-defaults flag", async () => {
