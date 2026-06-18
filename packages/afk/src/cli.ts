@@ -404,7 +404,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "enable <folder>                   Move a disabled global skill back to active",
       "trash [folder]                    Move one or more global skills to Trash",
       "upgrade [skills...]               Upgrade selected or all tracked skills",
-      "categorize                        Create or update skill-catalog.json with Codex",
+      "categorize                        Create or update skills.json categories with Codex",
     ],
     examples: [
       "afk skills list",
@@ -472,7 +472,6 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent <agent>                   Limit project or agent roots",
       "--category <id-or-label>          Filter by AFK category",
       "--tag <tag>                       Filter by AFK tag",
-      "--platform <platform>             Filter by AFK platform",
       "--uncategorized                   Show records without an AFK category",
       "--json                            Print JSON records",
     ],
@@ -581,7 +580,7 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills categorize": {
     title: "AFK skills categorize",
-    summary: "Create or update ~/.agents/afk/skill-catalog.json with Codex exec.",
+    summary: "Create or update ~/.agents/afk/catalog/skills.json categorization with Codex exec.",
     usage: "afk skills categorize [options]",
     options: [
       "--mode append-missing|recategorize-all",
@@ -681,7 +680,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsJson = false;
   let skillsCategory = "";
   let skillsTag = "";
-  let skillsPlatform = "";
   let skillsUncategorized = false;
   let skillOpenApp: SkillOpenApp = "finder";
   let skillOpenTarget: "file" | "folder" = "file";
@@ -955,16 +953,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsCommand && arg === "--platform") {
-      const value = args[index + 1];
-      if (!value) {
-        return { help: false, kind: "error", error: "Missing --platform value" };
-      }
-      skillsPlatform = value;
-      index += 1;
-      continue;
-    }
-
     if (isAfkSkillsCommand && arg === "--uncategorized") {
       skillsUncategorized = true;
       continue;
@@ -1059,7 +1047,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsJson,
       skillsCategory,
       skillsTag,
-      skillsPlatform,
       skillsUncategorized,
       skillOpenApp,
       skillOpenTarget,

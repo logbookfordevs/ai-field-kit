@@ -30,7 +30,7 @@ Implemented in `packages/afk/src/skills/`:
 - `afk skills upgrade`
 - `afk skills categorize`
 
-The implementation intentionally uses `~/.agents/afk/skill-catalog.json` instead of the AppKit-era `skills.json`, which keeps AFK-owned enrichment separate from setup manifests. Mutations now cover the shared global library by default and agent-specific roots when `--agent` selects one.
+The implementation intentionally uses `~/.agents/afk/catalog/skills.json` as the single source for setup metadata and AFK-owned categorization enrichment. Mutations now cover the shared global library by default and agent-specific roots when `--agent` selects one.
 Skill rename is intentionally not exposed until AFK can support a real managed customization flow that updates agent-visible metadata without breaking upstream upgrade identity.
 
 ## AppKit Features Already Covered
@@ -44,10 +44,10 @@ AppKit `CustomTabViewController` and `CustomSkillsCatalogService` manage:
 - local search
 - enable/disable moves
 - categorized and uncategorized sections
-- missing or invalid skill-catalog messaging
+- missing or invalid skills catalog messaging
 - Codex-powered auto-categorization
 
-AFK has the functional equivalent for the CLI-oriented subset, with AFK enrichment stored in `skill-catalog.json`.
+AFK has the functional equivalent for the CLI-oriented subset, with AFK enrichment stored inside `skills.json`.
 
 ### Project Codex And Claude Browsing
 
@@ -171,7 +171,7 @@ The following items were selected for the next implementation slice and moved to
 - installed-agent browsing beyond current-project Codex and Claude roots
 - `afk skills open` for `SKILL.md` and skill folders, including editor flags
 - `afk skills trash` for confirmed local Trash moves
-- category, tag, platform, and uncategorized filters for `afk skills list`
+- category, tag, and uncategorized filters for `afk skills list`
 
 ## Backlog Priority
 

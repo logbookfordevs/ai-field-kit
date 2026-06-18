@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { ManagedSkillAgent, SkillsListScope } from "../types.js";
-import { loadSkillManifest, localAfkDir } from "../manifest.js";
+import { loadSkillManifest, localManifestDir, type SkillManifest, type SkillManifestItem } from "../manifest.js";
 
-export const skillCatalogFileName = "skill-catalog.json";
+export const skillCatalogFileName = "skills.json";
+export const retiredSkillCatalogFileName = "skill-catalog.json";
 export const legacySkillCatalogFileName = "afk-skills.json";
 
 export type SkillStorage = "active" | "disabled";
@@ -25,7 +26,6 @@ export type SkillRecord = {
   category: string | undefined;
   categoryId: string | undefined;
   tags: string[];
-  platforms: string[];
   autoInvocation: SkillAutoInvocationState;
   autoInvocationSources: string[];
   autoInvocationDetails: string[];
@@ -41,16 +41,17 @@ export type SkillCategorizationEntry = {
   folder: string;
   name?: string;
   scope: string;
-  platforms?: string[];
   tags?: string[];
 };
 
 export type SkillCatalogDefinition = {
   version: number;
+  defaultSource?: string;
   generatedAt?: string;
   description?: string;
   scopes: SkillCatalogScope[];
   skills: SkillCategorizationEntry[];
+  items?: SkillManifestItem[];
 };
 
 export type SkillCategorizationState =
@@ -109,7 +110,6 @@ export function loadSkillCatalog(options: {
 export type SkillListFilters = {
   category?: string | undefined;
   tag?: string | undefined;
-  platform?: string | undefined;
   uncategorized?: boolean | undefined;
 };
 
@@ -131,13 +131,6 @@ export function filterSkillRecords(records: SkillRecord[], filters: SkillListFil
     if (filters.tag) {
       const tag = normalize(filters.tag);
       if (!record.tags.some((item) => normalize(item) === tag)) {
-        return false;
-      }
-    }
-
-    if (filters.platform) {
-      const platform = normalize(filters.platform);
-      if (!record.platforms.some((item) => normalize(item) === platform)) {
         return false;
       }
     }
@@ -205,15 +198,19 @@ export function normalizeSkillDescription(value: string | undefined): string | u
 export function loadCategorizationState(homeDir: string): SkillCategorizationState {
   const path = skillCatalogPath(homeDir);
   const legacyPath = legacySkillCatalogPath(homeDir);
-  const source = existsSync(path) ? "canonical" : existsSync(legacyPath) ? "legacy" : undefined;
+  const retiredPath = retiredSkillCatalogPath(homeDir);
+  const source = existsSync(path) ? "canonical" : existsSync(retiredPath) || existsSync(legacyPath) ? "legacy" : undefined;
   if (!source) {
     return { state: "missing", path, legacyPath };
   }
 
-  const readPath = source === "canonical" ? path : legacyPath;
+  const readPath = source === "canonical" ? path : existsSync(retiredPath) ? retiredPath : legacyPath;
   try {
-    const definition = JSON.parse(readFileSync(readPath, "utf8")) as SkillCatalogDefinition;
-    if (!isSkillCatalogDefinition(definition)) {
+    const parsed = JSON.parse(readFileSync(readPath, "utf8")) as unknown;
+    const definition = source === "canonical"
+      ? mergeLegacyDefinition(skillManifestToCatalogDefinition(parsed), readLegacyCatalogDefinition(retiredPath, legacyPath))
+      : legacyCatalogDefinition(parsed);
+    if (!definition) {
       return { state: "invalid", path, legacyPath, source, message: "Expected version, scopes, and skills fields." };
     }
 
@@ -228,7 +225,11 @@ export function taxonomyPath(homeDir: string): string {
 }
 
 export function skillCatalogPath(homeDir: string): string {
-  return join(localAfkDir(homeDir), skillCatalogFileName);
+  return join(localManifestDir(homeDir), skillCatalogFileName);
+}
+
+export function retiredSkillCatalogPath(homeDir: string): string {
+  return join(dirname(localManifestDir(homeDir)), retiredSkillCatalogFileName);
 }
 
 export function legacySkillCatalogPath(homeDir: string): string {
@@ -411,21 +412,19 @@ export function syncSkillCatalogFromManifest(options: {
     ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))
     : manifest.items.filter((item) => item.default || options.allSkills);
   const folders = uniqueStrings(selected.map((item) => item.id.trim()).filter(Boolean));
-  const categorization = loadCategorizationState(options.homeDir);
-
-  if (categorization.state === "invalid") {
-    throw new Error(`Skill catalog sync requires a valid ${categorization.source === "legacy" ? categorization.legacyPath : categorization.path}. ${categorization.message}`);
+  const path = skillCatalogPath(options.homeDir);
+  const legacy = loadCategorizationState(options.homeDir);
+  if (legacy.state === "invalid") {
+    throw new Error(`Skill catalog sync requires a valid ${legacy.source === "legacy" ? legacy.legacyPath : legacy.path}. ${legacy.message}`);
   }
 
-  const definition = categorization.state === "loaded"
-    ? categorization.definition
-    : emptySkillCatalogDefinition();
+  const definition = legacy.state === "loaded" ? legacy.definition : skillManifestToDefinition(manifest);
   const uncategorized = ensureUncategorizedScope(definition);
   const existingFolders = new Set(definition.skills.map((skill) => skill.folder.toLowerCase()));
   const added = folders.filter((folder) => !existingFolders.has(folder.toLowerCase()));
 
   if (added.length === 0) {
-    return { path: categorization.path, added };
+    return { path, added };
   }
 
   const nextDefinition: SkillCatalogDefinition = {
@@ -439,11 +438,11 @@ export function syncSkillCatalogFromManifest(options: {
   };
 
   if (!options.dryRun) {
-    mkdirSync(dirname(categorization.path), { recursive: true });
-    writeFileSync(categorization.path, `${JSON.stringify(nextDefinition, null, 2)}\n`);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(catalogDefinitionToSkillManifest(nextDefinition, manifest), null, 2)}\n`);
   }
 
-  return { path: categorization.path, added };
+  return { path, added };
 }
 
 export function parseOpenAiImplicitInvocation(contents: string): boolean | undefined {
@@ -515,7 +514,6 @@ function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationStat
         category: scope?.label,
         categoryId: scope?.id,
         tags: taxonomyEntry?.tags ?? [],
-        platforms: taxonomyEntry?.platforms ?? [],
         autoInvocation: autoInvocation.state,
         autoInvocationSources: autoInvocation.sources,
         autoInvocationDetails: autoInvocation.details,
@@ -572,15 +570,143 @@ function resolveAutoInvocation(input: {
 function emptySkillCatalogDefinition(): SkillCatalogDefinition {
   return {
     version: 1,
+    defaultSource: "",
     generatedAt: new Date().toISOString(),
     description: "AFK skill catalog. Skills added by setup start uncategorized until afk skills categorize enriches them.",
     scopes: [],
     skills: [],
+    items: [],
   };
 }
 
 function uniqueStrings(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function skillManifestToCatalogDefinition(value: unknown): SkillCatalogDefinition | null {
+  if (!isSkillManifestLike(value)) {
+    return null;
+  }
+
+  return skillManifestToDefinition(value);
+}
+
+function legacyCatalogDefinition(value: unknown): SkillCatalogDefinition | null {
+  return isSkillCatalogDefinition(value) ? value : null;
+}
+
+function readLegacyCatalogDefinition(retiredPath: string, legacyPath: string): SkillCatalogDefinition | null {
+  const readPath = existsSync(retiredPath) ? retiredPath : existsSync(legacyPath) ? legacyPath : undefined;
+  if (!readPath) {
+    return null;
+  }
+
+  try {
+    return legacyCatalogDefinition(JSON.parse(readFileSync(readPath, "utf8")) as unknown);
+  } catch {
+    return null;
+  }
+}
+
+function mergeLegacyDefinition(
+  canonical: SkillCatalogDefinition | null,
+  legacy: SkillCatalogDefinition | null,
+): SkillCatalogDefinition | null {
+  if (!canonical || !legacy) {
+    return canonical;
+  }
+
+  const scopeIds = new Set(canonical.scopes.map((scope) => scope.id));
+  const folders = new Set(canonical.skills.map((skill) => skill.folder));
+  return {
+    ...canonical,
+    scopes: [
+      ...canonical.scopes,
+      ...legacy.scopes.filter((scope) => !scopeIds.has(scope.id)),
+    ],
+    skills: [
+      ...canonical.skills,
+      ...legacy.skills.filter((skill) => !folders.has(skill.folder)),
+    ],
+  };
+}
+
+function skillManifestToDefinition(manifest: SkillManifest): SkillCatalogDefinition {
+  return {
+    version: manifest.version,
+    defaultSource: manifest.defaultSource,
+    scopes: manifest.scopes ?? [],
+    skills: manifest.items
+      .filter((item) => item.catalog?.scope)
+      .map((item) => {
+        const catalog = item.catalog;
+        return {
+          folder: item.id,
+          scope: catalog?.scope ?? "",
+          ...(catalog?.tags ? { tags: catalog.tags } : {}),
+        };
+      }),
+    items: manifest.items,
+  };
+}
+
+function catalogDefinitionToSkillManifest(definition: SkillCatalogDefinition, baseManifest?: SkillManifest): SkillManifest {
+  const entries = new Map(definition.skills.map((entry) => [entry.folder, entry]));
+  const baseItems = baseManifest?.items ?? definition.items ?? [];
+  const itemIds = new Set(baseItems.map((item) => item.id));
+  const missingItems = definition.skills
+    .filter((entry) => !itemIds.has(entry.folder))
+    .map(skillCatalogEntryToManifestItem);
+
+  return {
+    version: Math.max(baseManifest?.version ?? definition.version, 1),
+    defaultSource: baseManifest?.defaultSource ?? definition.defaultSource ?? "",
+    scopes: definition.scopes,
+    items: [
+      ...baseItems.map((item) => mergeSkillCatalogEntry(item, entries.get(item.id))),
+      ...missingItems,
+    ],
+  };
+}
+
+function mergeSkillCatalogEntry(item: SkillManifestItem, entry: SkillCategorizationEntry | undefined): SkillManifestItem {
+  if (!entry) {
+    return item;
+  }
+
+  return {
+    ...item,
+    catalog: {
+      ...(item.catalog ?? {}),
+      scope: entry.scope,
+      ...(entry.tags ? { tags: entry.tags } : {}),
+    },
+  };
+}
+
+function skillCatalogEntryToManifestItem(entry: SkillCategorizationEntry): SkillManifestItem {
+  return {
+    id: entry.folder,
+    label: entry.name ?? humanizeSkillId(entry.folder),
+    source: "",
+    args: ["--skill", entry.folder],
+    default: false,
+    autoInvocation: true,
+    role: "utility",
+    profiles: [],
+    catalog: {
+      scope: entry.scope,
+      ...(entry.tags ? { tags: entry.tags } : {}),
+    },
+  };
+}
+
+function humanizeSkillId(id: string): string {
+  return id
+    .split(/[-_:]+/)
+    .filter(Boolean)
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
 }
 
 function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
@@ -819,6 +945,17 @@ function isSkillCatalogDefinition(value: unknown): value is SkillCatalogDefiniti
 
   const candidate = value as SkillCatalogDefinition;
   return typeof candidate.version === "number" && Array.isArray(candidate.scopes) && Array.isArray(candidate.skills);
+}
+
+function isSkillManifestLike(value: unknown): value is SkillManifest {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as SkillManifest;
+  return typeof candidate.version === "number" &&
+    typeof candidate.defaultSource === "string" &&
+    Array.isArray(candidate.items);
 }
 
 function rootSortOrder(record: SkillRecord): number {

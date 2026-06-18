@@ -118,7 +118,6 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
   const records = filterSkillRecords(snapshot.records, {
     category: options.skillsCategory,
     tag: options.skillsTag,
-    platform: options.skillsPlatform,
     uncategorized: options.skillsUncategorized,
   });
 
@@ -330,7 +329,6 @@ export function filterSkillChoices(records: SkillRecord[], term: string | undefi
       record.agent ?? "",
       record.storage,
       ...record.tags,
-      ...record.platforms,
     ].join(" ").toLowerCase();
 
     return tokens.every((token) => searchable.includes(token));

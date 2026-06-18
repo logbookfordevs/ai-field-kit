@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { quoteArg } from "../delegates.js";
-import { localAfkDir } from "../manifest.js";
+import { localManifestDir } from "../manifest.js";
 import type { Runtime, SkillCategorizationMode } from "../types.js";
 import { skillCatalogFileName, loadSkillCatalog, skillCatalogPath, type SkillCatalogSnapshot } from "./catalog.js";
 import { renderCategorizationRoute, renderPromptPreview } from "./render.js";
@@ -49,7 +49,7 @@ export function buildCodexCategorizationCommand(options: {
     scope: "global",
     agent: undefined,
   });
-  const afkRoot = localAfkDir(options.homeDir);
+  const afkRoot = localManifestDir(options.homeDir);
   const skillsRoot = join(options.homeDir, ".agents", "skills");
   const mode = options.mode ?? recommendedCategorizationMode(snapshot);
   const prompt = buildCategorizationPrompt(snapshot, mode, options.instruction);
@@ -117,28 +117,33 @@ export function buildCategorizationPrompt(
     ];
 
   return [
-    "You are inside ~/.agents/afk.",
+    "You are inside ~/.agents/afk/catalog.",
     "",
-    `Your job is to create or update ${skillCatalogFileName} for AFK using this schema exactly:`,
+    `Your job is to create or update ${skillCatalogFileName} for AFK without creating a second catalog file.`,
     "- version",
-    "- generatedAt",
-    "- description",
+    "- defaultSource",
     "- scopes",
-    "- skills",
+    "- items",
     "",
     "Rules:",
     "- Read local skill folders from ~/.agents/skills and ~/.agents/skills/.disabled.",
     "- A skill folder is a directory containing SKILL.md.",
-    "- Match skills by folder name.",
+    "- Match skills by item.id and folder name.",
     `- If ${skillCatalogFileName} is missing, create it.`,
-    `- If ${skillCatalogFileName} exists and is valid, preserve existing scopes when they still fit the library well.`,
+    `- If ${skillCatalogFileName} exists and is valid, preserve install fields on every item: id, label, source, args, default, autoInvocation, role, composes, and profiles.`,
+    "- Store AFK categorization metadata under each item.catalog.",
+    "- item.catalog may contain scope and tags.",
+    "- Store reusable category definitions in top-level scopes.",
+    "- Do not create a top-level skills array.",
+    "- When adding a missing item from a folder, use id as the folder name, label from SKILL.md name when available, source as an empty string, args as [\"--skill\", id], default as false, role as \"utility\", and profiles as [].",
+    "- Preserve existing scopes when they still fit the library well.",
     "- Create a new scope only when no existing scope is a good fit.",
     "- Prefer intent-based scopes over umbrella buckets.",
     "- Common useful scope patterns include Frontend, Docs, Review, Debug, Automation, Project Context, Video, and Stitch.",
     "- Include both active and disabled skills.",
     "- Do not edit SKILL.md files.",
     "- Do not delete skill folders.",
-    `- Write the final result to ~/.agents/afk/${skillCatalogFileName}.`,
+    `- Write the final result to ~/.agents/afk/catalog/${skillCatalogFileName}.`,
     "- Keep the JSON pretty-printed.",
     ...modeInstructions.map((item) => `- ${item}`),
     "",

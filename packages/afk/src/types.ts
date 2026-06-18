@@ -71,7 +71,6 @@ export type CliOptions = {
   skillsJson?: boolean;
   skillsCategory?: string;
   skillsTag?: string;
-  skillsPlatform?: string;
   skillsUncategorized?: boolean;
   skillOpenApp?: SkillOpenApp;
   skillOpenTarget?: "file" | "folder";

@@ -11,14 +11,14 @@ Implement the selected AppKit parity slice for `afk skills`:
 - read-only installed-agent browsing beyond current-project Codex and Claude roots
 - `afk skills open` for skill files and folders
 - `afk skills trash` for confirmed local Trash moves
-- category, tag, platform, and uncategorized filters for `afk skills list`
+- category, tag, and uncategorized filters for `afk skills list`
 
 This plan intentionally leaves official Hub search, source add/install delegation, update checks, and catalog export in the backlog.
 
 ## Command Surface
 
 ```bash
-afk skills list [--scope global|project|all] [--agent <id>] [--category <id-or-label>] [--tag <tag>] [--platform <platform>] [--uncategorized] [--json]
+afk skills list [--scope global|project|all] [--agent <id>] [--category <id-or-label>] [--tag <tag>] [--uncategorized] [--json]
 afk skills open [<folder>] [--file|--folder] [--app finder|code|cursor|zed|agy]
 afk skills trash [<folder>] [--dry-run] [--yes]
 ```
@@ -107,18 +107,17 @@ Add filters to `afk skills list`:
 
 - `--category <id-or-label>`
 - `--tag <tag>`
-- `--platform <platform>`
 - `--uncategorized`
 
 Filters should apply after scope and agent selection. Multiple filters should combine with AND semantics.
 
-Category matching should accept category id or visible label case-insensitively. Tag and platform matching should be case-insensitive exact matches after trimming.
+Category matching should accept category id or visible label case-insensitively. Tag matching should be case-insensitive exact matches after trimming.
 
 ## Implementation Steps
 
 1. Extend CLI parsing and help text.
    - Add `agent` to list scope parsing.
-   - Add `--category`, `--tag`, `--platform`, `--uncategorized`, `--app`, `--file`, `--folder`, and `--yes`.
+   - Add `--category`, `--tag`, `--uncategorized`, `--app`, `--file`, `--folder`, and `--yes`.
    - Add command help for `open` and `trash`.
 
 2. Extend skill root modeling.
@@ -128,7 +127,7 @@ Category matching should accept category id or visible label case-insensitively.
    - Keep global-library mutation boundaries unchanged.
 
 3. Add list filtering.
-   - Apply category/tag/platform/uncategorized filters in the catalog or command layer.
+   - Apply category/tag/uncategorized filters in the catalog or command layer.
    - Keep JSON output stable and flat.
    - Update branded list output to section agent results by root when useful.
 
@@ -148,7 +147,7 @@ Category matching should accept category id or visible label case-insensitively.
    - Agent root scanning and `--agent` filtering behavior.
    - Section/order behavior for human list rendering.
    - JSON remains flat.
-   - Category/tag/platform/uncategorized filtering.
+   - Category/tag/uncategorized filtering.
    - `open` argument generation for finder/code/cursor/zed/agy.
    - Missing app executable failure.
    - `trash` dry-run, confirmation bypass, read-only rejection, and successful trash handler path.
@@ -162,7 +161,7 @@ Category matching should accept category id or visible label case-insensitively.
 
 - `afk skills list --scope global --agent codex` shows Codex's read-only global agent-root skills.
 - `afk skills list --scope global --agent codex --json` returns a flat record array.
-- `afk skills list` filters work for category, tag, platform, and uncategorized records.
+- `afk skills list` filters work for category, tag, and uncategorized records.
 - `afk skills open` can open a selected skill file or folder with Finder, Code, Cursor, Zed, or Antigravity.
 - `afk skills trash` never affects project or agent roots and never permanently deletes a skill.
 - Existing `show`, `disable`, `enable`, and `categorize` behavior remains intact.

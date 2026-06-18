@@ -234,9 +234,15 @@ test("runArea skills adds selected setup skills to AFK skill catalog after insta
     args: ["skills", "add", "example/skills", "--global", "--yes", "--skill", "beta", "--agent", "claude-code"],
   }]);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
-    skills: Array<{ folder: string; scope: string }>;
+    items: Array<{ id: string; catalog?: { scope?: string } }>;
   };
-  assert.deepEqual(catalog.skills, [{ folder: "beta", scope: "uncategorized" }]);
+  assert.deepEqual(
+    catalog.items.map((item) => ({ id: item.id, scope: item.catalog?.scope })),
+    [
+      { id: "alpha", scope: undefined },
+      { id: "beta", scope: "uncategorized" },
+    ],
+  );
 });
 
 test("runSetup skips the source prompt when a default source is saved", async () => {

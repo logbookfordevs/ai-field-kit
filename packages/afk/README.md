@@ -739,21 +739,25 @@ afk skills categorize --dry-run
 installation to the official `skills` CLI; the skills command family manages
 local skill libraries that already exist on disk.
 
-AFK stores its own skill catalog separately from setup manifests:
+AFK uses one skills catalog file for both setup metadata and skill-management
+enrichment:
 
 ```text
-~/.agents/afk/skill-catalog.json
+~/.agents/afk/catalog/skills.json
 ```
 
 Skills installed through `afk setup skills` are automatically inserted into this
 catalog as uncategorized entries after a successful upstream `skills add` run.
+AFK categorization metadata lives in top-level `scopes` plus each item's nested
+`catalog` object, so `id`, `source`, `args`, `default`, and other install fields
+remain easy to read.
 
 `afk skills list` reads the shared global library, current-project Codex and
 Claude roots, and installed-agent roots such as Codex, Claude, Gemini,
 OpenCode, Cursor, Zed, and Kiro when they exist. Use `--scope
 global|project|all` to choose root families, `--agent` to focus on an agent,
-and `--category`, `--tag`, `--platform`, or `--uncategorized` to filter AFK
-catalog metadata.
+and `--category`, `--tag`, or `--uncategorized` to filter AFK catalog
+metadata.
 
 `afk skills disable`, `afk skills enable`, and `afk skills trash` can manage
 the shared global library by default, or agent-specific roots when `--agent` is
@@ -762,6 +766,5 @@ provided.
 `afk skills open` can open a skill file or folder in Finder, VS Code, Cursor,
 Zed, or Antigravity.
 
-`afk skills categorize` uses `codex exec` to create or
-update AFK's explicit skill catalog, `skill-catalog.json`, while preserving the
-path for a later SDK-backed runner.
+`afk skills categorize` uses `codex exec` to update the categorization metadata
+inside `skills.json`, while preserving the path for a later SDK-backed runner.

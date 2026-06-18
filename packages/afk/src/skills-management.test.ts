@@ -118,7 +118,7 @@ test("loadSkillCatalog orders global active, global disabled, then project roots
   writeSkillCatalog(homeDir, {
     version: 1,
     scopes: [{ id: "docs", label: "Docs" }],
-    skills: [{ folder: "z-active", name: "Alpha Active", scope: "docs", tags: ["docs"], platforms: ["generic"] }],
+    skills: [{ folder: "z-active", name: "Alpha Active", scope: "docs", tags: ["docs"] }],
   });
 
   const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "all", agent: undefined });
@@ -129,7 +129,7 @@ test("loadSkillCatalog orders global active, global disabled, then project roots
     "codex-skill",
     "claude-skill",
   ]);
-  assert.equal(snapshot.records[0]?.name, "Alpha Active");
+  assert.equal(snapshot.records[0]?.name, "Z Active");
   assert.equal(snapshot.records[0]?.category, "Docs");
   assert.equal(snapshot.records[2]?.readOnly, false);
 });
@@ -237,7 +237,7 @@ test("filterSkillChoices searches folders, names, categories, tags, and roots", 
   assert.deepEqual(filterSkillChoices(snapshot.records, "review helper").map((record) => record.folder), ["review-helper"]);
 });
 
-test("filterSkillRecords filters by category, tag, platform, and uncategorized", () => {
+test("filterSkillRecords filters by category, tag, and uncategorized", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skills-list-filters-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
@@ -251,15 +251,14 @@ test("filterSkillRecords filters by category, tag, platform, and uncategorized",
       { id: "review", label: "Review" },
     ],
     skills: [
-      { folder: "doc-helper", name: "Doc Helper", scope: "docs", tags: ["writing"], platforms: ["generic"] },
-      { folder: "review-helper", name: "Review Helper", scope: "review", tags: ["critique"], platforms: ["codex"] },
+      { folder: "doc-helper", name: "Doc Helper", scope: "docs", tags: ["writing"] },
+      { folder: "review-helper", name: "Review Helper", scope: "review", tags: ["critique"] },
     ],
   });
   const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
 
   assert.deepEqual(filterSkillRecords(snapshot.records, { category: "Docs" }).map((record) => record.folder), ["doc-helper"]);
   assert.deepEqual(filterSkillRecords(snapshot.records, { tag: "critique" }).map((record) => record.folder), ["review-helper"]);
-  assert.deepEqual(filterSkillRecords(snapshot.records, { platform: "generic" }).map((record) => record.folder), ["doc-helper"]);
   assert.deepEqual(filterSkillRecords(snapshot.records, { uncategorized: true }).map((record) => record.folder), ["plain-helper"]);
 });
 
@@ -481,7 +480,6 @@ test("buildSkillOpenCommand targets files, folders, and supported apps", () => {
     category: undefined,
     categoryId: undefined,
     tags: [],
-    platforms: [],
     autoInvocation: "default",
     autoInvocationSources: [],
     autoInvocationDetails: [],
@@ -515,7 +513,6 @@ test("renderSkillChoice separates core picker fields", () => {
     category: "Docs",
     categoryId: "docs",
     tags: [],
-    platforms: [],
     autoInvocation: "enabled",
     autoInvocationSources: ["SKILL.md"],
     autoInvocationDetails: ["SKILL.md enables"],
@@ -536,7 +533,6 @@ test("renderSkillChoice separates core picker fields", () => {
     category: undefined,
     categoryId: undefined,
     tags: [],
-    platforms: [],
     autoInvocation: "disabled",
     autoInvocationSources: ["agents/openai.yaml"],
     autoInvocationDetails: ["agents/openai.yaml disables"],
@@ -559,7 +555,6 @@ test("renderSkillDetails shows mixed auto invocation diagnostics", () => {
     category: undefined,
     categoryId: undefined,
     tags: [],
-    platforms: [],
     autoInvocation: "mixed",
     autoInvocationSources: ["SKILL.md", "agents/openai.yaml"],
     autoInvocationDetails: ["SKILL.md disables", "agents/openai.yaml enables"],
@@ -706,10 +701,16 @@ test("syncSkillCatalogFromManifest adds setup skills to canonical catalog", () =
   assert.deepEqual(result.added, ["beta"]);
   const written = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
     scopes: Array<{ id: string }>;
-    skills: Array<{ folder: string; scope: string; name?: string }>;
+    items: Array<{ id: string; catalog?: { scope?: string } }>;
   };
   assert.ok(written.scopes.some((scope) => scope.id === "uncategorized"));
-  assert.deepEqual(written.skills, [{ folder: "beta", scope: "uncategorized" }]);
+  assert.deepEqual(
+    written.items.map((item) => ({ id: item.id, scope: item.catalog?.scope })),
+    [
+      { id: "alpha", scope: undefined },
+      { id: "beta", scope: "uncategorized" },
+    ],
+  );
 });
 
 test("syncSkillCatalogFromManifest preserves existing legacy catalog entries and writes canonical catalog", () => {
@@ -732,15 +733,17 @@ test("syncSkillCatalogFromManifest preserves existing legacy catalog entries and
   assert.deepEqual(result.added, ["beta"]);
   const written = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
     scopes: Array<{ id: string }>;
-    skills: Array<{ folder: string; scope: string; name?: string }>;
+    items: Array<{ id: string; label: string; catalog?: { scope?: string } }>;
   };
-  assert.deepEqual(written.skills.map((skill) => skill.folder), ["alpha", "beta"]);
-  assert.equal(written.skills[0]?.name, "Alpha");
+  assert.deepEqual(written.items.map((skill) => skill.id), ["alpha", "beta"]);
+  assert.equal(written.items[0]?.label, "alpha");
+  assert.equal(written.items[0]?.catalog?.scope, "docs");
+  assert.equal(written.items[1]?.catalog?.scope, "uncategorized");
   assert.ok(written.scopes.some((scope) => scope.id === "docs"));
   assert.ok(written.scopes.some((scope) => scope.id === "uncategorized"));
 });
 
-test("buildCodexCategorizationCommand targets skill-catalog.json with codex exec", () => {
+test("buildCodexCategorizationCommand targets skills.json with codex exec", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-categorize-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
@@ -763,11 +766,11 @@ test("buildCodexCategorizationCommand targets skill-catalog.json with codex exec
     "never",
     "--ephemeral",
   ]);
-  assert.equal(built.cwd, join(homeDir, ".agents", "afk"));
-  assert.ok(built.args.includes(join(homeDir, ".agents", "afk")));
+  assert.equal(built.cwd, join(homeDir, ".agents", "afk", "catalog"));
+  assert.ok(built.args.includes(join(homeDir, ".agents", "afk", "catalog")));
   assert.ok(built.args.includes(join(homeDir, ".agents", "skills")));
   assert.ok(built.prompt.includes(skillCatalogFileName));
-  assert.ok(built.prompt.includes("~/.agents/afk/skill-catalog.json"));
+  assert.ok(built.prompt.includes("~/.agents/afk/catalog/skills.json"));
   assert.ok(built.prompt.includes("Prefer docs categories."));
 });
 
@@ -823,7 +826,39 @@ function writeSkill(root: string, folder: string, name: string, options: {
 function writeSkillCatalog(homeDir: string, content: unknown, options: { legacy?: boolean } = {}): void {
   const path = options.legacy ? legacySkillCatalogPath(homeDir) : skillCatalogPath(homeDir);
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(content, null, 2)}\n`);
+  writeFileSync(path, `${JSON.stringify(options.legacy ? content : skillManifestFixture(content), null, 2)}\n`);
+}
+
+function skillManifestFixture(content: unknown): unknown {
+  if (!content || typeof content !== "object" || !("skills" in content)) {
+    return content;
+  }
+
+  const definition = content as {
+    version?: number;
+    scopes?: Array<{ id: string; label: string; description?: string }>;
+    skills?: Array<{ folder: string; name?: string; scope: string; tags?: string[] }>;
+  };
+
+  return {
+    version: definition.version ?? 1,
+    defaultSource: "",
+    scopes: definition.scopes ?? [],
+    items: (definition.skills ?? []).map((skill) => ({
+      id: skill.folder,
+      label: skill.name ?? skill.folder,
+      source: "",
+      args: ["--skill", skill.folder],
+      default: false,
+      autoInvocation: true,
+      role: "utility",
+      profiles: [],
+      catalog: {
+        scope: skill.scope,
+        ...(skill.tags ? { tags: skill.tags } : {}),
+      },
+    })),
+  };
 }
 
 function writeGlobalSkillLock(homeDir: string, skills: Record<string, object>): void {
@@ -898,7 +933,6 @@ function baseOptions(root: string) {
     skillsJson: false,
     skillsCategory: "",
     skillsTag: "",
-    skillsPlatform: "",
     skillsUncategorized: false,
     skillOpenApp: "finder" as const,
     skillOpenTarget: "file" as const,
@@ -928,7 +962,6 @@ function skillRecord(input: { folder: string; rootPath: string }): SkillRecord {
     category: undefined,
     categoryId: undefined,
     tags: [],
-    platforms: [],
     autoInvocation: "default",
     autoInvocationSources: [],
     autoInvocationDetails: [],

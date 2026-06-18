@@ -131,6 +131,7 @@ function readSkillCatalog(path: string): SkillManifest {
   return {
     version: typeof parsed.version === "number" ? parsed.version : 1,
     defaultSource: typeof parsed.defaultSource === "string" ? parsed.defaultSource : "",
+    scopes: Array.isArray(parsed.scopes) ? parsed.scopes : [],
     items: Array.isArray(parsed.items) ? parsed.items.filter(isSkillManifestItem) : [],
   };
 }

@@ -1,6 +1,7 @@
 {
     "version": 1,
     "defaultSource": "https://github.com/logbookfordevs/ai-field-kit",
+    "scopes": [],
     "items": [
         {
             "id": "afk-animated-driven-frontend",

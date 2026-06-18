@@ -33,7 +33,6 @@ export function renderSkillDetails(record: SkillRecord): string {
     record.agent ? renderField("Agent", record.agent) : undefined,
     record.category ? renderField("Category", record.category) : undefined,
     record.tags.length > 0 ? renderField("Tags", record.tags.join(", ")) : undefined,
-    record.platforms.length > 0 ? renderField("Platforms", record.platforms.join(", ")) : undefined,
     renderField("Skill file", record.skillFilePath),
   ].filter((line): line is string => Boolean(line)).join("\n");
 }
