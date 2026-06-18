@@ -29,7 +29,6 @@ Keep existing commands intact:
 afk skills show [<folder>] [--json]
 afk skills disable [<folder>] [--dry-run]
 afk skills enable [<folder>] [--dry-run]
-afk skills rename [<folder>] [<display-name>] [--dry-run]
 afk skills categorize ...
 ```
 
@@ -166,7 +165,7 @@ Category matching should accept category id or visible label case-insensitively.
 - `afk skills list` filters work for category, tag, platform, and uncategorized records.
 - `afk skills open` can open a selected skill file or folder with Finder, Code, Cursor, Zed, or Antigravity.
 - `afk skills trash` never affects project or agent roots and never permanently deletes a skill.
-- Existing `show`, `disable`, `enable`, `rename`, and `categorize` behavior remains intact.
+- Existing `show`, `disable`, `enable`, and `categorize` behavior remains intact.
 
 ## Validation
 

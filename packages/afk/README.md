@@ -616,15 +616,15 @@ Manage local skills:
 ```bash
 afk skills list
 afk skills list --scope global --json
-afk skills list --scope agent --agent codex
+afk skills list --scope global --agent codex
+afk skills list --scope project --agent claude
 afk skills list --category Docs --tag writing
 afk skills show afk-note
 afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
 afk skills enable old-skill
-afk skills rename afk-note "AFK Note"
-afk skills rename afk-note "AFK Note" --agent-metadata codex
 afk skills trash old-skill --dry-run
+afk skills upgrade --all
 afk skills categorize --dry-run
 ```
 
@@ -632,25 +632,29 @@ afk skills categorize --dry-run
 installation to the official `skills` CLI; the skills command family manages
 local skill libraries that already exist on disk.
 
-In v1, mutating commands only operate on the shared global library:
+AFK stores its own skill catalog separately from setup manifests:
 
 ```text
-~/.agents/skills/
-~/.agents/skills/.disabled/
-~/.agents/skills/afk-skills.json
+~/.agents/afk/skill-catalog.json
 ```
 
-`afk skills list` also reads current-project Codex and Claude skill roots, plus
-read-only installed-agent roots such as Codex, Claude, Gemini, OpenCode, Cursor,
-Zed, and Kiro when they exist. Use `--scope agent` to focus on installed-agent
-libraries, and `--category`, `--tag`, `--platform`, or `--uncategorized` to
-filter AFK taxonomy metadata.
+Skills installed through `afk setup skills` are automatically inserted into this
+catalog as uncategorized entries after a successful upstream `skills add` run.
+
+`afk skills list` reads the shared global library, current-project Codex and
+Claude roots, and installed-agent roots such as Codex, Claude, Gemini,
+OpenCode, Cursor, Zed, and Kiro when they exist. Use `--scope
+global|project|all` to choose root families, `--agent` to focus on an agent,
+and `--category`, `--tag`, `--platform`, or `--uncategorized` to filter AFK
+catalog metadata.
+
+`afk skills disable`, `afk skills enable`, and `afk skills trash` can manage
+the shared global library by default, or agent-specific roots when `--agent` is
+provided.
 
 `afk skills open` can open a skill file or folder in Finder, VS Code, Cursor,
-Zed, or Antigravity. `afk skills rename` stores an AFK-owned display label by
-default; add `--agent-metadata codex` to also update or create
-`agents/openai.yaml` with `interface.display_name`.
+Zed, or Antigravity.
 
 `afk skills categorize` uses `codex exec` to create or
-update AFK's explicit taxonomy file, `afk-skills.json`, while preserving the
+update AFK's explicit skill catalog, `skill-catalog.json`, while preserving the
 path for a later SDK-backed runner.

@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import { quoteArg } from "../delegates.js";
+import { localAfkDir } from "../manifest.js";
 import type { Runtime, SkillCategorizationMode } from "../types.js";
-import { afkSkillsTaxonomyFileName, loadSkillCatalog, type SkillCatalogSnapshot } from "./catalog.js";
+import { skillCatalogFileName, loadSkillCatalog, skillCatalogPath, type SkillCatalogSnapshot } from "./catalog.js";
 import { renderCategorizationRoute, renderPromptPreview } from "./render.js";
 
 export type CategorizationCommand = {
@@ -22,7 +23,7 @@ export async function runCodexCategorization(runtime: Runtime, options: {
   const built = buildCodexCategorizationCommand(options);
   runtime.io.stdout(renderCategorizationRoute({
     mode: built.mode,
-    taxonomyPath: join(built.cwd, afkSkillsTaxonomyFileName),
+    taxonomyPath: skillCatalogPath(options.homeDir),
     commandLine: `${built.command} ${[...built.args.slice(0, -1), "<prompt>"].map(quoteArg).join(" ")}`,
     dryRun: options.dryRun,
   }));
@@ -48,7 +49,8 @@ export function buildCodexCategorizationCommand(options: {
     scope: "global",
     agent: undefined,
   });
-  const root = join(options.homeDir, ".agents", "skills");
+  const afkRoot = localAfkDir(options.homeDir);
+  const skillsRoot = join(options.homeDir, ".agents", "skills");
   const mode = options.mode ?? recommendedCategorizationMode(snapshot);
   const prompt = buildCategorizationPrompt(snapshot, mode, options.instruction);
   const args = [
@@ -60,16 +62,18 @@ export function buildCodexCategorizationCommand(options: {
     "never",
     "--ephemeral",
     "-C",
-    root,
+    afkRoot,
     "--add-dir",
-    root,
+    afkRoot,
+    "--add-dir",
+    skillsRoot,
     prompt,
   ];
 
   return {
     command: "codex",
     args,
-    cwd: root,
+    cwd: afkRoot,
     mode,
     prompt,
   };
@@ -104,7 +108,7 @@ export function buildCategorizationPrompt(
     : "";
   const modeInstructions = mode === "append-missing"
     ? [
-      "Preserve all existing skill mappings already present in afk-skills.json.",
+      `Preserve all existing skill mappings already present in ${skillCatalogFileName}.`,
       "Append only missing skills that are not already represented.",
     ]
     : [
@@ -113,9 +117,9 @@ export function buildCategorizationPrompt(
     ];
 
   return [
-    "You are inside ~/.agents/skills.",
+    "You are inside ~/.agents/afk.",
     "",
-    `Your job is to create or update ${afkSkillsTaxonomyFileName} for AFK using this schema exactly:`,
+    `Your job is to create or update ${skillCatalogFileName} for AFK using this schema exactly:`,
     "- version",
     "- generatedAt",
     "- description",
@@ -123,18 +127,18 @@ export function buildCategorizationPrompt(
     "- skills",
     "",
     "Rules:",
-    "- Read local skill folders from the current directory and from .disabled.",
+    "- Read local skill folders from ~/.agents/skills and ~/.agents/skills/.disabled.",
     "- A skill folder is a directory containing SKILL.md.",
     "- Match skills by folder name.",
-    `- If ${afkSkillsTaxonomyFileName} is missing, create it.`,
-    `- If ${afkSkillsTaxonomyFileName} exists and is valid, preserve existing scopes when they still fit the library well.`,
+    `- If ${skillCatalogFileName} is missing, create it.`,
+    `- If ${skillCatalogFileName} exists and is valid, preserve existing scopes when they still fit the library well.`,
     "- Create a new scope only when no existing scope is a good fit.",
     "- Prefer intent-based scopes over umbrella buckets.",
     "- Common useful scope patterns include Frontend, Docs, Review, Debug, Automation, Project Context, Video, and Stitch.",
     "- Include both active and disabled skills.",
     "- Do not edit SKILL.md files.",
     "- Do not delete skill folders.",
-    `- Write the final result to ~/.agents/skills/${afkSkillsTaxonomyFileName}.`,
+    `- Write the final result to ~/.agents/afk/${skillCatalogFileName}.`,
     "- Keep the JSON pretty-printed.",
     ...modeInstructions.map((item) => `- ${item}`),
     "",
@@ -151,10 +155,10 @@ function taxonomyStatus(snapshot: SkillCatalogSnapshot): string {
   const state = snapshot.categorization;
   switch (state.state) {
     case "missing":
-      return `${afkSkillsTaxonomyFileName} is currently missing. Create it from scratch.`;
+      return `${skillCatalogFileName} is currently missing. Create it from scratch.`;
     case "invalid":
-      return `${afkSkillsTaxonomyFileName} exists but cannot be parsed. Repair it. Error: ${state.message}`;
+      return `${skillCatalogFileName} exists but cannot be parsed. Repair it. Error: ${state.message}`;
     case "loaded":
-      return `${afkSkillsTaxonomyFileName} exists and is valid.`;
+      return `${skillCatalogFileName} exists and is valid.`;
   }
 }

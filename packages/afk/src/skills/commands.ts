@@ -1,4 +1,4 @@
-import { confirm, input, search } from "@inquirer/prompts";
+import { confirm, search } from "@inquirer/prompts";
 import { join } from "node:path";
 import { afkPromptTheme, afkSearchableCheckboxTheme, afkSearchTheme, renderPromptStep } from "../prompt-ui.js";
 import { searchableCheckbox } from "../searchable-checkbox.js";
@@ -10,8 +10,6 @@ import {
   filterSkillRecords,
   loadSkillCatalog,
   moveSkillRecord,
-  renameCodexSkillMetadata,
-  renameGlobalSkill,
   trashSkillRecords,
   type SkillRecord,
 } from "./catalog.js";
@@ -22,7 +20,6 @@ import {
   renderSkillList,
   renderSkillMove,
   renderSkillOpen,
-  renderSkillRename,
   renderSkillTrashBatch,
 } from "./render.js";
 import {
@@ -32,7 +29,7 @@ import {
   type LockedSkillRecord,
 } from "./upgrade.js";
 
-type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "rename" | "trash" | "upgrade" | "categorize";
+type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "trash" | "upgrade" | "categorize";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   const command = commandPath[1] as SkillCommandName | undefined;
@@ -50,8 +47,6 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
         return runSkillsMove(operands[0], false, runtime, options);
       case "enable":
         return runSkillsMove(operands[0], true, runtime, options);
-      case "rename":
-        return runSkillsRename(operands[0], operands.slice(1).join(" "), runtime, options);
       case "trash":
         return runSkillsTrash(operands[0], runtime, options);
       case "upgrade":
@@ -257,66 +252,6 @@ async function runSkillsMove(folder: string | undefined, enabled: boolean, runti
   return 0;
 }
 
-async function runSkillsRename(folder: string | undefined, displayName: string, runtime: Runtime, options: CliOptions): Promise<number> {
-  const snapshot = loadSkillCatalog({
-    homeDir: options.homeDir,
-    cwd: options.cwd,
-    scope: options.skillAgentMetadata ? "all" : "global",
-    agent: options.skillsAgent,
-  });
-  const candidates = options.skillAgentMetadata ? snapshot.records : snapshot.records.filter((record) => record.rootKind === "global-library");
-  const record = folder
-    ? findRenameSkillRecord(candidates, folder, Boolean(options.skillAgentMetadata))
-    : await promptSkillRecord(candidates, options.skillAgentMetadata
-      ? "Select a skill to rename:"
-      : "Select a global skill to rename:");
-
-  if (!record) {
-    runtime.io.stderr(folder ? `Skill not found: ${folder}` : "No global skills found.");
-    return 1;
-  }
-
-  const resolvedDisplayName = displayName.trim() || await input({
-    message: "Display name:",
-    default: record.name,
-    validate: (value) => {
-      if (!value.trim()) {
-        return "Display name cannot be empty.";
-      }
-      if (/[\r\n]/.test(value)) {
-        return "Display name must stay on a single line.";
-      }
-      return true;
-    },
-    theme: afkPromptTheme,
-  });
-
-  const path = record.rootKind === "global-library"
-    ? renameGlobalSkill({
-      homeDir: options.homeDir,
-      folder: record.folder,
-      displayName: resolvedDisplayName,
-      dryRun: options.dryRun,
-    })
-    : undefined;
-  const metadataPath = options.skillAgentMetadata === "codex"
-    ? renameCodexSkillMetadata({
-      record,
-      displayName: resolvedDisplayName,
-      dryRun: options.dryRun,
-    })
-    : undefined;
-
-  runtime.io.stdout(renderSkillRename({
-    folder: record.folder,
-    displayName: resolvedDisplayName,
-    path,
-    metadataPath,
-    dryRun: options.dryRun,
-  }));
-  return 0;
-}
-
 async function runSkillsTrash(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
   const globalCandidates = loadMutationSkillRecords(options);
   const candidates = options.skillsTrashManifestOnly
@@ -488,34 +423,6 @@ function findSkillRecord(records: SkillRecord[], value: string): SkillRecord | u
     record.name.toLowerCase() === normalized ||
     record.originalName.toLowerCase() === normalized
   );
-}
-
-function findRenameSkillRecord(records: SkillRecord[], value: string, allowAgentFolderTarget: boolean): SkillRecord | undefined {
-  const normalized = value.trim().toLowerCase();
-  if (allowAgentFolderTarget) {
-    const byFolder = records.find((record) => record.folder.toLowerCase() === normalized);
-    if (byFolder) {
-      return byFolder;
-    }
-  }
-
-  return records.find((record) =>
-    record.rootKind === "global-library" && (
-      record.folder.toLowerCase() === normalized ||
-      record.name.toLowerCase() === normalized ||
-      record.originalName.toLowerCase() === normalized
-    )
-  );
-}
-
-function formatSkillChoice(record: SkillRecord): string {
-  const markers = [
-    record.rootLabel,
-    record.storage === "disabled" ? "disabled" : undefined,
-    record.category,
-  ].filter(Boolean);
-
-  return `${record.name} [${record.folder}] (${markers.join(", ")})`;
 }
 
 export function formatLockedSkillChoice(record: LockedSkillRecord): string {

@@ -33,7 +33,6 @@ export type ManagedSkillAgent =
 export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
 export type SkillOpenApp = "finder" | "code" | "cursor" | "zed" | "agy";
-export type SkillAgentMetadata = "codex";
 export type ManifestCategory = "rules" | "skills" | "mcps" | "plugins" | "hooks" | "presets";
 
 export type CliOptions = {
@@ -74,7 +73,6 @@ export type CliOptions = {
   skillsUncategorized?: boolean;
   skillOpenApp?: SkillOpenApp;
   skillOpenTarget?: "file" | "folder";
-  skillAgentMetadata?: SkillAgentMetadata | undefined;
   skillCategorizationMode?: SkillCategorizationMode | undefined;
   skillCategorizationRunner?: SkillCategorizationRunner;
   skillCategorizationInstruction?: string;

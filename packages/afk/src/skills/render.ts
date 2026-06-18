@@ -1,6 +1,6 @@
 import { sectionTitle, muted } from "../brand.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
-import { afkSkillsTaxonomyFileName, type SkillCategorizationState, type SkillRecord } from "./catalog.js";
+import { skillCatalogFileName, type SkillCategorizationState, type SkillRecord } from "./catalog.js";
 
 export function renderSkillList(records: SkillRecord[], categorization: SkillCategorizationState): string {
   if (records.length === 0) {
@@ -28,6 +28,8 @@ export function renderSkillDetails(record: SkillRecord): string {
     renderField("Root", record.rootLabel),
     renderField("Storage", record.storage),
     renderField("Mode", record.readOnly ? "read-only" : "managed"),
+    renderField("Auto", renderAutoInvocation(record)),
+    record.autoInvocationDetails.length > 0 ? renderField("Auto source", record.autoInvocationDetails.join(", ")) : undefined,
     record.agent ? renderField("Agent", record.agent) : undefined,
     record.category ? renderField("Category", record.category) : undefined,
     record.tags.length > 0 ? renderField("Tags", record.tags.join(", ")) : undefined,
@@ -51,23 +53,6 @@ export function renderSkillMove(input: {
       : `${accent(input.enabled ? "Enabled" : "Disabled")} ${strong(input.folder)}`,
     muted(input.movement),
   ].join("\n");
-}
-
-export function renderSkillRename(input: {
-  folder: string;
-  displayName: string;
-  path?: string | undefined;
-  metadataPath?: string | undefined;
-  dryRun: boolean;
-}): string {
-  return [
-    sectionTitle(input.dryRun ? "Rename Preview" : "Rename Complete"),
-    input.dryRun
-      ? `${muted("Would label")} ${strong(input.folder)} ${muted("as")} ${accent(input.displayName)}`
-      : `${muted("Labeled")} ${strong(input.folder)} ${muted("as")} ${accent(input.displayName)}`,
-    input.path ? renderField("AFK label", input.path) : undefined,
-    input.metadataPath ? renderField("Codex meta", input.metadataPath) : undefined,
-  ].filter((line): line is string => Boolean(line)).join("\n");
 }
 
 export function renderSkillOpen(input: {
@@ -151,6 +136,7 @@ export function renderSkillChoice(record: SkillRecord): string {
     muted(record.rootLabel),
     record.storage === "disabled" ? warn("disabled") : success("active"),
     record.readOnly ? muted("read-only") : accent("managed"),
+    renderAutoInvocationBadge(record),
     record.category ? accent(record.category) : undefined,
   ].filter((value): value is string => Boolean(value));
 
@@ -173,8 +159,9 @@ function renderSkillRow(record: SkillRecord, isLast: boolean): string {
   const branch = paint(terminalPalette.sienna, isLast ? "└" : "├");
   const status = record.storage === "disabled" ? warn("disabled") : success("active");
   const management = record.readOnly ? muted("read-only") : accent("managed");
+  const autoInvocation = muted(` · ${renderAutoInvocationBadge(record)}`);
   const category = record.category ? muted(` · ${record.category}`) : "";
-  return `${branch} ${strong(record.name)} ${muted(`[${record.folder}]`)} ${status} ${management}${category}\n  ${muted(truncate(record.description, 120))}`;
+  return `${branch} ${strong(record.name)} ${muted(`[${record.folder}]`)} ${status} ${management}${autoInvocation}${category}\n  ${muted(truncate(record.description, 120))}`;
 }
 
 function renderLibrarySummary(records: SkillRecord[], categorization: SkillCategorizationState): string {
@@ -183,16 +170,42 @@ function renderLibrarySummary(records: SkillRecord[], categorization: SkillCateg
   const project = records.filter((record) => record.rootKind === "project-agent").length;
   const agent = records.filter((record) => record.rootKind === "agent-library").length;
   const taxonomy = categorization.state === "loaded"
-    ? afkSkillsTaxonomyFileName
+    ? skillCatalogFileName
     : categorization.state === "invalid"
-      ? `${afkSkillsTaxonomyFileName} needs repair`
-      : `${afkSkillsTaxonomyFileName} not created yet`;
+      ? `${skillCatalogFileName} needs repair`
+      : `${skillCatalogFileName} not created yet`;
 
   return `${active} active · ${disabled} disabled · ${project} project · ${agent} agent · ${taxonomy}`;
 }
 
 function renderField(label: string, value: string): string {
   return `${muted(label.padEnd(10))} ${value}`;
+}
+
+function renderAutoInvocation(record: SkillRecord): string {
+  switch (record.autoInvocation) {
+    case "enabled":
+      return "enabled";
+    case "disabled":
+      return "disabled";
+    case "mixed":
+      return "mixed";
+    case "default":
+      return "default";
+  }
+}
+
+function renderAutoInvocationBadge(record: SkillRecord): string {
+  switch (record.autoInvocation) {
+    case "enabled":
+      return success("auto");
+    case "disabled":
+      return warn("manual");
+    case "mixed":
+      return warn("mixed");
+    case "default":
+      return muted("default");
+  }
 }
 
 function groupRecords(records: SkillRecord[]): Array<[string, SkillRecord[]]> {

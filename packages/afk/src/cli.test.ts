@@ -366,14 +366,6 @@ test("runCli validates skills open app", async () => {
   assert.ok(output.join("\n").includes("Invalid --app value: vim"));
 });
 
-test("runCli validates skills agent metadata", async () => {
-  const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "rename", "demo", "Demo", "--agent-metadata", "claude"]));
-
-  assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("Invalid --agent-metadata value: claude"));
-});
-
 test("runCli validates skills categorize runner", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["skills", "categorize", "--runner", "sdk"]));

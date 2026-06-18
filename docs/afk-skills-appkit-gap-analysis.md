@@ -10,10 +10,9 @@ AFK now covers the core Global Library management loop from the AppKit app:
 - include disabled skills from `~/.agents/skills/.disabled`
 - show skill details
 - enable and disable skills by moving folders
-- rename display labels through AFK taxonomy metadata
 - categorize local skills through Codex CLI
 - browse current-project Codex and Claude roots as read-only roots
-- prompt with searchable choices when `show`, `disable`, `enable`, or `rename` is missing a skill operand
+- prompt with searchable choices when `show`, `disable`, `enable`, or `trash` is missing a skill operand
 - upgrade selected or all tracked skills by delegating to the official `skills` CLI
 
 The main AppKit behavior still not represented in AFK is not the local mutate loop. It is the surrounding discovery surface: official catalog search, source install command preparation, and catalog export.
@@ -27,12 +26,12 @@ Implemented in `packages/afk/src/skills/`:
 - `afk skills open`
 - `afk skills disable`
 - `afk skills enable`
-- `afk skills rename`
 - `afk skills trash`
 - `afk skills upgrade`
 - `afk skills categorize`
 
-The implementation intentionally uses `~/.agents/skills/afk-skills.json` instead of the AppKit-era `skills.json`, which is the right AFK-owned boundary. Mutations are also intentionally limited to the shared global library in v1.
+The implementation intentionally uses `~/.agents/afk/skill-catalog.json` instead of the AppKit-era `skills.json`, which keeps AFK-owned enrichment separate from setup manifests. Mutations now cover the shared global library by default and agent-specific roots when `--agent` selects one.
+Skill rename is intentionally not exposed until AFK can support a real managed customization flow that updates agent-visible metadata without breaking upstream upgrade identity.
 
 ## AppKit Features Already Covered
 
@@ -44,12 +43,11 @@ AppKit `CustomTabViewController` and `CustomSkillsCatalogService` manage:
 - disabled skills in `~/.agents/skills/.disabled`
 - local search
 - enable/disable moves
-- display-name rename through taxonomy metadata
 - categorized and uncategorized sections
-- missing or invalid taxonomy messaging
+- missing or invalid skill-catalog messaging
 - Codex-powered auto-categorization
 
-AFK has the functional equivalent for the CLI-oriented subset, with the taxonomy renamed to `afk-skills.json`.
+AFK has the functional equivalent for the CLI-oriented subset, with AFK enrichment stored in `skill-catalog.json`.
 
 ### Project Codex And Claude Browsing
 

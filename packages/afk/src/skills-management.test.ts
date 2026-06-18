@@ -1,27 +1,28 @@
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "vitest";
 import {
-  afkSkillsTaxonomyFileName,
   filterSkillRecords,
+  legacySkillCatalogPath,
   loadSkillCatalog,
   moveSkillRecord,
   moveGlobalSkill,
   normalizeSkillDescription,
   parseSkillFile,
-  renameCodexSkillMetadata,
-  renameGlobalSkill,
+  parseOpenAiImplicitInvocation,
+  skillCatalogFileName,
+  skillCatalogPath,
+  syncSkillCatalogFromManifest,
   trashSkillRecords,
   trashGlobalSkill,
   trashGlobalSkills,
-  updateOpenAiMetadataDisplayName,
   type SkillRecord,
 } from "./skills/catalog.js";
 import { buildCodexCategorizationCommand, runCodexCategorization } from "./skills/categorization.js";
 import { buildSkillOpenCommand, filterManifestSkillRecords, filterSkillChoices, formatLockedSkillChoice, runSkillsCommand } from "./skills/commands.js";
-import { renderSkillChoice, renderSkillTrashBatch } from "./skills/render.js";
+import { renderSkillChoice, renderSkillDetails, renderSkillTrashBatch } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 import { localManifestDir } from "./manifest.js";
@@ -31,6 +32,17 @@ test("parseSkillFile reads frontmatter name and description", () => {
 
   assert.equal(metadata.name, "demo");
   assert.equal(metadata.description, "Demo skill");
+});
+
+test("parseSkillFile reads disable-model-invocation frontmatter", () => {
+  assert.equal(parseSkillFile("---\nname: demo\ndisable-model-invocation: true\n---\n\n# Demo\n", "fallback").disableModelInvocation, true);
+  assert.equal(parseSkillFile("---\nname: demo\ndisable-model-invocation: false\n---\n\n# Demo\n", "fallback").disableModelInvocation, false);
+});
+
+test("parseOpenAiImplicitInvocation reads allow_implicit_invocation", () => {
+  assert.equal(parseOpenAiImplicitInvocation("policy:\n  allow_implicit_invocation: true\n"), true);
+  assert.equal(parseOpenAiImplicitInvocation("policy:\n  allow_implicit_invocation: false\n"), false);
+  assert.equal(parseOpenAiImplicitInvocation("interface:\n  display_name: Demo\n"), undefined);
 });
 
 test("parseSkillFile folds YAML block scalar descriptions", () => {
@@ -103,11 +115,11 @@ test("loadSkillCatalog orders global active, global disabled, then project roots
   writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "a-disabled", "A Disabled");
   writeSkill(join(cwd, ".codex", "skills"), "codex-skill", "Codex Skill");
   writeSkill(join(cwd, ".claude", "skills"), "claude-skill", "Claude Skill");
-  writeFileSync(join(homeDir, ".agents", "skills", afkSkillsTaxonomyFileName), JSON.stringify({
+  writeSkillCatalog(homeDir, {
     version: 1,
     scopes: [{ id: "docs", label: "Docs" }],
     skills: [{ folder: "z-active", name: "Alpha Active", scope: "docs", tags: ["docs"], platforms: ["generic"] }],
-  }));
+  });
 
   const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "all", agent: undefined });
 
@@ -178,13 +190,37 @@ test("loadSkillCatalog includes disabled installed agent roots with --scope glob
   ]);
 });
 
+test("loadSkillCatalog resolves auto invocation states from SKILL and OpenAI metadata", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-auto-invocation-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "default-skill", "Default Skill");
+  writeSkill(join(homeDir, ".agents", "skills"), "manual-skill", "Manual Skill", { disableModelInvocation: true });
+  writeSkill(join(homeDir, ".agents", "skills"), "auto-skill", "Auto Skill", { openAiImplicitInvocation: true });
+  writeSkill(join(homeDir, ".agents", "skills"), "mixed-skill", "Mixed Skill", {
+    disableModelInvocation: true,
+    openAiImplicitInvocation: true,
+  });
+
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
+  const byFolder = new Map(snapshot.records.map((record) => [record.folder, record]));
+
+  assert.equal(byFolder.get("default-skill")?.autoInvocation, "default");
+  assert.equal(byFolder.get("manual-skill")?.autoInvocation, "disabled");
+  assert.deepEqual(byFolder.get("manual-skill")?.autoInvocationDetails, ["SKILL.md disables"]);
+  assert.equal(byFolder.get("auto-skill")?.autoInvocation, "enabled");
+  assert.deepEqual(byFolder.get("auto-skill")?.autoInvocationDetails, ["agents/openai.yaml enables"]);
+  assert.equal(byFolder.get("mixed-skill")?.autoInvocation, "mixed");
+  assert.deepEqual(byFolder.get("mixed-skill")?.autoInvocationDetails, ["SKILL.md disables", "agents/openai.yaml enables"]);
+});
+
 test("filterSkillChoices searches folders, names, categories, tags, and roots", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skills-filter-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
   writeSkill(join(homeDir, ".agents", "skills"), "doc-helper", "Doc Helper");
   writeSkill(join(homeDir, ".agents", "skills"), "review-helper", "Review Helper");
-  writeFileSync(join(homeDir, ".agents", "skills", afkSkillsTaxonomyFileName), JSON.stringify({
+  writeSkillCatalog(homeDir, {
     version: 1,
     scopes: [
       { id: "docs", label: "Docs" },
@@ -194,7 +230,7 @@ test("filterSkillChoices searches folders, names, categories, tags, and roots", 
       { folder: "doc-helper", name: "Doc Helper", scope: "docs", tags: ["writing"] },
       { folder: "review-helper", name: "Review Helper", scope: "review", tags: ["critique"] },
     ],
-  }));
+  });
   const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
 
   assert.deepEqual(filterSkillChoices(snapshot.records, "writing").map((record) => record.folder), ["doc-helper"]);
@@ -208,7 +244,7 @@ test("filterSkillRecords filters by category, tag, platform, and uncategorized",
   writeSkill(join(homeDir, ".agents", "skills"), "doc-helper", "Doc Helper");
   writeSkill(join(homeDir, ".agents", "skills"), "review-helper", "Review Helper");
   writeSkill(join(homeDir, ".agents", "skills"), "plain-helper", "Plain Helper");
-  writeFileSync(join(homeDir, ".agents", "skills", afkSkillsTaxonomyFileName), JSON.stringify({
+  writeSkillCatalog(homeDir, {
     version: 1,
     scopes: [
       { id: "docs", label: "Docs" },
@@ -218,7 +254,7 @@ test("filterSkillRecords filters by category, tag, platform, and uncategorized",
       { folder: "doc-helper", name: "Doc Helper", scope: "docs", tags: ["writing"], platforms: ["generic"] },
       { folder: "review-helper", name: "Review Helper", scope: "review", tags: ["critique"], platforms: ["codex"] },
     ],
-  }));
+  });
   const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
 
   assert.deepEqual(filterSkillRecords(snapshot.records, { category: "Docs" }).map((record) => record.folder), ["doc-helper"]);
@@ -446,6 +482,9 @@ test("buildSkillOpenCommand targets files, folders, and supported apps", () => {
     categoryId: undefined,
     tags: [],
     platforms: [],
+    autoInvocation: "default",
+    autoInvocationSources: [],
+    autoInvocationDetails: [],
   };
 
   assert.deepEqual(buildSkillOpenCommand(record, { app: "finder", target: "file" }), {
@@ -477,7 +516,10 @@ test("renderSkillChoice separates core picker fields", () => {
     categoryId: "docs",
     tags: [],
     platforms: [],
-  }), "Demo Skill [demo] Global Library · active · managed · Docs");
+    autoInvocation: "enabled",
+    autoInvocationSources: ["SKILL.md"],
+    autoInvocationDetails: ["SKILL.md enables"],
+  }), "Demo Skill [demo] Global Library · active · managed · auto · Docs");
 
   assert.equal(renderSkillChoice({
     folder: "disabled-demo",
@@ -495,7 +537,36 @@ test("renderSkillChoice separates core picker fields", () => {
     categoryId: undefined,
     tags: [],
     platforms: [],
-  }), "Disabled Demo [disabled-demo] Global Library / Disabled · disabled · managed");
+    autoInvocation: "disabled",
+    autoInvocationSources: ["agents/openai.yaml"],
+    autoInvocationDetails: ["agents/openai.yaml disables"],
+  }), "Disabled Demo [disabled-demo] Global Library / Disabled · disabled · managed · manual");
+});
+
+test("renderSkillDetails shows mixed auto invocation diagnostics", () => {
+  const output = renderSkillDetails({
+    folder: "mixed-demo",
+    name: "Mixed Demo",
+    originalName: "Mixed Demo",
+    description: "Demo description",
+    rootLabel: "Global Library",
+    rootPath: "/tmp/skills",
+    skillFilePath: "/tmp/skills/mixed-demo/SKILL.md",
+    storage: "active",
+    rootKind: "global-library",
+    readOnly: false,
+    agent: undefined,
+    category: undefined,
+    categoryId: undefined,
+    tags: [],
+    platforms: [],
+    autoInvocation: "mixed",
+    autoInvocationSources: ["SKILL.md", "agents/openai.yaml"],
+    autoInvocationDetails: ["SKILL.md disables", "agents/openai.yaml enables"],
+  });
+
+  assert.ok(output.includes("Auto       mixed"));
+  assert.ok(output.includes("Auto source SKILL.md disables, agents/openai.yaml enables"));
 });
 
 test("loadLockedSkills reads global and project tracked skills by scope", () => {
@@ -619,94 +690,57 @@ test("runSkillsCommand upgrade explicit names invokes global update by default",
   }]);
 });
 
-test("renameGlobalSkill updates existing afk-skills entry", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-rename-"));
+test("syncSkillCatalogFromManifest adds setup skills to canonical catalog", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-catalog-sync-"));
   const homeDir = join(root, "home");
-  const path = join(homeDir, ".agents", "skills", afkSkillsTaxonomyFileName);
-  mkdirSync(join(homeDir, ".agents", "skills"), { recursive: true });
-  writeFileSync(path, JSON.stringify({
+  writeSkillManifest(homeDir, ["alpha", "beta"]);
+
+  const result = syncSkillCatalogFromManifest({
+    homeDir,
+    selectedSkillIds: ["beta"],
+    allSkills: false,
+    dryRun: false,
+  });
+
+  assert.equal(result.path, skillCatalogPath(homeDir));
+  assert.deepEqual(result.added, ["beta"]);
+  const written = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
+    scopes: Array<{ id: string }>;
+    skills: Array<{ folder: string; scope: string; name?: string }>;
+  };
+  assert.ok(written.scopes.some((scope) => scope.id === "uncategorized"));
+  assert.deepEqual(written.skills, [{ folder: "beta", scope: "uncategorized" }]);
+});
+
+test("syncSkillCatalogFromManifest preserves existing legacy catalog entries and writes canonical catalog", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-catalog-sync-legacy-"));
+  const homeDir = join(root, "home");
+  writeSkillManifest(homeDir, ["alpha", "beta"]);
+  writeSkillCatalog(homeDir, {
     version: 1,
     scopes: [{ id: "docs", label: "Docs" }],
-    skills: [{ folder: "demo", name: "Demo", scope: "docs" }],
-  }));
+    skills: [{ folder: "alpha", name: "Alpha", scope: "docs" }],
+  }, { legacy: true });
 
-  renameGlobalSkill({ homeDir, folder: "demo", displayName: "Better Demo", dryRun: false });
+  const result = syncSkillCatalogFromManifest({
+    homeDir,
+    selectedSkillIds: [],
+    allSkills: true,
+    dryRun: false,
+  });
 
-  const next = JSON.parse(readFileSync(path, "utf8")) as { skills: Array<{ folder: string; name: string }> };
-  assert.equal(next.skills[0]?.name, "Better Demo");
-});
-
-test("renameGlobalSkill adds missing entries to uncategorized scope", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-rename-new-"));
-  const homeDir = join(root, "home");
-  const path = join(homeDir, ".agents", "skills", afkSkillsTaxonomyFileName);
-  mkdirSync(join(homeDir, ".agents", "skills"), { recursive: true });
-  writeFileSync(path, JSON.stringify({ version: 1, scopes: [], skills: [] }));
-
-  renameGlobalSkill({ homeDir, folder: "demo", displayName: "Demo", dryRun: false });
-
-  const next = JSON.parse(readFileSync(path, "utf8")) as {
+  assert.deepEqual(result.added, ["beta"]);
+  const written = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
     scopes: Array<{ id: string }>;
-    skills: Array<{ folder: string; scope: string }>;
+    skills: Array<{ folder: string; scope: string; name?: string }>;
   };
-  assert.equal(next.skills[0]?.scope, "uncategorized");
-  assert.ok(next.scopes.some((scope) => scope.id === "uncategorized"));
+  assert.deepEqual(written.skills.map((skill) => skill.folder), ["alpha", "beta"]);
+  assert.equal(written.skills[0]?.name, "Alpha");
+  assert.ok(written.scopes.some((scope) => scope.id === "docs"));
+  assert.ok(written.scopes.some((scope) => scope.id === "uncategorized"));
 });
 
-test("renameGlobalSkill requires an existing valid afk-skills file", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-rename-missing-"));
-  const homeDir = join(root, "home");
-
-  assert.throws(
-    () => renameGlobalSkill({ homeDir, folder: "demo", displayName: "Demo", dryRun: false }),
-    /Run afk skills categorize first/,
-  );
-});
-
-test("updateOpenAiMetadataDisplayName updates existing interface display name", () => {
-  const next = updateOpenAiMetadataDisplayName(
-    [
-      "interface:",
-      "  display_name: \"Old Name\"",
-      "  short_description: \"Short\"",
-      "policy:",
-      "  allow_implicit_invocation: true",
-      "",
-    ].join("\n"),
-    "New Name",
-  );
-
-  assert.equal(next, [
-    "interface:",
-    "  display_name: \"New Name\"",
-    "  short_description: \"Short\"",
-    "policy:",
-    "  allow_implicit_invocation: true",
-    "",
-  ].join("\n"));
-});
-
-test("updateOpenAiMetadataDisplayName creates interface display name when missing", () => {
-  assert.equal(updateOpenAiMetadataDisplayName("", "New Name"), "interface:\n  display_name: \"New Name\"\n");
-  assert.equal(
-    updateOpenAiMetadataDisplayName("policy:\n  allow_implicit_invocation: true\n", "New Name"),
-    "interface:\n  display_name: \"New Name\"\npolicy:\n  allow_implicit_invocation: true\n",
-  );
-});
-
-test("renameCodexSkillMetadata writes agents openai yaml", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-codex-metadata-"));
-  const skillRoot = join(root, "skills");
-  writeSkill(skillRoot, "demo", "Demo");
-  const record = skillRecord({ folder: "demo", rootPath: skillRoot });
-
-  const path = renameCodexSkillMetadata({ record, displayName: "Better Demo", dryRun: false });
-
-  assert.equal(path, join(skillRoot, "demo", "agents", "openai.yaml"));
-  assert.equal(readFileSync(path, "utf8"), "interface:\n  display_name: \"Better Demo\"\n");
-});
-
-test("buildCodexCategorizationCommand targets afk-skills.json with codex exec", () => {
+test("buildCodexCategorizationCommand targets skill-catalog.json with codex exec", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-categorize-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
@@ -729,7 +763,11 @@ test("buildCodexCategorizationCommand targets afk-skills.json with codex exec", 
     "never",
     "--ephemeral",
   ]);
-  assert.ok(built.prompt.includes(afkSkillsTaxonomyFileName));
+  assert.equal(built.cwd, join(homeDir, ".agents", "afk"));
+  assert.ok(built.args.includes(join(homeDir, ".agents", "afk")));
+  assert.ok(built.args.includes(join(homeDir, ".agents", "skills")));
+  assert.ok(built.prompt.includes(skillCatalogFileName));
+  assert.ok(built.prompt.includes("~/.agents/afk/skill-catalog.json"));
   assert.ok(built.prompt.includes("Prefer docs categories."));
 });
 
@@ -758,9 +796,34 @@ test("runCodexCategorization dry-run does not spawn codex", async () => {
   assert.ok(output.join("\n").includes("Prompt Preview"));
 });
 
-function writeSkill(root: string, folder: string, name: string): void {
+function writeSkill(root: string, folder: string, name: string, options: {
+  disableModelInvocation?: boolean;
+  openAiImplicitInvocation?: boolean;
+} = {}): void {
   mkdirSync(join(root, folder), { recursive: true });
-  writeFileSync(join(root, folder, "SKILL.md"), `---\nname: ${name}\ndescription: ${name} description\n---\n\n# ${name}\n`);
+  writeFileSync(join(root, folder, "SKILL.md"), [
+    "---",
+    `name: ${name}`,
+    `description: ${name} description`,
+    ...(options.disableModelInvocation === undefined ? [] : [`disable-model-invocation: ${options.disableModelInvocation ? "true" : "false"}`]),
+    "---",
+    "",
+    `# ${name}`,
+    "",
+  ].join("\n"));
+  if (options.openAiImplicitInvocation !== undefined) {
+    mkdirSync(join(root, folder, "agents"), { recursive: true });
+    writeFileSync(
+      join(root, folder, "agents", "openai.yaml"),
+      `policy:\n  allow_implicit_invocation: ${options.openAiImplicitInvocation ? "true" : "false"}\n`,
+    );
+  }
+}
+
+function writeSkillCatalog(homeDir: string, content: unknown, options: { legacy?: boolean } = {}): void {
+  const path = options.legacy ? legacySkillCatalogPath(homeDir) : skillCatalogPath(homeDir);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(content, null, 2)}\n`);
 }
 
 function writeGlobalSkillLock(homeDir: string, skills: Record<string, object>): void {
@@ -837,7 +900,6 @@ function baseOptions(root: string) {
     skillsUncategorized: false,
     skillOpenApp: "finder" as const,
     skillOpenTarget: "file" as const,
-    skillAgentMetadata: undefined,
     skillCategorizationMode: undefined,
     skillCategorizationRunner: "codex-exec" as const,
     skillCategorizationInstruction: "",
@@ -865,5 +927,8 @@ function skillRecord(input: { folder: string; rootPath: string }): SkillRecord {
     categoryId: undefined,
     tags: [],
     platforms: [],
+    autoInvocation: "default",
+    autoInvocationSources: [],
+    autoInvocationDetails: [],
   };
 }

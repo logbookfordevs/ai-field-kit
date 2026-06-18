@@ -1,6 +1,7 @@
 import { syncRules } from "./rules.js";
 import { syncHooks } from "./hooks.js";
 import { syncSkillInvocationPolicy } from "./skills.js";
+import { syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
@@ -209,6 +210,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
       if (code === 0) {
         syncSkillInvocationPolicy(runtime, selectedOptions);
+        syncSetupSkillCatalog(runtime, selectedOptions);
       }
 
       return code;
@@ -248,6 +250,23 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 
       return syncHooks(runtime, selectedOptions);
     }
+  }
+}
+
+function syncSetupSkillCatalog(runtime: Runtime, options: CliOptions): void {
+  if (options.dryRun) {
+    return;
+  }
+
+  try {
+    syncSkillCatalogFromManifest({
+      homeDir: options.homeDir,
+      selectedSkillIds: options.selectedSkillIds,
+      allSkills: options.allSkills,
+      dryRun: false,
+    });
+  } catch (error) {
+    runtime.io.stderr(`Warning: could not update AFK skill catalog. ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

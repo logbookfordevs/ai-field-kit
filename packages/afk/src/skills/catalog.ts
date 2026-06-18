@@ -1,11 +1,14 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { ManagedSkillAgent, SkillsListScope } from "../types.js";
+import { loadSkillManifest, localAfkDir } from "../manifest.js";
 
-export const afkSkillsTaxonomyFileName = "afk-skills.json";
+export const skillCatalogFileName = "skill-catalog.json";
+export const legacySkillCatalogFileName = "afk-skills.json";
 
 export type SkillStorage = "active" | "disabled";
 export type SkillRootKind = "global-library" | "project-agent" | "agent-library";
+export type SkillAutoInvocationState = "enabled" | "disabled" | "mixed" | "default";
 
 export type SkillRecord = {
   folder: string;
@@ -23,6 +26,9 @@ export type SkillRecord = {
   categoryId: string | undefined;
   tags: string[];
   platforms: string[];
+  autoInvocation: SkillAutoInvocationState;
+  autoInvocationSources: string[];
+  autoInvocationDetails: string[];
 };
 
 export type SkillCatalogScope = {
@@ -48,9 +54,9 @@ export type SkillCatalogDefinition = {
 };
 
 export type SkillCategorizationState =
-  | { state: "missing"; path: string }
-  | { state: "invalid"; path: string; message: string }
-  | { state: "loaded"; path: string; definition: SkillCatalogDefinition };
+  | { state: "missing"; path: string; legacyPath: string }
+  | { state: "invalid"; path: string; legacyPath: string; message: string; source: "canonical" | "legacy" }
+  | { state: "loaded"; path: string; legacyPath: string; definition: SkillCatalogDefinition; source: "canonical" | "legacy" };
 
 export type SkillCatalogSnapshot = {
   records: SkillRecord[];
@@ -60,6 +66,11 @@ export type SkillCatalogSnapshot = {
 export type SkillMovement = {
   folder: string;
   movement: string;
+};
+
+export type SkillCatalogManifestSyncResult = {
+  path: string;
+  added: string[];
 };
 
 type SkillRoot = {
@@ -74,6 +85,7 @@ type SkillRoot = {
 type FrontmatterMetadata = {
   name: string | undefined;
   description: string | undefined;
+  disableModelInvocation: boolean | undefined;
 };
 
 export function loadSkillCatalog(options: {
@@ -140,6 +152,7 @@ export function parseSkillFile(contents: string, fallbackName: string): Frontmat
     return {
       name: undefined,
       description: firstBodyParagraph(contents),
+      disableModelInvocation: undefined,
     };
   }
 
@@ -166,6 +179,7 @@ export function parseSkillFile(contents: string, fallbackName: string): Frontmat
     return {
       name: undefined,
       description: firstBodyParagraph(contents),
+      disableModelInvocation: undefined,
     };
   }
 
@@ -175,6 +189,7 @@ export function parseSkillFile(contents: string, fallbackName: string): Frontmat
   return {
     name: nonEmpty(values.get("name")) ?? fallbackName,
     description,
+    disableModelInvocation: parseBoolean(values.get("disable-model-invocation")),
   };
 }
 
@@ -188,25 +203,36 @@ export function normalizeSkillDescription(value: string | undefined): string | u
 }
 
 export function loadCategorizationState(homeDir: string): SkillCategorizationState {
-  const path = taxonomyPath(homeDir);
-  if (!existsSync(path)) {
-    return { state: "missing", path };
+  const path = skillCatalogPath(homeDir);
+  const legacyPath = legacySkillCatalogPath(homeDir);
+  const source = existsSync(path) ? "canonical" : existsSync(legacyPath) ? "legacy" : undefined;
+  if (!source) {
+    return { state: "missing", path, legacyPath };
   }
 
+  const readPath = source === "canonical" ? path : legacyPath;
   try {
-    const definition = JSON.parse(readFileSync(path, "utf8")) as SkillCatalogDefinition;
+    const definition = JSON.parse(readFileSync(readPath, "utf8")) as SkillCatalogDefinition;
     if (!isSkillCatalogDefinition(definition)) {
-      return { state: "invalid", path, message: "Expected version, scopes, and skills fields." };
+      return { state: "invalid", path, legacyPath, source, message: "Expected version, scopes, and skills fields." };
     }
 
-    return { state: "loaded", path, definition };
+    return { state: "loaded", path, legacyPath, source, definition };
   } catch (error) {
-    return { state: "invalid", path, message: error instanceof Error ? error.message : String(error) };
+    return { state: "invalid", path, legacyPath, source, message: error instanceof Error ? error.message : String(error) };
   }
 }
 
 export function taxonomyPath(homeDir: string): string {
-  return join(homeDir, ".agents", "skills", afkSkillsTaxonomyFileName);
+  return skillCatalogPath(homeDir);
+}
+
+export function skillCatalogPath(homeDir: string): string {
+  return join(localAfkDir(homeDir), skillCatalogFileName);
+}
+
+export function legacySkillCatalogPath(homeDir: string): string {
+  return join(homeDir, ".agents", "skills", legacySkillCatalogFileName);
 }
 
 export function moveGlobalSkill(options: {
@@ -374,116 +400,59 @@ export function trashSkillRecords(options: {
   }));
 }
 
-export function renameGlobalSkill(options: {
+export function syncSkillCatalogFromManifest(options: {
   homeDir: string;
-  folder: string;
-  displayName: string;
+  selectedSkillIds: string[];
+  allSkills: boolean;
   dryRun: boolean;
-}): string {
-  const displayName = options.displayName.trim();
-  if (!displayName) {
-    throw new Error("Display name cannot be empty.");
-  }
-
-  if (/[\r\n]/.test(displayName)) {
-    throw new Error("Display name must stay on a single line.");
-  }
-
+}): SkillCatalogManifestSyncResult {
+  const manifest = loadSkillManifest(options);
+  const selected = options.selectedSkillIds.length > 0
+    ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))
+    : manifest.items.filter((item) => item.default || options.allSkills);
+  const folders = uniqueStrings(selected.map((item) => item.id.trim()).filter(Boolean));
   const categorization = loadCategorizationState(options.homeDir);
-  if (categorization.state === "missing") {
-    throw new Error(`Rename labels require ${categorization.path}. Run afk skills categorize first.`);
-  }
 
   if (categorization.state === "invalid") {
-    throw new Error(`Rename labels require a valid ${categorization.path}. ${categorization.message}`);
+    throw new Error(`Skill catalog sync requires a valid ${categorization.source === "legacy" ? categorization.legacyPath : categorization.path}. ${categorization.message}`);
   }
 
-  const definition = categorization.definition;
-  const skills = [...definition.skills];
-  const existingIndex = skills.findIndex((skill) => skill.folder === options.folder);
-  if (existingIndex >= 0) {
-    const existing = skills[existingIndex];
-    if (existing) {
-      skills[existingIndex] = { ...existing, name: displayName };
-    }
-  } else {
-    skills.push({
-      folder: options.folder,
-      name: displayName,
-      scope: ensureUncategorizedScope(definition).id,
-    });
+  const definition = categorization.state === "loaded"
+    ? categorization.definition
+    : emptySkillCatalogDefinition();
+  const uncategorized = ensureUncategorizedScope(definition);
+  const existingFolders = new Set(definition.skills.map((skill) => skill.folder.toLowerCase()));
+  const added = folders.filter((folder) => !existingFolders.has(folder.toLowerCase()));
+
+  if (added.length === 0) {
+    return { path: categorization.path, added };
   }
 
   const nextDefinition: SkillCatalogDefinition = {
     ...definition,
-    scopes: ensureScope(definition.scopes, ensureUncategorizedScope(definition)),
-    skills,
+    generatedAt: new Date().toISOString(),
+    scopes: ensureScope(definition.scopes, uncategorized),
+    skills: [
+      ...definition.skills,
+      ...added.map((folder) => ({ folder, scope: uncategorized.id })),
+    ],
   };
 
   if (!options.dryRun) {
+    mkdirSync(dirname(categorization.path), { recursive: true });
     writeFileSync(categorization.path, `${JSON.stringify(nextDefinition, null, 2)}\n`);
   }
 
-  return categorization.path;
+  return { path: categorization.path, added };
 }
 
-export function renameCodexSkillMetadata(options: {
-  record: SkillRecord;
-  displayName: string;
-  dryRun: boolean;
-}): string {
-  const displayName = validateDisplayName(options.displayName);
-  const path = join(options.record.rootPath, options.record.folder, "agents", "openai.yaml");
-
-  if (options.dryRun) {
-    return path;
+export function parseOpenAiImplicitInvocation(contents: string): boolean | undefined {
+  const match = /^\s*allow_implicit_invocation:\s*(true|false)\s*$/m.exec(contents);
+  if (!match) {
+    return undefined;
   }
 
-  mkdirSync(dirname(path), { recursive: true });
-  const current = existsSync(path) ? readFileSync(path, "utf8") : "";
-  writeFileSync(path, updateOpenAiMetadataDisplayName(current, displayName));
-
-  return path;
-}
-
-export function updateOpenAiMetadataDisplayName(contents: string, displayName: string): string {
-  const quotedName = quoteYamlString(validateDisplayName(displayName));
-  if (!contents.trim()) {
-    return [
-      "interface:",
-      `  display_name: ${quotedName}`,
-      "",
-    ].join("\n");
-  }
-
-  const lines = contents.split(/\r?\n/);
-  const interfaceIndex = lines.findIndex((line) => /^interface:\s*$/.test(line));
-  if (interfaceIndex < 0) {
-    return [
-      "interface:",
-      `  display_name: ${quotedName}`,
-      ...lines,
-    ].join("\n").replace(/\n+$/, "\n");
-  }
-
-  let insertIndex = interfaceIndex + 1;
-  for (let index = interfaceIndex + 1; index < lines.length; index += 1) {
-    const line = lines[index] ?? "";
-    if (/^\S/.test(line) && line.trim().length > 0) {
-      break;
-    }
-
-    if (/^\s+display_name:\s*/.test(line)) {
-      const indent = line.match(/^\s*/)?.[0] ?? "  ";
-      lines[index] = `${indent}display_name: ${quotedName}`;
-      return lines.join("\n").replace(/\n+$/, "\n");
-    }
-
-    insertIndex = index + 1;
-  }
-
-  lines.splice(insertIndex, 0, `  display_name: ${quotedName}`);
-  return lines.join("\n").replace(/\n+$/, "\n");
+  return match[1] === "true";
 }
 
 export function sortSkillRecords(records: SkillRecord[]): SkillRecord[] {
@@ -523,6 +492,10 @@ function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationStat
       }
 
       const metadata = parseSkillFile(readFileSync(skillFilePath, "utf8"), entry.name);
+      const autoInvocation = resolveAutoInvocation({
+        skillFile: metadata.disableModelInvocation === undefined ? undefined : !metadata.disableModelInvocation,
+        openAi: readOpenAiImplicitInvocation(root.path, entry.name),
+      });
       const taxonomyEntry = root.kind === "global-library" ? entriesByFolder.get(entry.name) : undefined;
       const scope = taxonomyEntry ? scopesById.get(taxonomyEntry.scope) : undefined;
       const originalName = metadata.name ?? entry.name;
@@ -543,25 +516,71 @@ function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationStat
         categoryId: scope?.id,
         tags: taxonomyEntry?.tags ?? [],
         platforms: taxonomyEntry?.platforms ?? [],
+        autoInvocation: autoInvocation.state,
+        autoInvocationSources: autoInvocation.sources,
+        autoInvocationDetails: autoInvocation.details,
       } satisfies SkillRecord];
     });
 }
 
-function validateDisplayName(value: string): string {
-  const displayName = value.trim();
-  if (!displayName) {
-    throw new Error("Display name cannot be empty.");
+function readOpenAiImplicitInvocation(rootPath: string, folder: string): boolean | undefined {
+  const path = join(rootPath, folder, "agents", "openai.yaml");
+  if (!existsSync(path)) {
+    return undefined;
   }
 
-  if (/[\r\n]/.test(displayName)) {
-    throw new Error("Display name must stay on a single line.");
-  }
-
-  return displayName;
+  return parseOpenAiImplicitInvocation(readFileSync(path, "utf8"));
 }
 
-function quoteYamlString(value: string): string {
-  return JSON.stringify(value);
+function resolveAutoInvocation(input: {
+  skillFile?: boolean | undefined;
+  openAi?: boolean | undefined;
+}): { state: SkillAutoInvocationState; sources: string[]; details: string[] } {
+  const signals = [
+    input.skillFile === undefined
+      ? undefined
+      : {
+        source: "SKILL.md",
+        enabled: input.skillFile,
+        detail: `SKILL.md ${input.skillFile ? "enables" : "disables"}`,
+      },
+    input.openAi === undefined
+      ? undefined
+      : {
+        source: "agents/openai.yaml",
+        enabled: input.openAi,
+        detail: `agents/openai.yaml ${input.openAi ? "enables" : "disables"}`,
+      },
+  ].filter((signal): signal is { source: string; enabled: boolean; detail: string } => Boolean(signal));
+
+  if (signals.length === 0) {
+    return { state: "default", sources: [], details: [] };
+  }
+
+  const first = signals[0];
+  const state = signals.every((signal) => signal.enabled === first?.enabled)
+    ? first?.enabled ? "enabled" : "disabled"
+    : "mixed";
+
+  return {
+    state,
+    sources: signals.map((signal) => signal.source),
+    details: signals.map((signal) => signal.detail),
+  };
+}
+
+function emptySkillCatalogDefinition(): SkillCatalogDefinition {
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    description: "AFK skill catalog. Skills added by setup start uncategorized until afk skills categorize enriches them.",
+    scopes: [],
+    skills: [],
+  };
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
@@ -728,6 +747,19 @@ function normalize(value: string | undefined): string {
 function nonEmpty(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function parseBoolean(value: string | undefined): boolean | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "true") {
+    return true;
+  }
+
+  if (normalized === "false") {
+    return false;
+  }
+
+  return undefined;
 }
 
 function parseFrontmatterValues(lines: string[]): Map<string, string> {

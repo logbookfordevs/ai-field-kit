@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test, vi } from "vitest";
 import { localManifestDir } from "./manifest.js";
 import { runArea, runSetup } from "./setup.js";
+import { skillCatalogPath } from "./skills/catalog.js";
 import type { SetupSelection } from "./interactive.js";
 import type { CliOptions, Runtime } from "./types.js";
 
@@ -178,6 +179,64 @@ test("runSetup prepares manifests only once before running selected areas", asyn
 
   assert.equal(code, 0);
   assert.equal(localManifestHeadings.length, 1);
+});
+
+test("runArea skills adds selected setup skills to AFK skill catalog after install", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "alpha",
+          label: "Alpha",
+          source: "example/skills",
+          args: ["--skill", "alpha"],
+          default: false,
+        },
+        {
+          id: "beta",
+          label: "Beta",
+          source: "example/skills",
+          args: ["--skill", "beta"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+  const spawned: Array<{ command: string; args: string[] }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runArea("skills", runtime, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    setupManifestsPrepared: true,
+    selectedSkillIds: ["beta"],
+    selectedSkillAgentIds: ["claude-code"],
+    defaultsSource: "local",
+    defaultsSourceExplicit: true,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["skills", "add", "example/skills", "--global", "--yes", "--skill", "beta", "--agent", "claude-code"],
+  }]);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
+    skills: Array<{ folder: string; scope: string }>;
+  };
+  assert.deepEqual(catalog.skills, [{ folder: "beta", scope: "uncategorized" }]);
 });
 
 test("runSetup prompts for a run-only source without changing the saved default", async () => {

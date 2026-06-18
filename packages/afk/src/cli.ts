@@ -19,7 +19,6 @@ import type {
   Runtime,
   SetupScope,
   SkillAgentId,
-  SkillAgentMetadata,
   SkillCategorizationMode,
   SkillCategorizationRunner,
   SkillOpenApp,
@@ -372,10 +371,9 @@ const commandHelps: Record<string, CommandHelp> = {
       "open <folder>                     Open SKILL.md or the skill folder",
       "disable <folder>                  Move a global skill into .disabled",
       "enable <folder>                   Move a disabled global skill back to active",
-      "rename <folder> <display-name>    Store an AFK display name in afk-skills.json",
       "trash [folder]                    Move one or more global skills to Trash",
       "upgrade [skills...]               Upgrade selected or all tracked skills",
-      "categorize                        Create or update afk-skills.json with Codex",
+      "categorize                        Create or update skill-catalog.json with Codex",
     ],
     examples: [
       "afk skills list",
@@ -514,19 +512,6 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills enable --scope project --agent claude",
     ],
   },
-  "skills rename": {
-    title: "AFK skills rename",
-    summary: "Store a display name override in ~/.agents/skills/afk-skills.json.",
-    usage: "afk skills rename <folder> <display-name> [options]",
-    options: [
-      "--agent-metadata codex            Also update agents/openai.yaml display_name",
-      "--dry-run                         Preview the metadata update without applying it",
-    ],
-    examples: [
-      "afk skills rename afk-note \"AFK Note\" --dry-run",
-      "afk skills rename afk-note \"AFK Note\" --agent-metadata codex",
-    ],
-  },
   "skills trash": {
     title: "AFK skills trash",
     summary: "Move one or more shared or agent-specific skill folders to the macOS Trash.",
@@ -536,7 +521,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent <agent>                   Target one agent-specific root",
       "--dry-run                         Preview the Trash move without applying it",
       "--yes, -y                         Skip confirmation",
-      "--manifest-only                   Show only skills from AFK skills.json",
+      "--manifest-only                   Show only skills from AFK's setup skills manifest",
     ],
     examples: [
       "afk skills trash",
@@ -565,7 +550,7 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills categorize": {
     title: "AFK skills categorize",
-    summary: "Create or update ~/.agents/skills/afk-skills.json with Codex exec.",
+    summary: "Create or update ~/.agents/afk/skill-catalog.json with Codex exec.",
     usage: "afk skills categorize [options]",
     options: [
       "--mode append-missing|recategorize-all",
@@ -656,7 +641,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsUncategorized = false;
   let skillOpenApp: SkillOpenApp = "finder";
   let skillOpenTarget: "file" | "folder" = "file";
-  let skillAgentMetadata: SkillAgentMetadata | undefined;
   let skillCategorizationMode: SkillCategorizationMode | undefined;
   let skillCategorizationRunner: SkillCategorizationRunner = "codex-exec";
   let skillCategorizationInstruction = "";
@@ -946,16 +930,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsCommand && arg === "--agent-metadata") {
-      const value = args[index + 1];
-      if (value !== "codex") {
-        return { help: false, kind: "error", error: `Invalid --agent-metadata value: ${value ?? "(missing)"}` };
-      }
-      skillAgentMetadata = value;
-      index += 1;
-      continue;
-    }
-
     if (isAfkSkillsCommand && arg === "--mode") {
       const value = args[index + 1];
       if (value !== "append-missing" && value !== "recategorize-all") {
@@ -1029,7 +1003,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsUncategorized,
       skillOpenApp,
       skillOpenTarget,
-      skillAgentMetadata,
       skillCategorizationMode,
       skillCategorizationRunner,
       skillCategorizationInstruction,
