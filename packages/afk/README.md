@@ -13,7 +13,7 @@ AFK skills are modeled as composable parts: primitives, wrappers, flows,
 utilities, references, and routers. That shape keeps automatic model discovery
 small while still giving people named workflows to invoke directly. See
 [Skill Composition](docs/skill-composition.md) for the full mental model, or
-open the visual companion in [Skill Composition Studio](docs/skill-composition.html).
+open the visual companion in [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg).
 
 ## Quick Start
 
@@ -34,8 +34,10 @@ afk setup
 ```
 
 Interactive setup starts with nothing selected. Use space to choose the areas
-and items you want. Scripted setup can use `--yes` to accept defaults after you
-pass `--source` for that run or save a source with `--default-source`.
+and items you want. On first run, AFK asks which source should seed the local
+cache, saves that source as the default, refreshes the cache, then continues.
+Scripted setup can use `--yes` to accept defaults after the cache exists, or
+`--source` to run from another source once without changing the cache.
 
 ## What AFK Sets Up
 
@@ -91,8 +93,8 @@ In project scope, rules are injected into project host files such as
 MCPs are delegated without their global flags. RTK project initialization runs
 from the current project directory.
 
-For `afk setup refresh`, `--local` has a different meaning: it refreshes
-`./afk/manifests` instead of the global manifest store.
+For `afk refresh`, `--local` has a different meaning: it refreshes
+`./afk/manifests` instead of the global manifest cache.
 
 ## Common Commands
 
@@ -117,9 +119,9 @@ afk setup plugins --dry-run
 afk setup hooks --dry-run
 
 # Refresh local manifest files from defaults
-afk setup refresh
+afk refresh
 
-# Inspect the active setup source
+# Inspect the local manifest cache
 afk show
 ```
 
@@ -139,13 +141,24 @@ These flags apply to `afk setup` and most area commands.
 | `--verbose` | Show delegated installer output instead of keeping it quiet. |
 | `--yes`, `-y` | Accept defaults and skip prompts. Useful for scripts. |
 | `--scope global/project` | Choose machine-wide setup or current-project setup. |
-| `--local` | Alias for `--scope project`, except on `setup refresh`, where it refreshes `./afk/manifests`. |
+| `--local` | Alias for `--scope project`. |
 | `--agent <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
-| `--source <source>` | Use a setup source for this run only. |
+| `--source <source>` | Use a manifest source for this run only, without changing the cache or default source. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK manifests and rules. |
-| `--init-only` | Create or update manifest files, then exit without setup. |
-| `--empty` | With `--init-only` or `setup refresh`, create empty manifest files. |
-| `--default-source <source>` | Save a default setup source and exit. |
+| `--init-only` | Legacy cache-prep flag; prefer `afk refresh`. |
+
+### Refresh Flags
+
+These flags apply to `afk refresh`.
+
+| Flag | Meaning |
+|---|---|
+| `--dry-run` | Preview cache writes without applying them. |
+| `--local` | Refresh `./afk/manifests` instead of the global manifest cache. |
+| `--source <source>` | Refresh the cache from this source once, without changing the remembered default source. |
+| `--default-source <source>` | Save the default source and refresh the cache from it. |
+| `--ref <git-ref>` | Choose the Git ref used when fetching default AFK manifests and rules. |
+| `--empty` | Create empty manifest files. |
 
 General setup agent values are:
 
@@ -242,15 +255,18 @@ are usually manual, and composition makes the relationship explicit.
 
 | Command | Shows |
 |---|---|
-| `afk show` | Active setup source overview. |
-| `afk show skills` | Skills manifest. |
-| `afk show skills mcps` | Multiple manifests in one run. |
+| `afk show` | Cached global AFK manifests. |
+| `afk show skills` | Cached skills manifest. |
+| `afk show skills mcps` | Multiple cached manifests in one run. |
+| `afk show --source <source>` | Inspect a source directly without changing the cache. |
+| `afk show --local` | Inspect project-local `./afk/manifests`. |
 | `afk manifests show` | Alias for `afk show`. |
 | `afk manifest show` | Alias for `afk show`. |
 
-`afk show` reads the active setup source by default: an explicit `--source`, a
-remembered `--default-source`, or the built-in AFK source. Use `--local` only
-when you need to inspect materialized `./afk/manifests` files.
+`afk show` does not hit the network by default. It shows the local cache AFK
+will use for normal setup. Add `--source` when you want to inspect a repo,
+branch, raw URL, or local source path without writing that source into the
+cache.
 
 ## Manifest Model
 
@@ -277,25 +293,28 @@ plugins.json
 hooks.json
 ```
 
-AFK setup is source-backed. It reads recommendations from an explicit
-`--source`, a saved `--default-source`, or the built-in AFK source. Local
-manifest files are materialized setup inputs and inspection artifacts, not the
-primary authoring surface.
+AFK has a small cache/source split:
+
+- `afk refresh` updates local manifest cache files.
+- `afk show` inspects the cache by default.
+- `afk setup` applies the cache by default.
+- `--source` reads a source for one command without changing the cache or saved default.
+- `--default-source` belongs to `afk refresh`; it saves the default source and refreshes the cache from it.
 
 Use these commands to prepare manifest files without running setup:
 
 ```bash
-afk setup --init-only
-afk setup --init-only --empty
-afk setup refresh
-afk setup refresh --local
+afk refresh
+afk refresh skills
+afk refresh --empty
+afk refresh --local
 ```
 
-If you need to update materialized manifest files, refresh them from the active
-source:
+If you want to inspect another source without changing the cache, use `show`
+with `--source`:
 
 ```bash
-afk setup refresh
+afk show skills --source your-org/dev-kit
 ```
 
 ## Custom Defaults
@@ -305,8 +324,8 @@ convention-compatible manifests in another repo, then point AFK at it:
 
 ```bash
 afk setup --source your-org/dev-kit
-afk setup --default-source your-org/dev-kit
-afk setup refresh --source your-org/dev-kit
+afk refresh --source your-org/dev-kit
+afk refresh --default-source your-org/dev-kit
 ```
 
 For a normal GitHub repo, AFK looks in both of these locations:
@@ -326,11 +345,14 @@ packages/afk/manifests/
 | Raw GitHub directory URL | `https://raw.githubusercontent.com/your-org/dev-kit/main/afk/manifests` |
 | Local path | `./afk/manifests` |
 
-`--source` applies only to the current run. `--default-source` saves the source
-in `presets.json` and exits; later `afk setup`, `afk setup --yes`, and
-`afk setup refresh` runs can reuse the remembered source without repeating the
-flag. `presets.json` is not used for local detected-agent state; custom local
-target evidence belongs in `~/.agents/afk/setup-targets.json`.
+`--source` applies only to the current command. It can point at a local path or
+remote source and never changes the cache or remembered default by itself.
+`afk refresh --source <source>` refreshes the cache once from that source.
+`afk refresh --default-source <source>` saves the source in `presets.json` and
+refreshes the cache from it. Later `afk setup`, `afk setup --yes`, and
+`afk refresh` can reuse the remembered source without repeating the flag.
+`presets.json` is not used for local detected-agent state; custom local target
+evidence belongs in `~/.agents/afk/setup-targets.json`.
 
 ## Install Manifests From the shadcn Registry
 
@@ -355,18 +377,19 @@ The registry item writes:
 ```
 
 Use this when you want AFK defaults committed in a project before running
-`afk setup --local`. Use `afk setup refresh --local` when you want AFK itself to
+`afk setup --local`. Use `afk refresh --local` when you want AFK itself to
 refresh those files from a defaults source.
 
 ## Author Manifests
 
-Setup is source-backed. To change what AFK installs, edit the configured source
-repository or directory, then point setup at it with `--source` or
-`--default-source`.
+To change what AFK installs durably, edit the configured source repository or
+directory, then refresh the cache from it. Use `--source` for one command only,
+or `afk refresh --default-source` when the source should become the saved
+default.
 
 ```bash
 afk show skills --source your-org/dev-kit
-afk setup --default-source your-org/dev-kit
+afk refresh --default-source your-org/dev-kit
 ```
 
 `afk configure` is intentionally retired until AFK can edit a writable setup
@@ -573,22 +596,22 @@ afk --version
 
 ### A new manifest item does not appear
 
-AFK reads the active setup source by default. Inspect that source first:
+AFK reads the local manifest cache by default. Inspect the cache first:
 
 ```bash
 afk show
 ```
 
-If you need to update materialized local files, refresh them:
+If you need to update the cache, refresh it:
 
 ```bash
-afk setup refresh
+afk refresh
 ```
 
 Use project-local refresh when the manifests should live in the repo:
 
 ```bash
-afk setup refresh --local
+afk refresh --local
 ```
 
 ### I want to inspect what AFK will do

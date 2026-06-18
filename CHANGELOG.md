@@ -13,7 +13,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
-- `cli:` made guided setup prefill the official `logbookfordevs/ai-field-kit` source when no saved default source exists yet, while keeping explicit `--default-source` as the way to persist a different default.
+- `cli:` moved manifest cache updates to top-level `afk refresh`, made `afk setup` consume the cache by default, and made `afk show` inspect the cache unless `--source` is passed.
+- `cli:` made first-run setup seed the manifest cache from the official `logbookfordevs/ai-field-kit` source when no default exists, while `afk refresh --default-source` now saves a new default source and refreshes the cache.
 
 ## v0.6.0 - 2026-06-16
 

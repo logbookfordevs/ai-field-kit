@@ -180,15 +180,13 @@ test("runSetup prepares manifests only once before running selected areas", asyn
   assert.equal(localManifestHeadings.length, 1);
 });
 
-test("runSetup prompts for a run-only source without changing the saved default", async () => {
+test("runSetup skips the source prompt when a default source is saved", async () => {
   const homeDir = localHomeWithManifests({
     "presets.json": { version: 1, defaultsSource: "acme/saved-kit", presets: [] },
   });
   const repoDir = localRepoWithRules();
-  const sourceDir = localDefaultsSource();
   const output: string[] = [];
 
-  promptState.defaultsSource = sourceDir;
   promptState.rememberedSources = [];
   promptState.selection = {
     areas: [],
@@ -211,11 +209,11 @@ test("runSetup prompts for a run-only source without changing the saved default"
   const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as { defaultsSource: string };
 
   assert.equal(code, 0);
-  assert.deepEqual(promptState.rememberedSources, ["acme/saved-kit"]);
+  assert.deepEqual(promptState.rememberedSources, []);
   assert.equal(presets.defaultsSource, "acme/saved-kit");
 });
 
-test("runArea prompts for a source for every interactive setup area", async () => {
+test("runArea prompts for a source only on first-run interactive setup areas", async () => {
   const areas = ["rules", "skills", "mcps", "plugins", "hooks"] as const;
 
   for (const area of areas) {
@@ -240,7 +238,7 @@ test("runArea prompts for a source for every interactive setup area", async () =
   }
 });
 
-test("runArea refreshes explicit source manifests before installing selected skills", async () => {
+test("runArea uses explicit source manifests without writing cache before installing selected skills", async () => {
   const homeDir = localHomeWithManifests({
     "skills.json": {
       version: 1,
@@ -296,7 +294,10 @@ test("runArea refreshes explicit source manifests before installing selected ski
   assert.equal(code, 0);
   assert.equal(commands[0]?.command, "npx");
   assert.deepEqual(commands[0]?.args, ["skills", "add", "remote/source", "--global", "--yes", "--skill", "remote-skill"]);
-  assert.ok(output.join("\n").includes("Local manifests prepared: 6 wrote files."));
+  assert.ok(!output.join("\n").includes("Local manifests prepared"));
+  const cached = readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8");
+  assert.ok(cached.includes("stale/source"));
+  assert.ok(!cached.includes("remote/source"));
 });
 
 test("runArea dry-run uses explicit source manifests without cache writes", async () => {

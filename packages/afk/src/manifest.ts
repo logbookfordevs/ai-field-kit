@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
-import type { CliOptions, ManifestFilename, PathOperation } from "./types.js";
+import type { CliOptions, ManifestCategory, ManifestFilename, PathOperation } from "./types.js";
 
-const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
+export const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 export const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -105,6 +105,7 @@ type ManifestOptions = Pick<
   cwd?: string;
   defaultsSourceExplicit?: boolean;
   rememberDefaultsSource?: boolean;
+  selectedManifestCategories?: ManifestCategory[];
 };
 
 type ManifestDirOptions = Pick<CliOptions, "homeDir" | "manifestLocal"> & {
@@ -155,12 +156,13 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
   const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
   const shouldRefreshDefaults = options.refreshDefaults || options.defaultsSourceExplicit || Boolean(options.defaultsSource);
+  const selectedNames = manifestNamesForCategories(options.selectedManifestCategories ?? []);
 
   if (!existsSync(manifestDir)) {
     operations.push({ type: "mkdir", path: manifestDir });
   }
 
-  for (const name of manifestNames) {
+  for (const name of selectedNames) {
     const target = join(manifestDir, name);
     if (!shouldRefreshDefaults && existsSync(target)) {
       const migrated = migrateLocalManifest(name, readFileSync(target, "utf8"));
@@ -191,6 +193,44 @@ export async function loadDefaultManifestContent(name: ManifestName, options: Ma
   const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
   return defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
+}
+
+export async function loadSourceManifestContents(options: ManifestOptions): Promise<Partial<Record<ManifestFilename, string>>> {
+  const contents: Partial<Record<ManifestFilename, string>> = {};
+  const manifestDir = manifestDirForOptions(options);
+  const rememberedSource = rememberedDefaultsSource(manifestDir);
+  const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+
+  for (const name of manifestNamesForCategories(options.selectedManifestCategories ?? [])) {
+    contents[name] = await loadDefaultManifestContent(name, options) ?? emptyManifestContent(name, options, effectiveDefaultsSource);
+  }
+
+  return contents;
+}
+
+export function manifestNamesForCategories(categories: ManifestCategory[]): ManifestName[] {
+  if (categories.length === 0) {
+    return [...manifestNames];
+  }
+
+  return categories.map(manifestNameForCategory);
+}
+
+export function manifestNameForCategory(category: ManifestCategory): ManifestName {
+  switch (category) {
+    case "rules":
+      return "rules.json";
+    case "skills":
+      return "skills.json";
+    case "mcps":
+      return "mcps.json";
+    case "plugins":
+      return "plugins.json";
+    case "hooks":
+      return "hooks.json";
+    case "presets":
+      return "presets.json";
+  }
 }
 
 export function loadSkillManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): SkillManifest {
@@ -230,7 +270,7 @@ function parseManifest<T>(
 
   const path = join(localManifestDir(options.homeDir), name);
   if (!existsSync(path)) {
-    throw new Error(`Missing AFK manifest: ${path}. Run "afk setup refresh" to prepare local manifests.`);
+    throw new Error(`Missing AFK manifest: ${path}. Run "afk refresh" to prepare local manifests.`);
   }
 
   const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));

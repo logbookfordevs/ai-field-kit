@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
 import { runSetup, runArea } from "./setup.js";
+import { runRefresh } from "./refresh.js";
 import { runManifestShow } from "./manifest-show.js";
 import { selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
@@ -65,7 +66,17 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
   const { commandPath, options } = parsed;
   const key = commandKey(commandPath);
 
-  if (key === "setup" || key === "setup refresh") {
+  if (isRefreshCommand(key)) {
+    return runRefresh(runtime, options);
+  }
+
+  if (options.defaultSourceUpdate) {
+    runtime.io.stderr("--default-source is only supported with afk refresh.");
+    runtime.io.stderr("Use --source for one command, or run afk refresh --default-source <source> to save and refresh.");
+    return 1;
+  }
+
+  if (key === "setup") {
     return runSetup(runtime, options);
   }
 
@@ -132,11 +143,11 @@ const setupOptions = {
   localScope: "--local                           Alias for --scope project",
   localManifest: "--local                           Refresh ./afk/manifests instead of global manifests",
   agent: "--agent <agent>                   Override detected targets; repeatable",
-  source: "--source <source>                 Use a setup source for this run only",
+  source: "--source <source>                 Use a manifest source for this run only",
   ref: "--ref <git-ref>                   Git ref for default AFK manifest URLs",
   initOnly: "--init-only                       Create/update local manifests only, then exit",
   empty: "--empty                           Create empty manifests with --init-only or refresh",
-  defaultSource: "--default-source <source>         Save a default setup source and exit",
+  defaultSource: "--default-source <source>         Save the default source and refresh the cache",
   allSkills: "--all                            Include all skills when installing skills",
 };
 
@@ -151,7 +162,6 @@ const setupAreaOptions = [
   setupOptions.ref,
   setupOptions.initOnly,
   setupOptions.empty,
-  setupOptions.defaultSource,
 ];
 
 const commandHelps: Record<string, CommandHelp> = {
@@ -170,11 +180,9 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.ref,
       setupOptions.initOnly,
       setupOptions.empty,
-      setupOptions.defaultSource,
       setupOptions.allSkills,
     ],
     subcommands: [
-      "afk setup refresh                 Refresh global or project-local AFK manifests",
       "afk setup rules                   Sync AFK rules into managed agent rule regions",
       "afk setup skills                  Delegate skill installation to the official skills CLI",
       "afk setup mcps                    Delegate MCP installation to add-mcp",
@@ -186,14 +194,12 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup --dry-run",
       "afk setup --local",
       "afk setup --source your-org/dev-kit",
-      "afk setup --default-source your-org/dev-kit",
-      "afk setup --default-source ./afk/manifests",
     ],
   },
-  "setup refresh": {
-    title: "AFK setup refresh",
-    summary: "Refresh AFK manifests from the remembered or selected defaults source.",
-    usage: "afk setup refresh [options]",
+  refresh: {
+    title: "AFK refresh",
+    summary: "Refresh cached AFK manifests from the remembered or selected source.",
+    usage: "afk refresh [category...] [options]",
     options: [
       setupOptions.dryRun,
       setupOptions.localManifest,
@@ -203,10 +209,30 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.defaultSource,
     ],
     examples: [
-      "afk setup refresh",
-      "afk setup refresh --local",
-      "afk setup refresh --source your-org/dev-kit",
-      "afk setup refresh --source local",
+      "afk refresh",
+      "afk refresh skills",
+      "afk refresh --local",
+      "afk refresh --source your-org/dev-kit",
+      "afk refresh --default-source your-org/dev-kit",
+    ],
+  },
+  "setup refresh": {
+    title: "AFK refresh",
+    summary: "Deprecated alias for afk refresh.",
+    usage: "afk refresh [category...] [options]",
+    options: [
+      setupOptions.dryRun,
+      setupOptions.localManifest,
+      setupOptions.source,
+      setupOptions.ref,
+      setupOptions.empty,
+      setupOptions.defaultSource,
+    ],
+    examples: [
+      "afk refresh",
+      "afk refresh skills",
+      "afk refresh --source your-org/dev-kit",
+      "afk refresh --default-source your-org/dev-kit",
     ],
   },
   "setup hooks": {
@@ -316,11 +342,11 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   show: {
     title: "AFK show",
-    summary: "Show the active AFK setup source manifests.",
+    summary: "Show cached AFK manifests, or inspect a source with --source.",
     usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show manifests from this setup source",
-      "--local                          Show ./afk/manifests instead of the setup source",
+      "--source <source>                Show manifests from this source",
+      "--local                          Show ./afk/manifests instead of the global cache",
     ],
     examples: [
       "afk show",
@@ -335,8 +361,8 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Alias for afk show.",
     usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show manifests from this setup source",
-      "--local                          Show ./afk/manifests instead of the setup source",
+      "--source <source>                Show manifests from this source",
+      "--local                          Show ./afk/manifests instead of the global cache",
     ],
     examples: [
       "afk show",
@@ -351,8 +377,8 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Alias for afk show.",
     usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show manifests from this setup source",
-      "--local                          Show ./afk/manifests instead of the setup source",
+      "--source <source>                Show manifests from this source",
+      "--local                          Show ./afk/manifests instead of the global cache",
     ],
     examples: [
       "afk show",
@@ -380,7 +406,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
   let empty = false;
-  const refreshDefaults = key === "setup refresh";
+  const refreshDefaults = isRefreshCommand(key);
   let defaultsSource = "";
   let defaultsSourceExplicit = false;
   let defaultSourceUpdate = "";
@@ -405,7 +431,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   }
 
   if (args.includes("--help") || args.includes("-h")) {
-    return { help: true, commandPath: isManifestShowCommand(key) ? ["show"] : commandPath };
+    return { help: true, commandPath: isManifestShowCommand(key) ? ["show"] : isRefreshCommand(key) ? ["refresh"] : commandPath };
   }
 
   for (let index = 0; index < args.length; index += 1) {
@@ -435,7 +461,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
-      if (key === "setup refresh") {
+      if (isRefreshCommand(key)) {
         manifestLocal = true;
         continue;
       }
@@ -638,9 +664,13 @@ function isManifestShowCommand(key: string): boolean {
     key.startsWith("manifest show ");
 }
 
+function isRefreshCommand(key: string): boolean {
+  return key === "refresh" || key.startsWith("refresh ") || key === "setup refresh";
+}
+
 function unavailableManifestConfigure(runtime: Runtime): number {
   runtime.io.stderr("AFK configure is not available for source-backed setup yet.");
-  runtime.io.stderr("Use afk show to inspect the active setup source. To change manifests, edit the configured source repository directly for now.");
+  runtime.io.stderr("Use afk show to inspect the local cache, or afk show --source <source> to inspect a source directly.");
   return 1;
 }
 
@@ -688,8 +718,8 @@ Guided setup router for AI Field Kit.
 
 Usage:
   afk --version
+  afk refresh [category...] [options]
   afk setup [options]
-  afk setup refresh [options]
   afk setup rules [options]
   afk setup skills [options]
   afk setup mcps [options]
@@ -721,7 +751,7 @@ function manifestCategoriesFromCommandPath(commandPath: string[]): { kind: "ok";
   for (const arg of args) {
     const category = manifestCategory(arg);
     if (!category) {
-      return { kind: "error", error: `Unknown show category: ${arg}` };
+      return { kind: "error", error: `Unknown manifest category: ${arg}` };
     }
     if (!categories.includes(category)) {
       categories.push(category);
@@ -733,6 +763,10 @@ function manifestCategoriesFromCommandPath(commandPath: string[]): { kind: "ok";
 
 function manifestCategoryArgs(commandPath: string[]): string[] | null {
   if (commandPath[0] === "show") {
+    return commandPath.slice(1);
+  }
+
+  if (commandPath[0] === "refresh") {
     return commandPath.slice(1);
   }
 

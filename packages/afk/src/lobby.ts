@@ -24,9 +24,9 @@ export const compassLobbyChoices: LobbyChoice[] = [
     description: "Route: afk setup",
   },
   {
-    name: "Change default setup source",
+    name: "Change default manifest source",
     value: "source",
-    description: "Route: afk setup --default-source <source>",
+    description: "Route: afk refresh --default-source <source>",
   },
   {
     name: "Add or update skills",
@@ -97,7 +97,7 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
     case "setup":
       return ["setup"];
     case "source":
-      return defaultSource ? ["setup", "--default-source", defaultSource] : ["setup", "--default-source"];
+      return defaultSource ? ["refresh", "--default-source", defaultSource] : ["refresh", "--default-source"];
     case "skills":
       return ["setup", "skills"];
     case "mcps":

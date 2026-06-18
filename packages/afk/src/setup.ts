@@ -6,7 +6,7 @@ import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateC
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
 import { selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
-import { builtInDefaultsSource, ensureLocalManifests, planRememberedDefaultsSourceUpdate, readRememberedDefaultsSource } from "./manifest.js";
+import { builtInDefaultsSource, ensureLocalManifests, loadSourceManifestContents, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
@@ -14,7 +14,7 @@ import { basename } from "node:path";
 import type { Area, CliOptions, ManifestFilename, PathOperation, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
-  const updateNotice = options.yes || options.refreshDefaults
+  const updateNotice = options.yes
     ? null
     : await resolveUpdateNotice({ currentVersion: packageVersion() });
 
@@ -23,25 +23,10 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     updateNotice,
   }));
 
-  const defaultSourceUpdateCode = applyDefaultSourceUpdate(runtime, options);
-  if (defaultSourceUpdateCode !== null) {
-    return defaultSourceUpdateCode;
-  }
-
-  if (options.refreshDefaults) {
-    runtime.io.stdout(
-      options.manifestLocal
-        ? "Refreshing project AFK manifests from your configured defaults source."
-        : "Refreshing global AFK manifests from your configured defaults source.",
-    );
-    return ensureManifestFiles(runtime, options);
-  }
-
   runtime.io.stdout("Choose the parts of your AI field setup you want AFK to prepare.");
   runtime.io.stdout(muted(defaultCheckedDetail));
 
-  const sourceOptions = await resolveSetupSource(options);
-  const prepared = await prepareManifestFiles(runtime, sourceOptions);
+  const prepared = await prepareSetupManifests(runtime, options);
   if (prepared.code !== 0 || prepared.options.initOnly) {
     return prepared.code;
   }
@@ -174,13 +159,7 @@ function sameTargets(left: string[], right: string[]): boolean {
 }
 
 export async function runArea(area: Area, runtime: Runtime, options: CliOptions): Promise<number> {
-  const defaultSourceUpdateCode = applyDefaultSourceUpdate(runtime, options);
-  if (defaultSourceUpdateCode !== null) {
-    return defaultSourceUpdateCode;
-  }
-
-  const sourceOptions = options.setupManifestsPrepared ? options : await resolveSetupSource(options);
-  const prepared = options.setupManifestsPrepared ? { code: 0, options: sourceOptions } : await prepareManifestFiles(runtime, sourceOptions);
+  const prepared = options.setupManifestsPrepared ? { code: 0, options } : await prepareSetupManifests(runtime, options);
   if (prepared.code !== 0 || prepared.options.initOnly) {
     return prepared.code;
   }
@@ -240,53 +219,6 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       return syncHooks(runtime, selectedOptions);
     }
   }
-}
-
-async function resolveSetupSource(options: CliOptions): Promise<CliOptions> {
-  if (options.defaultsSourceExplicit) {
-    return { ...options, rememberDefaultsSource: false };
-  }
-
-  const rememberedSource = readRememberedDefaultsSource(options) || builtInDefaultsSource;
-  if (options.yes) {
-    return {
-      ...options,
-      defaultsSource: rememberedSource,
-      defaultsSourceExplicit: true,
-      rememberDefaultsSource: false,
-    };
-  }
-
-  const selectedSource = await selectDefaultsSource(rememberedSource);
-  return {
-    ...options,
-    defaultsSource: selectedSource.trim(),
-    defaultsSourceExplicit: true,
-    rememberDefaultsSource: false,
-  };
-}
-
-function applyDefaultSourceUpdate(runtime: Runtime, options: CliOptions): number | null {
-  if (!options.defaultSourceUpdate) {
-    return null;
-  }
-
-  const operations = planRememberedDefaultsSourceUpdate(options, options.defaultSourceUpdate);
-  if (options.dryRun) {
-    runtime.io.stdout(`\n${sectionTitle("Default Setup Source")}`);
-    for (const operation of operations) {
-      runtime.io.stdout(`- ${formatOperation(operation)}`);
-    }
-    return 0;
-  }
-
-  for (const operation of operations) {
-    applyOperation(operation);
-  }
-
-  runtime.io.stdout(`Default setup source updated to ${options.defaultSourceUpdate.trim()}.`);
-  runtime.io.stdout("Run afk setup again to continue with that source preselected.");
-  return 0;
 }
 
 async function resolveRulesOptions(options: CliOptions): Promise<CliOptions> {
@@ -413,6 +345,26 @@ async function ensureManifestFiles(runtime: Runtime, options: CliOptions): Promi
 
   runtime.io.stdout(`\nLocal manifests prepared: ${summarizeOperations(operations)}.`);
   return 0;
+}
+
+async function prepareSetupManifests(runtime: Runtime, options: CliOptions): Promise<{ code: number; options: CliOptions }> {
+  if (options.defaultsSourceExplicit) {
+    const manifestContents = await loadSourceManifestContents({ ...options, rememberDefaultsSource: false });
+    return { code: 0, options: { ...options, manifestContents, rememberDefaultsSource: false } };
+  }
+
+  if (readRememberedDefaultsSource(options)) {
+    return { code: 0, options };
+  }
+
+  const selectedSource = options.yes ? builtInDefaultsSource : (await selectDefaultsSource(builtInDefaultsSource)).trim();
+  return prepareManifestFiles(runtime, {
+    ...options,
+    defaultsSource: selectedSource,
+    defaultsSourceExplicit: true,
+    refreshDefaults: true,
+    rememberDefaultsSource: true,
+  });
 }
 
 async function prepareManifestFiles(runtime: Runtime, options: CliOptions): Promise<{ code: number; options: CliOptions }> {

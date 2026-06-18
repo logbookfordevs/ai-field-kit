@@ -24,17 +24,16 @@ export async function runManifestShow(runtime: Runtime, options: CliOptions): Pr
   const selected = selectedCategories(options);
   const localDir = manifestShowDir(options);
   const sourceLabel = manifestShowSourceLabel(options);
+  const showSource = options.defaultsSourceExplicit;
 
   runtime.io.stdout("");
   runtime.io.stdout(sectionTitle("AFK manifests"));
-  runtime.io.stdout(options.manifestLocal
-    ? `${muted("Source")} ${sourceBadge("Local")}  ${muted("Directory")} ${localDir}`
-    : `${muted("Source")} ${sourceBadge("Setup")}  ${muted("Defaults")} ${sourceLabel}`);
+  runtime.io.stdout(showSource
+    ? `${muted("Source")} ${sourceBadge("Source")}  ${muted("Defaults")} ${sourceLabel}`
+    : `${muted("Source")} ${sourceBadge("Cache")}  ${muted("Directory")} ${localDir}`);
 
   for (const category of selected) {
-    const loaded = options.manifestLocal
-      ? loadLocalManifest(localDir, category.filename)
-      : await loadSourceManifest(category.filename, options);
+    const loaded = showSource ? await loadSourceManifest(category.filename, options) : loadLocalManifest(localDir, category.filename);
     runtime.io.stdout(renderCardHeader(category.label, loaded));
 
     if (!loaded.content) {
@@ -268,8 +267,8 @@ function detailItemLine(title: string, details: string[]): string {
   ].join("\n");
 }
 
-function sourceBadge(value: "Setup" | "Local"): string {
-  return paint(value === "Setup" ? terminalPalette.harbor : terminalPalette.brass, value);
+function sourceBadge(value: "Source" | "Cache"): string {
+  return paint(value === "Source" ? terminalPalette.harbor : terminalPalette.brass, value);
 }
 
 function valueOrUnknown(value: unknown): string {
