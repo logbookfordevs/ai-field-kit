@@ -117,11 +117,11 @@ export function localAfkDir(homeDir: string): string {
 }
 
 export function localManifestDir(homeDir: string): string {
-  return join(localAfkDir(homeDir), "manifests");
+  return join(localAfkDir(homeDir), "catalog");
 }
 
 export function projectManifestDir(cwd: string): string {
-  return join(cwd, "afk", "manifests");
+  return join(cwd, "afk", "catalog");
 }
 
 export function readRememberedDefaultsSource(options: ManifestDirOptions): string {
@@ -262,7 +262,7 @@ function parseManifest<T>(
   if (content !== undefined) {
     const parsed: unknown = JSON.parse(content);
     if (!guard(parsed)) {
-      throw new Error(`Invalid AFK manifest from setup source: ${name}`);
+      throw new Error(`Invalid AFK catalog file from setup source: ${name}`);
     }
 
     return parsed;
@@ -270,13 +270,13 @@ function parseManifest<T>(
 
   const path = join(localManifestDir(options.homeDir), name);
   if (!existsSync(path)) {
-    throw new Error(`Missing AFK manifest: ${path}. Run "afk refresh" to prepare local manifests.`);
+    throw new Error(`Missing AFK catalog file: ${path}. Run "afk refresh" to prepare the local catalog.`);
   }
 
   const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
 
   if (!guard(parsed)) {
-    throw new Error(`Invalid AFK manifest: ${path}`);
+    throw new Error(`Invalid AFK catalog file: ${path}`);
   }
 
   return parsed;
@@ -324,9 +324,9 @@ async function fetchDefaultManifest(name: ManifestName, options: ManifestOptions
 function readLocalPackageManifest(name: ManifestName, options: ManifestOptions): string | null {
   const cwd = options.cwd ?? process.cwd();
   const candidates = [
-    join(cwd, "packages", "afk", "manifests", name),
-    join(cwd, "manifests", name),
-    join(options.repoDir, "packages", "afk", "manifests", name),
+    join(cwd, "packages", "afk", "catalog", name),
+    join(cwd, "catalog", name),
+    join(options.repoDir, "packages", "afk", "catalog", name),
     manifestPath(name),
   ];
 
@@ -352,7 +352,7 @@ function readLocalDefaultManifest(name: ManifestName, options: ManifestOptions, 
   const basePath = isAbsolute(normalized) ? normalized : resolve(options.cwd ?? process.cwd(), normalized);
   const candidates = [
     join(basePath, name),
-    join(basePath, "afk", "manifests", name),
+    join(basePath, "afk", "catalog", name),
   ];
 
   for (const candidate of unique(candidates)) {
@@ -422,13 +422,13 @@ function rememberedDefaultsSource(manifestDir: string): string {
 }
 
 export function defaultsManifestBaseUrl(source: string, ref: string): string {
-  return defaultsManifestBaseUrls(source, ref)[0] ?? `${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/manifests`;
+  return defaultsManifestBaseUrls(source, ref)[0] ?? `${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/catalog`;
 }
 
 export function defaultsManifestBaseUrls(source: string, ref: string): string[] {
   const normalized = source.trim().replace(/\/$/, "");
   if (!normalized) {
-    return [`${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/manifests`];
+    return [`${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/catalog`];
   }
 
   const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
@@ -461,8 +461,8 @@ export function defaultsManifestBaseUrls(source: string, ref: string): string[] 
 function defaultRepoManifestUrls(owner: string, repo: string, ref: string): string[] {
   const base = `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(ref)}`;
   return [
-    `${base}/afk/manifests`,
-    `${base}/packages/afk/manifests`,
+    `${base}/afk/catalog`,
+    `${base}/packages/afk/catalog`,
   ];
 }
 

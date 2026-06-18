@@ -36,7 +36,7 @@ test("compass lobby labels stay intent-oriented while descriptions teach command
 
   assert.ok(labels.includes("Prepare this machine for agent work"));
   assert.ok(!labels.includes("Build or edit a custom field kit"));
-  assert.ok(labels.includes("Change default manifest source"));
+  assert.ok(labels.includes("Change default catalog source"));
   assert.ok(descriptions.some((description) => description.includes("afk setup skills")));
   assert.ok(descriptions.some((description) => description.includes("afk refresh --default-source")));
   assert.ok(descriptions.some((description) => description.includes("afk show")));

@@ -36,7 +36,7 @@ export async function runManifestShow(runtime: Runtime, options: CliOptions): Pr
   }
 
   runtime.io.stdout("");
-  runtime.io.stdout(sectionTitle("AFK manifests"));
+  runtime.io.stdout(sectionTitle("AFK catalog"));
   runtime.io.stdout(showSource
     ? `${muted("Source")} ${sourceBadge("Source")}  ${muted("Defaults")} ${sourceLabel}`
     : `${muted("Source")} ${sourceBadge("Cache")}  ${muted("Directory")} ${localDir}`);
@@ -77,13 +77,13 @@ async function runSkillsVisualization(runtime: Runtime, options: CliOptions, sel
 
   const skillCategory = categories.find((category) => category.id === "skills");
   if (!skillCategory) {
-    runtime.io.stderr("Skills manifest category is not available.");
+    runtime.io.stderr("Skills catalog category is not available.");
     return 1;
   }
 
   const loaded = showSource ? await loadSourceManifest(skillCategory.filename, options) : loadLocalManifest(manifestShowDir(options), skillCategory.filename);
   if (!loaded.content || !isRecord(loaded.content)) {
-    runtime.io.stderr("Skills manifest is missing or invalid. Run afk refresh, or pass --source to visualize a source directly.");
+    runtime.io.stderr("Skills catalog file is missing or invalid. Run afk refresh, or pass --source to visualize a source directly.");
     return 1;
   }
 
@@ -98,7 +98,7 @@ async function runSkillsVisualization(runtime: Runtime, options: CliOptions, sel
 }
 
 function manifestShowDir(options: CliOptions): string {
-  return options.setupScope === "project" || options.manifestLocal ? join(options.cwd, "afk", "manifests") : localManifestDir(options.homeDir);
+  return options.setupScope === "project" || options.manifestLocal ? join(options.cwd, "afk", "catalog") : localManifestDir(options.homeDir);
 }
 
 function loadLocalManifest(manifestDir: string, filename: string): LoadedManifest {
@@ -156,7 +156,7 @@ function renderCardHeader(label: string, loaded: LoadedManifest): string {
 
 function renderManifestSummary(category: ManifestCategory, manifest: unknown, options: CliOptions): string {
   if (!isRecord(manifest)) {
-    return "- Invalid manifest shape";
+    return "- Invalid catalog file shape";
   }
 
   switch (category) {
@@ -362,7 +362,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
       <div>
         <div class="eyebrow">AFK skills / composition visualization</div>
         <h1>Skills as a component system.</h1>
-        <p class="subhead">A static snapshot of the current skills manifest: primitives stay discoverable, wrappers become named experiences, and flows carry larger execution motion.</p>
+        <p class="subhead">A static snapshot of the current skills catalog: primitives stay discoverable, wrappers become named experiences, and flows carry larger execution motion.</p>
       </div>
       <div class="meta">
         <div>${escapeHtml(context.sourceKind)} source</div>
@@ -414,7 +414,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
     <section>
       <div class="section-head">
         <h2>Role counts.</h2>
-        <p>The manifest doubles as a small architecture map.</p>
+        <p>The catalog doubles as a small architecture map.</p>
       </div>
       <div class="skill-grid">${roleCounts.map(([role, count]) => `<div class="skill ${roleClass(role)}"><b>${escapeHtml(role)}</b><span>${count} skill${count === 1 ? "" : "s"}</span></div>`).join("")}</div>
     </section>

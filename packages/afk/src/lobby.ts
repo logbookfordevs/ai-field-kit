@@ -24,7 +24,7 @@ export const compassLobbyChoices: LobbyChoice[] = [
     description: "Route: afk setup",
   },
   {
-    name: "Change default manifest source",
+    name: "Change default catalog source",
     value: "source",
     description: "Route: afk refresh --default-source <source>",
   },

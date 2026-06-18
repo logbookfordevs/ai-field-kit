@@ -141,12 +141,12 @@ const setupOptions = {
   yes: "--yes, -y                         Accept defaults and skip prompts",
   scope: "--scope global|project            Choose machine-wide or current-project setup",
   localScope: "--local                           Alias for --scope project",
-  localManifest: "--local                           Refresh ./afk/manifests instead of global manifests",
+  localManifest: "--local                           Refresh ./afk/catalog instead of the global catalog",
   agent: "--agent <agent>                   Override detected targets; repeatable",
-  source: "--source <source>                 Use a manifest source for this run only",
-  ref: "--ref <git-ref>                   Git ref for default AFK manifest URLs",
-  initOnly: "--init-only                       Create/update local manifests only, then exit",
-  empty: "--empty                           Create empty manifests with --init-only or refresh",
+  source: "--source <source>                 Use a catalog source for this run only",
+  ref: "--ref <git-ref>                   Git ref for default AFK catalog URLs",
+  initOnly: "--init-only                       Create/update the local catalog only, then exit",
+  empty: "--empty                           Create empty catalog files with --init-only or refresh",
   defaultSource: "--default-source <source>         Save the default source and refresh the cache",
   allSkills: "--all                            Include all skills when installing skills",
 };
@@ -198,7 +198,7 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   refresh: {
     title: "AFK refresh",
-    summary: "Refresh cached AFK manifests from the remembered or selected source.",
+    summary: "Refresh cached AFK catalog files from the remembered or selected source.",
     usage: "afk refresh [category...] [options]",
     options: [
       setupOptions.dryRun,
@@ -342,11 +342,11 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   show: {
     title: "AFK show",
-    summary: "Show cached AFK manifests, or inspect a source with --source.",
+    summary: "Show the cached AFK catalog, or inspect a source with --source.",
     usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show manifests from this source",
-      "--local                          Show ./afk/manifests instead of the global cache",
+      "--source <source>                Show catalog files from this source",
+      "--local                          Show ./afk/catalog instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
       "--visualize                      Write a self-contained skills composition HTML file",
     ],
@@ -365,8 +365,8 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Alias for afk show.",
     usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show manifests from this source",
-      "--local                          Show ./afk/manifests instead of the global cache",
+      "--source <source>                Show catalog files from this source",
+      "--local                          Show ./afk/catalog instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
       "--visualize                      Write a self-contained skills composition HTML file",
     ],
@@ -385,8 +385,8 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Alias for afk show.",
     usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show manifests from this source",
-      "--local                          Show ./afk/manifests instead of the global cache",
+      "--source <source>                Show catalog files from this source",
+      "--local                          Show ./afk/catalog instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
       "--visualize                      Write a self-contained skills composition HTML file",
     ],
@@ -704,7 +704,7 @@ function isRefreshCommand(key: string): boolean {
 
 function unavailableManifestConfigure(runtime: Runtime): number {
   runtime.io.stderr("AFK configure is not available for source-backed setup yet.");
-  runtime.io.stderr("Use afk show to inspect the local cache, or afk show --source <source> to inspect a source directly.");
+  runtime.io.stderr("Use afk show to inspect the local catalog, or afk show --source <source> to inspect a source directly.");
   return 1;
 }
 
@@ -785,7 +785,7 @@ function manifestCategoriesFromCommandPath(commandPath: string[]): { kind: "ok";
   for (const arg of args) {
     const category = manifestCategory(arg);
     if (!category) {
-      return { kind: "error", error: `Unknown manifest category: ${arg}` };
+      return { kind: "error", error: `Unknown catalog category: ${arg}` };
     }
     if (!categories.includes(category)) {
       categories.push(category);

@@ -1,6 +1,6 @@
 # 🧭 AI Field Kit — by Logbook for Devs
 
-> *The rules, skills, MCP manifests, and setup router powering a DX-first AI developer workflow.*
+> *The rules, skills, setup catalog, and router powering a DX-first AI developer workflow.*
 
 A curated, version-controlled collection of everything you need to make AI coding agents actually useful in a real development environment. No fluff — just the configuration, prompts, and automation that ship every day.
 
@@ -19,7 +19,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 - [Quick Start](#quick-start)
   - [Just the skills](#just-the-skills--30-seconds)
   - [AFK CLI](#afk-cli--full-setup)
-  - [AFK manifests through the shadcn registry](#afk-manifests-through-the-shadcn-registry)
+  - [AFK catalog through the shadcn registry](#afk-catalog-through-the-shadcn-registry)
 - [The Skills](#the-skills)
 - [The Workflows](#the-workflows)
 - [Skill vs Workflow Rubric](#skill-vs-workflow-rubric)
@@ -40,7 +40,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 | `rules/` | Global agent instructions (AGENTS.md) shared across all AI tools |
 | `.agents/skills/` | Reusable capabilities, quality lenses, and explicit workflow-style procedures |
 | `mcps/` | MCP server registry for delegated setup through official tooling |
-| `registry.json` | shadcn-compatible registry entrypoint for installing AFK manifest bundles |
+| `registry.json` | shadcn-compatible registry entrypoint for installing AFK catalog bundles |
 | `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
 | `apps/site/` | React/Vite marketing and docs site for AI Field Kit |
 
@@ -62,7 +62,7 @@ support is handled by the official `skills` CLI.
 ### AFK CLI — full setup
 
 If you want the complete stack, use the AFK CLI. It is the setup router for
-rules, skills, MCPs, plugins, hooks, dry-runs, and team-specific manifests.
+rules, skills, MCPs, plugins, hooks, dry-runs, and team-specific catalogs.
 
 ```bash
 npm install -g @logbookfordevs/afk
@@ -74,24 +74,24 @@ writes to your machine. The CLI owns AFK rule and hook setup, then delegates
 skills, MCPs, and plugins to the official tools or installer scripts that
 already own those ecosystems.
 
-For the full command reference, flags, manifest format, local-development
+For the full command reference, flags, catalog format, local-development
 install flow, and custom defaults workflow, read the
 [AFK CLI README](./packages/afk/README.md).
 
-### AFK manifests through the shadcn registry
+### AFK catalog through the shadcn registry
 
-AI Field Kit also publishes its default AFK manifests as a shadcn-compatible
+AI Field Kit also publishes its default AFK catalog as a shadcn-compatible
 registry item. Use this when you want to commit the current AFK defaults into a
 project before running project-local setup:
 
 ```bash
-pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
-// or npx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
+pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-catalog
+// or npx shadcn@latest add logbookfordevs/ai-field-kit/afk-catalog
 afk setup --local --dry-run
 ```
 
-The registry item writes the same fragmented manifest files AFK already reads
-under `./afk/manifests/`. shadcn handles distribution; AFK still owns setup
+The registry item writes the same fragmented catalog files AFK already reads
+under `./afk/catalog/`. shadcn handles distribution; AFK still owns setup
 semantics such as defaults, scopes, managed rules, hooks, plugins, and
 delegated skill/MCP installers.
 
@@ -143,7 +143,7 @@ If you only want the AFK skill-routing entry point, install `afk-compass` direct
 npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-compass
 ```
 
-This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the next useful AFK or recommended external skill. Compass is a selector, not a workflow runner: it helps choose the current tool and then gets out of the way.
+This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the next useful AFK or recommended external skill.
 
 > **What does global vs. agent-specific mean?**
 > Global installs (`--global`) place the skill in `~/.agents/skills/` and make it available to every agent that reads from there.
@@ -508,9 +508,9 @@ Use `add-mcp` or the agent's official setup flow for the actual install.
 
 ## Configuration
 
-### AFK manifests
+### AFK catalog
 
-AFK setup is driven by manifests under `packages/afk/manifests/`. Use them to
+AFK setup is driven by the catalog under `packages/afk/catalog/`. Use it to
 define recommended rules, skills, MCPs, plugins, and presets while keeping
 installation delegated to the right upstream CLI.
 

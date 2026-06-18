@@ -174,7 +174,7 @@ test("runSetup prepares manifests only once before running selected areas", asyn
   };
 
   const code = await runSetup(fakeRuntime(output), defaultOptions(homeDir, repoDir));
-  const localManifestHeadings = output.filter((line) => line.includes("Local Manifests"));
+  const localManifestHeadings = output.filter((line) => line.includes("Local Catalog"));
 
   assert.equal(code, 0);
   assert.equal(localManifestHeadings.length, 1);
@@ -294,7 +294,7 @@ test("runArea uses explicit source manifests without writing cache before instal
   assert.equal(code, 0);
   assert.equal(commands[0]?.command, "npx");
   assert.deepEqual(commands[0]?.args, ["skills", "add", "remote/source", "--global", "--yes", "--skill", "remote-skill"]);
-  assert.ok(!output.join("\n").includes("Local manifests prepared"));
+  assert.ok(!output.join("\n").includes("Local catalog prepared"));
   const cached = readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8");
   assert.ok(cached.includes("stale/source"));
   assert.ok(!cached.includes("remote/source"));
@@ -448,7 +448,7 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
 
 function localDefaultsSource(overrides: Record<string, unknown> = {}): string {
   const sourceDir = mkdtempSync(join(tmpdir(), "afk-default-source-"));
-  const manifestDir = join(sourceDir, "afk", "manifests");
+  const manifestDir = join(sourceDir, "afk", "catalog");
   mkdirSync(manifestDir, { recursive: true });
 
   const manifests: Record<string, unknown> = {

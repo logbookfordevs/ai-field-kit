@@ -585,7 +585,7 @@
   .switch-row b { display: block; }
   .switch-row span { color: var(--muted); font-size: 13px; }
 
-  .manifest {
+  .catalog {
     background: #15130f;
     color: #f8ead7;
     border-radius: 8px;
@@ -597,10 +597,10 @@
     border: 1px solid rgba(255,255,255,0.08);
   }
 
-  .manifest .key { color: #ffb07c; }
-  .manifest .str { color: #9de0cf; }
-  .manifest .bool { color: #b6adff; }
-  .manifest .punct { color: #8c8374; }
+  .catalog .key { color: #ffb07c; }
+  .catalog .str { color: #9de0cf; }
+  .catalog .bool { color: #b6adff; }
+  .catalog .punct { color: #8c8374; }
 
   .steps {
     display: grid;
@@ -812,9 +812,9 @@
           </div>
 
           <div class="code-card">
-            <h3>The AFK-shaped manifest</h3>
-            <p>The manifest says the same thing without pretending it is runtime code.</p>
-            <pre class="code-window" aria-label="AFK manifest equivalent"><span class="comment">// same tree, different surface</span>
+            <h3>The AFK-shaped catalog</h3>
+            <p>The catalog says the same thing without pretending it is runtime code.</p>
+            <pre class="code-window" aria-label="AFK catalog equivalent"><span class="comment">// same tree, different surface</span>
 {
   <span class="prop">"id"</span>: <span class="str">"afk-code-grill"</span>,
   <span class="prop">"role"</span>: <span class="str">"wrapper"</span>,
@@ -930,14 +930,14 @@
         </div>
         <div class="quote">
           <p>Ask for <code>afk-code-grill</code>. Get the interview loop, the Truss lens, and the architecture vocabulary.</p>
-          <a class="action" href="#manifest">inspect JSON</a>
+          <a class="action" href="#catalog">inspect JSON</a>
         </div>
       </section>
 
-      <section id="manifest">
+      <section id="catalog">
         <div class="section-head">
           <h2>A skill entry should explain itself.</h2>
-          <p>The manifest becomes a system map: shape, discovery, composition, future profile membership.</p>
+          <p>The catalog becomes a system map: shape, discovery, composition, future profile membership.</p>
         </div>
         <div class="split">
           <div class="panel">
@@ -950,7 +950,7 @@
               <div class="step"><div class="num">04</div><b>Where will it live?</b><span>`profiles` prepares future activation sets.</span></div>
             </div>
           </div>
-          <pre class="manifest" aria-label="Example skill manifest entry"><span class="punct">{</span>
+          <pre class="catalog" aria-label="Example skill catalog entry"><span class="punct">{</span>
   <span class="key">"id"</span><span class="punct">:</span> <span class="str">"afk-code-grill"</span><span class="punct">,</span>
   <span class="key">"label"</span><span class="punct">:</span> <span class="str">"AFK - Code Grill"</span><span class="punct">,</span>
   <span class="key">"role"</span><span class="punct">:</span> <span class="str">"wrapper"</span><span class="punct">,</span>
@@ -975,7 +975,7 @@
           <div class="step"><div class="num">step 01</div><b>Select wrapper</b><span>The main list stays flat so every skill remains a real selectable item.</span></div>
           <div class="step"><div class="num">step 02</div><b>Review composed skills</b><span>AFK shows the primitives the wrapper is built from in a second prompt.</span></div>
           <div class="step"><div class="num">step 03</div><b>Install the set</b><span>The user can keep or remove suggested children before installation.</span></div>
-          <div class="step"><div class="num">step 04</div><b>Sync invocation</b><span>AFK writes policy metadata so auto-discovery follows the manifest.</span></div>
+          <div class="step"><div class="num">step 04</div><b>Sync invocation</b><span>AFK writes policy metadata so auto-discovery follows the catalog.</span></div>
         </div>
       </section>
 
@@ -983,7 +983,7 @@
         <div class="section-head">
           <h2>Current AFK, rendered as composition.</h2>
           <p>
-            This is the same mental model turned back onto the real manifest. The CLI can print this view with
+            This is the same mental model turned back onto the real catalog. The CLI can print this view with
             <code>afk show skills --react</code>: discoverable pieces first, explicit wrappers and flows second,
             and composed children nested where they belong.
           </p>

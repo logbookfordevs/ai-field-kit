@@ -13,13 +13,14 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
-- `cli:` added `afk show skills --react` to render the skills manifest as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
-- `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills manifest.
+- `cli:` added `afk show skills --react` to render the skills catalog as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
+- `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills catalog.
 
 ### Changed
 
-- `cli:` moved manifest cache updates to top-level `afk refresh`, made `afk setup` consume the cache by default, and made `afk show` inspect the cache unless `--source` is passed.
-- `cli:` made first-run setup seed the manifest cache from the official `logbookfordevs/ai-field-kit` source when no default exists, while `afk refresh --default-source` now saves a new default source and refreshes the cache.
+- `cli:` moved catalog cache updates to top-level `afk refresh`, made `afk setup` consume the cache by default, and made `afk show` inspect the cache unless `--source` is passed.
+- `cli:` made first-run setup seed the catalog cache from the official `logbookfordevs/ai-field-kit` source when no default exists, while `afk refresh --default-source` now saves a new default source and refreshes the cache.
+- `cli:` renamed AFK's public setup data model from manifests to catalog, moving bundled defaults to `packages/afk/catalog`, global cache files to `~/.agents/afk/catalog`, and project-local files to `./afk/catalog`.
 
 ## v0.6.0 - 2026-06-16
 

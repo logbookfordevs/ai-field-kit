@@ -4,40 +4,40 @@
   "homepage": "https://github.com/logbookfordevs/ai-field-kit",
   "items": [
     {
-      "name": "afk-manifests",
+      "name": "afk-catalog",
       "type": "registry:item",
-      "title": "AFK Manifests",
-      "description": "Project-local AFK setup manifests for rules, skills, MCPs, plugins, hooks, and presets.",
+      "title": "AFK Catalog",
+      "description": "Project-local AFK setup catalog for rules, skills, MCPs, plugins, hooks, and presets.",
       "files": [
         {
-          "path": "packages/afk/manifests/skills.json",
+          "path": "packages/afk/catalog/skills.json",
           "type": "registry:file",
-          "target": "~/afk/manifests/skills.json"
+          "target": "~/afk/catalog/skills.json"
         },
         {
-          "path": "packages/afk/manifests/mcps.json",
+          "path": "packages/afk/catalog/mcps.json",
           "type": "registry:file",
-          "target": "~/afk/manifests/mcps.json"
+          "target": "~/afk/catalog/mcps.json"
         },
         {
-          "path": "packages/afk/manifests/rules.json",
+          "path": "packages/afk/catalog/rules.json",
           "type": "registry:file",
-          "target": "~/afk/manifests/rules.json"
+          "target": "~/afk/catalog/rules.json"
         },
         {
-          "path": "packages/afk/manifests/plugins.json",
+          "path": "packages/afk/catalog/plugins.json",
           "type": "registry:file",
-          "target": "~/afk/manifests/plugins.json"
+          "target": "~/afk/catalog/plugins.json"
         },
         {
-          "path": "packages/afk/manifests/hooks.json",
+          "path": "packages/afk/catalog/hooks.json",
           "type": "registry:file",
-          "target": "~/afk/manifests/hooks.json"
+          "target": "~/afk/catalog/hooks.json"
         },
         {
-          "path": "packages/afk/manifests/presets.json",
+          "path": "packages/afk/catalog/presets.json",
           "type": "registry:file",
-          "target": "~/afk/manifests/presets.json"
+          "target": "~/afk/catalog/presets.json"
         }
       ]
     }

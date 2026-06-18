@@ -14,8 +14,8 @@ export async function runRefresh(runtime: Runtime, options: CliOptions): Promise
 
   runtime.io.stdout(
     sourceOptions.manifestLocal
-      ? "Refreshing project AFK manifests."
-      : "Refreshing global AFK manifests.",
+      ? "Refreshing project AFK catalog."
+      : "Refreshing global AFK catalog.",
   );
 
   const operations = await refreshOperations(sourceOptions);
@@ -24,7 +24,7 @@ export async function runRefresh(runtime: Runtime, options: CliOptions): Promise
   }
 
   if (sourceOptions.dryRun) {
-    runtime.io.stdout(`\n${sectionTitle("Local Manifests")}`);
+    runtime.io.stdout(`\n${sectionTitle("Local Catalog")}`);
     for (const operation of operations) {
       runtime.io.stdout(`- ${formatOperation(operation)}`);
     }
@@ -35,7 +35,7 @@ export async function runRefresh(runtime: Runtime, options: CliOptions): Promise
     applyOperation(operation);
   }
 
-  runtime.io.stdout(`\nLocal manifests refreshed: ${summarizeOperations(operations)}.`);
+  runtime.io.stdout(`\nLocal catalog refreshed: ${summarizeOperations(operations)}.`);
   return 0;
 }
 

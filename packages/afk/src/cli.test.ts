@@ -57,7 +57,7 @@ test("runCli prints contextual refresh help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK refresh"));
   assert.ok(output.join("\n").includes("afk refresh skills"));
-  assert.ok(output.join("\n").includes("Refresh cached AFK manifests"));
+  assert.ok(output.join("\n").includes("Refresh cached AFK catalog"));
   assert.ok(!output.join("\n").includes("--refresh-defaults"));
 });
 
@@ -252,7 +252,7 @@ test("runCli explains configure is not available for source-backed setup yet", a
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("AFK configure is not available for source-backed setup yet."));
-  assert.ok(output.join("\n").includes("Use afk show to inspect the local cache, or afk show --source <source> to inspect a source directly."));
+  assert.ok(output.join("\n").includes("Use afk show to inspect the local catalog, or afk show --source <source> to inspect a source directly."));
   assert.ok(!output.join("\n").includes("afk configure --local"));
 });
 
@@ -345,7 +345,7 @@ test("runCli shows cached manifests by default", async () => {
 
     assert.equal(code, 0);
     assert.deepEqual(requestedUrls, []);
-    assert.ok(text.includes("AFK manifests"));
+    assert.ok(text.includes("AFK catalog"));
     assert.ok(text.includes("Cache"));
     assert.ok(text.includes("local-skill"));
     assert.ok(text.includes("auto-invocation: on"));
@@ -433,7 +433,7 @@ test("runCli treats show --react as the skills React view", async () => {
   assert.ok(!text.includes("MCPs"));
 });
 
-test("runCli rejects the React skill view for non-skill manifests", async () => {
+test("runCli rejects the React skill view for non-skill catalogs", async () => {
   const homeDir = localHomeWithManifests({
     "mcps.json": { version: 1, items: [] },
   });
@@ -515,7 +515,7 @@ test("runCli treats show --visualize as the skills visualization", async () => {
   }
 });
 
-test("runCli rejects the skills visualization for non-skill manifests", async () => {
+test("runCli rejects the skills visualization for non-skill catalogs", async () => {
   const homeDir = localHomeWithManifests({
     "mcps.json": { version: 1, items: [] },
   });
@@ -548,8 +548,8 @@ test("runCli shows source manifests when source is explicit", async () => {
     const text = output.join("\n");
 
     assert.equal(code, 0);
-    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/skills.json"));
-    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/mcps.json"));
+    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/skills.json"));
+    assert.ok(requestedUrls.includes("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/mcps.json"));
     assert.ok(text.includes("Skills"));
     assert.ok(text.includes("MCPs"));
   } finally {

@@ -332,7 +332,7 @@ async function ensureManifestFiles(runtime: Runtime, options: CliOptions): Promi
   }
 
   if (options.dryRun) {
-    runtime.io.stdout(`\n${sectionTitle("Local Manifests")}`);
+    runtime.io.stdout(`\n${sectionTitle("Local Catalog")}`);
     for (const operation of operations) {
       runtime.io.stdout(`- ${formatOperation(operation)}`);
     }
@@ -343,7 +343,7 @@ async function ensureManifestFiles(runtime: Runtime, options: CliOptions): Promi
     applyOperation(operation);
   }
 
-  runtime.io.stdout(`\nLocal manifests prepared: ${summarizeOperations(operations)}.`);
+  runtime.io.stdout(`\nLocal catalog prepared: ${summarizeOperations(operations)}.`);
   return 0;
 }
 
@@ -376,7 +376,7 @@ async function prepareManifestFiles(runtime: Runtime, options: CliOptions): Prom
   }
 
   if (options.dryRun) {
-    runtime.io.stdout(`\n${sectionTitle("Local Manifests")}`);
+    runtime.io.stdout(`\n${sectionTitle("Local Catalog")}`);
     for (const operation of operations) {
       runtime.io.stdout(`- ${formatOperation(operation)}`);
     }
@@ -387,7 +387,7 @@ async function prepareManifestFiles(runtime: Runtime, options: CliOptions): Prom
     applyOperation(operation);
   }
 
-  runtime.io.stdout(`\nLocal manifests prepared: ${summarizeOperations(operations)}.`);
+  runtime.io.stdout(`\nLocal catalog prepared: ${summarizeOperations(operations)}.`);
   return { code: 0, options: { ...options, manifestContents } };
 }
 

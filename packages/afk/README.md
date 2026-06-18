@@ -2,7 +2,7 @@
 
 AFK is the setup router for AI Field Kit. It gives developers one place to
 preview and apply the parts of the kit they want: shared rules, skills, MCPs,
-plugins, hooks, and custom setup manifests.
+plugins, hooks, and custom setup catalogs.
 
 The CLI is intentionally a router, not a replacement for every ecosystem tool.
 AFK owns the AFK-specific rule and hook behavior. It delegates skills to the
@@ -94,7 +94,7 @@ MCPs are delegated without their global flags. RTK project initialization runs
 from the current project directory.
 
 For `afk refresh`, `--local` has a different meaning: it refreshes
-`./afk/manifests` instead of the global manifest cache.
+`./afk/catalog` instead of the global catalog cache.
 
 ## Common Commands
 
@@ -118,10 +118,10 @@ afk setup mcps --dry-run
 afk setup plugins --dry-run
 afk setup hooks --dry-run
 
-# Refresh local manifest files from defaults
+# Refresh local catalog files from defaults
 afk refresh
 
-# Inspect the local manifest cache
+# Inspect the local catalog cache
 afk show
 ```
 
@@ -143,8 +143,8 @@ These flags apply to `afk setup` and most area commands.
 | `--scope global/project` | Choose machine-wide setup or current-project setup. |
 | `--local` | Alias for `--scope project`. |
 | `--agent <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
-| `--source <source>` | Use a manifest source for this run only, without changing the cache or default source. |
-| `--ref <git-ref>` | Choose the Git ref used when fetching default AFK manifests and rules. |
+| `--source <source>` | Use a catalog source for this run only, without changing the cache or default source. |
+| `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
 | `--init-only` | Legacy cache-prep flag; prefer `afk refresh`. |
 
 ### Refresh Flags
@@ -154,11 +154,11 @@ These flags apply to `afk refresh`.
 | Flag | Meaning |
 |---|---|
 | `--dry-run` | Preview cache writes without applying them. |
-| `--local` | Refresh `./afk/manifests` instead of the global manifest cache. |
+| `--local` | Refresh `./afk/catalog` instead of the global catalog cache. |
 | `--source <source>` | Refresh the cache from this source once, without changing the remembered default source. |
 | `--default-source <source>` | Save the default source and refresh the cache from it. |
-| `--ref <git-ref>` | Choose the Git ref used when fetching default AFK manifests and rules. |
-| `--empty` | Create empty manifest files. |
+| `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
+| `--empty` | Create empty catalog files. |
 
 General setup agent values are:
 
@@ -225,7 +225,7 @@ detected paths into this file automatically.
 
 | Flag | Meaning |
 |---|---|
-| `--all` | Include every skill in the manifest, not only default skills. |
+| `--all` | Include every skill in the catalog, not only default skills. |
 | `--agent <skill-agent>` | Override detected skill providers and add direct installs for supported skill hosts. Repeatable. |
 
 Skill-agent values are:
@@ -240,7 +240,7 @@ agents hide the skill from normal model discovery unless it is explicitly
 attached or invoked. Use `autoInvocation: true` when plain-language requests
 should discover the skill.
 
-Skill manifests can also describe architecture metadata:
+Skill catalog entries can also describe architecture metadata:
 
 | Field | Meaning |
 |---|---|
@@ -251,17 +251,17 @@ Skill manifests can also describe architecture metadata:
 The short version: primitives are usually model-discoverable, wrappers and flows
 are usually manual, and composition makes the relationship explicit.
 
-### Manifest Show
+### Catalog Show
 
 | Command | Shows |
 |---|---|
-| `afk show` | Cached global AFK manifests. |
-| `afk show skills` | Cached skills manifest. |
+| `afk show` | Cached global AFK catalog. |
+| `afk show skills` | Cached skills catalog. |
 | `afk show skills --react` | Cached skills as a React-style composition tree. |
 | `afk show skills --visualize` | Write `afk-skills.html`, a self-contained skills composition page. |
-| `afk show skills mcps` | Multiple cached manifests in one run. |
+| `afk show skills mcps` | Multiple cached catalog files in one run. |
 | `afk show --source <source>` | Inspect a source directly without changing the cache. |
-| `afk show --local` | Inspect project-local `./afk/manifests`. |
+| `afk show --local` | Inspect project-local `./afk/catalog`. |
 | `afk manifests show` | Alias for `afk show`. |
 | `afk manifest show` | Alias for `afk show`. |
 
@@ -270,7 +270,7 @@ will use for normal setup. Add `--source` when you want to inspect a repo,
 branch, raw URL, or local source path without writing that source into the
 cache.
 
-Use `afk show skills --react` when you want the skills manifest rendered as
+Use `afk show skills --react` when you want the skills catalog rendered as
 AFK's React-inspired architecture: auto-discoverable skills under
 `<ModelDiscovery>`, explicit skills under `<ExplicitInvocation>`, and composed
 skills as nested primitive, wrapper, flow, router, utility, or reference
@@ -280,18 +280,18 @@ Use `afk show skills --visualize` when you want the same composition story as a
 local HTML artifact. AFK writes `afk-skills.html` in the current directory; the
 file is self-contained and does not start a server.
 
-## Manifest Model
+## Catalog Model
 
-AFK reads setup recommendations from JSON manifests. Global manifests live here:
+AFK reads setup recommendations from JSON catalog files. The global catalog lives here:
 
 ```text
-~/.agents/afk/manifests/
+~/.agents/afk/catalog/
 ```
 
-Project-local manifests live here:
+The project-local catalog lives here:
 
 ```text
-./afk/manifests/
+./afk/catalog/
 ```
 
 The expected files are:
@@ -307,13 +307,13 @@ hooks.json
 
 AFK has a small cache/source split:
 
-- `afk refresh` updates local manifest cache files.
+- `afk refresh` updates local catalog cache files.
 - `afk show` inspects the cache by default.
 - `afk setup` applies the cache by default.
 - `--source` reads a source for one command without changing the cache or saved default.
 - `--default-source` belongs to `afk refresh`; it saves the default source and refreshes the cache from it.
 
-Use these commands to prepare manifest files without running setup:
+Use these commands to prepare catalog files without running setup:
 
 ```bash
 afk refresh
@@ -332,7 +332,7 @@ afk show skills --source your-org/dev-kit
 ## Custom Defaults
 
 You can make AFK a setup router for your own team or personal toolkit. Put
-convention-compatible manifests in another repo, then point AFK at it:
+convention-compatible catalog files in another repo, then point AFK at it:
 
 ```bash
 afk setup --source your-org/dev-kit
@@ -343,8 +343,8 @@ afk refresh --default-source your-org/dev-kit
 For a normal GitHub repo, AFK looks in both of these locations:
 
 ```text
-afk/manifests/
-packages/afk/manifests/
+afk/catalog/
+packages/afk/catalog/
 ```
 
 `--source` and `--default-source` accept:
@@ -353,9 +353,9 @@ packages/afk/manifests/
 |---|---|
 | GitHub shorthand | `your-org/dev-kit` |
 | GitHub repo URL | `https://github.com/your-org/dev-kit` |
-| GitHub tree URL | `https://github.com/your-org/dev-kit/tree/main/path/to/manifests` |
-| Raw GitHub directory URL | `https://raw.githubusercontent.com/your-org/dev-kit/main/afk/manifests` |
-| Local path | `./afk/manifests` |
+| GitHub tree URL | `https://github.com/your-org/dev-kit/tree/main/path/to/catalog` |
+| Raw GitHub directory URL | `https://raw.githubusercontent.com/your-org/dev-kit/main/afk/catalog` |
+| Local path | `./afk/catalog` |
 
 `--source` applies only to the current command. It can point at a local path or
 remote source and never changes the cache or remembered default by itself.
@@ -366,33 +366,33 @@ refreshes the cache from it. Later `afk setup`, `afk setup --yes`, and
 `presets.json` is not used for local detected-agent state; custom local target
 evidence belongs in `~/.agents/afk/setup-targets.json`.
 
-## Install Manifests From the shadcn Registry
+## Install Catalog From the shadcn Registry
 
-The AI Field Kit repository exposes its default AFK manifests as a
+The AI Field Kit repository exposes its default AFK catalog as a
 shadcn-compatible registry item. This is a project-local distribution path for
-the manifest files; AFK still performs the actual setup work.
+the catalog files; AFK still performs the actual setup work.
 
 ```bash
-pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
+pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-catalog
 afk setup --local --dry-run
 ```
 
 The registry item writes:
 
 ```text
-./afk/manifests/skills.json
-./afk/manifests/mcps.json
-./afk/manifests/rules.json
-./afk/manifests/plugins.json
-./afk/manifests/hooks.json
-./afk/manifests/presets.json
+./afk/catalog/skills.json
+./afk/catalog/mcps.json
+./afk/catalog/rules.json
+./afk/catalog/plugins.json
+./afk/catalog/hooks.json
+./afk/catalog/presets.json
 ```
 
 Use this when you want AFK defaults committed in a project before running
 `afk setup --local`. Use `afk refresh --local` when you want AFK itself to
 refresh those files from a defaults source.
 
-## Author Manifests
+## Author Catalog
 
 To change what AFK installs durably, edit the configured source repository or
 directory, then refresh the cache from it. Use `--source` for one command only,
@@ -407,7 +407,7 @@ afk refresh --default-source your-org/dev-kit
 `afk configure` is intentionally retired until AFK can edit a writable setup
 source directly, for example by creating a branch or patch in the source repo.
 
-## Manifest Examples
+## Catalog Examples
 
 ### Rules
 
@@ -452,7 +452,7 @@ project scope it writes project host files.
 depends on another setup helper, keep it `default: false` until the dependency
 is also installed by default.
 
-`role`, `autoInvocation`, and `composes` make the manifest readable as a skill
+`role`, `autoInvocation`, and `composes` make the catalog readable as a skill
 system instead of a flat install list. For example, a wrapper can stay manually
 invoked while composing smaller primitives that remain available to automatic
 model discovery.
@@ -581,7 +581,7 @@ scope.
 
 ### Plugins
 
-The bundled plugin manifest currently includes Plannotator, GoalBuddy,
+The bundled plugin catalog currently includes Plannotator, GoalBuddy,
 Plannotator Tot, RTK, Yggtree, and Impeccable. Plugin setup is best-effort
 because these installers are owned by their upstream tools.
 
@@ -606,9 +606,9 @@ command -v afk
 afk --version
 ```
 
-### A new manifest item does not appear
+### A new catalog item does not appear
 
-AFK reads the local manifest cache by default. Inspect the cache first:
+AFK reads the local catalog cache by default. Inspect the cache first:
 
 ```bash
 afk show
@@ -620,7 +620,7 @@ If you need to update the cache, refresh it:
 afk refresh
 ```
 
-Use project-local refresh when the manifests should live in the repo:
+Use project-local refresh when the catalog should live in the repo:
 
 ```bash
 afk refresh --local
