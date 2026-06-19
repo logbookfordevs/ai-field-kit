@@ -79,7 +79,7 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
 }
 
 export async function runManifestConfigureWithPrompts(runtime: Runtime, options: CliOptions, prompts: ManifestConfigurePrompts): Promise<number> {
-  const outputDir = options.manifestConfigureLocal ? join(options.cwd, "afk", "manifests") : localManifestDir(options.homeDir);
+  const outputDir = options.manifestConfigureLocal ? join(options.cwd, "afk", "catalog") : localManifestDir(options.homeDir);
   const original = readEditableManifests(outputDir);
   const drafts = cloneDrafts(original);
   const touched = new Set<ManifestArea>();
@@ -87,7 +87,7 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
   resetPromptSteps();
   runtime.io.stdout("\nAFK configure");
   runtime.io.stdout(`Writing to: ${outputDir}`);
-  runtime.io.stdout(renderPromptStep("Manifest editor", "Choose a manifest, make changes, and finish to review the JSON before writing."));
+  runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
 
   while (true) {
     const area = await prompts.selectArea(areaChoices(drafts));
@@ -100,7 +100,7 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
 
   const validationErrors = validationErrorsFor(drafts, touched);
   if (validationErrors.length > 0) {
-    runtime.io.stderr("\nManifest validation failed:");
+    runtime.io.stderr("\nCatalog validation failed:");
     for (const error of validationErrors) {
       runtime.io.stderr(`- ${error}`);
     }
@@ -109,24 +109,24 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
 
   const serialized = changedDrafts(original, drafts, touched);
   if (Object.keys(serialized).length === 0) {
-    runtime.io.stdout("\nNo manifest changes planned.");
+    runtime.io.stdout("\nNo catalog changes planned.");
     return 0;
   }
 
-  runtime.io.stdout("\nManifest preview");
+  runtime.io.stdout("\nCatalog preview");
   for (const [filename, content] of Object.entries(serialized)) {
     runtime.io.stdout(`\n--- ${filename} ---\n${content.trimEnd()}`);
   }
 
   if (options.dryRun) {
-    runtime.io.stdout("\nDry run complete. No manifests written.");
+    runtime.io.stdout("\nDry run complete. No catalog files written.");
     return 0;
   }
 
-  runtime.io.stdout(renderPromptStep("Write manifests", "Review the preview above, then confirm whether AFK should write the files."));
-  const shouldWrite = await prompts.confirm(`Write ${Object.keys(serialized).length} manifest file(s)?`, true);
+  runtime.io.stdout(renderPromptStep("Write catalog", "Review the preview above, then confirm whether AFK should write the files."));
+  const shouldWrite = await prompts.confirm(`Write ${Object.keys(serialized).length} catalog file(s)?`, true);
   if (!shouldWrite) {
-    runtime.io.stdout("\nCancelled. No manifests written.");
+    runtime.io.stdout("\nCancelled. No catalog files written.");
     return 0;
   }
 
@@ -135,7 +135,7 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
     writeFileSync(join(outputDir, filename), content);
   }
 
-  runtime.io.stdout(`\nWrote ${Object.keys(serialized).length} manifest file(s) to ${outputDir}.`);
+  runtime.io.stdout(`\nWrote ${Object.keys(serialized).length} catalog file(s) to ${outputDir}.`);
   return 0;
 }
 
@@ -278,6 +278,9 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
     args: skillArgsFromInput(existing, skill),
     default: isDefault,
     autoInvocation,
+    role: existing?.role ?? "primitive",
+    composes: existing?.composes ?? [],
+    profiles: existing?.profiles ?? [],
   };
 }
 
@@ -305,7 +308,7 @@ async function promptPlugin(prompts: ManifestConfigurePrompts, existing?: Plugin
   const label = await prompts.input({ message: "Plugin label", default: existing?.label ?? inferLabel(id), required: true });
   const description = await prompts.input({ message: "Plugin description", default: existing?.description ?? `${label} install script.`, required: true });
   const nextInstallLine = await prompts.input({ message: "Plugin install command", default: installLine, required: true });
-  const nextPostInstallLine = await prompts.input({ message: "Post-install command (optional, or rtk-init)", default: existingPostInstallLine });
+  const nextPostInstallLine = await prompts.input({ message: "Post-install command (optional)", default: existingPostInstallLine });
   const defaultValue = existing?.default ?? true;
   const isDefault = await prompts.confirm(booleanPrompt("Selected by default?", defaultValue, existing ? "current" : "default"), defaultValue);
 
@@ -348,12 +351,12 @@ async function promptHook(prompts: ManifestConfigurePrompts, existing?: HookMani
 async function loadDefaultHooks(options: CliOptions): Promise<HookManifest> {
   const content = await loadDefaultManifestContent("hooks.json", options);
   if (!content) {
-    throw new Error("Could not load default hooks manifest from the configured defaults source.");
+    throw new Error("Could not load default hooks catalog file from the configured defaults source.");
   }
 
   const parsed: unknown = JSON.parse(content);
   if (!isHookManifest(parsed)) {
-    throw new Error("Default hooks manifest from the configured defaults source is invalid.");
+    throw new Error("Default hooks catalog file from the configured defaults source is invalid.");
   }
 
   return parsed;
@@ -423,7 +426,7 @@ function areaChoices(drafts: Drafts): Array<SelectChoice<ManifestAreaChoice>> {
     {
       name: "Finish and review",
       value: "finish" as const,
-      description: "Preview changed manifest JSON before writing.",
+      description: "Preview changed catalog JSON before writing.",
     },
   ];
 }
@@ -432,7 +435,7 @@ function actionChoices(area: ManifestArea, manifest: EditableManifest): Array<Se
   if (area === "rules") {
     return [
       { name: "Edit rules source", value: "edit-rules", description: "Change the rules URL/path and inferred source type." },
-      { name: "Back to manifests", value: "back" },
+      { name: "Back to catalog", value: "back" },
     ];
   }
 
@@ -443,7 +446,7 @@ function actionChoices(area: ManifestArea, manifest: EditableManifest): Array<Se
     ...(hasItems ? [{ name: `Remove ${singularArea(area)}`, value: "remove" as const }] : []),
     ...(hasItems ? [{ name: "Toggle default", value: "toggle-default" as const }] : []),
     ...(area === "skills" && hasItems ? [{ name: "Toggle autoInvocation", value: "toggle-auto" as const }] : []),
-    { name: "Back to manifests", value: "back" },
+    { name: "Back to catalog", value: "back" },
   ];
 }
 
@@ -591,10 +594,6 @@ function postInstallLine(postInstall?: PluginManifestItem["postInstall"]): strin
     return "";
   }
 
-  if (postInstall === "rtk-init") {
-    return "rtk-init";
-  }
-
   if ((postInstall.command === "sh" || postInstall.command === "bash") && postInstall.args[0] === "-c" && postInstall.args[1]) {
     return postInstall.args[1];
   }
@@ -602,11 +601,7 @@ function postInstallLine(postInstall?: PluginManifestItem["postInstall"]): strin
   return [postInstall.command, ...postInstall.args].join(" ");
 }
 
-function postInstallFromLine(line: string, existing?: PluginManifestItem["postInstall"]): "rtk-init" | PluginPostInstallCommand {
-  if (line === "rtk-init") {
-    return "rtk-init";
-  }
-
+function postInstallFromLine(line: string, existing?: PluginManifestItem["postInstall"]): PluginPostInstallCommand {
   if (line === postInstallLine(existing) && typeof existing === "object") {
     return existing;
   }
@@ -639,7 +634,7 @@ function autoInvocationValue(item: EditableManifestItem): boolean {
 function inquirerPrompts(): ManifestConfigurePrompts {
   return {
     selectArea: async (choices) => select<ManifestAreaChoice>({
-      message: "Choose a manifest to edit",
+      message: "Choose a catalog file to edit",
       choices,
       pageSize: 8,
       theme: afkSelectTheme,

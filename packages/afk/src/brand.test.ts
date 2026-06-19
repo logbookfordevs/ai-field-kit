@@ -29,8 +29,8 @@ test("renderBanner shows an available update without hiding the AFK identity", (
 test("renderBanner can remind setup users to refresh manifests", () => {
   const banner = renderBanner({ showRefreshHint: true });
 
-  assert.ok(banner.includes("afk setup refresh"));
-  assert.ok(banner.includes("local manifests"));
+  assert.ok(banner.includes("afk refresh"));
+  assert.ok(banner.includes("local catalog"));
 });
 
 test("renderSetupOutro closes setup with AFK-owned context", () => {

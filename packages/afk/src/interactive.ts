@@ -1,7 +1,7 @@
 import { checkbox, input, select } from "@inquirer/prompts";
 import { detectSetupTargets, type TargetSelectionSource } from "./agent-detection.js";
 import { agentIds, hookAgentIds, skillAgentIds } from "./agents.js";
-import { loadHookManifest, loadMcpManifest, loadSkillManifest, loadPluginManifest } from "./manifest.js";
+import { loadHookManifest, loadMcpManifest, loadSkillManifest, loadPluginManifest, type SkillManifestItem } from "./manifest.js";
 import { DEFAULT_CHECKED, afkCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { AgentId, Area, CliOptions, SetupScope, SkillAgentId } from "./types.js";
 
@@ -322,27 +322,96 @@ async function selectAgentChoices(
   return { agents, source: agents.length > 0 ? "manual" : "none" };
 }
 
-async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills">): Promise<string[]> {
+async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills" | "manifestContents">): Promise<string[]> {
   const manifest = loadSkillManifest(options);
   if (options.allSkills) {
     return manifest.items.map((item) => item.id);
   }
 
-  return selectCheckbox(
+  const selected = uniqueStrings(await selectCheckbox(
     "Choose skills to install",
-    manifest.items.map((item) => ({
-      name: item.label,
-      value: item.id,
-      checked: DEFAULT_CHECKED,
-      description: item.args.join(" "),
-    })),
+    skillChoices(manifest.items),
+  ));
+  const expanded = expandComposedSkillIds(manifest.items, selected);
+  if (expanded.length === selected.length) {
+    return selected;
+  }
+
+  const composed = expanded.filter((id) => !selected.includes(id));
+  const composedSelection = await selectCheckbox(
+    "Choose composed skills to include",
+    composed.map((id) => {
+      const item = manifest.items.find((candidate) => candidate.id === id);
+      return {
+        name: item?.label ?? id,
+        value: id,
+        checked: true,
+        description: composedSkillDescription(manifest.items, id),
+      };
+    }),
   );
+
+  return uniqueStrings([...selected, ...composedSelection]);
 }
 
-function nonInteractiveSkillIds(options: Pick<CliOptions, "homeDir" | "allSkills">): string[] {
-  return loadSkillManifest(options).items
+function nonInteractiveSkillIds(options: Pick<CliOptions, "homeDir" | "allSkills" | "manifestContents">): string[] {
+  const manifest = loadSkillManifest(options);
+  const selected = manifest.items
     .filter((item) => item.default || options.allSkills)
     .map((item) => item.id);
+  return options.allSkills ? selected : expandComposedSkillIds(manifest.items, selected);
+}
+
+function skillChoices(items: SkillManifestItem[]): Choice<string>[] {
+  return items.map((item) => ({
+    name: item.label,
+    value: item.id,
+    checked: DEFAULT_CHECKED,
+    description: skillChoiceDetail(item),
+  }));
+}
+
+function skillChoiceDetail(item: SkillManifestItem): string {
+  const role = item.role ?? "primitive";
+  const autoInvocation = item.autoInvocation === false ? "off" : "on";
+  const composes = item.composes && item.composes.length > 0 ? ` · composes ${item.composes.join(", ")}` : "";
+  return `role: ${role} · auto-invocation: ${autoInvocation}${composes} · ${item.args.join(" ")}`;
+}
+
+function expandComposedSkillIds(items: SkillManifestItem[], selectedIds: string[]): string[] {
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const expanded = new Set(selectedIds);
+  const queue = [...selectedIds];
+
+  while (queue.length > 0) {
+    const id = queue.shift();
+    if (!id) {
+      continue;
+    }
+
+    const item = byId.get(id);
+    for (const composedId of item?.composes ?? []) {
+      if (expanded.has(composedId)) {
+        continue;
+      }
+
+      expanded.add(composedId);
+      queue.push(composedId);
+    }
+  }
+
+  return [...expanded];
+}
+
+function composedSkillDescription(items: SkillManifestItem[], id: string): string {
+  const parents = items.filter((item) => item.composes?.includes(id)).map((item) => `${item.label} (${item.role ?? "primitive"})`);
+  const parentDetail = parents.length > 0 ? `Composed by ${parents.join(", ")}. ` : "";
+  const item = items.find((candidate) => candidate.id === id);
+  return `${parentDetail}${item ? skillChoiceDetail(item) : "Composed skill"}`;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 function selectSkillAgents(
@@ -375,7 +444,7 @@ function resolveNonInteractiveAgentSelection(
   return { agents: [], agentSource: "none" };
 }
 
-async function selectMcps(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+async function selectMcps(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string[]> {
   const manifest = loadMcpManifest(options);
   return selectCheckbox(
     "Choose MCPs to install",
@@ -388,7 +457,7 @@ async function selectMcps(options: Pick<CliOptions, "homeDir">): Promise<string[
   );
 }
 
-async function selectPlugins(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+async function selectPlugins(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string[]> {
   const manifest = loadPluginManifest(options);
   return selectCheckbox(
     "Choose plugins to install",
@@ -401,7 +470,7 @@ async function selectPlugins(options: Pick<CliOptions, "homeDir">): Promise<stri
   );
 }
 
-async function selectHooks(options: Pick<CliOptions, "homeDir">): Promise<string[]> {
+async function selectHooks(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string[]> {
   const manifest = loadHookManifest(options);
   return selectCheckbox(
     "Choose hooks to install",
@@ -416,6 +485,11 @@ async function selectHooks(options: Pick<CliOptions, "homeDir">): Promise<string
 
 async function selectCheckbox<Value extends string>(message: string, choices: Choice<Value>[]): Promise<Value[]> {
   console.log(renderPromptStep(message, defaultCheckedDetail));
+  if (choices.length === 0) {
+    console.log("No choices available in the current catalog.");
+    return [];
+  }
+
   return checkbox<Value>({
     message,
     choices,

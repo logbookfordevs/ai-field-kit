@@ -1,5 +1,4 @@
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
 import { addMcpAgentNames } from "./agents.js";
 import { loadMcpManifest, loadSkillManifest, loadPluginManifest, type SkillManifestItem, type PluginManifestItem } from "./manifest.js";
 import type { AgentId, CliOptions, Runtime, SkillAgentId } from "./types.js";
@@ -63,7 +62,7 @@ export function buildPluginCommands(options: Pick<CliOptions, "agents" | "homeDi
 
   return selected.flatMap((item) => [
     buildPluginInstallCommand(item),
-    ...buildPluginPostInstallCommands(item, options),
+    ...buildPluginPostInstallCommands(item),
   ]);
 }
 
@@ -181,7 +180,7 @@ function buildPluginInstallCommand(item: PluginManifestItem): DelegateCommand {
   };
 }
 
-function buildPluginPostInstallCommands(item: PluginManifestItem, options: Pick<CliOptions, "agents" | "homeDir" | "setupScope">): DelegateCommand[] {
+function buildPluginPostInstallCommands(item: PluginManifestItem): DelegateCommand[] {
   if (typeof item.postInstall === "object") {
     return [{
       label: item.postInstall.label ?? `${item.label} / post-install`,
@@ -190,76 +189,7 @@ function buildPluginPostInstallCommands(item: PluginManifestItem, options: Pick<
     }];
   }
 
-  if (item.postInstall !== "rtk-init") {
-    return [];
-  }
-
-  const selectedAgents = filterPluginAgents(options.agents);
-  return selectedAgents.map((agent) => ({
-    label: `RTK / init ${agentLabel(agent)}`,
-    command: "rtk",
-    args: rtkInitArgs(agent, options.setupScope),
-    ...(options.setupScope === "global" && agent === "codex" ? { cwd: join(options.homeDir, ".codex") } : {}),
-  }));
-}
-
-function defaultPluginAgents(): AgentId[] {
-  return ["antigravity", "claude", "codex", "opencode"];
-}
-
-function filterPluginAgents(agents: AgentId[]): AgentId[] {
-  if (agents.length === 0) {
-    return defaultPluginAgents();
-  }
-
-  return agents.filter((agent) => defaultPluginAgents().includes(agent));
-}
-
-function rtkInitArgs(agent: AgentId, scope: "global" | "project"): string[] {
-  if (scope === "project") {
-    switch (agent) {
-      case "claude":
-        return ["init"];
-      case "codex":
-        return ["init", "--codex"];
-      case "antigravity":
-        return ["init", "--agent", "antigravity"];
-      case "opencode":
-        return ["init", "--opencode"];
-      case "cursor-local":
-        return ["init"];
-    }
-  }
-
-  switch (agent) {
-    case "claude":
-      return ["init", "--global"];
-    case "codex":
-      return ["init", "--codex"];
-    case "antigravity":
-      // Antigravity still consumes the global Gemini rules host, so global RTK uses
-      // the Gemini compatibility initializer while project setup uses Antigravity.
-      return ["init", "--global", "--gemini"];
-    case "opencode":
-      return ["init", "--global", "--opencode"];
-    case "cursor-local":
-      return ["init", "--global"];
-  }
-}
-
-function agentLabel(agent: AgentId): string {
-  switch (agent) {
-    case "claude":
-      return "Claude Code";
-    case "codex":
-      return "Codex";
-    case "antigravity":
-      return "Antigravity";
-    case "opencode":
-      return "OpenCode";
-    case "cursor-local":
-      return "Cursor Local";
-  }
+  return [];
 }
 
 function buildSkillsAgentArgs(agents: SkillAgentId[]): string[] {

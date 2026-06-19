@@ -22,7 +22,12 @@
                 "command": "npx",
                 "args": [
                     "--yes",
-                    "goalbuddy"
+                    "goalbuddy",
+                    "&&",
+                    "npx",
+                    "--yes",
+                    "goalbuddy",
+                    "update"
                 ]
             },
             "default": true
@@ -40,20 +45,6 @@
                 ]
             },
             "default": false
-        },
-        {
-            "id": "rtk",
-            "label": "RTK",
-            "description": "Compress noisy command output for coding agents and add agent hooks or rules that nudge shell commands through RTK.",
-            "install": {
-                "command": "sh",
-                "args": [
-                    "-c",
-                    "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"
-                ]
-            },
-            "postInstall": "rtk-init",
-            "default": true
         },
         {
             "id": "yggtree",

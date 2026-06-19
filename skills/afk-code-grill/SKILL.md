@@ -1,13 +1,13 @@
 ---
 name: afk-code-grill
-description: Grill implementation and UX trade-offs inside a bounded coding scope. Use when a feature, screen, component, or technical slice is understood but important choices still need sharper engineering judgment before implementation.
+description: Grill implementation and UX trade-offs inside a bounded coding scope before implementation.
 metadata:
   short-description: Grill implementation and UX trade-offs before coding.
 ---
 
 # Code Grill
 
-This is Grill for code decisions.
+This is a wrapper for bounded code decisions. Compose `grilling` for the interview loop, `truss-evaluation` for the decision lens, and `codebase-design` when module, interface, seam, or test-surface shape matters.
 
 Use it when the work is already scoped but still has choices that can materially change UX, correctness, maintainability, ownership, library commitments, state shape, or component composition.
 
@@ -18,7 +18,7 @@ Do not use it for broad discovery, full planning, generic architecture theater, 
 1. Name the bounded slice in one sentence.
 2. Inspect only the context needed to avoid asking answered questions.
 3. Identify the 1-3 trade-offs that would actually change the implementation.
-4. Ask one sharp question at a time.
+4. Ask one sharp question at a time using the `grilling` loop.
 5. Recommend a direction when the evidence is enough.
 6. End with a tiny decision note only when it will help execution or handoff.
 
@@ -63,7 +63,7 @@ My default: [option], because [reason].
 
 If the user answers freeform, synthesize it into a decision and continue.
 
-## Truss Dependency
+## Primitive Dependencies
 
 Use `truss-evaluation` as the decision lens:
 
@@ -79,6 +79,8 @@ npx skills add https://github.com/leoreisdias/truss-framework
 ```
 
 Do not produce a full matrix unless the user asks for one.
+
+Use `codebase-design` when the trade-off touches module depth, interface shape, seam placement, adapter design, or testability.
 
 ## Output
 

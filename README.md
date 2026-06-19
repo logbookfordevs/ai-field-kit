@@ -1,13 +1,13 @@
 # 🧭 AI Field Kit — by Logbook for Devs
 
-> *The rules, skills, MCP manifests, and setup router powering a DX-first AI developer workflow.*
+> *The rules, skills, setup catalog, and router powering a DX-first AI developer workflow.*
 
-A curated, version-controlled collection of everything you need to make AI coding agents actually useful in a real development environment. No fluff — just the configuration, prompts, and automation that ship every day.
+A curated, version-controlled collection for making AI coding agents useful in a real development environment.
 
 AI Field Kit treats frameworks like BMAD, Get Shit Done, Agent OS, Superpowers, and agent skills as reference material, not masters. The kit is a personal synthesis of patterns that keep proving useful in real work: standalone skills when you only need one tool, and an optional workflow when you want the pieces to move together.
 
-> **Standalone skills with an optional workflow path.**
-> Install one skill when that is all you need, or use the kit as a loose workflow when the work benefits from staged discovery, decisions, execution, and review.
+For the skill composition mental model, open the visual companion:
+[Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg).
 
 Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated entries instead of release versions.
 
@@ -17,9 +17,9 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 
 - [What's in the Kit](#whats-in-the-kit)
 - [Quick Start](#quick-start)
-  - [Just the skills](#just-the-skills--30-seconds)
   - [AFK CLI](#afk-cli--full-setup)
-  - [AFK manifests through the shadcn registry](#afk-manifests-through-the-shadcn-registry)
+  - [Authored skills only](#authored-skills-only--30-seconds)
+  - [AFK catalog through the shadcn registry](#afk-catalog-through-the-shadcn-registry)
 - [The Skills](#the-skills)
 - [The Workflows](#the-workflows)
 - [Skill vs Workflow Rubric](#skill-vs-workflow-rubric)
@@ -40,7 +40,7 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 | `rules/` | Global agent instructions (AGENTS.md) shared across all AI tools |
 | `.agents/skills/` | Reusable capabilities, quality lenses, and explicit workflow-style procedures |
 | `mcps/` | MCP server registry for delegated setup through official tooling |
-| `registry.json` | shadcn-compatible registry entrypoint for installing AFK manifest bundles |
+| `registry.json` | shadcn-compatible registry entrypoint for installing AFK catalog bundles |
 | `packages/afk/` | Local AFK CLI package for guided setup and setup dry-runs |
 | `apps/site/` | React/Vite marketing and docs site for AI Field Kit |
 
@@ -48,25 +48,26 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 
 ## Quick Start
 
-### Just the skills — 30 seconds
-
-No clone needed. Install directly from GitHub using the [`skills` CLI](https://skills.sh/):
-
-```bash
-npx skills add https://github.com/logbookfordevs/ai-field-kit
-```
-
-The interactive mode lets you pick which skills to install. Agent-specific
-support is handled by the official `skills` CLI.
-
 ### AFK CLI — full setup
 
-If you want the complete stack, use the AFK CLI. It is the setup router for
-rules, skills, MCPs, plugins, hooks, dry-runs, and team-specific manifests.
+Start with AFK. It is the setup router for rules, skills, MCPs, plugins, hooks,
+catalog composition, dry-runs, and team-specific catalogs.
+
+```bash
+npx @logbookfordevs/afk setup --dry-run
+```
+
+Use `npx` for the first run, a one-off setup, or trying AFK without adding a
+global command to your machine. When AFK becomes part of your daily agent setup,
+install the CLI so the field-kit commands are always available:
 
 ```bash
 npm install -g @logbookfordevs/afk
+
 afk setup --dry-run
+afk refresh
+afk show skills --react
+afk show skills --visualize
 ```
 
 Start with `--dry-run`: AFK prints the exact actions it would take before it
@@ -74,24 +75,41 @@ writes to your machine. The CLI owns AFK rule and hook setup, then delegates
 skills, MCPs, and plugins to the official tools or installer scripts that
 already own those ecosystems.
 
-For the full command reference, flags, manifest format, local-development
+Plugins are recommended for the full experience: some AFK skills mention,
+delegate to, or become much more useful with companion plugin capabilities such
+as Plannotator, GoalBuddy, or Impeccable installed.
+
+For the full command reference, flags, catalog format, local-development
 install flow, and custom defaults workflow, read the
 [AFK CLI README](./packages/afk/README.md).
 
-### AFK manifests through the shadcn registry
+### Authored skills only — 30 seconds
 
-AI Field Kit also publishes its default AFK manifests as a shadcn-compatible
+If you only want the AFK-authored skill files, install directly from GitHub using
+the [`skills` CLI](https://skills.sh/):
+
+```bash
+npx skills add https://github.com/logbookfordevs/ai-field-kit
+```
+
+This is the lightest path, but it is not the full AFK experience: it installs
+skills from this repository only. It does not apply AFK rules, hooks, MCPs,
+plugins, catalog composition, or setup policy.
+
+### AFK catalog through the shadcn registry
+
+AI Field Kit also publishes its default AFK catalog as a shadcn-compatible
 registry item. Use this when you want to commit the current AFK defaults into a
 project before running project-local setup:
 
 ```bash
-pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
-// or npx shadcn@latest add logbookfordevs/ai-field-kit/afk-manifests
+pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-catalog
+// or npx shadcn@latest add logbookfordevs/ai-field-kit/afk-catalog
 afk setup --local --dry-run
 ```
 
-The registry item writes the same fragmented manifest files AFK already reads
-under `./afk/manifests/`. shadcn handles distribution; AFK still owns setup
+The registry item writes the same fragmented catalog files AFK already reads
+under `./afk/catalog/`. shadcn handles distribution; AFK still owns setup
 semantics such as defaults, scopes, managed rules, hooks, plugins, and
 delegated skill/MCP installers.
 
@@ -111,43 +129,29 @@ node packages/afk/dist/index.js setup --dry-run
 
 Skills are modular instruction files that teach agents *how* to think and work across many requests: debugging lenses, DX heuristics, motion direction, and specialized integrations.
 
-### Installing skills with the CLI
+### Installing skills
 
-The easiest way to install skills from this repo is with the [`skills` CLI](https://skills.sh/). Run it from the repo directory and it'll walk you through an interactive picker:
-
-```bash
-npx skills add https://github.com/logbookfordevs/ai-field-kit
-```
-
-The interactive mode lets you pick which skills to install and where the official
-`skills` CLI should place them. A few useful flags:
+Use AFK for the full skills experience:
 
 ```bash
-# Install all skills globally, skip confirmation
-npx skills add https://github.com/logbookfordevs/ai-field-kit --all --global
-
-# Install only to a specific agent
-npx skills add https://github.com/logbookfordevs/ai-field-kit --agent claude-code
-
-# Preview what's available without installing
-npx skills add https://github.com/logbookfordevs/ai-field-kit --list
+npx @logbookfordevs/afk setup
 ```
 
-The CLI symlinks skill files into the right agent directories — no manual path juggling needed.
-
-### Install a single skill
-
-If you only want the AFK skill-routing entry point, install `afk-compass` directly:
+Install the CLI globally when you want AFK to become a regular machine command
+for setup, refresh, catalog import, and skill inspection:
 
 ```bash
-npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-compass
+npm install -g @logbookfordevs/afk
+afk setup
+afk refresh
+afk show skills
 ```
 
-This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the next useful AFK or recommended external skill. Compass is a selector, not a workflow runner: it helps choose the current tool and then gets out of the way.
-
-> **What does global vs. agent-specific mean?**
-> Global installs (`--global`) place the skill in `~/.agents/skills/` and make it available to every agent that reads from there.
-> Agent-specific installs target a single tool's config directory directly.
+Use `npx skills add` only when you specifically want the authored skills from
+this repository and do not need AFK rules, hooks, MCPs, plugins, or
+catalog-aware companion installs. AFK delegates to that ecosystem during full
+setup, then adds the surrounding AFK setup pieces and recommended companion
+plugins.
 
 ### Available skills
 
@@ -160,13 +164,13 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-sprint` | Fast goal execution with Plannotator, native `/goal`, and Markdown checkpoint tracking |
 | `afk-turbo` | High-throughput goal execution with Plannotator and GoalBuddy's live board |
 | `afk-ask` | Gets a second opinion from another local AI CLI and saves the result as an artifact |
+| `afk-delegate` | Assigns work to another local agent and supervises it through live or background terminal lanes |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-code-grill` | Grill-style pressure on UX and implementation choices inside a defined coding scope |
 | `afk-to-prd-spec` | Turns grilled context, PM PRDs, or feature notes into an agent-ready PRD/spec |
 | `afk-to-issues` | Turns PRDs, plans, goal packages, or tracker issues into executable checkpoint packets |
 | `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
 | `afk-pickup` | Explicitly resumes from disposable handoff notes saved in the OS temp directory |
-| `afk-resume-workflow` | Continues an AFK workflow from durable repo artifacts after a context reset |
 
 ### Spec-Driven discussion and planning skills
 
@@ -180,10 +184,10 @@ They are intentionally similar, but they are not redundant:
 | `afk-code-grill` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | Tiny decision note or ADR only when the decision deserves one |
 | `afk-to-prd-spec` | You need to create or normalize a PRD/spec after Grill or Grill With Docs | Agent-ready PRD/spec with behavior, acceptance criteria, implementation decisions, and testing seams |
 | `afk-to-issues` | You have a PRD/spec, plan, goal package, tracker issue, or rough context that needs executable slices | Local AFK checkpoint packets, external tracker issues, or both |
-| `afk-execution-tracking` | You have checkpoint packets and want checkpointed execution instead of one long build run | Updated checkpoint packets with status, review gates, validation, implementation notes, and handoff notes |
+| `afk-execution-tracking` | You have checkpoint packets and want checkpointed execution, including resume, instead of one long build run | Updated checkpoint packets with status, review gates, validation, implementation notes, and handoff notes |
 | `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
-| `afk-resume-workflow` | A fresh session needs to continue an AFK workflow from repo artifacts | Current state, next useful move, and Compass routing |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
+| `afk-delegate` | You want another local agent to do work while AFK supervises the terminal run | Live or background delegated agent run with status based on terminal evidence |
 
 ### How the workflow currently maps
 
@@ -195,9 +199,9 @@ They are intentionally similar, but they are not redundant:
 | PRD/spec creation | `afk-to-prd-spec` |
 | RFC creation | Flexible for now; create a dedicated AFK skill only if the RFC shape becomes worth standardizing |
 | Executable slicing | `afk-to-issues` |
-| Execution control | `afk-execution-tracking` plus the selected execution bundle |
+| Execution control | `afk-execution-tracking` plus the selected execution bundle; use its resume mode after context resets |
 | Validation / testing | Flexible for now; use project checks directly, with `diagnosing-bugs` when something fails |
-| Support | `afk-resume-workflow`, `afk-pickup`, `afk-ask`, `afk-doc-craft`, `diagnosing-bugs` |
+| Support | `afk-pickup`, `afk-ask`, `afk-delegate`, `afk-doc-craft`, `diagnosing-bugs` |
 
 Compass defines the default artifact convention in `skills/afk-compass/references/artifacts.md`: `docs/<task-slug>/<task-slug>.<type>.md`, with checkpoint packets under `docs/<task-slug>/tracking/` and task-specific references under `docs/<task-slug>/references/`.
 
@@ -208,15 +212,17 @@ If you're unsure which one to reach for, use this shortcut:
 - "We need more ideas" -> `afk-brainstorming-facilitator`
 - "Run AFK Sprint" -> `afk-sprint`
 - "Run AFK Turbo" -> `afk-turbo`
+- "Run AFK Turbo with human review gates" -> `afk-turbo` review-gated mode
 - "We need AFK artifact boundaries or storage conventions" -> `afk-compass`
 - "We need to create or normalize a PRD/spec after grilling" -> `afk-to-prd-spec`
 - "We need to split this into executable slices/checkpoints" -> `afk-to-issues`
 - "Grill me on this plan/design before we commit" -> `grill-me`
 - "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-code-grill`
-- "We have checkpoint packets and need tracked execution" -> `afk-execution-tracking`
-- "Continue this AFK workflow from repo artifacts" -> `afk-resume-workflow`
+- "We have checkpoint packets and need tracked execution or resume" -> `afk-execution-tracking`
+- "Continue AFK Turbo from repo artifacts" -> `afk-turbo` resume mode
 - "A previous agent left a temp handoff for this session" -> `afk-pickup`
 - "I want another model's opinion" -> `afk-ask`
+- "I want another local agent to do this work" -> `afk-delegate`
 
 ### Use Only What You Need
 
@@ -233,9 +239,9 @@ If the work is already clear, skip straight to the later skill that matches the 
 
 When you ask for an AFK workflow, feature workflow, or AFK run, Compass should help select the next useful skill for the current phase. It should not force the whole sequence below.
 
-### Recommended AFK Flow
+### Recommended AFK Workflow
 
-AFK Flow is a human-facing recommendation, not a required agent pipeline. Use the pieces that fit the work.
+AFK Workflow is a human-facing recommendation, not a required agent pipeline. Use the pieces that fit the work.
 
 1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
 2. Use `grill-me` when a plan or design needs relentless questioning before you commit.
@@ -247,7 +253,7 @@ AFK Flow is a human-facing recommendation, not a required agent pipeline. Use th
 8. Select the execution bundle for each task: use `tdd` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
 9. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
 
-Most flows only use a few of these. For example:
+Most workflows only use a few of these. For example:
 
 ```text
 references -> grill-me/grill-with-docs -> PRD/spec -> checkpoint packets -> tracked execution -> execution bundle evidence before review
@@ -273,7 +279,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 - **Truss Evaluation (Truss Framework)**
   Install: `npx skills add https://github.com/leoreisdias/truss-framework --skill truss-evaluation`
 
-  Keep this available as a decision-quality lens across normal prompting, free routing, AFK Flow, code review, debugging, and architecture discussion. It is not a workflow phase; it is the layer to reach for when the work needs explicit trade-offs, structured critique, or a grounded answer to "which approach is better?" Truss evaluates decisions through Maintainability, Strategy, Clarity, and Performance, with a research whitepaper in progress behind the framework.
+  Keep this available as a decision-quality lens across normal prompting, free routing, AFK Workflow, code review, debugging, and architecture discussion. It is not a workflow phase; it is the layer to reach for when the work needs explicit trade-offs, structured critique, or a grounded answer to "which approach is better?" Truss evaluates decisions through Maintainability, Strategy, Clarity, and Performance, with a research whitepaper in progress behind the framework.
 
 #### Optional companion skills
 
@@ -303,7 +309,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Grill With Docs (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
-  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. In AFK Flow, use it for brownfield work before PRD/spec creation and before executable slicing. It complements `afk-code-grill`: use code grill when implementation decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy. Matt's current version relies on `codebase-design` and `domain-modeling`, so install those alongside it.
+  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. In AFK Workflow, use it for brownfield work before PRD/spec creation and before executable slicing. It complements `afk-code-grill`: use code grill when implementation decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy. Matt's current version relies on `codebase-design` and `domain-modeling`, so install those alongside it.
 
 - **Grill Me (Matt Pocock Skills)**
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-me`
@@ -325,9 +331,17 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 AFK's fast execution packages are:
 
-- **AFK Flow**: recommended human-facing composition with optional checkpoint packets and execution tracking.
+- **AFK Workflow**: recommended human-facing composition with optional checkpoint packets and execution tracking.
 - **AFK Sprint**: `afk-sprint`, a Plannotator goal package plus AFK checkpoint packets, native `/goal`, and execution tracking.
-- **AFK Turbo**: `afk-turbo`, a Plannotator goal package plus GoalBuddy's local live board and PM loop.
+- **AFK Turbo**: `afk-turbo`, an optional grilling pass, a Plannotator goal package, and GoalBuddy's local live board and PM loop. Turbo writes a deterministic `goal-launch.html` beside `goal.md` and waits for an explicit launch trigger before execution. Ask for review-gated Turbo when each code-changing task should stage changes and pause for human review before task completion; ask for Turbo resume when prior goal packages or handoffs should seed a fresh focused goal.
+
+| Ask for | Use |
+|---|---|
+| Run Turbo normally | `afk-turbo` |
+| Run Turbo with human review gates | `afk-turbo` review-gated mode |
+| Resume prior Turbo work | `afk-turbo` resume mode |
+| Run checkpointed execution | `afk-execution-tracking` |
+| Resume checkpointed execution | `afk-execution-tracking` resume mode |
 
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  
@@ -337,13 +351,8 @@ AFK's fast execution packages are:
   Install: `npx impeccable install --global`
   Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Plugins and delegates to its installer, including Impeccable's design hook.
 
-- **cmux**  
-  Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  
-  Use when you are working inside a cmux terminal and need deterministic control of windows, workspaces, panes, surfaces, focus, routing, and visual attention cues for parallel agent orchestration.
-
-- **tmux (steipete/clawdis)**  
-  Install: `npx skills add https://github.com/steipete/clawdis --skill tmux`  
-  Use when parallel agents or long-running interactive CLI sessions live in tmux. It helps send keystrokes, inspect pane output, and monitor sessions that continue across disconnects.
+- **AFK Delegate**
+  Use `afk-delegate` when another local agent should do work, not merely advise. It uses cmux as the default live/shared-control lane and tmux as the default background lane.
 
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
@@ -357,13 +366,13 @@ Installer-based companions belong in Plugins. Keep `skills.json` focused on skil
 - `afk-code-grill` is Grill for code decisions: one meaningful trade-off at a time, with a recommendation when the evidence is enough.
 - `afk-to-issues` replaces one-file implementation planning with executable checkpoint packets.
 - `afk-execution-tracking` starts after checkpoint packets exist. Use it when execution needs status, resume safety, review gates, or parallel coordination.
-- `afk-pickup` and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
+- `afk-pickup`, `afk-ask`, and `afk-delegate` are support skills. They pair well with the others but usually are not the main event.
 
-### Supporting skills around the flow
+### Supporting skills around the workflow
 
-The spec-shaping flow is the core lane, but it is not the whole story of AI Field Kit.
+The spec-shaping workflow is the core lane, but it is not the whole story of AI Field Kit.
 
-Several AFK support skills fit naturally around this flow as specialist companions rather than main stages:
+Several AFK support skills fit naturally around this workflow as specialist companions rather than main stages:
 
 | Skill | Where it fits |
 |---|---|
@@ -372,23 +381,23 @@ Several AFK support skills fit naturally around this flow as specialist companio
 | `afk-compass` | When you want help choosing which AFK or companion skill best matches the current moment |
 | `afk-pickup` | When a previous session created a disposable temp handoff and the new session needs to find it |
 
-These are not required steps in the main flow. They are optional specialists you bring in when the work changes shape.
+These are not required steps in the main workflow. They are optional specialists you bring in when the work changes shape.
 
 #### How they connect
 
 - Use `afk-doc-craft` after brainstorming, trade-offs, or another shaping pass when the output needs to become a human-friendly document instead of a working artifact.
-- Use `diagnosing-bugs` instead of the spec-shaping flow when the task is really about understanding a defect, incident, or failure timeline.
-- Use `afk-compass` when you're unsure whether you need the main flow, a support skill, or a recommended external companion skill.
+- Use `diagnosing-bugs` instead of the spec-shaping workflow when the task is really about understanding a defect, incident, or failure timeline.
+- Use `afk-compass` when you're unsure whether you need the main workflow, a support skill, or a recommended external companion skill.
 - Use `afk-pickup` after the external `handoff` skill when the previous session kept its handoff note disposable in the OS temp directory.
 
 #### A useful mental model
 
 Think of AI Field Kit in two layers:
 
-- **Core flow:** shape the work before execution
+- **Core workflow:** shape the work before execution
 - **Support layer:** polish, debug, document, or route the work more intelligently
 
-That keeps the main flow coherent without pretending every skill belongs in the same sequence.
+That keeps the main workflow coherent without pretending every skill belongs in the same sequence.
 
 ---
 
@@ -508,9 +517,9 @@ Use `add-mcp` or the agent's official setup flow for the actual install.
 
 ## Configuration
 
-### AFK manifests
+### AFK catalog
 
-AFK setup is driven by manifests under `packages/afk/manifests/`. Use them to
+AFK setup is driven by the catalog under `packages/afk/catalog/`. Use it to
 define recommended rules, skills, MCPs, plugins, and presets while keeping
 installation delegated to the right upstream CLI.
 

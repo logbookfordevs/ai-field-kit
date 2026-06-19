@@ -1,6 +1,6 @@
 ---
 name: afk-to-issues
-description: Create an implementation plan as AFK execution checkpoint packets from a PRD/spec, existing implementation plan, goal package, tracker issue, or rough context using tracer-bullet vertical slices. Use when AFK needs planning output as local tracking checkpoints, implementation tickets, or slices before execution tracking.
+description: Create an implementation plan as AFK execution checkpoint packets from a PRD/spec, implementation plan, goal package, tracker issue, or rough context using tracer-bullet vertical slices.
 metadata:
   short-description: Create AFK execution checkpoint packets.
 ---
@@ -20,15 +20,10 @@ Use any available source artifact: PRD/spec, existing implementation plan, goal 
 ### 2. Explore the codebase (optional)
 If you have not already explored the codebase, do so to understand the current state of the code. Issue titles and descriptions should use the project's domain glossary vocabulary, and respect ADRs in the area you're touching.
 
+Look for opportunities to prefactor the code to make implementation easier. "Make the change easy, then make the easy change." Any prefactoring should be planned before dependent vertical slices.
+
 ### 3. Draft vertical slices
 Draft the implementation plan directly as **tracer bullet** checkpoint packets. Each packet is a thin vertical slice that cuts through all required integration layers end-to-end, not a horizontal slice of one layer.
-
-Classify each slice by execution autonomy:
-
-- `AFK`: clear enough to execute without new human decisions.
-- `HITL`: requires human input before completion because a decision, trade-off, assumption, or missing context remains.
-
-Do not use type as a proxy for review gates. Every implementation slice has a code review gate. Add design or product gates only when the slice's surface requires them.
 
 <vertical-slice-rules>
 - Each slice delivers a narrow but complete path through every required layer.
@@ -37,9 +32,9 @@ Do not use type as a proxy for review gates. Every implementation slice has a co
 </vertical-slice-rules>
 
 ### 4. Quiz the user
-Present the proposed breakdown as a numbered list. For each slice, show title, type, blockers, and user stories covered when available.
+Present the proposed breakdown as a numbered list. For each slice, show title, blockers, and user stories covered when available.
 
-Ask whether the granularity, dependencies, and HITL/AFK classifications are right. Confirm whether approved slices should be written as local AFK tracking files, external tracker issues, or both.
+Ask whether the granularity and dependencies are right. Confirm whether approved slices should be written as local AFK tracking files, external tracker issues, or both.
 
 Iterate until the user approves the breakdown.
 
@@ -50,13 +45,14 @@ For local AFK tracking, create one checkpoint packet per slice under `docs/<task
 
 For external trackers, publish issues with the right project labels and dependency links. If writing both local and external issues, create local files first and add tracker links after publication.
 
+After writing local checkpoint packets, run `plannotator annotate --gate <tracking-folder>` when Plannotator is available. Treat returned annotations as requested changes across the packet set before handing off to execution. If only external tracker issues were created, skip this gate unless a local draft folder exists.
+
 Do NOT close or modify any parent issue.
 
 <checkpoint-template>
 ---
 id: I001
 title: Short Title
-type: AFK
 status: pending
 blocked_by: []
 source: docs/<task-slug>/<source-artifact>.md
@@ -78,7 +74,9 @@ Describe the end-to-end behavior, not layer-by-layer implementation. Avoid speci
 - [ ] Criterion 3
 
 ## Blocked By
+Use one of:
 - None - can start immediately
+- Checkpoint dependencies, human decisions, missing context, or external blockers.
 
 ## Execution Bundle
 - tdd | source-driven-development | doubt-driven-development | normal validation

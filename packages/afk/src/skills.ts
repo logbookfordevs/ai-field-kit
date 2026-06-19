@@ -4,7 +4,7 @@ import { applyOperation, formatOperation, pathExists, readText, summarizeOperati
 import { loadSkillManifest, type SkillManifestItem } from "./manifest.js";
 import type { CliOptions, PathOperation, Runtime } from "./types.js";
 
-export function planSkillInvocationPolicy(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "selectedSkillIds">): PathOperation[] {
+export function planSkillInvocationPolicy(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "selectedSkillIds" | "manifestContents">): PathOperation[] {
   const manifest = loadSkillManifest(options);
   const selected = options.selectedSkillIds.length > 0
     ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))

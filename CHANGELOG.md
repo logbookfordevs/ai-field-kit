@@ -11,9 +11,43 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `cli:` added `afk show skills --react` to render the skills catalog as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
+- `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills catalog and open it automatically in interactive terminals.
+- `cli:` added `afk catalog import` to backfill missing skills catalog entries from installed skills when the official `skills` CLI lockfile can recover the original source.
+- `skills:` added AFK Turbo review-gated mode, where each code-changing GoalBuddy task stages changes, suggests Plannotator Review, and waits for human approval before task completion.
+- `skills:` added a deterministic AFK Turbo goal launch gate that writes `goal-launch.html`, opens a localhost control surface, and returns whether the user chose current-chat execution, Codex delegation, Claude Code delegation, or close.
+
 ### Changed
 
-- `cli:` made guided setup prefill the official `logbookfordevs/ai-field-kit` source when no saved default source exists yet, while keeping explicit `--default-source` as the way to persist a different default.
+- `cli:` moved catalog cache updates to top-level `afk refresh`, made `afk setup` consume the cache by default, and made `afk show` inspect the cache unless `--source` is passed.
+- `cli:` made first-run setup seed the catalog cache from the official `logbookfordevs/ai-field-kit` source when no default exists, while `afk refresh --default-source` now saves a new default source and refreshes the cache.
+- `cli:` renamed AFK's public setup data model from manifests to catalog, moving bundled defaults to `packages/afk/catalog`, global cache files to `~/.agents/afk/catalog`, and project-local files to `./afk/catalog`.
+- `cli:` fixed the skills visualization React analogy so quoted JSX attributes render as normal quotes instead of visible `&quot;` entities.
+- `cli:` made the root lobby and command help more self-documenting, including direct routes for refresh, skill React view, skill visualization, and catalog import.
+- `cli:` removed RTK from the bundled plugin catalog and dropped its special `rtk-init` post-install path in favor of generic plugin post-install commands.
+- `cli:` refined the skills visualization template typography with smaller fixed headings, clearer product UI hierarchy, and lighter role markers.
+- `cli:` marked catalog-imported skills with `imported: true` and preserved them across refresh until the refreshed source owns the same skill id.
+- `docs:` made Quick Start lead with AFK CLI, clarified when to use `npx` versus a global AFK install, recommended companion plugins for the full skills experience, and kept `npx skills add` as the authored-skills-only path.
+- `docs:` documented Turbo and execution-tracking modes so review-gated and resume requests are discoverable without reading skill internals.
+- `docs:` refreshed the skill composition markdown and HTML companion so the current AFK tree no longer references the removed resume workflow and shows Turbo composing `grilling`.
+- `skills:` distilled the AFK Turbo launch page template so the launch action stays primary while goal package details sit behind a quiet disclosure.
+- `skills:` made AFK Turbo launch pages carry review-gated mode through the visible page, copied command, and delegated agent prompts.
+- `skills:` made AFK Turbo launch deep links explicitly invoke the manual Turbo skill in Codex and Claude Code sessions.
+- `skills:` folded workflow resume into Turbo and execution-tracking modes, removed `afk-resume-workflow` from the catalog, and let Turbo compose the `grilling` primitive before Plannotator setup.
+- `skills:` aligned Sprint and execution tracking with Turbo's preflight/review posture by adding short grilling before weak Plannotator setup context and recommending `/plannotator-review` at review gates.
+- `skills:` added a Plannotator annotation gate after `afk-to-prd-spec` writes local PRD/spec artifacts so user feedback is resolved before slicing or execution consumes the spec.
+- `skills:` added a folder-level Plannotator annotation gate after `afk-to-issues` writes local checkpoint packets so packet content is reviewed before tracked execution starts.
+- `skills:` added `afk-delegate` as a supervised external-agent utility and removed raw cmux/tmux entries from the catalog in favor of live/background transport references.
+- `skills:` renamed the composition role from `flow` to `workflow`, including bundled catalog values, show output, visualization docs, and README language.
+- `skills:` clarified AFK Sprint so manual composed skills are explicit user-invocation boundaries instead of silent internal steps.
+- `skills:` pointed Turbo and execution tracking at `yggtree` for parallel worktrees before falling back to native git worktree commands.
+- `skills:` shortened AFK-owned manual skill descriptions and default prompts so `autoInvocation: false` skills read like explicit invocation surfaces instead of auto-discovery triggers.
+
+### Fixed
+
+- `skills:` made AFK Turbo launch pages resilient on `file://` by adding clipboard fallback behavior and visible launch status messages for Codex and Claude Code buttons.
 
 ## v0.6.0 - 2026-06-16
 

@@ -11,6 +11,7 @@ import {
   planRememberedDefaultsSourceUpdate,
   projectManifestDir,
   readRememberedDefaultsSource,
+  type SkillManifest,
 } from "./manifest.js";
 
 type PluginManifestFile = {
@@ -117,7 +118,7 @@ test("ensureLocalManifests migrates existing skills to invocation policy metadat
 });
 
 test("packaged plugin manifests keep npx installs non-interactive", () => {
-  const manifest = JSON.parse(readFileSync(new URL("../manifests/plugins.json", import.meta.url), "utf8")) as PluginManifestFile;
+  const manifest = JSON.parse(readFileSync(new URL("../catalog/plugins.json", import.meta.url), "utf8")) as PluginManifestFile;
   const interactiveNpxItems = manifest.items
     .filter((item) => usesNpx(item.install.command, item.install.args) && !usesNonInteractiveNpx(item.install.command, item.install.args))
     .map((item) => item.id);
@@ -128,7 +129,7 @@ test("packaged plugin manifests keep npx installs non-interactive", () => {
 test("defaultsManifestBaseUrl resolves GitHub shorthand to the AFK manifest convention", () => {
   assert.equal(
     defaultsManifestBaseUrl("acme/dev-kit", "main"),
-    "https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests",
+    "https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog",
   );
 });
 
@@ -136,8 +137,8 @@ test("defaultsManifestBaseUrls falls back to the package manifest convention", (
   assert.deepEqual(
     defaultsManifestBaseUrls("acme/dev-kit", "main"),
     [
-      "https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests",
-      "https://raw.githubusercontent.com/acme/dev-kit/main/packages/afk/manifests",
+      "https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog",
+      "https://raw.githubusercontent.com/acme/dev-kit/main/packages/afk/catalog",
     ],
   );
 });
@@ -227,7 +228,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     const presetsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("presets.json"));
     assert.ok(presetsWrite && presetsWrite.type === "write");
     assert.ok(presetsWrite.content.includes("\"defaultsSource\": \"acme/dev-kit\""));
-    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/rules.json")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/hooks.json")));
     assert.ok(!requestedUrls.some((url) => url.endsWith("/workflows.json")));
@@ -273,13 +274,13 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
       dryRun: true,
     });
 
-    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test("ensureLocalManifests can refresh project-local manifests", async () => {
+test("ensureLocalManifests can refresh project-local catalog", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
   globalThis.fetch = async (input) => {
@@ -315,7 +316,153 @@ test("ensureLocalManifests can refresh project-local manifests", async () => {
 
     assert.ok(operations.some((operation) => operation.type === "mkdir" && operation.path === manifestDir));
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path === join(manifestDir, "skills.json")));
-    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/manifests/")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests preserves imported skills that are absent from refreshed source", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "source-skill",
+            label: "Source Skill",
+            source: "acme/dev-kit",
+            args: ["--skill", "source-skill"],
+            default: true,
+          },
+        ],
+      }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "presets.json": JSON.stringify({ version: 1, presets: [] }),
+      "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
+      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": JSON.stringify({ version: 1, items: [] }),
+    };
+
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-preserve-imported-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(
+      join(manifestDir, "skills.json"),
+      `${JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "local-skill",
+            label: "Local Skill",
+            source: "acme/local-kit",
+            args: ["--skill", "local-skill"],
+            default: false,
+            imported: true,
+          },
+        ],
+      }, null, 2)}\n`,
+    );
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+    });
+
+    const skillsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("skills.json"));
+    assert.ok(skillsWrite && skillsWrite.type === "write");
+    const next = JSON.parse(skillsWrite.content) as SkillManifest;
+    assert.equal(next.items.find((item) => item.id === "source-skill")?.imported, false);
+    assert.equal(next.items.find((item) => item.id === "local-skill")?.imported, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests turns imported skills into source skills when refreshed source includes them", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "local-skill",
+            label: "Upstream Local Skill",
+            source: "acme/dev-kit",
+            args: ["--skill", "local-skill"],
+            default: true,
+          },
+        ],
+      }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "presets.json": JSON.stringify({ version: 1, presets: [] }),
+      "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
+      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": JSON.stringify({ version: 1, items: [] }),
+    };
+
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-adopt-imported-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(
+      join(manifestDir, "skills.json"),
+      `${JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "local-skill",
+            label: "Local Skill",
+            source: "acme/local-kit",
+            args: ["--skill", "local-skill"],
+            default: false,
+            imported: true,
+          },
+        ],
+      }, null, 2)}\n`,
+    );
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+    });
+
+    const skillsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("skills.json"));
+    assert.ok(skillsWrite && skillsWrite.type === "write");
+    const next = JSON.parse(skillsWrite.content) as SkillManifest;
+    assert.equal(next.items.length, 1);
+    assert.equal(next.items[0]?.id, "local-skill");
+    assert.equal(next.items[0]?.label, "Upstream Local Skill");
+    assert.equal(next.items[0]?.imported, false);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -328,7 +475,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
   globalThis.fetch = async (input) => {
     const url = String(input);
     requestedUrls.push(url);
-    if (url.includes("/afk/manifests/")) {
+    if (url.includes("/afk/catalog/")) {
       return new Response("missing", { status: 404 });
     }
 
@@ -360,8 +507,8 @@ test("ensureLocalManifests falls back to remote package manifest convention when
     });
 
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("plugins.json")));
-    assert.ok(requestedUrls.some((url) => url.includes("/afk/manifests/skills.json")));
-    assert.ok(requestedUrls.some((url) => url.includes("/packages/afk/manifests/skills.json")));
+    assert.ok(requestedUrls.some((url) => url.includes("/afk/catalog/skills.json")));
+    assert.ok(requestedUrls.some((url) => url.includes("/packages/afk/catalog/skills.json")));
   } finally {
     globalThis.fetch = originalFetch;
   }

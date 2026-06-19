@@ -37,7 +37,7 @@ Treat explicit "AFK workflow" or "feature workflow" requests as composable AFK w
 - Don't run dev server commands (like `npm run dev`) - assume it's already running.
 
 ## Worktrees
-- When creating or managing git worktrees, prefer the installed `yggtree` CLI, check `yggtree --help`to inspect available workflow commands.
+- When creating or managing git worktrees, prefer the installed `yggtree` CLI; run `yggtree --help` before falling back to native git worktree commands.
 
 ## Package Managers
 - Check and follow the current project's package manager. Always chose pnpm in new projects.

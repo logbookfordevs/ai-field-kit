@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
-import type { CliOptions, PathOperation } from "./types.js";
+import type { CliOptions, ManifestCategory, ManifestFilename, PathOperation } from "./types.js";
 
-const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
+export const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 export const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -22,7 +22,13 @@ export type SkillManifestItem = {
   args: string[];
   default: boolean;
   autoInvocation?: boolean;
+  role?: SkillManifestItemRole;
+  composes?: string[];
+  profiles?: string[];
+  imported?: boolean;
 };
+
+export type SkillManifestItemRole = "primitive" | "wrapper" | "workflow" | "utility" | "reference" | "router";
 
 export type McpManifest = {
   version: number;
@@ -56,7 +62,7 @@ export type PluginManifestItem = {
     command: string;
     args: string[];
   };
-  postInstall?: "rtk-init" | PluginPostInstallCommand;
+  postInstall?: PluginPostInstallCommand;
   default: boolean;
 };
 
@@ -100,6 +106,7 @@ type ManifestOptions = Pick<
   cwd?: string;
   defaultsSourceExplicit?: boolean;
   rememberDefaultsSource?: boolean;
+  selectedManifestCategories?: ManifestCategory[];
 };
 
 type ManifestDirOptions = Pick<CliOptions, "homeDir" | "manifestLocal"> & {
@@ -111,11 +118,11 @@ export function localAfkDir(homeDir: string): string {
 }
 
 export function localManifestDir(homeDir: string): string {
-  return join(localAfkDir(homeDir), "manifests");
+  return join(localAfkDir(homeDir), "catalog");
 }
 
 export function projectManifestDir(cwd: string): string {
-  return join(cwd, "afk", "manifests");
+  return join(cwd, "afk", "catalog");
 }
 
 export function readRememberedDefaultsSource(options: ManifestDirOptions): string {
@@ -150,12 +157,13 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
   const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
   const shouldRefreshDefaults = options.refreshDefaults || options.defaultsSourceExplicit || Boolean(options.defaultsSource);
+  const selectedNames = manifestNamesForCategories(options.selectedManifestCategories ?? []);
 
   if (!existsSync(manifestDir)) {
     operations.push({ type: "mkdir", path: manifestDir });
   }
 
-  for (const name of manifestNames) {
+  for (const name of selectedNames) {
     const target = join(manifestDir, name);
     if (!shouldRefreshDefaults && existsSync(target)) {
       const migrated = migrateLocalManifest(name, readFileSync(target, "utf8"));
@@ -165,9 +173,10 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
       continue;
     }
 
-    const content = options.empty
+    const rawContent = options.empty
       ? emptyManifestContent(name, options, effectiveDefaultsSource)
       : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
+    const content = rawContent && name === "skills.json" ? mergedSkillsManifestContent(rawContent, target) : rawContent;
     if (content) {
       operations.push({ type: "write", path: target, content });
     } else if (existsSync(target)) {
@@ -188,36 +197,88 @@ export async function loadDefaultManifestContent(name: ManifestName, options: Ma
   return defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
 }
 
-export function loadSkillManifest(options: Pick<CliOptions, "homeDir">): SkillManifest {
-  return parseLocalManifest<SkillManifest>(options.homeDir, "skills.json", isSkillManifest);
+export async function loadSourceManifestContents(options: ManifestOptions): Promise<Partial<Record<ManifestFilename, string>>> {
+  const contents: Partial<Record<ManifestFilename, string>> = {};
+  const manifestDir = manifestDirForOptions(options);
+  const rememberedSource = rememberedDefaultsSource(manifestDir);
+  const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+
+  for (const name of manifestNamesForCategories(options.selectedManifestCategories ?? [])) {
+    contents[name] = await loadDefaultManifestContent(name, options) ?? emptyManifestContent(name, options, effectiveDefaultsSource);
+  }
+
+  return contents;
 }
 
-export function loadMcpManifest(options: Pick<CliOptions, "homeDir">): McpManifest {
-  return parseLocalManifest<McpManifest>(options.homeDir, "mcps.json", isMcpManifest);
+export function manifestNamesForCategories(categories: ManifestCategory[]): ManifestName[] {
+  if (categories.length === 0) {
+    return [...manifestNames];
+  }
+
+  return categories.map(manifestNameForCategory);
 }
 
-export function loadRulesManifest(options: Pick<CliOptions, "homeDir">): RulesManifest {
-  return parseLocalManifest<RulesManifest>(options.homeDir, "rules.json", isRulesManifest);
+export function manifestNameForCategory(category: ManifestCategory): ManifestName {
+  switch (category) {
+    case "rules":
+      return "rules.json";
+    case "skills":
+      return "skills.json";
+    case "mcps":
+      return "mcps.json";
+    case "plugins":
+      return "plugins.json";
+    case "hooks":
+      return "hooks.json";
+    case "presets":
+      return "presets.json";
+  }
 }
 
-export function loadPluginManifest(options: Pick<CliOptions, "homeDir">): PluginManifest {
-  return parseLocalManifest<PluginManifest>(options.homeDir, "plugins.json", isPluginManifest);
+export function loadSkillManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): SkillManifest {
+  return parseManifest<SkillManifest>(options, "skills.json", isSkillManifest);
 }
 
-export function loadHookManifest(options: Pick<CliOptions, "homeDir">): HookManifest {
-  return parseLocalManifest<HookManifest>(options.homeDir, "hooks.json", isHookManifest);
+export function loadMcpManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): McpManifest {
+  return parseManifest<McpManifest>(options, "mcps.json", isMcpManifest);
 }
 
-function parseLocalManifest<T>(homeDir: string, name: ManifestName, guard: (value: unknown) => value is T): T {
-  const path = join(localManifestDir(homeDir), name);
+export function loadRulesManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): RulesManifest {
+  return parseManifest<RulesManifest>(options, "rules.json", isRulesManifest);
+}
+
+export function loadPluginManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): PluginManifest {
+  return parseManifest<PluginManifest>(options, "plugins.json", isPluginManifest);
+}
+
+export function loadHookManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): HookManifest {
+  return parseManifest<HookManifest>(options, "hooks.json", isHookManifest);
+}
+
+function parseManifest<T>(
+  options: Pick<CliOptions, "homeDir" | "manifestContents">,
+  name: ManifestName,
+  guard: (value: unknown) => value is T,
+): T {
+  const content = options.manifestContents?.[name as ManifestFilename];
+  if (content !== undefined) {
+    const parsed: unknown = JSON.parse(content);
+    if (!guard(parsed)) {
+      throw new Error(`Invalid AFK catalog file from setup source: ${name}`);
+    }
+
+    return parsed;
+  }
+
+  const path = join(localManifestDir(options.homeDir), name);
   if (!existsSync(path)) {
-    throw new Error(`Missing AFK manifest: ${path}. Run "afk setup refresh" to prepare local manifests.`);
+    throw new Error(`Missing AFK catalog file: ${path}. Run "afk refresh" to prepare the local catalog.`);
   }
 
   const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
 
   if (!guard(parsed)) {
-    throw new Error(`Invalid AFK manifest: ${path}`);
+    throw new Error(`Invalid AFK catalog file: ${path}`);
   }
 
   return parsed;
@@ -265,9 +326,9 @@ async function fetchDefaultManifest(name: ManifestName, options: ManifestOptions
 function readLocalPackageManifest(name: ManifestName, options: ManifestOptions): string | null {
   const cwd = options.cwd ?? process.cwd();
   const candidates = [
-    join(cwd, "packages", "afk", "manifests", name),
-    join(cwd, "manifests", name),
-    join(options.repoDir, "packages", "afk", "manifests", name),
+    join(cwd, "packages", "afk", "catalog", name),
+    join(cwd, "catalog", name),
+    join(options.repoDir, "packages", "afk", "catalog", name),
     manifestPath(name),
   ];
 
@@ -293,7 +354,7 @@ function readLocalDefaultManifest(name: ManifestName, options: ManifestOptions, 
   const basePath = isAbsolute(normalized) ? normalized : resolve(options.cwd ?? process.cwd(), normalized);
   const candidates = [
     join(basePath, name),
-    join(basePath, "afk", "manifests", name),
+    join(basePath, "afk", "catalog", name),
   ];
 
   for (const candidate of unique(candidates)) {
@@ -363,13 +424,13 @@ function rememberedDefaultsSource(manifestDir: string): string {
 }
 
 export function defaultsManifestBaseUrl(source: string, ref: string): string {
-  return defaultsManifestBaseUrls(source, ref)[0] ?? `${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/manifests`;
+  return defaultsManifestBaseUrls(source, ref)[0] ?? `${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/catalog`;
 }
 
 export function defaultsManifestBaseUrls(source: string, ref: string): string[] {
   const normalized = source.trim().replace(/\/$/, "");
   if (!normalized) {
-    return [`${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/manifests`];
+    return [`${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/catalog`];
   }
 
   const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
@@ -402,8 +463,8 @@ export function defaultsManifestBaseUrls(source: string, ref: string): string[] 
 function defaultRepoManifestUrls(owner: string, repo: string, ref: string): string[] {
   const base = `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(ref)}`;
   return [
-    `${base}/afk/manifests`,
-    `${base}/packages/afk/manifests`,
+    `${base}/afk/catalog`,
+    `${base}/packages/afk/catalog`,
   ];
 }
 
@@ -508,12 +569,23 @@ function migrateSkillsManifest(content: string): string | null {
 
   let changed = false;
   const items = parsed.items.map((item) => {
-    if (item.autoInvocation !== undefined) {
-      return item;
+    const next = { ...item };
+    if (next.autoInvocation === undefined) {
+      next.autoInvocation = true;
+      changed = true;
     }
 
-    changed = true;
-    return { ...item, autoInvocation: true };
+    if (next.profiles === undefined) {
+      next.profiles = [];
+      changed = true;
+    }
+
+    if (next.imported === undefined) {
+      next.imported = false;
+      changed = true;
+    }
+
+    return next;
   });
 
   if (!changed) {
@@ -521,6 +593,45 @@ function migrateSkillsManifest(content: string): string | null {
   }
 
   return `${JSON.stringify({ ...parsed, items }, null, 2)}\n`;
+}
+
+function mergedSkillsManifestContent(content: string, targetPath: string): string {
+  let refreshed: unknown;
+  try {
+    refreshed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+
+  if (!isSkillManifest(refreshed)) {
+    return content;
+  }
+
+  const refreshedIds = new Set(refreshed.items.map((item) => item.id));
+  const importedItems = readExistingImportedSkillItems(targetPath).filter((item) => !refreshedIds.has(item.id));
+  const items = [
+    ...refreshed.items.map((item) => ({ ...item, imported: false })),
+    ...importedItems.map((item) => ({ ...item, imported: true })),
+  ];
+
+  return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
+}
+
+function readExistingImportedSkillItems(path: string): SkillManifestItem[] {
+  if (!existsSync(path)) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    if (!isSkillManifest(parsed)) {
+      return [];
+    }
+
+    return parsed.items.filter((item) => item.imported === true);
+  } catch {
+    return [];
+  }
 }
 
 function migratePresetsManifest(content: string): string | null {
@@ -585,9 +696,17 @@ function isSkillManifest(value: unknown): value is SkillManifest {
       typeof item.source === "string" &&
       isStringArray(item.args) &&
       typeof item.default === "boolean" &&
-      (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean")
+      (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean") &&
+      (item.role === undefined || isSkillManifestItemRole(item.role)) &&
+      (item.composes === undefined || isStringArray(item.composes)) &&
+      (item.profiles === undefined || isStringArray(item.profiles)) &&
+      (item.imported === undefined || typeof item.imported === "boolean")
     );
   });
+}
+
+function isSkillManifestItemRole(value: unknown): value is SkillManifestItemRole {
+  return value === "primitive" || value === "wrapper" || value === "workflow" || value === "utility" || value === "reference" || value === "router";
 }
 
 function isMcpManifest(value: unknown): value is McpManifest {
@@ -634,7 +753,7 @@ function isPluginManifest(value: unknown): value is PluginManifest {
       typeof item.description === "string" &&
       typeof item.install.command === "string" &&
       isStringArray(item.install.args) &&
-      (item.postInstall === undefined || item.postInstall === "rtk-init" || isPluginPostInstallCommand(item.postInstall)) &&
+      (item.postInstall === undefined || isPluginPostInstallCommand(item.postInstall)) &&
       typeof item.default === "boolean"
     );
   });

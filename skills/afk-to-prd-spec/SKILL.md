@@ -1,6 +1,6 @@
 ---
 name: afk-to-prd-spec
-description: Turn the current conversation context, grilled plan, PM PRD, or feature notes into an agent-ready PRD/spec artifact. Use when AFK needs product intent, behavior, implementation decisions, and testing seams before issues, planning, Turbo, or execution.
+description: Turn conversation context, grilled plans, PM PRDs, or feature notes into an agent-ready PRD/spec artifact.
 metadata:
   short-description: Create or normalize an agent-ready PRD/spec.
 ---
@@ -17,11 +17,13 @@ The artifact location should follow the repo convention or AFK artifact conventi
 
 1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD/spec, and respect any ADRs in the area you're touching.
 
-2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can.
+2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest meaningful seam possible. The fewer seams across the codebase, the better; one honest high-level seam is ideal when it covers the behavior.
 
 Check with the user that these seams match their expectations.
 
 3. Write the PRD/spec using the template below. If a PM PRD already exists, preserve its product intent and strengthen only what is missing for agent execution: behavior, acceptance criteria, implementation decisions, testing seams, or out-of-scope boundaries.
+
+4. After writing a local PRD/spec, run `plannotator annotate --gate <path-to-prd-spec>` when Plannotator is available. Treat returned annotations as requested changes and update the artifact before handing it to slicing or execution. If Plannotator is unavailable, say the artifact path and continue.
 
 <prd-spec-template>
 

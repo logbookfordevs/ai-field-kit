@@ -1,7 +1,9 @@
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
+import { runCatalogImport } from "./catalog-import.js";
 import { runSetup, runArea } from "./setup.js";
+import { runRefresh } from "./refresh.js";
 import { runManifestShow } from "./manifest-show.js";
 import { selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
@@ -65,7 +67,21 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
   const { commandPath, options } = parsed;
   const key = commandKey(commandPath);
 
-  if (key === "setup" || key === "setup refresh") {
+  if (isRefreshCommand(key)) {
+    return runRefresh(runtime, options);
+  }
+
+  if (isCatalogImportCommand(key)) {
+    return runCatalogImport(runtime, options);
+  }
+
+  if (options.defaultSourceUpdate) {
+    runtime.io.stderr("--default-source is only supported with afk refresh.");
+    runtime.io.stderr("Use --source for one command, or run afk refresh --default-source <source> to save and refresh.");
+    return 1;
+  }
+
+  if (key === "setup") {
     return runSetup(runtime, options);
   }
 
@@ -119,6 +135,7 @@ type CommandHelp = {
   title: string;
   summary: string;
   usage: string;
+  notes?: string[];
   options: string[];
   subcommands?: string[];
   examples: string[];
@@ -130,13 +147,14 @@ const setupOptions = {
   yes: "--yes, -y                         Accept defaults and skip prompts",
   scope: "--scope global|project            Choose machine-wide or current-project setup",
   localScope: "--local                           Alias for --scope project",
-  localManifest: "--local                           Refresh ./afk/manifests instead of global manifests",
+  localManifest: "--local                           Refresh ./afk/catalog instead of the global catalog",
+  localCatalog: "--local                           Write ./afk/catalog and prefer ./.agents/skills when available",
   agent: "--agent <agent>                   Override detected targets; repeatable",
-  source: "--source <source>                 Use a setup source for this run only",
-  ref: "--ref <git-ref>                   Git ref for default AFK manifest URLs",
-  initOnly: "--init-only                       Create/update local manifests only, then exit",
-  empty: "--empty                           Create empty manifests with --init-only or refresh",
-  defaultSource: "--default-source <source>         Save a default setup source and exit",
+  source: "--source <source>                 Use a catalog source for this run only",
+  ref: "--ref <git-ref>                   Git ref for default AFK catalog URLs",
+  initOnly: "--init-only                       Create/update the local catalog only, then exit",
+  empty: "--empty                           Create empty catalog files with --init-only or refresh",
+  defaultSource: "--default-source <source>         Save the default source and refresh the cache",
   allSkills: "--all                            Include all skills when installing skills",
 };
 
@@ -151,7 +169,6 @@ const setupAreaOptions = [
   setupOptions.ref,
   setupOptions.initOnly,
   setupOptions.empty,
-  setupOptions.defaultSource,
 ];
 
 const commandHelps: Record<string, CommandHelp> = {
@@ -159,6 +176,10 @@ const commandHelps: Record<string, CommandHelp> = {
     title: "AFK setup",
     summary: "Guided setup for rules, skills, MCPs, plugins, and hooks.",
     usage: "afk setup [options]",
+    notes: [
+      "Use this when you want AFK to prepare agent-facing surfaces on this machine or in the current project.",
+      "Pass --source for a one-run catalog source; use afk refresh --default-source to change the remembered source.",
+    ],
     options: [
       setupOptions.dryRun,
       setupOptions.verbose,
@@ -170,11 +191,9 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.ref,
       setupOptions.initOnly,
       setupOptions.empty,
-      setupOptions.defaultSource,
       setupOptions.allSkills,
     ],
     subcommands: [
-      "afk setup refresh                 Refresh global or project-local AFK manifests",
       "afk setup rules                   Sync AFK rules into managed agent rule regions",
       "afk setup skills                  Delegate skill installation to the official skills CLI",
       "afk setup mcps                    Delegate MCP installation to add-mcp",
@@ -186,14 +205,16 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup --dry-run",
       "afk setup --local",
       "afk setup --source your-org/dev-kit",
-      "afk setup --default-source your-org/dev-kit",
-      "afk setup --default-source ./afk/manifests",
     ],
   },
-  "setup refresh": {
-    title: "AFK setup refresh",
-    summary: "Refresh AFK manifests from the remembered or selected defaults source.",
-    usage: "afk setup refresh [options]",
+  refresh: {
+    title: "AFK refresh",
+    summary: "Refresh cached AFK catalog files from the remembered or selected source.",
+    usage: "afk refresh [category...] [options]",
+    notes: [
+      "Use refresh when you want the local catalog cache to change.",
+      "Use --source for a one-off refresh source; use --default-source to save the source for future setup/show runs.",
+    ],
     options: [
       setupOptions.dryRun,
       setupOptions.localManifest,
@@ -203,10 +224,30 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.defaultSource,
     ],
     examples: [
-      "afk setup refresh",
-      "afk setup refresh --local",
-      "afk setup refresh --source your-org/dev-kit",
-      "afk setup refresh --source local",
+      "afk refresh",
+      "afk refresh skills",
+      "afk refresh --local",
+      "afk refresh --source your-org/dev-kit",
+      "afk refresh --default-source your-org/dev-kit",
+    ],
+  },
+  "setup refresh": {
+    title: "AFK refresh",
+    summary: "Deprecated alias for afk refresh.",
+    usage: "afk refresh [category...] [options]",
+    options: [
+      setupOptions.dryRun,
+      setupOptions.localManifest,
+      setupOptions.source,
+      setupOptions.ref,
+      setupOptions.empty,
+      setupOptions.defaultSource,
+    ],
+    examples: [
+      "afk refresh",
+      "afk refresh skills",
+      "afk refresh --source your-org/dev-kit",
+      "afk refresh --default-source your-org/dev-kit",
     ],
   },
   "setup hooks": {
@@ -257,6 +298,10 @@ const commandHelps: Record<string, CommandHelp> = {
     title: "AFK setup skills",
     summary: "Delegate selected skills to the official skills CLI.",
     usage: "afk setup skills [options]",
+    notes: [
+      "Interactive runs let you choose skills from the catalog.",
+      "--all makes non-interactive installs include every catalog skill, not just defaults.",
+    ],
     options: [
       ...setupAreaOptions,
       setupOptions.allSkills,
@@ -316,64 +361,182 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   show: {
     title: "AFK show",
-    summary: "Show the active AFK setup source manifests.",
-    usage: "afk show [options]",
+    summary: "Show the cached AFK catalog, or inspect a source with --source.",
+    usage: "afk show [category...] [options]",
+    notes: [
+      "Use show when you want to inspect catalog data without installing or refreshing it.",
+      "Without --source, show reads the local cache. With --source, it inspects that source for this run only.",
+    ],
     options: [
-      "--source <source>                Show manifests from this setup source",
-      "--local                          Show ./afk/manifests instead of the setup source",
-      "--rules                          Show rules manifest",
-      "--skills                         Show skills manifest",
-      "--mcp, --mcps                    Show MCP manifest",
-      "--plugins                          Show plugins manifest",
-      "--hooks                          Show hooks manifest",
-      "--presets                        Show presets manifest",
+      "--source <source>                Show catalog files from this source",
+      "--local                          Show ./afk/catalog instead of the global cache",
+      "--react                          Show skills as a React-style composition tree",
+      "--visualize                      Write a self-contained skills composition HTML file",
     ],
     examples: [
       "afk show",
+      "afk show skills",
+      "afk show skills --react",
+      "afk show skills --visualize",
+      "afk show skills mcps",
       "afk show --local",
-      "afk show --rules --skills",
-      "afk show --mcp --plugins",
+      "afk show skills --source your-org/dev-kit",
+    ],
+  },
+  "show skills": {
+    title: "AFK show skills",
+    summary: "Inspect the skills catalog as a list, a React-style composition tree, or an HTML visual map.",
+    usage: "afk show skills [options]",
+    notes: [
+      "--react is a terminal view for AFK's primitive/wrapper/workflow analogy.",
+      "--visualize writes and opens a self-contained HTML diagram for a more spatial view.",
+    ],
+    options: [
+      "--source <source>                Show skills from this source for this run only",
+      "--ref <git-ref>                  Git ref for GitHub catalog sources",
+      "--local                          Show ./afk/catalog instead of the global cache",
+      "--react                          Show skills as a React-style composition tree",
+      "--visualize                      Write and open a skills composition HTML file",
+    ],
+    examples: [
+      "afk show skills",
+      "afk show skills --react",
+      "afk show skills --visualize",
+      "afk show skills --source logbookfordevs/ai-field-kit --ref main",
+      "afk show skills --local",
+    ],
+  },
+  "show rules": {
+    title: "AFK show rules",
+    summary: "Inspect the rules catalog AFK would sync into managed rule regions.",
+    usage: "afk show rules [options]",
+    options: [
+      "--source <source>                Show rules from this source for this run only",
+      "--ref <git-ref>                  Git ref for GitHub catalog sources",
+      "--local                          Show ./afk/catalog instead of the global cache",
+    ],
+    examples: [
+      "afk show rules",
+      "afk show rules --source logbookfordevs/ai-field-kit",
+      "afk show rules --local",
+    ],
+  },
+  "show mcps": {
+    title: "AFK show MCPs",
+    summary: "Inspect MCP recommendations before delegating installation to add-mcp.",
+    usage: "afk show mcps [options]",
+    options: [
+      "--source <source>                Show MCPs from this source for this run only",
+      "--ref <git-ref>                  Git ref for GitHub catalog sources",
+      "--local                          Show ./afk/catalog instead of the global cache",
+    ],
+    examples: [
+      "afk show mcps",
+      "afk show mcps --source logbookfordevs/ai-field-kit",
+      "afk show mcps --local",
+    ],
+  },
+  "show plugins": {
+    title: "AFK show plugins",
+    summary: "Inspect optional plugin installers and post-install commands.",
+    usage: "afk show plugins [options]",
+    options: [
+      "--source <source>                Show plugins from this source for this run only",
+      "--ref <git-ref>                  Git ref for GitHub catalog sources",
+      "--local                          Show ./afk/catalog instead of the global cache",
+    ],
+    examples: [
+      "afk show plugins",
+      "afk show plugins --source logbookfordevs/ai-field-kit",
+      "afk show plugins --local",
+    ],
+  },
+  "show hooks": {
+    title: "AFK show hooks",
+    summary: "Inspect lifecycle hooks AFK can merge into supported agent hook configs.",
+    usage: "afk show hooks [options]",
+    options: [
+      "--source <source>                Show hooks from this source for this run only",
+      "--ref <git-ref>                  Git ref for GitHub catalog sources",
+      "--local                          Show ./afk/catalog instead of the global cache",
+    ],
+    examples: [
+      "afk show hooks",
+      "afk show hooks --source logbookfordevs/ai-field-kit",
+      "afk show hooks --local",
+    ],
+  },
+  "show presets": {
+    title: "AFK show presets",
+    summary: "Inspect catalog presets such as remembered default source metadata.",
+    usage: "afk show presets [options]",
+    options: [
+      "--source <source>                Show presets from this source for this run only",
+      "--ref <git-ref>                  Git ref for GitHub catalog sources",
+      "--local                          Show ./afk/catalog instead of the global cache",
+    ],
+    examples: [
+      "afk show presets",
+      "afk show presets --source logbookfordevs/ai-field-kit",
+      "afk show presets --local",
     ],
   },
   "manifests show": {
     title: "AFK show",
     summary: "Alias for afk show.",
-    usage: "afk show [options]",
+    usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show manifests from this setup source",
-      "--local                          Show ./afk/manifests instead of the setup source",
-      "--rules                          Show rules manifest",
-      "--skills                         Show skills manifest",
-      "--mcp, --mcps                    Show MCP manifest",
-      "--plugins                          Show plugins manifest",
-      "--hooks                          Show hooks manifest",
-      "--presets                        Show presets manifest",
+      "--source <source>                Show catalog files from this source",
+      "--local                          Show ./afk/catalog instead of the global cache",
+      "--react                          Show skills as a React-style composition tree",
+      "--visualize                      Write a self-contained skills composition HTML file",
     ],
     examples: [
       "afk show",
+      "afk show skills",
+      "afk show skills --react",
+      "afk show skills --visualize",
+      "afk show skills mcps",
       "afk show --local",
-      "afk show --rules --skills",
-      "afk show --mcp --plugins",
+      "afk show skills --source your-org/dev-kit",
     ],
   },
   "manifest show": {
     title: "AFK show",
     summary: "Alias for afk show.",
-    usage: "afk show [options]",
+    usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show manifests from this setup source",
-      "--local                          Show ./afk/manifests instead of the setup source",
-      "--rules                          Show rules manifest",
-      "--skills                         Show skills manifest",
-      "--mcp, --mcps                    Show MCP manifest",
-      "--plugins                          Show plugins manifest",
-      "--hooks                          Show hooks manifest",
-      "--presets                        Show presets manifest",
+      "--source <source>                Show catalog files from this source",
+      "--local                          Show ./afk/catalog instead of the global cache",
+      "--react                          Show skills as a React-style composition tree",
+      "--visualize                      Write a self-contained skills composition HTML file",
     ],
     examples: [
       "afk show",
+      "afk show skills",
+      "afk show skills --react",
+      "afk show skills --visualize",
+      "afk show skills mcps",
       "afk show --local",
-      "afk show --rules --skills",
+      "afk show skills --source your-org/dev-kit",
+    ],
+  },
+  "catalog import": {
+    title: "AFK catalog import",
+    summary: "Backfill missing skills catalog entries from installed skills with skills CLI lock metadata.",
+    usage: "afk catalog import [options]",
+    notes: [
+      "Use this when skills already exist in .agents/skills but are missing from the AFK catalog.",
+      "AFK imports only skills whose original source can be recovered from the official skills CLI lockfile.",
+    ],
+    options: [
+      setupOptions.dryRun,
+      setupOptions.localCatalog,
+    ],
+    examples: [
+      "afk catalog import",
+      "afk catalog import --dry-run",
+      "afk catalog import --local",
     ],
   },
 };
@@ -394,14 +557,20 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
   let empty = false;
-  const refreshDefaults = key === "setup refresh";
+  const refreshDefaults = isRefreshCommand(key);
   let defaultsSource = "";
   let defaultsSourceExplicit = false;
   let defaultSourceUpdate = "";
   let manifestLocal = false;
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
-  const selectedManifestCategories: ManifestCategory[] = [];
+  let manifestShowReact = false;
+  let manifestShowVisualize = false;
+  const manifestCategories = manifestCategoriesFromCommandPath(commandPath);
+  if (manifestCategories.kind === "error") {
+    return { help: false, kind: "error", error: manifestCategories.error };
+  }
+  const selectedManifestCategories: ManifestCategory[] = manifestCategories.categories;
   const homeDir = resolveHome(env);
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
@@ -415,7 +584,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   }
 
   if (args.includes("--help") || args.includes("-h")) {
-    return { help: true, commandPath };
+    return { help: true, commandPath: helpCommandPath(commandPath, key) };
   }
 
   for (let index = 0; index < args.length; index += 1) {
@@ -426,14 +595,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (isManifestConfigureCommand(key) && arg === "--from-current") {
       manifestConfigureFromCurrent = true;
-      continue;
-    }
-
-    if (isManifestShowCommand(key) && manifestCategoryFlag(arg)) {
-      const category = manifestCategoryFlag(arg);
-      if (category && !selectedManifestCategories.includes(category)) {
-        selectedManifestCategories.push(category);
-      }
       continue;
     }
 
@@ -453,12 +614,12 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
-      if (key === "setup refresh") {
+      if (isRefreshCommand(key)) {
         manifestLocal = true;
         continue;
       }
 
-      if (isManifestShowCommand(key)) {
+      if (isManifestShowCommand(key) || isCatalogImportCommand(key)) {
         manifestLocal = true;
         continue;
       }
@@ -496,6 +657,24 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--empty") {
       empty = true;
+      continue;
+    }
+
+    if (arg === "--react") {
+      if (!isManifestShowCommand(key)) {
+        return { help: false, kind: "error", error: "Unknown option: --react" };
+      }
+
+      manifestShowReact = true;
+      continue;
+    }
+
+    if (arg === "--visualize") {
+      if (!isManifestShowCommand(key)) {
+        return { help: false, kind: "error", error: "Unknown option: --visualize" };
+      }
+
+      manifestShowVisualize = true;
       continue;
     }
 
@@ -597,6 +776,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       manifestLocal,
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
+      manifestShowReact,
+      manifestShowVisualize,
       selectedManifestCategories,
       homeDir,
       repoDir,
@@ -648,12 +829,50 @@ function isManifestConfigureCommand(key: string): boolean {
 }
 
 function isManifestShowCommand(key: string): boolean {
-  return key === "show" || key === "manifests show" || key === "manifest show";
+  return key === "show" ||
+    key.startsWith("show ") ||
+    key === "manifests show" ||
+    key.startsWith("manifests show ") ||
+    key === "manifest show" ||
+    key.startsWith("manifest show ");
+}
+
+function isRefreshCommand(key: string): boolean {
+  return key === "refresh" || key.startsWith("refresh ") || key === "setup refresh";
+}
+
+function isCatalogImportCommand(key: string): boolean {
+  return key === "catalog import";
+}
+
+function helpCommandPath(commandPath: string[], key: string): string[] {
+  if (isRefreshCommand(key)) {
+    return ["refresh"];
+  }
+
+  if (isManifestShowCommand(key)) {
+    const canonical = canonicalShowHelpPath(commandPath);
+    return commandHelps[commandKey(canonical)] ? canonical : ["show"];
+  }
+
+  return commandPath;
+}
+
+function canonicalShowHelpPath(commandPath: string[]): string[] {
+  if (commandPath[0] === "show") {
+    return commandPath.slice(0, 2);
+  }
+
+  if ((commandPath[0] === "manifests" || commandPath[0] === "manifest") && commandPath[1] === "show") {
+    return ["show", ...(commandPath[2] ? [commandPath[2]] : [])];
+  }
+
+  return ["show"];
 }
 
 function unavailableManifestConfigure(runtime: Runtime): number {
   runtime.io.stderr("AFK configure is not available for source-backed setup yet.");
-  runtime.io.stderr("Use afk show to inspect the active setup source. To change manifests, edit the configured source repository directly for now.");
+  runtime.io.stderr("Use afk show to inspect the local catalog, or afk show --source <source> to inspect a source directly.");
   return 1;
 }
 
@@ -701,14 +920,24 @@ Guided setup router for AI Field Kit.
 
 Usage:
   afk --version
+  afk
+  afk refresh [category...] [options]
   afk setup [options]
-  afk setup refresh [options]
   afk setup rules [options]
   afk setup skills [options]
   afk setup mcps [options]
   afk setup plugins [options]
   afk setup hooks [options]
-  afk show [options]
+  afk catalog import [options]
+  afk show [category...] [options]
+
+Common paths:
+  afk                         Open the interactive lobby when your terminal supports prompts
+  afk setup                   Prepare rules, skills, MCPs, plugins, and hooks
+  afk refresh                 Update the local catalog cache
+  afk show skills --react     Print the skills catalog as a React-style composition tree
+  afk show skills --visualize Write and open the skills composition map
+  afk catalog import          Backfill catalog entries from installed skills
 
 Run "afk <command> --help" for command-specific options.
 
@@ -724,23 +953,65 @@ function commandKey(commandPath: string[] = []): string {
   return commandPath.join(" ");
 }
 
-function manifestCategoryFlag(arg: string): ManifestCategory | null {
+function manifestCategoriesFromCommandPath(commandPath: string[]): { kind: "ok"; categories: ManifestCategory[] } | { kind: "error"; error: string } {
+  const args = manifestCategoryArgs(commandPath);
+  if (!args) {
+    return { kind: "ok", categories: [] };
+  }
+
+  const categories: ManifestCategory[] = [];
+  for (const arg of args) {
+    const category = manifestCategory(arg);
+    if (!category) {
+      return { kind: "error", error: `Unknown catalog category: ${arg}` };
+    }
+    if (!categories.includes(category)) {
+      categories.push(category);
+    }
+  }
+
+  return { kind: "ok", categories };
+}
+
+function manifestCategoryArgs(commandPath: string[]): string[] | null {
+  if (commandPath[0] === "show") {
+    return commandPath.slice(1);
+  }
+
+  if (commandPath[0] === "refresh") {
+    return commandPath.slice(1);
+  }
+
+  if (commandPath[0] === "manifests" && commandPath[1] === "show") {
+    return commandPath.slice(2);
+  }
+
+  if (commandPath[0] === "manifest" && commandPath[1] === "show") {
+    return commandPath.slice(2);
+  }
+
+  return null;
+}
+
+function manifestCategory(arg: string): ManifestCategory | null {
   switch (arg) {
-    case "--rules":
+    case "rule":
+    case "rules":
       return "rules";
-    case "--skill":
-    case "--skills":
+    case "skill":
+    case "skills":
       return "skills";
-    case "--mcp":
-    case "--mcps":
+    case "mcp":
+    case "mcps":
       return "mcps";
-    case "--plugins":
+    case "plugin":
+    case "plugins":
       return "plugins";
-    case "--hook":
-    case "--hooks":
+    case "hook":
+    case "hooks":
       return "hooks";
-    case "--preset":
-    case "--presets":
+    case "preset":
+    case "presets":
       return "presets";
     default:
       return null;
@@ -755,10 +1026,15 @@ function renderCommandHelp(help: CommandHelp): string {
     "",
     "Usage:",
     `  ${help.usage}`,
-    "",
-    "Options:",
-    ...help.options.map((option) => `  ${option}`),
   ];
+
+  if (help.notes && help.notes.length > 0) {
+    parts.push("", "Notes:", ...help.notes.map((note) => `  ${note}`));
+  }
+
+  if (help.options.length > 0) {
+    parts.push("", "Options:", ...help.options.map((option) => `  ${option}`));
+  }
 
   if (help.subcommands && help.subcommands.length > 0) {
     parts.push("", "Subcommands:", ...help.subcommands.map((subcommand) => `  ${subcommand}`));

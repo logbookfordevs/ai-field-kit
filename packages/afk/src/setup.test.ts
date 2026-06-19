@@ -33,7 +33,9 @@ vi.mock("./interactive.js", async (importOriginal) => {
 });
 
 test("runSetup keeps prompted rule targets out of plugin defaults", async () => {
-  const homeDir = localHomeWithManifests();
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "local", presets: [] },
+  });
   const repoDir = localRepoWithRules();
   const output: string[] = [];
 
@@ -45,7 +47,7 @@ test("runSetup keeps prompted rule targets out of plugin defaults", async () => 
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: ["rtk"],
+    pluginIds: ["sample-plugin"],
     hookIds: [],
   };
 
@@ -56,10 +58,7 @@ test("runSetup keeps prompted rule targets out of plugin defaults", async () => 
   assert.ok(text.includes("- Rules targets: codex"));
   assert.ok(text.includes("/.codex/AGENTS.md"));
   assert.ok(!text.includes("/.gemini/GEMINI.md"));
-  assert.ok(text.includes("RTK / init Antigravity"));
-  assert.ok(text.includes("RTK / init Claude Code"));
-  assert.ok(text.includes("RTK / init Codex"));
-  assert.ok(text.includes("RTK / init OpenCode"));
+  assert.ok(text.includes("Sample Plugin / install"));
 });
 
 test("runSetup labels detected targets in the setup summary", async () => {
@@ -169,26 +168,24 @@ test("runSetup prepares manifests only once before running selected areas", asyn
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: ["rtk"],
+    pluginIds: ["sample-plugin"],
     hookIds: [],
   };
 
   const code = await runSetup(fakeRuntime(output), defaultOptions(homeDir, repoDir));
-  const localManifestHeadings = output.filter((line) => line.includes("Local Manifests"));
+  const localManifestHeadings = output.filter((line) => line.includes("Local Catalog"));
 
   assert.equal(code, 0);
   assert.equal(localManifestHeadings.length, 1);
 });
 
-test("runSetup prompts for a run-only source without changing the saved default", async () => {
+test("runSetup skips the source prompt when a default source is saved", async () => {
   const homeDir = localHomeWithManifests({
     "presets.json": { version: 1, defaultsSource: "acme/saved-kit", presets: [] },
   });
   const repoDir = localRepoWithRules();
-  const sourceDir = localDefaultsSource();
   const output: string[] = [];
 
-  promptState.defaultsSource = sourceDir;
   promptState.rememberedSources = [];
   promptState.selection = {
     areas: [],
@@ -211,11 +208,11 @@ test("runSetup prompts for a run-only source without changing the saved default"
   const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as { defaultsSource: string };
 
   assert.equal(code, 0);
-  assert.deepEqual(promptState.rememberedSources, ["acme/saved-kit"]);
+  assert.deepEqual(promptState.rememberedSources, []);
   assert.equal(presets.defaultsSource, "acme/saved-kit");
 });
 
-test("runArea prompts for a source for every interactive setup area", async () => {
+test("runArea prompts for a source only on first-run interactive setup areas", async () => {
   const areas = ["rules", "skills", "mcps", "plugins", "hooks"] as const;
 
   for (const area of areas) {
@@ -231,13 +228,123 @@ test("runArea prompts for a source for every interactive setup area", async () =
       agents: ["codex"],
       selectedSkillIds: area === "skills" ? ["afk-note"] : [],
       selectedMcpIds: area === "mcps" ? ["stitch"] : [],
-      selectedPluginIds: area === "plugins" ? ["rtk"] : [],
+      selectedPluginIds: area === "plugins" ? ["sample-plugin"] : [],
       selectedHookIds: area === "hooks" ? ["afk-typescript-typecheck-stop-check"] : [],
     });
 
     assert.equal(code, 0);
     assert.deepEqual(promptState.rememberedSources, [builtInDefaultsSource], area);
   }
+});
+
+test("runArea uses explicit source manifests without writing cache before installing selected skills", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Stale Skill",
+          source: "stale/source",
+          args: ["--skill", "stale-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Remote Skill",
+          source: "remote/source",
+          args: ["--skill", "remote-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const output: string[] = [];
+  const commands: Array<{ command: string; args: string[] }> = [];
+
+  const code = await runArea("skills", {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      commands.push({ command, args });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["remote-skill"],
+  });
+
+  assert.equal(code, 0);
+  assert.equal(commands[0]?.command, "npx");
+  assert.deepEqual(commands[0]?.args, ["skills", "add", "remote/source", "--global", "--yes", "--skill", "remote-skill"]);
+  assert.ok(!output.join("\n").includes("Local catalog prepared"));
+  const cached = readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8");
+  assert.ok(cached.includes("stale/source"));
+  assert.ok(!cached.includes("remote/source"));
+});
+
+test("runArea dry-run uses explicit source manifests without cache writes", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Stale Skill",
+          source: "stale/source",
+          args: ["--skill", "stale-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "remote-skill",
+          label: "Remote Skill",
+          source: "remote/source",
+          args: ["--skill", "remote-skill"],
+          default: false,
+        },
+      ],
+    },
+  });
+  const output: string[] = [];
+
+  const code = await runArea("skills", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["remote-skill"],
+  });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("$ npx skills add remote/source --global --yes --skill remote-skill"));
+  assert.ok(!text.includes("stale/source"));
 });
 
 test("runSetup with --yes uses a saved default source without prompting", async () => {
@@ -255,7 +362,6 @@ test("runSetup with --yes uses a saved default source without prompting", async 
 
   assert.equal(code, 0);
   assert.deepEqual(promptState.rememberedSources, []);
-  assert.ok(!output.join("\n").includes("RTK / init"));
 });
 
 function fakeRuntime(output: string[]): Runtime {
@@ -295,6 +401,8 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
     manifestLocal: false,
     manifestConfigureLocal: false,
     manifestConfigureFromCurrent: false,
+    manifestShowReact: false,
+    manifestShowVisualize: false,
     selectedManifestCategories: [],
     homeDir,
     repoDir,
@@ -316,11 +424,10 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
       version: 1,
       items: [
         {
-          id: "rtk",
-          label: "RTK",
-          description: "Compress noisy command output for coding agents.",
-          install: { command: "sh", args: ["-c", "install-rtk"] },
-          postInstall: "rtk-init",
+          id: "sample-plugin",
+          label: "Sample Plugin",
+          description: "Sample plugin install.",
+          install: { command: "sh", args: ["-c", "install-sample-plugin"] },
           default: true,
         },
       ],
@@ -336,9 +443,9 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
   return homeDir;
 }
 
-function localDefaultsSource(): string {
+function localDefaultsSource(overrides: Record<string, unknown> = {}): string {
   const sourceDir = mkdtempSync(join(tmpdir(), "afk-default-source-"));
-  const manifestDir = join(sourceDir, "afk", "manifests");
+  const manifestDir = join(sourceDir, "afk", "catalog");
   mkdirSync(manifestDir, { recursive: true });
 
   const manifests: Record<string, unknown> = {
@@ -348,6 +455,7 @@ function localDefaultsSource(): string {
     "rules.json": { version: 1, source: "github", url: "" },
     "plugins.json": { version: 1, items: [] },
     "hooks.json": { version: 1, items: [] },
+    ...overrides,
   };
 
   for (const [name, content] of Object.entries(manifests)) {

@@ -4,7 +4,19 @@ import { afkPromptTheme, afkSelectTheme } from "./prompt-ui.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { Runtime } from "./types.js";
 
-export type LobbyChoiceValue = "setup" | "source" | "skills" | "mcps" | "plugins" | "hooks" | "inspect" | "help";
+export type LobbyChoiceValue =
+  | "setup"
+  | "source"
+  | "refresh"
+  | "skills"
+  | "mcps"
+  | "plugins"
+  | "hooks"
+  | "inspect"
+  | "skills-react"
+  | "skills-visualize"
+  | "catalog-import"
+  | "help";
 
 type TtyState = {
   stdin: boolean;
@@ -24,9 +36,14 @@ export const compassLobbyChoices: LobbyChoice[] = [
     description: "Route: afk setup",
   },
   {
-    name: "Change default setup source",
+    name: "Change default catalog source",
     value: "source",
-    description: "Route: afk setup --default-source <source>",
+    description: "Route: afk refresh --default-source <source>",
+  },
+  {
+    name: "Refresh the local catalog",
+    value: "refresh",
+    description: "Route: afk refresh",
   },
   {
     name: "Add or update skills",
@@ -52,6 +69,21 @@ export const compassLobbyChoices: LobbyChoice[] = [
     name: "Inspect what AFK knows",
     value: "inspect",
     description: "Route: afk show",
+  },
+  {
+    name: "View skills as React composition",
+    value: "skills-react",
+    description: "Route: afk show skills --react",
+  },
+  {
+    name: "Open the skills visual map",
+    value: "skills-visualize",
+    description: "Route: afk show skills --visualize",
+  },
+  {
+    name: "Import installed skills into a catalog",
+    value: "catalog-import",
+    description: "Route: afk catalog import",
   },
   {
     name: "Show command help",
@@ -97,7 +129,9 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
     case "setup":
       return ["setup"];
     case "source":
-      return defaultSource ? ["setup", "--default-source", defaultSource] : ["setup", "--default-source"];
+      return defaultSource ? ["refresh", "--default-source", defaultSource] : ["refresh", "--default-source"];
+    case "refresh":
+      return ["refresh"];
     case "skills":
       return ["setup", "skills"];
     case "mcps":
@@ -108,6 +142,12 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
       return ["setup", "hooks"];
     case "inspect":
       return ["show"];
+    case "skills-react":
+      return ["show", "skills", "--react"];
+    case "skills-visualize":
+      return ["show", "skills", "--visualize"];
+    case "catalog-import":
+      return ["catalog", "import"];
     case "help":
       return ["--help"];
   }

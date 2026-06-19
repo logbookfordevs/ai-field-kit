@@ -45,11 +45,10 @@ const defaultHomeDir = localHomeWithManifests({
         default: true,
       },
       {
-        id: "rtk",
-        label: "RTK",
-        description: "Compress noisy command output for coding agents.",
-        install: { command: "sh", args: ["-c", "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"] },
-        postInstall: "rtk-init",
+        id: "sample-plugin",
+        label: "Sample Plugin",
+        description: "Sample plugin install.",
+        install: { command: "sh", args: ["-c", "install-sample-plugin"] },
         default: true,
       },
     ],
@@ -80,6 +79,8 @@ const options: CliOptions = {
   manifestLocal: false,
   manifestConfigureLocal: false,
   manifestConfigureFromCurrent: false,
+  manifestShowReact: false,
+  manifestShowVisualize: false,
   selectedManifestCategories: [],
   homeDir: defaultHomeDir,
   repoDir: "/tmp/repo",
@@ -252,48 +253,6 @@ test("buildMcpCommands maps Antigravity to the add-mcp antigravity target", () =
 test("buildMcpCommands skips project-scoped Antigravity installs", () => {
   const commands = buildMcpCommands({ ...options, agents: ["antigravity"], setupScope: "project" });
   assert.deepEqual(commands, []);
-});
-
-test("buildPluginCommands adds RTK init commands for selected agents", () => {
-  const commands = buildPluginCommands({ ...options, agents: ["antigravity", "claude", "codex", "opencode"], selectedPluginIds: ["rtk"] });
-
-  assert.deepEqual(
-    commands.map((command) => [command.command, command.args]),
-    [
-      ["sh", ["-c", "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"]],
-      ["rtk", ["init", "--global", "--gemini"]],
-      ["rtk", ["init", "--global"]],
-      ["rtk", ["init", "--codex"]],
-      ["rtk", ["init", "--global", "--opencode"]],
-    ],
-  );
-  assert.equal(commands[3]?.cwd, join(defaultHomeDir, ".codex"));
-});
-
-test("buildPluginCommands ignores Cursor local because it is hook-only", () => {
-  const commands = buildPluginCommands({ ...options, agents: ["cursor-local"], selectedPluginIds: ["rtk"] });
-
-  assert.deepEqual(
-    commands.map((command) => [command.command, command.args]),
-    [["sh", ["-c", "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"]]],
-  );
-});
-
-
-test("buildPluginCommands runs RTK init locally for project scope", () => {
-  const commands = buildPluginCommands({ ...options, setupScope: "project", agents: ["antigravity", "claude", "codex", "opencode"], selectedPluginIds: ["rtk"] });
-
-  assert.deepEqual(
-    commands.map((command) => [command.command, command.args]),
-    [
-      ["sh", ["-c", "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"]],
-      ["rtk", ["init", "--agent", "antigravity"]],
-      ["rtk", ["init"]],
-      ["rtk", ["init", "--codex"]],
-      ["rtk", ["init", "--opencode"]],
-    ],
-  );
-  assert.equal(commands[3]?.cwd, undefined);
 });
 
 test("buildPluginCommands supports generic post-install commands", () => {

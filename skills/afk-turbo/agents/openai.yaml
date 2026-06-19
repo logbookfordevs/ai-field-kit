@@ -1,4 +1,4 @@
 interface:
   display_name: "AFK Turbo"
   short_description: "High-throughput goal execution with GoalBuddy board"
-  default_prompt: "Use $afk-turbo for explicit AFK Turbo requests: prepare the goal with Plannotator, run GoalBuddy from that goal package, start or register the local live board, and preserve proof discipline in GoalBuddy tasks."
+  default_prompt: "Run AFK Turbo for this goal."
