@@ -1,4 +1,4 @@
 interface:
   display_name: "AFK Sprint"
   short_description: "Fast goal execution with Markdown checkpoint tracking"
-  default_prompt: "Use $afk-sprint for explicit AFK Sprint requests: prepare the goal with Plannotator, create AFK checkpoint packets as the implementation plan, run native /goal, and track execution with AFK execution tracking."
+  default_prompt: "Run AFK Sprint for this goal."

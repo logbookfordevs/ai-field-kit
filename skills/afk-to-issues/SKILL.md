@@ -1,6 +1,6 @@
 ---
 name: afk-to-issues
-description: Create an implementation plan as AFK execution checkpoint packets from a PRD/spec, existing implementation plan, goal package, tracker issue, or rough context using tracer-bullet vertical slices. Use when AFK needs planning output as local tracking checkpoints, implementation tickets, or slices before execution tracking.
+description: Create an implementation plan as AFK execution checkpoint packets from a PRD/spec, implementation plan, goal package, tracker issue, or rough context using tracer-bullet vertical slices.
 metadata:
   short-description: Create AFK execution checkpoint packets.
 ---

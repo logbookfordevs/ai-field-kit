@@ -1,6 +1,6 @@
 ---
 name: afk-brainstorming-facilitator
-description: 'Facilitate interactive brainstorming sessions using diverse creative techniques and ideation methods. Use when the user wants guided ideation, creative divergence, or a structured brainstorming session rather than a quick list of ideas.'
+description: Interactive brainstorming facilitation for guided ideation, creative divergence, structured exploration, and convergence.
 ---
 
 This skill is experience-sensitive. Preserve the facilitated session feel, the divergence-first bias, and the distinct entry modes.

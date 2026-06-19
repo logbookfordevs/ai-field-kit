@@ -1,6 +1,6 @@
 ---
 name: afk-code-grill
-description: Grill implementation and UX trade-offs inside a bounded coding scope. Use when a feature, screen, component, or technical slice is understood but important choices still need sharper engineering judgment before implementation.
+description: Grill implementation and UX trade-offs inside a bounded coding scope before implementation.
 metadata:
   short-description: Grill implementation and UX trade-offs before coding.
 ---

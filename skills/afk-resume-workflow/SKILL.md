@@ -1,6 +1,6 @@
 ---
 name: afk-resume-workflow
-description: Resume existing feature or AFK workflow work from durable repo artifacts and choose the next phase. Use when the user asks to continue/resume work, pick up a feature, run the next task/slice/phase, or launch parallel subagents for an ongoing workflow after prior artifacts or tracking exist.
+description: Resume existing feature or AFK workflow work from durable repo artifacts and choose the next phase.
 metadata:
   short-description: Resume feature or AFK workflow work from repo artifacts and route the next move.
 ---

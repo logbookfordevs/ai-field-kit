@@ -1,6 +1,6 @@
 ---
 name: afk-ask
-description: Ask a local AI CLI advisor such as Kiro, OpenCode, Codex, or Agy and capture the result as a reusable artifact. Use when a second opinion, critique, brainstorm, review, or alternate model perspective would help.
+description: Ask a local AI CLI advisor such as Kiro, OpenCode, Codex, or Agy and capture the result as a reusable artifact.
 metadata:
   short-description: Ask a local Kiro/OpenCode, Codex, or Agy CLI for a second opinion and preserve the answer.
 ---

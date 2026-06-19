@@ -211,6 +211,7 @@ If you're unsure which one to reach for, use this shortcut:
 - "We need more ideas" -> `afk-brainstorming-facilitator`
 - "Run AFK Sprint" -> `afk-sprint`
 - "Run AFK Turbo" -> `afk-turbo`
+- "Run AFK Turbo with human review gates" -> `afk-turbo` review-gated mode
 - "We need AFK artifact boundaries or storage conventions" -> `afk-compass`
 - "We need to create or normalize a PRD/spec after grilling" -> `afk-to-prd-spec`
 - "We need to split this into executable slices/checkpoints" -> `afk-to-issues`
@@ -330,7 +331,7 @@ AFK's fast execution packages are:
 
 - **AFK Workflow**: recommended human-facing composition with optional checkpoint packets and execution tracking.
 - **AFK Sprint**: `afk-sprint`, a Plannotator goal package plus AFK checkpoint packets, native `/goal`, and execution tracking.
-- **AFK Turbo**: `afk-turbo`, a Plannotator goal package plus GoalBuddy's local live board and PM loop.
+- **AFK Turbo**: `afk-turbo`, a Plannotator goal package plus GoalBuddy's local live board and PM loop. Ask for review-gated Turbo when each code-changing task should stage changes and pause for human review before task completion.
 
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  

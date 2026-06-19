@@ -16,6 +16,7 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` added `afk show skills --react` to render the skills catalog as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
 - `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills catalog and open it automatically in interactive terminals.
 - `cli:` added `afk catalog import` to backfill missing skills catalog entries from installed skills when the official `skills` CLI lockfile can recover the original source.
+- `skills:` added AFK Turbo review-gated mode, where each code-changing GoalBuddy task stages changes, suggests Plannotator Review, and waits for human approval before task completion.
 
 ### Changed
 
@@ -24,6 +25,7 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` renamed AFK's public setup data model from manifests to catalog, moving bundled defaults to `packages/afk/catalog`, global cache files to `~/.agents/afk/catalog`, and project-local files to `./afk/catalog`.
 - `cli:` fixed the skills visualization React analogy so quoted JSX attributes render as normal quotes instead of visible `&quot;` entities.
 - `skills:` renamed the composition role from `flow` to `workflow`, including bundled catalog values, show output, visualization docs, and README language.
+- `skills:` shortened AFK-owned manual skill descriptions and default prompts so `autoInvocation: false` skills read like explicit invocation surfaces instead of auto-discovery triggers.
 
 ## v0.6.0 - 2026-06-16
 

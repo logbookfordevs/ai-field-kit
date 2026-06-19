@@ -1,13 +1,13 @@
 ---
 name: afk-sprint
-description: Run AFK Sprint, a fast goal-driven execution package using Plannotator, AFK checkpoint packets, native /goal, and AFK execution tracking. Use when the user explicitly asks for AFK Sprint or wants fast goal execution with Markdown tracking instead of a visual board.
+description: AFK Sprint is a fast goal-driven execution package using Plannotator, AFK checkpoint packets, native /goal, and AFK execution tracking.
 metadata:
   short-description: Fast goal execution with Markdown checkpoint tracking.
 ---
 
 # AFK Sprint
 
-AFK Sprint is a named execution package. Use it only when the user asks for Sprint or clearly wants this package.
+AFK Sprint is a named execution package with Markdown checkpoint tracking.
 
 ## Route
 

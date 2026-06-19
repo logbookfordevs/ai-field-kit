@@ -1,6 +1,6 @@
 ---
 name: afk-execution-tracking
-description: Track implementation when executable AFK checkpoint packets exist and execution needs statuses, review gates, handoff notes, parallel agents, interruption recovery, or durable progress state.
+description: Track executable AFK checkpoint packets with statuses, review gates, handoff notes, parallel-agent coordination, interruption recovery, and durable progress state.
 metadata:
   short-description: Track implementation checkpoints, statuses, validation, and handoffs across agent sessions.
 ---
