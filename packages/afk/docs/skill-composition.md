@@ -84,7 +84,9 @@ AFK setup uses this metadata to suggest composed skills when a wrapper is select
 
 ## Profiles
 
-`profiles` is present in the manifest now, but profile behavior is intentionally future-facing.
+Profiles are focus sets that temporarily narrow the active global skill library.
+They live in `profiles.json`, while each skill item can still carry lightweight
+profile metadata for catalog readers.
 
 ```json
 {
@@ -92,7 +94,10 @@ AFK setup uses this metadata to suggest composed skills when a wrapper is select
 }
 ```
 
-Later, profiles can become curated activation sets such as `engineering`, `docs`, or `frontend`. For now, the empty array keeps the schema ready without pretending that profile activation exists.
+Use profiles for curated activation sets such as `engineering`, `docs`, or
+`frontend`. `afk show skills --visualize` reads local profile catalog and state
+when available, then shows which profiles are enabled, which skills are
+always-on, and which referenced skills are missing from the catalog.
 
 ## Reading The Manifest
 
@@ -115,7 +120,7 @@ A well-shaped skill entry should answer four questions quickly:
 - What is this? `role: wrapper`
 - Can the model discover it automatically? `autoInvocation: false`
 - What does it build on? `composes`
-- Is it part of a future curated activation set? `profiles`
+- Is it part of a curated activation set? `profiles`
 
 That is the house style: small pieces, named compositions, explicit discovery behavior, and no mystery dependencies.
 

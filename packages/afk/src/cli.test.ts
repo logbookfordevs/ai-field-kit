@@ -712,6 +712,76 @@ test("runCli writes a skills visualization HTML file", async () => {
   }
 });
 
+test("runCli includes skill profiles in the visualization HTML", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "acme/dev-kit", presets: [] },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "hyperframes",
+          label: "HyperFrames",
+          source: "https://github.com/acme/local-kit",
+          args: ["--skill", "hyperframes"],
+          default: true,
+          autoInvocation: true,
+          role: "primitive",
+        },
+        {
+          id: "tailwind",
+          label: "Tailwind",
+          source: "https://github.com/acme/local-kit",
+          args: ["--skill", "tailwind"],
+          default: true,
+          autoInvocation: true,
+          role: "primitive",
+        },
+      ],
+    },
+    "profiles.json": {
+      version: 1,
+      alwaysOn: ["tailwind"],
+      items: [
+        {
+          id: "video",
+          name: "Video Editing",
+          skills: ["hyperframes", "missing-skill"],
+        },
+      ],
+    },
+  });
+  const stateDir = join(homeDir, ".agents", "afk", "state");
+  mkdirSync(stateDir, { recursive: true });
+  writeFileSync(join(stateDir, "skill-profiles.json"), `${JSON.stringify({
+    version: 1,
+    enabledProfileIds: ["video"],
+    profileMovedSkills: ["other-skill"],
+    preExistingDisabledSkills: [],
+  }, null, 2)}\n`);
+  const cwd = mkdtempSync(join(tmpdir(), "afk-visualize-profiles-"));
+  const previousCwd = process.cwd();
+  const output: string[] = [];
+
+  try {
+    process.chdir(cwd);
+    const code = await withConsole(output, () => runCli(["show", "skills", "--visualize"], { HOME: homeDir }));
+    const html = readFileSync(join(cwd, "afk-skills.html"), "utf8");
+
+    assert.equal(code, 0);
+    assert.ok(html.includes("Focus profiles."));
+    assert.ok(html.includes("Video Editing"));
+    assert.ok(html.includes("video · enabled · 2 skills · 1 missing"));
+    assert.ok(html.includes("Always-on skills"));
+    assert.ok(html.includes("missing-skill missing"));
+    assert.ok(html.includes("FocusProfiles"));
+    assert.ok(html.includes("SkillProfile"));
+    assert.ok(html.includes("ExternalSkill"));
+  } finally {
+    process.chdir(previousCwd);
+  }
+});
+
 test("runCli treats show --visualize as the skills visualization", async () => {
   const homeDir = localHomeWithManifests({
     "presets.json": { version: 1, defaultsSource: "acme/dev-kit", presets: [] },
