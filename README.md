@@ -2,12 +2,9 @@
 
 > *The rules, skills, setup catalog, and router powering a DX-first AI developer workflow.*
 
-A curated, version-controlled collection of everything you need to make AI coding agents actually useful in a real development environment. No fluff — just the configuration, prompts, and automation that ship every day.
+A curated, version-controlled collection for making AI coding agents useful in a real development environment.
 
 AI Field Kit treats frameworks like BMAD, Get Shit Done, Agent OS, Superpowers, and agent skills as reference material, not masters. The kit is a personal synthesis of patterns that keep proving useful in real work: standalone skills when you only need one tool, and an optional workflow when you want the pieces to move together.
-
-> **Standalone skills with an optional workflow path.**
-> Install one skill when that is all you need, or use the kit as a loose workflow when the work benefits from staged discovery, decisions, execution, and review.
 
 For the skill composition mental model, open the visual companion:
 [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg).
@@ -334,6 +331,14 @@ AFK's fast execution packages are:
 - **AFK Workflow**: recommended human-facing composition with optional checkpoint packets and execution tracking.
 - **AFK Sprint**: `afk-sprint`, a Plannotator goal package plus AFK checkpoint packets, native `/goal`, and execution tracking.
 - **AFK Turbo**: `afk-turbo`, an optional grilling pass, a Plannotator goal package, and GoalBuddy's local live board and PM loop. Turbo writes a deterministic `goal-launch.html` beside `goal.md` and waits for an explicit launch trigger before execution. Ask for review-gated Turbo when each code-changing task should stage changes and pause for human review before task completion; ask for Turbo resume when prior goal packages or handoffs should seed a fresh focused goal.
+
+| Ask for | Use |
+|---|---|
+| Run Turbo normally | `afk-turbo` |
+| Run Turbo with human review gates | `afk-turbo` review-gated mode |
+| Resume prior Turbo work | `afk-turbo` resume mode |
+| Run checkpointed execution | `afk-execution-tracking` |
+| Resume checkpointed execution | `afk-execution-tracking` resume mode |
 
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  

@@ -23,6 +23,8 @@ Check with the user that these seams match their expectations.
 
 3. Write the PRD/spec using the template below. If a PM PRD already exists, preserve its product intent and strengthen only what is missing for agent execution: behavior, acceptance criteria, implementation decisions, testing seams, or out-of-scope boundaries.
 
+4. After writing a local PRD/spec, run `plannotator annotate --gate <path-to-prd-spec>` when Plannotator is available. Treat returned annotations as requested changes and update the artifact before handing it to slicing or execution. If Plannotator is unavailable, say the artifact path and continue.
+
 <prd-spec-template>
 
 ## Problem Statement
