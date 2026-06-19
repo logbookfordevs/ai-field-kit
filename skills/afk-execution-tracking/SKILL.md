@@ -57,6 +57,8 @@ Statuses: `pending`, `in_progress`, `validating`, `review`, `blocked`, `done`.
 
 Allowed review gates are `code`, `design`, and `product`. Every implementation checkpoint has a `code` gate. Add `design` for visual parity against an explicit reference, and `product` for user-facing behavior, copy, workflow, or product-fit validation.
 
+When a checkpoint reaches review, recommend `/plannotator-review` for a better guided review experience when available.
+
 Do not name gates after evidence sources such as tests, lint, Figma, or backend contracts. Record those under validation or discipline evidence.
 
 Use `blocked_by` for checkpoint dependencies, human decisions, missing context, or external blockers.
