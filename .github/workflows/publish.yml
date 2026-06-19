@@ -73,7 +73,7 @@ jobs:
 
       - name: Publish AFK CLI to npm
         working-directory: packages/afk
-        run: npm publish --access public
+        run: npm publish --access public --ignore-scripts
 
       - name: Publish AFK GitHub release asset
         uses: softprops/action-gh-release@v2
