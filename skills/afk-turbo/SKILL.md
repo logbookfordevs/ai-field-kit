@@ -15,12 +15,25 @@ Turbo combines `plannotator-setup-goal` with GoalBuddy's local live board and PM
 
 1. Use existing AFK artifacts as Plannotator input when present.
 2. Use `plannotator-setup-goal` to create reviewed facts, plan, and `goal.md`.
-3. Stop at the launch boundary and ask for an explicit user trigger before execution starts.
-4. After the user triggers launch, run GoalBuddy from that goal package.
-5. Start or register the local board before execution and include a clickable board URL when available.
+3. Create the launch page:
+
+   ```bash
+   node scripts/create-goal-launch.mjs <path-to-goal.md>
+   ```
+
+   Resolve the script path from this skill folder. The script opens a launch gate and prints `AFK_TURBO_LAUNCH_ACTION` after the user chooses.
+   If the user asked for review-gated Turbo, pass `--review-gated`.
+
+4. Stop at the launch boundary and ask for an explicit user trigger before execution starts.
+5. After the user triggers launch, run GoalBuddy from that goal package.
+6. Start or register the local board before execution and include a clickable board URL when available.
 
 Do not also use `afk-execution-tracking`; the GoalBuddy board is the continuity surface.
 
 Preserve execution discipline in GoalBuddy tasks: `tdd` for behavior, source checks for APIs/libs, doubt checks for risky decisions, and concrete validation.
+
+Do not hand-write the launch HTML. Use the script.
+
+If the launch action is `delegated-codex`, `delegated-claude-code`, or `closed`, do not start GoalBuddy in this chat.
 
 If the user asks for review-gated Turbo, use [review-gated.md](references/review-gated.md).
