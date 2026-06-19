@@ -66,7 +66,7 @@ export type CliOptions = {
   skillsListScope?: SkillsListScope;
   skillsUpgradeAll?: boolean;
   skillsUpgradeScope?: SkillsUpgradeScope;
-  skillsTrashManifestOnly?: boolean;
+  skillsDeleteManifestOnly?: boolean;
   skillsAgent?: ManagedSkillAgent | undefined;
   skillsJson?: boolean;
   skillsCategory?: string;

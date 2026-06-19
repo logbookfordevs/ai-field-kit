@@ -15,9 +15,9 @@ import {
   skillCatalogFileName,
   skillCatalogPath,
   syncSkillCatalogFromManifest,
-  trashSkillRecords,
-  trashGlobalSkill,
-  trashGlobalSkills,
+  deleteSkillRecords,
+  deleteGlobalSkill,
+  deleteGlobalSkills,
   type SkillRecord,
 } from "./skills/catalog.js";
 import { buildCodexCategorizationCommand, runCodexCategorization } from "./skills/categorization.js";
@@ -29,7 +29,7 @@ import {
   skillProfilePaths,
   type SkillProfileCatalog,
 } from "./skills/profiles.js";
-import { renderSkillChoice, renderSkillDetails, renderSkillTrashBatch } from "./skills/render.js";
+import { renderSkillChoice, renderSkillDetails, renderSkillDeleteBatch } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 import { localManifestDir, projectManifestDir } from "./manifest.js";
@@ -314,41 +314,36 @@ test("moveSkillRecord disables and enables agent-specific global skills", () => 
   assert.equal(existsSync(join(homeDir, ".codex", "skills", ".disabled", "demo")), false);
 });
 
-test("trashGlobalSkill supports dry-run and moves active skills to Trash", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-"));
+test("deleteGlobalSkill supports dry-run and permanently deletes active skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-"));
   const homeDir = join(root, "home");
   writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo");
 
-  trashGlobalSkill({ homeDir, folder: "demo", dryRun: true, platform: "darwin" });
+  deleteGlobalSkill({ homeDir, folder: "demo", dryRun: true });
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo")), true);
-  assert.equal(existsSync(join(homeDir, ".Trash", "demo")), false);
 
-  trashGlobalSkill({ homeDir, folder: "demo", dryRun: false, platform: "darwin" });
+  deleteGlobalSkill({ homeDir, folder: "demo", dryRun: false });
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo")), false);
-  assert.equal(existsSync(join(homeDir, ".Trash", "demo")), true);
 });
 
-test("trashGlobalSkills supports dry-run and moves multiple skills to Trash", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-many-"));
+test("deleteGlobalSkills supports dry-run and permanently deletes multiple skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-many-"));
   const homeDir = join(root, "home");
   writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
   writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
 
-  const preview = trashGlobalSkills({ homeDir, folders: ["alpha", "beta"], dryRun: true, platform: "darwin" });
+  const preview = deleteGlobalSkills({ homeDir, folders: ["alpha", "beta"], dryRun: true });
   assert.deepEqual(preview.map((item) => item.folder), ["alpha", "beta"]);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "alpha")), true);
-  assert.equal(existsSync(join(homeDir, ".Trash", "alpha")), false);
 
-  const moved = trashGlobalSkills({ homeDir, folders: ["alpha", "beta"], dryRun: false, platform: "darwin" });
+  const moved = deleteGlobalSkills({ homeDir, folders: ["alpha", "beta"], dryRun: false });
   assert.deepEqual(moved.map((item) => item.folder), ["alpha", "beta"]);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "alpha")), false);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "beta")), false);
-  assert.equal(existsSync(join(homeDir, ".Trash", "alpha")), true);
-  assert.equal(existsSync(join(homeDir, ".Trash", "beta")), true);
 });
 
-test("trashGlobalSkills removes imported skills from the AFK catalog only", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-catalog-"));
+test("deleteGlobalSkills removes imported skills from the AFK catalog only", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-catalog-"));
   const homeDir = join(root, "home");
   writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
   writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
@@ -376,7 +371,7 @@ test("trashGlobalSkills removes imported skills from the AFK catalog only", () =
     ],
   });
 
-  trashGlobalSkills({ homeDir, folders: ["alpha", "beta"], dryRun: false, platform: "darwin" });
+  deleteGlobalSkills({ homeDir, folders: ["alpha", "beta"], dryRun: false });
 
   const written = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
     items: Array<{ id: string; imported?: boolean }>;
@@ -384,8 +379,8 @@ test("trashGlobalSkills removes imported skills from the AFK catalog only", () =
   assert.deepEqual(written.items.map((item) => ({ id: item.id, imported: item.imported })), [
     { id: "beta", imported: false },
   ]);
-  assert.equal(existsSync(join(homeDir, ".Trash", "alpha")), true);
-  assert.equal(existsSync(join(homeDir, ".Trash", "beta")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "alpha")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "beta")), false);
 });
 
 test("skillProfilePaths resolves global and local profile files", () => {
@@ -511,36 +506,23 @@ test("runSkillsCommand profiles create writes profile catalog", async () => {
   assert.deepEqual(catalog.items, [{ id: "engineering", name: "Engineering", skills: ["alpha"] }]);
 });
 
-test("trashSkillRecords moves agent-specific skills to unique Trash destinations", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-trash-"));
+test("deleteSkillRecords permanently deletes agent-specific skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-delete-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
   writeSkill(join(homeDir, ".codex", "skills"), "demo", "Global Demo");
   writeSkill(join(cwd, ".codex", "skills"), "demo", "Project Demo");
   const records = loadSkillCatalog({ homeDir, cwd, scope: "all", agent: "codex" }).records;
 
-  const moved = trashSkillRecords({ homeDir, records, dryRun: false, platform: "darwin" });
+  const moved = deleteSkillRecords({ homeDir, records, dryRun: false });
 
   assert.deepEqual(moved.map((item) => item.folder), ["demo", "demo"]);
   assert.equal(existsSync(join(homeDir, ".codex", "skills", "demo")), false);
   assert.equal(existsSync(join(cwd, ".codex", "skills", "demo")), false);
-  assert.equal(existsSync(join(homeDir, ".Trash", "demo")), true);
-  assert.equal(existsSync(join(homeDir, ".Trash", "demo-1")), true);
-});
-
-test("trashGlobalSkill rejects unsupported platforms", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-platform-"));
-  const homeDir = join(root, "home");
-  writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo");
-
-  assert.throws(
-    () => trashGlobalSkill({ homeDir, folder: "demo", dryRun: false, platform: "linux" }),
-    /macOS only/,
-  );
 });
 
 test("filterManifestSkillRecords keeps only global skills from AFK skills manifest", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-manifest-filter-"));
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-manifest-filter-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
   writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
@@ -551,38 +533,38 @@ test("filterManifestSkillRecords keeps only global skills from AFK skills manife
   assert.deepEqual(filterManifestSkillRecords(snapshot.records, { homeDir }).map((record) => record.folder), ["alpha"]);
 });
 
-test("runSkillsCommand trash --manifest-only rejects explicit skills outside AFK manifest", async () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-manifest-explicit-"));
+test("runSkillsCommand delete --manifest-only rejects explicit skills outside AFK manifest", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-manifest-explicit-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
   writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
   writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
   writeSkillManifest(homeDir, ["alpha"]);
 
-  const code = await runSkillsCommand(["skills", "trash", "beta"], outputRuntime(output), {
+  const code = await runSkillsCommand(["skills", "delete", "beta"], outputRuntime(output), {
     ...baseOptions(root),
     dryRun: true,
-    skillsTrashManifestOnly: true,
+    skillsDeleteManifestOnly: true,
   });
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Skill not found in skills.json manifest: beta"));
 });
 
-test("runSkillsCommand trashes agent-specific global skills with --agent", async () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-trash-command-"));
+test("runSkillsCommand deletes agent-specific global skills with --agent", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-delete-command-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
   writeSkill(join(homeDir, ".claude", "skills"), "frontend-design", "Frontend Design");
 
-  const code = await runSkillsCommand(["skills", "trash", "frontend-design"], outputRuntime(output), {
+  const code = await runSkillsCommand(["skills", "delete", "frontend-design"], outputRuntime(output), {
     ...baseOptions(root),
     dryRun: true,
     skillsAgent: "claude",
   });
 
   assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("Trash Preview"));
+  assert.ok(output.join("\n").includes("Delete Preview"));
   assert.ok(output.join("\n").includes(".claude/skills/frontend-design"));
 });
 
@@ -620,18 +602,18 @@ test("runSkillsCommand enables agent-specific project skills with --scope projec
   assert.equal(existsSync(join(cwd, ".claude", "skills", ".disabled", "demo")), false);
 });
 
-test("renderSkillTrashBatch summarizes multiple selected skills", () => {
-  assert.equal(renderSkillTrashBatch({
+test("renderSkillDeleteBatch summarizes multiple selected skills", () => {
+  assert.equal(renderSkillDeleteBatch({
     dryRun: true,
     items: [
-      { folder: "alpha", movement: "/skills/alpha -> ~/.Trash/alpha" },
-      { folder: "beta", movement: "/skills/beta -> ~/.Trash/beta" },
+      { folder: "alpha", movement: "/skills/alpha -> (deleted)" },
+      { folder: "beta", movement: "/skills/beta -> (deleted)" },
     ],
   }), [
-    "◆ Trash Preview",
-    "Would move 2 skills to Trash",
-    "• alpha /skills/alpha -> ~/.Trash/alpha",
-    "• beta /skills/beta -> ~/.Trash/beta",
+    "◆ Delete Preview",
+    "Would permanently delete 2 skills",
+    "• alpha /skills/alpha -> (deleted)",
+    "• beta /skills/beta -> (deleted)",
   ].join("\n"));
 });
 
@@ -1105,7 +1087,7 @@ function baseOptions(root: string) {
     skillsListScope: "all" as const,
     skillsUpgradeScope: "global" as const,
     skillsUpgradeAll: false,
-    skillsTrashManifestOnly: false,
+    skillsDeleteManifestOnly: false,
     skillsAgent: undefined,
     skillsJson: false,
     skillsCategory: "",

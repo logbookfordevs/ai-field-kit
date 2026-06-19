@@ -13,8 +13,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
-- `cli:` added the `afk skills` command family for local skill management, including list, show, open, enable, disable, trash, upgrade, and categorize commands.
-- `cli:` added searchable skill pickers for management commands and multi-select Trash flows when a command needs the user to choose skills interactively.
+- `cli:` added the `afk skills` command family for local skill management, including list, show, open, enable, disable, delete, upgrade, and categorize commands.
+- `cli:` added searchable skill pickers for management commands and multi-select delete flows when a command needs the user to choose skills interactively.
 - `cli:` added `afk skills profiles` to create, edit, enable, disable, delete, and inspect focus profiles that temporarily keep selected global skills active while moving the rest aside.
 - `cli:` added `afk ui` as a thin, attributed wrapper around the UI Skills CLI for `start`, `categories`, `list`, and `get` without forcing users to remember the `npx ui-skills` command shape.
 - `cli:` added `afk show skills --react` to render the skills catalog as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
@@ -30,8 +30,8 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` renamed AFK's public setup data model from manifests to catalog, moving bundled defaults to `packages/afk/catalog`, global cache files to `~/.agents/afk/catalog`, and project-local files to `./afk/catalog`.
 - `cli:` made `~/.agents/afk/catalog/skills.json` the single AFK skills catalog for setup metadata and skill-management enrichment, with categorization stored in top-level scopes plus each item's nested `catalog` object.
 - `cli:` made successful `afk setup skills` installs synchronize installed skill entries into the AFK skills catalog as uncategorized imported items.
-- `cli:` made `afk skills trash` remove imported catalog entries for skills it moves to Trash, so imported catalog state follows the local skill library.
-- `cli:` made `afk skills list`, `show`, `open`, `enable`, `disable`, and `trash` understand global, project, and agent-specific skill roots through `--scope` and `--agent`.
+- `cli:` made `afk skills delete` remove imported catalog entries for deleted skills, so imported catalog state follows the local skill library.
+- `cli:` made `afk skills list`, `show`, `open`, `enable`, `disable`, and `delete` understand global, project, and agent-specific skill roots through `--scope` and `--agent`.
 - `cli:` made skill list/show output expose auto-invocation state from `SKILL.md` and Codex `agents/openai.yaml`, including mixed-state warnings when the two sources disagree.
 - `cli:` made `afk skills upgrade` use AFK's tracked skill catalog for selection while delegating the actual update to the official skills CLI.
 - `cli:` fixed the skills visualization React analogy so quoted JSX attributes render as normal quotes instead of visible `&quot;` entities.

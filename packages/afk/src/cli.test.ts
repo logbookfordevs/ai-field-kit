@@ -340,13 +340,13 @@ test("runCli prints contextual skills upgrade help", async () => {
   assert.ok(!text.includes("AFK skills check"));
 });
 
-test("runCli prints contextual skills trash help", async () => {
+test("runCli prints contextual skills delete help", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "trash", "--help"]));
+  const code = await withConsole(output, () => runCli(["skills", "delete", "--help"]));
   const text = output.join("\n");
 
   assert.equal(code, 0);
-  assert.ok(text.includes("AFK skills trash"));
+  assert.ok(text.includes("AFK skills delete"));
   assert.ok(text.includes("--manifest-only"));
 });
 
@@ -402,7 +402,7 @@ test("runCli creates local skill profiles with repeated skill flags", async () =
   }
 });
 
-test("runCli accepts skills trash manifest-only flag", async () => {
+test("runCli accepts skills delete manifest-only flag", async () => {
   const homeDir = localHomeWithManifests({
     "skills.json": {
       version: 1,
@@ -423,7 +423,7 @@ test("runCli accepts skills trash manifest-only flag", async () => {
   const output: string[] = [];
 
   const code = await withConsole(output, () => runCli(
-    ["skills", "trash", "beta", "--manifest-only", "--dry-run"],
+    ["skills", "delete", "beta", "--manifest-only", "--dry-run"],
     { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
   ));
 

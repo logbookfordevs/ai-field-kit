@@ -50,7 +50,7 @@ test("skills lobby choices route skill-management intents", () => {
   assert.deepEqual(routeForSkillsLobbyChoice("skills-open"), ["skills", "open"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-disable"), ["skills", "disable"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-enable"), ["skills", "enable"]);
-  assert.deepEqual(routeForSkillsLobbyChoice("skills-trash"), ["skills", "trash"]);
+  assert.deepEqual(routeForSkillsLobbyChoice("skills-delete"), ["skills", "delete"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-upgrade"), ["skills", "upgrade"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-categorize"), ["skills", "categorize"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-catalog-import"), ["catalog", "import"]);

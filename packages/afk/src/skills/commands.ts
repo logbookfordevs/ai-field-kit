@@ -11,7 +11,7 @@ import {
   filterSkillRecords,
   loadSkillCatalog,
   moveSkillRecord,
-  trashSkillRecords,
+  deleteSkillRecords,
   type SkillRecord,
 } from "./catalog.js";
 import { runCodexCategorization } from "./categorization.js";
@@ -37,7 +37,7 @@ import {
   renderSkillList,
   renderSkillMove,
   renderSkillOpen,
-  renderSkillTrashBatch,
+  renderSkillDeleteBatch,
 } from "./render.js";
 import {
   buildSkillUpgradeCommands,
@@ -46,7 +46,7 @@ import {
   type LockedSkillRecord,
 } from "./upgrade.js";
 
-type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "trash" | "upgrade" | "categorize" | "profiles";
+type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "delete" | "upgrade" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   const command = commandPath[1] as SkillCommandName | undefined;
@@ -69,8 +69,8 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
         return runSkillsMove(operands[0], false, runtime, options);
       case "enable":
         return runSkillsMove(operands[0], true, runtime, options);
-      case "trash":
-        return runSkillsTrash(operands[0], runtime, options);
+      case "delete":
+        return runSkillsDelete(operands[0], runtime, options);
       case "upgrade":
         return runSkillsUpgrade(operands, runtime, options);
       case "categorize":
@@ -397,19 +397,19 @@ async function runSkillsMove(folder: string | undefined, enabled: boolean, runti
   return 0;
 }
 
-async function runSkillsTrash(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
+async function runSkillsDelete(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
   const globalCandidates = loadMutationSkillRecords(options);
-  const candidates = options.skillsTrashManifestOnly
+  const candidates = options.skillsDeleteManifestOnly
     ? filterManifestSkillRecords(globalCandidates, options)
     : globalCandidates;
   const records = folder
     ? [findSkillRecord(candidates, folder)].filter((record): record is SkillRecord => Boolean(record))
-    : await promptSkillRecords(candidates, `Select ${mutationTargetLabel(options)} skill to move to Trash:`);
+    : await promptSkillRecords(candidates, `Select ${mutationTargetLabel(options)} skill to delete:`);
 
   if (records.length === 0) {
     runtime.io.stderr(folder
-      ? options.skillsTrashManifestOnly ? `Skill not found in skills.json manifest: ${folder}` : `Skill not found: ${folder}`
-      : options.skillsTrashManifestOnly
+      ? options.skillsDeleteManifestOnly ? `Skill not found in skills.json manifest: ${folder}` : `Skill not found: ${folder}`
+      : options.skillsDeleteManifestOnly
         ? `No ${mutationTargetLabel(options)} skills from skills.json manifest found.`
         : `No ${mutationTargetLabel(options)} skills found.`);
     return 1;
@@ -417,29 +417,29 @@ async function runSkillsTrash(folder: string | undefined, runtime: Runtime, opti
 
   const readOnlyRecord = records.find((record) => record.readOnly);
   if (readOnlyRecord) {
-    runtime.io.stderr(`Cannot trash ${readOnlyRecord.folder}; ${readOnlyRecord.rootLabel} is read-only.`);
+    runtime.io.stderr(`Cannot delete ${readOnlyRecord.folder}; ${readOnlyRecord.rootLabel} is read-only.`);
     return 1;
   }
 
   if (!options.yes && !options.dryRun) {
     const count = records.length;
     const accepted = await confirm({
-      message: count === 1 ? `Move ${records[0]?.folder ?? "skill"} to Trash?` : `Move ${count} skills to Trash?`,
+      message: count === 1 ? `Permanently delete ${records[0]?.folder ?? "skill"}?` : `Permanently delete ${count} skills?`,
       default: false,
       theme: afkPromptTheme,
     });
     if (!accepted) {
-      runtime.io.stdout("Trash cancelled. Nothing was changed.");
+      runtime.io.stdout("Delete cancelled. Nothing was changed.");
       return 0;
     }
   }
 
-  const movements = trashSkillRecords({
+  const movements = deleteSkillRecords({
     homeDir: options.homeDir,
     records,
     dryRun: options.dryRun,
   });
-  runtime.io.stdout(renderSkillTrashBatch({
+  runtime.io.stdout(renderSkillDeleteBatch({
     items: movements,
     dryRun: options.dryRun,
   }));

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { ManagedSkillAgent, SkillsListScope } from "../types.js";
 import { loadSkillManifest, localManifestDir, type SkillManifest, type SkillManifestItem } from "../manifest.js";
@@ -304,17 +304,15 @@ export function moveSkillRecord(options: {
   return `${source} -> ${destination}`;
 }
 
-export function trashGlobalSkill(options: {
+export function deleteGlobalSkill(options: {
   homeDir: string;
   folder: string;
   dryRun: boolean;
-  platform?: NodeJS.Platform;
 }): string {
-  const movement = trashGlobalSkills({
+  const movement = deleteGlobalSkills({
     homeDir: options.homeDir,
     folders: [options.folder],
     dryRun: options.dryRun,
-    ...(options.platform ? { platform: options.platform } : {}),
   })[0];
   if (!movement) {
     throw new Error(`Could not find global skill: ${options.folder}`);
@@ -323,40 +321,28 @@ export function trashGlobalSkill(options: {
   return movement.movement;
 }
 
-export function trashGlobalSkills(options: {
+export function deleteGlobalSkills(options: {
   homeDir: string;
   folders: string[];
   dryRun: boolean;
-  platform?: NodeJS.Platform;
 }): SkillMovement[] {
-  const platform = options.platform ?? process.platform;
-  if (platform !== "darwin") {
-    throw new Error("Trash is currently supported on macOS only.");
-  }
-
-  const trashRoot = join(options.homeDir, ".Trash");
-  const reservedDestinations = new Set<string>();
   const movements = options.folders.map((folder) => {
     const source = resolveGlobalSkillPath(options.homeDir, folder);
     if (!source) {
       throw new Error(`Could not find global skill: ${folder}`);
     }
 
-    const destination = uniqueTrashPath(trashRoot, folder, reservedDestinations);
-    reservedDestinations.add(destination);
-
     return {
       folder,
       source,
-      destination,
+      destination: "(deleted)",
     };
   });
   const catalogPrune = planImportedCatalogPrune(options.homeDir, options.folders);
 
   if (!options.dryRun) {
-    mkdirSync(trashRoot, { recursive: true });
     for (const movement of movements) {
-      renameSync(movement.source, movement.destination);
+      rmSync(movement.source, { recursive: true, force: false });
     }
     writeImportedCatalogPrune(catalogPrune);
   }
@@ -367,32 +353,21 @@ export function trashGlobalSkills(options: {
   }));
 }
 
-export function trashSkillRecords(options: {
+export function deleteSkillRecords(options: {
   homeDir: string;
   records: SkillRecord[];
   dryRun: boolean;
-  platform?: NodeJS.Platform;
 }): SkillMovement[] {
-  const platform = options.platform ?? process.platform;
-  if (platform !== "darwin") {
-    throw new Error("Trash is currently supported on macOS only.");
-  }
-
-  const trashRoot = join(options.homeDir, ".Trash");
-  const reservedDestinations = new Set<string>();
   const movements = options.records.map((record) => {
     const source = join(record.rootPath, record.folder);
     if (!existsSync(source)) {
       throw new Error(`Could not find skill: ${record.folder}`);
     }
 
-    const destination = uniqueTrashPath(trashRoot, record.folder, reservedDestinations);
-    reservedDestinations.add(destination);
-
     return {
       folder: record.folder,
       source,
-      destination,
+      destination: "(deleted)",
     };
   });
   const catalogPrune = planImportedCatalogPrune(
@@ -403,9 +378,8 @@ export function trashSkillRecords(options: {
   );
 
   if (!options.dryRun) {
-    mkdirSync(trashRoot, { recursive: true });
     for (const movement of movements) {
-      renameSync(movement.source, movement.destination);
+      rmSync(movement.source, { recursive: true, force: false });
     }
     writeImportedCatalogPrune(catalogPrune);
   }
@@ -486,7 +460,7 @@ function planImportedCatalogPrune(homeDir: string, folders: string[]): ImportedC
   try {
     parsed = JSON.parse(readFileSync(path, "utf8")) as SkillManifest;
   } catch {
-    throw new Error(`Could not update AFK skill catalog before trash; invalid JSON at ${path}.`);
+    throw new Error(`Could not update AFK skill catalog before delete; invalid JSON at ${path}.`);
   }
 
   if (!Array.isArray(parsed.items)) {
@@ -914,22 +888,6 @@ function resolveGlobalSkillPath(homeDir: string, folder: string): string | undef
   }
 
   return undefined;
-}
-
-function uniqueTrashPath(trashRoot: string, folder: string, reserved: Set<string> = new Set()): string {
-  const first = join(trashRoot, folder);
-  if (!existsSync(first) && !reserved.has(first)) {
-    return first;
-  }
-
-  let index = 1;
-  while (true) {
-    const candidate = join(trashRoot, `${folder}-${index}`);
-    if (!existsSync(candidate) && !reserved.has(candidate)) {
-      return candidate;
-    }
-    index += 1;
-  }
 }
 
 function normalize(value: string | undefined): string {

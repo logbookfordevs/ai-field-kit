@@ -25,7 +25,7 @@ export type SkillsLobbyChoiceValue =
   | "skills-open"
   | "skills-disable"
   | "skills-enable"
-  | "skills-trash"
+  | "skills-delete"
   | "skills-upgrade"
   | "skills-categorize"
   | "skills-catalog-import"
@@ -152,9 +152,9 @@ export const skillsLobbyChoices: Array<{
     description: "Route: afk skills enable",
   },
   {
-    name: "Move skills to Trash",
-    value: "skills-trash",
-    description: "Route: afk skills trash",
+    name: "Delete skills",
+    value: "skills-delete",
+    description: "Route: afk skills delete",
   },
   {
     name: "Upgrade tracked skills",
@@ -339,8 +339,8 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue): string
       return ["skills", "disable"];
     case "skills-enable":
       return ["skills", "enable"];
-    case "skills-trash":
-      return ["skills", "trash"];
+    case "skills-delete":
+      return ["skills", "delete"];
     case "skills-upgrade":
       return ["skills", "upgrade"];
     case "skills-categorize":

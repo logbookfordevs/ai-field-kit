@@ -70,27 +70,27 @@ export function renderSkillOpen(input: {
   ].join("\n");
 }
 
-export function renderSkillTrash(input: {
+export function renderSkillDelete(input: {
   folder: string;
   movement: string;
   dryRun: boolean;
 }): string {
-  return renderSkillTrashBatch({
+  return renderSkillDeleteBatch({
     items: [{ folder: input.folder, movement: input.movement }],
     dryRun: input.dryRun,
   });
 }
 
-export function renderSkillTrashBatch(input: {
+export function renderSkillDeleteBatch(input: {
   items: Array<{ folder: string; movement: string }>;
   dryRun: boolean;
 }): string {
   const count = input.items.length;
   return [
-    sectionTitle(input.dryRun ? "Trash Preview" : "Trash Complete"),
+    sectionTitle(input.dryRun ? "Delete Preview" : "Delete Complete"),
     input.dryRun
-      ? `${muted("Would move")} ${accent(String(count))} ${muted(count === 1 ? "skill to Trash" : "skills to Trash")}`
-      : `${muted("Moved")} ${accent(String(count))} ${muted(count === 1 ? "skill to Trash" : "skills to Trash")}`,
+      ? `${muted("Would permanently delete")} ${accent(String(count))} ${muted(count === 1 ? "skill" : "skills")}`
+      : `${muted("Deleted")} ${accent(String(count))} ${muted(count === 1 ? "skill" : "skills")}`,
     ...input.items.map((item) => `${paint(terminalPalette.sienna, "•")} ${strong(item.folder)} ${muted(item.movement)}`),
   ].join("\n");
 }

@@ -722,7 +722,7 @@ afk skills show afk-note
 afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
 afk skills enable old-skill
-afk skills trash old-skill --dry-run
+afk skills delete old-skill --dry-run
 afk skills upgrade --all
 afk skills categorize --dry-run
 afk skills profiles create video --name Video --skill hyperframes --skill tailwind
@@ -754,9 +754,10 @@ global|project|all` to choose root families, `--agent` to focus on an agent,
 and `--category`, `--tag`, or `--uncategorized` to filter AFK catalog
 metadata.
 
-`afk skills disable`, `afk skills enable`, and `afk skills trash` can manage
+`afk skills disable`, `afk skills enable`, and `afk skills delete` can manage
 the shared global library by default, or agent-specific roots when `--agent` is
-provided.
+provided. Delete is permanent; use `--dry-run` to preview the selected folders
+before removing them.
 
 `afk skills profiles` manages focus profiles for the shared global skill
 library. A profile is a named group of skill folders. Enabling one or more

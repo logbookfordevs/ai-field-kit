@@ -419,7 +419,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "open <folder>                     Open SKILL.md or the skill folder",
       "disable <folder>                  Move a global skill into .disabled",
       "enable <folder>                   Move a disabled global skill back to active",
-      "trash [folder]                    Move one or more global skills to Trash",
+      "delete [folder]                   Permanently delete one or more skills",
       "upgrade [skills...]               Upgrade selected or all tracked skills",
       "profiles <command>                Manage skill focus profiles",
       "categorize                        Create or update skills.json categories with Codex",
@@ -560,24 +560,24 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills enable --scope project --agent claude",
     ],
   },
-  "skills trash": {
-    title: "AFK skills trash",
-    summary: "Move one or more shared or agent-specific skill folders to the macOS Trash.",
-    usage: "afk skills trash [folder] [options]",
+  "skills delete": {
+    title: "AFK skills delete",
+    summary: "Permanently delete one or more shared or agent-specific skill folders.",
+    usage: "afk skills delete [folder] [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
       "--agent <agent>                   Target one agent-specific root",
-      "--dry-run                         Preview the Trash move without applying it",
+      "--dry-run                         Preview the delete without applying it",
       "--yes, -y                         Skip confirmation",
       "--manifest-only                   Show only skills from AFK's setup skills manifest",
     ],
     examples: [
-      "afk skills trash",
-      "afk skills trash --scope global --agent codex",
-      "afk skills trash --scope project --agent claude",
-      "afk skills trash --manifest-only",
-      "afk skills trash old-skill --dry-run",
-      "afk skills trash old-skill --yes",
+      "afk skills delete",
+      "afk skills delete --scope global --agent codex",
+      "afk skills delete --scope project --agent claude",
+      "afk skills delete --manifest-only",
+      "afk skills delete old-skill --dry-run",
+      "afk skills delete old-skill --yes",
     ],
   },
   "skills upgrade": {
@@ -822,7 +822,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsListScope: SkillsListScope = "all";
   let skillsUpgradeScope: SkillsUpgradeScope = "global";
   let skillsUpgradeAll = false;
-  let skillsTrashManifestOnly = false;
+  let skillsDeleteManifestOnly = false;
   let skillsAgent: ManagedSkillAgent | undefined;
   let skillsJson = false;
   let skillsCategory = "";
@@ -964,10 +964,10 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (isAfkSkillsCommand && arg === "--manifest-only") {
-      if (commandPath[1] !== "trash") {
+      if (commandPath[1] !== "delete") {
         return { help: false, kind: "error", error: "Unknown option: --manifest-only" };
       }
-      skillsTrashManifestOnly = true;
+      skillsDeleteManifestOnly = true;
       continue;
     }
 
@@ -1228,7 +1228,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsListScope,
       skillsUpgradeAll,
       skillsUpgradeScope,
-      skillsTrashManifestOnly,
+      skillsDeleteManifestOnly,
       skillsAgent,
       skillsJson,
       skillsCategory,
