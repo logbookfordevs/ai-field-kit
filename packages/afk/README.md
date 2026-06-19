@@ -9,11 +9,10 @@ AFK owns the AFK-specific rule and hook behavior. It delegates skills to the
 official `skills` CLI, MCPs to `add-mcp`, and plugins to their own installer
 commands.
 
-AFK skills are modeled as composable parts: primitives, wrappers, flows,
+AFK skills are modeled as composable parts: primitives, wrappers, workflows,
 utilities, references, and routers. That shape keeps automatic model discovery
 small while still giving people named workflows to invoke directly. See
-[Skill Composition](docs/skill-composition.md) for the full mental model, or
-open the visual companion in [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg).
+[Skill Composition](docs/skill-composition.md) for the full mental model.
 
 ## Quick Start
 
@@ -90,8 +89,7 @@ AFK can prepare a machine-wide field kit or only the current project.
 
 In project scope, rules are injected into project host files such as
 `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or `.cursor/rules/afk.mdc`. Skills and
-MCPs are delegated without their global flags. RTK project initialization runs
-from the current project directory.
+MCPs are delegated without their global flags.
 
 For `afk refresh`, `--local` has a different meaning: it refreshes
 `./afk/catalog` instead of the global catalog cache.
@@ -206,7 +204,7 @@ Area support is narrower than the full alias list:
 | Rules | `antigravity`, `claude`, `codex`, `opencode`; project scope also supports `cursor-local`. |
 | MCPs | `antigravity`, `claude`, `codex`, `opencode`; project scope skips Antigravity because `add-mcp` does not support that target locally. |
 | Hooks | `codex`, `claude`, `cursor-local`. |
-| Plugins | Plugin installers run independently; RTK post-install supports `antigravity`, `claude`, `codex`, and `opencode`. |
+| Plugins | Plugin installers run independently and may define generic post-install commands. |
 
 ### Detected Setup Targets
 
@@ -270,11 +268,11 @@ Skill catalog entries can also describe architecture metadata:
 
 | Field | Meaning |
 |---|---|
-| `role` | The skill's compositional shape: `primitive`, `wrapper`, `flow`, `utility`, `reference`, or `router`. |
-| `composes` | Skills that a wrapper or flow is built from. Setup can suggest these when the parent is selected. |
+| `role` | The skill's compositional shape: `primitive`, `wrapper`, `workflow`, `utility`, `reference`, or `router`. |
+| `composes` | Skills that a wrapper or workflow is built from. Setup can suggest these when the parent is selected. |
 | `profiles` | Future activation groups. Present now as metadata, often empty until profile support lands. |
 
-The short version: primitives are usually model-discoverable, wrappers and flows
+The short version: primitives are usually model-discoverable, wrappers and workflows
 are usually manual, and composition makes the relationship explicit.
 
 ### Catalog Show
@@ -299,7 +297,7 @@ cache.
 Use `afk show skills --react` when you want the skills catalog rendered as
 AFK's React-inspired architecture: auto-discoverable skills under
 `<ModelDiscovery>`, explicit skills under `<ExplicitInvocation>`, and composed
-skills as nested primitive, wrapper, flow, router, utility, or reference
+skills as nested primitive, wrapper, workflow, router, utility, or reference
 components.
 
 Use `afk show skills --visualize` when you want the same composition story as a
@@ -580,8 +578,6 @@ AFK also supports object-style post-install commands:
 }
 ```
 
-RTK has built-in post-install handling through `"postInstall": "rtk-init"`.
-
 ### Hooks
 
 ```json
@@ -650,12 +646,8 @@ scope.
 ### Plugins
 
 The bundled plugin catalog currently includes Plannotator, GoalBuddy,
-Plannotator Tot, RTK, Yggtree, and Impeccable. Plugin setup is best-effort
+Plannotator Tot, Yggtree, and Impeccable. Plugin setup is best-effort
 because these installers are owned by their upstream tools.
-
-RTK post-install follows the selected AFK targets. With no explicit plugin
-agent selection, AFK uses the RTK defaults: `antigravity`, `claude`, `codex`,
-and `opencode`.
 
 ## Troubleshooting
 

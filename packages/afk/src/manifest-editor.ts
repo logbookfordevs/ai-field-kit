@@ -276,7 +276,7 @@ function isPluginManifest(value: EditableManifest): value is PluginManifest {
       isRecord(item.install) &&
       typeof item.install.command === "string" &&
       isStringArray(item.install.args) &&
-      (item.postInstall === undefined || item.postInstall === "rtk-init" || isPluginPostInstallCommand(item.postInstall)) &&
+      (item.postInstall === undefined || isPluginPostInstallCommand(item.postInstall)) &&
       typeof item.default === "boolean"
     ))
   );

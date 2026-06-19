@@ -1,6 +1,6 @@
 ---
 name: afk-to-prd-spec
-description: Turn the current conversation context, grilled plan, PM PRD, or feature notes into an agent-ready PRD/spec artifact. Use when AFK needs product intent, behavior, implementation decisions, and testing seams before issues, planning, Turbo, or execution.
+description: Turn conversation context, grilled plans, PM PRDs, or feature notes into an agent-ready PRD/spec artifact.
 metadata:
   short-description: Create or normalize an agent-ready PRD/spec.
 ---

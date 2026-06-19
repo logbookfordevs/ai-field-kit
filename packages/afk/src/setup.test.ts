@@ -34,7 +34,9 @@ vi.mock("./interactive.js", async (importOriginal) => {
 });
 
 test("runSetup keeps prompted rule targets out of plugin defaults", async () => {
-  const homeDir = localHomeWithManifests();
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "local", presets: [] },
+  });
   const repoDir = localRepoWithRules();
   const output: string[] = [];
 
@@ -46,7 +48,7 @@ test("runSetup keeps prompted rule targets out of plugin defaults", async () => 
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: ["rtk"],
+    pluginIds: ["sample-plugin"],
     hookIds: [],
   };
 
@@ -57,10 +59,7 @@ test("runSetup keeps prompted rule targets out of plugin defaults", async () => 
   assert.ok(text.includes("- Rules targets: codex"));
   assert.ok(text.includes("/.codex/AGENTS.md"));
   assert.ok(!text.includes("/.gemini/GEMINI.md"));
-  assert.ok(text.includes("RTK / init Antigravity"));
-  assert.ok(text.includes("RTK / init Claude Code"));
-  assert.ok(text.includes("RTK / init Codex"));
-  assert.ok(text.includes("RTK / init OpenCode"));
+  assert.ok(text.includes("Sample Plugin / install"));
 });
 
 test("runSetup labels detected targets in the setup summary", async () => {
@@ -170,7 +169,7 @@ test("runSetup prepares manifests only once before running selected areas", asyn
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: ["rtk"],
+    pluginIds: ["sample-plugin"],
     hookIds: [],
   };
 
@@ -294,7 +293,7 @@ test("runArea prompts for a source only on first-run interactive setup areas", a
       agents: ["codex"],
       selectedSkillIds: area === "skills" ? ["afk-note"] : [],
       selectedMcpIds: area === "mcps" ? ["stitch"] : [],
-      selectedPluginIds: area === "plugins" ? ["rtk"] : [],
+      selectedPluginIds: area === "plugins" ? ["sample-plugin"] : [],
       selectedHookIds: area === "hooks" ? ["afk-typescript-typecheck-stop-check"] : [],
     });
 
@@ -428,7 +427,6 @@ test("runSetup with --yes uses a saved default source without prompting", async 
 
   assert.equal(code, 0);
   assert.deepEqual(promptState.rememberedSources, []);
-  assert.ok(!output.join("\n").includes("RTK / init"));
 });
 
 function fakeRuntime(output: string[]): Runtime {
@@ -491,11 +489,10 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
       version: 1,
       items: [
         {
-          id: "rtk",
-          label: "RTK",
-          description: "Compress noisy command output for coding agents.",
-          install: { command: "sh", args: ["-c", "install-rtk"] },
-          postInstall: "rtk-init",
+          id: "sample-plugin",
+          label: "Sample Plugin",
+          description: "Sample plugin install.",
+          install: { command: "sh", args: ["-c", "install-sample-plugin"] },
           default: true,
         },
       ],

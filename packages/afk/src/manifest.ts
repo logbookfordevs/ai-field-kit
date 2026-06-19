@@ -38,9 +38,10 @@ export type SkillManifestItem = {
   composes?: string[];
   profiles?: string[];
   catalog?: SkillManifestItemCatalog;
+  imported?: boolean;
 };
 
-export type SkillManifestItemRole = "primitive" | "wrapper" | "flow" | "utility" | "reference" | "router";
+export type SkillManifestItemRole = "primitive" | "wrapper" | "workflow" | "utility" | "reference" | "router";
 
 export type McpManifest = {
   version: number;
@@ -74,7 +75,7 @@ export type PluginManifestItem = {
     command: string;
     args: string[];
   };
-  postInstall?: "rtk-init" | PluginPostInstallCommand;
+  postInstall?: PluginPostInstallCommand;
   default: boolean;
 };
 
@@ -185,9 +186,10 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
       continue;
     }
 
-    const content = options.empty
+    const rawContent = options.empty
       ? emptyManifestContent(name, options, effectiveDefaultsSource)
       : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
+    const content = rawContent && name === "skills.json" ? mergedSkillsManifestContent(rawContent, target) : rawContent;
     if (content) {
       operations.push({ type: "write", path: target, content });
     } else if (existsSync(target)) {
@@ -591,6 +593,11 @@ function migrateSkillsManifest(content: string): string | null {
       changed = true;
     }
 
+    if (next.imported === undefined) {
+      next.imported = false;
+      changed = true;
+    }
+
     return next;
   });
 
@@ -599,6 +606,45 @@ function migrateSkillsManifest(content: string): string | null {
   }
 
   return `${JSON.stringify({ ...parsed, items }, null, 2)}\n`;
+}
+
+function mergedSkillsManifestContent(content: string, targetPath: string): string {
+  let refreshed: unknown;
+  try {
+    refreshed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+
+  if (!isSkillManifest(refreshed)) {
+    return content;
+  }
+
+  const refreshedIds = new Set(refreshed.items.map((item) => item.id));
+  const importedItems = readExistingImportedSkillItems(targetPath).filter((item) => !refreshedIds.has(item.id));
+  const items = [
+    ...refreshed.items.map((item) => ({ ...item, imported: false })),
+    ...importedItems.map((item) => ({ ...item, imported: true })),
+  ];
+
+  return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
+}
+
+function readExistingImportedSkillItems(path: string): SkillManifestItem[] {
+  if (!existsSync(path)) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    if (!isSkillManifest(parsed)) {
+      return [];
+    }
+
+    return parsed.items.filter((item) => item.imported === true);
+  } catch {
+    return [];
+  }
 }
 
 function migratePresetsManifest(content: string): string | null {
@@ -671,7 +717,8 @@ function isSkillManifest(value: unknown): value is SkillManifest {
       (item.role === undefined || isSkillManifestItemRole(item.role)) &&
       (item.composes === undefined || isStringArray(item.composes)) &&
       (item.profiles === undefined || isStringArray(item.profiles)) &&
-      (item.catalog === undefined || isSkillManifestItemCatalog(item.catalog))
+      (item.catalog === undefined || isSkillManifestItemCatalog(item.catalog)) &&
+      (item.imported === undefined || typeof item.imported === "boolean")
     );
   });
 }
@@ -694,7 +741,7 @@ function isSkillManifestItemCatalog(value: unknown): value is SkillManifestItemC
 }
 
 function isSkillManifestItemRole(value: unknown): value is SkillManifestItemRole {
-  return value === "primitive" || value === "wrapper" || value === "flow" || value === "utility" || value === "reference" || value === "router";
+  return value === "primitive" || value === "wrapper" || value === "workflow" || value === "utility" || value === "reference" || value === "router";
 }
 
 function isMcpManifest(value: unknown): value is McpManifest {
@@ -741,7 +788,7 @@ function isPluginManifest(value: unknown): value is PluginManifest {
       typeof item.description === "string" &&
       typeof item.install.command === "string" &&
       isStringArray(item.install.args) &&
-      (item.postInstall === undefined || item.postInstall === "rtk-init" || isPluginPostInstallCommand(item.postInstall)) &&
+      (item.postInstall === undefined || isPluginPostInstallCommand(item.postInstall)) &&
       typeof item.default === "boolean"
     );
   });

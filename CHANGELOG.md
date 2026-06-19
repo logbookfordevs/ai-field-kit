@@ -16,6 +16,8 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` added `afk show skills --react` to render the skills catalog as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
 - `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills catalog and open it automatically in interactive terminals.
 - `cli:` added `afk catalog import` to backfill missing skills catalog entries from installed skills when the official `skills` CLI lockfile can recover the original source.
+- `skills:` added AFK Turbo review-gated mode, where each code-changing GoalBuddy task stages changes, suggests Plannotator Review, and waits for human approval before task completion.
+- `skills:` added a deterministic AFK Turbo goal launch gate that writes `goal-launch.html`, opens a localhost control surface, and returns whether the user chose current-chat execution, Codex delegation, Claude Code delegation, or close.
 
 ### Changed
 
@@ -23,6 +25,23 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` made first-run setup seed the catalog cache from the official `logbookfordevs/ai-field-kit` source when no default exists, while `afk refresh --default-source` now saves a new default source and refreshes the cache.
 - `cli:` renamed AFK's public setup data model from manifests to catalog, moving bundled defaults to `packages/afk/catalog`, global cache files to `~/.agents/afk/catalog`, and project-local files to `./afk/catalog`.
 - `cli:` fixed the skills visualization React analogy so quoted JSX attributes render as normal quotes instead of visible `&quot;` entities.
+- `cli:` made the root lobby and command help more self-documenting, including direct routes for refresh, skill React view, skill visualization, and catalog import.
+- `cli:` removed RTK from the bundled plugin catalog and dropped its special `rtk-init` post-install path in favor of generic plugin post-install commands.
+- `cli:` refined the skills visualization template typography with smaller fixed headings, clearer product UI hierarchy, and lighter role markers.
+- `cli:` marked catalog-imported skills with `imported: true` and preserved them across refresh until the refreshed source owns the same skill id.
+- `docs:` made Quick Start lead with AFK CLI, clarified when to use `npx` versus a global AFK install, and kept `npx skills add` as the authored-skills-only path.
+- `skills:` distilled the AFK Turbo launch page template so the launch action stays primary while goal package details sit behind a quiet disclosure.
+- `skills:` made AFK Turbo launch pages carry review-gated mode through the visible page, copied command, and delegated agent prompts.
+- `skills:` made AFK Turbo launch deep links explicitly invoke the manual Turbo skill in Codex and Claude Code sessions.
+- `skills:` folded workflow resume into Turbo and execution-tracking modes, removed `afk-resume-workflow` from the catalog, and let Turbo compose the `grilling` primitive before Plannotator setup.
+- `skills:` renamed the composition role from `flow` to `workflow`, including bundled catalog values, show output, visualization docs, and README language.
+- `skills:` clarified AFK Sprint so manual composed skills are explicit user-invocation boundaries instead of silent internal steps.
+- `skills:` pointed Turbo and execution tracking at `yggtree` for parallel worktrees before falling back to native git worktree commands.
+- `skills:` shortened AFK-owned manual skill descriptions and default prompts so `autoInvocation: false` skills read like explicit invocation surfaces instead of auto-discovery triggers.
+
+### Fixed
+
+- `skills:` made AFK Turbo launch pages resilient on `file://` by adding clipboard fallback behavior and visible launch status messages for Codex and Claude Code buttons.
 
 ## v0.6.0 - 2026-06-16
 

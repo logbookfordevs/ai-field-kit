@@ -295,14 +295,13 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
     --line: #d6cec0;
     --primitive: #c75a49;
     --wrapper: #247268;
-    --flow: #50508f;
+    --workflow: #50508f;
     --utility: #8a612c;
     --reference: #395f85;
     --router: #8d3b64;
     --external: #b65a3c;
     --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
-    --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    --serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -315,7 +314,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
       --line: #5a4f40;
       --primitive: #ff7b62;
       --wrapper: #69c7b5;
-      --flow: #a79cff;
+      --workflow: #a79cff;
       --utility: #ebb15e;
       --reference: #7db7f2;
       --router: #f078ad;
@@ -324,65 +323,75 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
   }
 
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: var(--sans);
-    line-height: 1.5;
-  }
-  .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 70px; }
-  header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; border-bottom: 1px solid var(--line); padding-bottom: 22px; }
-  .eyebrow { font-family: var(--mono); color: var(--muted); font-size: 12px; margin-bottom: 12px; }
-  h1 { font-family: var(--serif); font-size: clamp(38px, 6vw, 72px); line-height: 0.98; margin: 0; font-weight: 520; max-width: 11ch; }
-  .subhead { color: var(--muted); max-width: 58rem; margin: 18px 0 0; font-size: 17px; }
-  .meta { font-family: var(--mono); color: var(--muted); font-size: 12px; text-align: right; }
-  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); border-block: 1px solid var(--line); margin: 28px 0 0; }
-  .metric { padding: 16px 14px; border-right: 1px solid var(--line); }
-  .metric:last-child { border-right: 0; }
-  .metric b { display: block; font-family: var(--mono); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
-  .metric span { display: block; font-size: 28px; margin-top: 4px; }
-  section { margin-top: 54px; }
-  .section-head { display: grid; grid-template-columns: minmax(0, 0.55fr) minmax(280px, 1fr); gap: 24px; align-items: end; border-top: 1px solid var(--line); padding-top: 20px; margin-bottom: 18px; }
-  h2 { font-family: var(--serif); font-weight: 520; font-size: clamp(27px, 4vw, 42px); line-height: 1.04; margin: 0; }
-  .section-head p { margin: 0; color: var(--muted); }
-  .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  .lane { border-top: 1px solid var(--line); padding-top: 14px; min-width: 0; }
-  .lane h3 { margin: 0 0 12px; font-size: 17px; }
-  .skill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
-  .skill, .composition-card { border: 1px solid var(--line); background: var(--paper); padding: 12px; border-radius: 8px; min-width: 0; }
-  .skill { border-left: 5px solid var(--role-color); }
-  .skill b, .composition-card b { display: block; overflow-wrap: anywhere; }
-  .skill span, .composition-card span { display: block; color: var(--muted); font-family: var(--mono); font-size: 11px; margin-top: 3px; }
+	  body {
+	    margin: 0;
+	    background: var(--bg);
+	    color: var(--ink);
+	    font-family: var(--sans);
+	    font-size: 1rem;
+	    line-height: 1.55;
+	    font-kerning: normal;
+	  }
+	  .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 70px; }
+	  header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; border-bottom: 1px solid var(--line); padding-bottom: 22px; }
+	  .eyebrow { font-family: var(--mono); color: var(--muted); font-size: 0.75rem; margin-bottom: 0.75rem; }
+	  h1 { font-size: 2.25rem; line-height: 1.08; margin: 0; font-weight: 680; letter-spacing: 0; max-width: 18ch; text-wrap: balance; }
+	  .subhead { color: var(--muted); max-width: 68ch; margin: 0.875rem 0 0; font-size: 1rem; line-height: 1.6; text-wrap: pretty; }
+	  .meta { font-family: var(--mono); color: var(--muted); font-size: 0.75rem; text-align: right; }
+	  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); border-block: 1px solid var(--line); margin: 28px 0 0; }
+	  .metric { padding: 16px 14px; border-right: 1px solid var(--line); }
+	  .metric:last-child { border-right: 0; }
+	  .metric b { display: block; font-family: var(--mono); color: var(--muted); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; }
+	  .metric span { display: block; font-size: 1.5rem; line-height: 1.15; margin-top: 0.25rem; font-variant-numeric: tabular-nums; }
+	  section { margin-top: 54px; }
+	  .section-head { display: grid; grid-template-columns: minmax(0, 0.55fr) minmax(280px, 1fr); gap: 24px; align-items: end; border-top: 1px solid var(--line); padding-top: 20px; margin-bottom: 18px; }
+	  h2 { font-weight: 650; font-size: 1.5rem; line-height: 1.18; margin: 0; letter-spacing: 0; text-wrap: balance; }
+	  .section-head p { margin: 0; color: var(--muted); max-width: 70ch; line-height: 1.6; text-wrap: pretty; }
+	  .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+	  .lane { border-top: 1px solid var(--line); padding-top: 14px; min-width: 0; }
+	  .lane h3 { margin: 0 0 0.75rem; font-size: 1.125rem; line-height: 1.25; font-weight: 650; }
+	  .skill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+	  .skill, .composition-card { position: relative; border: 1px solid var(--line); background: var(--paper); padding: 0.875rem 0.875rem 0.875rem 2rem; border-radius: 8px; min-width: 0; }
+	  .skill::before, .composition-card::before { content: ""; position: absolute; left: 0.875rem; top: 1.05rem; width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--role-color); }
+	  .skill b, .composition-card b { display: block; overflow-wrap: anywhere; font-size: 0.9375rem; line-height: 1.25; font-weight: 650; }
+	  .skill span, .composition-card span { display: block; color: var(--muted); font-family: var(--mono); font-size: 0.6875rem; line-height: 1.45; margin-top: 0.25rem; }
   .primitive { --role-color: var(--primitive); }
   .wrapper { --role-color: var(--wrapper); }
-  .flow { --role-color: var(--flow); }
+  .workflow { --role-color: var(--workflow); }
   .utility { --role-color: var(--utility); }
   .reference { --role-color: var(--reference); }
   .router { --role-color: var(--router); }
-  .composition-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
-  .composition-card { border-top: 4px solid var(--role-color); }
-  .children { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-  .pill { border: 1px solid var(--line); border-radius: 999px; padding: 4px 7px; font-family: var(--mono); font-size: 11px; color: var(--ink); background: var(--paper-2); }
-  .code-window { margin: 0; border: 1px solid rgba(255,255,255,0.08); background: #15130f; color: #f8ead7; border-radius: 8px; padding: 18px; font-family: var(--mono); font-size: 12px; line-height: 1.66; overflow: auto; max-height: 720px; }
+	  .composition-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+	  .children { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+	  .pill { border: 1px solid var(--line); border-radius: 999px; padding: 0.25rem 0.4375rem; font-family: var(--mono); font-size: 0.6875rem; color: var(--ink); background: var(--paper-2); }
+	  .code-window { margin: 0; border: 1px solid rgba(255,255,255,0.08); background: #15130f; color: #f8ead7; border-radius: 8px; padding: 1rem; font-family: var(--mono); font-size: 0.75rem; line-height: 1.66; overflow: auto; max-height: 720px; }
   .jsx-punct { color: #8c8374; }
   .jsx-root, .jsx-primitive { color: #9de0cf; }
   .jsx-group, .jsx-string { color: #f8ead7; }
   .jsx-wrapper { color: #f3bf68; }
-  .jsx-flow { color: #b6adff; }
+  .jsx-workflow { color: #b6adff; }
   .jsx-utility { color: #dca85e; }
   .jsx-reference { color: #86b9ed; }
   .jsx-router { color: #ff8fbd; }
   .jsx-external, .jsx-false { color: #ff987d; }
   .jsx-prop { color: #ffb07c; }
-  footer { border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: 12px; margin-top: 56px; padding-top: 18px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  @media (max-width: 820px) {
-    header, .section-head, .lanes { grid-template-columns: 1fr; }
-    .meta { text-align: left; }
-    .metrics { grid-template-columns: repeat(2, 1fr); }
-    .metric:nth-child(2) { border-right: 0; }
-    .metric:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
-  }
+	  footer { border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: 0.75rem; margin-top: 56px; padding-top: 18px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+	  @media (max-width: 820px) {
+	    header, .section-head, .lanes { grid-template-columns: 1fr; }
+	    .meta { text-align: left; }
+	    .metrics { grid-template-columns: repeat(2, 1fr); }
+	    .metric:nth-child(2) { border-right: 0; }
+	    .metric:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+	  }
+	  @media (max-width: 520px) {
+	    .wrap { width: min(100% - 24px, 1180px); padding-top: 20px; }
+	    h1 { font-size: 1.875rem; }
+	    h2 { font-size: 1.3125rem; }
+	    .metrics { grid-template-columns: 1fr; }
+	    .metric { border-right: 0; border-bottom: 1px solid var(--line); }
+	    .metric:last-child { border-bottom: 0; }
+	    .metric:nth-child(2) { border-bottom: 1px solid var(--line); }
+	  }
 </style>
 </head>
 <body>
@@ -391,7 +400,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
       <div>
         <div class="eyebrow">AFK skills / composition visualization</div>
         <h1>Skills as a component system.</h1>
-        <p class="subhead">A static snapshot of the current skills catalog: primitives stay discoverable, wrappers become named experiences, and flows carry larger execution motion.</p>
+        <p class="subhead">A static snapshot of the current skills catalog: primitives stay discoverable, wrappers become named experiences, and workflows carry larger execution motion.</p>
       </div>
       <div class="meta">
         <div>${escapeHtml(context.sourceKind)} source</div>
@@ -427,7 +436,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
     <section>
       <div class="section-head">
         <h2>Composed skills.</h2>
-        <p>These are the wrappers and flows with children. This is where the React analogy becomes concrete: role becomes component, composes becomes children.</p>
+        <p>These are the wrappers and workflows with children. This is where the React analogy becomes concrete: role becomes component, composes becomes children.</p>
       </div>
       <div class="composition-grid">${composed.map((item) => renderCompositionCardHtml(item, items)).join("")}</div>
     </section>
@@ -557,7 +566,7 @@ function roleSummary(items: Record<string, unknown>[]): Array<[string, number]> 
 }
 
 function roleClass(role: string): string {
-  return ["primitive", "wrapper", "flow", "utility", "reference", "router"].includes(role) ? role : "primitive";
+  return ["primitive", "wrapper", "workflow", "utility", "reference", "router"].includes(role) ? role : "primitive";
 }
 
 function highlightJsxForHtml(source: string): string {
@@ -610,7 +619,7 @@ function jsxTagClass(tag: string): string {
   if (tag === "ModelDiscovery" || tag === "ExplicitInvocation") return "jsx-group";
   if (tag === "PrimitiveSkill") return "jsx-primitive";
   if (tag === "WrapperSkill") return "jsx-wrapper";
-  if (tag === "FlowSkill") return "jsx-flow";
+  if (tag === "WorkflowSkill") return "jsx-workflow";
   if (tag === "UtilitySkill") return "jsx-utility";
   if (tag === "ReferenceSkill") return "jsx-reference";
   if (tag === "RouterSkill") return "jsx-router";
@@ -724,7 +733,7 @@ function tagColor(tag: string): typeof terminalPalette[keyof typeof terminalPale
   switch (tag) {
     case "WrapperSkill":
       return terminalPalette.brass;
-    case "FlowSkill":
+    case "WorkflowSkill":
       return terminalPalette.rust;
     case "UtilitySkill":
       return terminalPalette.sienna;
@@ -775,8 +784,8 @@ function componentTag(role: unknown): string {
   switch (role) {
     case "wrapper":
       return "WrapperSkill";
-    case "flow":
-      return "FlowSkill";
+    case "workflow":
+      return "WorkflowSkill";
     case "utility":
       return "UtilitySkill";
     case "reference":

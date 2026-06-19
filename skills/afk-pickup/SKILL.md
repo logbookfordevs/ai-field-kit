@@ -1,6 +1,6 @@
 ---
 name: afk-pickup
-description: Find and resume from a handoff document saved in the user's OS temporary directory. Use when a previous session wrote a disposable handoff note, the user mentions pickup/resume/handoff from temp, or the user passes a handoff path/topic.
+description: Find and resume from a disposable handoff document saved in the user's OS temporary directory.
 argument-hint: "Optional handoff path, repo name, topic, or 'latest'"
 metadata:
   short-description: Find and resume from temp-directory handoff notes.

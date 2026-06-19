@@ -1,6 +1,6 @@
 ---
 name: afk-execution-tracking
-description: Track implementation when executable AFK checkpoint packets exist and execution needs statuses, review gates, handoff notes, parallel agents, interruption recovery, or durable progress state.
+description: Track executable AFK checkpoint packets with statuses, review gates, handoff notes, parallel-agent coordination, interruption recovery, and durable progress state.
 metadata:
   short-description: Track implementation checkpoints, statuses, validation, and handoffs across agent sessions.
 ---
@@ -10,6 +10,8 @@ Keep implementation state visible in the checkpoint packet itself. The packet is
 
 ## Activation
 Use after executable checkpoint packets exist. If there is only a PRD/spec, plan, goal package, tracker issue, or rough implementation context, create checkpoint packets first, typically with `afk-to-issues` or another approved slicing source.
+
+If the user asks to resume tracked work, use [resume.md](references/resume.md).
 
 Skip tiny one-shot edits unless the user asks.
 
@@ -23,6 +25,8 @@ docs/<task-slug>/tracking/I001-short-title.md
 Checkpoint packets are the only required tracking artifacts.
 
 For parallel work, assign exact checkpoint files. Each agent updates only its assigned packet and directly relevant handoff notes.
+
+When parallel work needs separate worktrees, prefer `yggtree` when available before falling back to native git worktree commands.
 
 ## Active Checkpoint
 Choose the active checkpoint in this order:

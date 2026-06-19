@@ -17,7 +17,7 @@ When a request arrives:
 ## Selection Modes
 
 ### Recommend
-Use this mode when the user asks what AFK skill, flow, or command fits.
+Use this mode when the user asks what AFK skill, workflow, or command fits.
 
 Output:
 - The recommended skill or package.
@@ -54,9 +54,9 @@ Use when a feature, product change, or technical slice needs to become code.
 
 Use when the user is resuming a feature, workflow, branch, packet, or previous session.
 
-- `afk-resume-workflow` for durable repo artifacts.
+- `afk-turbo` resume mode for durable Turbo goal packages, handoffs, or board context.
 - `afk-pickup` for disposable handoff notes.
-- `afk-execution-tracking` when checkpoint packets already exist and need status, validation, or handoff updates.
+- `afk-execution-tracking` resume mode when checkpoint packets already exist and need state, validation, or handoff updates.
 
 ### Design and frontend judgment
 
@@ -84,7 +84,8 @@ Task arrives
 +-- Explicit AFK Turbo or visual-board execution package? -> afk-turbo
 +-- Explicit AFK Sprint or goal run with Markdown tracking? -> afk-sprint
 +-- Explicit AFK workflow / Flow / run? --------> route only the current phase
-+-- Resuming existing feature/workflow work? ---> afk-resume-workflow
++-- Resuming Turbo goal/board work? -----------> afk-turbo resume mode
++-- Resuming checkpointed work? ---------------> afk-execution-tracking resume mode
 +-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
 +-- Need an agent-ready PRD/spec before code? ---> afk-to-prd-spec
 +-- Need executable slices/checkpoints? ---------> afk-to-issues
@@ -101,11 +102,11 @@ Task arrives
 
 Only invoke skills that are installed or clearly available. If a routed skill is missing, state the gap and continue with the best available installed skill or normal workflow.
 
-For explicit AFK workflow / Flow requests, explain that AFK is composable and route the current phase. Add Grill, PRD/spec, issues, tracking, or execution discipline only when that is the current need.
+For explicit AFK workflow requests, explain that AFK is composable and route the current phase. Add Grill, PRD/spec, issues, tracking, or execution discipline only when that is the current need.
 
 ## Manual Wrappers
 
-Many AFK wrappers and flows are intentionally manual. Compass may still recommend them by name when the request clearly fits.
+Many AFK wrappers and workflows are intentionally manual. Compass may still recommend them by name when the request clearly fits.
 
 When recommending a manual skill, give the invocation string and the reason. When routing into it from an active work request, announce the skill and continue.
 

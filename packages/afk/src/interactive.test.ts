@@ -36,7 +36,7 @@ vi.mock("@inquirer/prompts", () => ({
     }
 
     if (message === "Choose plugins to install") {
-      return ["rtk"];
+      return ["sample-plugin"];
     }
 
     return [];
@@ -77,7 +77,7 @@ test("normalizeSetupSelection keeps item areas when at least one item is selecte
     skillIds: ["afk-note"],
     skillAgents: ["kiro-cli"],
     mcpIds: ["stitch"],
-    pluginIds: ["rtk"],
+    pluginIds: ["sample-plugin"],
     hookIds: [],
   });
 
@@ -140,16 +140,16 @@ test("selectSetup does not ask for agent targets when only plugins are selected"
   const selection = await selectSetup(defaultOptions(localHomeWithPluginManifest()));
 
   assert.deepEqual(selection.areas, ["plugins"]);
-  assert.deepEqual(selection.pluginIds, ["rtk"]);
+  assert.deepEqual(selection.pluginIds, ["sample-plugin"]);
   assert.deepEqual(selection.agents, []);
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
 
-test("selectPluginsInstall does not ask for agent targets when installing RTK", async () => {
+test("selectPluginsInstall does not ask for agent targets when installing plugins", async () => {
   promptState.checkboxMessages = [];
   const selection = await selectPluginsInstall(defaultOptions(localHomeWithPluginManifest()));
 
-  assert.deepEqual(selection.pluginIds, ["rtk"]);
+  assert.deepEqual(selection.pluginIds, ["sample-plugin"]);
   assert.deepEqual(selection.agents, []);
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
@@ -380,11 +380,10 @@ function localHomeWithPluginManifest(): string {
       version: 1,
       items: [
         {
-          id: "rtk",
-          label: "RTK",
-          description: "Compress noisy command output for coding agents.",
-          install: { command: "sh", args: ["-c", "install-rtk"] },
-          postInstall: "rtk-init",
+          id: "sample-plugin",
+          label: "Sample Plugin",
+          description: "Sample plugin install.",
+          install: { command: "sh", args: ["-c", "install-sample-plugin"] },
           default: true,
         },
       ],
