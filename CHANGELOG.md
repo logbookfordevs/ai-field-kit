@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v1.0.0 - 2026-06-19
+
 ### Added
 
 - `cli:` added the `afk skills` command family for local skill management, including list, show, open, enable, disable, delete, upgrade, and categorize commands.
