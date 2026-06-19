@@ -25,6 +25,7 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` made first-run setup seed the catalog cache from the official `logbookfordevs/ai-field-kit` source when no default exists, while `afk refresh --default-source` now saves a new default source and refreshes the cache.
 - `cli:` renamed AFK's public setup data model from manifests to catalog, moving bundled defaults to `packages/afk/catalog`, global cache files to `~/.agents/afk/catalog`, and project-local files to `./afk/catalog`.
 - `cli:` fixed the skills visualization React analogy so quoted JSX attributes render as normal quotes instead of visible `&quot;` entities.
+- `cli:` made the root lobby and command help more self-documenting, including direct routes for refresh, skill React view, skill visualization, and catalog import.
 - `skills:` distilled the AFK Turbo launch page template so the launch action stays primary while goal package details sit behind a quiet disclosure.
 - `skills:` made AFK Turbo launch pages carry review-gated mode through the visible page, copied command, and delegated agent prompts.
 - `skills:` renamed the composition role from `flow` to `workflow`, including bundled catalog values, show output, visualization docs, and README language.

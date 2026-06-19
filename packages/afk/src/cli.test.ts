@@ -59,6 +59,7 @@ test("runCli prints contextual refresh help", async () => {
   assert.ok(output.join("\n").includes("AFK refresh"));
   assert.ok(output.join("\n").includes("afk refresh skills"));
   assert.ok(output.join("\n").includes("Refresh cached AFK catalog"));
+  assert.ok(output.join("\n").includes("Use refresh when you want the local catalog cache to change."));
   assert.ok(!output.join("\n").includes("--refresh-defaults"));
 });
 
@@ -71,6 +72,7 @@ test("runCli prints contextual catalog import help", async () => {
   assert.ok(text.includes("AFK catalog import"));
   assert.ok(text.includes("afk catalog import --local"));
   assert.ok(text.includes("Backfill missing skills catalog entries"));
+  assert.ok(text.includes("original source can be recovered"));
 });
 
 test("runCli rejects the removed refresh-defaults flag", async () => {
@@ -96,6 +98,7 @@ test("runCli prints contextual setup help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK setup"));
+  assert.ok(text.includes("Use this when you want AFK to prepare agent-facing surfaces"));
   assert.ok(text.includes("Subcommands:"));
   assert.ok(!text.includes("afk setup refresh"));
   assert.ok(text.includes("afk setup mcps"));
@@ -294,6 +297,31 @@ test("runCli prints contextual manifest show help", async () => {
   assert.ok(output.join("\n").includes("afk show skills mcps"));
   assert.ok(!output.join("\n").includes("afk show --rules --skills"));
   assert.ok(!output.join("\n").includes("AFK setup\n"));
+});
+
+test("runCli prints contextual show skills help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["show", "skills", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK show skills"));
+  assert.ok(text.includes("React-style composition tree"));
+  assert.ok(text.includes("--react                          Show skills as a React-style composition tree"));
+  assert.ok(text.includes("--visualize                      Write and open a skills composition HTML file"));
+  assert.ok(text.includes("afk show skills --source logbookfordevs/ai-field-kit --ref main"));
+  assert.ok(!text.includes("afk show skills mcps"));
+});
+
+test("runCli prints contextual show category help through old aliases", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["manifests", "show", "mcps", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK show MCPs"));
+  assert.ok(text.includes("Inspect MCP recommendations"));
+  assert.ok(text.includes("Usage:\n  afk show mcps [options]"));
 });
 
 test("runCli keeps old manifest command forms as aliases", async () => {
