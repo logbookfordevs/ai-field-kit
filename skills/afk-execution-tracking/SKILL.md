@@ -24,6 +24,8 @@ Checkpoint packets are the only required tracking artifacts.
 
 For parallel work, assign exact checkpoint files. Each agent updates only its assigned packet and directly relevant handoff notes.
 
+When parallel work needs separate worktrees, prefer `yggtree` when available before falling back to native git worktree commands.
+
 ## Active Checkpoint
 Choose the active checkpoint in this order:
 

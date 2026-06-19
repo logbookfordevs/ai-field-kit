@@ -30,6 +30,7 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` made AFK Turbo launch pages carry review-gated mode through the visible page, copied command, and delegated agent prompts.
 - `skills:` renamed the composition role from `flow` to `workflow`, including bundled catalog values, show output, visualization docs, and README language.
 - `skills:` clarified AFK Sprint so manual composed skills are explicit user-invocation boundaries instead of silent internal steps.
+- `skills:` pointed Turbo and execution tracking at `yggtree` for parallel worktrees before falling back to native git worktree commands.
 - `skills:` shortened AFK-owned manual skill descriptions and default prompts so `autoInvocation: false` skills read like explicit invocation surfaces instead of auto-discovery triggers.
 
 ### Fixed

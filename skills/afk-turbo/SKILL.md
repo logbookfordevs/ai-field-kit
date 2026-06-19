@@ -32,6 +32,8 @@ Do not also use `afk-execution-tracking`; the GoalBuddy board is the continuity 
 
 Preserve execution discipline in GoalBuddy tasks: `tdd` for behavior, source checks for APIs/libs, doubt checks for risky decisions, and concrete validation.
 
+If execution needs parallel worktrees, prefer `yggtree` when available, especially in repositories with submodules.
+
 Do not hand-write the launch HTML. Use the script.
 
 If the launch action is `delegated-codex`, `delegated-claude-code`, or `closed`, do not start GoalBuddy in this chat.
