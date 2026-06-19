@@ -34,17 +34,9 @@ cleanup() {
 trap cleanup EXIT
 
 package_dir="$tmp_dir/package"
-mkdir -p "$package_dir"
-cp -R "$AFK_DIR/dist" "$package_dir/dist"
-find "$package_dir/dist" -name '*.test.js' -delete
-
-if [[ -f "$AFK_DIR/package.json" ]]; then
-  cp "$AFK_DIR/package.json" "$package_dir/package.json"
-fi
-
-if [[ -f "$ROOT_DIR/README.md" ]]; then
-  cp "$ROOT_DIR/README.md" "$package_dir/README.md"
-fi
+info "deploying production package"
+pnpm --dir "$ROOT_DIR" --filter @logbookfordevs/afk deploy --prod --legacy "$package_dir"
+chmod +x "$package_dir/dist/index.js"
 
 mkdir -p "$OUT_DIR"
 tar -czf "$ASSET_PATH" -C "$package_dir" .

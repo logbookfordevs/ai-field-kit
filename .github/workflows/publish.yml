@@ -6,7 +6,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 concurrency:
@@ -68,6 +68,16 @@ jobs:
       - name: Check AFK package contents
         run: pnpm --dir packages/afk pack --dry-run
 
+      - name: Package AFK GitHub release asset
+        run: pnpm --dir packages/afk release:pack
+
       - name: Publish AFK CLI to npm
         working-directory: packages/afk
         run: npm publish --access public
+
+      - name: Publish AFK GitHub release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            .release/afk-cli.tar.gz
+            .release/afk-cli.tar.gz.sha256
