@@ -421,6 +421,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "enable <folder>                   Move a disabled global skill back to active",
       "trash [folder]                    Move one or more global skills to Trash",
       "upgrade [skills...]               Upgrade selected or all tracked skills",
+      "profiles <command>                Manage skill focus profiles",
       "categorize                        Create or update skills.json categories with Codex",
     ],
     examples: [
@@ -608,6 +609,33 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk skills categorize --dry-run",
       "afk skills categorize --mode recategorize-all --instruction \"Prefer workflow-oriented categories\"",
+    ],
+  },
+  "skills profiles": {
+    title: "AFK skills profiles",
+    summary: "Manage groups of skills that can temporarily focus the global skill library.",
+    usage: "afk skills profiles <command> [options]",
+    options: [
+      "list                              List profiles",
+      "show [profile]                    Show one profile",
+      "create <profile>                  Create a profile",
+      "edit <profile>                    Update a profile",
+      "delete <profile>                  Remove a profile definition",
+      "enable <profile>                  Enable a profile and apply filtering",
+      "disable <profile>                 Disable a profile and restore eligible skills",
+      "status                            Show enabled profiles and state",
+      "--local                           Use ./afk/catalog and ./afk/state for profile data",
+      "--name <name>                     Set profile name for create/edit",
+      "--skill <skill>                   Add profile skill; repeatable",
+      "--always-on <skill>               Add global always-on skill; repeatable",
+      "--dry-run                         Preview filesystem-changing operations",
+      "--json                            Print JSON for list/show",
+    ],
+    examples: [
+      "afk skills profiles list",
+      "afk skills profiles create video --name Video --skill hyperframes --skill tailwind",
+      "afk skills profiles enable video --dry-run",
+      "afk skills profiles status --local",
     ],
   },
   "show skills": {
@@ -805,6 +833,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillCategorizationMode: SkillCategorizationMode | undefined;
   let skillCategorizationRunner: SkillCategorizationRunner = "codex-exec";
   let skillCategorizationInstruction = "";
+  let skillProfileName: string | undefined;
+  const skillProfileSkills: string[] = [];
+  const skillProfileAlwaysOn: string[] = [];
   let uiCategory = "";
   let manifestShowReact = false;
   let manifestShowVisualize = false;
@@ -817,6 +848,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
   const isAfkSkillsCommand = commandPath[0] === "skills";
+  const isAfkSkillsProfilesCommand = commandPath[0] === "skills" && commandPath[1] === "profiles";
   const isAfkUiCommand = commandPath[0] === "ui";
 
   if (args.includes("--version") || args.includes("-v")) {
@@ -863,6 +895,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
+      if (isAfkSkillsProfilesCommand) {
+        manifestLocal = true;
+        continue;
+      }
+
       if (isRefreshCommand(key)) {
         manifestLocal = true;
         continue;
@@ -1127,6 +1164,36 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (isAfkSkillsProfilesCommand && arg === "--name") {
+      const value = args[index + 1]?.trim();
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --name value" };
+      }
+      skillProfileName = value;
+      index += 1;
+      continue;
+    }
+
+    if (isAfkSkillsProfilesCommand && arg === "--skill") {
+      const value = args[index + 1]?.trim();
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --skill value" };
+      }
+      skillProfileSkills.push(value);
+      index += 1;
+      continue;
+    }
+
+    if (isAfkSkillsProfilesCommand && arg === "--always-on") {
+      const value = args[index + 1]?.trim();
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --always-on value" };
+      }
+      skillProfileAlwaysOn.push(value);
+      index += 1;
+      continue;
+    }
+
     return { help: false, kind: "error", error: `Unknown option: ${arg}` };
   }
 
@@ -1172,6 +1239,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillCategorizationMode,
       skillCategorizationRunner,
       skillCategorizationInstruction,
+      skillProfileName,
+      skillProfileSkills,
+      skillProfileAlwaysOn,
       uiCategory,
       manifestShowReact,
       manifestShowVisualize,
@@ -1251,6 +1321,10 @@ function isCatalogImportCommand(key: string): boolean {
 }
 
 function helpCommandPath(commandPath: string[], key: string): string[] {
+  if (key === "skills profiles" || key.startsWith("skills profiles ")) {
+    return ["skills", "profiles"];
+  }
+
   if (isRefreshCommand(key)) {
     return ["refresh"];
   }
@@ -1361,6 +1435,15 @@ function commandKey(commandPath: string[] = []): string {
 }
 
 function helpKey(commandPath: string[] = []): string {
+  if (commandPath[0] === "skills" && commandPath[1] === "profiles") {
+    const contextualKey = commandPath.slice(0, 3).join(" ");
+    if (commandPath[2] && commandHelps[contextualKey]) {
+      return contextualKey;
+    }
+
+    return "skills profiles";
+  }
+
   if (commandPath[0] === "skills" && commandPath[1]) {
     return commandPath.slice(0, 2).join(" ");
   }

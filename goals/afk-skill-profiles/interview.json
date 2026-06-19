@@ -1,0 +1,198 @@
+{
+  "stage": "interview",
+  "title": "AFK Skill Profiles",
+  "goalSlug": "afk-skill-profiles",
+  "questions": [
+    {
+      "id": "command_family",
+      "prompt": "Where should profile commands live?",
+      "description": "This decides the public command shape and how discoverable profiles feel relative to skills.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Put profiles inside the skills family as `afk skills profiles ...`. Profiles operate on skills and should feel like skill-management mode, not a separate top-level AFK concept yet.",
+      "recommendedOptionIds": [
+        "skills_profiles"
+      ],
+      "options": [
+        {
+          "id": "skills_profiles",
+          "label": "afk skills profiles"
+        },
+        {
+          "id": "top_level_profiles",
+          "label": "afk profiles"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "profile_activation_model",
+      "prompt": "How should activating a profile affect installed skills?",
+      "description": "This is the most important safety decision: whether AFK physically moves skill folders or records state elsewhere.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Use the same enable/disable mechanics already used by AFK: activating a profile moves non-profile global skills into `.disabled`, and deactivating restores the pre-profile active set from an AFK state file. V1 should target the shared global library only unless `--agent` support is explicitly added later.",
+      "recommendedOptionIds": [
+        "move_with_state"
+      ],
+      "options": [
+        {
+          "id": "move_with_state",
+          "label": "Move folders with state"
+        },
+        {
+          "id": "catalog_only",
+          "label": "Catalog state only"
+        },
+        {
+          "id": "agent_metadata",
+          "label": "Agent metadata only"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "always_on_model",
+      "prompt": "How should skills survive every active profile?",
+      "description": "Examples might include routing, AFK core workflow, or emergency utility skills that should never disappear during focus mode.",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "Add an explicit `alwaysOn` list in `profiles.json`. Active profile skills plus always-on skills remain enabled; everything else is temporarily disabled. Avoid an implicit default profile for V1 because it hides too much behavior and makes troubleshooting harder.",
+      "recommendedOptionIds": [
+        "always_on_list"
+      ],
+      "options": [
+        {
+          "id": "always_on_list",
+          "label": "Explicit alwaysOn list"
+        },
+        {
+          "id": "default_profile",
+          "label": "Default profile"
+        },
+        {
+          "id": "per_skill_flag",
+          "label": "Per-skill flag"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "profile_file_shape",
+      "prompt": "What should `profiles.json` contain in V1?",
+      "description": "This defines the durable catalog file users may sync later.",
+      "answerMode": "multi-custom",
+      "recommendedAnswer": "Use `~/.agents/afk/catalog/profiles.json` with top-level `activeProfileId`, top-level `alwaysOn`, and `items` containing `{ id, name, skills }`. Keep state needed to restore folders in a separate transient file, not inside the user-editable profiles catalog.",
+      "recommendedOptionIds": [
+        "active_profile",
+        "always_on",
+        "items",
+        "separate_state"
+      ],
+      "options": [
+        {
+          "id": "active_profile",
+          "label": "activeProfileId"
+        },
+        {
+          "id": "always_on",
+          "label": "alwaysOn"
+        },
+        {
+          "id": "items",
+          "label": "profile items"
+        },
+        {
+          "id": "separate_state",
+          "label": "separate restore state"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "commands_scope",
+      "prompt": "Which profile commands should be implemented now?",
+      "description": "This keeps V1 shippable while still useful.",
+      "answerMode": "multi-custom",
+      "recommendedAnswer": "Implement `list`, `show`, `create`, `delete`, `activate`, `deactivate`, and `status`. Use interactive searchable skill selection for create/edit where possible. Skip profile edit/rename/import/export unless needed after V1.",
+      "recommendedOptionIds": [
+        "list",
+        "show",
+        "create",
+        "delete",
+        "activate",
+        "deactivate",
+        "status"
+      ],
+      "options": [
+        {
+          "id": "list",
+          "label": "list"
+        },
+        {
+          "id": "show",
+          "label": "show"
+        },
+        {
+          "id": "create",
+          "label": "create"
+        },
+        {
+          "id": "delete",
+          "label": "delete"
+        },
+        {
+          "id": "activate",
+          "label": "activate"
+        },
+        {
+          "id": "deactivate",
+          "label": "deactivate"
+        },
+        {
+          "id": "status",
+          "label": "status"
+        },
+        {
+          "id": "edit",
+          "label": "edit"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "safety_rules",
+      "prompt": "What safety boundaries should profile activation obey?",
+      "description": "This determines how AFK avoids accidentally hiding or overwriting skills.",
+      "answerMode": "multi-custom",
+      "recommendedAnswer": "V1 should never delete skills, should refuse activation when another profile state is active unless forced/deactivated first, should dry-run all folder moves, should preserve pre-existing disabled skills as disabled after deactivate, and should only operate on global shared skills.",
+      "recommendedOptionIds": [
+        "never_delete",
+        "single_active_profile",
+        "dry_run",
+        "preserve_disabled",
+        "global_only"
+      ],
+      "options": [
+        {
+          "id": "never_delete",
+          "label": "never delete"
+        },
+        {
+          "id": "single_active_profile",
+          "label": "single active profile"
+        },
+        {
+          "id": "dry_run",
+          "label": "dry-run support"
+        },
+        {
+          "id": "preserve_disabled",
+          "label": "preserve disabled"
+        },
+        {
+          "id": "global_only",
+          "label": "global only"
+        }
+      ],
+      "required": true
+    }
+  ]
+}

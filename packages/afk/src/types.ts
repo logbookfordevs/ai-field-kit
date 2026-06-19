@@ -77,6 +77,9 @@ export type CliOptions = {
   skillCategorizationMode?: SkillCategorizationMode | undefined;
   skillCategorizationRunner?: SkillCategorizationRunner;
   skillCategorizationInstruction?: string;
+  skillProfileName?: string | undefined;
+  skillProfileSkills?: string[] | undefined;
+  skillProfileAlwaysOn?: string[] | undefined;
   uiCategory?: string;
   manifestShowReact: boolean;
   manifestShowVisualize: boolean;

@@ -1,10 +1,11 @@
-import { confirm, search } from "@inquirer/prompts";
+import { confirm, input, search } from "@inquirer/prompts";
 import { join } from "node:path";
 import { afkPromptTheme, afkSearchableCheckboxTheme, afkSearchTheme, renderPromptStep } from "../prompt-ui.js";
 import { searchableCheckbox } from "../searchable-checkbox.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
+import { selectSkillProfilesLobbyRoute, selectSkillsLobbyRoute } from "../lobby.js";
 import { loadSkillManifest } from "../manifest.js";
 import {
   filterSkillRecords,
@@ -15,6 +16,22 @@ import {
 } from "./catalog.js";
 import { runCodexCategorization } from "./categorization.js";
 import {
+  deleteSkillProfile,
+  disableSkillProfile,
+  enableSkillProfile,
+  listSkillProfiles,
+  skillProfileStatus,
+  upsertSkillProfile,
+  type SkillProfileContext,
+  type SkillProfileItem,
+} from "./profiles.js";
+import {
+  renderSkillProfileApply,
+  renderSkillProfileDelete,
+  renderSkillProfileDetail,
+  renderSkillProfileList,
+  renderSkillProfileStatus,
+  renderSkillProfileWrite,
   renderSkillChoice,
   renderSkillDetails,
   renderSkillList,
@@ -29,13 +46,18 @@ import {
   type LockedSkillRecord,
 } from "./upgrade.js";
 
-type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "trash" | "upgrade" | "categorize";
+type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "trash" | "upgrade" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   const command = commandPath[1] as SkillCommandName | undefined;
   const operands = commandPath.slice(2);
 
   try {
+    if (!command) {
+      const route = await selectSkillsLobbyRoute(runtime);
+      return runSkillsCommand(route, runtime, options);
+    }
+
     switch (command) {
       case "list":
         return runSkillsList(runtime, options);
@@ -59,6 +81,8 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
           mode: options.skillCategorizationMode,
           instruction: options.skillCategorizationInstruction,
         });
+      case "profiles":
+        return runSkillProfilesCommand(operands, runtime, options);
       default:
         runtime.io.stderr(`Unknown skills command: ${command ?? "(none)"}`);
         return 1;
@@ -66,6 +90,128 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
   } catch (error) {
     runtime.io.stderr(error instanceof Error ? error.message : String(error));
     return 1;
+  }
+}
+
+async function runSkillProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  if (operands.length === 0) {
+    const route = await selectSkillProfilesLobbyRoute(runtime);
+    return runSkillsCommand(route, runtime, options);
+  }
+
+  const command = operands[0] ?? "list";
+  const id = operands[1];
+  const context = skillProfileContext(options);
+
+  switch (command) {
+    case "list": {
+      const result = listSkillProfiles(context);
+      if (options.skillsJson) {
+        runtime.io.stdout(JSON.stringify(result.catalog, null, 2));
+        return 0;
+      }
+      runtime.io.stdout(renderSkillProfileList({
+        catalog: result.catalog,
+        state: result.state,
+        catalogPath: result.paths.catalogPath,
+      }));
+      return 0;
+    }
+    case "show": {
+      const result = listSkillProfiles(context);
+      const profile = id
+        ? findSkillProfile(result.catalog.items, id)
+        : await promptSkillProfile(result.catalog.items, "Select a profile to show:");
+      if (!profile) {
+        runtime.io.stderr(id ? `Skill profile not found: ${id}` : "No skill profiles found.");
+        return 1;
+      }
+      if (options.skillsJson) {
+        runtime.io.stdout(JSON.stringify(profile, null, 2));
+        return 0;
+      }
+      runtime.io.stdout(renderSkillProfileDetail({
+        profile,
+        catalog: result.catalog,
+        state: result.state,
+        catalogPath: result.paths.catalogPath,
+      }));
+      return 0;
+    }
+    case "create":
+    case "edit": {
+      const profiles = listSkillProfiles(context).catalog.items;
+      const selectedId = id ?? (command === "create"
+        ? await promptNewSkillProfileId()
+        : (await promptSkillProfile(profiles, "Select a profile to edit:"))?.id);
+      if (!selectedId) {
+        runtime.io.stderr(command === "create" ? "Profile id is required." : "No skill profiles found.");
+        return 1;
+      }
+      if (command === "edit" && !findSkillProfile(profiles, selectedId)) {
+        runtime.io.stderr(`Skill profile not found: ${selectedId}`);
+        return 1;
+      }
+      const profileName = options.skillProfileName ?? (command === "create" ? await promptOptionalSkillProfileName(selectedId) : undefined);
+      const skills = options.skillProfileSkills && options.skillProfileSkills.length > 0
+        ? options.skillProfileSkills
+        : (await promptSkillRecords(loadMutationSkillRecords(options), `Select skills for ${selectedId}:`)).map((record) => record.folder);
+      const result = upsertSkillProfile(context, {
+        id: selectedId,
+        skills,
+        alwaysOn: options.skillProfileAlwaysOn ?? [],
+        dryRun: options.dryRun,
+        ...(profileName ? { name: profileName } : {}),
+      });
+      runtime.io.stdout(renderSkillProfileWrite({
+        profile: result.profile,
+        catalogPath: result.paths.catalogPath,
+        dryRun: result.dryRun,
+        created: result.created,
+      }));
+      return 0;
+    }
+    case "delete": {
+      const profiles = listSkillProfiles(context).catalog.items;
+      const selectedId = id ?? (await promptSkillProfile(profiles, "Select a profile to delete:"))?.id;
+      if (!selectedId) {
+        runtime.io.stderr("No skill profiles found.");
+        return 1;
+      }
+      const result = deleteSkillProfile(context, selectedId, options.dryRun);
+      runtime.io.stdout(renderSkillProfileDelete({
+        profile: result.removed,
+        catalogPath: result.paths.catalogPath,
+        dryRun: result.dryRun,
+      }));
+      return 0;
+    }
+    case "enable": {
+      const profiles = listSkillProfiles(context).catalog.items;
+      const selectedId = id ?? (await promptSkillProfile(profiles, "Select a profile to enable:"))?.id;
+      if (!selectedId) {
+        runtime.io.stderr("No skill profiles found.");
+        return 1;
+      }
+      runtime.io.stdout(renderSkillProfileApply(enableSkillProfile(context, selectedId, options.dryRun)));
+      return 0;
+    }
+    case "disable": {
+      const profiles = listSkillProfiles(context).catalog.items;
+      const selectedId = id ?? (await promptSkillProfile(profiles, "Select a profile to disable:"))?.id;
+      if (!selectedId) {
+        runtime.io.stderr("No skill profiles found.");
+        return 1;
+      }
+      runtime.io.stdout(renderSkillProfileApply(disableSkillProfile(context, selectedId, options.dryRun)));
+      return 0;
+    }
+    case "status":
+      runtime.io.stdout(renderSkillProfileStatus(skillProfileStatus(context)));
+      return 0;
+    default:
+      runtime.io.stderr(`Unknown skills profiles command: ${command}`);
+      return 1;
   }
 }
 
@@ -371,6 +517,54 @@ function mutationTargetLabel(options: CliOptions): string {
   return "global";
 }
 
+function skillProfileContext(options: CliOptions): SkillProfileContext {
+  return {
+    homeDir: options.homeDir,
+    cwd: options.cwd,
+    local: options.manifestLocal,
+  };
+}
+
+async function promptNewSkillProfileId(): Promise<string> {
+  console.log(renderPromptStep("Skill Profile", "Create a profile id, then choose the skills that belong to it."));
+  return input({
+    message: "Profile id:",
+    required: true,
+    theme: afkPromptTheme,
+  });
+}
+
+async function promptOptionalSkillProfileName(id: string): Promise<string | undefined> {
+  const value = await input({
+    message: "Profile name:",
+    default: humanizeProfileId(id),
+    theme: afkPromptTheme,
+  });
+  return value.trim() || undefined;
+}
+
+async function promptSkillProfile(profiles: SkillProfileItem[], message: string): Promise<SkillProfileItem | undefined> {
+  if (profiles.length === 0) {
+    return undefined;
+  }
+
+  console.log(renderPromptStep("Skill Profile", "Type to filter by profile id, name, or skill."));
+  return search<SkillProfileItem>({
+    message,
+    source: async (term) => filterSkillProfiles(profiles, term).map((profile) => ({
+      name: `${strong(accent(profile.name))} ${muted(`[${profile.id}]`)}`,
+      value: profile,
+      description: profile.skills.join(", "),
+    })),
+    pageSize: 10,
+    instructions: {
+      navigation: "Use arrow keys to move.",
+      pager: "Type to filter; use arrow keys to reveal more choices.",
+    },
+    theme: afkSearchTheme,
+  });
+}
+
 async function promptSkillRecord(records: SkillRecord[], message: string): Promise<SkillRecord | undefined> {
   if (records.length === 0) {
     return undefined;
@@ -423,6 +617,32 @@ function findSkillRecord(records: SkillRecord[], value: string): SkillRecord | u
   );
 }
 
+function findSkillProfile(profiles: SkillProfileItem[], value: string): SkillProfileItem | undefined {
+  const normalized = value.trim().toLowerCase();
+  return profiles.find((profile) => profile.id.toLowerCase() === normalized || profile.name.toLowerCase() === normalized);
+}
+
+function filterSkillProfiles(profiles: SkillProfileItem[], term: string | undefined): SkillProfileItem[] {
+  const tokens = term?.trim().toLowerCase().split(/\s+/).filter(Boolean) ?? [];
+  if (tokens.length === 0) {
+    return profiles;
+  }
+
+  return profiles.filter((profile) => {
+    const searchable = [profile.id, profile.name, ...profile.skills].join(" ").toLowerCase();
+    return tokens.every((token) => searchable.includes(token));
+  });
+}
+
+function humanizeProfileId(id: string): string {
+  return id
+    .trim()
+    .split(/[-_:]+/)
+    .filter(Boolean)
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
 export function formatLockedSkillChoice(record: LockedSkillRecord): string {
   return [
     strong(record.name),
@@ -433,6 +653,10 @@ export function formatLockedSkillChoice(record: LockedSkillRecord): string {
 
 function strong(value: string): string {
   return `${bold}${paint(terminalPalette.brass, value)}${reset}`;
+}
+
+function accent(value: string): string {
+  return paint(terminalPalette.brass, value);
 }
 
 function badge(value: string): string {

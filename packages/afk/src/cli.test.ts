@@ -350,6 +350,58 @@ test("runCli prints contextual skills trash help", async () => {
   assert.ok(text.includes("--manifest-only"));
 });
 
+test("runCli prints contextual skills profiles help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "profiles", "enable", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK skills profiles"));
+  assert.ok(text.includes("enable <profile>"));
+  assert.ok(text.includes("--local"));
+  assert.ok(text.includes("--always-on <skill>"));
+});
+
+test("runCli creates local skill profiles with repeated skill flags", async () => {
+  const homeDir = localHomeWithManifests({});
+  const cwd = mkdtempSync(join(tmpdir(), "afk-cli-profile-project-"));
+  const output: string[] = [];
+  const originalCwd = process.cwd();
+  process.chdir(cwd);
+
+  try {
+    const code = await withConsole(output, () => runCli(
+      [
+        "skills",
+        "profiles",
+        "create",
+        "video",
+        "--local",
+        "--name",
+        "Video",
+        "--skill",
+        "hyperframes",
+        "--skill",
+        "tailwind",
+        "--always-on",
+        "afk-compass",
+      ],
+      { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    ));
+
+    assert.equal(code, 0);
+    assert.ok(output.join("\n").includes("Profile Create Complete"));
+    const catalog = JSON.parse(readFileSync(join(cwd, "afk", "catalog", "profiles.json"), "utf8")) as {
+      alwaysOn: string[];
+      items: Array<{ id: string; name: string; skills: string[] }>;
+    };
+    assert.deepEqual(catalog.alwaysOn, ["afk-compass"]);
+    assert.deepEqual(catalog.items, [{ id: "video", name: "Video", skills: ["hyperframes", "tailwind"] }]);
+  } finally {
+    process.chdir(originalCwd);
+  }
+});
+
 test("runCli accepts skills trash manifest-only flag", async () => {
   const homeDir = localHomeWithManifests({
     "skills.json": {

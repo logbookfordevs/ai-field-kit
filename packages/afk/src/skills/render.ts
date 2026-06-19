@@ -1,6 +1,7 @@
 import { sectionTitle, muted } from "../brand.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import { skillCatalogFileName, type SkillCategorizationState, type SkillRecord } from "./catalog.js";
+import type { SkillProfileApplyResult, SkillProfileCatalog, SkillProfileItem, SkillProfileMovement, SkillProfileState } from "./profiles.js";
 
 export function renderSkillList(records: SkillRecord[], categorization: SkillCategorizationState): string {
   if (records.length === 0) {
@@ -122,6 +123,100 @@ export function renderSkillUpgradeRoute(input: {
   ].join("\n");
 }
 
+export function renderSkillProfileList(input: {
+  catalog: SkillProfileCatalog;
+  state: SkillProfileState;
+  catalogPath: string;
+}): string {
+  if (input.catalog.items.length === 0) {
+    return [
+      sectionTitle("Skill Profiles"),
+      muted("No skill profiles found."),
+      renderField("Catalog", input.catalogPath),
+    ].join("\n");
+  }
+
+  const enabled = new Set(input.state.enabledProfileIds);
+  return [
+    sectionTitle("Skill Profiles"),
+    muted(`${input.catalog.items.length} profiles · ${enabled.size} enabled · ${input.catalog.alwaysOn.length} always-on`),
+    renderField("Catalog", input.catalogPath),
+    "",
+    ...input.catalog.items.map((profile) => renderSkillProfileRow(profile, enabled.has(profile.id))),
+  ].join("\n");
+}
+
+export function renderSkillProfileDetail(input: {
+  profile: SkillProfileItem;
+  catalog: SkillProfileCatalog;
+  state: SkillProfileState;
+  catalogPath: string;
+}): string {
+  const enabled = input.state.enabledProfileIds.includes(input.profile.id);
+  return [
+    sectionTitle("Skill Profile"),
+    `${strong(accent(input.profile.name))} ${muted(`[${input.profile.id}]`)}`,
+    renderField("State", enabled ? success("enabled") : muted("disabled")),
+    renderField("Skills", input.profile.skills.length === 0 ? muted("none") : input.profile.skills.join(", ")),
+    renderField("Always-on", input.catalog.alwaysOn.length === 0 ? muted("none") : input.catalog.alwaysOn.join(", ")),
+    renderField("Catalog", input.catalogPath),
+  ].join("\n");
+}
+
+export function renderSkillProfileWrite(input: {
+  profile: SkillProfileItem;
+  catalogPath: string;
+  dryRun: boolean;
+  created: boolean;
+}): string {
+  const verb = input.created ? "Create" : "Update";
+  return [
+    sectionTitle(input.dryRun ? `Profile ${verb} Preview` : `Profile ${verb} Complete`),
+    `${input.dryRun ? muted("Would save") : accent("Saved")} ${strong(input.profile.name)} ${muted(`[${input.profile.id}]`)}`,
+    renderField("Skills", input.profile.skills.length === 0 ? muted("none") : input.profile.skills.join(", ")),
+    renderField("Catalog", input.catalogPath),
+  ].join("\n");
+}
+
+export function renderSkillProfileDelete(input: {
+  profile: SkillProfileItem;
+  catalogPath: string;
+  dryRun: boolean;
+}): string {
+  return [
+    sectionTitle(input.dryRun ? "Profile Delete Preview" : "Profile Delete Complete"),
+    input.dryRun
+      ? `${muted("Would remove profile")} ${strong(input.profile.id)}`
+      : `${accent("Removed profile")} ${strong(input.profile.id)}`,
+    renderField("Catalog", input.catalogPath),
+  ].join("\n");
+}
+
+export function renderSkillProfileApply(input: SkillProfileApplyResult): string {
+  return [
+    sectionTitle(input.dryRun ? "Profile Move Preview" : "Profile Move Complete"),
+    renderField("Enabled", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
+    renderField("Kept", input.keptSkills.length === 0 ? muted("none") : input.keptSkills.join(", ")),
+    renderField("Moved", String(input.movements.length)),
+    renderField("State", input.paths.statePath),
+    "",
+    ...input.movements.map(renderSkillProfileMovement),
+  ].filter((line) => line !== "").join("\n");
+}
+
+export function renderSkillProfileStatus(input: SkillProfileApplyResult): string {
+  return [
+    sectionTitle("Skill Profile Status"),
+    renderField("Enabled", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
+    renderField("Always-on", input.catalog.alwaysOn.length === 0 ? muted("none") : input.catalog.alwaysOn.join(", ")),
+    renderField("Kept", input.keptSkills.length === 0 ? muted("none") : input.keptSkills.join(", ")),
+    renderField("Moved", input.state.profileMovedSkills.length === 0 ? muted("none") : input.state.profileMovedSkills.join(", ")),
+    renderField("Pre-disabled", input.state.preExistingDisabledSkills.length === 0 ? muted("none") : input.state.preExistingDisabledSkills.join(", ")),
+    renderField("Catalog", input.paths.catalogPath),
+    renderField("State", input.paths.statePath),
+  ].join("\n");
+}
+
 export function renderPromptPreview(prompt: string): string {
   return [
     "",
@@ -161,6 +256,16 @@ function renderSkillRow(record: SkillRecord, isLast: boolean): string {
   const autoInvocation = muted(` · ${renderAutoInvocationBadge(record)}`);
   const category = record.category ? muted(` · ${record.category}`) : "";
   return `${branch} ${strong(record.name)} ${muted(`[${record.folder}]`)} ${status} ${management}${autoInvocation}${category}\n  ${muted(truncate(record.description, 120))}`;
+}
+
+function renderSkillProfileRow(profile: SkillProfileItem, enabled: boolean): string {
+  const status = enabled ? success("enabled") : muted("disabled");
+  return `${paint(terminalPalette.sienna, "•")} ${strong(profile.name)} ${muted(`[${profile.id}]`)} ${status}\n  ${muted(profile.skills.length === 0 ? "No skills assigned." : profile.skills.join(", "))}`;
+}
+
+function renderSkillProfileMovement(movement: SkillProfileMovement): string {
+  const action = movement.action === "enable" ? success("enable") : warn("disable");
+  return `${paint(terminalPalette.sienna, "•")} ${strong(movement.folder)} ${action} ${muted(`${movement.source} -> ${movement.destination}`)}`;
 }
 
 function renderLibrarySummary(records: SkillRecord[], categorization: SkillCategorizationState): string {

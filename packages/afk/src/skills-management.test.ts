@@ -22,10 +22,17 @@ import {
 } from "./skills/catalog.js";
 import { buildCodexCategorizationCommand, runCodexCategorization } from "./skills/categorization.js";
 import { buildSkillOpenCommand, filterManifestSkillRecords, filterSkillChoices, formatLockedSkillChoice, runSkillsCommand } from "./skills/commands.js";
+import {
+  disableSkillProfile,
+  enableSkillProfile,
+  loadSkillProfileState,
+  skillProfilePaths,
+  type SkillProfileCatalog,
+} from "./skills/profiles.js";
 import { renderSkillChoice, renderSkillDetails, renderSkillTrashBatch } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
-import { localManifestDir } from "./manifest.js";
+import { localManifestDir, projectManifestDir } from "./manifest.js";
 
 test("parseSkillFile reads frontmatter name and description", () => {
   const metadata = parseSkillFile("---\nname: demo\ndescription: Demo skill\n---\n\n# Demo\n", "fallback");
@@ -379,6 +386,129 @@ test("trashGlobalSkills removes imported skills from the AFK catalog only", () =
   ]);
   assert.equal(existsSync(join(homeDir, ".Trash", "alpha")), true);
   assert.equal(existsSync(join(homeDir, ".Trash", "beta")), true);
+});
+
+test("skillProfilePaths resolves global and local profile files", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-paths-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+
+  assert.deepEqual(skillProfilePaths({ homeDir, cwd, local: false }), {
+    catalogPath: join(localManifestDir(homeDir), "profiles.json"),
+    statePath: join(homeDir, ".agents", "afk", "state", "skill-profiles.json"),
+    skillsRoot: join(homeDir, ".agents", "skills"),
+    disabledRoot: join(homeDir, ".agents", "skills", ".disabled"),
+  });
+  assert.deepEqual(skillProfilePaths({ homeDir, cwd, local: true }), {
+    catalogPath: join(projectManifestDir(cwd), "profiles.json"),
+    statePath: join(cwd, "afk", "state", "skill-profiles.json"),
+    skillsRoot: join(homeDir, ".agents", "skills"),
+    disabledRoot: join(homeDir, ".agents", "skills", ".disabled"),
+  });
+});
+
+test("enableSkillProfile disables non-profile skills and preserves pre-disabled skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-enable-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
+  writeSkill(join(homeDir, ".agents", "skills"), "compass", "Compass");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "old", "Old");
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    alwaysOn: ["compass"],
+    items: [{ id: "engineering", name: "Engineering", skills: ["alpha"] }],
+  });
+
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "engineering", false);
+
+  assert.deepEqual(enabled.state.enabledProfileIds, ["engineering"]);
+  assert.deepEqual(enabled.state.profileMovedSkills, ["beta"]);
+  assert.deepEqual(enabled.state.preExistingDisabledSkills, ["old"]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "alpha")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "compass")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "beta")), true);
+
+  const disabled = disableSkillProfile({ homeDir, cwd, local: false }, "engineering", false);
+  assert.deepEqual(disabled.state.enabledProfileIds, []);
+  assert.deepEqual(disabled.state.profileMovedSkills, []);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "beta")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "old")), true);
+});
+
+test("enableSkillProfile temporarily enables pre-disabled skills kept by a profile", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-pre-disabled-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "old", "Old");
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    alwaysOn: [],
+    items: [{ id: "legacy", name: "Legacy", skills: ["old"] }],
+  });
+
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "legacy", false);
+
+  assert.deepEqual(enabled.state.enabledProfileIds, ["legacy"]);
+  assert.deepEqual(enabled.state.profileMovedSkills, ["alpha"]);
+  assert.deepEqual(enabled.state.preExistingDisabledSkills, ["old"]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "old")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "old")), false);
+
+  const disabled = disableSkillProfile({ homeDir, cwd, local: false }, "legacy", false);
+  assert.deepEqual(disabled.state.enabledProfileIds, []);
+  assert.deepEqual(disabled.state.profileMovedSkills, []);
+  assert.deepEqual(loadSkillProfileState({ homeDir, cwd, local: false }).preExistingDisabledSkills, ["old"]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "old")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "alpha")), true);
+});
+
+test("multiple enabled profiles keep the union of profile skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-union-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
+  writeSkill(join(homeDir, ".agents", "skills"), "gamma", "Gamma");
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    alwaysOn: [],
+    items: [
+      { id: "front", name: "Front", skills: ["alpha"] },
+      { id: "qa", name: "QA", skills: ["beta"] },
+    ],
+  });
+
+  enableSkillProfile({ homeDir, cwd, local: false }, "front", false);
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "qa", false);
+
+  assert.deepEqual(enabled.state.enabledProfileIds, ["front", "qa"]);
+  assert.deepEqual(enabled.state.profileMovedSkills, ["gamma"]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "alpha")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "beta")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "gamma")), true);
+});
+
+test("runSkillsCommand profiles create writes profile catalog", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-command-"));
+  const homeDir = join(root, "home");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  const output: string[] = [];
+
+  const code = await runSkillsCommand(["skills", "profiles", "create", "engineering"], outputRuntime(output), {
+    ...baseOptions(root),
+    skillProfileName: "Engineering",
+    skillProfileSkills: ["alpha"],
+    skillProfileAlwaysOn: ["afk-compass"],
+  });
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("Profile Create Complete"));
+  const catalog = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
+  assert.deepEqual(catalog.alwaysOn, ["afk-compass"]);
+  assert.deepEqual(catalog.items, [{ id: "engineering", name: "Engineering", skills: ["alpha"] }]);
 });
 
 test("trashSkillRecords moves agent-specific skills to unique Trash destinations", () => {
@@ -868,6 +998,12 @@ function writeSkillCatalog(homeDir: string, content: unknown, options: { legacy?
   const path = options.legacy ? legacySkillCatalogPath(homeDir) : skillCatalogPath(homeDir);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(options.legacy ? content : skillManifestFixture(content), null, 2)}\n`);
+}
+
+function writeSkillProfiles(homeDir: string, content: SkillProfileCatalog): void {
+  const path = join(localManifestDir(homeDir), "profiles.json");
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(content, null, 2)}\n`);
 }
 
 function skillManifestFixture(content: unknown): unknown {
