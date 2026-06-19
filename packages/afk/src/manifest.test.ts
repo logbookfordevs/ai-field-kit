@@ -7,6 +7,7 @@ import {
   defaultsManifestBaseUrl,
   defaultsManifestBaseUrls,
   ensureLocalManifests,
+  loadPluginManifest,
   localManifestDir,
   planRememberedDefaultsSourceUpdate,
   projectManifestDir,
@@ -124,6 +125,47 @@ test("packaged plugin manifests keep npx installs non-interactive", () => {
     .map((item) => item.id);
 
   assert.deepEqual(interactiveNpxItems, []);
+});
+
+test("plugin manifests reject shell control tokens outside shell commands", () => {
+  assert.throws(
+    () => loadPluginManifest({
+      homeDir: "/tmp/home",
+      manifestContents: {
+        "plugins.json": JSON.stringify({
+          version: 1,
+          items: [
+            {
+              id: "bad-plugin",
+              label: "Bad Plugin",
+              description: "Invalid direct shell chaining.",
+              install: { command: "npx", args: ["--yes", "bad-plugin", "&&", "npx", "--yes", "bad-plugin", "update"] },
+              default: true,
+            },
+          ],
+        }),
+      },
+    }),
+    /Invalid AFK catalog file from setup source: plugins\.json/,
+  );
+
+  assert.doesNotThrow(() => loadPluginManifest({
+    homeDir: "/tmp/home",
+    manifestContents: {
+      "plugins.json": JSON.stringify({
+        version: 1,
+        items: [
+          {
+            id: "shell-plugin",
+            label: "Shell Plugin",
+            description: "Valid explicit shell command.",
+            install: { command: "sh", args: ["-c", "install-plugin && update-plugin"] },
+            default: true,
+          },
+        ],
+      }),
+    },
+  }));
 });
 
 test("defaultsManifestBaseUrl resolves GitHub shorthand to the AFK manifest convention", () => {

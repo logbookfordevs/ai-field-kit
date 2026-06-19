@@ -786,8 +786,7 @@ function isPluginManifest(value: unknown): value is PluginManifest {
       typeof item.id === "string" &&
       typeof item.label === "string" &&
       typeof item.description === "string" &&
-      typeof item.install.command === "string" &&
-      isStringArray(item.install.args) &&
+      isPluginCommand(item.install) &&
       (item.postInstall === undefined || isPluginPostInstallCommand(item.postInstall)) &&
       typeof item.default === "boolean"
     );
@@ -795,12 +794,24 @@ function isPluginManifest(value: unknown): value is PluginManifest {
 }
 
 function isPluginPostInstallCommand(value: unknown): value is PluginPostInstallCommand {
-  return (
-    isRecord(value) &&
-    (value.label === undefined || typeof value.label === "string") &&
-    typeof value.command === "string" &&
-    isStringArray(value.args)
-  );
+  return isRecord(value) && (value.label === undefined || typeof value.label === "string") && isPluginCommand(value);
+}
+
+function isPluginCommand(value: unknown): value is { command: string; args: string[] } {
+  if (!isRecord(value) || typeof value.command !== "string" || !isStringArray(value.args)) {
+    return false;
+  }
+
+  return isShellCommand(value.command) || !value.args.some(isShellControlToken);
+}
+
+function isShellCommand(command: string): boolean {
+  const executable = command.split("/").pop();
+  return executable === "sh" || executable === "bash" || executable === "zsh";
+}
+
+function isShellControlToken(value: string): boolean {
+  return value === "&&" || value === "||" || value === "|" || value === ";";
 }
 
 export function isHookManifest(value: unknown): value is HookManifest {

@@ -22,9 +22,13 @@
                 "command": "npx",
                 "args": [
                     "--yes",
-                    "goalbuddy",
-                    "&&",
-                    "npx",
+                    "goalbuddy"
+                ]
+            },
+            "postInstall": {
+                "label": "GoalBuddy / update",
+                "command": "npx",
+                "args": [
                     "--yes",
                     "goalbuddy",
                     "update"
