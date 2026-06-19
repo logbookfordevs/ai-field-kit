@@ -39,6 +39,7 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` aligned Sprint and execution tracking with Turbo's preflight/review posture by adding short grilling before weak Plannotator setup context and recommending `/plannotator-review` at review gates.
 - `skills:` added a Plannotator annotation gate after `afk-to-prd-spec` writes local PRD/spec artifacts so user feedback is resolved before slicing or execution consumes the spec.
 - `skills:` added a folder-level Plannotator annotation gate after `afk-to-issues` writes local checkpoint packets so packet content is reviewed before tracked execution starts.
+- `skills:` added `afk-delegate` as a supervised external-agent utility and removed raw cmux/tmux entries from the catalog in favor of live/background transport references.
 - `skills:` renamed the composition role from `flow` to `workflow`, including bundled catalog values, show output, visualization docs, and README language.
 - `skills:` clarified AFK Sprint so manual composed skills are explicit user-invocation boundaries instead of silent internal steps.
 - `skills:` pointed Turbo and execution tracking at `yggtree` for parallel worktrees before falling back to native git worktree commands.

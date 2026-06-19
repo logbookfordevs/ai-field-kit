@@ -33,6 +33,21 @@
             "profiles": []
         },
         {
+            "id": "afk-delegate",
+            "label": "AFK - Delegate",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-delegate",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": [],
+            "profiles": []
+        },
+        {
             "id": "afk-brainstorming-facilitator",
             "label": "AFK - Brainstorming Facilitator",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -481,36 +496,6 @@
             ],
             "default": true,
             "autoInvocation": false,
-            "role": "utility",
-            "composes": [],
-            "profiles": []
-        },
-        {
-            "id": "cmux",
-            "label": "cmux",
-            "source": "https://github.com/manaflow-ai/cmux",
-            "args": [
-                "--skill",
-                "cmux",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": true,
-            "role": "utility",
-            "composes": [],
-            "profiles": []
-        },
-        {
-            "id": "tmux",
-            "label": "tmux",
-            "source": "https://github.com/steipete/clawdis",
-            "args": [
-                "--skill",
-                "tmux",
-                "--global"
-            ],
-            "default": false,
-            "autoInvocation": true,
             "role": "utility",
             "composes": [],
             "profiles": []

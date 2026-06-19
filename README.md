@@ -164,6 +164,7 @@ plugins.
 | `afk-sprint` | Fast goal execution with Plannotator, native `/goal`, and Markdown checkpoint tracking |
 | `afk-turbo` | High-throughput goal execution with Plannotator and GoalBuddy's live board |
 | `afk-ask` | Gets a second opinion from another local AI CLI and saves the result as an artifact |
+| `afk-delegate` | Assigns work to another local agent and supervises it through live or background terminal lanes |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-code-grill` | Grill-style pressure on UX and implementation choices inside a defined coding scope |
 | `afk-to-prd-spec` | Turns grilled context, PM PRDs, or feature notes into an agent-ready PRD/spec |
@@ -186,6 +187,7 @@ They are intentionally similar, but they are not redundant:
 | `afk-execution-tracking` | You have checkpoint packets and want checkpointed execution, including resume, instead of one long build run | Updated checkpoint packets with status, review gates, validation, implementation notes, and handoff notes |
 | `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
+| `afk-delegate` | You want another local agent to do work while AFK supervises the terminal run | Live or background delegated agent run with status based on terminal evidence |
 
 ### How the workflow currently maps
 
@@ -199,7 +201,7 @@ They are intentionally similar, but they are not redundant:
 | Executable slicing | `afk-to-issues` |
 | Execution control | `afk-execution-tracking` plus the selected execution bundle; use its resume mode after context resets |
 | Validation / testing | Flexible for now; use project checks directly, with `diagnosing-bugs` when something fails |
-| Support | `afk-pickup`, `afk-ask`, `afk-doc-craft`, `diagnosing-bugs` |
+| Support | `afk-pickup`, `afk-ask`, `afk-delegate`, `afk-doc-craft`, `diagnosing-bugs` |
 
 Compass defines the default artifact convention in `skills/afk-compass/references/artifacts.md`: `docs/<task-slug>/<task-slug>.<type>.md`, with checkpoint packets under `docs/<task-slug>/tracking/` and task-specific references under `docs/<task-slug>/references/`.
 
@@ -220,6 +222,7 @@ If you're unsure which one to reach for, use this shortcut:
 - "Continue AFK Turbo from repo artifacts" -> `afk-turbo` resume mode
 - "A previous agent left a temp handoff for this session" -> `afk-pickup`
 - "I want another model's opinion" -> `afk-ask`
+- "I want another local agent to do this work" -> `afk-delegate`
 
 ### Use Only What You Need
 
@@ -348,13 +351,8 @@ AFK's fast execution packages are:
   Install: `npx impeccable install --global`
   Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Plugins and delegates to its installer, including Impeccable's design hook.
 
-- **cmux**  
-  Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  
-  Use when you are working inside a cmux terminal and need deterministic control of windows, workspaces, panes, surfaces, focus, routing, and visual attention cues for parallel agent orchestration.
-
-- **tmux (steipete/clawdis)**  
-  Install: `npx skills add https://github.com/steipete/clawdis --skill tmux`  
-  Use when parallel agents or long-running interactive CLI sessions live in tmux. It helps send keystrokes, inspect pane output, and monitor sessions that continue across disconnects.
+- **AFK Delegate**
+  Use `afk-delegate` when another local agent should do work, not merely advise. It uses cmux as the default live/shared-control lane and tmux as the default background lane.
 
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
@@ -368,7 +366,7 @@ Installer-based companions belong in Plugins. Keep `skills.json` focused on skil
 - `afk-code-grill` is Grill for code decisions: one meaningful trade-off at a time, with a recommendation when the evidence is enough.
 - `afk-to-issues` replaces one-file implementation planning with executable checkpoint packets.
 - `afk-execution-tracking` starts after checkpoint packets exist. Use it when execution needs status, resume safety, review gates, or parallel coordination.
-- `afk-pickup` and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
+- `afk-pickup`, `afk-ask`, and `afk-delegate` are support skills. They pair well with the others but usually are not the main event.
 
 ### Supporting skills around the workflow
 
