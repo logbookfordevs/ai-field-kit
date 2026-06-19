@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Changed
+
+- `release:` made `install.sh` a GitHub release installer again, with checksum-verified release assets and a generated launcher that requires Node 20 or newer at runtime.
+
 ## v1.0.0 - 2026-06-19
 
 ### Added

@@ -16,10 +16,10 @@ small while still giving people named workflows to invoke directly. See
 
 ## Quick Start
 
-Install the published CLI from npm:
+Install the latest AFK CLI release:
 
 ```bash
-npm install -g @logbookfordevs/afk
+curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
 afk setup --dry-run
 ```
 
@@ -52,7 +52,14 @@ Scripted setup can use `--yes` to accept defaults after the cache exists, or
 independently: if one delegated installer fails, AFK still tries the remaining
 selected areas, then exits non-zero with a failure summary.
 
-## Install From Source
+## Install AFK
+
+Use the latest GitHub release for a persistent machine command:
+
+```bash
+curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
+afk setup --dry-run
+```
 
 Use the package directly while developing:
 
@@ -70,9 +77,8 @@ command:
 afk setup --dry-run
 ```
 
-`scripts/install.sh` is for local development installs from this checkout. The
-user-facing install path is the npm package. A local link can shadow an
-npm-installed `afk`; restore the npm binary on `PATH` with:
+`scripts/install.sh --local` is for local development installs from this
+checkout. A local launcher can shadow another `afk` on `PATH`; remove it with:
 
 ```bash
 ./scripts/install.sh --unlink
@@ -651,13 +657,13 @@ because these installers are owned by their upstream tools.
 
 ## Troubleshooting
 
-### The npm CLI is installed, but `afk` runs a local checkout
+### `afk` runs a local checkout
 
-`./scripts/install.sh --local` writes a symlink to `~/.local/bin/afk` by
-default. If `~/.local/bin` appears before your npm global bin in `PATH`, it
-will shadow the npm package.
+`./scripts/install.sh --local` writes a launcher to `~/.local/bin/afk` by
+default. If `~/.local/bin` appears before another AFK install in `PATH`, it
+will shadow that command.
 
-Restore the npm-installed binary:
+Remove the local launcher:
 
 ```bash
 ./scripts/install.sh --unlink

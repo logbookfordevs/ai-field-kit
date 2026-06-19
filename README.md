@@ -59,10 +59,11 @@ npx @logbookfordevs/afk setup --dry-run
 
 Use `npx` for the first run, a one-off setup, or trying AFK without adding a
 global command to your machine. When AFK becomes part of your daily agent setup,
-install the CLI so the field-kit commands are always available:
+install the CLI from the latest GitHub release so the field-kit commands are
+always available:
 
 ```bash
-npm install -g @logbookfordevs/afk
+curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
 
 afk setup --dry-run
 afk refresh
@@ -141,7 +142,7 @@ Install the CLI globally when you want AFK to become a regular machine command
 for setup, refresh, catalog import, and skill inspection:
 
 ```bash
-npm install -g @logbookfordevs/afk
+curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
 afk setup
 afk refresh
 afk show skills
