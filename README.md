@@ -78,6 +78,10 @@ writes to your machine. The CLI owns AFK rule and hook setup, then delegates
 skills, MCPs, and plugins to the official tools or installer scripts that
 already own those ecosystems.
 
+Plugins are recommended for the full experience: some AFK skills mention,
+delegate to, or become much more useful with companion plugin capabilities such
+as Plannotator, GoalBuddy, or Impeccable installed.
+
 For the full command reference, flags, catalog format, local-development
 install flow, and custom defaults workflow, read the
 [AFK CLI README](./packages/afk/README.md).
@@ -149,7 +153,8 @@ afk show skills
 Use `npx skills add` only when you specifically want the authored skills from
 this repository and do not need AFK rules, hooks, MCPs, plugins, or
 catalog-aware companion installs. AFK delegates to that ecosystem during full
-setup, then adds the surrounding AFK setup pieces.
+setup, then adds the surrounding AFK setup pieces and recommended companion
+plugins.
 
 ### Available skills
 
