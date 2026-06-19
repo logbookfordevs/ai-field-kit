@@ -42,22 +42,36 @@ const title = firstHeading(goalText) || titleFromSlug(basename(goalDir));
 const launchCommand = reviewGated
   ? `/goal Follow ${relativeGoalPath || normalizePath(goalPath)} in AFK Turbo review-gated mode.`
   : `/goal Follow ${relativeGoalPath || normalizePath(goalPath)}.`;
-const launchPrompt = [
-  reviewGated ? "Run AFK Turbo in review-gated mode for this goal." : "Run AFK Turbo for this goal.",
+const turboModeInstruction = reviewGated
+  ? "Use this Turbo goal package in review-gated mode."
+  : "Use this Turbo goal package.";
+const reviewGatedInstruction = reviewGated
+  ? "\nDo not auto-commit task code changes. Stage them and wait for human review before marking code-changing tasks done."
+  : "";
+const codexLaunchPrompt = [
+  "[$afk-turbo](~/.agents/skills/afk-turbo/SKILL.md)",
+  "",
+  turboModeInstruction,
   "",
   launchCommand,
-  reviewGated
-    ? "\nDo not auto-commit task code changes. Stage them and wait for human review before marking code-changing tasks done."
-    : "",
+  reviewGatedInstruction,
+].join("\n");
+const claudeLaunchPrompt = [
+  "/afk-turbo",
+  "",
+  turboModeInstruction,
+  "",
+  launchCommand,
+  reviewGatedInstruction,
 ].join("\n");
 
 const codexUrl = deepLink("codex://threads/new", {
   path: workspacePath,
-  prompt: launchPrompt,
+  prompt: codexLaunchPrompt,
 });
 const claudeUrl = deepLink("claude-cli://open", {
   cwd: workspacePath,
-  q: launchPrompt,
+  q: claudeLaunchPrompt,
 });
 
 const sections = [
@@ -73,7 +87,8 @@ const pageData = {
   goalPath,
   relativeGoalPath,
   launchCommand,
-  launchPrompt,
+  codexLaunchPrompt,
+  claudeLaunchPrompt,
   codexUrl,
   claudeUrl,
   boardUrl,
