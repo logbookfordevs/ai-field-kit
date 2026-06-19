@@ -31,6 +31,7 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` marked catalog-imported skills with `imported: true` and preserved them across refresh until the refreshed source owns the same skill id.
 - `docs:` made Quick Start lead with AFK CLI, clarified when to use `npx` versus a global AFK install, recommended companion plugins for the full skills experience, and kept `npx skills add` as the authored-skills-only path.
 - `docs:` documented Turbo and execution-tracking modes so review-gated and resume requests are discoverable without reading skill internals.
+- `docs:` refreshed the skill composition markdown and HTML companion so the current AFK tree no longer references the removed resume workflow and shows Turbo composing `grilling`.
 - `skills:` distilled the AFK Turbo launch page template so the launch action stays primary while goal package details sit behind a quiet disclosure.
 - `skills:` made AFK Turbo launch pages carry review-gated mode through the visible page, copied command, and delegated agent prompts.
 - `skills:` made AFK Turbo launch deep links explicitly invoke the manual Turbo skill in Codex and Claude Code sessions.
