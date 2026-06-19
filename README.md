@@ -9,6 +9,9 @@ AI Field Kit treats frameworks like BMAD, Get Shit Done, Agent OS, Superpowers, 
 > **Standalone skills with an optional workflow path.**
 > Install one skill when that is all you need, or use the kit as a loose workflow when the work benefits from staged discovery, decisions, execution, and review.
 
+For the skill composition mental model, open the visual companion:
+[Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg).
+
 Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated entries instead of release versions.
 
 ---

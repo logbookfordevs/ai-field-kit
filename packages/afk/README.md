@@ -12,8 +12,7 @@ commands.
 AFK skills are modeled as composable parts: primitives, wrappers, workflows,
 utilities, references, and routers. That shape keeps automatic model discovery
 small while still giving people named workflows to invoke directly. See
-[Skill Composition](docs/skill-composition.md) for the full mental model, or
-open the visual companion in [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg).
+[Skill Composition](docs/skill-composition.md) for the full mental model.
 
 ## Quick Start
 
