@@ -340,6 +340,47 @@ test("trashGlobalSkills supports dry-run and moves multiple skills to Trash", ()
   assert.equal(existsSync(join(homeDir, ".Trash", "beta")), true);
 });
 
+test("trashGlobalSkills removes imported skills from the AFK catalog only", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-trash-catalog-"));
+  const homeDir = join(root, "home");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
+  writeSkillCatalog(homeDir, {
+    version: 1,
+    defaultSource: "",
+    scopes: [],
+    items: [
+      {
+        id: "alpha",
+        label: "Alpha",
+        source: "acme/skills",
+        args: ["--skill", "alpha"],
+        default: false,
+        imported: true,
+      },
+      {
+        id: "beta",
+        label: "Beta",
+        source: "logbookfordevs/ai-field-kit",
+        args: ["--skill", "beta"],
+        default: true,
+        imported: false,
+      },
+    ],
+  });
+
+  trashGlobalSkills({ homeDir, folders: ["alpha", "beta"], dryRun: false, platform: "darwin" });
+
+  const written = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
+    items: Array<{ id: string; imported?: boolean }>;
+  };
+  assert.deepEqual(written.items.map((item) => ({ id: item.id, imported: item.imported })), [
+    { id: "beta", imported: false },
+  ]);
+  assert.equal(existsSync(join(homeDir, ".Trash", "alpha")), true);
+  assert.equal(existsSync(join(homeDir, ".Trash", "beta")), true);
+});
+
 test("trashSkillRecords moves agent-specific skills to unique Trash destinations", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-trash-"));
   const homeDir = join(root, "home");
@@ -701,14 +742,14 @@ test("syncSkillCatalogFromManifest adds setup skills to canonical catalog", () =
   assert.deepEqual(result.added, ["beta"]);
   const written = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
     scopes: Array<{ id: string }>;
-    items: Array<{ id: string; catalog?: { scope?: string } }>;
+    items: Array<{ id: string; imported?: boolean; catalog?: { scope?: string } }>;
   };
   assert.ok(written.scopes.some((scope) => scope.id === "uncategorized"));
   assert.deepEqual(
-    written.items.map((item) => ({ id: item.id, scope: item.catalog?.scope })),
+    written.items.map((item) => ({ id: item.id, imported: item.imported, scope: item.catalog?.scope })),
     [
-      { id: "alpha", scope: undefined },
-      { id: "beta", scope: "uncategorized" },
+      { id: "alpha", imported: undefined, scope: undefined },
+      { id: "beta", imported: true, scope: "uncategorized" },
     ],
   );
 });

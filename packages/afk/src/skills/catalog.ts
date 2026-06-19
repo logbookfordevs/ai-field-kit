@@ -69,6 +69,12 @@ export type SkillMovement = {
   movement: string;
 };
 
+type ImportedCatalogPrunePlan = {
+  path: string;
+  removed: string[];
+  content: string | null;
+};
+
 export type SkillCatalogManifestSyncResult = {
   path: string;
   added: string[];
@@ -345,12 +351,14 @@ export function trashGlobalSkills(options: {
       destination,
     };
   });
+  const catalogPrune = planImportedCatalogPrune(options.homeDir, options.folders);
 
   if (!options.dryRun) {
     mkdirSync(trashRoot, { recursive: true });
     for (const movement of movements) {
       renameSync(movement.source, movement.destination);
     }
+    writeImportedCatalogPrune(catalogPrune);
   }
 
   return movements.map((movement) => ({
@@ -387,12 +395,19 @@ export function trashSkillRecords(options: {
       destination,
     };
   });
+  const catalogPrune = planImportedCatalogPrune(
+    options.homeDir,
+    options.records
+      .filter((record) => record.rootKind === "global-library")
+      .map((record) => record.folder),
+  );
 
   if (!options.dryRun) {
     mkdirSync(trashRoot, { recursive: true });
     for (const movement of movements) {
       renameSync(movement.source, movement.destination);
     }
+    writeImportedCatalogPrune(catalogPrune);
   }
 
   return movements.map((movement) => ({
@@ -422,8 +437,11 @@ export function syncSkillCatalogFromManifest(options: {
   const uncategorized = ensureUncategorizedScope(definition);
   const existingFolders = new Set(definition.skills.map((skill) => skill.folder.toLowerCase()));
   const added = folders.filter((folder) => !existingFolders.has(folder.toLowerCase()));
+  const syncedFolders = new Set(folders);
+  const shouldMarkImported = (definition.items ?? manifest.items)
+    .some((item) => syncedFolders.has(item.id) && item.imported !== true);
 
-  if (added.length === 0) {
+  if (added.length === 0 && !shouldMarkImported) {
     return { path, added };
   }
 
@@ -438,8 +456,12 @@ export function syncSkillCatalogFromManifest(options: {
   };
 
   if (!options.dryRun) {
+    const nextManifest = catalogDefinitionToSkillManifest(nextDefinition, manifest);
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, `${JSON.stringify(catalogDefinitionToSkillManifest(nextDefinition, manifest), null, 2)}\n`);
+    writeFileSync(path, `${JSON.stringify({
+      ...nextManifest,
+      items: nextManifest.items.map((item) => syncedFolders.has(item.id) ? { ...item, imported: true } : item),
+    }, null, 2)}\n`);
   }
 
   return { path, added };
@@ -452,6 +474,50 @@ export function parseOpenAiImplicitInvocation(contents: string): boolean | undef
   }
 
   return match[1] === "true";
+}
+
+function planImportedCatalogPrune(homeDir: string, folders: string[]): ImportedCatalogPrunePlan {
+  const path = skillCatalogPath(homeDir);
+  if (folders.length === 0 || !existsSync(path)) {
+    return { path, removed: [], content: null };
+  }
+
+  let parsed: SkillManifest;
+  try {
+    parsed = JSON.parse(readFileSync(path, "utf8")) as SkillManifest;
+  } catch {
+    throw new Error(`Could not update AFK skill catalog before trash; invalid JSON at ${path}.`);
+  }
+
+  if (!Array.isArray(parsed.items)) {
+    return { path, removed: [], content: null };
+  }
+
+  const folderIds = new Set(folders.map((folder) => folder.toLowerCase()));
+  const removed = parsed.items
+    .filter((item) => item.imported === true && folderIds.has(item.id.toLowerCase()))
+    .map((item) => item.id);
+
+  if (removed.length === 0) {
+    return { path, removed, content: null };
+  }
+
+  return {
+    path,
+    removed,
+    content: `${JSON.stringify({
+      ...parsed,
+      items: parsed.items.filter((item) => !(item.imported === true && folderIds.has(item.id.toLowerCase()))),
+    }, null, 2)}\n`,
+  };
+}
+
+function writeImportedCatalogPrune(plan: ImportedCatalogPrunePlan): void {
+  if (!plan.content) {
+    return;
+  }
+
+  writeFileSync(plan.path, plan.content);
 }
 
 export function sortSkillRecords(records: SkillRecord[]): SkillRecord[] {
