@@ -11,6 +11,7 @@ import {
   planRememberedDefaultsSourceUpdate,
   projectManifestDir,
   readRememberedDefaultsSource,
+  type SkillManifest,
 } from "./manifest.js";
 
 type PluginManifestFile = {
@@ -316,6 +317,152 @@ test("ensureLocalManifests can refresh project-local catalog", async () => {
     assert.ok(operations.some((operation) => operation.type === "mkdir" && operation.path === manifestDir));
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path === join(manifestDir, "skills.json")));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests preserves imported skills that are absent from refreshed source", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "source-skill",
+            label: "Source Skill",
+            source: "acme/dev-kit",
+            args: ["--skill", "source-skill"],
+            default: true,
+          },
+        ],
+      }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "presets.json": JSON.stringify({ version: 1, presets: [] }),
+      "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
+      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": JSON.stringify({ version: 1, items: [] }),
+    };
+
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-preserve-imported-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(
+      join(manifestDir, "skills.json"),
+      `${JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "local-skill",
+            label: "Local Skill",
+            source: "acme/local-kit",
+            args: ["--skill", "local-skill"],
+            default: false,
+            imported: true,
+          },
+        ],
+      }, null, 2)}\n`,
+    );
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+    });
+
+    const skillsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("skills.json"));
+    assert.ok(skillsWrite && skillsWrite.type === "write");
+    const next = JSON.parse(skillsWrite.content) as SkillManifest;
+    assert.equal(next.items.find((item) => item.id === "source-skill")?.imported, false);
+    assert.equal(next.items.find((item) => item.id === "local-skill")?.imported, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests turns imported skills into source skills when refreshed source includes them", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "local-skill",
+            label: "Upstream Local Skill",
+            source: "acme/dev-kit",
+            args: ["--skill", "local-skill"],
+            default: true,
+          },
+        ],
+      }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "presets.json": JSON.stringify({ version: 1, presets: [] }),
+      "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
+      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": JSON.stringify({ version: 1, items: [] }),
+    };
+
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-adopt-imported-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(
+      join(manifestDir, "skills.json"),
+      `${JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [
+          {
+            id: "local-skill",
+            label: "Local Skill",
+            source: "acme/local-kit",
+            args: ["--skill", "local-skill"],
+            default: false,
+            imported: true,
+          },
+        ],
+      }, null, 2)}\n`,
+    );
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+    });
+
+    const skillsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("skills.json"));
+    assert.ok(skillsWrite && skillsWrite.type === "write");
+    const next = JSON.parse(skillsWrite.content) as SkillManifest;
+    assert.equal(next.items.length, 1);
+    assert.equal(next.items[0]?.id, "local-skill");
+    assert.equal(next.items[0]?.label, "Upstream Local Skill");
+    assert.equal(next.items[0]?.imported, false);
   } finally {
     globalThis.fetch = originalFetch;
   }

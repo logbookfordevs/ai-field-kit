@@ -1,4 +1,0 @@
-interface:
-  display_name: "AFK Resume Workflow"
-  short_description: "Resume feature or AFK workflow work from repo artifacts."
-  default_prompt: "Resume this feature or AFK workflow from durable repo artifacts."

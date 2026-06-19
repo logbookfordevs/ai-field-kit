@@ -20,8 +20,8 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 
 - [What's in the Kit](#whats-in-the-kit)
 - [Quick Start](#quick-start)
-  - [Just the skills](#just-the-skills--30-seconds)
   - [AFK CLI](#afk-cli--full-setup)
+  - [Authored skills only](#authored-skills-only--30-seconds)
   - [AFK catalog through the shadcn registry](#afk-catalog-through-the-shadcn-registry)
 - [The Skills](#the-skills)
 - [The Workflows](#the-workflows)
@@ -51,25 +51,26 @@ Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated en
 
 ## Quick Start
 
-### Just the skills — 30 seconds
-
-No clone needed. Install directly from GitHub using the [`skills` CLI](https://skills.sh/):
-
-```bash
-npx skills add https://github.com/logbookfordevs/ai-field-kit
-```
-
-The interactive mode lets you pick which skills to install. Agent-specific
-support is handled by the official `skills` CLI.
-
 ### AFK CLI — full setup
 
-If you want the complete stack, use the AFK CLI. It is the setup router for
-rules, skills, MCPs, plugins, hooks, dry-runs, and team-specific catalogs.
+Start with AFK. It is the setup router for rules, skills, MCPs, plugins, hooks,
+catalog composition, dry-runs, and team-specific catalogs.
+
+```bash
+npx @logbookfordevs/afk setup --dry-run
+```
+
+Use `npx` for the first run, a one-off setup, or trying AFK without adding a
+global command to your machine. When AFK becomes part of your daily agent setup,
+install the CLI so the field-kit commands are always available:
 
 ```bash
 npm install -g @logbookfordevs/afk
+
 afk setup --dry-run
+afk refresh
+afk show skills --react
+afk show skills --visualize
 ```
 
 Start with `--dry-run`: AFK prints the exact actions it would take before it
@@ -80,6 +81,19 @@ already own those ecosystems.
 For the full command reference, flags, catalog format, local-development
 install flow, and custom defaults workflow, read the
 [AFK CLI README](./packages/afk/README.md).
+
+### Authored skills only — 30 seconds
+
+If you only want the AFK-authored skill files, install directly from GitHub using
+the [`skills` CLI](https://skills.sh/):
+
+```bash
+npx skills add https://github.com/logbookfordevs/ai-field-kit
+```
+
+This is the lightest path, but it is not the full AFK experience: it installs
+skills from this repository only. It does not apply AFK rules, hooks, MCPs,
+plugins, catalog composition, or setup policy.
 
 ### AFK catalog through the shadcn registry
 
@@ -114,43 +128,28 @@ node packages/afk/dist/index.js setup --dry-run
 
 Skills are modular instruction files that teach agents *how* to think and work across many requests: debugging lenses, DX heuristics, motion direction, and specialized integrations.
 
-### Installing skills with the CLI
+### Installing skills
 
-The easiest way to install skills from this repo is with the [`skills` CLI](https://skills.sh/). Run it from the repo directory and it'll walk you through an interactive picker:
-
-```bash
-npx skills add https://github.com/logbookfordevs/ai-field-kit
-```
-
-The interactive mode lets you pick which skills to install and where the official
-`skills` CLI should place them. A few useful flags:
+Use AFK for the full skills experience:
 
 ```bash
-# Install all skills globally, skip confirmation
-npx skills add https://github.com/logbookfordevs/ai-field-kit --all --global
-
-# Install only to a specific agent
-npx skills add https://github.com/logbookfordevs/ai-field-kit --agent claude-code
-
-# Preview what's available without installing
-npx skills add https://github.com/logbookfordevs/ai-field-kit --list
+npx @logbookfordevs/afk setup
 ```
 
-The CLI symlinks skill files into the right agent directories — no manual path juggling needed.
-
-### Install a single skill
-
-If you only want the AFK skill-routing entry point, install `afk-compass` directly:
+Install the CLI globally when you want AFK to become a regular machine command
+for setup, refresh, catalog import, and skill inspection:
 
 ```bash
-npx skills add https://github.com/logbookfordevs/ai-field-kit --skill afk-compass
+npm install -g @logbookfordevs/afk
+afk setup
+afk refresh
+afk show skills
 ```
 
-This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-compass/) and routes broad or ambiguous requests to the next useful AFK or recommended external skill.
-
-> **What does global vs. agent-specific mean?**
-> Global installs (`--global`) place the skill in `~/.agents/skills/` and make it available to every agent that reads from there.
-> Agent-specific installs target a single tool's config directory directly.
+Use `npx skills add` only when you specifically want the authored skills from
+this repository and do not need AFK rules, hooks, MCPs, plugins, or
+catalog-aware companion installs. AFK delegates to that ecosystem during full
+setup, then adds the surrounding AFK setup pieces.
 
 ### Available skills
 
@@ -169,7 +168,6 @@ This skill lives in the repository under [`skills/afk-compass/`](./skills/afk-co
 | `afk-to-issues` | Turns PRDs, plans, goal packages, or tracker issues into executable checkpoint packets |
 | `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
 | `afk-pickup` | Explicitly resumes from disposable handoff notes saved in the OS temp directory |
-| `afk-resume-workflow` | Continues an AFK workflow from durable repo artifacts after a context reset |
 
 ### Spec-Driven discussion and planning skills
 
@@ -183,9 +181,8 @@ They are intentionally similar, but they are not redundant:
 | `afk-code-grill` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | Tiny decision note or ADR only when the decision deserves one |
 | `afk-to-prd-spec` | You need to create or normalize a PRD/spec after Grill or Grill With Docs | Agent-ready PRD/spec with behavior, acceptance criteria, implementation decisions, and testing seams |
 | `afk-to-issues` | You have a PRD/spec, plan, goal package, tracker issue, or rough context that needs executable slices | Local AFK checkpoint packets, external tracker issues, or both |
-| `afk-execution-tracking` | You have checkpoint packets and want checkpointed execution instead of one long build run | Updated checkpoint packets with status, review gates, validation, implementation notes, and handoff notes |
+| `afk-execution-tracking` | You have checkpoint packets and want checkpointed execution, including resume, instead of one long build run | Updated checkpoint packets with status, review gates, validation, implementation notes, and handoff notes |
 | `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
-| `afk-resume-workflow` | A fresh session needs to continue an AFK workflow from repo artifacts | Current state, next useful move, and Compass routing |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
 
 ### How the workflow currently maps
@@ -198,9 +195,9 @@ They are intentionally similar, but they are not redundant:
 | PRD/spec creation | `afk-to-prd-spec` |
 | RFC creation | Flexible for now; create a dedicated AFK skill only if the RFC shape becomes worth standardizing |
 | Executable slicing | `afk-to-issues` |
-| Execution control | `afk-execution-tracking` plus the selected execution bundle |
+| Execution control | `afk-execution-tracking` plus the selected execution bundle; use its resume mode after context resets |
 | Validation / testing | Flexible for now; use project checks directly, with `diagnosing-bugs` when something fails |
-| Support | `afk-resume-workflow`, `afk-pickup`, `afk-ask`, `afk-doc-craft`, `diagnosing-bugs` |
+| Support | `afk-pickup`, `afk-ask`, `afk-doc-craft`, `diagnosing-bugs` |
 
 Compass defines the default artifact convention in `skills/afk-compass/references/artifacts.md`: `docs/<task-slug>/<task-slug>.<type>.md`, with checkpoint packets under `docs/<task-slug>/tracking/` and task-specific references under `docs/<task-slug>/references/`.
 
@@ -217,8 +214,8 @@ If you're unsure which one to reach for, use this shortcut:
 - "We need to split this into executable slices/checkpoints" -> `afk-to-issues`
 - "Grill me on this plan/design before we commit" -> `grill-me`
 - "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-code-grill`
-- "We have checkpoint packets and need tracked execution" -> `afk-execution-tracking`
-- "Continue this AFK workflow from repo artifacts" -> `afk-resume-workflow`
+- "We have checkpoint packets and need tracked execution or resume" -> `afk-execution-tracking`
+- "Continue AFK Turbo from repo artifacts" -> `afk-turbo` resume mode
 - "A previous agent left a temp handoff for this session" -> `afk-pickup`
 - "I want another model's opinion" -> `afk-ask`
 
@@ -331,7 +328,7 @@ AFK's fast execution packages are:
 
 - **AFK Workflow**: recommended human-facing composition with optional checkpoint packets and execution tracking.
 - **AFK Sprint**: `afk-sprint`, a Plannotator goal package plus AFK checkpoint packets, native `/goal`, and execution tracking.
-- **AFK Turbo**: `afk-turbo`, a Plannotator goal package plus GoalBuddy's local live board and PM loop. Turbo writes a deterministic `goal-launch.html` beside `goal.md` and waits for an explicit launch trigger before execution. Ask for review-gated Turbo when each code-changing task should stage changes and pause for human review before task completion.
+- **AFK Turbo**: `afk-turbo`, an optional grilling pass, a Plannotator goal package, and GoalBuddy's local live board and PM loop. Turbo writes a deterministic `goal-launch.html` beside `goal.md` and waits for an explicit launch trigger before execution. Ask for review-gated Turbo when each code-changing task should stage changes and pause for human review before task completion; ask for Turbo resume when prior goal packages or handoffs should seed a fresh focused goal.
 
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  

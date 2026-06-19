@@ -25,6 +25,7 @@ export type SkillManifestItem = {
   role?: SkillManifestItemRole;
   composes?: string[];
   profiles?: string[];
+  imported?: boolean;
 };
 
 export type SkillManifestItemRole = "primitive" | "wrapper" | "workflow" | "utility" | "reference" | "router";
@@ -172,9 +173,10 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
       continue;
     }
 
-    const content = options.empty
+    const rawContent = options.empty
       ? emptyManifestContent(name, options, effectiveDefaultsSource)
       : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
+    const content = rawContent && name === "skills.json" ? mergedSkillsManifestContent(rawContent, target) : rawContent;
     if (content) {
       operations.push({ type: "write", path: target, content });
     } else if (existsSync(target)) {
@@ -578,6 +580,11 @@ function migrateSkillsManifest(content: string): string | null {
       changed = true;
     }
 
+    if (next.imported === undefined) {
+      next.imported = false;
+      changed = true;
+    }
+
     return next;
   });
 
@@ -586,6 +593,45 @@ function migrateSkillsManifest(content: string): string | null {
   }
 
   return `${JSON.stringify({ ...parsed, items }, null, 2)}\n`;
+}
+
+function mergedSkillsManifestContent(content: string, targetPath: string): string {
+  let refreshed: unknown;
+  try {
+    refreshed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+
+  if (!isSkillManifest(refreshed)) {
+    return content;
+  }
+
+  const refreshedIds = new Set(refreshed.items.map((item) => item.id));
+  const importedItems = readExistingImportedSkillItems(targetPath).filter((item) => !refreshedIds.has(item.id));
+  const items = [
+    ...refreshed.items.map((item) => ({ ...item, imported: false })),
+    ...importedItems.map((item) => ({ ...item, imported: true })),
+  ];
+
+  return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
+}
+
+function readExistingImportedSkillItems(path: string): SkillManifestItem[] {
+  if (!existsSync(path)) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    if (!isSkillManifest(parsed)) {
+      return [];
+    }
+
+    return parsed.items.filter((item) => item.imported === true);
+  } catch {
+    return [];
+  }
 }
 
 function migratePresetsManifest(content: string): string | null {
@@ -653,7 +699,8 @@ function isSkillManifest(value: unknown): value is SkillManifest {
       (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean") &&
       (item.role === undefined || isSkillManifestItemRole(item.role)) &&
       (item.composes === undefined || isStringArray(item.composes)) &&
-      (item.profiles === undefined || isStringArray(item.profiles))
+      (item.profiles === undefined || isStringArray(item.profiles)) &&
+      (item.imported === undefined || typeof item.imported === "boolean")
     );
   });
 }

@@ -54,9 +54,9 @@ Use when a feature, product change, or technical slice needs to become code.
 
 Use when the user is resuming a feature, workflow, branch, packet, or previous session.
 
-- `afk-resume-workflow` for durable repo artifacts.
+- `afk-turbo` resume mode for durable Turbo goal packages, handoffs, or board context.
 - `afk-pickup` for disposable handoff notes.
-- `afk-execution-tracking` when checkpoint packets already exist and need status, validation, or handoff updates.
+- `afk-execution-tracking` resume mode when checkpoint packets already exist and need state, validation, or handoff updates.
 
 ### Design and frontend judgment
 
@@ -84,7 +84,8 @@ Task arrives
 +-- Explicit AFK Turbo or visual-board execution package? -> afk-turbo
 +-- Explicit AFK Sprint or goal run with Markdown tracking? -> afk-sprint
 +-- Explicit AFK workflow / Flow / run? --------> route only the current phase
-+-- Resuming existing feature/workflow work? ---> afk-resume-workflow
++-- Resuming Turbo goal/board work? -----------> afk-turbo resume mode
++-- Resuming checkpointed work? ---------------> afk-execution-tracking resume mode
 +-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
 +-- Need an agent-ready PRD/spec before code? ---> afk-to-prd-spec
 +-- Need executable slices/checkpoints? ---------> afk-to-issues

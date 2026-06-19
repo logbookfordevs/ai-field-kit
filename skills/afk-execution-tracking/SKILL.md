@@ -11,6 +11,8 @@ Keep implementation state visible in the checkpoint packet itself. The packet is
 ## Activation
 Use after executable checkpoint packets exist. If there is only a PRD/spec, plan, goal package, tracker issue, or rough implementation context, create checkpoint packets first, typically with `afk-to-issues` or another approved slicing source.
 
+If the user asks to resume tracked work, use [resume.md](references/resume.md).
+
 Skip tiny one-shot edits unless the user asks.
 
 ## Storage

@@ -157,21 +157,6 @@
             "profiles": []
         },
         {
-            "id": "afk-resume-workflow",
-            "label": "AFK - Resume Workflow",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-resume-workflow",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
-            "role": "utility",
-            "composes": [],
-            "profiles": []
-        },
-        {
             "id": "afk-compass",
             "label": "AFK - Compass",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -218,6 +203,7 @@
             "autoInvocation": false,
             "role": "workflow",
             "composes": [
+                "grilling",
                 "plannotator-setup-goal"
             ],
             "profiles": []
