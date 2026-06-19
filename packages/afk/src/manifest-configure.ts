@@ -308,7 +308,7 @@ async function promptPlugin(prompts: ManifestConfigurePrompts, existing?: Plugin
   const label = await prompts.input({ message: "Plugin label", default: existing?.label ?? inferLabel(id), required: true });
   const description = await prompts.input({ message: "Plugin description", default: existing?.description ?? `${label} install script.`, required: true });
   const nextInstallLine = await prompts.input({ message: "Plugin install command", default: installLine, required: true });
-  const nextPostInstallLine = await prompts.input({ message: "Post-install command (optional, or rtk-init)", default: existingPostInstallLine });
+  const nextPostInstallLine = await prompts.input({ message: "Post-install command (optional)", default: existingPostInstallLine });
   const defaultValue = existing?.default ?? true;
   const isDefault = await prompts.confirm(booleanPrompt("Selected by default?", defaultValue, existing ? "current" : "default"), defaultValue);
 
@@ -594,10 +594,6 @@ function postInstallLine(postInstall?: PluginManifestItem["postInstall"]): strin
     return "";
   }
 
-  if (postInstall === "rtk-init") {
-    return "rtk-init";
-  }
-
   if ((postInstall.command === "sh" || postInstall.command === "bash") && postInstall.args[0] === "-c" && postInstall.args[1]) {
     return postInstall.args[1];
   }
@@ -605,11 +601,7 @@ function postInstallLine(postInstall?: PluginManifestItem["postInstall"]): strin
   return [postInstall.command, ...postInstall.args].join(" ");
 }
 
-function postInstallFromLine(line: string, existing?: PluginManifestItem["postInstall"]): "rtk-init" | PluginPostInstallCommand {
-  if (line === "rtk-init") {
-    return "rtk-init";
-  }
-
+function postInstallFromLine(line: string, existing?: PluginManifestItem["postInstall"]): PluginPostInstallCommand {
   if (line === postInstallLine(existing) && typeof existing === "object") {
     return existing;
   }

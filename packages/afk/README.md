@@ -89,8 +89,7 @@ AFK can prepare a machine-wide field kit or only the current project.
 
 In project scope, rules are injected into project host files such as
 `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or `.cursor/rules/afk.mdc`. Skills and
-MCPs are delegated without their global flags. RTK project initialization runs
-from the current project directory.
+MCPs are delegated without their global flags.
 
 For `afk refresh`, `--local` has a different meaning: it refreshes
 `./afk/catalog` instead of the global catalog cache.
@@ -182,7 +181,7 @@ Area support is narrower than the full alias list:
 | Rules | `antigravity`, `claude`, `codex`, `opencode`; project scope also supports `cursor-local`. |
 | MCPs | `antigravity`, `claude`, `codex`, `opencode`; project scope skips Antigravity because `add-mcp` does not support that target locally. |
 | Hooks | `codex`, `claude`, `cursor-local`. |
-| Plugins | Plugin installers run independently; RTK post-install supports `antigravity`, `claude`, `codex`, and `opencode`. |
+| Plugins | Plugin installers run independently and may define generic post-install commands. |
 
 ### Detected Setup Targets
 
@@ -556,8 +555,6 @@ AFK also supports object-style post-install commands:
 }
 ```
 
-RTK has built-in post-install handling through `"postInstall": "rtk-init"`.
-
 ### Hooks
 
 ```json
@@ -626,12 +623,8 @@ scope.
 ### Plugins
 
 The bundled plugin catalog currently includes Plannotator, GoalBuddy,
-Plannotator Tot, RTK, Yggtree, and Impeccable. Plugin setup is best-effort
+Plannotator Tot, Yggtree, and Impeccable. Plugin setup is best-effort
 because these installers are owned by their upstream tools.
-
-RTK post-install follows the selected AFK targets. With no explicit plugin
-agent selection, AFK uses the RTK defaults: `antigravity`, `claude`, `codex`,
-and `opencode`.
 
 ## Troubleshooting
 
