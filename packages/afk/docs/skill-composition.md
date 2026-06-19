@@ -118,3 +118,22 @@ A well-shaped skill entry should answer four questions quickly:
 - Is it part of a future curated activation set? `profiles`
 
 That is the house style: small pieces, named compositions, explicit discovery behavior, and no mystery dependencies.
+
+## Current Workflow Shape
+
+The current AFK catalog keeps execution packages explicit and manual:
+
+```text
+afk-sprint
+  plannotator-setup-goal
+  afk-to-issues
+  afk-execution-tracking
+
+afk-turbo
+  grilling
+  plannotator-setup-goal
+```
+
+Resume behavior is no longer a standalone skill. It lives as a mode inside `afk-turbo` and `afk-execution-tracking`, with `afk-compass` routing the user to the right mode.
+
+Delegation is also represented as a utility: `afk-delegate` owns live/background external-agent supervision, while cmux and tmux are transport details disclosed inside that skill rather than catalog skills.

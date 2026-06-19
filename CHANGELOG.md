@@ -29,11 +29,17 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` removed RTK from the bundled plugin catalog and dropped its special `rtk-init` post-install path in favor of generic plugin post-install commands.
 - `cli:` refined the skills visualization template typography with smaller fixed headings, clearer product UI hierarchy, and lighter role markers.
 - `cli:` marked catalog-imported skills with `imported: true` and preserved them across refresh until the refreshed source owns the same skill id.
-- `docs:` made Quick Start lead with AFK CLI, clarified when to use `npx` versus a global AFK install, and kept `npx skills add` as the authored-skills-only path.
+- `docs:` made Quick Start lead with AFK CLI, clarified when to use `npx` versus a global AFK install, recommended companion plugins for the full skills experience, and kept `npx skills add` as the authored-skills-only path.
+- `docs:` documented Turbo and execution-tracking modes so review-gated and resume requests are discoverable without reading skill internals.
+- `docs:` refreshed the skill composition markdown and HTML companion so the current AFK tree no longer references the removed resume workflow and shows Turbo composing `grilling`.
 - `skills:` distilled the AFK Turbo launch page template so the launch action stays primary while goal package details sit behind a quiet disclosure.
 - `skills:` made AFK Turbo launch pages carry review-gated mode through the visible page, copied command, and delegated agent prompts.
 - `skills:` made AFK Turbo launch deep links explicitly invoke the manual Turbo skill in Codex and Claude Code sessions.
 - `skills:` folded workflow resume into Turbo and execution-tracking modes, removed `afk-resume-workflow` from the catalog, and let Turbo compose the `grilling` primitive before Plannotator setup.
+- `skills:` aligned Sprint and execution tracking with Turbo's preflight/review posture by adding short grilling before weak Plannotator setup context and recommending `/plannotator-review` at review gates.
+- `skills:` added a Plannotator annotation gate after `afk-to-prd-spec` writes local PRD/spec artifacts so user feedback is resolved before slicing or execution consumes the spec.
+- `skills:` added a folder-level Plannotator annotation gate after `afk-to-issues` writes local checkpoint packets so packet content is reviewed before tracked execution starts.
+- `skills:` added `afk-delegate` as a supervised external-agent utility and removed raw cmux/tmux entries from the catalog in favor of live/background transport references.
 - `skills:` renamed the composition role from `flow` to `workflow`, including bundled catalog values, show output, visualization docs, and README language.
 - `skills:` clarified AFK Sprint so manual composed skills are explicit user-invocation boundaries instead of silent internal steps.
 - `skills:` pointed Turbo and execution tracking at `yggtree` for parallel worktrees before falling back to native git worktree commands.

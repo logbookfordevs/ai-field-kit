@@ -2,12 +2,9 @@
 
 > *The rules, skills, setup catalog, and router powering a DX-first AI developer workflow.*
 
-A curated, version-controlled collection of everything you need to make AI coding agents actually useful in a real development environment. No fluff — just the configuration, prompts, and automation that ship every day.
+A curated, version-controlled collection for making AI coding agents useful in a real development environment.
 
 AI Field Kit treats frameworks like BMAD, Get Shit Done, Agent OS, Superpowers, and agent skills as reference material, not masters. The kit is a personal synthesis of patterns that keep proving useful in real work: standalone skills when you only need one tool, and an optional workflow when you want the pieces to move together.
-
-> **Standalone skills with an optional workflow path.**
-> Install one skill when that is all you need, or use the kit as a loose workflow when the work benefits from staged discovery, decisions, execution, and review.
 
 For the skill composition mental model, open the visual companion:
 [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg).
@@ -77,6 +74,10 @@ Start with `--dry-run`: AFK prints the exact actions it would take before it
 writes to your machine. The CLI owns AFK rule and hook setup, then delegates
 skills, MCPs, and plugins to the official tools or installer scripts that
 already own those ecosystems.
+
+Plugins are recommended for the full experience: some AFK skills mention,
+delegate to, or become much more useful with companion plugin capabilities such
+as Plannotator, GoalBuddy, or Impeccable installed.
 
 For the full command reference, flags, catalog format, local-development
 install flow, and custom defaults workflow, read the
@@ -149,7 +150,8 @@ afk show skills
 Use `npx skills add` only when you specifically want the authored skills from
 this repository and do not need AFK rules, hooks, MCPs, plugins, or
 catalog-aware companion installs. AFK delegates to that ecosystem during full
-setup, then adds the surrounding AFK setup pieces.
+setup, then adds the surrounding AFK setup pieces and recommended companion
+plugins.
 
 ### Available skills
 
@@ -162,6 +164,7 @@ setup, then adds the surrounding AFK setup pieces.
 | `afk-sprint` | Fast goal execution with Plannotator, native `/goal`, and Markdown checkpoint tracking |
 | `afk-turbo` | High-throughput goal execution with Plannotator and GoalBuddy's live board |
 | `afk-ask` | Gets a second opinion from another local AI CLI and saves the result as an artifact |
+| `afk-delegate` | Assigns work to another local agent and supervises it through live or background terminal lanes |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-code-grill` | Grill-style pressure on UX and implementation choices inside a defined coding scope |
 | `afk-to-prd-spec` | Turns grilled context, PM PRDs, or feature notes into an agent-ready PRD/spec |
@@ -184,6 +187,7 @@ They are intentionally similar, but they are not redundant:
 | `afk-execution-tracking` | You have checkpoint packets and want checkpointed execution, including resume, instead of one long build run | Updated checkpoint packets with status, review gates, validation, implementation notes, and handoff notes |
 | `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
+| `afk-delegate` | You want another local agent to do work while AFK supervises the terminal run | Live or background delegated agent run with status based on terminal evidence |
 
 ### How the workflow currently maps
 
@@ -197,7 +201,7 @@ They are intentionally similar, but they are not redundant:
 | Executable slicing | `afk-to-issues` |
 | Execution control | `afk-execution-tracking` plus the selected execution bundle; use its resume mode after context resets |
 | Validation / testing | Flexible for now; use project checks directly, with `diagnosing-bugs` when something fails |
-| Support | `afk-pickup`, `afk-ask`, `afk-doc-craft`, `diagnosing-bugs` |
+| Support | `afk-pickup`, `afk-ask`, `afk-delegate`, `afk-doc-craft`, `diagnosing-bugs` |
 
 Compass defines the default artifact convention in `skills/afk-compass/references/artifacts.md`: `docs/<task-slug>/<task-slug>.<type>.md`, with checkpoint packets under `docs/<task-slug>/tracking/` and task-specific references under `docs/<task-slug>/references/`.
 
@@ -218,6 +222,7 @@ If you're unsure which one to reach for, use this shortcut:
 - "Continue AFK Turbo from repo artifacts" -> `afk-turbo` resume mode
 - "A previous agent left a temp handoff for this session" -> `afk-pickup`
 - "I want another model's opinion" -> `afk-ask`
+- "I want another local agent to do this work" -> `afk-delegate`
 
 ### Use Only What You Need
 
@@ -330,6 +335,14 @@ AFK's fast execution packages are:
 - **AFK Sprint**: `afk-sprint`, a Plannotator goal package plus AFK checkpoint packets, native `/goal`, and execution tracking.
 - **AFK Turbo**: `afk-turbo`, an optional grilling pass, a Plannotator goal package, and GoalBuddy's local live board and PM loop. Turbo writes a deterministic `goal-launch.html` beside `goal.md` and waits for an explicit launch trigger before execution. Ask for review-gated Turbo when each code-changing task should stage changes and pause for human review before task completion; ask for Turbo resume when prior goal packages or handoffs should seed a fresh focused goal.
 
+| Ask for | Use |
+|---|---|
+| Run Turbo normally | `afk-turbo` |
+| Run Turbo with human review gates | `afk-turbo` review-gated mode |
+| Resume prior Turbo work | `afk-turbo` resume mode |
+| Run checkpointed execution | `afk-execution-tracking` |
+| Resume checkpointed execution | `afk-execution-tracking` resume mode |
+
 - **Handoff (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill handoff`  
   Create a compact handoff document for a fresh agent when a session needs to continue elsewhere. It saves outside the workspace on purpose, keeping the note disposable. Pair it with `afk-pickup` in the next session to search temp locations, verify referenced paths, and resume from the right handoff.
@@ -338,13 +351,8 @@ AFK's fast execution packages are:
   Install: `npx impeccable install --global`
   Recommended for front-end design phases before and during implementation: shaping visual direction in specs, improving UI execution, auditing design quality, catching AI-slop patterns, and iterating against the real product context. AFK exposes Impeccable through Plugins and delegates to its installer, including Impeccable's design hook.
 
-- **cmux**  
-  Install: `npx skills add https://github.com/manaflow-ai/cmux --skill cmux`  
-  Use when you are working inside a cmux terminal and need deterministic control of windows, workspaces, panes, surfaces, focus, routing, and visual attention cues for parallel agent orchestration.
-
-- **tmux (steipete/clawdis)**  
-  Install: `npx skills add https://github.com/steipete/clawdis --skill tmux`  
-  Use when parallel agents or long-running interactive CLI sessions live in tmux. It helps send keystrokes, inspect pane output, and monitor sessions that continue across disconnects.
+- **AFK Delegate**
+  Use `afk-delegate` when another local agent should do work, not merely advise. It uses cmux as the default live/shared-control lane and tmux as the default background lane.
 
 Other useful Agent-Skills companions include security, performance, and Chrome DevTools-focused workflows. Browse the full catalog here:
 - [Agent-Skills: all 19 skills](https://github.com/addyosmani/agent-skills?tab=readme-ov-file#all-19-skills)
@@ -358,7 +366,7 @@ Installer-based companions belong in Plugins. Keep `skills.json` focused on skil
 - `afk-code-grill` is Grill for code decisions: one meaningful trade-off at a time, with a recommendation when the evidence is enough.
 - `afk-to-issues` replaces one-file implementation planning with executable checkpoint packets.
 - `afk-execution-tracking` starts after checkpoint packets exist. Use it when execution needs status, resume safety, review gates, or parallel coordination.
-- `afk-pickup` and `afk-ask` are support skills. They pair well with the others but usually are not the main event.
+- `afk-pickup`, `afk-ask`, and `afk-delegate` are support skills. They pair well with the others but usually are not the main event.
 
 ### Supporting skills around the workflow
 
