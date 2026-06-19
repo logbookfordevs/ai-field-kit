@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sectionTitle, muted } from "./brand.js";
 import { loadDefaultManifestContent, localManifestDir, readRememberedDefaultsSource, type ManifestName } from "./manifest.js";
+import { skillProfileStatus, type SkillProfileApplyResult } from "./skills/profiles.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, ManifestCategory, Runtime } from "./types.js";
 
@@ -88,10 +89,12 @@ async function runSkillsVisualization(runtime: Runtime, options: CliOptions, sel
   }
 
   const outputPath = join(options.cwd, "afk-skills.html");
+  const profiles = showSource ? null : loadProfilesForVisualization(options);
   writeFileSync(outputPath, renderSkillsVisualizationHtml(loaded.content, {
     generatedAt: new Date().toISOString(),
     sourceKind: loaded.source,
     sourceLabel: loaded.location,
+    profiles,
   }));
   runtime.io.stdout(`Skill visualization written: ${outputPath}`);
   await openVisualizationWhenInteractive(runtime, outputPath);
@@ -173,6 +176,24 @@ type LoadedManifest = {
   location: string;
   content: unknown | null;
 };
+
+type VisualizationProfiles = SkillProfileApplyResult | {
+  error: string;
+};
+
+function loadProfilesForVisualization(options: CliOptions): VisualizationProfiles {
+  try {
+    return skillProfileStatus({
+      homeDir: options.homeDir,
+      cwd: options.cwd,
+      local: options.setupScope === "project" || options.manifestLocal,
+    });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
 
 function renderCardHeader(label: string, loaded: LoadedManifest): string {
   const status = loaded.source === "missing" ? paint(terminalPalette.ember, "missing") : paint(terminalPalette.harbor, "ready");
@@ -270,13 +291,19 @@ function renderSkillsAsReact(manifest: Record<string, unknown>): string {
   ].join("\n");
 }
 
-function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, context: { generatedAt: string; sourceKind: string; sourceLabel: string }): string {
+function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, context: {
+  generatedAt: string;
+  sourceKind: string;
+  sourceLabel: string;
+  profiles: VisualizationProfiles | null;
+}): string {
   const items = skillItems(manifest);
   const modelDiscovered = items.filter((item) => item.autoInvocation !== false);
   const userInvoked = items.filter((item) => item.autoInvocation === false);
   const composed = items.filter((item) => stringList(item.composes).length > 0);
   const roleCounts = roleSummary(items);
-  const reactTree = renderSkillsAsReactPlain(manifest);
+  const profileSummary = profileVisualizationSummary(context.profiles, items);
+  const reactTree = renderSkillsAsReactPlain(manifest, context.profiles);
 
   return `<!doctype html>
 <html lang="en">
@@ -338,7 +365,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
 	  h1 { font-size: 2.25rem; line-height: 1.08; margin: 0; font-weight: 680; letter-spacing: 0; max-width: 18ch; text-wrap: balance; }
 	  .subhead { color: var(--muted); max-width: 68ch; margin: 0.875rem 0 0; font-size: 1rem; line-height: 1.6; text-wrap: pretty; }
 	  .meta { font-family: var(--mono); color: var(--muted); font-size: 0.75rem; text-align: right; }
-	  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); border-block: 1px solid var(--line); margin: 28px 0 0; }
+	  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-block: 1px solid var(--line); margin: 28px 0 0; }
 	  .metric { padding: 16px 14px; border-right: 1px solid var(--line); }
 	  .metric:last-child { border-right: 0; }
 	  .metric b { display: block; font-family: var(--mono); color: var(--muted); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -364,6 +391,15 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
 	  .composition-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
 	  .children { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 	  .pill { border: 1px solid var(--line); border-radius: 999px; padding: 0.25rem 0.4375rem; font-family: var(--mono); font-size: 0.6875rem; color: var(--ink); background: var(--paper-2); }
+	  .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+	  .profile-card { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 1rem; min-width: 0; }
+	  .profile-card.enabled { border-color: var(--wrapper); box-shadow: inset 0 0 0 1px var(--wrapper); }
+	  .profile-card b { display: block; font-size: 1rem; line-height: 1.25; overflow-wrap: anywhere; }
+	  .profile-card .profile-meta { display: block; color: var(--muted); font-family: var(--mono); font-size: 0.6875rem; line-height: 1.45; margin-top: 0.25rem; }
+	  .profile-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+	  .profile-skill { border: 1px solid var(--line); border-radius: 999px; padding: 0.25rem 0.4375rem; font-family: var(--mono); font-size: 0.6875rem; background: var(--paper-2); }
+	  .profile-skill.missing { color: var(--external); border-color: color-mix(in srgb, var(--external), var(--line) 45%); }
+	  .profile-empty { border-top: 1px solid var(--line); color: var(--muted); padding-top: 12px; font-family: var(--mono); font-size: 0.8125rem; }
 	  .code-window { margin: 0; border: 1px solid rgba(255,255,255,0.08); background: #15130f; color: #f8ead7; border-radius: 8px; padding: 1rem; font-family: var(--mono); font-size: 0.75rem; line-height: 1.66; overflow: auto; max-height: 720px; }
   .jsx-punct { color: #8c8374; }
   .jsx-root, .jsx-primitive { color: #9de0cf; }
@@ -373,15 +409,14 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
   .jsx-utility { color: #dca85e; }
   .jsx-reference { color: #86b9ed; }
   .jsx-router { color: #ff8fbd; }
+  .jsx-profile { color: #69c7b5; }
   .jsx-external, .jsx-false { color: #ff987d; }
   .jsx-prop { color: #ffb07c; }
 	  footer { border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: 0.75rem; margin-top: 56px; padding-top: 18px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 	  @media (max-width: 820px) {
 	    header, .section-head, .lanes { grid-template-columns: 1fr; }
 	    .meta { text-align: left; }
-	    .metrics { grid-template-columns: repeat(2, 1fr); }
-	    .metric:nth-child(2) { border-right: 0; }
-	    .metric:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+	    .metrics { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 	  }
 	  @media (max-width: 520px) {
 	    .wrap { width: min(100% - 24px, 1180px); padding-top: 20px; }
@@ -414,6 +449,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
       <div class="metric"><b>auto-discoverable</b><span>${modelDiscovered.length}</span></div>
       <div class="metric"><b>explicit</b><span>${userInvoked.length}</span></div>
       <div class="metric"><b>composed</b><span>${composed.length}</span></div>
+      <div class="metric"><b>profiles</b><span>${profileSummary.profileCount}</span></div>
     </div>
 
     <section>
@@ -439,6 +475,14 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
         <p>These are the wrappers and workflows with children. This is where the React analogy becomes concrete: role becomes component, composes becomes children.</p>
       </div>
       <div class="composition-grid">${composed.map((item) => renderCompositionCardHtml(item, items)).join("")}</div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Focus profiles.</h2>
+        <p>Profiles are temporary activation sets layered over the catalog. Enabled profiles define the skills AFK keeps active, while always-on skills survive every profile switch.</p>
+      </div>
+      ${renderProfilesSectionHtml(context.profiles, items)}
     </section>
 
     <section>
@@ -485,7 +529,78 @@ function renderCompositionCardHtml(item: Record<string, unknown>, items: Record<
   }).join("")}</div></article>`;
 }
 
-function renderSkillsAsReactPlain(manifest: Record<string, unknown>): string {
+function renderProfilesSectionHtml(profiles: VisualizationProfiles | null, items: Record<string, unknown>[]): string {
+  if (!profiles) {
+    return `<div class="profile-empty">Local profile data is not included when visualizing a remote source.</div>`;
+  }
+
+  if ("error" in profiles) {
+    return `<div class="profile-empty">Could not load profiles: ${escapeHtml(profiles.error)}</div>`;
+  }
+
+  const enabled = new Set(profiles.state.enabledProfileIds);
+  const itemIds = new Set(items.map((item) => stringValue(item.id, "unnamed")));
+  const cards = profiles.catalog.items.map((profile) => renderProfileCardHtml(profile, enabled.has(profile.id), itemIds));
+  const alwaysOn = profiles.catalog.alwaysOn.length > 0 ? renderAlwaysOnProfileCardHtml(profiles.catalog.alwaysOn, itemIds) : "";
+
+  if (cards.length === 0 && !alwaysOn) {
+    return [
+      `<div class="profile-empty">No skill profiles found.</div>`,
+      `<div class="profile-empty">Catalog path: ${escapeHtml(profiles.paths.catalogPath)}</div>`,
+    ].join("");
+  }
+
+  return [
+    `<div class="profile-grid">`,
+    alwaysOn,
+    ...cards,
+    `</div>`,
+    `<div class="profile-empty">${escapeHtml(profiles.catalog.items.length.toString())} profiles · ${escapeHtml(enabled.size.toString())} enabled · ${escapeHtml(profiles.catalog.alwaysOn.length.toString())} always-on · ${escapeHtml(profiles.paths.catalogPath)}</div>`,
+  ].join("");
+}
+
+function renderProfileCardHtml(profile: { id: string; name: string; skills: string[] }, enabled: boolean, itemIds: Set<string>): string {
+  const missing = profile.skills.filter((skill) => !itemIds.has(skill));
+  const skills = profile.skills.length > 0
+    ? profile.skills.map((skill) => renderProfileSkillPill(skill, itemIds.has(skill))).join("")
+    : `<span class="profile-skill missing">empty</span>`;
+  return `<article class="profile-card${enabled ? " enabled" : ""}"><b>${escapeHtml(profile.name)}</b><span class="profile-meta">${escapeHtml(profile.id)} · ${enabled ? "enabled" : "disabled"} · ${profile.skills.length} skill${profile.skills.length === 1 ? "" : "s"}${missing.length > 0 ? ` · ${missing.length} missing` : ""}</span><div class="profile-skills">${skills}</div></article>`;
+}
+
+function renderAlwaysOnProfileCardHtml(skills: string[], itemIds: Set<string>): string {
+  return `<article class="profile-card enabled"><b>Always-on skills</b><span class="profile-meta">kept across every profile · ${skills.length} skill${skills.length === 1 ? "" : "s"}</span><div class="profile-skills">${skills.map((skill) => renderProfileSkillPill(skill, itemIds.has(skill))).join("")}</div></article>`;
+}
+
+function renderProfileSkillPill(skill: string, known: boolean): string {
+  return `<span class="profile-skill${known ? "" : " missing"}">${escapeHtml(skill)}${known ? "" : " missing"}</span>`;
+}
+
+function profileVisualizationSummary(profiles: VisualizationProfiles | null, items: Record<string, unknown>[]): {
+  profileCount: number;
+  enabledCount: number;
+  alwaysOnCount: number;
+  missingSkillCount: number;
+} {
+  if (!profiles || "error" in profiles) {
+    return {
+      profileCount: 0,
+      enabledCount: 0,
+      alwaysOnCount: 0,
+      missingSkillCount: 0,
+    };
+  }
+
+  const itemIds = new Set(items.map((item) => stringValue(item.id, "unnamed")));
+  const profileSkills = profiles.catalog.items.flatMap((profile) => profile.skills);
+  return {
+    profileCount: profiles.catalog.items.length,
+    enabledCount: profiles.state.enabledProfileIds.length,
+    alwaysOnCount: profiles.catalog.alwaysOn.length,
+    missingSkillCount: [...new Set([...profileSkills, ...profiles.catalog.alwaysOn])].filter((skill) => !itemIds.has(skill)).length,
+  };
+}
+
+function renderSkillsAsReactPlain(manifest: Record<string, unknown>, profiles: VisualizationProfiles | null = null): string {
   const items = skillItems(manifest);
   const byId = new Map(items.map((item) => [stringValue(item.id, "unnamed"), item]));
   const modelDiscovered = items.filter((item) => item.autoInvocation !== false);
@@ -494,8 +609,35 @@ function renderSkillsAsReactPlain(manifest: Record<string, unknown>): string {
     "<AFKSkillTree>",
     ...renderReactGroupPlain("ModelDiscovery", modelDiscovered, byId, 1),
     ...renderReactGroupPlain("ExplicitInvocation", userInvoked, byId, 1),
+    ...renderProfilesReactPlain(profiles, byId, 1),
     "</AFKSkillTree>",
   ].join("\n");
+}
+
+function renderProfilesReactPlain(profiles: VisualizationProfiles | null, byId: Map<string, Record<string, unknown>>, indentLevel: number): string[] {
+  if (!profiles || "error" in profiles || (profiles.catalog.items.length === 0 && profiles.catalog.alwaysOn.length === 0)) {
+    return [];
+  }
+
+  const indent = "  ".repeat(indentLevel);
+  const childIndent = "  ".repeat(indentLevel + 1);
+  const enabled = new Set(profiles.state.enabledProfileIds);
+  return [
+    `${indent}<FocusProfiles>`,
+    ...(profiles.catalog.alwaysOn.length > 0
+      ? [
+          `${childIndent}<AlwaysOnSkills>`,
+          ...profiles.catalog.alwaysOn.map((skill) => renderSkillReferencePlain(skill, byId, indentLevel + 2)),
+          `${childIndent}</AlwaysOnSkills>`,
+        ]
+      : []),
+    ...profiles.catalog.items.flatMap((profile) => [
+      `${childIndent}<SkillProfile id="${escapeJsxAttribute(profile.id)}"${enabled.has(profile.id) ? " enabled" : ""}>`,
+      ...profile.skills.map((skill) => renderSkillReferencePlain(skill, byId, indentLevel + 2)),
+      `${childIndent}</SkillProfile>`,
+    ]),
+    `${indent}</FocusProfiles>`,
+  ];
 }
 
 function renderReactGroupPlain(name: string, items: Record<string, unknown>[], byId: Map<string, Record<string, unknown>>, indentLevel: number): string[] {
@@ -617,6 +759,7 @@ function unescapeHtmlAttribute(value: string): string {
 function jsxTagClass(tag: string): string {
   if (tag === "AFKSkillTree") return "jsx-root";
   if (tag === "ModelDiscovery" || tag === "ExplicitInvocation") return "jsx-group";
+  if (tag === "FocusProfiles" || tag === "SkillProfile" || tag === "AlwaysOnSkills") return "jsx-profile";
   if (tag === "PrimitiveSkill") return "jsx-primitive";
   if (tag === "WrapperSkill") return "jsx-wrapper";
   if (tag === "WorkflowSkill") return "jsx-workflow";

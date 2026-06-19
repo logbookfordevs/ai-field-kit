@@ -31,6 +31,9 @@ importers:
 
   packages/afk:
     dependencies:
+      '@inquirer/core':
+        specifier: ^10.3.2
+        version: 10.3.2(@types/node@22.19.19)
       '@inquirer/prompts':
         specifier: ^7.8.6
         version: 7.10.1(@types/node@22.19.19)

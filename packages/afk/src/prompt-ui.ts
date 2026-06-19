@@ -46,6 +46,18 @@ export const afkSelectTheme = {
   },
 } as const;
 
+export const afkSearchTheme = {
+  icon: {
+    cursor: brass("◆"),
+  },
+  style: {
+    description: (text: string) => muted(text),
+    searchTerm: (text: string) => brass(text),
+    disabled: (text: string) => muted(text),
+    keysHelpTip: (keys: [key: string, action: string][]) => formatKeys(keys),
+  },
+} as const;
+
 export const afkCheckboxTheme = {
   prefix: {
     idle: sea("◇"),
@@ -76,6 +88,18 @@ export const afkCheckboxTheme = {
       return `${selectedChoices.length} selected`;
     },
     keysHelpTip: (keys: [key: string, action: string][]) => formatKeys(keys),
+  },
+  helpMode: "always",
+} as const;
+
+export const afkSearchableCheckboxTheme = {
+  prefix: afkCheckboxTheme.prefix,
+  icon: afkCheckboxTheme.icon,
+  style: {
+    ...afkCheckboxTheme.style,
+    noMatches: (text: string) => muted(text),
+    searchTerm: (text: string) => brass(text),
+    selected: (text: string) => sea(text),
   },
   helpMode: "always",
 } as const;

@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Say Hi Demo - AFK Turbo Launch</title>
+<script>
+(() => {
+  const saved = localStorage.getItem("afk-goal-launch-theme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (saved === "dark" || (!saved && prefersDark)) document.documentElement.classList.add("dark");
+})();
+</script>
+<style>
+  :root {
+    --bg: oklch(0.982 0 0);
+    --surface: oklch(1 0 0);
+    --soft: oklch(0.955 0.004 250);
+    --ink: oklch(0.19 0.005 250);
+    --muted: oklch(0.48 0.012 250);
+    --line: oklch(0.86 0.006 250);
+    --accent: oklch(0.55 0.14 32);
+    --accent-ink: oklch(0.99 0 0);
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  html.dark {
+    --bg: oklch(0.16 0.004 250);
+    --surface: oklch(0.205 0.006 250);
+    --soft: oklch(0.26 0.008 250);
+    --ink: oklch(0.94 0.006 250);
+    --muted: oklch(0.72 0.01 250);
+    --line: oklch(0.36 0.01 250);
+    --accent: oklch(0.68 0.16 32);
+    --accent-ink: oklch(0.14 0.004 250);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.58;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, pre { font-family: var(--mono); }
+  a { color: inherit; }
+  .page {
+    width: min(760px, calc(100% - 28px));
+    margin: 0 auto;
+    padding: 24px 0 64px;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 52px;
+  }
+  .brand {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .theme-toggle {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 7px 10px;
+    cursor: pointer;
+  }
+  header {
+    margin-bottom: 20px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 32px;
+    line-height: 1.12;
+    font-weight: 680;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .lede {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 10px 0 0;
+    max-width: 62ch;
+  }
+  .launch {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 18px;
+    margin: 24px 0 14px;
+  }
+  .launch-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .launch h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 650;
+  }
+  .status {
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: nowrap;
+    background: var(--soft);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .action {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 11px;
+    text-decoration: none;
+    background: var(--surface);
+    cursor: pointer;
+    font: inherit;
+    color: var(--ink);
+  }
+  .action.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .action.quiet, .muted-action {
+    color: var(--muted);
+  }
+  .muted-action, .link-action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    font-size: 14px;
+  }
+  .link-action {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .command {
+    position: relative;
+    background: var(--soft);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    font-size: 13px;
+  }
+  .launch-status {
+    min-height: 18px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  details {
+    border-top: 1px solid var(--line);
+    margin-top: 18px;
+    padding-top: 14px;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .card {
+    padding: 14px 0 0;
+  }
+  .card h3 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 650;
+  }
+  .card .path {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  .card ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .card li {
+    margin: 4px 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .closing {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-items: center;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+    text-align: center;
+    padding: 24px;
+  }
+  .closing.active { display: grid; }
+  .closing-card {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 24px;
+    width: min(420px, 100%);
+  }
+  .closing-count {
+    display: block;
+    font-size: 56px;
+    line-height: 1;
+    color: var(--accent);
+    margin-top: 10px;
+  }
+  footer {
+    margin-top: 18px;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 640px) {
+    .page { width: min(100% - 20px, 760px); }
+    .launch-head { align-items: start; flex-direction: column; }
+    .action { flex: 1 1 auto; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div class="brand">AFK Turbo / launch gate</div>
+    <button class="theme-toggle" id="themeToggle" type="button">toggle theme</button>
+  </div>
+
+	  <header>
+	    <h1>Say Hi Demo</h1>
+	    <p class="lede">Goal package ready. Choose where the run continues.</p>
+	  </header>
+
+  <section class="launch" aria-labelledby="launch-title">
+    <div class="launch-head">
+      <div>
+	        <h2 id="launch-title">Launch</h2>
+	        <p class="note">Deep links prefill the command; you still submit inside the agent.</p>
+	      </div>
+	      <span class="status">review-gated</span>
+	    </div>
+	    <p class="note">Review-gated mode stages code changes and waits for human review before code-changing tasks are marked done.</p>
+	    <div class="actions">
+      
+      <a class="action secondary" id="openCodex" href="codex://threads/new?path=%2FUsers%2Fleonardo%2FCodes%2Fai-rules-workflows&amp;prompt=%5B%24afk-turbo%5D%28%7E%2F.agents%2Fskills%2Fafk-turbo%2FSKILL.md%29%0A%0AUse+this+Turbo+goal+package+in+review-gated+mode.%0A%0A%2Fgoal+Follow+docs%2Fgoals%2Fhello-turbo-launch-demo%2Fgoal.md+in+AFK+Turbo+review-gated+mode.%0A%0ADo+not+auto-commit+task+code+changes.+Stage+them+and+wait+for+human+review+before+marking+code-changing+tasks+done.">Open in Codex</a>
+      <a class="action secondary" id="openClaude" href="claude-cli://open?cwd=%2FUsers%2Fleonardo%2FCodes%2Fai-rules-workflows&amp;q=%2Fafk-turbo%0A%0AUse+this+Turbo+goal+package+in+review-gated+mode.%0A%0A%2Fgoal+Follow+docs%2Fgoals%2Fhello-turbo-launch-demo%2Fgoal.md+in+AFK+Turbo+review-gated+mode.%0A%0ADo+not+auto-commit+task+code+changes.+Stage+them+and+wait+for+human+review+before+marking+code-changing+tasks+done.">Open in Claude Code</a>
+      <button class="action" id="copyCommand" type="button">Copy command</button>
+      <span class="muted-action">Board appears after GoalBuddy starts</span>
+    </div>
+    <div class="launch-status" id="launchStatus" aria-live="polite"></div>
+    <pre class="command"><code>/goal Follow docs/goals/hello-turbo-launch-demo/goal.md in AFK Turbo review-gated mode.</code></pre>
+    <details>
+      <summary>Package details</summary>
+      <div class="card">
+        <h3>Workspace</h3>
+        <div class="path">/Users/leonardo/Codes/ai-rules-workflows</div>
+        <h3>Goal</h3>
+        <div class="path">docs/goals/hello-turbo-launch-demo/goal.md</div>
+      </div>
+    <article class="card">
+      <h3>Goal</h3>
+      <div class="path">goal.md</div>
+      <ul>
+        <li>This is a tiny fake AFK Turbo goal for testing the launch page.</li>
+        <li>Say hi, confirm the goal launcher opened correctly, and stop.</li>
+        <li>Run this as AFK Turbo, but do not do real implementation work. This package only exists to test the launch handoff.</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h3>Facts</h3>
+      <div class="path">facts.md</div>
+      <ul>
+        <li>This is a disposable demo goal.</li>
+        <li>The expected output is a short greeting.</li>
+        <li>No files should be edited by the launched goal run.</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h3>Plan</h3>
+      <div class="path">plan.md</div>
+      <ul>
+        <li>Read the goal.</li>
+        <li>Say hi to Leonardo.</li>
+        <li>Confirm the launch page worked.</li>
+        <li>Stop without changing files.</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h3>Board State</h3>
+      <div class="path">state.yaml</div>
+      <ul>
+        <li>Demo goal for AFK Turbo launch page smoke testing.</li>
+        <li>status: ready</li>
+        <li>activetask: say-hi</li>
+        <li>notes:</li>
+      </ul>
+    </article>
+      <p class="note">Turbo contract: register the GoalBuddy board before execution and keep proof discipline visible.</p>
+    </details>
+  </section>
+
+  <footer>
+    <span>Generated by AFK Turbo</span>
+    <span>goal.md</span>
+  </footer>
+</div>
+
+<div class="closing" id="closingOverlay" aria-live="polite" aria-hidden="true">
+  <div class="closing-card">
+    <h2>Closing this page</h2>
+    <span class="closing-count" id="closingCount">3</span>
+    <p class="note">If your browser keeps this tab open, you can close it manually.</p>
+  </div>
+</div>
+
+<script>
+const themeToggle = document.getElementById("themeToggle");
+themeToggle.addEventListener("click", () => {
+  document.documentElement.classList.toggle("dark");
+  localStorage.setItem("afk-goal-launch-theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
+});
+
+const launchStatus = document.getElementById("launchStatus");
+const closingOverlay = document.getElementById("closingOverlay");
+const closingCount = document.getElementById("closingCount");
+const launchCommand = "/goal Follow docs/goals/hello-turbo-launch-demo/goal.md in AFK Turbo review-gated mode.";
+const liveGate = false;
+let terminalActionStarted = false;
+
+async function copyText(value) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!copied) throw new Error("copy failed");
+}
+
+function setStatus(message) {
+  launchStatus.textContent = message;
+}
+
+function startCloseCountdown() {
+  if (terminalActionStarted) return;
+  terminalActionStarted = true;
+  closingOverlay.classList.add("active");
+  closingOverlay.setAttribute("aria-hidden", "false");
+  let remaining = 3;
+  closingCount.textContent = String(remaining);
+  const timer = setInterval(() => {
+    remaining -= 1;
+    closingCount.textContent = String(Math.max(remaining, 0));
+    if (remaining <= 0) {
+      clearInterval(timer);
+      window.close();
+      closingCount.textContent = "done";
+    }
+  }, 1000);
+}
+
+async function sendAction(action) {
+  if (!liveGate) return;
+  const response = await fetch("/action", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action }),
+  });
+  if (!response.ok) throw new Error("launch action failed");
+}
+
+document.getElementById("copyCommand").addEventListener("click", async () => {
+  try {
+    await copyText(launchCommand);
+    document.getElementById("copyCommand").textContent = "Copied";
+    setStatus("Command copied.");
+    setTimeout(() => {
+      document.getElementById("copyCommand").textContent = "Copy command";
+    }, 1400);
+  } catch {
+    setStatus("Copy failed. Select the command below and copy it manually.");
+  }
+});
+
+if (liveGate) {
+  document.getElementById("runHere").addEventListener("click", async () => {
+    try {
+      await sendAction("run-current-chat");
+      await copyText(launchCommand);
+      setStatus("Run request sent to the current agent. Command copied too.");
+      startCloseCountdown();
+    } catch {
+      setStatus("Could not notify the current agent. Command is below.");
+    }
+  });
+
+  document.getElementById("closeGate").addEventListener("click", async () => {
+    try {
+      await sendAction("closed");
+      setStatus("Launch closed.");
+      startCloseCountdown();
+    } catch {
+      setStatus("Could not notify the current agent.");
+    }
+  });
+}
+
+for (const item of [
+  ["openCodex", "delegated-codex"],
+  ["openClaude", "delegated-claude-code"],
+]) {
+  const [id, action] = item;
+  const link = document.getElementById(id);
+  link.addEventListener("click", async (event) => {
+    event.preventDefault();
+    try {
+      await copyText(launchCommand);
+      await sendAction(action);
+      setStatus("Command copied. Opening selected agent.");
+      startCloseCountdown();
+    } catch {
+      setStatus("Opening selected agent. If it does not open, paste the command below into a new agent session.");
+    }
+    window.location.href = link.href;
+  });
+}
+
+window.addEventListener("error", (event) => {
+  setStatus(event.message || "Something failed on the launch page.");
+});
+</script>
+</body>
+</html>

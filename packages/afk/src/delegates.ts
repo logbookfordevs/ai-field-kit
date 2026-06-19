@@ -249,7 +249,7 @@ function sourceLabel(source: string): string {
   return source;
 }
 
-function quoteArg(value: string): string {
+export function quoteArg(value: string): string {
   if (/^[A-Za-z0-9_./:=@-]+$/.test(value)) {
     return value;
   }

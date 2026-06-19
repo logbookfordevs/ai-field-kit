@@ -1,0 +1,105 @@
+{
+  "stage": "facts",
+  "title": "AFK Skill Profiles",
+  "goalSlug": "afk-skill-profiles",
+  "facts": [
+    {
+      "id": "fact-1",
+      "text": "AFK exposes profile management under the skills family as `afk skills profiles ...`.",
+      "comment": "Yes, remember that --local flag should exist here too, so profiles are managed in current directory",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-1-local",
+      "text": "Profile commands support `--local` so profiles can be managed in the current directory.",
+      "comment": "Derived from the accepted fact-1 comment.",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-2",
+      "text": "The global profile catalog is stored at `~/.agents/afk/catalog/profiles.json` and contains `version`, top-level `alwaysOn`, and profile `items` with `id`, `name`, and `skills`.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-3",
+      "text": "The profile catalog does not store active runtime state such as `activeProfileId` or enabled profile IDs.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-4",
+      "text": "Runtime profile state is stored separately under `~/.agents/afk/state/` and records enabled profile IDs, skills moved by profile filtering, and skills that were already disabled before filtering.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-5",
+      "text": "Multiple profiles can be enabled at the same time.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-6",
+      "text": "When profiles are enabled, the kept skill set is the union of all skills in enabled profiles plus every skill in top-level `alwaysOn`.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-7",
+      "text": "Profile enablement temporarily disables only global shared skills that are currently active and are not in the kept skill set.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-8",
+      "text": "Profile disablement restores AFK-moved skills and returns previously disabled skills to disabled once no enabled profile keeps them.",
+      "comment": "Refined after implementation discussion: profiles can temporarily enable disabled skills while active.",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-8-profile-borrows-disabled",
+      "text": "Profile enablement can temporarily enable a previously disabled skill when that skill is in the kept skill set.",
+      "comment": "Added after implementation discussion.",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-9",
+      "text": "V1 profile enablement and disablement operate only on the shared global skills library at `~/.agents/skills`.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-10",
+      "text": "Profile commands include `list`, `show`, `create`, `edit`, `delete`, `enable`, `disable`, and `status`.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-11",
+      "text": "Profile commands support dry-run behavior for filesystem-changing operations.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    },
+    {
+      "id": "fact-12",
+      "text": "Profile commands never delete skill folders; delete removes profile definitions only.",
+      "comment": "",
+      "recommendedAutomatedVerification": true,
+      "automatedVerification": true
+    }
+  ]
+}

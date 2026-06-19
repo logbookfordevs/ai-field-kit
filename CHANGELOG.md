@@ -13,6 +13,10 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added the `afk skills` command family for local skill management, including list, show, open, enable, disable, delete, upgrade, and categorize commands.
+- `cli:` added searchable skill pickers for management commands and multi-select delete flows when a command needs the user to choose skills interactively.
+- `cli:` added `afk skills profiles` to create, edit, enable, disable, delete, and inspect focus profiles that temporarily keep selected global skills active while moving the rest aside.
+- `cli:` added `afk ui` as a thin, attributed wrapper around the UI Skills CLI for `start`, `categories`, `list`, and `get` without forcing users to remember the `npx ui-skills` command shape.
 - `cli:` added `afk show skills --react` to render the skills catalog as a syntax-colored React-style composition tree using each skill's role, auto-discovery setting, and composed dependencies.
 - `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills catalog and open it automatically in interactive terminals.
 - `cli:` added `afk catalog import` to backfill missing skills catalog entries from installed skills when the official `skills` CLI lockfile can recover the original source.
@@ -24,8 +28,16 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` moved catalog cache updates to top-level `afk refresh`, made `afk setup` consume the cache by default, and made `afk show` inspect the cache unless `--source` is passed.
 - `cli:` made first-run setup seed the catalog cache from the official `logbookfordevs/ai-field-kit` source when no default exists, while `afk refresh --default-source` now saves a new default source and refreshes the cache.
 - `cli:` renamed AFK's public setup data model from manifests to catalog, moving bundled defaults to `packages/afk/catalog`, global cache files to `~/.agents/afk/catalog`, and project-local files to `./afk/catalog`.
+- `cli:` made `~/.agents/afk/catalog/skills.json` the single AFK skills catalog for setup metadata and skill-management enrichment, with categorization stored in top-level scopes plus each item's nested `catalog` object.
+- `cli:` made successful `afk setup skills` installs synchronize installed skill entries into the AFK skills catalog as uncategorized imported items.
+- `cli:` made `afk skills delete` remove imported catalog entries for deleted skills, so imported catalog state follows the local skill library.
+- `cli:` made `afk skills list`, `show`, `open`, `enable`, `disable`, and `delete` understand global, project, and agent-specific skill roots through `--scope` and `--agent`.
+- `cli:` made skill list/show output expose auto-invocation state from `SKILL.md` and Codex `agents/openai.yaml`, including mixed-state warnings when the two sources disagree.
+- `cli:` made `afk skills upgrade` use AFK's tracked skill catalog for selection while delegating the actual update to the official skills CLI.
 - `cli:` fixed the skills visualization React analogy so quoted JSX attributes render as normal quotes instead of visible `&quot;` entities.
+- `cli:` made `afk show skills --visualize` include local focus profiles, enabled state, always-on skills, and missing profile references when profile data is available.
 - `cli:` made the root lobby and command help more self-documenting, including direct routes for refresh, skill React view, skill visualization, and catalog import.
+- `cli:` expanded the interactive lobby with skill-management and profile-management submenus.
 - `cli:` removed RTK from the bundled plugin catalog and dropped its special `rtk-init` post-install path in favor of generic plugin post-install commands.
 - `cli:` refined the skills visualization template typography with smaller fixed headings, clearer product UI hierarchy, and lighter role markers.
 - `cli:` marked catalog-imported skills with `imported: true` and preserved them across refresh until the refreshed source owns the same skill id.
@@ -47,6 +59,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
+- `cli:` normalized skill description parsing so YAML block-scalar markers and leading blank descriptions no longer leak into `afk skills list` or `show` output.
 - `skills:` made AFK Turbo launch pages resilient on `file://` by adding clipboard fallback behavior and visible launch status messages for Codex and Claude Code buttons.
 
 ## v0.6.0 - 2026-06-16

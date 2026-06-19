@@ -315,14 +315,14 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-me`
   Use when you want relentless one-question-at-a-time pressure on a plan or design. It walks the decision tree, recommends answers, and inspects the codebase instead of asking questions the agent can answer directly.
 
-- **Prototype (Matt Pocock Skills)**  
-  Install: `npx skills add https://github.com/mattpocock/skills --skill prototype`  
+- **Prototype (Matt Pocock Skills)**
+  Install: `npx skills add https://github.com/mattpocock/skills --skill prototype`
   Use when a decision needs a throwaway artifact before production work: a tiny terminal prototype for state or business logic, or several UI variations on one route for front-end direction. This can pair with Impeccable for FE work when you want quick prototype learning without opening a separate design tool.
 
-- **Effective HTML (Plannotator)**  
-  Install: `npx skills add https://github.com/plannotator/effective-html --skill html`  
-  Install plan skill: `npx skills add https://github.com/plannotator/effective-html --skill html-plan`  
-  Install diagram skill: `npx skills add https://github.com/plannotator/effective-html --skill html-diagram`  
+- **Effective HTML (Plannotator)**
+  Install: `npx skills add https://github.com/plannotator/effective-html --skill html`
+  Install plan skill: `npx skills add https://github.com/plannotator/effective-html --skill html-plan`
+  Install diagram skill: `npx skills add https://github.com/plannotator/effective-html --skill html-diagram`
   Use when the best deliverable is a self-contained HTML artifact: an explainer, report, comparison, prototype, plan page, or architecture diagram. The `html-plan` and `html-diagram` variants keep the output focused when the user explicitly wants a plan or visual system map.
 
 - **GoalBuddy**

@@ -12,7 +12,19 @@ export type ManifestName = (typeof manifestNames)[number];
 export type SkillManifest = {
   version: number;
   defaultSource: string;
+  scopes?: SkillManifestScope[];
   items: SkillManifestItem[];
+};
+
+export type SkillManifestScope = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
+export type SkillManifestItemCatalog = {
+  scope?: string;
+  tags?: string[];
 };
 
 export type SkillManifestItem = {
@@ -25,6 +37,7 @@ export type SkillManifestItem = {
   role?: SkillManifestItemRole;
   composes?: string[];
   profiles?: string[];
+  catalog?: SkillManifestItemCatalog;
   imported?: boolean;
 };
 
@@ -470,7 +483,7 @@ function defaultRepoManifestUrls(owner: string, repo: string, ref: string): stri
 
 function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): string {
   if (name === "skills.json") {
-    return `${JSON.stringify({ version: 1, defaultSource: "", items: [] }, null, 2)}\n`;
+    return `${JSON.stringify({ version: 1, defaultSource: "", scopes: [], items: [] }, null, 2)}\n`;
   }
 
   if (name === "mcps.json") {
@@ -685,6 +698,10 @@ function isSkillManifest(value: unknown): value is SkillManifest {
     return false;
   }
 
+  if (value.scopes !== undefined && (!Array.isArray(value.scopes) || !value.scopes.every(isSkillManifestScope))) {
+    return false;
+  }
+
   return value.items.every((item) => {
     if (!isRecord(item)) {
       return false;
@@ -700,9 +717,27 @@ function isSkillManifest(value: unknown): value is SkillManifest {
       (item.role === undefined || isSkillManifestItemRole(item.role)) &&
       (item.composes === undefined || isStringArray(item.composes)) &&
       (item.profiles === undefined || isStringArray(item.profiles)) &&
+      (item.catalog === undefined || isSkillManifestItemCatalog(item.catalog)) &&
       (item.imported === undefined || typeof item.imported === "boolean")
     );
   });
+}
+
+function isSkillManifestScope(value: unknown): value is SkillManifestScope {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    (value.description === undefined || typeof value.description === "string")
+  );
+}
+
+function isSkillManifestItemCatalog(value: unknown): value is SkillManifestItemCatalog {
+  return (
+    isRecord(value) &&
+    (value.scope === undefined || typeof value.scope === "string") &&
+    (value.tags === undefined || isStringArray(value.tags))
+  );
 }
 
 function isSkillManifestItemRole(value: unknown): value is SkillManifestItemRole {

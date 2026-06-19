@@ -118,4 +118,3 @@ After all files are reviewed, provide:
 ## Comment Drafting Rule
 
 If the user asks for help drafting a PR comment, provide only the comment substance. Do not include file paths, line numbers, or code blocks that the PR UI already provides.
-
