@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { fetchLatestNpmVersion, isVersionGreater, packageName, resolveUpdateNotice, updateCommand } from "./update-check.js";
+import type { Runtime } from "./types.js";
+import { fetchLatestNpmVersion, isVersionGreater, packageName, resolveUpdateNotice, runUpdateCommand, updateCommand } from "./update-check.js";
 
 test("isVersionGreater compares semver triples", () => {
   assert.equal(isVersionGreater("0.5.3", "0.5.2"), true);
@@ -11,7 +12,7 @@ test("isVersionGreater compares semver triples", () => {
   assert.equal(isVersionGreater("latest", "0.5.2"), false);
 });
 
-test("resolveUpdateNotice returns an npm upgrade command when latest is newer", async () => {
+test("resolveUpdateNotice returns the hosted installer command when latest is newer", async () => {
   const notice = await resolveUpdateNotice({
     currentVersion: "0.5.2",
     fetchLatestVersion: async (name) => {
@@ -25,6 +26,39 @@ test("resolveUpdateNotice returns an npm upgrade command when latest is newer", 
     latestVersion: "0.5.3",
     command: updateCommand,
   });
+});
+
+test("runUpdateCommand dry-run prints the hosted installer command", async () => {
+  const output: string[] = [];
+  const runtime = testRuntime(output, async () => {
+    throw new Error("spawn should not run during dry-run");
+  });
+
+  const code = await runUpdateCommand(runtime, { dryRun: true });
+
+  assert.equal(code, 0);
+  assert.deepEqual(output, [updateCommand]);
+});
+
+test("runUpdateCommand runs the hosted installer through bash", async () => {
+  const output: string[] = [];
+  const spawns: Array<{ command: string; args: string[]; behavior: { verbose: boolean } | undefined }> = [];
+  const runtime = testRuntime(output, async (command, args, _cwd, behavior) => {
+    spawns.push({ command, args, behavior });
+    return { code: 0 };
+  });
+
+  const code = await runUpdateCommand(runtime, { dryRun: false });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawns, [
+    {
+      command: "bash",
+      args: ["-c", updateCommand],
+      behavior: { verbose: true },
+    },
+  ]);
+  assert.ok(output.includes("Updating AFK from the latest GitHub release..."));
 });
 
 test("resolveUpdateNotice stays quiet when latest is current or lookup fails", async () => {
@@ -61,3 +95,16 @@ test("fetchLatestNpmVersion reads npm dist-tags latest", async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+function testRuntime(
+  output: string[],
+  spawn: Runtime["spawn"],
+): Runtime {
+  return {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn,
+  };
+}

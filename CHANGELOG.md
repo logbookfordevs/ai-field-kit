@@ -11,6 +11,14 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `cli:` added `afk update` to update the AFK CLI through the hosted GitHub release installer, with `--dry-run` for previewing the installer command.
+
+### Changed
+
+- `install:` updated AFK update notices and the website full-setup copy to use the hosted `install.sh` flow instead of npm install commands.
+
 ## v1.0.1 - 2026-06-19
 
 ### Changed

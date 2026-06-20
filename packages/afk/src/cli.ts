@@ -10,7 +10,7 @@ import { managedSkillAgents } from "./skills/catalog.js";
 import { runUiCommand } from "./ui.js";
 import { selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
-import { packageVersion } from "./update-check.js";
+import { packageVersion, runUpdateCommand } from "./update-check.js";
 import type {
   AgentId,
   Area,
@@ -91,6 +91,10 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (isCatalogImportCommand(key)) {
     return runCatalogImport(runtime, options);
+  }
+
+  if (isCliUpdateCommand(key)) {
+    return runUpdateCommand(runtime, options);
   }
 
   if (options.defaultSourceUpdate) {
@@ -255,6 +259,21 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk refresh --local",
       "afk refresh --source your-org/dev-kit",
       "afk refresh --default-source your-org/dev-kit",
+    ],
+  },
+  update: {
+    title: "AFK update",
+    summary: "Update the AFK CLI from the latest GitHub release.",
+    usage: "afk update [options]",
+    notes: [
+      "Runs the hosted AFK installer so the same release asset flow handles fresh installs and updates.",
+    ],
+    options: [
+      setupOptions.dryRun,
+    ],
+    examples: [
+      "afk update",
+      "afk update --dry-run",
     ],
   },
   "setup refresh": {
@@ -1320,6 +1339,10 @@ function isCatalogImportCommand(key: string): boolean {
   return key === "catalog import";
 }
 
+function isCliUpdateCommand(key: string): boolean {
+  return key === "update";
+}
+
 function helpCommandPath(commandPath: string[], key: string): string[] {
   if (key === "skills profiles" || key.startsWith("skills profiles ")) {
     return ["skills", "profiles"];
@@ -1409,6 +1432,7 @@ Usage:
   afk setup hooks [options]
   afk skills <command> [options]
   afk ui <command> [options]
+  afk update [options]
   afk catalog import [options]
   afk show [category...] [options]
 
@@ -1416,6 +1440,7 @@ Common paths:
   afk                         Open the interactive lobby when your terminal supports prompts
   afk setup                   Prepare rules, skills, MCPs, plugins, and hooks
   afk refresh                 Update the local catalog cache
+  afk update                  Update AFK from the latest GitHub release
   afk show skills --react     Print the skills catalog as a React-style composition tree
   afk show skills --visualize Write and open the skills composition map
   afk catalog import          Backfill catalog entries from installed skills

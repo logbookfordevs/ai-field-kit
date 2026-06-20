@@ -8,7 +8,7 @@ import { Opencode } from '@/components/ui/svgs/opencode.jsx';
 
 const installCommand = 'npx skills add https://github.com/logbookfordevs/ai-field-kit';
 
-const fullSetupCommand = 'npm install -g @logbookfordevs/afk\nafk setup --dry-run';
+const fullSetupCommand = 'curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash\nafk setup --dry-run';
 
 const kitLayers = [
   {
@@ -93,7 +93,7 @@ const tabs = [
   {
     id: 'full',
     label: 'Full setup',
-    text: 'Install the AFK CLI from npm, then preview detected rules, skills, MCP, utility, and hook targets before anything writes to your machine.',
+    text: 'Install the AFK CLI from the latest GitHub release, then preview detected rules, skills, MCP, utility, and hook targets before anything writes to your machine.',
     command: fullSetupCommand,
     copyLabel: 'Copy full setup commands',
   },
@@ -273,7 +273,7 @@ function App() {
                   </span>
                 ))}
               </div>
-              <pre className="overflow-x-auto rounded-[8px] bg-[#18221f] p-[18px] font-mono text-[0.82rem] leading-[1.75] whitespace-pre-wrap text-[#f9ecd4]"><code>{`$ npm install -g @logbookfordevs/afk
+              <pre className="overflow-x-auto rounded-[8px] bg-[#18221f] p-[18px] font-mono text-[0.82rem] leading-[1.75] whitespace-pre-wrap text-[#f9ecd4]"><code>{`$ curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
 $ afk setup --dry-run
 
 rules      -> linked

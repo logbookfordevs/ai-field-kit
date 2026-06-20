@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { CliOptions, Runtime } from "./types.js";
 
 export const packageName = "@logbookfordevs/afk";
-export const updateCommand = `npm install -g ${packageName}@latest`;
+export const installerUrl = "https://ai-field-kit.logbookfordevs.com/install.sh";
+export const updateCommand = `curl -fsSL ${installerUrl} | bash`;
 
 export type UpdateNotice = {
   currentVersion: string;
@@ -64,6 +66,22 @@ export async function fetchLatestNpmVersion(name: string, signal: AbortSignal): 
   }
 
   return metadata["dist-tags"].latest;
+}
+
+export async function runUpdateCommand(runtime: Runtime, options: Pick<CliOptions, "dryRun">): Promise<number> {
+  if (options.dryRun) {
+    runtime.io.stdout(updateCommand);
+    return 0;
+  }
+
+  runtime.io.stdout("Updating AFK from the latest GitHub release...");
+  const result = await runtime.spawn("bash", ["-c", updateCommand], undefined, { verbose: true });
+  if (result.code !== 0) {
+    runtime.io.stderr("AFK update failed. You can rerun the installer directly:");
+    runtime.io.stderr(updateCommand);
+  }
+
+  return result.code;
 }
 
 export function isVersionGreater(candidate: string, current: string): boolean {

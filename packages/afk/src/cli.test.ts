@@ -32,15 +32,38 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk setup plugins [options]"));
   assert.ok(output.join("\n").includes("afk setup hooks [options]"));
   assert.ok(output.join("\n").includes("afk ui <command> [options]"));
+  assert.ok(output.join("\n").includes("afk update [options]"));
   assert.ok(output.join("\n").includes("afk catalog import [options]"));
   assert.ok(!output.join("\n").includes("afk setup utils"));
   assert.ok(output.join("\n").includes("afk show [category...] [options]"));
+  assert.ok(output.join("\n").includes("afk update                  Update AFK from the latest GitHub release"));
   assert.ok(!output.join("\n").includes("afk configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests show [options]"));
   assert.ok(!output.join("\n").includes("afk setup mcps install [options]"));
   assert.ok(output.join("\n").includes("afk --version"));
   assert.ok(output.join("\n").includes('Run "afk <command> --help"'));
+});
+
+test("runCli prints contextual update help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["update", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK update"));
+  assert.ok(text.includes("afk update [options]"));
+  assert.ok(text.includes("Update the AFK CLI from the latest GitHub release."));
+  assert.ok(text.includes("afk update --dry-run"));
+});
+
+test("runCli dry-runs CLI update", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["update", "--dry-run"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash"));
 });
 
 test("runCli keeps plain afk as help in non-interactive output", async () => {
