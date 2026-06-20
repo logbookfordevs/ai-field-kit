@@ -17,7 +17,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
-- `install:` updated AFK update notices and the website full-setup copy to use the hosted `install.sh` flow instead of npm install commands.
+- `install:` updated AFK update notices to suggest `afk update` and refreshed the website full-setup copy to use the hosted `install.sh` flow instead of npm install commands.
 
 ## v1.0.1 - 2026-06-19
 

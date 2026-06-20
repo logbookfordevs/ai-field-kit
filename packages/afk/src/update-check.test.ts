@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import type { Runtime } from "./types.js";
-import { fetchLatestNpmVersion, isVersionGreater, packageName, resolveUpdateNotice, runUpdateCommand, updateCommand } from "./update-check.js";
+import { fetchLatestNpmVersion, installerCommand, isVersionGreater, packageName, resolveUpdateNotice, runUpdateCommand, updateCommand } from "./update-check.js";
 
 test("isVersionGreater compares semver triples", () => {
   assert.equal(isVersionGreater("0.5.3", "0.5.2"), true);
@@ -37,7 +37,7 @@ test("runUpdateCommand dry-run prints the hosted installer command", async () =>
   const code = await runUpdateCommand(runtime, { dryRun: true });
 
   assert.equal(code, 0);
-  assert.deepEqual(output, [updateCommand]);
+  assert.deepEqual(output, [installerCommand]);
 });
 
 test("runUpdateCommand runs the hosted installer through bash", async () => {
@@ -54,7 +54,7 @@ test("runUpdateCommand runs the hosted installer through bash", async () => {
   assert.deepEqual(spawns, [
     {
       command: "bash",
-      args: ["-c", updateCommand],
+      args: ["-c", installerCommand],
       behavior: { verbose: true },
     },
   ]);
