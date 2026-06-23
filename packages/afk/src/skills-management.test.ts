@@ -29,7 +29,7 @@ import {
   skillProfilePaths,
   type SkillProfileCatalog,
 } from "./skills/profiles.js";
-import { renderSkillChoice, renderSkillDetails, renderSkillDeleteBatch } from "./skills/render.js";
+import { renderSkillChoice, renderSkillDetails, renderSkillDeleteBatch, renderSkillProfileApply } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 import { localManifestDir, projectManifestDir, type SkillManifest } from "./manifest.js";
@@ -855,6 +855,35 @@ test("renderSkillDeleteBatch summarizes multiple selected skills", () => {
     "Would permanently delete 2 skills",
     "• alpha /skills/alpha -> (deleted)",
     "• beta /skills/beta -> (deleted)",
+  ].join("\n"));
+});
+
+test("renderSkillProfileApply summarizes profile movements compactly", () => {
+  assert.equal(renderSkillProfileApply({
+    catalog: { version: 1, alwaysOn: [], items: [] },
+    state: { version: 1, enabledProfileIds: ["frontend"], profileMovedSkills: ["api"], preExistingDisabledSkills: [] },
+    paths: {
+      catalogPath: "/tmp/catalog/profiles.json",
+      statePath: "/tmp/state/skill-profiles.json",
+      skillsRoot: "/tmp/skills",
+      disabledRoot: "/tmp/skills/.disabled",
+    },
+    keptSkills: ["react"],
+    movements: [
+      { folder: "api", source: "/tmp/skills/api", destination: "/tmp/skills/.disabled/api", action: "disable" },
+      { folder: "docs", source: "/tmp/skills/docs", destination: "/tmp/skills/.disabled/docs", action: "disable" },
+      { folder: "react", source: "/tmp/skills/.disabled/react", destination: "/tmp/skills/react", action: "enable" },
+    ],
+    dryRun: false,
+  }), [
+    "◆ Profile Move Complete",
+    "Profiles   frontend",
+    "enabled  disabled  kept",
+    "1        2         1   ",
+    "Enabled    react",
+    "Disabled   api, docs",
+    "Kept       react",
+    "State      /tmp/state/skill-profiles.json",
   ].join("\n"));
 });
 
