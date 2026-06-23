@@ -66,6 +66,7 @@ const options: CliOptions = {
   selectedSkillIds: [],
   selectedSkillAgentIds: [],
     skillAddArgs: [],
+  skillAddProfileIds: [],
   skillAddStartDisabled: false,
   selectedMcpIds: [],
   selectedPluginIds: [],

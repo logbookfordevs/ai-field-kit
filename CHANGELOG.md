@@ -11,14 +11,15 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
-## v1.0.2 - 2026-06-23
-
 ### Added
 
 - `cli:` added `afk update` to update the AFK CLI through the hosted GitHub release installer, with `--dry-run` for previewing the installer command.
 - `cli:` added `afk skills invocation` to enable or disable skill auto-invocation metadata in both `SKILL.md` and Codex `agents/openai.yaml`.
 - `cli:` added `startDisabled` support for skills catalog items, so installed skills can start in `.disabled` until enabled directly or through profiles.
-- `cli:` added `afk skills add <source> [flags...]` as a thin wrapper around the official `skills add` command, followed by AFK catalog import for new shared skills and an AFK-owned `--start-disabled` option.
+- `cli:` added `afk skills add <source> [flags...]` as a thin wrapper around the official `skills add` command, followed by AFK catalog import for new shared skills plus AFK-owned `--start-disabled` and `--profile <profile>` options.
+- `cli:` restored `afk configure` for writable catalog edits, including profile `alwaysOn` editing.
+- `cli:` added `afk catalog profiles` for profile definition edits, while keeping runtime profile operations under `afk skills profiles`.
+- `cli:` added `afk skills add` and `afk skills invocation` to the skill-management lobby.
 
 ### Changed
 

@@ -27,6 +27,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("Guided setup router for AI Field Kit."));
   assert.ok(output.join("\n").includes("afk refresh [category...] [options]"));
+  assert.ok(output.join("\n").includes("afk configure [options]"));
   assert.ok(output.join("\n").includes("afk setup [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
   assert.ok(output.join("\n").includes("afk setup plugins [options]"));
@@ -34,10 +35,12 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk ui <command> [options]"));
   assert.ok(output.join("\n").includes("afk update [options]"));
   assert.ok(output.join("\n").includes("afk catalog import [options]"));
+  assert.ok(output.join("\n").includes("afk catalog profiles <command> [options]"));
   assert.ok(!output.join("\n").includes("afk setup utils"));
   assert.ok(output.join("\n").includes("afk show [category...] [options]"));
+  assert.ok(output.join("\n").includes("afk configure               Edit writable local catalog files"));
+  assert.ok(output.join("\n").includes("afk catalog profiles        Edit skill profile definitions"));
   assert.ok(output.join("\n").includes("afk update                  Update AFK from the latest GitHub release"));
-  assert.ok(!output.join("\n").includes("afk configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests show [options]"));
   assert.ok(!output.join("\n").includes("afk setup mcps install [options]"));
@@ -285,23 +288,23 @@ test("runCli prints contextual hooks help", async () => {
   assert.ok(!output.join("\n").includes("AFK setup skills"));
 });
 
-test("runCli explains configure is not available for source-backed setup yet", async () => {
+test("runCli prints contextual configure help", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["configure"]));
+  const code = await withConsole(output, () => runCli(["configure", "--help"]));
 
-  assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("AFK configure is not available for source-backed setup yet."));
-  assert.ok(output.join("\n").includes("Use afk show to inspect the local catalog, or afk show --source <source> to inspect a source directly."));
-  assert.ok(!output.join("\n").includes("afk configure --local"));
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK configure"));
+  assert.ok(output.join("\n").includes("Interactively edit writable AFK catalog files."));
+  assert.ok(output.join("\n").includes("afk configure --local"));
 });
 
-test("runCli explains configure retirement instead of showing command help", async () => {
+test("runCli prints configure help through legacy manifests alias", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["manifests", "configure", "--help"]));
 
-  assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("AFK configure is not available for source-backed setup yet."));
-  assert.ok(!output.join("\n").includes("Usage:\n  afk configure"));
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK configure"));
+  assert.ok(output.join("\n").includes("Usage:\n  afk configure"));
 });
 
 test("runCli prints contextual skills help", async () => {
@@ -395,6 +398,18 @@ test("runCli prints contextual skills profiles help", async () => {
   assert.ok(text.includes("--always-on <skill>"));
 });
 
+test("runCli prints contextual catalog profiles help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["catalog", "profiles", "create", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK catalog profiles"));
+  assert.ok(text.includes("afk catalog profiles <command>"));
+  assert.ok(text.includes("create <profile>"));
+  assert.ok(text.includes("Use afk skills profiles enable|disable|status"));
+});
+
 test("runCli creates local skill profiles with repeated skill flags", async () => {
   const homeDir = localHomeWithManifests({});
   const cwd = mkdtempSync(join(tmpdir(), "afk-cli-profile-project-"));
@@ -433,6 +448,54 @@ test("runCli creates local skill profiles with repeated skill flags", async () =
   } finally {
     process.chdir(originalCwd);
   }
+});
+
+test("runCli creates local catalog profiles with repeated skill flags", async () => {
+  const homeDir = localHomeWithManifests({});
+  const cwd = mkdtempSync(join(tmpdir(), "afk-cli-catalog-profile-project-"));
+  const output: string[] = [];
+  const originalCwd = process.cwd();
+  process.chdir(cwd);
+
+  try {
+    const code = await withConsole(output, () => runCli(
+      [
+        "catalog",
+        "profiles",
+        "create",
+        "video",
+        "--local",
+        "--name",
+        "Video",
+        "--skill",
+        "hyperframes",
+        "--skill",
+        "tailwind",
+        "--always-on",
+        "afk-compass",
+      ],
+      { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    ));
+
+    assert.equal(code, 0);
+    assert.ok(output.join("\n").includes("Profile Create Complete"));
+    const catalog = JSON.parse(readFileSync(join(cwd, "afk", "catalog", "profiles.json"), "utf8")) as {
+      alwaysOn: string[];
+      items: Array<{ id: string; name: string; skills: string[] }>;
+    };
+    assert.deepEqual(catalog.alwaysOn, ["afk-compass"]);
+    assert.deepEqual(catalog.items, [{ id: "video", name: "Video", skills: ["hyperframes", "tailwind"] }]);
+  } finally {
+    process.chdir(originalCwd);
+  }
+});
+
+test("runCli keeps runtime profile operations under skills profiles", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["catalog", "profiles", "enable", "video"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Use afk skills profiles enable instead."));
 });
 
 test("runCli accepts skills delete manifest-only flag", async () => {
@@ -497,6 +560,7 @@ test("runCli prints contextual skills add help", async () => {
   assert.ok(text.includes("AFK skills add"));
   assert.ok(text.includes("afk skills add <source>"));
   assert.ok(text.includes("Forwarded to skills add"));
+  assert.ok(text.includes("--profile"));
   assert.ok(text.includes("--start-disabled"));
 });
 

@@ -32,6 +32,7 @@ test("compass lobby choices route intents to existing command paths", () => {
   assert.deepEqual(routeForLobbyChoice("setup"), ["setup"]);
   assert.deepEqual(routeForLobbyChoice("source", "acme/dev-kit"), ["refresh", "--default-source", "acme/dev-kit"]);
   assert.deepEqual(routeForLobbyChoice("refresh"), ["refresh"]);
+  assert.deepEqual(routeForLobbyChoice("configure"), ["configure"]);
   assert.deepEqual(routeForLobbyChoice("skills"), ["setup", "skills"]);
   assert.deepEqual(routeForLobbyChoice("skill-management"), ["skills"]);
   assert.deepEqual(routeForLobbyChoice("mcps"), ["setup", "mcps"]);
@@ -48,8 +49,10 @@ test("skills lobby choices route skill-management intents", () => {
   assert.deepEqual(routeForSkillsLobbyChoice("skills-list"), ["skills", "list"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-show"), ["skills", "show"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-open"), ["skills", "open"]);
+  assert.deepEqual(routeForSkillsLobbyChoice("skills-add"), ["skills", "add"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-disable"), ["skills", "disable"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-enable"), ["skills", "enable"]);
+  assert.deepEqual(routeForSkillsLobbyChoice("skills-invocation"), ["skills", "invocation"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-delete"), ["skills", "delete"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-upgrade"), ["skills", "upgrade"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-categorize"), ["skills", "categorize"]);
@@ -77,6 +80,7 @@ test("compass lobby labels stay intent-oriented while descriptions teach command
   assert.ok(!labels.includes("Build or edit a custom field kit"));
   assert.ok(labels.includes("Change default catalog source"));
   assert.ok(labels.includes("Refresh the local catalog"));
+  assert.ok(labels.includes("Edit local catalog"));
   assert.ok(labels.includes("Install skills"));
   assert.ok(labels.includes("Manage installed skills"));
   assert.ok(labels.includes("View skills as React composition"));
@@ -84,6 +88,7 @@ test("compass lobby labels stay intent-oriented while descriptions teach command
   assert.ok(labels.includes("Import installed skills into a catalog"));
   assert.ok(descriptions.some((description) => description.includes("afk setup skills")));
   assert.ok(descriptions.some((description) => description.includes("afk refresh --default-source")));
+  assert.ok(descriptions.some((description) => description.includes("afk configure")));
   assert.ok(descriptions.some((description) => description.includes("afk show skills --react")));
   assert.ok(descriptions.some((description) => description.includes("afk show skills --visualize")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog import")));
@@ -94,9 +99,13 @@ test("skills lobby labels include catalog and profile management", () => {
   const labels = skillsLobbyChoices.map((choice) => choice.name);
   const descriptions = skillsLobbyChoices.map((choice) => choice.description ?? "");
 
+  assert.ok(labels.includes("Add a skill"));
+  assert.ok(labels.includes("Change invocation policy"));
   assert.ok(labels.includes("Import installed skills into the catalog"));
   assert.ok(labels.includes("Manage skill profiles"));
   assert.ok(labels.includes("Show profile status"));
+  assert.ok(descriptions.some((description) => description.includes("afk skills add")));
+  assert.ok(descriptions.some((description) => description.includes("afk skills invocation")));
   assert.ok(descriptions.some((description) => description.includes("Open profile list")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog import")));
 });

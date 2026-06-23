@@ -18,10 +18,12 @@ import {
 } from "./catalog.js";
 import { runCodexCategorization } from "./categorization.js";
 import {
+  appendSkillsToSkillProfile,
   deleteSkillProfile,
   disableSkillProfile,
   enableSkillProfile,
   listSkillProfiles,
+  loadSkillProfileState,
   skillProfileStatus,
   upsertSkillProfile,
   type SkillProfileContext,
@@ -139,6 +141,10 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     applyOperation(operation);
   }
 
+  const profileResults = options.skillAddProfileIds.length > 0 && plan.imported.length > 0
+    ? syncAddedSkillsToProfiles(options, plan.imported.map((item) => item.id))
+    : [];
+
   runtime.io.stdout([
     "",
     section("Skill Catalog"),
@@ -148,11 +154,43 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     startupOperations.length > 0
       ? `${accent("Storage")} ${summarizeOperations(startupOperations)}`
       : "",
+    ...profileResults.map((result) => `${accent("Profile")} ${result.profile.id} ${result.created ? "created with" : "updated with"} ${plan.imported.length} skill${plan.imported.length === 1 ? "" : "s"}.`),
     plan.imported.length > 0
       ? `${accent("Imported")} ${plan.imported.map((item) => item.id).join(", ")}`
       : muted("No new shared skills found to import."),
   ].filter(Boolean).join("\n"));
   return 0;
+}
+
+function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Array<{ profile: { id: string }; created: boolean }> {
+  const context = skillProfileContext(options);
+  const state = loadSkillProfileState(context);
+  const results: Array<{ profile: { id: string }; created: boolean }> = [];
+
+  for (const profileId of options.skillAddProfileIds) {
+    const result = appendSkillsToSkillProfile(context, {
+      id: profileId,
+      skills: skillIds,
+      dryRun: false,
+    });
+    results.push({ profile: result.profile, created: result.created });
+  }
+
+  if (state.enabledProfileIds[0]) {
+    enableSkillProfile(context, state.enabledProfileIds[0], false);
+  }
+
+  return results;
+}
+
+export async function runCatalogProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const command = operands[0] ?? "list";
+  if (command === "enable" || command === "disable" || command === "status") {
+    runtime.io.stderr(`afk catalog profiles ${command} is a runtime profile operation. Use afk skills profiles ${command} instead.`);
+    return 1;
+  }
+
+  return runSkillProfilesCommand(operands.length === 0 ? ["list"] : operands, runtime, options);
 }
 
 async function runSkillProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {

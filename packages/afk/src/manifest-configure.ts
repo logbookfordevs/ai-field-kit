@@ -30,13 +30,15 @@ import {
   type PluginManifestItem,
   type PluginPostInstallCommand,
 } from "./manifest.js";
+import type { SkillProfileCatalog } from "./skills/profiles.js";
 import { afkPromptTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
-type ManifestArea = Area;
+type ManifestArea = Area | "profiles";
 type ManifestAreaChoice = ManifestArea | "finish";
-export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "edit-rules" | "back";
-type Drafts = Record<ManifestArea, EditableManifest>;
+export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "edit-rules" | "back";
+type EditableDraft = EditableManifest | SkillProfileCatalog;
+type Drafts = Record<ManifestArea, EditableDraft>;
 type SerializedDrafts = Partial<Record<`${ManifestArea}.json`, string>>;
 type SelectChoice<Value extends string> = {
   name: string;
@@ -64,11 +66,12 @@ export type ManifestConfigurePrompts = {
   confirm: (message: string, defaultValue: boolean) => Promise<boolean>;
 };
 
-const manifestAreas: ManifestArea[] = ["rules", "skills", "mcps", "plugins", "hooks"];
+const manifestAreas: ManifestArea[] = ["rules", "skills", "profiles", "mcps", "plugins", "hooks"];
 
 const areaDescriptions: Record<ManifestArea, string> = {
   rules: "Point rules sync at one AGENTS.md source.",
   skills: "Add, edit, remove, and toggle skills.",
+  profiles: "Edit profile-level always-on skills.",
   mcps: "Add, edit, remove, and toggle MCP recommendations.",
   plugins: "Add, edit, remove, and toggle plugin installers.",
   hooks: "Add, edit, remove, and toggle lifecycle hooks.",
@@ -162,12 +165,18 @@ async function editManifestArea(
       continue;
     }
 
+    if (area === "profiles") {
+      drafts.profiles = await applyProfileAction(prompts, drafts.profiles, drafts.skills, action);
+      touched.add("profiles");
+      continue;
+    }
+
     if (!isItemManifestArea(area)) {
       return;
     }
 
     try {
-      drafts[area] = await applyItemAction(prompts, area, drafts[area], action, options);
+      drafts[area] = await applyItemAction(prompts, area, drafts[area] as EditableManifest, action, options);
       touched.add(area);
     } catch (error) {
       runtime.io.stderr(`\n${error instanceof Error ? error.message : String(error)}`);
@@ -177,7 +186,7 @@ async function editManifestArea(
 
 async function applyItemAction(
   prompts: ManifestConfigurePrompts,
-  area: Exclude<ManifestArea, "rules">,
+  area: Exclude<Area, "rules">,
   manifest: EditableManifest,
   action: ManifestAction,
   options: CliOptions,
@@ -232,6 +241,25 @@ async function applyItemAction(
   return manifest;
 }
 
+async function applyProfileAction(
+  prompts: ManifestConfigurePrompts,
+  manifest: EditableDraft,
+  skillsManifest: EditableDraft,
+  action: ManifestAction,
+): Promise<SkillProfileCatalog> {
+  const profileCatalog = normalizeProfileDraft(manifest);
+  if (action !== "toggle-always-on") {
+    return profileCatalog;
+  }
+
+  const values = await prompts.toggleBooleans("profiles", alwaysOnToggleChoices(profileCatalog, skillsManifest), "Toggle always-on skills");
+  const alwaysOn = Object.entries(values)
+    .filter(([, enabled]) => enabled)
+    .map(([id]) => id)
+    .sort((left, right) => left.localeCompare(right));
+  return { ...profileCatalog, alwaysOn };
+}
+
 async function configureRules(prompts: ManifestConfigurePrompts, manifest: EditableManifest): Promise<RulesManifest> {
   const existing = isRulesDraft(manifest) ? manifest : { version: 1, source: "github", url: "" };
   const url = await prompts.input({
@@ -247,7 +275,7 @@ async function configureRules(prompts: ManifestConfigurePrompts, manifest: Edita
   };
 }
 
-async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<ManifestArea, "rules">, existing?: EditableManifestItem): Promise<EditableManifestItem> {
+async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<Area, "rules">, existing?: EditableManifestItem): Promise<EditableManifestItem> {
   switch (area) {
     case "skills":
       return promptSkill(prompts, existing as SkillManifestItem | undefined);
@@ -368,14 +396,15 @@ function readEditableManifests(outputDir: string): Drafts {
   return {
     rules: readManifestOrEmpty(outputDir, "rules"),
     skills: readManifestOrEmpty(outputDir, "skills"),
+    profiles: readProfilesOrEmpty(outputDir),
     mcps: readManifestOrEmpty(outputDir, "mcps"),
     plugins: readManifestOrEmpty(outputDir, "plugins"),
     hooks: readManifestOrEmpty(outputDir, "hooks"),
   };
 }
 
-function readManifestOrEmpty(outputDir: string, area: ManifestArea): EditableManifest {
-  const path = join(outputDir, manifestFilename(area));
+function readManifestOrEmpty(outputDir: string, area: Area): EditableManifest {
+  const path = join(outputDir, catalogFilename(area));
   if (!existsSync(path)) {
     return emptyEditableManifest(area);
   }
@@ -383,10 +412,20 @@ function readManifestOrEmpty(outputDir: string, area: ManifestArea): EditableMan
   return JSON.parse(readFileSync(path, "utf8")) as EditableManifest;
 }
 
+function readProfilesOrEmpty(outputDir: string): SkillProfileCatalog {
+  const path = join(outputDir, catalogFilename("profiles"));
+  if (!existsSync(path)) {
+    return emptyProfileCatalog();
+  }
+
+  return normalizeProfileDraft(JSON.parse(readFileSync(path, "utf8")) as unknown);
+}
+
 function cloneDrafts(drafts: Drafts): Drafts {
   return {
     rules: cloneDraft(drafts.rules),
     skills: cloneDraft(drafts.skills),
+    profiles: cloneProfileDraft(drafts.profiles),
     mcps: cloneDraft(drafts.mcps),
     plugins: cloneDraft(drafts.plugins),
     hooks: cloneDraft(drafts.hooks),
@@ -397,25 +436,29 @@ function cloneDraft(manifest: EditableManifest): EditableManifest {
   return JSON.parse(JSON.stringify(manifest)) as EditableManifest;
 }
 
+function cloneProfileDraft(manifest: EditableDraft): SkillProfileCatalog {
+  return normalizeProfileDraft(JSON.parse(JSON.stringify(manifest)) as unknown);
+}
+
 function changedDrafts(original: Drafts, drafts: Drafts, touched: Set<ManifestArea>): SerializedDrafts {
   const serialized: SerializedDrafts = {};
   for (const area of touched) {
     const originalContent = rawSerialize(original[area]);
-    const nextContent = serializeEditableManifest(area, drafts[area]);
+    const nextContent = serializeDraft(area, drafts[area]);
     if (originalContent !== nextContent) {
-      serialized[manifestFilename(area)] = nextContent;
+      serialized[catalogFilename(area)] = nextContent;
     }
   }
 
   return serialized;
 }
 
-function rawSerialize(manifest: EditableManifest): string {
+function rawSerialize(manifest: EditableDraft): string {
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
 function validationErrorsFor(drafts: Drafts, touched: Set<ManifestArea>): string[] {
-  return [...touched].flatMap((area) => validateEditableManifest(area, drafts[area]).map((error) => `${manifestFilename(area)}: ${error}`));
+  return [...touched].flatMap((area) => validateDraft(area, drafts[area]).map((error) => `${catalogFilename(area)}: ${error}`));
 }
 
 function areaChoices(drafts: Drafts): Array<SelectChoice<ManifestAreaChoice>> {
@@ -433,10 +476,17 @@ function areaChoices(drafts: Drafts): Array<SelectChoice<ManifestAreaChoice>> {
   ];
 }
 
-function actionChoices(area: ManifestArea, manifest: EditableManifest): Array<SelectChoice<ManifestAction>> {
+function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<SelectChoice<ManifestAction>> {
   if (area === "rules") {
     return [
       { name: "Edit rules source", value: "edit-rules", description: "Change the rules URL/path and inferred source type." },
+      { name: "Back to catalog", value: "back" },
+    ];
+  }
+
+  if (area === "profiles") {
+    return [
+      { name: "Toggle alwaysOn", value: "toggle-always-on", description: "Choose skills that stay active across enabled profiles." },
       { name: "Back to catalog", value: "back" },
     ];
   }
@@ -472,10 +522,20 @@ function booleanToggleChoices(manifest: EditableManifest, field: "default" | "au
   });
 }
 
-function renderAreaSummary(area: ManifestArea, manifest: EditableManifest): string {
+function renderAreaSummary(area: ManifestArea, manifest: EditableDraft): string {
   if (area === "rules") {
     const rules = isRulesDraft(manifest) ? manifest : { version: 1, source: "github", url: "" };
     return `\nCurrent rules source: ${rules.url || "(empty)"} [${rules.source}]`;
+  }
+
+  if (area === "profiles") {
+    const profiles = normalizeProfileDraft(manifest);
+    return [
+      "",
+      "Profiles entries",
+      `- alwaysOn: ${profiles.alwaysOn.length > 0 ? profiles.alwaysOn.join(", ") : "(none)"}`,
+      `- profiles: ${profiles.items.length}`,
+    ].join("\n");
   }
 
   const items = itemsFromManifest(manifest);
@@ -503,7 +563,11 @@ function findItem(manifest: EditableManifest, id: string): EditableManifestItem 
   return itemsFromManifest(manifest).find((item) => item.id === id);
 }
 
-function entryCount(manifest: EditableManifest): number {
+function entryCount(manifest: EditableDraft): number {
+  if (isProfileCatalogDraft(manifest)) {
+    return manifest.alwaysOn.length + manifest.items.length;
+  }
+
   if (isRulesDraft(manifest)) {
     return manifest.url ? 1 : 0;
   }
@@ -549,6 +613,8 @@ function actionLabel(action: ManifestAction): string {
       return "Toggle default for";
     case "toggle-auto":
       return "Toggle autoInvocation for";
+    case "toggle-always-on":
+      return "Toggle alwaysOn for";
     default:
       return "Select";
   }
@@ -560,6 +626,8 @@ function areaTitle(area: ManifestArea): string {
       return "Rules";
     case "skills":
       return "Skills";
+    case "profiles":
+      return "Profiles";
     case "mcps":
       return "MCPs";
     case "plugins":
@@ -569,10 +637,12 @@ function areaTitle(area: ManifestArea): string {
   }
 }
 
-function singularArea(area: Exclude<ManifestArea, "rules">): string {
+function singularArea(area: Exclude<Area, "rules"> | "profiles"): string {
   switch (area) {
     case "skills":
       return "skill";
+    case "profiles":
+      return "profile";
     case "mcps":
       return "MCP";
     case "plugins":
@@ -580,6 +650,85 @@ function singularArea(area: Exclude<ManifestArea, "rules">): string {
     case "hooks":
       return "hook";
   }
+}
+
+function catalogFilename(area: ManifestArea): `${ManifestArea}.json` {
+  return area === "profiles" ? "profiles.json" : manifestFilename(area);
+}
+
+function serializeDraft(area: ManifestArea, manifest: EditableDraft): string {
+  if (area === "profiles") {
+    return `${JSON.stringify(normalizeProfileDraft(manifest), null, 2)}\n`;
+  }
+
+  return serializeEditableManifest(area, manifest as EditableManifest);
+}
+
+function validateDraft(area: ManifestArea, manifest: EditableDraft): string[] {
+  if (area === "profiles") {
+    return isProfileCatalogDraft(manifest) ? [] : ["Invalid profiles manifest shape"];
+  }
+
+  return validateEditableManifest(area, manifest as EditableManifest);
+}
+
+function alwaysOnToggleChoices(profiles: SkillProfileCatalog, skillsManifest: EditableDraft): BooleanToggleChoice[] {
+  const skillItems = itemsFromManifest(skillsManifest as EditableManifest);
+  const byId = new Map(skillItems.map((item) => [item.id, item]));
+  const ids = [...new Set([...skillItems.map((item) => item.id), ...profiles.alwaysOn])].sort((left, right) => left.localeCompare(right));
+  const enabledIds = new Set(profiles.alwaysOn);
+  return ids.map((id) => {
+    const item = byId.get(id);
+    const enabled = enabledIds.has(id);
+    return {
+      name: `${booleanSwitch(enabled)} ${item ? itemLabel(item) : id}`,
+      value: id,
+      enabled,
+      description: item ? itemDescription(item) : "Missing from skills catalog",
+    };
+  });
+}
+
+function emptyProfileCatalog(): SkillProfileCatalog {
+  return { version: 1, alwaysOn: [], items: [] };
+}
+
+function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
+  if (!isProfileCatalogDraft(value)) {
+    return emptyProfileCatalog();
+  }
+
+  return {
+    version: Math.max(value.version, 1),
+    alwaysOn: uniqueStrings(value.alwaysOn),
+    items: value.items
+      .map((item) => ({
+        id: item.id.trim().toLowerCase(),
+        name: item.name.trim() || item.id.trim(),
+        skills: uniqueStrings(item.skills),
+      }))
+      .filter((item) => item.id)
+      .sort((left, right) => left.id.localeCompare(right.id)),
+  };
+}
+
+function isProfileCatalogDraft(value: unknown): value is SkillProfileCatalog {
+  return isRecord(value) &&
+    typeof value.version === "number" &&
+    Array.isArray(value.alwaysOn) &&
+    value.alwaysOn.every((item) => typeof item === "string") &&
+    Array.isArray(value.items) &&
+    value.items.every((item) =>
+      isRecord(item) &&
+      typeof item.id === "string" &&
+      typeof item.name === "string" &&
+      Array.isArray(item.skills) &&
+      item.skills.every((skill) => typeof skill === "string")
+    );
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))].sort((left, right) => left.localeCompare(right));
 }
 
 function installLineFromCommand(install?: PluginManifestItem["install"]): string {
