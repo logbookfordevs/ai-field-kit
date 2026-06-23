@@ -33,6 +33,9 @@ Treat explicit "AFK workflow" or "feature workflow" requests as composable AFK w
 - Avoid `any` unless necessary or specifically instructed.
 - TypeScript changes must pass the repo typecheck before final handoff.
 
+## React
+- Conditional JSX should use named booleans, not chained `||` expressions inside `{condition && (...)}` blocks. Hoist OR logic above the return, such as `const showActions = isReady && canEdit`, then use `&&` with those names in JSX. For repeated status unions like `active | pending` or `loading | refreshing`, use shared helpers in `utils/`, such as `isActiveStatus`, instead of duplicating OR expressions.
+
 ## Commands
 - Don't run dev server commands (like `npm run dev`) - assume it's already running.
 

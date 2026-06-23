@@ -8,4 +8,4 @@ If the prior `goal.md` is done, stale, or scoped away from the remaining work, d
 
 If a deferred seam is under-specified, run a short grilling pass before `plannotator-setup-goal`.
 
-Then continue the normal Turbo route and create a fresh launch page.
+Then continue the normal Turbo route from the fresh goal package.

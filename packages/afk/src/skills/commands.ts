@@ -1,5 +1,6 @@
 import { confirm, input, search } from "@inquirer/prompts";
 import { join } from "node:path";
+import { applyOperation, pathExists, readText } from "../fs-utils.js";
 import { afkPromptTheme, afkSearchableCheckboxTheme, afkSearchTheme, renderPromptStep } from "../prompt-ui.js";
 import { searchableCheckbox } from "../searchable-checkbox.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
@@ -38,6 +39,7 @@ import {
   renderSkillMove,
   renderSkillOpen,
   renderSkillDeleteBatch,
+  renderSkillInvocationPolicy,
 } from "./render.js";
 import {
   buildSkillUpgradeCommands,
@@ -45,8 +47,9 @@ import {
   runSkillUpgradeCommands,
   type LockedSkillRecord,
 } from "./upgrade.js";
+import { upsertFrontmatterBoolean, upsertOpenAiImplicitInvocation } from "../skills.js";
 
-type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "delete" | "upgrade" | "categorize" | "profiles";
+type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "invocation" | "delete" | "upgrade" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   const command = commandPath[1] as SkillCommandName | undefined;
@@ -69,6 +72,8 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
         return runSkillsMove(operands[0], false, runtime, options);
       case "enable":
         return runSkillsMove(operands[0], true, runtime, options);
+      case "invocation":
+        return runSkillsInvocation(operands, runtime, options);
       case "delete":
         return runSkillsDelete(operands[0], runtime, options);
       case "upgrade":
@@ -397,6 +402,32 @@ async function runSkillsMove(folder: string | undefined, enabled: boolean, runti
   return 0;
 }
 
+async function runSkillsInvocation(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const action = operands[0] === "enable" || operands[0] === "disable" ? operands[0] : "disable";
+  const folder = operands[0] === "enable" || operands[0] === "disable" ? operands[1] : operands[0];
+  const allowInvocation = action === "enable";
+  const candidates = loadMutationSkillRecords(options);
+  const record = folder
+    ? findSkillRecord(candidates, folder)
+    : await promptSkillRecord(candidates, allowInvocation
+      ? `Select ${mutationTargetLabel(options)} skill to enable auto invocation:`
+      : `Select ${mutationTargetLabel(options)} skill to disable auto invocation:`);
+
+  if (!record) {
+    runtime.io.stderr(folder ? `Skill not found: ${folder}` : `No ${mutationTargetLabel(options)} skills found.`);
+    return 1;
+  }
+
+  const result = setSkillInvocationPolicy({
+    record,
+    allowInvocation,
+    dryRun: options.dryRun,
+  });
+
+  runtime.io.stdout(renderSkillInvocationPolicy(result));
+  return 0;
+}
+
 async function runSkillsDelete(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
   const globalCandidates = loadMutationSkillRecords(options);
   const candidates = options.skillsDeleteManifestOnly
@@ -444,6 +475,54 @@ async function runSkillsDelete(folder: string | undefined, runtime: Runtime, opt
     dryRun: options.dryRun,
   }));
   return 0;
+}
+
+function setSkillInvocationPolicy(options: {
+  record: SkillRecord;
+  allowInvocation: boolean;
+  dryRun: boolean;
+}): {
+  folder: string;
+  allowInvocation: boolean;
+  dryRun: boolean;
+  operations: ReturnType<typeof buildSkillInvocationPolicyOperations>;
+} {
+  const operations = buildSkillInvocationPolicyOperations(options.record, options.allowInvocation);
+
+  if (!options.dryRun) {
+    for (const operation of operations) {
+      applyOperation(operation);
+    }
+  }
+
+  return {
+    folder: options.record.folder,
+    allowInvocation: options.allowInvocation,
+    dryRun: options.dryRun,
+    operations,
+  };
+}
+
+function buildSkillInvocationPolicyOperations(record: SkillRecord, allowInvocation: boolean) {
+  const skillDir = join(record.rootPath, record.folder);
+  const openaiYaml = join(skillDir, "agents", "openai.yaml");
+  const currentSkillMd = readText(record.skillFilePath);
+  const nextSkillMd = upsertFrontmatterBoolean(currentSkillMd, "disable-model-invocation", !allowInvocation);
+  const currentOpenAiYaml = pathExists(openaiYaml) ? readText(openaiYaml) : "";
+  const nextOpenAiYaml = upsertOpenAiImplicitInvocation(currentOpenAiYaml, allowInvocation);
+
+  return [
+    nextSkillMd === currentSkillMd ? undefined : {
+      type: "write" as const,
+      path: record.skillFilePath,
+      content: nextSkillMd,
+    },
+    nextOpenAiYaml === currentOpenAiYaml ? undefined : {
+      type: "write" as const,
+      path: openaiYaml,
+      content: nextOpenAiYaml,
+    },
+  ].filter((operation): operation is NonNullable<typeof operation> => Boolean(operation));
 }
 
 export function buildSkillOpenCommand(record: SkillRecord, options: {

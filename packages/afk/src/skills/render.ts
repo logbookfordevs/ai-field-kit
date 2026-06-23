@@ -1,7 +1,9 @@
 import { sectionTitle, muted } from "../brand.js";
+import { formatOperation } from "../fs-utils.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import { skillCatalogFileName, type SkillCategorizationState, type SkillRecord } from "./catalog.js";
 import type { SkillProfileApplyResult, SkillProfileCatalog, SkillProfileItem, SkillProfileMovement, SkillProfileState } from "./profiles.js";
+import type { PathOperation } from "../types.js";
 
 export function renderSkillList(records: SkillRecord[], categorization: SkillCategorizationState): string {
   if (records.length === 0) {
@@ -53,6 +55,24 @@ export function renderSkillMove(input: {
       : `${accent(input.enabled ? "Enabled" : "Disabled")} ${strong(input.folder)}`,
     muted(input.movement),
   ].join("\n");
+}
+
+export function renderSkillInvocationPolicy(input: {
+  folder: string;
+  allowInvocation: boolean;
+  dryRun: boolean;
+  operations: PathOperation[];
+}): string {
+  const verb = input.allowInvocation ? "enable" : "disable";
+  const title = input.dryRun ? "Auto Invocation Preview" : "Auto Invocation Complete";
+  return [
+    sectionTitle(title),
+    input.dryRun
+      ? `${muted("Would")} ${accent(verb)} ${muted("auto invocation for")} ${strong(input.folder)}`
+      : `${accent(input.allowInvocation ? "Enabled" : "Disabled")} ${muted("auto invocation for")} ${strong(input.folder)}`,
+    input.operations.length === 0 ? muted("No file changes needed.") : undefined,
+    ...input.operations.map((operation) => `${paint(terminalPalette.sienna, "•")} ${muted(formatOperation(operation))}`),
+  ].filter((line): line is string => Boolean(line)).join("\n");
 }
 
 export function renderSkillOpen(input: {

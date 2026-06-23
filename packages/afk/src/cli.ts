@@ -438,6 +438,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "open <folder>                     Open SKILL.md or the skill folder",
       "disable <folder>                  Move a global skill into .disabled",
       "enable <folder>                   Move a disabled global skill back to active",
+      "invocation [disable|enable] [folder] Toggle auto invocation metadata",
       "delete [folder]                   Permanently delete one or more skills",
       "upgrade [skills...]               Upgrade selected or all tracked skills",
       "profiles <command>                Manage skill focus profiles",
@@ -447,6 +448,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills list",
       "afk skills list --scope global --json",
       "afk skills disable old-skill --dry-run",
+      "afk skills invocation disable afk-doc-craft",
       "afk skills upgrade --all",
       "afk skills categorize --mode append-missing --dry-run",
     ],
@@ -577,6 +579,22 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills enable old-skill",
       "afk skills enable --scope global --agent codex",
       "afk skills enable --scope project --agent claude",
+    ],
+  },
+  "skills invocation": {
+    title: "AFK skills invocation",
+    summary: "Enable or disable auto invocation metadata for one skill.",
+    usage: "afk skills invocation [disable|enable] [folder] [options]",
+    options: [
+      "--scope global|project|all        Choose the target roots when --agent is set",
+      "--agent <agent>                   Target one agent-specific root",
+      "--dry-run                         Preview metadata writes without applying them",
+    ],
+    examples: [
+      "afk skills invocation",
+      "afk skills invocation disable afk-doc-craft",
+      "afk skills invocation enable afk-doc-craft --dry-run",
+      "afk skills invocation disable --scope global --agent codex",
     ],
   },
   "skills delete": {

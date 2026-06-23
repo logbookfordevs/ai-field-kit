@@ -334,7 +334,7 @@ AFK's fast execution packages are:
 
 - **AFK Workflow**: recommended human-facing composition with optional checkpoint packets and execution tracking.
 - **AFK Sprint**: `afk-sprint`, a Plannotator goal package plus AFK checkpoint packets, native `/goal`, and execution tracking.
-- **AFK Turbo**: `afk-turbo`, an optional grilling pass, a Plannotator goal package, and GoalBuddy's local live board and PM loop. Turbo writes a deterministic `goal-launch.html` beside `goal.md` and waits for an explicit launch trigger before execution. Ask for review-gated Turbo when each code-changing task should stage changes and pause for human review before task completion; ask for Turbo resume when prior goal packages or handoffs should seed a fresh focused goal.
+- **AFK Turbo**: `afk-turbo`, an optional grilling pass, a Plannotator goal package, and GoalBuddy's local live board and PM loop. Turbo stops at the launch boundary with the exact user-triggered command for the current harness. Ask for review-gated Turbo when each code-changing task should stage changes and pause for human review before task completion; ask for Turbo resume when prior goal packages or handoffs should seed a fresh focused goal.
 
 | Ask for | Use |
 |---|---|

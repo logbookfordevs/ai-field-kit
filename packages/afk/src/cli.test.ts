@@ -373,6 +373,16 @@ test("runCli prints contextual skills delete help", async () => {
   assert.ok(text.includes("--manifest-only"));
 });
 
+test("runCli prints contextual skills invocation help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "invocation", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK skills invocation"));
+  assert.ok(text.includes("invocation [disable|enable] [folder]"));
+});
+
 test("runCli prints contextual skills profiles help", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["skills", "profiles", "enable", "--help"]));

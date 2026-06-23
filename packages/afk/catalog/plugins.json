@@ -55,11 +55,10 @@
             "label": "Yggtree",
             "description": "Create and manage git worktrees with a focused CLI workflow for agent-friendly branch and workspace handling.",
             "install": {
-                "command": "npm",
+                "command": "bash",
                 "args": [
-                    "install",
-                    "-g",
-                    "yggtree"
+                    "-c",
+                    "curl -fsSL https://yggtree.logbookfordevs.com/install.sh | bash"
                 ]
             },
             "default": true
