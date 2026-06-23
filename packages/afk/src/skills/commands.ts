@@ -114,11 +114,8 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     `${accent("Route")} npx ${upstreamArgs.map(quoteArg).join(" ")}`,
   ].join("\n"));
 
-  const result = await runtime.spawn("npx", upstreamArgs, options.cwd, { verbose: options.verbose });
+  const result = await runtime.spawn("npx", upstreamArgs, options.cwd, { verbose: true });
   if (result.code !== 0) {
-    if (!options.verbose) {
-      runtime.io.stderr("Upstream output hidden. Re-run with --verbose to inspect skills add.");
-    }
     return result.code;
   }
 

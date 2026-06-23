@@ -510,14 +510,14 @@ test("runSkillsCommand add delegates to skills add and imports installed skills 
   const root = mkdtempSync(join(tmpdir(), "afk-skill-add-command-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
-  const spawned: Array<{ command: string; args: string[]; cwd?: string }> = [];
+  const spawned: Array<{ command: string; args: string[]; cwd?: string; verbose?: boolean }> = [];
   const runtime: Runtime = {
     io: {
       stdout: (message) => output.push(message),
       stderr: (message) => output.push(message),
     },
-    spawn: async (command, args, cwd) => {
-      spawned.push({ command, args, ...(cwd ? { cwd } : {}) });
+    spawn: async (command, args, cwd, behavior) => {
+      spawned.push({ command, args, ...(cwd ? { cwd } : {}), ...(behavior?.verbose !== undefined ? { verbose: behavior.verbose } : {}) });
       writeSkill(join(homeDir, ".agents", "skills"), "demo-skill", "Demo Skill");
       writeGlobalSkillLock(homeDir, {
         "demo-skill": { source: "owner/skills", sourceType: "github" },
@@ -537,6 +537,7 @@ test("runSkillsCommand add delegates to skills add and imports installed skills 
     command: "npx",
     args: ["skills", "add", "owner/skills", "--skill", "demo-skill", "--global", "--yes"],
     cwd: join(root, "project"),
+    verbose: true,
   }]);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
   assert.deepEqual(catalog.scopes?.map((scope) => scope.id), ["uncategorized"]);
@@ -556,14 +557,14 @@ test("runSkillsCommand add handles start-disabled as an AFK flag", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-add-start-disabled-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
-  const spawned: Array<{ command: string; args: string[]; cwd?: string }> = [];
+  const spawned: Array<{ command: string; args: string[]; cwd?: string; verbose?: boolean }> = [];
   const runtime: Runtime = {
     io: {
       stdout: (message) => output.push(message),
       stderr: (message) => output.push(message),
     },
-    spawn: async (command, args, cwd) => {
-      spawned.push({ command, args, ...(cwd ? { cwd } : {}) });
+    spawn: async (command, args, cwd, behavior) => {
+      spawned.push({ command, args, ...(cwd ? { cwd } : {}), ...(behavior?.verbose !== undefined ? { verbose: behavior.verbose } : {}) });
       writeSkill(join(homeDir, ".agents", "skills"), "demo-skill", "Demo Skill");
       writeGlobalSkillLock(homeDir, {
         "demo-skill": { source: "owner/skills", sourceType: "github" },
@@ -583,6 +584,7 @@ test("runSkillsCommand add handles start-disabled as an AFK flag", async () => {
     command: "npx",
     args: ["skills", "add", "owner/skills", "--skill", "demo-skill", "--global", "--yes"],
     cwd: join(root, "project"),
+    verbose: true,
   }]);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
   assert.equal(catalog.items[0]?.startDisabled, true);
