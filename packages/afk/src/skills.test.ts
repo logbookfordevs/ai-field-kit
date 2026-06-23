@@ -141,35 +141,3 @@ test("planSkillStartupStorage moves start-disabled skills into .disabled", () =>
   assert.equal(existsSync(skillDir), false);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "quiet-skill")), true);
 });
-
-test("planSkillStartupStorage can start selected skills disabled for one setup run", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-storage-"));
-  const homeDir = join(root, "home");
-  const skillDir = join(homeDir, ".agents", "skills", "one-run-skill");
-  mkdirSync(skillDir, { recursive: true });
-  mkdirSync(localManifestDir(homeDir), { recursive: true });
-  writeFileSync(join(skillDir, "SKILL.md"), "---\nname: one-run-skill\n---\n\n# One Run\n");
-  writeFileSync(join(localManifestDir(homeDir), "skills.json"), JSON.stringify({
-    version: 1,
-    defaultSource: "",
-    items: [
-      {
-        id: "one-run-skill",
-        label: "One Run Skill",
-        source: "https://github.com/example/skills",
-        args: ["--skill", "one-run-skill"],
-        default: true,
-      },
-    ],
-  }));
-
-  const operations = planSkillStartupStorage({
-    homeDir,
-    cwd: join(root, "project"),
-    setupScope: "global",
-    selectedSkillIds: ["one-run-skill"],
-    startDisabledSkills: true,
-  });
-
-  assert.deepEqual(operations.map((operation) => operation.type), ["move"]);
-});

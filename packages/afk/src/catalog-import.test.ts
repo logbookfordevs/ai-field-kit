@@ -3,7 +3,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { planCatalogImport } from "./catalog-import.js";
+import { planCatalogImport, runCatalogImport } from "./catalog-import.js";
+import type { CliOptions, Runtime } from "./types.js";
 
 test("planCatalogImport imports installed skills with lock metadata into global catalog", () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-import-"));
@@ -104,6 +105,81 @@ test("planCatalogImport does not duplicate existing catalog skills", () => {
   assert.deepEqual(plan.skippedExisting, ["existing-skill"]);
   assert.equal(JSON.parse(readFileSync(join(catalogDir, "skills.json"), "utf8")).defaultSource, "acme/default-kit");
 });
+
+test("runCatalogImport renders a branded, scannable summary", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-import-"));
+  writeInstalledSkill(homeDir, "afk-code-grill", "---\nname: AFK Code Grill\n---\n");
+  writeInstalledSkill(homeDir, "local-only", "---\nname: Local Only\n---\n");
+  writeSkillLock(homeDir, {
+    "afk-code-grill": {
+      source: "logbookfordevs/ai-field-kit",
+    },
+  });
+  const output: string[] = [];
+
+  const code = await runCatalogImport(captureRuntime(output), cliOptions({
+    homeDir,
+    cwd: mkdtempSync(join(tmpdir(), "afk-project-")),
+    dryRun: true,
+  }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("◆ Catalog Import"));
+  assert.ok(text.includes("◆ Import Preview"));
+  assert.ok(text.includes("◆ Import Summary"));
+  assert.ok(text.includes("Imported"));
+  assert.ok(text.includes("• afk-code-grill"));
+  assert.ok(text.includes("Missing lock metadata"));
+  assert.ok(text.includes("• local-only"));
+});
+
+function captureRuntime(output: string[]): Runtime {
+  return {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => ({ code: 0 }),
+  };
+}
+
+function cliOptions(overrides: Partial<CliOptions>): CliOptions {
+  return {
+    agents: [],
+    setupScope: "global",
+    scopeExplicit: true,
+    dryRun: false,
+    verbose: false,
+    yes: false,
+    allSkills: false,
+    selectedSkillIds: [],
+    selectedSkillAgentIds: [],
+    skillAddArgs: [],
+    skillAddStartDisabled: false,
+    selectedMcpIds: [],
+    selectedPluginIds: [],
+    selectedHookIds: [],
+    rulesRef: "main",
+    rulesSource: "local",
+    initOnly: false,
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: "",
+    defaultsSourceExplicit: false,
+    defaultSourceUpdate: "",
+    manifestLocal: false,
+    manifestConfigureLocal: false,
+    manifestConfigureFromCurrent: false,
+    manifestShowReact: false,
+    manifestShowVisualize: false,
+    selectedManifestCategories: [],
+    homeDir: mkdtempSync(join(tmpdir(), "afk-catalog-import-home-")),
+    repoDir: process.cwd(),
+    cwd: mkdtempSync(join(tmpdir(), "afk-catalog-import-project-")),
+    ...overrides,
+  };
+}
 
 function writeInstalledSkill(root: string, id: string, skillMd: string): void {
   const skillDir = join(root, ".agents", "skills", id);

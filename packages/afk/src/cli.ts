@@ -350,7 +350,6 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       ...setupAreaOptions,
       setupOptions.allSkills,
-      "--start-disabled                 Move installed skills into .disabled after setup",
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -365,7 +364,6 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       ...setupAreaOptions,
       setupOptions.allSkills,
-      "--start-disabled                 Move installed skills into .disabled after setup",
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -438,6 +436,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "list                              List global and project skills",
       "show <folder>                     Show one skill",
       "open <folder>                     Open SKILL.md or the skill folder",
+      "add <source> [flags...]           Delegate to skills add, then sync the AFK catalog",
       "disable <folder>                  Move a global skill into .disabled",
       "enable <folder>                   Move a disabled global skill back to active",
       "invocation [disable|enable] [folder] Toggle auto invocation metadata",
@@ -448,11 +447,32 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk skills list",
+      "afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes",
       "afk skills list --scope global --json",
       "afk skills disable old-skill --dry-run",
       "afk skills invocation disable afk-doc-craft",
       "afk skills upgrade --all",
       "afk skills categorize --mode append-missing --dry-run",
+    ],
+  },
+  "skills add": {
+    title: "AFK skills add",
+    summary: "Delegate to the official skills add command, then sync AFK's skills catalog.",
+    usage: "afk skills add <source> [skills add flags...]",
+    notes: [
+      "AFK forwards flags after <source> to the official skills CLI.",
+      "After a successful install, AFK imports new shared skills into ~/.agents/afk/catalog/skills.json as imported and uncategorized.",
+    ],
+    options: [
+      "--skill <skill>                   Forwarded to skills add",
+      "--global                          Forwarded to skills add",
+      "--yes, -y                         Forwarded to skills add",
+      "--agent <agent>                   Forwarded to skills add when supported upstream",
+      "--start-disabled                  AFK: import new skills as disabled and move shared folders into .disabled",
+    ],
+    examples: [
+      "afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes",
+      "afk skills add https://github.com/mattpocock/skills --skill tdd --global",
     ],
   },
   ui: {
@@ -847,7 +867,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
   let allSkills = false;
-  let startDisabledSkills = false;
   let rulesRef = "main";
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
@@ -888,8 +907,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const repoDir = resolveRepoDir(env);
   const cwd = resolve(process.cwd());
   const isAfkSkillsCommand = commandPath[0] === "skills";
+  const isAfkSkillsAddCommand = commandPath[0] === "skills" && commandPath[1] === "add";
   const isAfkSkillsProfilesCommand = commandPath[0] === "skills" && commandPath[1] === "profiles";
   const isAfkUiCommand = commandPath[0] === "ui";
+  let skillAddArgs: string[] = [];
+  let skillAddStartDisabled = false;
 
   if (args.includes("--version") || args.includes("-v")) {
     return { version: true, help: false };
@@ -901,6 +923,19 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
   if (args.includes("--help") || args.includes("-h")) {
     return { help: true, commandPath: helpCommandPath(commandPath, key) };
+  }
+
+  if (isAfkSkillsAddCommand) {
+    skillAddArgs = [];
+    for (const arg of args) {
+      if (arg === "--start-disabled") {
+        skillAddStartDisabled = true;
+        continue;
+      }
+
+      skillAddArgs.push(arg);
+    }
+    args.length = 0;
   }
 
   for (let index = 0; index < args.length; index += 1) {
@@ -921,11 +956,6 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (isAfkSkillsCommand && arg === "--json") {
       skillsJson = true;
-      continue;
-    }
-
-    if (isSetupSkillsCommand(key) && arg === "--start-disabled") {
-      startDisabledSkills = true;
       continue;
     }
 
@@ -1256,7 +1286,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       allSkills,
       selectedSkillIds: [],
       selectedSkillAgentIds,
-      startDisabledSkills,
+      skillAddArgs,
+      skillAddStartDisabled,
       selectedMcpIds: [],
       selectedPluginIds: [],
       selectedHookIds: [],
@@ -1371,6 +1402,10 @@ function isCliUpdateCommand(key: string): boolean {
 }
 
 function helpCommandPath(commandPath: string[], key: string): string[] {
+  if (key === "skills add" || key.startsWith("skills add ")) {
+    return ["skills", "add"];
+  }
+
   if (key === "skills profiles" || key.startsWith("skills profiles ")) {
     return ["skills", "profiles"];
   }

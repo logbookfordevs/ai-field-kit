@@ -42,13 +42,20 @@ export function syncSkillInvocationPolicy(runtime: Runtime, options: CliOptions)
   runtime.io.stdout(`\nSkill invocation policies synced: ${summarizeOperations(operations)}.`);
 }
 
-export function planSkillStartupStorage(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "selectedSkillIds" | "manifestContents"> & { allSkills?: boolean; startDisabledSkills?: boolean }): PathOperation[] {
+export function planSkillStartupStorage(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "selectedSkillIds" | "manifestContents"> & { allSkills?: boolean }): PathOperation[] {
   const manifest = loadSkillManifest(options);
   const selected = selectedSkillManifestItems(manifest.items, options);
+  return planSkillStartupStorageForItems(options, selected);
+}
+
+export function planSkillStartupStorageForItems(
+  options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,
+  items: SkillManifestItem[],
+): PathOperation[] {
   const operations: PathOperation[] = [];
 
-  for (const item of selected) {
-    if (item.startDisabled !== true && options.startDisabledSkills !== true) {
+  for (const item of items) {
+    if (item.startDisabled !== true) {
       continue;
     }
 

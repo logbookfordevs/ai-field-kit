@@ -257,7 +257,6 @@ detected paths into this file automatically.
 |---|---|
 | `--all` | Include every skill in the catalog, not only default skills. |
 | `--agent <skill-agent>` | Override detected skill providers and add direct installs for supported skill hosts. Repeatable. |
-| `--start-disabled` | Install selected skills, then move their shared skill folders into `.disabled`. |
 
 Skill-agent values are:
 
@@ -728,6 +727,8 @@ afk skills list --scope global --json
 afk skills list --scope global --agent codex
 afk skills list --scope project --agent claude
 afk skills list --category Docs --tag writing
+afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes
+afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --start-disabled
 afk skills show afk-note
 afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
@@ -740,9 +741,9 @@ afk skills profiles enable video --dry-run
 afk skills profiles status
 ```
 
-`afk skills` is separate from `afk setup skills install`. Setup still delegates
-installation to the official `skills` CLI; the skills command family manages
-local skill libraries that already exist on disk.
+`afk skills` is separate from `afk setup skills install`. Setup remains the
+catalog-driven install flow, while `afk skills add` is a direct convenience
+wrapper around the official `skills add` command for one-off installs.
 
 AFK uses one skills catalog file for both setup metadata and skill-management
 enrichment:
@@ -751,8 +752,11 @@ enrichment:
 ~/.agents/afk/catalog/skills.json
 ```
 
-Skills installed through `afk setup skills` are automatically inserted into this
-catalog as uncategorized entries after a successful upstream `skills add` run.
+Skills installed through `afk setup skills` or `afk skills add` are
+automatically inserted into this catalog as imported, uncategorized entries
+after a successful upstream `skills add` run.
+Use `afk skills add --start-disabled` to mark those new catalog entries with
+`startDisabled: true` and move their shared skill folders into `.disabled`.
 AFK categorization metadata lives in top-level `scopes` plus each item's nested
 `catalog` object, so `id`, `source`, `args`, `default`, and other install fields
 remain easy to read.
