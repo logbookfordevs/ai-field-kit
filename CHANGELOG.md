@@ -14,6 +14,7 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `cli:` added `afk update` to update the AFK CLI through the hosted GitHub release installer, with `--dry-run` for previewing the installer command.
+- `cli:` added `afk skills invocation` to enable or disable skill auto-invocation metadata in both `SKILL.md` and Codex `agents/openai.yaml`.
 
 ### Changed
 
@@ -37,7 +38,6 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills catalog and open it automatically in interactive terminals.
 - `cli:` added `afk catalog import` to backfill missing skills catalog entries from installed skills when the official `skills` CLI lockfile can recover the original source.
 - `skills:` added AFK Turbo review-gated mode, where each code-changing GoalBuddy task stages changes, suggests Plannotator Review, and waits for human approval before task completion.
-- `skills:` added a deterministic AFK Turbo goal launch gate that writes `goal-launch.html`, opens a localhost control surface, and returns whether the user chose current-chat execution, Codex delegation, Claude Code delegation, or close.
 
 ### Changed
 
@@ -60,9 +60,7 @@ This changelog tracks meaningful updates by version and date.
 - `docs:` made Quick Start lead with AFK CLI, clarified when to use `npx` versus a global AFK install, recommended companion plugins for the full skills experience, and kept `npx skills add` as the authored-skills-only path.
 - `docs:` documented Turbo and execution-tracking modes so review-gated and resume requests are discoverable without reading skill internals.
 - `docs:` refreshed the skill composition markdown and HTML companion so the current AFK tree no longer references the removed resume workflow and shows Turbo composing `grilling`.
-- `skills:` distilled the AFK Turbo launch page template so the launch action stays primary while goal package details sit behind a quiet disclosure.
-- `skills:` made AFK Turbo launch pages carry review-gated mode through the visible page, copied command, and delegated agent prompts.
-- `skills:` made AFK Turbo launch deep links explicitly invoke the manual Turbo skill in Codex and Claude Code sessions.
+- `skills:` simplified AFK Turbo launch behavior so the skill stops at the harness boundary and prints the exact user-triggered command instead of generating a launch page.
 - `skills:` folded workflow resume into Turbo and execution-tracking modes, removed `afk-resume-workflow` from the catalog, and let Turbo compose the `grilling` primitive before Plannotator setup.
 - `skills:` aligned Sprint and execution tracking with Turbo's preflight/review posture by adding short grilling before weak Plannotator setup context and recommending `/plannotator-review` at review gates.
 - `skills:` added a Plannotator annotation gate after `afk-to-prd-spec` writes local PRD/spec artifacts so user feedback is resolved before slicing or execution consumes the spec.
@@ -76,7 +74,6 @@ This changelog tracks meaningful updates by version and date.
 ### Fixed
 
 - `cli:` normalized skill description parsing so YAML block-scalar markers and leading blank descriptions no longer leak into `afk skills list` or `show` output.
-- `skills:` made AFK Turbo launch pages resilient on `file://` by adding clipboard fallback behavior and visible launch status messages for Codex and Claude Code buttons.
 
 ## v0.6.0 - 2026-06-16
 

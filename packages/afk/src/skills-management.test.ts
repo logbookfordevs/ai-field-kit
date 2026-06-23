@@ -584,6 +584,43 @@ test("runSkillsCommand disables agent-specific global skills with --agent", asyn
   assert.equal(existsSync(join(homeDir, ".codex", "skills", ".disabled", "demo")), true);
 });
 
+test("runSkillsCommand disables auto invocation metadata for one skill", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-invocation-disable-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo", {
+    disableModelInvocation: false,
+    openAiImplicitInvocation: true,
+  });
+
+  const code = await runSkillsCommand(["skills", "invocation", "disable", "demo"], outputRuntime(output), baseOptions(root));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("Auto Invocation Complete"));
+  assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
+  assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
+});
+
+test("runSkillsCommand previews auto invocation enable without writing metadata", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-invocation-enable-dry-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo", {
+    disableModelInvocation: true,
+    openAiImplicitInvocation: false,
+  });
+
+  const code = await runSkillsCommand(["skills", "invocation", "enable", "demo"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+  });
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("Auto Invocation Preview"));
+  assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
+  assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
+});
+
 test("runSkillsCommand enables agent-specific project skills with --scope project --agent", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-enable-command-"));
   const cwd = join(root, "project");
