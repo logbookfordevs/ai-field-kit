@@ -156,6 +156,7 @@ function cliOptions(overrides: Partial<CliOptions>): CliOptions {
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
     skillAddArgs: [],
+    skillAddProfileIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
     selectedPluginIds: [],

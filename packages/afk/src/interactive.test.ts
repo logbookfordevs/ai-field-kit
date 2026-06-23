@@ -348,6 +348,7 @@ function defaultOptions(homeDir: string): CliOptions {
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
     skillAddArgs: [],
+    skillAddProfileIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
     selectedPluginIds: [],

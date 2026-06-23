@@ -18,10 +18,12 @@ import {
 } from "./catalog.js";
 import { runCodexCategorization } from "./categorization.js";
 import {
+  appendSkillsToSkillProfile,
   deleteSkillProfile,
   disableSkillProfile,
   enableSkillProfile,
   listSkillProfiles,
+  loadSkillProfileState,
   skillProfileStatus,
   upsertSkillProfile,
   type SkillProfileContext,
@@ -139,6 +141,10 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     applyOperation(operation);
   }
 
+  const profileResults = options.skillAddProfileIds.length > 0 && plan.imported.length > 0
+    ? syncAddedSkillsToProfiles(options, plan.imported.map((item) => item.id))
+    : [];
+
   runtime.io.stdout([
     "",
     section("Skill Catalog"),
@@ -148,11 +154,33 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     startupOperations.length > 0
       ? `${accent("Storage")} ${summarizeOperations(startupOperations)}`
       : "",
+    ...profileResults.map((result) => `${accent("Profile")} ${result.profile.id} ${result.created ? "created with" : "updated with"} ${plan.imported.length} skill${plan.imported.length === 1 ? "" : "s"}.`),
     plan.imported.length > 0
       ? `${accent("Imported")} ${plan.imported.map((item) => item.id).join(", ")}`
       : muted("No new shared skills found to import."),
   ].filter(Boolean).join("\n"));
   return 0;
+}
+
+function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Array<{ profile: { id: string }; created: boolean }> {
+  const context = skillProfileContext(options);
+  const state = loadSkillProfileState(context);
+  const enabled = new Set(state.enabledProfileIds);
+  const results: Array<{ profile: { id: string }; created: boolean }> = [];
+
+  for (const profileId of options.skillAddProfileIds) {
+    const result = appendSkillsToSkillProfile(context, {
+      id: profileId,
+      skills: skillIds,
+      dryRun: false,
+    });
+    if (enabled.has(result.profile.id)) {
+      enableSkillProfile(context, result.profile.id, false);
+    }
+    results.push({ profile: result.profile, created: result.created });
+  }
+
+  return results;
 }
 
 async function runSkillProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {

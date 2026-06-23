@@ -468,6 +468,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--global                          Forwarded to skills add",
       "--yes, -y                         Forwarded to skills add",
       "--agent <agent>                   Forwarded to skills add when supported upstream",
+      "--profile <profile>               AFK: add imported skills to a new or existing profile",
       "--start-disabled                  AFK: import new skills as disabled and move shared folders into .disabled",
     ],
     examples: [
@@ -911,6 +912,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const isAfkSkillsProfilesCommand = commandPath[0] === "skills" && commandPath[1] === "profiles";
   const isAfkUiCommand = commandPath[0] === "ui";
   let skillAddArgs: string[] = [];
+  const skillAddProfileIds: string[] = [];
   let skillAddStartDisabled = false;
 
   if (args.includes("--version") || args.includes("-v")) {
@@ -927,9 +929,24 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
   if (isAfkSkillsAddCommand) {
     skillAddArgs = [];
-    for (const arg of args) {
+    for (let index = 0; index < args.length; index += 1) {
+      const arg = args[index];
+      if (!arg) {
+        continue;
+      }
+
       if (arg === "--start-disabled") {
         skillAddStartDisabled = true;
+        continue;
+      }
+
+      if (arg === "--profile") {
+        const value = args[index + 1]?.trim();
+        if (!value) {
+          return { help: false, kind: "error", error: "Missing --profile value" };
+        }
+        skillAddProfileIds.push(value);
+        index += 1;
         continue;
       }
 
@@ -1287,6 +1304,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       selectedSkillIds: [],
       selectedSkillAgentIds,
       skillAddArgs,
+      skillAddProfileIds,
       skillAddStartDisabled,
       selectedMcpIds: [],
       selectedPluginIds: [],

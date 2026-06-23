@@ -728,6 +728,7 @@ afk skills list --scope global --agent codex
 afk skills list --scope project --agent claude
 afk skills list --category Docs --tag writing
 afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes
+afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --profile video
 afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --start-disabled
 afk skills show afk-note
 afk skills open afk-note --folder --app cursor
@@ -757,6 +758,8 @@ automatically inserted into this catalog as imported, uncategorized entries
 after a successful upstream `skills add` run.
 Use `afk skills add --start-disabled` to mark those new catalog entries with
 `startDisabled: true` and move their shared skill folders into `.disabled`.
+Use `afk skills add --profile <profile>` to append imported skills to a new or
+existing profile in `profiles.json`.
 AFK categorization metadata lives in top-level `scopes` plus each item's nested
 `catalog` object, so `id`, `source`, `args`, `default`, and other install fields
 remain easy to read.

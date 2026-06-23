@@ -145,6 +145,43 @@ export function upsertSkillProfile(context: SkillProfileContext, input: {
   };
 }
 
+export function appendSkillsToSkillProfile(context: SkillProfileContext, input: {
+  id: string;
+  skills: string[];
+  dryRun: boolean;
+}): { catalog: SkillProfileCatalog; paths: SkillProfilePaths; profile: SkillProfileItem; created: boolean; dryRun: boolean } {
+  const id = normalizeId(input.id);
+  if (!id) {
+    throw new Error("Profile id is required.");
+  }
+
+  const catalog = loadSkillProfileCatalog(context);
+  const existing = catalog.items.find((item) => item.id === id);
+  const profile: SkillProfileItem = {
+    id,
+    name: existing?.name || humanizeProfileId(id),
+    skills: uniqueNormalized([...(existing?.skills ?? []), ...input.skills]),
+  };
+  const next: SkillProfileCatalog = {
+    ...catalog,
+    items: existing
+      ? catalog.items.map((item) => item.id === id ? profile : item)
+      : [...catalog.items, profile].sort((left, right) => left.id.localeCompare(right.id)),
+  };
+
+  if (!input.dryRun) {
+    writeSkillProfileCatalog(context, next);
+  }
+
+  return {
+    catalog: next,
+    paths: skillProfilePaths(context),
+    profile,
+    created: !existing,
+    dryRun: input.dryRun,
+  };
+}
+
 export function deleteSkillProfile(context: SkillProfileContext, idValue: string, dryRun: boolean): {
   catalog: SkillProfileCatalog;
   paths: SkillProfilePaths;

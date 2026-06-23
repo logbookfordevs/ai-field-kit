@@ -449,6 +449,7 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
     skillAddArgs: [],
+    skillAddProfileIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
     selectedPluginIds: [],
