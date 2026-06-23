@@ -1,6 +1,6 @@
 import { confirm, input, search } from "@inquirer/prompts";
 import { join } from "node:path";
-import { applyOperation, pathExists, readText } from "../fs-utils.js";
+import { applyOperation, pathExists, readText, summarizeOperations } from "../fs-utils.js";
 import { afkPromptTheme, afkSearchableCheckboxTheme, afkSearchTheme, renderPromptStep } from "../prompt-ui.js";
 import { searchableCheckbox } from "../searchable-checkbox.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
@@ -8,6 +8,7 @@ import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
 import { selectSkillProfilesLobbyRoute, selectSkillsLobbyRoute } from "../lobby.js";
 import { loadSkillManifest } from "../manifest.js";
+import { planCatalogImport } from "../catalog-import.js";
 import {
   filterSkillRecords,
   loadSkillCatalog,
@@ -47,9 +48,9 @@ import {
   runSkillUpgradeCommands,
   type LockedSkillRecord,
 } from "./upgrade.js";
-import { upsertFrontmatterBoolean, upsertOpenAiImplicitInvocation } from "../skills.js";
+import { planSkillStartupStorageForItems, upsertFrontmatterBoolean, upsertOpenAiImplicitInvocation } from "../skills.js";
 
-type SkillCommandName = "list" | "show" | "open" | "disable" | "enable" | "invocation" | "delete" | "upgrade" | "categorize" | "profiles";
+type SkillCommandName = "list" | "show" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "upgrade" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   const command = commandPath[1] as SkillCommandName | undefined;
@@ -68,6 +69,8 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
         return runSkillsShow(operands[0], runtime, options);
       case "open":
         return runSkillsOpen(operands[0], runtime, options);
+      case "add":
+        return runSkillsAdd(operands, runtime, options);
       case "disable":
         return runSkillsMove(operands[0], false, runtime, options);
       case "enable":
@@ -96,6 +99,60 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
     runtime.io.stderr(error instanceof Error ? error.message : String(error));
     return 1;
   }
+}
+
+async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const source = operands[0];
+  if (!source) {
+    runtime.io.stderr("Missing skills source. Usage: afk skills add <source> [skills add flags...]");
+    return 1;
+  }
+
+  const upstreamArgs = ["skills", "add", source, ...operands.slice(1), ...(options.skillAddArgs ?? [])];
+  runtime.io.stdout([
+    section("Skill Add"),
+    `${accent("Route")} npx ${upstreamArgs.map(quoteArg).join(" ")}`,
+  ].join("\n"));
+
+  const result = await runtime.spawn("npx", upstreamArgs, options.cwd, { verbose: true });
+  if (result.code !== 0) {
+    return result.code;
+  }
+
+  const plan = planCatalogImport({
+    homeDir: options.homeDir,
+    cwd: options.cwd,
+    dryRun: false,
+    manifestLocal: false,
+    startDisabled: options.skillAddStartDisabled,
+  });
+
+  for (const operation of plan.operations) {
+    applyOperation(operation);
+  }
+
+  const startupOperations = planSkillStartupStorageForItems(
+    { homeDir: options.homeDir, cwd: options.cwd, setupScope: "global" },
+    plan.imported,
+  ).filter((operation) => operation.type !== "skip");
+  for (const operation of startupOperations) {
+    applyOperation(operation);
+  }
+
+  runtime.io.stdout([
+    "",
+    section("Skill Catalog"),
+    plan.operations.length > 0
+      ? `${accent("Synced")} ${summarizeOperations(plan.operations)}`
+      : `${accent("Synced")} AFK catalog already up to date.`,
+    startupOperations.length > 0
+      ? `${accent("Storage")} ${summarizeOperations(startupOperations)}`
+      : "",
+    plan.imported.length > 0
+      ? `${accent("Imported")} ${plan.imported.map((item) => item.id).join(", ")}`
+      : muted("No new shared skills found to import."),
+  ].filter(Boolean).join("\n"));
+  return 0;
 }
 
 async function runSkillProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
@@ -732,6 +789,10 @@ export function formatLockedSkillChoice(record: LockedSkillRecord): string {
 
 function strong(value: string): string {
   return `${bold}${paint(terminalPalette.brass, value)}${reset}`;
+}
+
+function section(value: string): string {
+  return `${paint(terminalPalette.rust, "◆")} ${bold}${value}${reset}`;
 }
 
 function accent(value: string): string {

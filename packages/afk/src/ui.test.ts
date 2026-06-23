@@ -100,6 +100,8 @@ function baseOptions(cwd: string): CliOptions {
     allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
+    skillAddArgs: [],
+    skillAddStartDisabled: false,
     selectedMcpIds: [],
     selectedPluginIds: [],
     selectedHookIds: [],

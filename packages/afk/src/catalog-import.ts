@@ -1,7 +1,9 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { sectionTitle, muted } from "./brand.js";
 import { applyOperation, formatOperation, isDirectory, summarizeOperations } from "./fs-utils.js";
 import { localManifestDir, projectManifestDir, type SkillManifest, type SkillManifestItem } from "./manifest.js";
+import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, PathOperation, Runtime } from "./types.js";
 
 type SkillLock = {
@@ -23,28 +25,23 @@ type ImportPlan = {
   targetCatalogPath: string;
 };
 
-type CatalogImportOptions = Pick<CliOptions, "homeDir" | "cwd" | "dryRun" | "manifestLocal">;
+type CatalogImportOptions = Pick<CliOptions, "homeDir" | "cwd" | "dryRun" | "manifestLocal"> & {
+  startDisabled?: boolean;
+};
 
 export async function runCatalogImport(runtime: Runtime, options: CliOptions): Promise<number> {
   const plan = planCatalogImport(options);
 
-  runtime.io.stdout(`Importing installed skills into ${options.manifestLocal ? "project" : "global"} AFK catalog.`);
-  runtime.io.stdout(`Skills: ${plan.sourceSkillsDir}`);
-  runtime.io.stdout(`Lock: ${plan.sourceLockPath}`);
-  runtime.io.stdout(`Catalog: ${plan.targetCatalogPath}`);
+  runtime.io.stdout(renderImportHeader(plan, options.manifestLocal ? "project" : "global"));
 
   if (plan.operations.length === 0) {
-    runtime.io.stdout("\nNo catalog changes planned.");
-    runtime.io.stdout(importSummary(plan));
+    runtime.io.stdout(renderImportComplete(plan, "No catalog changes planned."));
     return 0;
   }
 
   if (options.dryRun) {
-    runtime.io.stdout("\nCatalog import plan");
-    for (const operation of plan.operations) {
-      runtime.io.stdout(`- ${formatOperation(operation)}`);
-    }
-    runtime.io.stdout(importSummary(plan));
+    runtime.io.stdout(renderImportPlan(plan));
+    runtime.io.stdout(renderImportSummary(plan));
     return 0;
   }
 
@@ -52,8 +49,7 @@ export async function runCatalogImport(runtime: Runtime, options: CliOptions): P
     applyOperation(operation);
   }
 
-  runtime.io.stdout(`\nCatalog import complete: ${summarizeOperations(plan.operations)}.`);
-  runtime.io.stdout(importSummary(plan));
+  runtime.io.stdout(renderImportComplete(plan, summarizeOperations(plan.operations)));
   return 0;
 }
 
@@ -81,15 +77,16 @@ export function planCatalogImport(options: CatalogImportOptions): ImportPlan {
       continue;
     }
 
-    imported.push(skillManifestItemFromInstalledSkill(id, sourceSkillsDir, lockEntry.source));
+    imported.push(skillManifestItemFromInstalledSkill(id, sourceSkillsDir, lockEntry.source, options.startDisabled === true));
   }
 
   const operations: PathOperation[] = [];
   if (imported.length > 0) {
+    const scopes = ensureUncategorizedScope(existing.scopes ?? []);
     operations.push({
       type: "write",
       path: targetCatalogPath,
-      content: `${JSON.stringify({ ...existing, items: [...existing.items, ...imported] }, null, 2)}\n`,
+      content: `${JSON.stringify({ ...existing, scopes, items: [...existing.items, ...imported] }, null, 2)}\n`,
     });
   }
 
@@ -120,6 +117,21 @@ function sourceLockPathForOptions(options: CatalogImportOptions): string {
   }
 
   return join(options.homeDir, ".agents", ".skill-lock.json");
+}
+
+function ensureUncategorizedScope(scopes: NonNullable<SkillManifest["scopes"]>): NonNullable<SkillManifest["scopes"]> {
+  if (scopes.some((scope) => scope.id === "uncategorized")) {
+    return scopes;
+  }
+
+  return [
+    ...scopes,
+    {
+      id: "uncategorized",
+      label: "Uncategorized",
+      description: "Imported skills waiting for categorization.",
+    },
+  ];
 }
 
 function readSkillCatalog(path: string): SkillManifest {
@@ -160,11 +172,11 @@ function installedSkillIdsFrom(skillsDir: string): string[] {
     .sort((left, right) => left.localeCompare(right));
 }
 
-function skillManifestItemFromInstalledSkill(id: string, skillsDir: string, source: string): SkillManifestItem {
+function skillManifestItemFromInstalledSkill(id: string, skillsDir: string, source: string, startDisabled: boolean): SkillManifestItem {
   const skillPath = join(skillsDir, id, "SKILL.md");
   const content = existsSync(skillPath) ? readFileSync(skillPath, "utf8") : "";
   const frontmatter = frontmatterFields(content);
-  return {
+  const item: SkillManifestItem = {
     id,
     label: frontmatter.name ?? humanizeSkillId(id),
     source,
@@ -172,9 +184,14 @@ function skillManifestItemFromInstalledSkill(id: string, skillsDir: string, sour
     default: false,
     autoInvocation: frontmatter["disable-model-invocation"] !== "true",
     role: "utility",
-    profiles: [],
+    catalog: { scope: "uncategorized" },
     imported: true,
   };
+  if (startDisabled) {
+    item.startDisabled = true;
+  }
+
+  return item;
 }
 
 function frontmatterFields(markdown: string): Record<string, string> {
@@ -224,11 +241,69 @@ function isSkillManifestItem(value: unknown): value is SkillManifestItem {
   );
 }
 
-function importSummary(plan: ImportPlan): string {
+function renderImportHeader(plan: ImportPlan, scope: "global" | "project"): string {
   return [
     "",
-    `Imported skills: ${plan.imported.length}${plan.imported.length > 0 ? ` (${plan.imported.map((item) => item.id).join(", ")})` : ""}`,
-    `Already in catalog: ${plan.skippedExisting.length}`,
-    `Skipped without skills lock metadata: ${plan.skippedNoLock.length}${plan.skippedNoLock.length > 0 ? ` (${plan.skippedNoLock.join(", ")})` : ""}`,
+    sectionTitle("Catalog Import"),
+    muted(`Backfill installed skills into the ${scope} AFK catalog.`),
+    "",
+    renderPathRow("Scope", scope),
+    renderPathRow("Skills", plan.sourceSkillsDir),
+    renderPathRow("Lock", plan.sourceLockPath),
+    renderPathRow("Catalog", plan.targetCatalogPath),
   ].join("\n");
+}
+
+function renderImportPlan(plan: ImportPlan): string {
+  return [
+    "",
+    sectionTitle("Import Preview"),
+    ...plan.operations.map((operation) => `${bullet()} ${muted(formatOperation(operation))}`),
+  ].join("\n");
+}
+
+function renderImportComplete(plan: ImportPlan, message: string): string {
+  return [
+    "",
+    sectionTitle(plan.operations.length === 0 ? "Import Check" : "Import Complete"),
+    `${label("Result")} ${message}`,
+    renderImportSummary(plan),
+  ].join("\n");
+}
+
+function renderImportSummary(plan: ImportPlan): string {
+  return [
+    "",
+    sectionTitle("Import Summary"),
+    renderCountBlock("Imported", plan.imported.length, plan.imported.map((item) => item.id), terminalPalette.harbor),
+    renderCountBlock("Already cataloged", plan.skippedExisting.length, [], terminalPalette.driftwood),
+    renderCountBlock("Missing lock metadata", plan.skippedNoLock.length, plan.skippedNoLock, terminalPalette.ember),
+  ].join("\n");
+}
+
+function renderCountBlock(title: string, count: number, values: string[], color: typeof terminalPalette[keyof typeof terminalPalette]): string {
+  return [
+    `${paint(color, "●")} ${bold}${title.padEnd(22)}${reset} ${paint(color, String(count))}`,
+    ...renderValueList(values),
+  ].join("\n");
+}
+
+function renderValueList(values: string[]): string[] {
+  if (values.length === 0) {
+    return [];
+  }
+
+  return values.map((value) => `  ${bullet()} ${value}`);
+}
+
+function renderPathRow(name: string, value: string): string {
+  return `${label(name.padEnd(8))} ${muted(value)}`;
+}
+
+function label(value: string): string {
+  return paint(terminalPalette.brass, value);
+}
+
+function bullet(): string {
+  return paint(terminalPalette.sienna, "•");
 }

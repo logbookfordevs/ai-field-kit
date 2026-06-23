@@ -733,7 +733,6 @@ function skillCatalogEntryToManifestItem(entry: SkillCategorizationEntry): Skill
     default: false,
     autoInvocation: true,
     role: "utility",
-    profiles: [],
     catalog: {
       scope: entry.scope,
       ...(entry.tags ? { tags: entry.tags } : {}),

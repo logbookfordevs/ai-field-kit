@@ -276,7 +276,7 @@ Skill catalog entries can also describe architecture metadata:
 |---|---|
 | `role` | The skill's compositional shape: `primitive`, `wrapper`, `workflow`, `utility`, `reference`, or `router`. |
 | `composes` | Skills that a wrapper or workflow is built from. Setup can suggest these when the parent is selected. |
-| `profiles` | Future activation groups. Present now as metadata, often empty until profile support lands. |
+| `startDisabled` | Install the skill, then keep it in `.disabled` until a user or profile activates it. |
 
 The short version: primitives are usually model-discoverable, wrappers and workflows
 are usually manual, and composition makes the relationship explicit.
@@ -342,8 +342,7 @@ Imported skills are conservative by default:
   "args": ["--skill", "some-skill"],
   "default": false,
   "autoInvocation": true,
-  "role": "utility",
-  "profiles": []
+  "role": "utility"
 }
 ```
 
@@ -512,9 +511,9 @@ project scope it writes project host files.
       "args": ["--skill", "review-pr"],
       "default": true,
       "autoInvocation": false,
+      "startDisabled": false,
       "role": "wrapper",
-      "composes": ["source-driven-development"],
-      "profiles": []
+      "composes": ["source-driven-development"]
     }
   ]
 }
@@ -524,10 +523,14 @@ project scope it writes project host files.
 depends on another setup helper, keep it `default: false` until the dependency
 is also installed by default.
 
-`role`, `autoInvocation`, and `composes` make the catalog readable as a skill
-system instead of a flat install list. For example, a wrapper can stay manually
-invoked while composing smaller primitives that remain available to automatic
-model discovery.
+`startDisabled: true` installs the skill, then places it in `.disabled` so it
+stays quiet until the user enables it directly or a skill profile keeps it
+active.
+
+`role`, `autoInvocation`, `startDisabled`, and `composes` make the catalog
+readable as a skill system instead of a flat install list. For example, a
+wrapper can stay manually invoked while composing smaller primitives that remain
+available to automatic model discovery.
 
 ### MCPs
 
@@ -724,6 +727,8 @@ afk skills list --scope global --json
 afk skills list --scope global --agent codex
 afk skills list --scope project --agent claude
 afk skills list --category Docs --tag writing
+afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes
+afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --start-disabled
 afk skills show afk-note
 afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
@@ -736,9 +741,9 @@ afk skills profiles enable video --dry-run
 afk skills profiles status
 ```
 
-`afk skills` is separate from `afk setup skills install`. Setup still delegates
-installation to the official `skills` CLI; the skills command family manages
-local skill libraries that already exist on disk.
+`afk skills` is separate from `afk setup skills install`. Setup remains the
+catalog-driven install flow, while `afk skills add` is a direct convenience
+wrapper around the official `skills add` command for one-off installs.
 
 AFK uses one skills catalog file for both setup metadata and skill-management
 enrichment:
@@ -747,8 +752,11 @@ enrichment:
 ~/.agents/afk/catalog/skills.json
 ```
 
-Skills installed through `afk setup skills` are automatically inserted into this
-catalog as uncategorized entries after a successful upstream `skills add` run.
+Skills installed through `afk setup skills` or `afk skills add` are
+automatically inserted into this catalog as imported, uncategorized entries
+after a successful upstream `skills add` run.
+Use `afk skills add --start-disabled` to mark those new catalog entries with
+`startDisabled: true` and move their shared skill folders into `.disabled`.
 AFK categorization metadata lives in top-level `scopes` plus each item's nested
 `catalog` object, so `id`, `source`, `args`, `default`, and other install fields
 remain easy to read.

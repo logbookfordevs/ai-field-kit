@@ -46,6 +46,8 @@ export type CliOptions = {
   allSkills: boolean;
   selectedSkillIds: string[];
   selectedSkillAgentIds: SkillAgentId[];
+  skillAddArgs: string[];
+  skillAddStartDisabled: boolean;
   selectedMcpIds: string[];
   selectedPluginIds: string[];
   selectedHookIds: string[];
@@ -133,6 +135,11 @@ export type PathOperation =
     }
   | {
       type: "backup";
+      source: string;
+      target: string;
+    }
+  | {
+      type: "move";
       source: string;
       target: string;
     }

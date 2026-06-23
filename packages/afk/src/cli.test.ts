@@ -488,6 +488,18 @@ test("runCli validates skills categorize runner", async () => {
   assert.ok(output.join("\n").includes("Invalid --runner value: sdk"));
 });
 
+test("runCli prints contextual skills add help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "add", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK skills add"));
+  assert.ok(text.includes("afk skills add <source>"));
+  assert.ok(text.includes("Forwarded to skills add"));
+  assert.ok(text.includes("--start-disabled"));
+});
+
 test("runCli prints contextual manifest show help", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["show", "--help"]));
@@ -561,7 +573,6 @@ test("runCli shows cached manifests by default", async () => {
             autoInvocation: true,
             role: "wrapper",
             composes: ["grilling", "truss-evaluation"],
-            profiles: ["engineering"],
           },
         ],
       }),

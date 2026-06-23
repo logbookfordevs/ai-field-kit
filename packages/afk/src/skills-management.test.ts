@@ -32,7 +32,7 @@ import {
 import { renderSkillChoice, renderSkillDetails, renderSkillDeleteBatch } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
-import { localManifestDir, projectManifestDir } from "./manifest.js";
+import { localManifestDir, projectManifestDir, type SkillManifest } from "./manifest.js";
 
 test("parseSkillFile reads frontmatter name and description", () => {
   const metadata = parseSkillFile("---\nname: demo\ndescription: Demo skill\n---\n\n# Demo\n", "fallback");
@@ -504,6 +504,93 @@ test("runSkillsCommand profiles create writes profile catalog", async () => {
   const catalog = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
   assert.deepEqual(catalog.alwaysOn, ["afk-compass"]);
   assert.deepEqual(catalog.items, [{ id: "engineering", name: "Engineering", skills: ["alpha"] }]);
+});
+
+test("runSkillsCommand add delegates to skills add and imports installed skills into catalog", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-command-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  const spawned: Array<{ command: string; args: string[]; cwd?: string; verbose?: boolean }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args, cwd, behavior) => {
+      spawned.push({ command, args, ...(cwd ? { cwd } : {}), ...(behavior?.verbose !== undefined ? { verbose: behavior.verbose } : {}) });
+      writeSkill(join(homeDir, ".agents", "skills"), "demo-skill", "Demo Skill");
+      writeGlobalSkillLock(homeDir, {
+        "demo-skill": { source: "owner/skills", sourceType: "github" },
+      });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "add", "owner/skills"], runtime, {
+    ...baseOptions(root),
+    skillAddArgs: ["--skill", "demo-skill", "--global", "--yes"],
+    skillAddStartDisabled: false,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["skills", "add", "owner/skills", "--skill", "demo-skill", "--global", "--yes"],
+    cwd: join(root, "project"),
+    verbose: true,
+  }]);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.deepEqual(catalog.scopes?.map((scope) => scope.id), ["uncategorized"]);
+  assert.deepEqual(catalog.items.map((item) => ({
+    id: item.id,
+    imported: item.imported,
+    scope: item.catalog?.scope,
+  })), [{
+    id: "demo-skill",
+    imported: true,
+    scope: "uncategorized",
+  }]);
+  assert.ok(output.join("\n").includes("Skill Catalog"));
+});
+
+test("runSkillsCommand add handles start-disabled as an AFK flag", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-start-disabled-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  const spawned: Array<{ command: string; args: string[]; cwd?: string; verbose?: boolean }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args, cwd, behavior) => {
+      spawned.push({ command, args, ...(cwd ? { cwd } : {}), ...(behavior?.verbose !== undefined ? { verbose: behavior.verbose } : {}) });
+      writeSkill(join(homeDir, ".agents", "skills"), "demo-skill", "Demo Skill");
+      writeGlobalSkillLock(homeDir, {
+        "demo-skill": { source: "owner/skills", sourceType: "github" },
+      });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "add", "owner/skills"], runtime, {
+    ...baseOptions(root),
+    skillAddArgs: ["--skill", "demo-skill", "--global", "--yes"],
+    skillAddStartDisabled: true,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["skills", "add", "owner/skills", "--skill", "demo-skill", "--global", "--yes"],
+    cwd: join(root, "project"),
+    verbose: true,
+  }]);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.equal(catalog.items[0]?.startDisabled, true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo-skill")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "demo-skill")), true);
+  assert.ok(output.join("\n").includes("Storage"));
 });
 
 test("deleteSkillRecords permanently deletes agent-specific skills", () => {
@@ -1048,7 +1135,6 @@ function skillManifestFixture(content: unknown): unknown {
       default: false,
       autoInvocation: true,
       role: "utility",
-      profiles: [],
       catalog: {
         scope: skill.scope,
         ...(skill.tags ? { tags: skill.tags } : {}),
@@ -1105,6 +1191,8 @@ function baseOptions(root: string) {
     allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
+    skillAddArgs: [],
+    skillAddStartDisabled: false,
     selectedMcpIds: [],
     selectedPluginIds: [],
     selectedHookIds: [],

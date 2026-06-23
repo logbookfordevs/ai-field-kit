@@ -130,7 +130,7 @@ export function buildCategorizationPrompt(
     "- A skill folder is a directory containing SKILL.md.",
     "- Match skills by item.id and folder name.",
     `- If ${skillCatalogFileName} is missing, create it.`,
-    `- If ${skillCatalogFileName} exists and is valid, preserve install fields on every item: id, label, source, args, default, autoInvocation, role, composes, and profiles.`,
+    `- If ${skillCatalogFileName} exists and is valid, preserve install fields on every item: id, label, source, args, default, autoInvocation, startDisabled, role, and composes.`,
     "- Store AFK categorization metadata under each item.catalog.",
     "- item.catalog may contain scope and tags.",
     "- Store reusable category definitions in top-level scopes.",

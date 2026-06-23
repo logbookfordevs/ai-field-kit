@@ -255,8 +255,8 @@ function renderSkills(manifest: Record<string, unknown>): string {
       const details = [
         `role: ${stringValue(item.role, "primitive")}`,
         `auto-invocation: ${item.autoInvocation === false ? "off" : "on"}`,
+        `start-disabled: ${item.startDisabled === true ? "on" : "off"}`,
         ...stringListDetail("composes", item.composes),
-        ...stringListDetail("profiles", item.profiles),
         ...(args ? [`args: ${args}`] : []),
       ];
       return detailItemLine(`${labelFor(item)}${defaultSuffix(item.default)}`, details);

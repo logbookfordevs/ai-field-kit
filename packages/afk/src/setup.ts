@@ -1,6 +1,6 @@
 import { syncRules } from "./rules.js";
 import { syncHooks } from "./hooks.js";
-import { syncSkillInvocationPolicy } from "./skills.js";
+import { syncSkillInvocationPolicy, syncSkillStartupStorage } from "./skills.js";
 import { syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
@@ -180,6 +180,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
       if (code === 0) {
         syncSkillInvocationPolicy(runtime, selectedOptions);
+        syncSkillStartupStorage(runtime, selectedOptions);
         syncSetupSkillCatalog(runtime, selectedOptions);
       }
 

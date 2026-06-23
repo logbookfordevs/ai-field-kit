@@ -85,6 +85,10 @@ export function applyOperation(operation: PathOperation): void {
       ensureParent(operation.target);
       renameSync(operation.source, operation.target);
       return;
+    case "move":
+      ensureParent(operation.target);
+      renameSync(operation.source, operation.target);
+      return;
     case "skip":
       return;
   }
@@ -104,6 +108,8 @@ export function formatOperation(operation: PathOperation): string {
       return `write ${operation.path}`;
     case "backup":
       return `backup ${operation.source} -> ${operation.target}`;
+    case "move":
+      return `move ${operation.source} -> ${operation.target}`;
     case "skip":
       return `skip ${operation.path} (${operation.reason})`;
   }
@@ -121,6 +127,7 @@ export function summarizeOperations(operations: PathOperation[]): string {
     formatCount("linked files", counts.get("symlink") ?? 0),
     formatCount("copied files", counts.get("copy") ?? 0),
     formatCount("backed up files", counts.get("backup") ?? 0),
+    formatCount("moved folders", counts.get("move") ?? 0),
     formatCount("removed files", counts.get("remove") ?? 0),
     formatCount("skipped unchanged or unmanaged files", counts.get("skip") ?? 0),
   ].filter(Boolean);

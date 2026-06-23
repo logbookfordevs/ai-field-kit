@@ -347,6 +347,8 @@ function defaultOptions(homeDir: string): CliOptions {
     allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
+    skillAddArgs: [],
+    skillAddStartDisabled: false,
     selectedMcpIds: [],
     selectedPluginIds: [],
     selectedHookIds: [],
@@ -502,7 +504,6 @@ function localHomeWithComposedSkillManifest(): string {
           autoInvocation: false,
           role: "wrapper",
           composes: ["grilling", "truss-evaluation"],
-          profiles: [],
         },
         {
           id: "grilling",
@@ -513,7 +514,6 @@ function localHomeWithComposedSkillManifest(): string {
           autoInvocation: true,
           role: "primitive",
           composes: [],
-          profiles: [],
         },
         {
           id: "truss-evaluation",
@@ -524,7 +524,6 @@ function localHomeWithComposedSkillManifest(): string {
           autoInvocation: true,
           role: "primitive",
           composes: [],
-          profiles: [],
         },
       ],
     }, null, 2)}\n`,
@@ -556,7 +555,6 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           autoInvocation: false,
           role: "wrapper",
           composes: ["grilling"],
-          profiles: [],
         },
         {
           id: "grill-with-docs",
@@ -567,7 +565,6 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           autoInvocation: false,
           role: "wrapper",
           composes: ["grilling", "domain-modeling"],
-          profiles: [],
         },
         {
           id: "grilling",
@@ -578,7 +575,6 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           autoInvocation: true,
           role: "primitive",
           composes: [],
-          profiles: [],
         },
         {
           id: "domain-modeling",
@@ -589,7 +585,6 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           autoInvocation: true,
           role: "primitive",
           composes: [],
-          profiles: [],
         },
       ],
     }, null, 2)}\n`,

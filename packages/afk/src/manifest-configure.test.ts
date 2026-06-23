@@ -243,13 +243,39 @@ test("runManifestConfigureWithPrompts preserves existing skill args during no-op
       actions: ["edit", "back"],
       items: ["afk-note"],
       inputs: ["https://github.com/logbookfordevs/ai-field-kit", "afk-note", "afk-note", "AFK / Note"],
-      confirms: [true, true, true],
+      confirms: [true, true, false, true],
     }),
   );
 
   const written = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as { items: Array<{ args: string[] }> };
   assert.equal(code, 0);
   assert.deepEqual(written.items[0]?.args, ["--skill", "afk-note", "--global"]);
+});
+
+test("runManifestConfigureWithPrompts writes startDisabled for skill items", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [],
+  }, null, 2)}\n`);
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: ["skills", "finish"],
+      actions: ["add", "back"],
+      inputs: ["https://github.com/example/skills", "quiet-skill", "quiet-skill", "Quiet Skill"],
+      confirms: [true, true, true, true],
+    }),
+  );
+
+  const written = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as { items: Array<{ startDisabled?: boolean }> };
+  assert.equal(code, 0);
+  assert.equal(written.items[0]?.startDisabled, true);
 });
 
 test("runManifestConfigureWithPrompts edits project manifests for local configure", async () => {
@@ -422,6 +448,8 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
     allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
+    skillAddArgs: [],
+    skillAddStartDisabled: false,
     selectedMcpIds: [],
     selectedPluginIds: [],
     selectedHookIds: [],
