@@ -742,7 +742,7 @@ afk skills enable old-skill
 afk skills delete old-skill --dry-run
 afk skills upgrade --all
 afk skills categorize --dry-run
-afk skills profiles create video --name Video --skill hyperframes --skill tailwind
+afk catalog profiles create video --name Video --skill hyperframes --skill tailwind
 afk skills profiles enable video --dry-run
 afk skills profiles status
 ```
@@ -781,13 +781,15 @@ the shared global library by default, or agent-specific roots when `--agent` is
 provided. Delete is permanent; use `--dry-run` to preview the selected folders
 before removing them.
 
-`afk skills profiles` manages focus profiles for the shared global skill
-library. A profile is a named group of skill folders. Enabling one or more
-profiles keeps the union of their skills plus top-level `alwaysOn` skills
-enabled, temporarily moves other active global skills into `.disabled`, and can
-temporarily enable a previously disabled skill when an enabled profile keeps it.
-Disabling profiles restores AFK-moved skills and returns previously disabled
-skills to disabled once no enabled profile keeps them.
+`afk catalog profiles` edits focus profile definitions in `profiles.json`. A
+profile is a named group of skill folders. `afk skills profiles
+enable|disable|status` applies those definitions to the shared global skill
+library. Enabling one or more profiles keeps the union of their skills plus
+top-level `alwaysOn` skills enabled, temporarily moves other active global
+skills into `.disabled`, and can temporarily enable a previously disabled skill
+when an enabled profile keeps it. Disabling profiles restores AFK-moved skills
+and returns previously disabled skills to disabled once no enabled profile keeps
+them.
 `afk configure` can edit profile-level `alwaysOn` skills from the Profiles
 catalog area.
 
@@ -803,10 +805,13 @@ Runtime restore state lives separately at:
 ~/.agents/afk/state/skill-profiles.json
 ```
 
-Use `--local` with `afk skills profiles ...` to read and write profile
-definitions/state in the current project under `./afk/catalog/profiles.json`
-and `./afk/state/skill-profiles.json`. V1 still applies the resulting profile
-filter to the shared global skill library at `~/.agents/skills`.
+Use `--local` with `afk catalog profiles ...` to read and write profile
+definitions in the current project under `./afk/catalog/profiles.json`. Use
+`--local` with `afk skills profiles ...` when applying project-local profile
+state under `./afk/state/skill-profiles.json`. During the transition, `afk
+skills profiles create|edit|delete` remain aliases for definition edits. V1
+still applies the resulting profile filter to the shared global skill library
+at `~/.agents/skills`.
 
 `afk skills open` can open a skill file or folder in Finder, VS Code, Cursor,
 Zed, or Antigravity.

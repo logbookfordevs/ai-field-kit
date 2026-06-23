@@ -6,7 +6,7 @@ import { runSetup, runArea } from "./setup.js";
 import { runRefresh } from "./refresh.js";
 import { runManifestShow } from "./manifest-show.js";
 import { runManifestConfigure } from "./manifest-configure.js";
-import { runSkillsCommand } from "./skills/commands.js";
+import { runCatalogProfilesCommand, runSkillsCommand } from "./skills/commands.js";
 import { managedSkillAgents } from "./skills/catalog.js";
 import { runUiCommand } from "./ui.js";
 import { selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
@@ -89,6 +89,10 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (isCatalogImportCommand(key)) {
     return runCatalogImport(runtime, options);
+  }
+
+  if (isCatalogProfilesCommand(key)) {
+    return runCatalogProfilesCommand(commandPath.slice(2), runtime, options);
   }
 
   if (isCliUpdateCommand(key)) {
@@ -703,14 +707,18 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills profiles": {
     title: "AFK skills profiles",
-    summary: "Manage groups of skills that can temporarily focus the global skill library.",
+    summary: "Apply profile definitions to temporarily focus the global skill library.",
     usage: "afk skills profiles <command> [options]",
+    notes: [
+      "Use afk catalog profiles create|edit|delete to manage profile definitions.",
+      "The create/edit/delete forms remain here as transitional aliases.",
+    ],
     options: [
       "list                              List profiles",
       "show [profile]                    Show one profile",
-      "create <profile>                  Create a profile",
-      "edit <profile>                    Update a profile",
-      "delete <profile>                  Remove a profile definition",
+      "create <profile>                  Alias for afk catalog profiles create",
+      "edit <profile>                    Alias for afk catalog profiles edit",
+      "delete <profile>                  Alias for afk catalog profiles delete",
       "enable <profile>                  Enable a profile and apply filtering",
       "disable <profile>                 Disable a profile and restore eligible skills",
       "status                            Show enabled profiles and state",
@@ -726,6 +734,34 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills profiles create video --name Video --skill hyperframes --skill tailwind",
       "afk skills profiles enable video --dry-run",
       "afk skills profiles status --local",
+    ],
+  },
+  "catalog profiles": {
+    title: "AFK catalog profiles",
+    summary: "Edit skill profile definitions in profiles.json.",
+    usage: "afk catalog profiles <command> [options]",
+    notes: [
+      "Catalog profile commands edit profile definitions only.",
+      "Use afk skills profiles enable|disable|status for runtime profile state and filesystem effects.",
+      "afk skills profiles create|edit|delete remain aliases during the transition.",
+    ],
+    options: [
+      "list                              List profile definitions",
+      "show [profile]                    Show one profile definition",
+      "create <profile>                  Create a profile definition",
+      "edit <profile>                    Update a profile definition",
+      "delete <profile>                  Remove a profile definition",
+      "--local                           Use ./afk/catalog for profile data",
+      "--name <name>                     Set profile name for create/edit",
+      "--skill <skill>                   Add profile skill; repeatable",
+      "--always-on <skill>               Add global always-on skill; repeatable",
+      "--json                            Print JSON for list/show",
+    ],
+    examples: [
+      "afk catalog profiles list",
+      "afk catalog profiles create video --name Video --skill hyperframes --skill tailwind",
+      "afk catalog profiles edit video --skill hyperframes-cli",
+      "afk catalog profiles show video --json",
     ],
   },
   "show skills": {
@@ -940,6 +976,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const isAfkSkillsCommand = commandPath[0] === "skills";
   const isAfkSkillsAddCommand = commandPath[0] === "skills" && commandPath[1] === "add";
   const isAfkSkillsProfilesCommand = commandPath[0] === "skills" && commandPath[1] === "profiles";
+  const isAfkCatalogProfilesCommand = commandPath[0] === "catalog" && commandPath[1] === "profiles";
+  const isAfkProfileCommand = isAfkSkillsProfilesCommand || isAfkCatalogProfilesCommand;
   const isAfkUiCommand = commandPath[0] === "ui";
   let skillAddArgs: string[] = [];
   const skillAddProfileIds: string[] = [];
@@ -1001,7 +1039,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsCommand && arg === "--json") {
+    if ((isAfkSkillsCommand || isAfkCatalogProfilesCommand) && arg === "--json") {
       skillsJson = true;
       continue;
     }
@@ -1017,7 +1055,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
-      if (isAfkSkillsProfilesCommand) {
+      if (isAfkProfileCommand) {
         manifestLocal = true;
         continue;
       }
@@ -1286,7 +1324,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsProfilesCommand && arg === "--name") {
+    if (isAfkProfileCommand && arg === "--name") {
       const value = args[index + 1]?.trim();
       if (!value) {
         return { help: false, kind: "error", error: "Missing --name value" };
@@ -1296,7 +1334,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsProfilesCommand && arg === "--skill") {
+    if (isAfkProfileCommand && arg === "--skill") {
       const value = args[index + 1]?.trim();
       if (!value) {
         return { help: false, kind: "error", error: "Missing --skill value" };
@@ -1306,7 +1344,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsProfilesCommand && arg === "--always-on") {
+    if (isAfkProfileCommand && arg === "--always-on") {
       const value = args[index + 1]?.trim();
       if (!value) {
         return { help: false, kind: "error", error: "Missing --always-on value" };
@@ -1445,6 +1483,10 @@ function isCatalogImportCommand(key: string): boolean {
   return key === "catalog import";
 }
 
+function isCatalogProfilesCommand(key: string): boolean {
+  return key === "catalog profiles" || key.startsWith("catalog profiles ");
+}
+
 function isCliUpdateCommand(key: string): boolean {
   return key === "update";
 }
@@ -1456,6 +1498,10 @@ function helpCommandPath(commandPath: string[], key: string): string[] {
 
   if (key === "skills profiles" || key.startsWith("skills profiles ")) {
     return ["skills", "profiles"];
+  }
+
+  if (key === "catalog profiles" || key.startsWith("catalog profiles ")) {
+    return ["catalog", "profiles"];
   }
 
   if (isRefreshCommand(key)) {
@@ -1539,6 +1585,7 @@ Usage:
   afk ui <command> [options]
   afk update [options]
   afk catalog import [options]
+  afk catalog profiles <command> [options]
   afk show [category...] [options]
 
 Common paths:
@@ -1550,6 +1597,7 @@ Common paths:
   afk show skills --react     Print the skills catalog as a React-style composition tree
   afk show skills --visualize Write and open the skills composition map
   afk catalog import          Backfill catalog entries from installed skills
+  afk catalog profiles        Edit skill profile definitions
 
 Run "afk <command> --help" for command-specific options.
 
@@ -1573,6 +1621,10 @@ function helpKey(commandPath: string[] = []): string {
     }
 
     return "skills profiles";
+  }
+
+  if (commandPath[0] === "catalog" && commandPath[1] === "profiles") {
+    return "catalog profiles";
   }
 
   if (commandPath[0] === "skills" && commandPath[1]) {

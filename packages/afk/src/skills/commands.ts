@@ -183,6 +183,16 @@ function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Arr
   return results;
 }
 
+export async function runCatalogProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const command = operands[0] ?? "list";
+  if (command === "enable" || command === "disable" || command === "status") {
+    runtime.io.stderr(`afk catalog profiles ${command} is a runtime profile operation. Use afk skills profiles ${command} instead.`);
+    return 1;
+  }
+
+  return runSkillProfilesCommand(operands.length === 0 ? ["list"] : operands, runtime, options);
+}
+
 async function runSkillProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   if (operands.length === 0) {
     const route = await selectSkillProfilesLobbyRoute(runtime);
