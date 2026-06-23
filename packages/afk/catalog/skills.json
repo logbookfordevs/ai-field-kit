@@ -117,7 +117,6 @@
             "default": true,
             "autoInvocation": true,
             "role": "primitive",
-            "alwaysOn": true,
             "composes": []
         },
         {
@@ -510,7 +509,6 @@
             "default": true,
             "autoInvocation": true,
             "role": "primitive",
-            "alwaysOn": true,
             "composes": []
         },
         {
@@ -525,7 +523,6 @@
             "default": true,
             "autoInvocation": true,
             "role": "primitive",
-            "alwaysOn": true,
             "composes": []
         },
         {
@@ -540,7 +537,6 @@
             "default": true,
             "autoInvocation": true,
             "role": "primitive",
-            "alwaysOn": true,
             "composes": []
         }
     ]
