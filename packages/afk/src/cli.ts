@@ -5,6 +5,7 @@ import { runCatalogImport } from "./catalog-import.js";
 import { runSetup, runArea } from "./setup.js";
 import { runRefresh } from "./refresh.js";
 import { runManifestShow } from "./manifest-show.js";
+import { runManifestConfigure } from "./manifest-configure.js";
 import { runSkillsCommand } from "./skills/commands.js";
 import { managedSkillAgents } from "./skills/catalog.js";
 import { runUiCommand } from "./ui.js";
@@ -64,9 +65,6 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (parsed.help) {
     const key = commandKey(parsed.commandPath);
-    if (isManifestConfigureCommand(key)) {
-      return unavailableManifestConfigure(runtime);
-    }
     if (parsed.commandPath && !commandHelps[key]) {
       runtime.io.stderr(`Unknown command: ${key}`);
       runtime.io.stderr(helpText());
@@ -108,7 +106,7 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
   }
 
   if (isManifestConfigureCommand(key)) {
-    return unavailableManifestConfigure(runtime);
+    return runManifestConfigure(runtime, options);
   }
 
   if (commandPath[0] === "skills") {
@@ -259,6 +257,38 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk refresh --local",
       "afk refresh --source your-org/dev-kit",
       "afk refresh --default-source your-org/dev-kit",
+    ],
+  },
+  configure: {
+    title: "AFK configure",
+    summary: "Interactively edit writable AFK catalog files.",
+    usage: "afk configure [options]",
+    notes: [
+      "Edits the local AFK catalog cache by default.",
+      "Use --local to edit ./afk/catalog for project-local setup.",
+      "Use this for small catalog tweaks; edit the source repository directly when maintaining a shared defaults source.",
+    ],
+    options: [
+      "--local                          Edit ./afk/catalog instead of the global cache",
+      setupOptions.dryRun,
+    ],
+    examples: [
+      "afk configure",
+      "afk configure --local",
+      "afk configure --dry-run",
+    ],
+  },
+  "manifests configure": {
+    title: "AFK configure",
+    summary: "Legacy alias for afk configure.",
+    usage: "afk configure [options]",
+    options: [
+      "--local                          Edit ./afk/catalog instead of the global cache",
+      setupOptions.dryRun,
+    ],
+    examples: [
+      "afk configure",
+      "afk configure --local",
     ],
   },
   update: {
@@ -1452,12 +1482,6 @@ function canonicalShowHelpPath(commandPath: string[]): string[] {
   return ["show"];
 }
 
-function unavailableManifestConfigure(runtime: Runtime): number {
-  runtime.io.stderr("AFK configure is not available for source-backed setup yet.");
-  runtime.io.stderr("Use afk show to inspect the local catalog, or afk show --source <source> to inspect a source directly.");
-  return 1;
-}
-
 function isSkillAgentId(value: string): value is SkillAgentId {
   return value === "claude-code" || value === "kiro-cli" || value === "kilo" || value === "pi" || value === "droid";
 }
@@ -1504,6 +1528,7 @@ Usage:
   afk --version
   afk
   afk refresh [category...] [options]
+  afk configure [options]
   afk setup [options]
   afk setup rules [options]
   afk setup skills [options]
@@ -1520,6 +1545,7 @@ Common paths:
   afk                         Open the interactive lobby when your terminal supports prompts
   afk setup                   Prepare rules, skills, MCPs, plugins, and hooks
   afk refresh                 Update the local catalog cache
+  afk configure               Edit writable local catalog files
   afk update                  Update AFK from the latest GitHub release
   afk show skills --react     Print the skills catalog as a React-style composition tree
   afk show skills --visualize Write and open the skills composition map

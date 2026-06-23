@@ -125,6 +125,9 @@ afk setup hooks --dry-run
 # Refresh local catalog files from defaults
 afk refresh
 
+# Edit writable local catalog files
+afk configure
+
 # Inspect the local catalog cache
 afk show
 
@@ -475,8 +478,10 @@ afk show skills --source your-org/dev-kit
 afk refresh --default-source your-org/dev-kit
 ```
 
-`afk configure` is intentionally retired until AFK can edit a writable setup
-source directly, for example by creating a branch or patch in the source repo.
+Use `afk configure` for small edits to writable local catalog files. It edits
+the global AFK catalog cache by default, or `./afk/catalog` with `--local`.
+For shared defaults, prefer editing the source repository directly and then
+refreshing from that source.
 
 ## Catalog Examples
 
@@ -783,6 +788,8 @@ enabled, temporarily moves other active global skills into `.disabled`, and can
 temporarily enable a previously disabled skill when an enabled profile keeps it.
 Disabling profiles restores AFK-moved skills and returns previously disabled
 skills to disabled once no enabled profile keeps them.
+`afk configure` can edit profile-level `alwaysOn` skills from the Profiles
+catalog area.
 
 Global profile definitions live at:
 

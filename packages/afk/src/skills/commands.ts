@@ -165,7 +165,6 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
 function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Array<{ profile: { id: string }; created: boolean }> {
   const context = skillProfileContext(options);
   const state = loadSkillProfileState(context);
-  const enabled = new Set(state.enabledProfileIds);
   const results: Array<{ profile: { id: string }; created: boolean }> = [];
 
   for (const profileId of options.skillAddProfileIds) {
@@ -174,10 +173,11 @@ function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Arr
       skills: skillIds,
       dryRun: false,
     });
-    if (enabled.has(result.profile.id)) {
-      enableSkillProfile(context, result.profile.id, false);
-    }
     results.push({ profile: result.profile, created: result.created });
+  }
+
+  if (state.enabledProfileIds[0]) {
+    enableSkillProfile(context, state.enabledProfileIds[0], false);
   }
 
   return results;

@@ -27,6 +27,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("Guided setup router for AI Field Kit."));
   assert.ok(output.join("\n").includes("afk refresh [category...] [options]"));
+  assert.ok(output.join("\n").includes("afk configure [options]"));
   assert.ok(output.join("\n").includes("afk setup [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
   assert.ok(output.join("\n").includes("afk setup plugins [options]"));
@@ -36,8 +37,8 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk catalog import [options]"));
   assert.ok(!output.join("\n").includes("afk setup utils"));
   assert.ok(output.join("\n").includes("afk show [category...] [options]"));
+  assert.ok(output.join("\n").includes("afk configure               Edit writable local catalog files"));
   assert.ok(output.join("\n").includes("afk update                  Update AFK from the latest GitHub release"));
-  assert.ok(!output.join("\n").includes("afk configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests show [options]"));
   assert.ok(!output.join("\n").includes("afk setup mcps install [options]"));
@@ -285,23 +286,23 @@ test("runCli prints contextual hooks help", async () => {
   assert.ok(!output.join("\n").includes("AFK setup skills"));
 });
 
-test("runCli explains configure is not available for source-backed setup yet", async () => {
+test("runCli prints contextual configure help", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["configure"]));
+  const code = await withConsole(output, () => runCli(["configure", "--help"]));
 
-  assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("AFK configure is not available for source-backed setup yet."));
-  assert.ok(output.join("\n").includes("Use afk show to inspect the local catalog, or afk show --source <source> to inspect a source directly."));
-  assert.ok(!output.join("\n").includes("afk configure --local"));
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK configure"));
+  assert.ok(output.join("\n").includes("Interactively edit writable AFK catalog files."));
+  assert.ok(output.join("\n").includes("afk configure --local"));
 });
 
-test("runCli explains configure retirement instead of showing command help", async () => {
+test("runCli prints configure help through legacy manifests alias", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["manifests", "configure", "--help"]));
 
-  assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("AFK configure is not available for source-backed setup yet."));
-  assert.ok(!output.join("\n").includes("Usage:\n  afk configure"));
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK configure"));
+  assert.ok(output.join("\n").includes("Usage:\n  afk configure"));
 });
 
 test("runCli prints contextual skills help", async () => {

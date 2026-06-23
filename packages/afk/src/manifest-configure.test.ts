@@ -278,6 +278,45 @@ test("runManifestConfigureWithPrompts writes startDisabled for skill items", asy
   assert.equal(written.items[0]?.startDisabled, true);
 });
 
+test("runManifestConfigureWithPrompts toggles profile alwaysOn skills", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      { id: "alpha", label: "Alpha", source: "owner/skills", args: ["--skill", "alpha"], default: true },
+      { id: "beta", label: "Beta", source: "owner/skills", args: ["--skill", "beta"], default: false },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
+    version: 1,
+    alwaysOn: ["beta"],
+    items: [],
+  }, null, 2)}\n`);
+  const output: string[] = [];
+  const seenToggleValues: string[] = [];
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo(output), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: ["profiles", "finish"],
+      actions: ["toggle-always-on", "back"],
+      toggleValues: [{ alpha: true, beta: false }],
+      confirms: [true],
+      onToggleChoices: (choices) => {
+        seenToggleValues.push(...choices.map((choice) => choice.value));
+      },
+    }),
+  );
+
+  assert.equal(code, 0);
+  assert.deepEqual(seenToggleValues, ["alpha", "beta"]);
+  const written = JSON.parse(readFileSync(join(manifestDir, "profiles.json"), "utf8")) as { alwaysOn: string[] };
+  assert.deepEqual(written.alwaysOn, ["alpha"]);
+});
+
 test("runManifestConfigureWithPrompts edits project manifests for local configure", async () => {
   const cwd = mkdtempSync(join(tmpdir(), "afk-configure-project-"));
   const manifestDir = join(cwd, "afk", "catalog");
@@ -476,7 +515,7 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
 }
 
 function scriptedPrompts(script: {
-  areas: Array<"rules" | "skills" | "mcps" | "plugins" | "hooks" | "finish">;
+  areas: Array<"rules" | "skills" | "profiles" | "mcps" | "plugins" | "hooks" | "finish">;
   actions: ManifestAction[];
   items?: string[];
   inputs?: string[];

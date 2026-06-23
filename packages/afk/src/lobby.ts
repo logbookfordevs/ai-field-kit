@@ -8,6 +8,7 @@ export type LobbyChoiceValue =
   | "setup"
   | "source"
   | "refresh"
+  | "configure"
   | "skills"
   | "skill-management"
   | "mcps"
@@ -23,8 +24,10 @@ export type SkillsLobbyChoiceValue =
   | "skills-list"
   | "skills-show"
   | "skills-open"
+  | "skills-add"
   | "skills-disable"
   | "skills-enable"
+  | "skills-invocation"
   | "skills-delete"
   | "skills-upgrade"
   | "skills-categorize"
@@ -68,6 +71,11 @@ export const compassLobbyChoices: LobbyChoice[] = [
     name: "Refresh the local catalog",
     value: "refresh",
     description: "Route: afk refresh",
+  },
+  {
+    name: "Edit local catalog",
+    value: "configure",
+    description: "Route: afk configure",
   },
   {
     name: "Install skills",
@@ -142,6 +150,11 @@ export const skillsLobbyChoices: Array<{
     description: "Route: afk skills open",
   },
   {
+    name: "Add a skill",
+    value: "skills-add",
+    description: "Route: afk skills add",
+  },
+  {
     name: "Disable a skill",
     value: "skills-disable",
     description: "Route: afk skills disable",
@@ -150,6 +163,11 @@ export const skillsLobbyChoices: Array<{
     name: "Enable a disabled skill",
     value: "skills-enable",
     description: "Route: afk skills enable",
+  },
+  {
+    name: "Change invocation policy",
+    value: "skills-invocation",
+    description: "Route: afk skills invocation",
   },
   {
     name: "Delete skills",
@@ -304,6 +322,8 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
       return defaultSource ? ["refresh", "--default-source", defaultSource] : ["refresh", "--default-source"];
     case "refresh":
       return ["refresh"];
+    case "configure":
+      return ["configure"];
     case "skills":
       return ["setup", "skills"];
     case "skill-management":
@@ -335,10 +355,14 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue): string
       return ["skills", "show"];
     case "skills-open":
       return ["skills", "open"];
+    case "skills-add":
+      return ["skills", "add"];
     case "skills-disable":
       return ["skills", "disable"];
     case "skills-enable":
       return ["skills", "enable"];
+    case "skills-invocation":
+      return ["skills", "invocation"];
     case "skills-delete":
       return ["skills", "delete"];
     case "skills-upgrade":
