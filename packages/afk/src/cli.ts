@@ -19,6 +19,7 @@ import type {
   CommandResult,
   ManifestCategory,
   ManagedSkillAgent,
+  SkillAgentFilter,
   Runtime,
   SetupScope,
   SkillAgentId,
@@ -26,6 +27,7 @@ import type {
   SkillCategorizationRunner,
   SkillOpenApp,
   SkillsListScope,
+  SkillsListStorage,
   SkillsUpgradeScope,
 } from "./types.js";
 
@@ -565,15 +567,19 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills list [options]",
     options: [
       "--scope global|project|all        Choose which skill roots to list",
-      "--agent <agent>                   Limit project or agent roots",
+      "--agent shared|<agent>            Limit shared, project, or agent roots",
       "--category <id-or-label>          Filter by AFK category",
       "--tag <tag>                       Filter by AFK tag",
       "--uncategorized                   Show records without an AFK category",
+      "--enabled                         Show enabled skills only",
+      "--disabled                        Show disabled skills only",
       "--json                            Print JSON records",
     ],
     examples: [
       "afk skills list",
       "afk skills list --scope global",
+      "afk skills list --agent shared",
+      "afk skills list --agent shared --disabled",
       "afk skills list --scope global --agent codex",
       "afk skills list --scope project --agent codex",
     ],
@@ -946,10 +952,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
   let skillsListScope: SkillsListScope = "all";
+  let skillsListStorage: SkillsListStorage | undefined;
   let skillsUpgradeScope: SkillsUpgradeScope = "global";
   let skillsUpgradeAll = false;
   let skillsDeleteManifestOnly = false;
-  let skillsAgent: ManagedSkillAgent | undefined;
+  let skillsAgent: SkillAgentFilter | undefined;
   let skillsJson = false;
   let skillsCategory = "";
   let skillsTag = "";
@@ -1218,6 +1225,12 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
       const value = args[index + 1];
       if (isAfkSkillsCommand) {
+        if (commandPath[1] === "list" && value === "shared") {
+          skillsAgent = value;
+          index += 1;
+          continue;
+        }
+
         if (!value || !isManagedSkillAgent(value)) {
           return { help: false, kind: "error", error: `Invalid --agent value: ${value ?? "(missing)"}` };
         }
@@ -1271,6 +1284,20 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (isAfkSkillsCommand && arg === "--uncategorized") {
       skillsUncategorized = true;
+      continue;
+    }
+
+    if (isAfkSkillsCommand && (arg === "--enabled" || arg === "--disabled")) {
+      if (commandPath[1] !== "list") {
+        return { help: false, kind: "error", error: `Unknown option: ${arg}` };
+      }
+
+      const nextStorage: SkillsListStorage = arg === "--enabled" ? "active" : "disabled";
+      if (skillsListStorage && skillsListStorage !== nextStorage) {
+        return { help: false, kind: "error", error: "Use only one of --enabled or --disabled" };
+      }
+
+      skillsListStorage = nextStorage;
       continue;
     }
 
@@ -1389,6 +1416,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       manifestConfigureLocal,
       manifestConfigureFromCurrent,
       skillsListScope,
+      skillsListStorage,
       skillsUpgradeAll,
       skillsUpgradeScope,
       skillsDeleteManifestOnly,

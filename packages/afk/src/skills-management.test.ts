@@ -182,6 +182,21 @@ test("loadSkillCatalog filters installed agent roots with --scope global --agent
   assert.deepEqual(snapshot.records.map((record) => record.folder), ["gemini-global"]);
 });
 
+test("loadSkillCatalog filters shared global library roots with --agent shared", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-shared-filter-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "shared-global", "Shared Global");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "shared-disabled", "Shared Disabled");
+  writeSkill(join(homeDir, ".codex", "skills"), "codex-global", "Codex Global");
+  writeSkill(join(cwd, ".codex", "skills"), "codex-project", "Codex Project");
+
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "all", agent: "shared" });
+
+  assert.deepEqual(snapshot.records.map((record) => record.folder), ["shared-global", "shared-disabled"]);
+  assert.deepEqual(snapshot.records.map((record) => record.rootKind), ["global-library", "global-library"]);
+});
+
 test("loadSkillCatalog includes disabled installed agent roots with --scope global --agent", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skills-installed-agent-disabled-"));
   const homeDir = join(root, "home");
@@ -267,6 +282,18 @@ test("filterSkillRecords filters by category, tag, and uncategorized", () => {
   assert.deepEqual(filterSkillRecords(snapshot.records, { category: "Docs" }).map((record) => record.folder), ["doc-helper"]);
   assert.deepEqual(filterSkillRecords(snapshot.records, { tag: "critique" }).map((record) => record.folder), ["review-helper"]);
   assert.deepEqual(filterSkillRecords(snapshot.records, { uncategorized: true }).map((record) => record.folder), ["plain-helper"]);
+});
+
+test("filterSkillRecords filters by enabled and disabled storage", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-list-storage-filters-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "active-helper", "Active Helper");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-helper", "Disabled Helper");
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: "shared" });
+
+  assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "active" }).map((record) => record.folder), ["active-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "disabled" }).map((record) => record.folder), ["disabled-helper"]);
 });
 
 test("moveGlobalSkill supports dry-run and active to disabled moves", () => {
@@ -1301,6 +1328,7 @@ function baseOptions(root: string) {
     manifestShowReact: false,
     manifestShowVisualize: false,
     skillsListScope: "all" as const,
+    skillsListStorage: undefined,
     skillsUpgradeScope: "global" as const,
     skillsUpgradeAll: false,
     skillsDeleteManifestOnly: false,
