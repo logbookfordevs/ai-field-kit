@@ -1048,7 +1048,6 @@ function skillManifestFixture(content: unknown): unknown {
       default: false,
       autoInvocation: true,
       role: "utility",
-      profiles: [],
       catalog: {
         scope: skill.scope,
         ...(skill.tags ? { tags: skill.tags } : {}),
@@ -1105,6 +1104,7 @@ function baseOptions(root: string) {
     allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
+    startDisabledSkills: false,
     selectedMcpIds: [],
     selectedPluginIds: [],
     selectedHookIds: [],

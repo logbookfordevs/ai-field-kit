@@ -15,10 +15,12 @@ This changelog tracks meaningful updates by version and date.
 
 - `cli:` added `afk update` to update the AFK CLI through the hosted GitHub release installer, with `--dry-run` for previewing the installer command.
 - `cli:` added `afk skills invocation` to enable or disable skill auto-invocation metadata in both `SKILL.md` and Codex `agents/openai.yaml`.
+- `cli:` added `startDisabled` support for skills catalog items, plus `afk setup skills --start-disabled`, so installed skills can start in `.disabled` until enabled directly or through profiles.
 
 ### Changed
 
 - `install:` updated AFK update notices to suggest `afk update` and refreshed the website full-setup copy to use the hosted `install.sh` flow instead of npm install commands.
+- `cli:` removed skill-item `profiles` metadata from the skills catalog model so `profiles.json` stays the single source of truth for focus-profile membership.
 
 ## v1.0.1 - 2026-06-19
 

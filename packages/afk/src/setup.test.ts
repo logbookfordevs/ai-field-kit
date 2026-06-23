@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
@@ -223,6 +223,7 @@ test("runArea skills adds selected setup skills to AFK skill catalog after insta
     setupManifestsPrepared: true,
     selectedSkillIds: ["beta"],
     selectedSkillAgentIds: ["claude-code"],
+    startDisabledSkills: false,
     defaultsSource: "local",
     defaultsSourceExplicit: true,
   });
@@ -242,6 +243,53 @@ test("runArea skills adds selected setup skills to AFK skill catalog after insta
       { id: "beta", scope: "uncategorized" },
     ],
   );
+});
+
+test("runArea skills moves start-disabled skills into disabled storage after install", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "quiet-skill",
+          label: "Quiet Skill",
+          source: "example/skills",
+          args: ["--skill", "quiet-skill"],
+          default: true,
+          startDisabled: true,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      const skillDir = join(homeDir, ".agents", "skills", "quiet-skill");
+      mkdirSync(skillDir, { recursive: true });
+      writeFileSync(join(skillDir, "SKILL.md"), "---\nname: quiet-skill\n---\n\n# Quiet\n");
+      return { code: 0 };
+    },
+  };
+
+  const code = await runArea("skills", runtime, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    setupManifestsPrepared: true,
+    yes: true,
+    defaultsSource: "local",
+    defaultsSourceExplicit: true,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "quiet-skill")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "quiet-skill")), true);
+  assert.ok(output.join("\n").includes("Skill startup storage synced"));
 });
 
 test("runSetup skips the source prompt when a default source is saved", async () => {
@@ -452,6 +500,7 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
     allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
+    startDisabledSkills: false,
     selectedMcpIds: [],
     selectedPluginIds: [],
     selectedHookIds: [],

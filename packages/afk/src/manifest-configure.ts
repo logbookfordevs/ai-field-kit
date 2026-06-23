@@ -268,8 +268,10 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
   const label = await prompts.input({ message: "Skill label", default: existing?.label ?? inferLabel(id), required: true });
   const defaultValue = existing?.default ?? true;
   const autoInvocationValue = existing?.autoInvocation ?? true;
+  const startDisabledValue = existing?.startDisabled ?? false;
   const isDefault = await prompts.confirm(booleanPrompt("Selected by default?", defaultValue, existing ? "current" : "default"), defaultValue);
   const autoInvocation = await prompts.confirm(booleanPrompt("Allow automatic model invocation?", autoInvocationValue, existing ? "current" : "default"), autoInvocationValue);
+  const startDisabled = await prompts.confirm(booleanPrompt("Start installed skill disabled?", startDisabledValue, existing ? "current" : "default"), startDisabledValue);
 
   return {
     id,
@@ -278,9 +280,9 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
     args: skillArgsFromInput(existing, skill),
     default: isDefault,
     autoInvocation,
+    startDisabled,
     role: existing?.role ?? "primitive",
     composes: existing?.composes ?? [],
-    profiles: existing?.profiles ?? [],
   };
 }
 
@@ -521,6 +523,9 @@ function itemDescription(item: EditableManifestItem): string {
   const states = [`default: ${booleanState(item.default)}`];
   if ("autoInvocation" in item) {
     states.push(`autoInvocation: ${booleanState(item.autoInvocation ?? true)}`);
+  }
+  if ("startDisabled" in item) {
+    states.push(`startDisabled: ${booleanState(item.startDisabled ?? false)}`);
   }
 
   if ("description" in item) {

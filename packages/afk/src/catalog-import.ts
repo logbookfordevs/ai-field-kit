@@ -172,7 +172,6 @@ function skillManifestItemFromInstalledSkill(id: string, skillsDir: string, sour
     default: false,
     autoInvocation: frontmatter["disable-model-invocation"] !== "true",
     role: "utility",
-    profiles: [],
     imported: true,
   };
 }

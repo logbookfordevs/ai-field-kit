@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
 import { applyOperation } from "./fs-utils.js";
 import { localManifestDir } from "./manifest.js";
-import { planSkillInvocationPolicy, upsertFrontmatterBoolean, upsertOpenAiImplicitInvocation } from "./skills.js";
+import { planSkillInvocationPolicy, planSkillStartupStorage, upsertFrontmatterBoolean, upsertOpenAiImplicitInvocation } from "./skills.js";
 
 test("upsertFrontmatterBoolean adds Claude manual invocation metadata", () => {
   const markdown = "---\nname: demo\n---\n\n# Demo\n";
@@ -103,4 +103,73 @@ test("planSkillInvocationPolicy re-enables installed automatic skills", () => {
 
   assert.match(readFileSync(join(skillDir, "SKILL.md"), "utf8"), /disable-model-invocation: false/);
   assert.match(readFileSync(join(skillDir, "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: true/);
+});
+
+test("planSkillStartupStorage moves start-disabled skills into .disabled", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-storage-"));
+  const homeDir = join(root, "home");
+  const skillDir = join(homeDir, ".agents", "skills", "quiet-skill");
+  mkdirSync(skillDir, { recursive: true });
+  mkdirSync(localManifestDir(homeDir), { recursive: true });
+  writeFileSync(join(skillDir, "SKILL.md"), "---\nname: quiet-skill\n---\n\n# Quiet\n");
+  writeFileSync(join(localManifestDir(homeDir), "skills.json"), JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "quiet-skill",
+        label: "Quiet Skill",
+        source: "https://github.com/example/skills",
+        args: ["--skill", "quiet-skill"],
+        default: true,
+        startDisabled: true,
+      },
+    ],
+  }));
+
+  const operations = planSkillStartupStorage({
+    homeDir,
+    cwd: join(root, "project"),
+    setupScope: "global",
+    selectedSkillIds: ["quiet-skill"],
+  });
+  for (const operation of operations) {
+    applyOperation(operation);
+  }
+
+  assert.deepEqual(operations.map((operation) => operation.type), ["move"]);
+  assert.equal(existsSync(skillDir), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "quiet-skill")), true);
+});
+
+test("planSkillStartupStorage can start selected skills disabled for one setup run", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-storage-"));
+  const homeDir = join(root, "home");
+  const skillDir = join(homeDir, ".agents", "skills", "one-run-skill");
+  mkdirSync(skillDir, { recursive: true });
+  mkdirSync(localManifestDir(homeDir), { recursive: true });
+  writeFileSync(join(skillDir, "SKILL.md"), "---\nname: one-run-skill\n---\n\n# One Run\n");
+  writeFileSync(join(localManifestDir(homeDir), "skills.json"), JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "one-run-skill",
+        label: "One Run Skill",
+        source: "https://github.com/example/skills",
+        args: ["--skill", "one-run-skill"],
+        default: true,
+      },
+    ],
+  }));
+
+  const operations = planSkillStartupStorage({
+    homeDir,
+    cwd: join(root, "project"),
+    setupScope: "global",
+    selectedSkillIds: ["one-run-skill"],
+    startDisabledSkills: true,
+  });
+
+  assert.deepEqual(operations.map((operation) => operation.type), ["move"]);
 });

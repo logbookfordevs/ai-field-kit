@@ -34,9 +34,9 @@ export type SkillManifestItem = {
   args: string[];
   default: boolean;
   autoInvocation?: boolean;
+  startDisabled?: boolean;
   role?: SkillManifestItemRole;
   composes?: string[];
-  profiles?: string[];
   catalog?: SkillManifestItemCatalog;
   imported?: boolean;
 };
@@ -582,14 +582,14 @@ function migrateSkillsManifest(content: string): string | null {
 
   let changed = false;
   const items = parsed.items.map((item) => {
-    const next = { ...item };
+    const next = { ...item } as SkillManifestItem & { profiles?: unknown };
     if (next.autoInvocation === undefined) {
       next.autoInvocation = true;
       changed = true;
     }
 
-    if (next.profiles === undefined) {
-      next.profiles = [];
+    if (next.profiles !== undefined) {
+      delete next.profiles;
       changed = true;
     }
 
@@ -623,11 +623,17 @@ function mergedSkillsManifestContent(content: string, targetPath: string): strin
   const refreshedIds = new Set(refreshed.items.map((item) => item.id));
   const importedItems = readExistingImportedSkillItems(targetPath).filter((item) => !refreshedIds.has(item.id));
   const items = [
-    ...refreshed.items.map((item) => ({ ...item, imported: false })),
-    ...importedItems.map((item) => ({ ...item, imported: true })),
+    ...refreshed.items.map((item) => ({ ...stripRetiredSkillManifestFields(item), imported: false })),
+    ...importedItems.map((item) => ({ ...stripRetiredSkillManifestFields(item), imported: true })),
   ];
 
   return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
+}
+
+function stripRetiredSkillManifestFields(item: SkillManifestItem): SkillManifestItem {
+  const next = { ...item } as SkillManifestItem & { profiles?: unknown };
+  delete next.profiles;
+  return next;
 }
 
 function readExistingImportedSkillItems(path: string): SkillManifestItem[] {
@@ -714,9 +720,9 @@ function isSkillManifest(value: unknown): value is SkillManifest {
       isStringArray(item.args) &&
       typeof item.default === "boolean" &&
       (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean") &&
+      (item.startDisabled === undefined || typeof item.startDisabled === "boolean") &&
       (item.role === undefined || isSkillManifestItemRole(item.role)) &&
       (item.composes === undefined || isStringArray(item.composes)) &&
-      (item.profiles === undefined || isStringArray(item.profiles)) &&
       (item.catalog === undefined || isSkillManifestItemCatalog(item.catalog)) &&
       (item.imported === undefined || typeof item.imported === "boolean")
     );

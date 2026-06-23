@@ -1,14 +1,12 @@
 import { realpathSync } from "node:fs";
 import { join } from "node:path";
-import { applyOperation, formatOperation, pathExists, readText, summarizeOperations } from "./fs-utils.js";
+import { applyOperation, formatOperation, isDirectory, pathExists, readText, summarizeOperations } from "./fs-utils.js";
 import { loadSkillManifest, type SkillManifestItem } from "./manifest.js";
 import type { CliOptions, PathOperation, Runtime } from "./types.js";
 
-export function planSkillInvocationPolicy(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "selectedSkillIds" | "manifestContents">): PathOperation[] {
+export function planSkillInvocationPolicy(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "selectedSkillIds" | "manifestContents"> & { allSkills?: boolean }): PathOperation[] {
   const manifest = loadSkillManifest(options);
-  const selected = options.selectedSkillIds.length > 0
-    ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))
-    : manifest.items.filter((item) => item.default);
+  const selected = selectedSkillManifestItems(manifest.items, options);
   const operations: PathOperation[] = [];
   const plannedRealPaths = new Set<string>();
 
@@ -44,12 +42,95 @@ export function syncSkillInvocationPolicy(runtime: Runtime, options: CliOptions)
   runtime.io.stdout(`\nSkill invocation policies synced: ${summarizeOperations(operations)}.`);
 }
 
+export function planSkillStartupStorage(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "selectedSkillIds" | "manifestContents"> & { allSkills?: boolean; startDisabledSkills?: boolean }): PathOperation[] {
+  const manifest = loadSkillManifest(options);
+  const selected = selectedSkillManifestItems(manifest.items, options);
+  const operations: PathOperation[] = [];
+
+  for (const item of selected) {
+    if (item.startDisabled !== true && options.startDisabledSkills !== true) {
+      continue;
+    }
+
+    const activeDir = sharedSkillDirectory(options, item);
+    const disabledDir = join(sharedSkillsRoot(options), ".disabled", item.id);
+    if (!isDirectory(activeDir)) {
+      operations.push({
+        type: "skip",
+        path: activeDir,
+        reason: isDirectory(disabledDir) ? "already disabled" : "installed skill not found",
+      });
+      continue;
+    }
+
+    if (pathExists(disabledDir)) {
+      operations.push({
+        type: "skip",
+        path: disabledDir,
+        reason: "disabled destination already exists",
+      });
+      continue;
+    }
+
+    operations.push({
+      type: "move",
+      source: activeDir,
+      target: disabledDir,
+    });
+  }
+
+  return operations;
+}
+
+export function syncSkillStartupStorage(runtime: Runtime, options: CliOptions): void {
+  const operations = planSkillStartupStorage(options);
+
+  if (operations.length === 0) {
+    return;
+  }
+
+  if (options.dryRun) {
+    runtime.io.stdout("\nSkill startup storage plan");
+    for (const operation of operations) {
+      runtime.io.stdout(`- ${formatOperation(operation)}`);
+    }
+    return;
+  }
+
+  const applied = operations.filter((operation) => operation.type !== "skip");
+  for (const operation of applied) {
+    applyOperation(operation);
+  }
+
+  if (applied.length > 0) {
+    runtime.io.stdout(`\nSkill startup storage synced: ${summarizeOperations(applied)}.`);
+  }
+}
+
 function skillDirectories(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">, item: SkillManifestItem): string[] {
   const root = options.setupScope === "global" ? options.homeDir : options.cwd;
   return [
     join(root, ".agents", "skills", item.id),
     join(root, ".claude", "skills", item.id),
   ];
+}
+
+function selectedSkillManifestItems(
+  items: SkillManifestItem[],
+  options: Pick<CliOptions, "selectedSkillIds"> & { allSkills?: boolean },
+): SkillManifestItem[] {
+  return options.selectedSkillIds.length > 0
+    ? items.filter((item) => options.selectedSkillIds.includes(item.id))
+    : items.filter((item) => item.default || options.allSkills === true);
+}
+
+function sharedSkillsRoot(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">): string {
+  const root = options.setupScope === "global" ? options.homeDir : options.cwd;
+  return join(root, ".agents", "skills");
+}
+
+function sharedSkillDirectory(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">, item: SkillManifestItem): string {
+  return join(sharedSkillsRoot(options), item.id);
 }
 
 function planSkillInvocation(skillDir: string, plannedRealPaths: Set<string>, allowInvocation: boolean): PathOperation[] {

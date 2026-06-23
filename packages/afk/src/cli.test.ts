@@ -561,7 +561,6 @@ test("runCli shows cached manifests by default", async () => {
             autoInvocation: true,
             role: "wrapper",
             composes: ["grilling", "truss-evaluation"],
-            profiles: ["engineering"],
           },
         ],
       }),

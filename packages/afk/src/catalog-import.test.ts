@@ -32,7 +32,6 @@ test("planCatalogImport imports installed skills with lock metadata into global 
   assert.equal(plan.imported[0]?.default, false);
   assert.equal(plan.imported[0]?.autoInvocation, false);
   assert.equal(plan.imported[0]?.role, "utility");
-  assert.deepEqual(plan.imported[0]?.profiles, []);
   assert.equal(plan.imported[0]?.imported, true);
   assert.equal(write?.path, join(homeDir, ".agents", "afk", "catalog", "skills.json"));
 });

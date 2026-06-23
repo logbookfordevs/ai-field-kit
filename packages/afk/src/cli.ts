@@ -350,6 +350,7 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       ...setupAreaOptions,
       setupOptions.allSkills,
+      "--start-disabled                 Move installed skills into .disabled after setup",
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -364,6 +365,7 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       ...setupAreaOptions,
       setupOptions.allSkills,
+      "--start-disabled                 Move installed skills into .disabled after setup",
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -845,6 +847,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
   let allSkills = false;
+  let startDisabledSkills = false;
   let rulesRef = "main";
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
@@ -918,6 +921,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (isAfkSkillsCommand && arg === "--json") {
       skillsJson = true;
+      continue;
+    }
+
+    if (isSetupSkillsCommand(key) && arg === "--start-disabled") {
+      startDisabledSkills = true;
       continue;
     }
 
@@ -1248,6 +1256,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       allSkills,
       selectedSkillIds: [],
       selectedSkillAgentIds,
+      startDisabledSkills,
       selectedMcpIds: [],
       selectedPluginIds: [],
       selectedHookIds: [],

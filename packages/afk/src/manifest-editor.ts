@@ -240,7 +240,8 @@ function isSkillManifest(value: EditableManifest): value is SkillManifest {
       typeof item.source === "string" &&
       isStringArray(item.args) &&
       typeof item.default === "boolean" &&
-      (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean")
+      (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean") &&
+      (item.startDisabled === undefined || typeof item.startDisabled === "boolean")
     ))
   );
 }

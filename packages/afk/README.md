@@ -257,6 +257,7 @@ detected paths into this file automatically.
 |---|---|
 | `--all` | Include every skill in the catalog, not only default skills. |
 | `--agent <skill-agent>` | Override detected skill providers and add direct installs for supported skill hosts. Repeatable. |
+| `--start-disabled` | Install selected skills, then move their shared skill folders into `.disabled`. |
 
 Skill-agent values are:
 
@@ -276,7 +277,7 @@ Skill catalog entries can also describe architecture metadata:
 |---|---|
 | `role` | The skill's compositional shape: `primitive`, `wrapper`, `workflow`, `utility`, `reference`, or `router`. |
 | `composes` | Skills that a wrapper or workflow is built from. Setup can suggest these when the parent is selected. |
-| `profiles` | Future activation groups. Present now as metadata, often empty until profile support lands. |
+| `startDisabled` | Install the skill, then keep it in `.disabled` until a user or profile activates it. |
 
 The short version: primitives are usually model-discoverable, wrappers and workflows
 are usually manual, and composition makes the relationship explicit.
@@ -342,8 +343,7 @@ Imported skills are conservative by default:
   "args": ["--skill", "some-skill"],
   "default": false,
   "autoInvocation": true,
-  "role": "utility",
-  "profiles": []
+  "role": "utility"
 }
 ```
 
@@ -512,9 +512,9 @@ project scope it writes project host files.
       "args": ["--skill", "review-pr"],
       "default": true,
       "autoInvocation": false,
+      "startDisabled": false,
       "role": "wrapper",
-      "composes": ["source-driven-development"],
-      "profiles": []
+      "composes": ["source-driven-development"]
     }
   ]
 }
@@ -524,10 +524,14 @@ project scope it writes project host files.
 depends on another setup helper, keep it `default: false` until the dependency
 is also installed by default.
 
-`role`, `autoInvocation`, and `composes` make the catalog readable as a skill
-system instead of a flat install list. For example, a wrapper can stay manually
-invoked while composing smaller primitives that remain available to automatic
-model discovery.
+`startDisabled: true` installs the skill, then places it in `.disabled` so it
+stays quiet until the user enables it directly or a skill profile keeps it
+active.
+
+`role`, `autoInvocation`, `startDisabled`, and `composes` make the catalog
+readable as a skill system instead of a flat install list. For example, a
+wrapper can stay manually invoked while composing smaller primitives that remain
+available to automatic model discovery.
 
 ### MCPs
 
