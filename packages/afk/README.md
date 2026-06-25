@@ -745,6 +745,7 @@ afk skills show afk-note
 afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
 afk skills enable old-skill
+afk skills invocation disable afk-doc-craft --dry-run
 afk skills delete old-skill --dry-run
 afk skills upgrade --all
 afk skills categorize --dry-run
@@ -781,7 +782,10 @@ OpenCode, Cursor, Zed, and Kiro when they exist. Use `--scope
 global|project|all` to choose root families, `--agent shared` to focus on the
 shared library, `--agent <agent>` to focus on one agent, `--enabled
 true|false` to filter active or disabled folders, and `--category`, `--tag`,
-or `--uncategorized` to filter AFK catalog metadata.
+or `--uncategorized` to filter AFK catalog metadata. The same `--enabled
+true|false` folder filter is also available on `afk skills show`, `open`,
+`delete`, and `invocation` when a command needs to choose from discovered skill
+folders.
 
 `afk skills disable`, `afk skills enable`, and `afk skills delete` can manage
 the shared global library by default, or explicitly with `--agent shared`.
@@ -793,14 +797,34 @@ removing them.
 `afk catalog profiles` edits focus profile definitions in `profiles.json`. A
 profile is a named group of skill folders. `afk skills profiles
 enable|disable|status` applies those definitions to the shared global skill
-library. Enabling one or more profiles keeps the union of their skills plus
-top-level `alwaysOn` skills enabled, temporarily moves other active global
-skills into `.disabled`, and can temporarily enable a previously disabled skill
-when an enabled profile keeps it. Disabling profiles restores AFK-moved skills
-and returns previously disabled skills to disabled once no enabled profile keeps
-them.
+library.
+
+#### Profile math: what stays on
+
+Profiles are reconciled from the desired final state each time you enable or
+disable one. AFK does not treat a skill's absence from a profile as a negative
+rule. Instead, it keeps this set active:
+
+```text
+alwaysOn + skills from every currently enabled profile
+```
+
+For example, if `captions` is not in profile X, is in profile Y, and is not in
+profile Z, enabling X, then Y, then Z keeps `captions` active because Y is still
+enabled. If Y is disabled later and no remaining enabled profile includes
+`captions`, AFK can move it back to `.disabled`.
+
+While profiles are enabled, AFK temporarily moves other active global skills
+into `.disabled`. If a profile needs a skill that was already disabled before
+profiles touched it, AFK can temporarily enable it, then return it to disabled
+once no enabled profile keeps it.
+
 `afk config` can edit profile-level `alwaysOn` skills from the Profiles
-catalog area.
+catalog area. In the interactive always-on picker, existing `alwaysOn` skills
+start checked. Use search to filter by text, or press `1` for auto-invocation
+on, `2` for auto-invocation off, `3` for default on, and `4` for
+start-disabled skills. Press the same number again to clear that shortcut
+filter.
 
 Global profile definitions live at:
 

@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { emitKeypressEvents } from "node:readline";
 import { confirm, input, select } from "@inquirer/prompts";
 import {
   addManifestItem,
@@ -32,6 +31,7 @@ import {
 } from "./manifest.js";
 import type { SkillProfileCatalog } from "./skills/profiles.js";
 import { afkPromptTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
+import { searchableCheckbox } from "./searchable-checkbox.js";
 import type { Area, CliOptions, Runtime } from "./types.js";
 
 type ManifestArea = Area | "profiles";
@@ -55,6 +55,7 @@ type BooleanToggleChoice = {
   value: string;
   enabled: boolean;
   description?: string;
+  searchAliases?: string[];
 };
 
 export type ManifestConfigurePrompts = {
@@ -685,8 +686,24 @@ function alwaysOnToggleChoices(profiles: SkillProfileCatalog, skillsManifest: Ed
       value: id,
       enabled,
       description: item ? itemDescription(item) : "Missing from skills catalog",
+      searchAliases: item ? alwaysOnSearchAliases(item) : ["missing:true"],
     };
   });
+}
+
+function alwaysOnSearchAliases(item: EditableManifestItem): string[] {
+  const aliases = [
+    `default:${booleanState(item.default)}`,
+  ];
+  if ("autoInvocation" in item) {
+    aliases.push(`auto:${booleanState(item.autoInvocation ?? true)}`);
+    aliases.push(`autoInvocation:${booleanState(item.autoInvocation ?? true)}`);
+  }
+  if ("startDisabled" in item) {
+    aliases.push(`startDisabled:${booleanState(item.startDisabled ?? false)}`);
+    aliases.push(`start-disabled:${booleanState(item.startDisabled ?? false)}`);
+  }
+  return aliases;
 }
 
 function emptyProfileCatalog(): SkillProfileCatalog {
@@ -816,99 +833,31 @@ async function toggleBooleanPrompt(message: string, choices: BooleanToggleChoice
     return {};
   }
 
-  const stdin = process.stdin;
-  const stdout = process.stdout;
-  const values = choices.map((choice) => choice.enabled);
-
-  if (!stdin.isTTY || !stdout.isTTY) {
-    return booleanRecord(choices, values);
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return booleanRecord(choices, choices.map((choice) => choice.enabled));
   }
 
-  return new Promise<Record<string, boolean>>((resolve, reject) => {
-    let index = 0;
-    let renderedLines = 0;
-    const wasRaw = stdin.isRaw;
-
-    const cleanup = (): void => {
-      stdin.off("keypress", onKeypress);
-      if (typeof stdin.setRawMode === "function") {
-        stdin.setRawMode(wasRaw);
-      }
-      stdout.write("\x1b[?25h\n");
-    };
-
-    const render = (): void => {
-      if (renderedLines > 0) {
-        stdout.write(`\x1b[${renderedLines}A`);
-      }
-
-      const lines = [
-        `◇ ${message}`,
-        "  ↑/↓ move · ← off · → on · space toggle · enter save",
-        ...choices.map((choice, choiceIndex) => {
-          const cursor = choiceIndex === index ? "◆" : " ";
-          const description = choice.description ? ` · ${choice.description}` : "";
-          return `${cursor} ${booleanSwitch(values[choiceIndex] ?? false)} ${choice.name.replace(/^\[(?:on |off)\]\s+/, "")}${description}`;
-        }),
-      ];
-
-      stdout.write(lines.map((line) => `\x1b[2K${line}`).join("\n"));
-      renderedLines = lines.length;
-    };
-
-    const onKeypress = (_input: string, key: KeypressInfo): void => {
-      if (key.ctrl && key.name === "c") {
-        cleanup();
-        const error = new Error("User force closed the prompt with SIGINT");
-        error.name = "ExitPromptError";
-        reject(error);
-        return;
-      }
-
-      if (key.name === "up") {
-        index = index === 0 ? choices.length - 1 : index - 1;
-        render();
-        return;
-      }
-
-      if (key.name === "down") {
-        index = index === choices.length - 1 ? 0 : index + 1;
-        render();
-        return;
-      }
-
-      if (key.name === "left") {
-        values[index] = false;
-        render();
-        return;
-      }
-
-      if (key.name === "right") {
-        values[index] = true;
-        render();
-        return;
-      }
-
-      if (key.name === "space") {
-        values[index] = !(values[index] ?? false);
-        render();
-        return;
-      }
-
-      if (key.name === "return" || key.name === "enter") {
-        cleanup();
-        resolve(booleanRecord(choices, values));
-      }
-    };
-
-    emitKeypressEvents(stdin);
-    if (typeof stdin.setRawMode === "function") {
-      stdin.setRawMode(true);
-    }
-    stdin.on("keypress", onKeypress);
-    stdout.write("\x1b[?25l");
-    render();
+  const selected = await searchableCheckbox<string>({
+    message,
+    choices: choices.map((choice) => ({
+      name: choice.name.replace(/^\[(?:on |off)\]\s+/, ""),
+      value: choice.value,
+      checked: choice.enabled,
+      short: choice.value,
+      ...(choice.description ? { description: choice.description } : {}),
+      searchAliases: choice.searchAliases ?? [],
+    })),
+    pageSize: 12,
+    instructions: "Use space to toggle, type to filter, enter to save.",
+    filterShortcuts: [
+      { key: "1", label: "auto on", term: "auto:on" },
+      { key: "2", label: "auto off", term: "auto:off" },
+      { key: "3", label: "default on", term: "default:on" },
+      { key: "4", label: "start disabled", term: "start-disabled:on" },
+    ],
   });
+  const selectedIds = new Set(selected);
+  return Object.fromEntries(choices.map((choice) => [choice.value, selectedIds.has(choice.value)]));
 }
 
 function booleanRecord(choices: BooleanToggleChoice[], values: boolean[]): Record<string, boolean> {
@@ -922,11 +871,6 @@ function booleanRecord(choices: BooleanToggleChoice[], values: boolean[]): Recor
 
   return record;
 }
-
-type KeypressInfo = {
-  name?: string;
-  ctrl?: boolean;
-};
 
 async function askInput(config: InputConfig): Promise<string> {
   return input({
