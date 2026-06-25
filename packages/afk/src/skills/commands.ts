@@ -365,6 +365,7 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
     category: options.skillsCategory,
     tag: options.skillsTag,
     uncategorized: options.skillsUncategorized,
+    storage: options.skillsListStorage,
   });
 
   if (options.skillsJson) {
