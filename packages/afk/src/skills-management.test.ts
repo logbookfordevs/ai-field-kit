@@ -29,7 +29,7 @@ import {
   skillProfilePaths,
   type SkillProfileCatalog,
 } from "./skills/profiles.js";
-import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch } from "./skills/render.js";
+import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch, renderSkillProfileApply } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 import { localManifestDir, projectManifestDir, type SkillManifest } from "./manifest.js";
@@ -182,17 +182,19 @@ test("loadSkillCatalog filters installed agent roots with --scope global --agent
   assert.deepEqual(snapshot.records.map((record) => record.folder), ["gemini-global"]);
 });
 
-test("loadSkillCatalog filters the shared library with --agent shared", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skills-shared-agent-filter-"));
+test("loadSkillCatalog filters shared global library roots with --agent shared", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-shared-filter-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
   writeSkill(join(homeDir, ".agents", "skills"), "shared-global", "Shared Global");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "shared-disabled", "Shared Disabled");
   writeSkill(join(homeDir, ".codex", "skills"), "codex-global", "Codex Global");
+  writeSkill(join(cwd, ".codex", "skills"), "codex-project", "Codex Project");
 
-  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: "shared" });
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "all", agent: "shared" });
 
-  assert.deepEqual(snapshot.records.map((record) => record.folder), ["shared-global"]);
-  assert.deepEqual(snapshot.records.map((record) => record.rootKind), ["global-library"]);
+  assert.deepEqual(snapshot.records.map((record) => record.folder), ["shared-global", "shared-disabled"]);
+  assert.deepEqual(snapshot.records.map((record) => record.rootKind), ["global-library", "global-library"]);
 });
 
 test("loadSkillCatalog includes disabled installed agent roots with --scope global --agent", () => {
@@ -281,8 +283,20 @@ test("filterSkillRecords filters by category, tag, and uncategorized", () => {
   assert.deepEqual(filterSkillRecords(snapshot.records, { category: "Docs" }).map((record) => record.folder), ["doc-helper"]);
   assert.deepEqual(filterSkillRecords(snapshot.records, { tag: "critique" }).map((record) => record.folder), ["review-helper"]);
   assert.deepEqual(filterSkillRecords(snapshot.records, { uncategorized: true }).map((record) => record.folder), ["plain-helper", "disabled-helper"]);
-  assert.deepEqual(filterSkillRecords(snapshot.records, { enabled: true }).map((record) => record.folder), ["doc-helper", "plain-helper", "review-helper"]);
-  assert.deepEqual(filterSkillRecords(snapshot.records, { enabled: false }).map((record) => record.folder), ["disabled-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "active" }).map((record) => record.folder), ["doc-helper", "plain-helper", "review-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "disabled" }).map((record) => record.folder), ["disabled-helper"]);
+});
+
+test("filterSkillRecords filters by enabled and disabled storage", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-list-storage-filters-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "active-helper", "Active Helper");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-helper", "Disabled Helper");
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: "shared" });
+
+  assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "active" }).map((record) => record.folder), ["active-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "disabled" }).map((record) => record.folder), ["disabled-helper"]);
 });
 
 test("moveGlobalSkill supports dry-run and active to disabled moves", () => {
@@ -767,7 +781,7 @@ test("runSkillsCommand deletes only disabled shared skills with --enabled false"
     ...baseOptions(root),
     dryRun: true,
     skillsAgent: "shared",
-    skillsEnabled: false,
+    skillsListStorage: "disabled",
   });
 
   assert.equal(code, 0);
@@ -859,6 +873,35 @@ test("renderSkillDeleteBatch summarizes multiple selected skills", () => {
     "Would permanently delete 2 skills",
     "• alpha /skills/alpha -> (deleted)",
     "• beta /skills/beta -> (deleted)",
+  ].join("\n"));
+});
+
+test("renderSkillProfileApply summarizes profile movements compactly", () => {
+  assert.equal(renderSkillProfileApply({
+    catalog: { version: 1, alwaysOn: [], items: [] },
+    state: { version: 1, enabledProfileIds: ["frontend"], profileMovedSkills: ["api"], preExistingDisabledSkills: [] },
+    paths: {
+      catalogPath: "/tmp/catalog/profiles.json",
+      statePath: "/tmp/state/skill-profiles.json",
+      skillsRoot: "/tmp/skills",
+      disabledRoot: "/tmp/skills/.disabled",
+    },
+    keptSkills: ["react"],
+    movements: [
+      { folder: "api", source: "/tmp/skills/api", destination: "/tmp/skills/.disabled/api", action: "disable" },
+      { folder: "docs", source: "/tmp/skills/docs", destination: "/tmp/skills/.disabled/docs", action: "disable" },
+      { folder: "react", source: "/tmp/skills/.disabled/react", destination: "/tmp/skills/react", action: "enable" },
+    ],
+    dryRun: false,
+  }), [
+    "◆ Profile Move Complete",
+    "Profiles   frontend",
+    "enabled  disabled  kept",
+    "1        2         1   ",
+    "Enabled    react",
+    "Disabled   api, docs",
+    "Kept       react",
+    "State      /tmp/state/skill-profiles.json",
   ].join("\n"));
 });
 
@@ -1357,11 +1400,11 @@ function baseOptions(root: string) {
     manifestShowReact: false,
     manifestShowVisualize: false,
     skillsListScope: "all" as const,
+    skillsListStorage: undefined,
     skillsUpgradeScope: "global" as const,
     skillsUpgradeAll: false,
     skillsDeleteManifestOnly: false,
     skillsAgent: undefined,
-    skillsEnabled: undefined,
     skillsJson: false,
     skillsCategory: "",
     skillsTag: "",

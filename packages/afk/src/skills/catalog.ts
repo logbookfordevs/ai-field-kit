@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ManagedSkillAgent, SkillsListScope } from "../types.js";
+import type { ManagedSkillAgent, SkillAgentFilter, SkillsListScope, SkillsListStorage } from "../types.js";
 import { loadSkillManifest, localManifestDir, type SkillManifest, type SkillManifestItem } from "../manifest.js";
 
 export const skillCatalogFileName = "skills.json";
@@ -99,7 +99,7 @@ export function loadSkillCatalog(options: {
   homeDir: string;
   cwd: string;
   scope: SkillsListScope;
-  agent: ManagedSkillAgent | undefined;
+  agent: SkillAgentFilter | undefined;
 }): SkillCatalogSnapshot {
   const categorization = loadCategorizationState(options.homeDir);
   const roots = skillRoots(options.homeDir, options.cwd)
@@ -115,14 +115,14 @@ export function loadSkillCatalog(options: {
 
 export type SkillListFilters = {
   category?: string | undefined;
-  enabled?: boolean | undefined;
   tag?: string | undefined;
   uncategorized?: boolean | undefined;
+  storage?: SkillsListStorage | undefined;
 };
 
 export function filterSkillRecords(records: SkillRecord[], filters: SkillListFilters): SkillRecord[] {
   return records.filter((record) => {
-    if (filters.enabled !== undefined && (record.storage === "active") !== filters.enabled) {
+    if (filters.storage && record.storage !== filters.storage) {
       return false;
     }
 
@@ -805,7 +805,7 @@ function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
   ];
 }
 
-export function managedSkillAgents(): ManagedSkillAgent[] {
+export function managedSkillAgents(): SkillAgentFilter[] {
   return ["shared", ...knownAgentRoots.map((root) => root.agent)];
 }
 
@@ -865,7 +865,7 @@ function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
   return root.kind === "project-agent";
 }
 
-function rootMatchesAgent(root: SkillRoot, agent: ManagedSkillAgent | undefined): boolean {
+function rootMatchesAgent(root: SkillRoot, agent: SkillAgentFilter | undefined): boolean {
   if (!agent) {
     return true;
   }

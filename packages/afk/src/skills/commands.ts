@@ -395,9 +395,9 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
 
   const records = filterSkillRecords(snapshot.records, {
     category: options.skillsCategory,
-    enabled: options.skillsEnabled,
     tag: options.skillsTag,
     uncategorized: options.skillsUncategorized,
+    storage: options.skillsListStorage,
   });
 
   if (options.skillsJson) {
@@ -446,7 +446,7 @@ async function runSkillsOpen(folder: string | undefined, runtime: Runtime, optio
     scope: "all",
     agent: options.skillsAgent,
   });
-  const records = filterSkillRecords(snapshot.records, { enabled: options.skillsEnabled });
+  const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage });
   const record = folder
     ? findSkillRecord(records, folder)
     : await promptSkillRecord(records, "Select a skill to open:");
@@ -482,7 +482,7 @@ async function runSkillsShow(folder: string | undefined, runtime: Runtime, optio
     scope: "all",
     agent: options.skillsAgent,
   });
-  const records = filterSkillRecords(snapshot.records, { enabled: options.skillsEnabled });
+  const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage });
   const record = folder
     ? findSkillRecord(records, folder)
     : await promptSkillRecord(records, "Select a skill to show:");
@@ -714,7 +714,7 @@ function loadMutationSkillRecords(options: CliOptions): SkillRecord[] {
     ? snapshot.records
     : snapshot.records.filter((record) => record.rootKind === "global-library");
 
-  return filterSkillRecords(records, { enabled: options.skillsEnabled });
+  return filterSkillRecords(records, { storage: options.skillsListStorage });
 }
 
 function mutationTargetLabel(options: CliOptions): string {

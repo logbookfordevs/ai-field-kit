@@ -12,9 +12,9 @@ export type SkillAgentId = "claude-code" | "kiro-cli" | "kilo" | "pi" | "droid";
 export type Area = "rules" | "skills" | "mcps" | "plugins" | "hooks";
 export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "all";
+export type SkillsListStorage = "active" | "disabled";
 export type SkillsUpgradeScope = "global" | "project" | "all";
 export type ManagedSkillAgent =
-  | "shared"
   | "codex"
   | "claude"
   | "gemini"
@@ -31,6 +31,7 @@ export type ManagedSkillAgent =
   | "kiro"
   | "jules"
   | "openhands";
+export type SkillAgentFilter = ManagedSkillAgent | "shared";
 export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
 export type SkillOpenApp = "finder" | "code" | "cursor" | "zed" | "agy";
@@ -68,11 +69,11 @@ export type CliOptions = {
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
   skillsListScope?: SkillsListScope;
+  skillsListStorage?: SkillsListStorage | undefined;
   skillsUpgradeAll?: boolean;
   skillsUpgradeScope?: SkillsUpgradeScope;
   skillsDeleteManifestOnly?: boolean;
-  skillsAgent?: ManagedSkillAgent | undefined;
-  skillsEnabled?: boolean | undefined;
+  skillsAgent?: SkillAgentFilter | undefined;
   skillsJson?: boolean;
   skillsCategory?: string;
   skillsTag?: string;

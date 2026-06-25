@@ -2,7 +2,7 @@ import { sectionTitle, muted } from "../brand.js";
 import { formatOperation } from "../fs-utils.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import { skillCatalogFileName, type SkillCategorizationState, type SkillRecord } from "./catalog.js";
-import type { SkillProfileApplyResult, SkillProfileCatalog, SkillProfileItem, SkillProfileMovement, SkillProfileState } from "./profiles.js";
+import type { SkillProfileApplyResult, SkillProfileCatalog, SkillProfileItem, SkillProfileState } from "./profiles.js";
 import type { PathOperation } from "../types.js";
 
 export function renderSkillList(records: SkillRecord[], categorization: SkillCategorizationState): string {
@@ -212,15 +212,18 @@ export function renderSkillProfileDelete(input: {
 }
 
 export function renderSkillProfileApply(input: SkillProfileApplyResult): string {
+  const enabled = input.movements.filter((movement) => movement.action === "enable").map((movement) => movement.folder).sort();
+  const disabled = input.movements.filter((movement) => movement.action === "disable").map((movement) => movement.folder).sort();
+
   return [
     sectionTitle(input.dryRun ? "Profile Move Preview" : "Profile Move Complete"),
-    renderField("Enabled", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
-    renderField("Kept", input.keptSkills.length === 0 ? muted("none") : input.keptSkills.join(", ")),
-    renderField("Moved", String(input.movements.length)),
+    renderField("Profiles", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
+    renderSkillProfileApplyTable(enabled.length, disabled.length, input.keptSkills.length),
+    renderSkillProfileApplyList("Enabled", enabled),
+    renderSkillProfileApplyList("Disabled", disabled),
+    renderSkillProfileApplyList("Kept", input.keptSkills),
     renderField("State", input.paths.statePath),
-    "",
-    ...input.movements.map(renderSkillProfileMovement),
-  ].filter((line) => line !== "").join("\n");
+  ].filter((line): line is string => Boolean(line)).join("\n");
 }
 
 export function renderSkillProfileStatus(input: SkillProfileApplyResult): string {
@@ -277,11 +280,6 @@ function renderSkillProfileRow(profile: SkillProfileItem, enabled: boolean): str
   return `${paint(terminalPalette.sienna, "•")} ${strong(profile.name)} ${muted(`[${profile.id}]`)} ${status}\n  ${muted(profile.skills.length === 0 ? "No skills assigned." : profile.skills.join(", "))}`;
 }
 
-function renderSkillProfileMovement(movement: SkillProfileMovement): string {
-  const action = movement.action === "enable" ? success("enable") : warn("disable");
-  return `${paint(terminalPalette.sienna, "•")} ${strong(movement.folder)} ${action} ${muted(`${movement.source} -> ${movement.destination}`)}`;
-}
-
 function renderLibrarySummary(records: SkillRecord[], categorization: SkillCategorizationState): string {
   const active = records.filter((record) => record.storage === "active").length;
   const disabled = records.filter((record) => record.storage === "disabled").length;
@@ -315,6 +313,24 @@ function renderSkillMetadataLine(record: SkillRecord, options: { includeScope?: 
 
 function renderMetadataField(label: string, value: string): string {
   return `${muted(`${label}:`)} ${value}`;
+}
+
+function renderSkillProfileApplyTable(enabled: number, disabled: number, kept: number): string {
+  const headers = ["enabled", "disabled", "kept"];
+  const values = [enabled, disabled, kept].map(String);
+  const widths = headers.map((header, index) => Math.max(header.length, values[index]?.length ?? 0));
+  return [
+    widths.map((width, index) => muted(headers[index]?.padEnd(width) ?? "")).join("  "),
+    values.map((value, index) => accent(value.padEnd(widths[index] ?? value.length))).join("  "),
+  ].join("\n");
+}
+
+function renderSkillProfileApplyList(label: string, skills: string[]): string | undefined {
+  if (skills.length === 0) {
+    return undefined;
+  }
+
+  return `${muted(`${label.padEnd(10)} ${skills.join(", ")}`)}`;
 }
 
 function renderAutoInvocation(record: SkillRecord): string {
