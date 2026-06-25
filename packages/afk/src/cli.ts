@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
-import { runCatalogImport } from "./catalog-import.js";
+import { runCatalogImport, runCatalogImportStatus } from "./catalog-import.js";
 import { runSetup, runArea } from "./setup.js";
 import { runRefresh } from "./refresh.js";
 import { runManifestShow } from "./manifest-show.js";
@@ -87,8 +87,12 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
     return runRefresh(runtime, options);
   }
 
-  if (isCatalogImportCommand(key)) {
+  if (isCatalogSkillsImportCommand(key)) {
     return runCatalogImport(runtime, options);
+  }
+
+  if (isCatalogSkillsImportStatusCommand(key)) {
+    return runCatalogImportStatus(runtime, options);
   }
 
   if (isCatalogProfilesCommand(key)) {
@@ -263,10 +267,10 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk refresh --default-source your-org/dev-kit",
     ],
   },
-  configure: {
-    title: "AFK configure",
+  config: {
+    title: "AFK config",
     summary: "Interactively edit writable AFK catalog files.",
-    usage: "afk configure [options]",
+    usage: "afk config [options]",
     notes: [
       "Edits the local AFK catalog cache by default.",
       "Use --local to edit ./afk/catalog for project-local setup.",
@@ -277,22 +281,35 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.dryRun,
     ],
     examples: [
-      "afk configure",
-      "afk configure --local",
-      "afk configure --dry-run",
+      "afk config",
+      "afk config --local",
+      "afk config --dry-run",
     ],
   },
-  "manifests configure": {
-    title: "AFK configure",
-    summary: "Legacy alias for afk configure.",
-    usage: "afk configure [options]",
+  configure: {
+    title: "AFK config",
+    summary: "Legacy alias for afk config.",
+    usage: "afk config [options]",
     options: [
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
     ],
     examples: [
-      "afk configure",
-      "afk configure --local",
+      "afk config",
+      "afk config --local",
+    ],
+  },
+  "manifests configure": {
+    title: "AFK config",
+    summary: "Legacy alias for afk config.",
+    usage: "afk config [options]",
+    options: [
+      "--local                          Edit ./afk/catalog instead of the global cache",
+      setupOptions.dryRun,
+    ],
+    examples: [
+      "afk config",
+      "afk config --local",
     ],
   },
   update: {
@@ -483,6 +500,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills list",
       "afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes",
       "afk skills list --scope global --json",
+      "afk skills list --agent shared --enabled false",
       "afk skills disable old-skill --dry-run",
       "afk skills invocation disable afk-doc-craft",
       "afk skills upgrade --all",
@@ -565,7 +583,8 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills list [options]",
     options: [
       "--scope global|project|all        Choose which skill roots to list",
-      "--agent <agent>                   Limit project or agent roots",
+      "--agent shared|<agent>            Limit lookup to shared or agent roots",
+      "--enabled true|false              Filter active or disabled skill folders",
       "--category <id-or-label>          Filter by AFK category",
       "--tag <tag>                       Filter by AFK tag",
       "--uncategorized                   Show records without an AFK category",
@@ -574,6 +593,7 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk skills list",
       "afk skills list --scope global",
+      "afk skills list --agent shared --enabled false",
       "afk skills list --scope global --agent codex",
       "afk skills list --scope project --agent codex",
     ],
@@ -583,7 +603,8 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Show details for one discovered skill.",
     usage: "afk skills show <folder> [options]",
     options: [
-      "--agent codex|claude              Limit project lookup to one agent",
+      "--agent shared|<agent>            Limit lookup to shared or agent roots",
+      "--enabled true|false              Filter active or disabled skill folders",
       "--json                            Print JSON record",
     ],
     examples: [
@@ -599,7 +620,8 @@ const commandHelps: Record<string, CommandHelp> = {
       "--file                            Open SKILL.md (default)",
       "--folder                          Open the skill folder",
       "--app finder|code|cursor|zed|agy  Choose the app command",
-      "--agent <agent>                   Limit lookup to one agent",
+      "--agent shared|<agent>            Limit lookup to shared or agent roots",
+      "--enabled true|false              Filter active or disabled skill folders",
     ],
     examples: [
       "afk skills open afk-note",
@@ -612,7 +634,7 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills disable <folder> [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
-      "--agent <agent>                   Target one agent-specific root",
+      "--agent shared|<agent>            Target shared or one agent-specific root",
       "--dry-run                         Preview the move without applying it",
     ],
     examples: [
@@ -628,7 +650,7 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills enable <folder> [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
-      "--agent <agent>                   Target one agent-specific root",
+      "--agent shared|<agent>            Target shared or one agent-specific root",
       "--dry-run                         Preview the move without applying it",
     ],
     examples: [
@@ -644,7 +666,8 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills invocation [disable|enable] [folder] [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
-      "--agent <agent>                   Target one agent-specific root",
+      "--agent shared|<agent>            Target shared or one agent-specific root",
+      "--enabled true|false              Filter active or disabled skill folders",
       "--dry-run                         Preview metadata writes without applying them",
     ],
     examples: [
@@ -660,7 +683,8 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills delete [folder] [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
-      "--agent <agent>                   Target one agent-specific root",
+      "--agent shared|<agent>            Target shared or one agent-specific root",
+      "--enabled true|false              Filter active or disabled skill folders",
       "--dry-run                         Preview the delete without applying it",
       "--yes, -y                         Skip confirmation",
       "--manifest-only                   Show only skills from AFK's setup skills manifest",
@@ -710,30 +734,19 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Apply profile definitions to temporarily focus the global skill library.",
     usage: "afk skills profiles <command> [options]",
     notes: [
-      "Use afk catalog profiles create|edit|delete to manage profile definitions.",
-      "The create/edit/delete forms remain here as transitional aliases.",
+      "Use afk catalog profiles to manage profile definitions.",
     ],
     options: [
-      "list                              List profiles",
-      "show [profile]                    Show one profile",
-      "create <profile>                  Alias for afk catalog profiles create",
-      "edit <profile>                    Alias for afk catalog profiles edit",
-      "delete <profile>                  Alias for afk catalog profiles delete",
       "enable <profile>                  Enable a profile and apply filtering",
       "disable <profile>                 Disable a profile and restore eligible skills",
       "status                            Show enabled profiles and state",
-      "--local                           Use ./afk/catalog and ./afk/state for profile data",
-      "--name <name>                     Set profile name for create/edit",
-      "--skill <skill>                   Add profile skill; repeatable",
-      "--always-on <skill>               Add global always-on skill; repeatable",
+      "--local                           Use ./afk/catalog and ./afk/state for profile runtime data",
       "--dry-run                         Preview filesystem-changing operations",
-      "--json                            Print JSON for list/show",
     ],
     examples: [
-      "afk skills profiles list",
-      "afk skills profiles create video --name Video --skill hyperframes --skill tailwind",
       "afk skills profiles enable video --dry-run",
       "afk skills profiles status --local",
+      "afk catalog profiles create video --name Video --skill hyperframes --skill tailwind",
     ],
   },
   "catalog profiles": {
@@ -743,7 +756,6 @@ const commandHelps: Record<string, CommandHelp> = {
     notes: [
       "Catalog profile commands edit profile definitions only.",
       "Use afk skills profiles enable|disable|status for runtime profile state and filesystem effects.",
-      "afk skills profiles create|edit|delete remain aliases during the transition.",
     ],
     options: [
       "list                              List profile definitions",
@@ -902,10 +914,23 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk show skills --source your-org/dev-kit",
     ],
   },
-  "catalog import": {
-    title: "AFK catalog import",
+  "catalog skills": {
+    title: "AFK catalog skills",
+    summary: "Manage skills catalog definitions.",
+    usage: "afk catalog skills <command> [options]",
+    options: [
+      "import                            Backfill missing skills catalog entries",
+      "import-status                     Compare installed skills with catalog entries",
+    ],
+    examples: [
+      "afk catalog skills import-status",
+      "afk catalog skills import --dry-run",
+    ],
+  },
+  "catalog skills import": {
+    title: "AFK catalog skills import",
     summary: "Backfill missing skills catalog entries from installed skills with skills CLI lock metadata.",
-    usage: "afk catalog import [options]",
+    usage: "afk catalog skills import [options]",
     notes: [
       "Use this when skills already exist in .agents/skills but are missing from the AFK catalog.",
       "AFK imports only skills whose original source can be recovered from the official skills CLI lockfile.",
@@ -915,9 +940,21 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.localCatalog,
     ],
     examples: [
-      "afk catalog import",
-      "afk catalog import --dry-run",
-      "afk catalog import --local",
+      "afk catalog skills import",
+      "afk catalog skills import --dry-run",
+      "afk catalog skills import --local",
+    ],
+  },
+  "catalog skills import-status": {
+    title: "AFK catalog skills import-status",
+    summary: "Compare installed shared skills with skills catalog entries.",
+    usage: "afk catalog skills import-status [options]",
+    options: [
+      setupOptions.localCatalog,
+    ],
+    examples: [
+      "afk catalog skills import-status",
+      "afk catalog skills import-status --local",
     ],
   },
 };
@@ -950,6 +987,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsUpgradeAll = false;
   let skillsDeleteManifestOnly = false;
   let skillsAgent: ManagedSkillAgent | undefined;
+  let skillsEnabled: boolean | undefined;
   let skillsJson = false;
   let skillsCategory = "";
   let skillsTag = "";
@@ -1065,7 +1103,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         continue;
       }
 
-      if (isManifestShowCommand(key) || isCatalogImportCommand(key)) {
+      if (isManifestShowCommand(key) || isCatalogSkillsCommand(key)) {
         manifestLocal = true;
         continue;
       }
@@ -1128,6 +1166,21 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         return { help: false, kind: "error", error: "Unknown option: --manifest-only" };
       }
       skillsDeleteManifestOnly = true;
+      continue;
+    }
+
+    if (isAfkSkillsCommand && arg === "--enabled") {
+      const command = commandPath[1];
+      if (command !== "list" && command !== "show" && command !== "open" && command !== "delete" && command !== "invocation") {
+        return { help: false, kind: "error", error: "Unknown option: --enabled" };
+      }
+
+      const value = args[index + 1];
+      if (value !== "true" && value !== "false") {
+        return { help: false, kind: "error", error: `Invalid --enabled value: ${value ?? "(missing)"}` };
+      }
+      skillsEnabled = value === "true";
+      index += 1;
       continue;
     }
 
@@ -1393,6 +1446,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsUpgradeScope,
       skillsDeleteManifestOnly,
       skillsAgent,
+      skillsEnabled,
       skillsJson,
       skillsCategory,
       skillsTag,
@@ -1463,7 +1517,7 @@ function isSetupSkillsCommand(key: string): boolean {
 }
 
 function isManifestConfigureCommand(key: string): boolean {
-  return key === "configure" || key === "manifests configure";
+  return key === "config" || key === "configure" || key === "manifests configure";
 }
 
 function isManifestShowCommand(key: string): boolean {
@@ -1479,8 +1533,17 @@ function isRefreshCommand(key: string): boolean {
   return key === "refresh" || key.startsWith("refresh ") || key === "setup refresh";
 }
 
-function isCatalogImportCommand(key: string): boolean {
-  return key === "catalog import";
+function isCatalogSkillsCommand(key: string): boolean {
+  return key === "catalog skills" ||
+    key.startsWith("catalog skills ");
+}
+
+function isCatalogSkillsImportCommand(key: string): boolean {
+  return key === "catalog skills import";
+}
+
+function isCatalogSkillsImportStatusCommand(key: string): boolean {
+  return key === "catalog skills import-status";
 }
 
 function isCatalogProfilesCommand(key: string): boolean {
@@ -1502,6 +1565,10 @@ function helpCommandPath(commandPath: string[], key: string): string[] {
 
   if (key === "catalog profiles" || key.startsWith("catalog profiles ")) {
     return ["catalog", "profiles"];
+  }
+
+  if (key === "catalog skills" || key.startsWith("catalog skills ")) {
+    return commandPath.slice(0, 3);
   }
 
   if (isRefreshCommand(key)) {
@@ -1574,7 +1641,7 @@ Usage:
   afk --version
   afk
   afk refresh [category...] [options]
-  afk configure [options]
+  afk config [options]
   afk setup [options]
   afk setup rules [options]
   afk setup skills [options]
@@ -1584,7 +1651,7 @@ Usage:
   afk skills <command> [options]
   afk ui <command> [options]
   afk update [options]
-  afk catalog import [options]
+  afk catalog skills <command> [options]
   afk catalog profiles <command> [options]
   afk show [category...] [options]
 
@@ -1592,11 +1659,11 @@ Common paths:
   afk                         Open the interactive lobby when your terminal supports prompts
   afk setup                   Prepare rules, skills, MCPs, plugins, and hooks
   afk refresh                 Update the local catalog cache
-  afk configure               Edit writable local catalog files
+  afk config                  Edit writable local catalog files
   afk update                  Update AFK from the latest GitHub release
   afk show skills --react     Print the skills catalog as a React-style composition tree
   afk show skills --visualize Write and open the skills composition map
-  afk catalog import          Backfill catalog entries from installed skills
+  afk catalog skills          Manage skills catalog definitions
   afk catalog profiles        Edit skill profile definitions
 
 Run "afk <command> --help" for command-specific options.

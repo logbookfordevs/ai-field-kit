@@ -6,7 +6,7 @@ import { searchableCheckbox } from "../searchable-checkbox.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
-import { selectSkillProfilesLobbyRoute, selectSkillsLobbyRoute } from "../lobby.js";
+import { selectCatalogProfilesLobbyRoute, selectSkillProfilesLobbyRoute, selectSkillsLobbyRoute } from "../lobby.js";
 import { loadSkillManifest } from "../manifest.js";
 import { planCatalogImport } from "../catalog-import.js";
 import {
@@ -37,6 +37,7 @@ import {
   renderSkillProfileStatus,
   renderSkillProfileWrite,
   renderSkillChoice,
+  renderSkillChoiceDescription,
   renderSkillDetails,
   renderSkillList,
   renderSkillMove,
@@ -184,21 +185,40 @@ function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Arr
 }
 
 export async function runCatalogProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  if (operands.length === 0) {
+    const route = await selectCatalogProfilesLobbyRoute(runtime);
+    return runCatalogProfilesCommand(route.slice(2), runtime, options);
+  }
+
   const command = operands[0] ?? "list";
   if (command === "enable" || command === "disable" || command === "status") {
     runtime.io.stderr(`afk catalog profiles ${command} is a runtime profile operation. Use afk skills profiles ${command} instead.`);
     return 1;
   }
 
-  return runSkillProfilesCommand(operands.length === 0 ? ["list"] : operands, runtime, options);
+  return runSkillProfileDefinitionsCommand(operands, runtime, options);
 }
 
 async function runSkillProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   if (operands.length === 0) {
     const route = await selectSkillProfilesLobbyRoute(runtime);
+    if (route[0] === "catalog" && route[1] === "profiles") {
+      return runCatalogProfilesCommand(route.slice(2), runtime, options);
+    }
+
     return runSkillsCommand(route, runtime, options);
   }
 
+  const command = operands[0] ?? "list";
+  if (command === "list" || command === "show" || command === "create" || command === "edit" || command === "delete") {
+    runtime.io.stderr(`afk skills profiles ${command} is a profile definition operation. Use afk catalog profiles ${command} instead.`);
+    return 1;
+  }
+
+  return runSkillProfileRuntimeCommand(operands, runtime, options);
+}
+
+async function runSkillProfileDefinitionsCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   const command = operands[0] ?? "list";
   const id = operands[1];
   const context = skillProfileContext(options);
@@ -286,6 +306,18 @@ async function runSkillProfilesCommand(operands: string[], runtime: Runtime, opt
       }));
       return 0;
     }
+    default:
+      runtime.io.stderr(`Unknown catalog profiles command: ${command}`);
+      return 1;
+  }
+}
+
+async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const command = operands[0] ?? "status";
+  const id = operands[1];
+  const context = skillProfileContext(options);
+
+  switch (command) {
     case "enable": {
       const profiles = listSkillProfiles(context).catalog.items;
       const selectedId = id ?? (await promptSkillProfile(profiles, "Select a profile to enable:"))?.id;
@@ -363,6 +395,7 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
 
   const records = filterSkillRecords(snapshot.records, {
     category: options.skillsCategory,
+    enabled: options.skillsEnabled,
     tag: options.skillsTag,
     uncategorized: options.skillsUncategorized,
   });
@@ -413,9 +446,10 @@ async function runSkillsOpen(folder: string | undefined, runtime: Runtime, optio
     scope: "all",
     agent: options.skillsAgent,
   });
+  const records = filterSkillRecords(snapshot.records, { enabled: options.skillsEnabled });
   const record = folder
-    ? findSkillRecord(snapshot.records, folder)
-    : await promptSkillRecord(snapshot.records, "Select a skill to open:");
+    ? findSkillRecord(records, folder)
+    : await promptSkillRecord(records, "Select a skill to open:");
 
   if (!record) {
     runtime.io.stderr(folder ? `Skill not found: ${folder}` : "No skills found.");
@@ -448,9 +482,10 @@ async function runSkillsShow(folder: string | undefined, runtime: Runtime, optio
     scope: "all",
     agent: options.skillsAgent,
   });
+  const records = filterSkillRecords(snapshot.records, { enabled: options.skillsEnabled });
   const record = folder
-    ? findSkillRecord(snapshot.records, folder)
-    : await promptSkillRecord(snapshot.records, "Select a skill to show:");
+    ? findSkillRecord(records, folder)
+    : await promptSkillRecord(records, "Select a skill to show:");
 
   if (!record) {
     runtime.io.stderr(folder ? `Skill not found: ${folder}` : "No skills found.");
@@ -675,15 +710,19 @@ function loadMutationSkillRecords(options: CliOptions): SkillRecord[] {
     agent: options.skillsAgent,
   });
 
-  if (options.skillsAgent) {
-    return snapshot.records;
-  }
+  const records = options.skillsAgent
+    ? snapshot.records
+    : snapshot.records.filter((record) => record.rootKind === "global-library");
 
-  return snapshot.records.filter((record) => record.rootKind === "global-library");
+  return filterSkillRecords(records, { enabled: options.skillsEnabled });
 }
 
 function mutationTargetLabel(options: CliOptions): string {
   if (options.skillsAgent) {
+    if (options.skillsAgent === "shared") {
+      return "shared";
+    }
+
     const scope = options.scopeExplicit ? options.skillsListScope ?? "global" : "global";
     return `${scope} ${options.skillsAgent}`;
   }
@@ -750,7 +789,7 @@ async function promptSkillRecord(records: SkillRecord[], message: string): Promi
     source: async (term) => filterSkillChoices(records, term).map((record) => ({
       name: renderSkillChoice(record),
       value: record,
-      description: record.description,
+      description: renderSkillChoiceDescription(record),
     })),
     pageSize: 10,
     instructions: {
@@ -772,7 +811,7 @@ async function promptSkillRecords(records: SkillRecord[], message: string): Prom
     choices: records.map((record) => ({
       name: renderSkillChoice(record),
       value: record,
-      description: record.description,
+      description: renderSkillChoiceDescription(record),
       short: record.folder,
     })),
     pageSize: 10,

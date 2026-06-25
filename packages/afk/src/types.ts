@@ -14,6 +14,7 @@ export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "all";
 export type SkillsUpgradeScope = "global" | "project" | "all";
 export type ManagedSkillAgent =
+  | "shared"
   | "codex"
   | "claude"
   | "gemini"
@@ -71,6 +72,7 @@ export type CliOptions = {
   skillsUpgradeScope?: SkillsUpgradeScope;
   skillsDeleteManifestOnly?: boolean;
   skillsAgent?: ManagedSkillAgent | undefined;
+  skillsEnabled?: boolean | undefined;
   skillsJson?: boolean;
   skillsCategory?: string;
   skillsTag?: string;

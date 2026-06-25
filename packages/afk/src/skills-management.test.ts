@@ -29,7 +29,7 @@ import {
   skillProfilePaths,
   type SkillProfileCatalog,
 } from "./skills/profiles.js";
-import { renderSkillChoice, renderSkillDetails, renderSkillDeleteBatch } from "./skills/render.js";
+import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 import { localManifestDir, projectManifestDir, type SkillManifest } from "./manifest.js";
@@ -182,6 +182,19 @@ test("loadSkillCatalog filters installed agent roots with --scope global --agent
   assert.deepEqual(snapshot.records.map((record) => record.folder), ["gemini-global"]);
 });
 
+test("loadSkillCatalog filters the shared library with --agent shared", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-shared-agent-filter-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "shared-global", "Shared Global");
+  writeSkill(join(homeDir, ".codex", "skills"), "codex-global", "Codex Global");
+
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: "shared" });
+
+  assert.deepEqual(snapshot.records.map((record) => record.folder), ["shared-global"]);
+  assert.deepEqual(snapshot.records.map((record) => record.rootKind), ["global-library"]);
+});
+
 test("loadSkillCatalog includes disabled installed agent roots with --scope global --agent", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skills-installed-agent-disabled-"));
   const homeDir = join(root, "home");
@@ -251,6 +264,7 @@ test("filterSkillRecords filters by category, tag, and uncategorized", () => {
   writeSkill(join(homeDir, ".agents", "skills"), "doc-helper", "Doc Helper");
   writeSkill(join(homeDir, ".agents", "skills"), "review-helper", "Review Helper");
   writeSkill(join(homeDir, ".agents", "skills"), "plain-helper", "Plain Helper");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-helper", "Disabled Helper");
   writeSkillCatalog(homeDir, {
     version: 1,
     scopes: [
@@ -266,7 +280,9 @@ test("filterSkillRecords filters by category, tag, and uncategorized", () => {
 
   assert.deepEqual(filterSkillRecords(snapshot.records, { category: "Docs" }).map((record) => record.folder), ["doc-helper"]);
   assert.deepEqual(filterSkillRecords(snapshot.records, { tag: "critique" }).map((record) => record.folder), ["review-helper"]);
-  assert.deepEqual(filterSkillRecords(snapshot.records, { uncategorized: true }).map((record) => record.folder), ["plain-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { uncategorized: true }).map((record) => record.folder), ["plain-helper", "disabled-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { enabled: true }).map((record) => record.folder), ["doc-helper", "plain-helper", "review-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { enabled: false }).map((record) => record.folder), ["disabled-helper"]);
 });
 
 test("moveGlobalSkill supports dry-run and active to disabled moves", () => {
@@ -486,10 +502,8 @@ test("multiple enabled profiles keep the union of profile skills", () => {
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "gamma")), true);
 });
 
-test("runSkillsCommand profiles create writes profile catalog", async () => {
+test("runSkillsCommand rejects profile definition writes under skills profiles", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-command-"));
-  const homeDir = join(root, "home");
-  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
   const output: string[] = [];
 
   const code = await runSkillsCommand(["skills", "profiles", "create", "engineering"], outputRuntime(output), {
@@ -499,11 +513,8 @@ test("runSkillsCommand profiles create writes profile catalog", async () => {
     skillProfileAlwaysOn: ["afk-compass"],
   });
 
-  assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("Profile Create Complete"));
-  const catalog = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
-  assert.deepEqual(catalog.alwaysOn, ["afk-compass"]);
-  assert.deepEqual(catalog.items, [{ id: "engineering", name: "Engineering", skills: ["alpha"] }]);
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Use afk catalog profiles create instead."));
 });
 
 test("runSkillsCommand add delegates to skills add and imports installed skills into catalog", async () => {
@@ -745,6 +756,26 @@ test("runSkillsCommand deletes agent-specific global skills with --agent", async
   assert.ok(output.join("\n").includes(".claude/skills/frontend-design"));
 });
 
+test("runSkillsCommand deletes only disabled shared skills with --enabled false", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-shared-skill-delete-enabled-filter-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "active-demo", "Active Demo");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-demo", "Disabled Demo");
+
+  const code = await runSkillsCommand(["skills", "delete", "disabled-demo"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+    skillsAgent: "shared",
+    skillsEnabled: false,
+  });
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("Delete Preview"));
+  assert.ok(output.join("\n").includes(".agents/skills/.disabled/disabled-demo"));
+  assert.ok(!output.join("\n").includes("active-demo"));
+});
+
 test("runSkillsCommand disables agent-specific global skills with --agent", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-disable-command-"));
   const homeDir = join(root, "home");
@@ -864,7 +895,7 @@ test("buildSkillOpenCommand targets files, folders, and supported apps", () => {
   });
 });
 
-test("renderSkillChoice separates core picker fields", () => {
+test("renderSkillChoice keeps picker rows compact", () => {
   assert.equal(renderSkillChoice({
     folder: "demo",
     name: "Demo Skill",
@@ -883,7 +914,7 @@ test("renderSkillChoice separates core picker fields", () => {
     autoInvocation: "enabled",
     autoInvocationSources: ["SKILL.md"],
     autoInvocationDetails: ["SKILL.md enables"],
-  }), "Demo Skill [demo] Global Library · active · managed · auto · Docs");
+  }), "Demo Skill [demo] Global Library");
 
   assert.equal(renderSkillChoice({
     folder: "disabled-demo",
@@ -903,7 +934,32 @@ test("renderSkillChoice separates core picker fields", () => {
     autoInvocation: "disabled",
     autoInvocationSources: ["agents/openai.yaml"],
     autoInvocationDetails: ["agents/openai.yaml disables"],
-  }), "Disabled Demo [disabled-demo] Global Library / Disabled · disabled · managed · manual");
+  }), "Disabled Demo [disabled-demo] Global Library / Disabled");
+});
+
+test("renderSkillChoiceDescription adds hovered skill metadata below the picker", () => {
+  assert.equal(renderSkillChoiceDescription({
+    folder: "demo",
+    name: "Demo Skill",
+    originalName: "Demo Skill",
+    description: "Demo description",
+    rootLabel: "Global Library",
+    rootPath: "/tmp/skills",
+    skillFilePath: "/tmp/skills/demo/SKILL.md",
+    storage: "active",
+    rootKind: "global-library",
+    readOnly: false,
+    agent: "codex",
+    category: "Docs",
+    categoryId: "docs",
+    tags: ["writing"],
+    autoInvocation: "enabled",
+    autoInvocationSources: ["SKILL.md"],
+    autoInvocationDetails: ["SKILL.md enables"],
+  }), [
+    "Demo description",
+    "Status: active · Invocation: auto · Agent: codex · Category: Docs · Tags: writing",
+  ].join("\n"));
 });
 
 test("renderSkillDetails shows mixed auto invocation diagnostics", () => {
@@ -1305,6 +1361,7 @@ function baseOptions(root: string) {
     skillsUpgradeAll: false,
     skillsDeleteManifestOnly: false,
     skillsAgent: undefined,
+    skillsEnabled: undefined,
     skillsJson: false,
     skillsCategory: "",
     skillsTag: "",

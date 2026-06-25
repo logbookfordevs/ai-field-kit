@@ -36,14 +36,17 @@ export type SkillsLobbyChoiceValue =
   | "skills-profile-status";
 
 export type SkillProfilesLobbyChoiceValue =
+  | "profiles-enable"
+  | "profiles-disable"
+  | "profiles-status"
+  | "profiles-manage-definitions";
+
+export type CatalogProfilesLobbyChoiceValue =
   | "profiles-list"
   | "profiles-show"
   | "profiles-create"
   | "profiles-edit"
-  | "profiles-delete"
-  | "profiles-enable"
-  | "profiles-disable"
-  | "profiles-status";
+  | "profiles-delete";
 
 type TtyState = {
   stdin: boolean;
@@ -75,7 +78,7 @@ export const compassLobbyChoices: LobbyChoice[] = [
   {
     name: "Edit local catalog",
     value: "configure",
-    description: "Route: afk configure",
+    description: "Route: afk config",
   },
   {
     name: "Install skills",
@@ -120,7 +123,7 @@ export const compassLobbyChoices: LobbyChoice[] = [
   {
     name: "Import installed skills into a catalog",
     value: "catalog-import",
-    description: "Route: afk catalog import",
+    description: "Route: afk catalog skills import",
   },
   {
     name: "Show command help",
@@ -187,7 +190,7 @@ export const skillsLobbyChoices: Array<{
   {
     name: "Import installed skills into the catalog",
     value: "skills-catalog-import",
-    description: "Route: afk catalog import",
+    description: "Route: afk catalog skills import",
   },
   {
     name: "Manage skill profiles",
@@ -207,31 +210,6 @@ export const skillProfilesLobbyChoices: Array<{
   description: string;
 }> = [
   {
-    name: "List profiles",
-    value: "profiles-list",
-    description: "Route: afk skills profiles list",
-  },
-  {
-    name: "Show a profile",
-    value: "profiles-show",
-    description: "Route: afk skills profiles show",
-  },
-  {
-    name: "Create a profile",
-    value: "profiles-create",
-    description: "Route: afk skills profiles create",
-  },
-  {
-    name: "Edit a profile",
-    value: "profiles-edit",
-    description: "Route: afk skills profiles edit",
-  },
-  {
-    name: "Delete a profile definition",
-    value: "profiles-delete",
-    description: "Route: afk skills profiles delete",
-  },
-  {
     name: "Enable a profile",
     value: "profiles-enable",
     description: "Route: afk skills profiles enable",
@@ -245,6 +223,43 @@ export const skillProfilesLobbyChoices: Array<{
     name: "Show profile status",
     value: "profiles-status",
     description: "Route: afk skills profiles status",
+  },
+  {
+    name: "Manage profile definitions",
+    value: "profiles-manage-definitions",
+    description: "Route: afk catalog profiles",
+  },
+];
+
+export const catalogProfilesLobbyChoices: Array<{
+  name: string;
+  value: CatalogProfilesLobbyChoiceValue;
+  description: string;
+}> = [
+  {
+    name: "List profile definitions",
+    value: "profiles-list",
+    description: "Route: afk catalog profiles list",
+  },
+  {
+    name: "Show a profile definition",
+    value: "profiles-show",
+    description: "Route: afk catalog profiles show",
+  },
+  {
+    name: "Create a profile definition",
+    value: "profiles-create",
+    description: "Route: afk catalog profiles create",
+  },
+  {
+    name: "Edit a profile definition",
+    value: "profiles-edit",
+    description: "Route: afk catalog profiles edit",
+  },
+  {
+    name: "Delete a profile definition",
+    value: "profiles-delete",
+    description: "Route: afk catalog profiles delete",
   },
 ];
 
@@ -314,6 +329,18 @@ export async function selectSkillProfilesLobbyRoute(runtime: Runtime): Promise<s
   return routeForSkillProfilesLobbyChoice(selected);
 }
 
+export async function selectCatalogProfilesLobbyRoute(runtime: Runtime): Promise<string[]> {
+  runtime.io.stdout(renderCatalogProfilesLobbyIntro());
+  const selected = await select<CatalogProfilesLobbyChoiceValue>({
+    message: "Pick a profile definition action",
+    choices: catalogProfilesLobbyChoices,
+    pageSize: catalogProfilesLobbyChoices.length,
+    loop: false,
+    theme: afkSelectTheme,
+  });
+  return routeForCatalogProfilesLobbyChoice(selected);
+}
+
 export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: string): string[] {
   switch (value) {
     case "setup":
@@ -323,7 +350,7 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
     case "refresh":
       return ["refresh"];
     case "configure":
-      return ["configure"];
+      return ["config"];
     case "skills":
       return ["setup", "skills"];
     case "skill-management":
@@ -341,7 +368,7 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
     case "skills-visualize":
       return ["show", "skills", "--visualize"];
     case "catalog-import":
-      return ["catalog", "import"];
+      return ["catalog", "skills", "import"];
     case "help":
       return ["--help"];
   }
@@ -370,7 +397,7 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue): string
     case "skills-categorize":
       return ["skills", "categorize"];
     case "skills-catalog-import":
-      return ["catalog", "import"];
+      return ["catalog", "skills", "import"];
     case "skills-profiles":
       return ["skills", "profiles"];
     case "skills-profile-status":
@@ -380,22 +407,29 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue): string
 
 export function routeForSkillProfilesLobbyChoice(value: SkillProfilesLobbyChoiceValue): string[] {
   switch (value) {
-    case "profiles-list":
-      return ["skills", "profiles", "list"];
-    case "profiles-show":
-      return ["skills", "profiles", "show"];
-    case "profiles-create":
-      return ["skills", "profiles", "create"];
-    case "profiles-edit":
-      return ["skills", "profiles", "edit"];
-    case "profiles-delete":
-      return ["skills", "profiles", "delete"];
     case "profiles-enable":
       return ["skills", "profiles", "enable"];
     case "profiles-disable":
       return ["skills", "profiles", "disable"];
     case "profiles-status":
       return ["skills", "profiles", "status"];
+    case "profiles-manage-definitions":
+      return ["catalog", "profiles"];
+  }
+}
+
+export function routeForCatalogProfilesLobbyChoice(value: CatalogProfilesLobbyChoiceValue): string[] {
+  switch (value) {
+    case "profiles-list":
+      return ["catalog", "profiles", "list"];
+    case "profiles-show":
+      return ["catalog", "profiles", "show"];
+    case "profiles-create":
+      return ["catalog", "profiles", "create"];
+    case "profiles-edit":
+      return ["catalog", "profiles", "edit"];
+    case "profiles-delete":
+      return ["catalog", "profiles", "delete"];
   }
 }
 
@@ -414,10 +448,21 @@ function renderSkillProfilesLobbyIntro(): string {
   return [
     "",
     sectionTitle("Skill profiles"),
-    fieldLine("Mode", "Profile management"),
-    fieldLine("Next step", "Pick a profile action; AFK will route you there."),
+    fieldLine("Mode", "Runtime profile operations"),
+    fieldLine("Next step", "Pick how to apply profile definitions."),
     "",
-    sectionTitle("What do you want to do with profiles?"),
+    sectionTitle("What do you want to do with active profiles?"),
+  ].join("\n");
+}
+
+function renderCatalogProfilesLobbyIntro(): string {
+  return [
+    "",
+    sectionTitle("Profile definitions"),
+    fieldLine("Mode", "Catalog definition management"),
+    fieldLine("Next step", "Pick how to edit profiles.json."),
+    "",
+    sectionTitle("What profile definition do you want to manage?"),
   ].join("\n");
 }
 

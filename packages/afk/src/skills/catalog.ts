@@ -104,7 +104,7 @@ export function loadSkillCatalog(options: {
   const categorization = loadCategorizationState(options.homeDir);
   const roots = skillRoots(options.homeDir, options.cwd)
     .filter((root) => rootMatchesScope(root, options.scope))
-    .filter((root) => !options.agent || root.agent === options.agent);
+    .filter((root) => rootMatchesAgent(root, options.agent));
 
   const records = roots.flatMap((root) => loadRootSkills(root, categorization));
   return {
@@ -115,12 +115,17 @@ export function loadSkillCatalog(options: {
 
 export type SkillListFilters = {
   category?: string | undefined;
+  enabled?: boolean | undefined;
   tag?: string | undefined;
   uncategorized?: boolean | undefined;
 };
 
 export function filterSkillRecords(records: SkillRecord[], filters: SkillListFilters): SkillRecord[] {
   return records.filter((record) => {
+    if (filters.enabled !== undefined && (record.storage === "active") !== filters.enabled) {
+      return false;
+    }
+
     if (filters.uncategorized && record.categoryId) {
       return false;
     }
@@ -801,7 +806,7 @@ function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
 }
 
 export function managedSkillAgents(): ManagedSkillAgent[] {
-  return knownAgentRoots.map((root) => root.agent);
+  return ["shared", ...knownAgentRoots.map((root) => root.agent)];
 }
 
 const knownAgentRoots: Array<{
@@ -858,6 +863,18 @@ function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
   }
 
   return root.kind === "project-agent";
+}
+
+function rootMatchesAgent(root: SkillRoot, agent: ManagedSkillAgent | undefined): boolean {
+  if (!agent) {
+    return true;
+  }
+
+  if (agent === "shared") {
+    return root.kind === "global-library";
+  }
+
+  return root.agent === agent;
 }
 
 function globalSkillsRoot(homeDir: string): string {

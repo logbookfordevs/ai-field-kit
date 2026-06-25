@@ -30,7 +30,6 @@ export function renderSkillDetails(record: SkillRecord): string {
     "",
     renderField("Root", record.rootLabel),
     renderField("Storage", record.storage),
-    renderField("Mode", record.readOnly ? "read-only" : "managed"),
     renderField("Auto", renderAutoInvocation(record)),
     record.autoInvocationDetails.length > 0 ? renderField("Auto source", record.autoInvocationDetails.join(", ")) : undefined,
     record.agent ? renderField("Agent", record.agent) : undefined,
@@ -246,19 +245,18 @@ export function renderPromptPreview(prompt: string): string {
 }
 
 export function renderSkillChoice(record: SkillRecord): string {
-  const details = [
-    muted(record.rootLabel),
-    record.storage === "disabled" ? warn("disabled") : success("active"),
-    record.readOnly ? muted("read-only") : accent("managed"),
-    renderAutoInvocationBadge(record),
-    record.category ? accent(record.category) : undefined,
-  ].filter((value): value is string => Boolean(value));
-
   return [
     strong(accent(record.name)),
     muted(`[${record.folder}]`),
-    details.join(` ${muted("·")} `),
-  ].filter(Boolean).join(" ");
+    muted(record.rootLabel),
+  ].join(" ");
+}
+
+export function renderSkillChoiceDescription(record: SkillRecord): string {
+  return [
+    truncate(record.description, 160),
+    renderSkillMetadataLine(record, { includeScope: false }),
+  ].filter(Boolean).join("\n");
 }
 
 function renderSkillGroup(label: string, records: SkillRecord[]): string[] {
@@ -271,11 +269,7 @@ function renderSkillGroup(label: string, records: SkillRecord[]): string[] {
 
 function renderSkillRow(record: SkillRecord, isLast: boolean): string {
   const branch = paint(terminalPalette.sienna, isLast ? "└" : "├");
-  const status = record.storage === "disabled" ? warn("disabled") : success("active");
-  const management = record.readOnly ? muted("read-only") : accent("managed");
-  const autoInvocation = muted(` · ${renderAutoInvocationBadge(record)}`);
-  const category = record.category ? muted(` · ${record.category}`) : "";
-  return `${branch} ${strong(record.name)} ${muted(`[${record.folder}]`)} ${status} ${management}${autoInvocation}${category}\n  ${muted(truncate(record.description, 120))}`;
+  return `${branch} ${strong(record.name)} ${muted(`[${record.folder}]`)} ${muted(record.rootLabel)}`;
 }
 
 function renderSkillProfileRow(profile: SkillProfileItem, enabled: boolean): string {
@@ -304,6 +298,23 @@ function renderLibrarySummary(records: SkillRecord[], categorization: SkillCateg
 
 function renderField(label: string, value: string): string {
   return `${muted(label.padEnd(10))} ${value}`;
+}
+
+function renderSkillMetadataLine(record: SkillRecord, options: { includeScope?: boolean } = {}): string {
+  const fields = [
+    options.includeScope === false ? undefined : renderMetadataField("Scope", muted(record.rootLabel)),
+    renderMetadataField("Status", record.storage === "disabled" ? warn("disabled") : success("active")),
+    renderMetadataField("Invocation", renderAutoInvocationBadge(record)),
+    record.agent ? renderMetadataField("Agent", accent(record.agent)) : undefined,
+    record.category ? renderMetadataField("Category", accent(record.category)) : undefined,
+    record.tags.length > 0 ? renderMetadataField("Tags", accent(record.tags.join(", "))) : undefined,
+  ].filter((value): value is string => Boolean(value));
+
+  return fields.join(` ${muted("·")} `);
+}
+
+function renderMetadataField(label: string, value: string): string {
+  return `${muted(`${label}:`)} ${value}`;
 }
 
 function renderAutoInvocation(record: SkillRecord): string {

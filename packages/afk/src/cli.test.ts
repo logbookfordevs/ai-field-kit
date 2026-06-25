@@ -27,18 +27,18 @@ test("runCli prints general help for top-level help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("Guided setup router for AI Field Kit."));
   assert.ok(output.join("\n").includes("afk refresh [category...] [options]"));
-  assert.ok(output.join("\n").includes("afk configure [options]"));
+  assert.ok(output.join("\n").includes("afk config [options]"));
   assert.ok(output.join("\n").includes("afk setup [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
   assert.ok(output.join("\n").includes("afk setup plugins [options]"));
   assert.ok(output.join("\n").includes("afk setup hooks [options]"));
   assert.ok(output.join("\n").includes("afk ui <command> [options]"));
   assert.ok(output.join("\n").includes("afk update [options]"));
-  assert.ok(output.join("\n").includes("afk catalog import [options]"));
+  assert.ok(output.join("\n").includes("afk catalog skills <command> [options]"));
   assert.ok(output.join("\n").includes("afk catalog profiles <command> [options]"));
   assert.ok(!output.join("\n").includes("afk setup utils"));
   assert.ok(output.join("\n").includes("afk show [category...] [options]"));
-  assert.ok(output.join("\n").includes("afk configure               Edit writable local catalog files"));
+  assert.ok(output.join("\n").includes("afk config                  Edit writable local catalog files"));
   assert.ok(output.join("\n").includes("afk catalog profiles        Edit skill profile definitions"));
   assert.ok(output.join("\n").includes("afk update                  Update AFK from the latest GitHub release"));
   assert.ok(!output.join("\n").includes("afk manifests configure [options]"));
@@ -90,16 +90,36 @@ test("runCli prints contextual refresh help", async () => {
   assert.ok(!output.join("\n").includes("--refresh-defaults"));
 });
 
-test("runCli prints contextual catalog import help", async () => {
+test("runCli prints contextual catalog skills import help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["catalog", "skills", "import", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK catalog skills import"));
+  assert.ok(text.includes("afk catalog skills import --local"));
+  assert.ok(text.includes("Backfill missing skills catalog entries"));
+  assert.ok(text.includes("original source can be recovered"));
+});
+
+test("runCli rejects old catalog import command", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["catalog", "import", "--help"]));
   const text = output.join("\n");
 
+  assert.equal(code, 1);
+  assert.ok(text.includes("Unknown command: catalog import"));
+});
+
+test("runCli prints contextual catalog skills import-status help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["catalog", "skills", "import-status", "--help"]));
+  const text = output.join("\n");
+
   assert.equal(code, 0);
-  assert.ok(text.includes("AFK catalog import"));
-  assert.ok(text.includes("afk catalog import --local"));
-  assert.ok(text.includes("Backfill missing skills catalog entries"));
-  assert.ok(text.includes("original source can be recovered"));
+  assert.ok(text.includes("AFK catalog skills import-status"));
+  assert.ok(text.includes("Compare installed shared skills with skills catalog entries."));
+  assert.ok(text.includes("afk catalog skills import-status --local"));
 });
 
 test("runCli rejects the removed refresh-defaults flag", async () => {
@@ -288,14 +308,23 @@ test("runCli prints contextual hooks help", async () => {
   assert.ok(!output.join("\n").includes("AFK setup skills"));
 });
 
-test("runCli prints contextual configure help", async () => {
+test("runCli prints contextual config help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["config", "--help"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("AFK config"));
+  assert.ok(output.join("\n").includes("Interactively edit writable AFK catalog files."));
+  assert.ok(output.join("\n").includes("afk config --local"));
+});
+
+test("runCli keeps configure as a legacy alias", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["configure", "--help"]));
 
   assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("AFK configure"));
-  assert.ok(output.join("\n").includes("Interactively edit writable AFK catalog files."));
-  assert.ok(output.join("\n").includes("afk configure --local"));
+  assert.ok(output.join("\n").includes("Legacy alias for afk config."));
+  assert.ok(output.join("\n").includes("Usage:\n  afk config"));
 });
 
 test("runCli prints configure help through legacy manifests alias", async () => {
@@ -303,8 +332,8 @@ test("runCli prints configure help through legacy manifests alias", async () => 
   const code = await withConsole(output, () => runCli(["manifests", "configure", "--help"]));
 
   assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("AFK configure"));
-  assert.ok(output.join("\n").includes("Usage:\n  afk configure"));
+  assert.ok(output.join("\n").includes("AFK config"));
+  assert.ok(output.join("\n").includes("Usage:\n  afk config"));
 });
 
 test("runCli prints contextual skills help", async () => {
@@ -314,6 +343,8 @@ test("runCli prints contextual skills help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK skills list"));
   assert.ok(output.join("\n").includes("--scope global|project|all"));
+  assert.ok(output.join("\n").includes("--agent shared|<agent>"));
+  assert.ok(output.join("\n").includes("--enabled true|false"));
   assert.ok(output.join("\n").includes("--category <id-or-label>"));
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
 });
@@ -352,6 +383,8 @@ test("runCli prints contextual skills open help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK skills open"));
   assert.ok(output.join("\n").includes("--app finder|code|cursor|zed|agy"));
+  assert.ok(output.join("\n").includes("--agent shared|<agent>"));
+  assert.ok(output.join("\n").includes("--enabled true|false"));
 });
 
 test("runCli prints contextual skills upgrade help", async () => {
@@ -373,6 +406,8 @@ test("runCli prints contextual skills delete help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills delete"));
+  assert.ok(text.includes("--agent shared|<agent>"));
+  assert.ok(text.includes("--enabled true|false"));
   assert.ok(text.includes("--manifest-only"));
 });
 
@@ -384,6 +419,8 @@ test("runCli prints contextual skills invocation help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills invocation"));
   assert.ok(text.includes("invocation [disable|enable] [folder]"));
+  assert.ok(text.includes("--agent shared|<agent>"));
+  assert.ok(text.includes("--enabled true|false"));
 });
 
 test("runCli prints contextual skills profiles help", async () => {
@@ -395,7 +432,8 @@ test("runCli prints contextual skills profiles help", async () => {
   assert.ok(text.includes("AFK skills profiles"));
   assert.ok(text.includes("enable <profile>"));
   assert.ok(text.includes("--local"));
-  assert.ok(text.includes("--always-on <skill>"));
+  assert.ok(!text.includes("--always-on <skill>"));
+  assert.ok(!text.includes("create <profile>"));
 });
 
 test("runCli prints contextual catalog profiles help", async () => {
@@ -408,46 +446,6 @@ test("runCli prints contextual catalog profiles help", async () => {
   assert.ok(text.includes("afk catalog profiles <command>"));
   assert.ok(text.includes("create <profile>"));
   assert.ok(text.includes("Use afk skills profiles enable|disable|status"));
-});
-
-test("runCli creates local skill profiles with repeated skill flags", async () => {
-  const homeDir = localHomeWithManifests({});
-  const cwd = mkdtempSync(join(tmpdir(), "afk-cli-profile-project-"));
-  const output: string[] = [];
-  const originalCwd = process.cwd();
-  process.chdir(cwd);
-
-  try {
-    const code = await withConsole(output, () => runCli(
-      [
-        "skills",
-        "profiles",
-        "create",
-        "video",
-        "--local",
-        "--name",
-        "Video",
-        "--skill",
-        "hyperframes",
-        "--skill",
-        "tailwind",
-        "--always-on",
-        "afk-compass",
-      ],
-      { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
-    ));
-
-    assert.equal(code, 0);
-    assert.ok(output.join("\n").includes("Profile Create Complete"));
-    const catalog = JSON.parse(readFileSync(join(cwd, "afk", "catalog", "profiles.json"), "utf8")) as {
-      alwaysOn: string[];
-      items: Array<{ id: string; name: string; skills: string[] }>;
-    };
-    assert.deepEqual(catalog.alwaysOn, ["afk-compass"]);
-    assert.deepEqual(catalog.items, [{ id: "video", name: "Video", skills: ["hyperframes", "tailwind"] }]);
-  } finally {
-    process.chdir(originalCwd);
-  }
 });
 
 test("runCli creates local catalog profiles with repeated skill flags", async () => {
@@ -490,6 +488,14 @@ test("runCli creates local catalog profiles with repeated skill flags", async ()
   }
 });
 
+test("runCli keeps profile definition operations under catalog profiles", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "profiles", "create", "video"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Use afk catalog profiles create instead."));
+});
+
 test("runCli keeps runtime profile operations under skills profiles", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["catalog", "profiles", "enable", "video"]));
@@ -525,6 +531,33 @@ test("runCli accepts skills delete manifest-only flag", async () => {
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Skill not found in skills.json manifest: beta"));
+});
+
+test("runCli validates skills enabled filter values", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "list", "--enabled", "maybe"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Invalid --enabled value: maybe"));
+});
+
+test("runCli rejects skills enabled filter where it is not meaningful", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "enable", "--enabled", "false"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown option: --enabled"));
+});
+
+test("runCli accepts explicit shared skill agent", async () => {
+  const homeDir = localHomeWithManifests({});
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(
+    ["skills", "list", "--agent", "shared"],
+    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+  ));
+
+  assert.equal(code, 0);
 });
 
 test("runCli validates skills upgrade scope", async () => {

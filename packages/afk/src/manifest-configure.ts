@@ -88,7 +88,7 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
   const touched = new Set<ManifestArea>();
 
   resetPromptSteps();
-  runtime.io.stdout("\nAFK configure");
+  runtime.io.stdout("\nAFK config");
   runtime.io.stdout(`Writing to: ${outputDir}`);
   runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
 
