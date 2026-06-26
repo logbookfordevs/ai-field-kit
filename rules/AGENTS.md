@@ -34,6 +34,7 @@ Treat explicit "AFK workflow" or "feature workflow" requests as composable AFK w
 - TypeScript changes must pass the repo typecheck before final handoff.
 
 ## React
+- Do not use ternaries inside JSX content. For one optional branch, use a positive `&&` check. For mutually exclusive branches or conditions with more than two checks, compute named variables before the return or extract a helper/component.
 - Conditional JSX should use named booleans, not chained `||` expressions inside `{condition && (...)}` blocks. Hoist OR logic above the return, such as `const showActions = isReady && canEdit`, then use `&&` with those names in JSX. For repeated status unions like `active | pending` or `loading | refreshing`, use shared helpers in `utils/`, such as `isActiveStatus`, instead of duplicating OR expressions.
 
 ## Commands
@@ -46,18 +47,17 @@ Treat explicit "AFK workflow" or "feature workflow" requests as composable AFK w
 - Check and follow the current project's package manager. Always chose pnpm in new projects.
 
 ## Tech Stack
-For web applications or related React work, use: Tailwind V4, TypeScript, and my preferred libraries where necessary.
+For web applications or React work, use Tailwind V4 and TypeScript.
 
 ## Frontend UX Defaults
-- UX quality beats avoiding setup. For standard app primitives in React/Tailwind, use the `afk-ui-registry-preferences` skill before choosing custom UI or a registry.
+- Do not choose a simpler implementation just to avoid setup when a richer interaction, mature primitive, or small amount of extra state materially improves UX. For standard app primitives in React/Tailwind, use the `afk-ui-registry-preferences` skill before choosing custom UI or a registry.
 - Prefer mature primitives or registry components when they materially improve UX, accessibility, responsiveness, or interaction quality.
 - Mobile is not degraded desktop; replace cramped, wrapped, clipped, or awkward controls with proper responsive patterns.
 
 ## Coding Style Instructions
-Optimize code for onboarding and day-2 maintenance without downgrading user experience for developer convenience.
-When the task is a review/refactor guidance, prefer explicit review.
+When reviewing or giving refactor guidance, use an explicit review stance.
 When evaluating code and thinking between solutions, apply `Truss Evaluation` skill as criteria.
-Be a critical thinking partner: challenge weak product or implementation directions, and make the codebase pleasant enough to maintain ambitious UX well.
+Challenge product or implementation directions that trade away user value mainly to reduce implementation effort.
 
 ## Browser
 - For browser automated tests, prefer `agent-browser` skill when no other option is specified.
