@@ -749,7 +749,7 @@ afk skills invocation disable afk-doc-craft --dry-run
 afk skills delete old-skill --dry-run
 afk skills upgrade --all
 afk skills categorize --dry-run
-afk catalog profiles create video --name Video --skill hyperframes --skill tailwind
+afk catalog profiles create video --name Video --skill hyperframes --skill tailwind --mode context
 afk skills profiles enable video --dry-run
 afk skills profiles status
 ```
@@ -808,6 +808,17 @@ rule. Instead, it keeps this set active:
 ```text
 alwaysOn + skills from every currently enabled profile
 ```
+
+The top-level `profiles.json` `mode` controls what happens to skills outside
+that set:
+
+| Mode | Behavior |
+|---|---|
+| `strict` | Default. Profiles act like an availability sandbox: active skills outside the kept set move to `.disabled`. |
+| `context` | Profiles act like a context filter: cataloged manual skills with `autoInvocation: false` stay active, while discoverable or uncataloged skills outside the kept set move to `.disabled`. |
+
+Use `afk catalog profiles create|edit --mode strict|context` to set the mode,
+or use the Profiles area in `afk config`.
 
 For example, if `captions` is not in profile X, is in profile Y, and is not in
 profile Z, enabling X, then Y, then Z keeps `captions` active because Y is still

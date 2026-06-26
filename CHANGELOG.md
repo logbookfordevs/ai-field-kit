@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+- `cli:` added profile reconciliation modes in `profiles.json`, with `strict` preserving existing profile filtering and `context` keeping cataloged manual skills active while profiles filter discoverable skills.
+
 ## v1.0.3 - 2026-06-23
 
 ### Added

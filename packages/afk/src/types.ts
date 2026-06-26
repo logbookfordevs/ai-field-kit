@@ -34,6 +34,7 @@ export type ManagedSkillAgent =
 export type SkillAgentFilter = ManagedSkillAgent | "shared";
 export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
+export type SkillProfileMode = "strict" | "context";
 export type SkillOpenApp = "finder" | "code" | "cursor" | "zed" | "agy";
 export type ManifestCategory = "rules" | "skills" | "mcps" | "plugins" | "hooks" | "presets";
 export type ManifestFilename = "skills.json" | "mcps.json" | "presets.json" | "rules.json" | "plugins.json" | "hooks.json";
@@ -86,6 +87,7 @@ export type CliOptions = {
   skillProfileName?: string | undefined;
   skillProfileSkills?: string[] | undefined;
   skillProfileAlwaysOn?: string[] | undefined;
+  skillProfileMode?: SkillProfileMode | undefined;
   uiCategory?: string;
   manifestShowReact: boolean;
   manifestShowVisualize: boolean;

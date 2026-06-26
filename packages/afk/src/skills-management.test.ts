@@ -516,6 +516,69 @@ test("multiple enabled profiles keep the union of profile skills", () => {
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "gamma")), true);
 });
 
+test("context profile mode keeps cataloged manual skills active", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-context-mode-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "manual", "Manual");
+  writeSkill(join(homeDir, ".agents", "skills"), "unknown", "Unknown");
+  writeSkillCatalog(homeDir, {
+    skills: [
+      { folder: "alpha", scope: "uncategorized" },
+      { folder: "manual", scope: "uncategorized" },
+    ],
+    items: [
+      { id: "alpha", label: "Alpha", source: "owner/kit", args: ["--skill", "alpha"], default: false, autoInvocation: true },
+      { id: "manual", label: "Manual", source: "owner/kit", args: ["--skill", "manual"], default: false, autoInvocation: false },
+    ],
+  });
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "focus", name: "Focus", skills: ["alpha"] }],
+  });
+
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "focus", false);
+
+  assert.deepEqual(enabled.state.profileMovedSkills, ["unknown"]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "manual")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "unknown")), true);
+});
+
+test("context profile mode restores manual skills moved by strict mode", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-context-restore-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "manual", "Manual");
+  writeSkillCatalog(homeDir, {
+    skills: [{ folder: "manual", scope: "uncategorized" }],
+    items: [
+      { id: "manual", label: "Manual", source: "owner/kit", args: ["--skill", "manual"], default: false, autoInvocation: false },
+    ],
+  });
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    mode: "strict",
+    alwaysOn: [],
+    items: [{ id: "focus", name: "Focus", skills: ["alpha"] }],
+  });
+
+  enableSkillProfile({ homeDir, cwd, local: false }, "focus", false);
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "focus", name: "Focus", skills: ["alpha"] }],
+  });
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "focus", false);
+
+  assert.deepEqual(enabled.state.profileMovedSkills, []);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "manual")), true);
+});
+
 test("runSkillsCommand rejects profile definition writes under skills profiles", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-command-"));
   const output: string[] = [];
@@ -878,7 +941,7 @@ test("renderSkillDeleteBatch summarizes multiple selected skills", () => {
 
 test("renderSkillProfileApply summarizes profile movements compactly", () => {
   assert.equal(renderSkillProfileApply({
-    catalog: { version: 1, alwaysOn: [], items: [] },
+    catalog: { version: 1, mode: "strict", alwaysOn: [], items: [] },
     state: { version: 1, enabledProfileIds: ["frontend"], profileMovedSkills: ["api"], preExistingDisabledSkills: [] },
     paths: {
       catalogPath: "/tmp/catalog/profiles.json",
@@ -896,6 +959,7 @@ test("renderSkillProfileApply summarizes profile movements compactly", () => {
   }), [
     "◆ Profile Move Complete",
     "Profiles   frontend",
+    "Mode       strict",
     "enabled  disabled  kept",
     "1        2         1   ",
     "Enabled    react",
@@ -1295,7 +1359,7 @@ function writeSkillCatalog(homeDir: string, content: unknown, options: { legacy?
   writeFileSync(path, `${JSON.stringify(options.legacy ? content : skillManifestFixture(content), null, 2)}\n`);
 }
 
-function writeSkillProfiles(homeDir: string, content: SkillProfileCatalog): void {
+function writeSkillProfiles(homeDir: string, content: SkillProfileCatalog | Omit<SkillProfileCatalog, "mode">): void {
   const path = join(localManifestDir(homeDir), "profiles.json");
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(content, null, 2)}\n`);
@@ -1310,13 +1374,14 @@ function skillManifestFixture(content: unknown): unknown {
     version?: number;
     scopes?: Array<{ id: string; label: string; description?: string }>;
     skills?: Array<{ folder: string; name?: string; scope: string; tags?: string[] }>;
+    items?: unknown[];
   };
 
   return {
     version: definition.version ?? 1,
     defaultSource: "",
     scopes: definition.scopes ?? [],
-    items: (definition.skills ?? []).map((skill) => ({
+    items: definition.items ?? (definition.skills ?? []).map((skill) => ({
       id: skill.folder,
       label: skill.name ?? skill.folder,
       source: "",

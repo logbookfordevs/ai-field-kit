@@ -280,11 +280,13 @@ async function runSkillProfileDefinitionsCommand(operands: string[], runtime: Ru
         id: selectedId,
         skills,
         alwaysOn: options.skillProfileAlwaysOn ?? [],
+        ...(options.skillProfileMode ? { mode: options.skillProfileMode } : {}),
         dryRun: options.dryRun,
         ...(profileName ? { name: profileName } : {}),
       });
       runtime.io.stdout(renderSkillProfileWrite({
         profile: result.profile,
+        mode: result.catalog.mode,
         catalogPath: result.paths.catalogPath,
         dryRun: result.dryRun,
         created: result.created,

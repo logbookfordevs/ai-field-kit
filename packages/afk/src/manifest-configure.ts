@@ -32,11 +32,11 @@ import {
 import type { SkillProfileCatalog } from "./skills/profiles.js";
 import { afkPromptTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import { searchableCheckbox } from "./searchable-checkbox.js";
-import type { Area, CliOptions, Runtime } from "./types.js";
+import type { Area, CliOptions, Runtime, SkillProfileMode } from "./types.js";
 
 type ManifestArea = Area | "profiles";
 type ManifestAreaChoice = ManifestArea | "finish";
-export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "edit-rules" | "back";
+export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "edit-rules" | "back";
 type EditableDraft = EditableManifest | SkillProfileCatalog;
 type Drafts = Record<ManifestArea, EditableDraft>;
 type SerializedDrafts = Partial<Record<`${ManifestArea}.json`, string>>;
@@ -62,6 +62,7 @@ export type ManifestConfigurePrompts = {
   selectArea: (choices: Array<SelectChoice<ManifestAreaChoice>>) => Promise<ManifestAreaChoice>;
   selectAction: (area: ManifestArea, choices: Array<SelectChoice<ManifestAction>>) => Promise<ManifestAction>;
   selectItem: (area: ManifestArea, choices: Array<SelectChoice<string>>, message: string) => Promise<string>;
+  selectProfileMode: (current: SkillProfileMode) => Promise<SkillProfileMode>;
   toggleBooleans: (area: ManifestArea, choices: BooleanToggleChoice[], message: string) => Promise<Record<string, boolean>>;
   input: (config: InputConfig) => Promise<string>;
   confirm: (message: string, defaultValue: boolean) => Promise<boolean>;
@@ -249,6 +250,13 @@ async function applyProfileAction(
   action: ManifestAction,
 ): Promise<SkillProfileCatalog> {
   const profileCatalog = normalizeProfileDraft(manifest);
+  if (action === "set-profile-mode") {
+    return {
+      ...profileCatalog,
+      mode: await prompts.selectProfileMode(profileCatalog.mode),
+    };
+  }
+
   if (action !== "toggle-always-on") {
     return profileCatalog;
   }
@@ -487,6 +495,7 @@ function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<Selec
 
   if (area === "profiles") {
     return [
+      { name: "Set profile mode", value: "set-profile-mode", description: "Choose strict availability or context-only filtering." },
       { name: "Toggle alwaysOn", value: "toggle-always-on", description: "Choose skills that stay active across enabled profiles." },
       { name: "Back to catalog", value: "back" },
     ];
@@ -534,6 +543,7 @@ function renderAreaSummary(area: ManifestArea, manifest: EditableDraft): string 
     return [
       "",
       "Profiles entries",
+      `- mode: ${profiles.mode}`,
       `- alwaysOn: ${profiles.alwaysOn.length > 0 ? profiles.alwaysOn.join(", ") : "(none)"}`,
       `- profiles: ${profiles.items.length}`,
     ].join("\n");
@@ -616,6 +626,8 @@ function actionLabel(action: ManifestAction): string {
       return "Toggle autoInvocation for";
     case "toggle-always-on":
       return "Toggle alwaysOn for";
+    case "set-profile-mode":
+      return "Set profile mode for";
     default:
       return "Select";
   }
@@ -707,7 +719,7 @@ function alwaysOnSearchAliases(item: EditableManifestItem): string[] {
 }
 
 function emptyProfileCatalog(): SkillProfileCatalog {
-  return { version: 1, alwaysOn: [], items: [] };
+  return { version: 1, mode: "strict", alwaysOn: [], items: [] };
 }
 
 function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
@@ -717,6 +729,7 @@ function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
 
   return {
     version: Math.max(value.version, 1),
+    mode: value.mode === "context" ? "context" : "strict",
     alwaysOn: uniqueStrings(value.alwaysOn),
     items: value.items
       .map((item) => ({
@@ -732,6 +745,7 @@ function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
 function isProfileCatalogDraft(value: unknown): value is SkillProfileCatalog {
   return isRecord(value) &&
     typeof value.version === "number" &&
+    (value.mode === undefined || value.mode === "strict" || value.mode === "context") &&
     Array.isArray(value.alwaysOn) &&
     value.alwaysOn.every((item) => typeof item === "string") &&
     Array.isArray(value.items) &&
@@ -820,6 +834,23 @@ function inquirerPrompts(): ManifestConfigurePrompts {
       message,
       choices,
       pageSize: 12,
+      theme: afkSelectTheme,
+    }),
+    selectProfileMode: async (current) => select<SkillProfileMode>({
+      message: "Choose profile mode",
+      choices: [
+        {
+          name: "strict",
+          value: "strict",
+          description: "Only alwaysOn and enabled profile skills stay active.",
+        },
+        {
+          name: "context",
+          value: "context",
+          description: "Keep manual skills active; filter discoverable skills by profile.",
+        },
+      ],
+      default: current,
       theme: afkSelectTheme,
     }),
     toggleBooleans: async (_area, choices, message) => toggleBooleanPrompt(message, choices),

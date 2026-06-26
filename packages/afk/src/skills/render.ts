@@ -158,7 +158,7 @@ export function renderSkillProfileList(input: {
   const enabled = new Set(input.state.enabledProfileIds);
   return [
     sectionTitle("Skill Profiles"),
-    muted(`${input.catalog.items.length} profiles · ${enabled.size} enabled · ${input.catalog.alwaysOn.length} always-on`),
+    muted(`${input.catalog.items.length} profiles · ${enabled.size} enabled · ${input.catalog.alwaysOn.length} always-on · ${input.catalog.mode} mode`),
     renderField("Catalog", input.catalogPath),
     "",
     ...input.catalog.items.map((profile) => renderSkillProfileRow(profile, enabled.has(profile.id))),
@@ -176,6 +176,7 @@ export function renderSkillProfileDetail(input: {
     sectionTitle("Skill Profile"),
     `${strong(accent(input.profile.name))} ${muted(`[${input.profile.id}]`)}`,
     renderField("State", enabled ? success("enabled") : muted("disabled")),
+    renderField("Mode", input.catalog.mode),
     renderField("Skills", input.profile.skills.length === 0 ? muted("none") : input.profile.skills.join(", ")),
     renderField("Always-on", input.catalog.alwaysOn.length === 0 ? muted("none") : input.catalog.alwaysOn.join(", ")),
     renderField("Catalog", input.catalogPath),
@@ -184,6 +185,7 @@ export function renderSkillProfileDetail(input: {
 
 export function renderSkillProfileWrite(input: {
   profile: SkillProfileItem;
+  mode: SkillProfileCatalog["mode"];
   catalogPath: string;
   dryRun: boolean;
   created: boolean;
@@ -192,6 +194,7 @@ export function renderSkillProfileWrite(input: {
   return [
     sectionTitle(input.dryRun ? `Profile ${verb} Preview` : `Profile ${verb} Complete`),
     `${input.dryRun ? muted("Would save") : accent("Saved")} ${strong(input.profile.name)} ${muted(`[${input.profile.id}]`)}`,
+    renderField("Mode", input.mode),
     renderField("Skills", input.profile.skills.length === 0 ? muted("none") : input.profile.skills.join(", ")),
     renderField("Catalog", input.catalogPath),
   ].join("\n");
@@ -218,6 +221,7 @@ export function renderSkillProfileApply(input: SkillProfileApplyResult): string 
   return [
     sectionTitle(input.dryRun ? "Profile Move Preview" : "Profile Move Complete"),
     renderField("Profiles", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
+    renderField("Mode", input.catalog.mode),
     renderSkillProfileApplyTable(enabled.length, disabled.length, input.keptSkills.length),
     renderSkillProfileApplyList("Enabled", enabled),
     renderSkillProfileApplyList("Disabled", disabled),
@@ -230,6 +234,7 @@ export function renderSkillProfileStatus(input: SkillProfileApplyResult): string
   return [
     sectionTitle("Skill Profile Status"),
     renderField("Enabled", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
+    renderField("Mode", input.catalog.mode),
     renderField("Always-on", input.catalog.alwaysOn.length === 0 ? muted("none") : input.catalog.alwaysOn.join(", ")),
     renderField("Kept", input.keptSkills.length === 0 ? muted("none") : input.keptSkills.join(", ")),
     renderField("Moved", input.state.profileMovedSkills.length === 0 ? muted("none") : input.state.profileMovedSkills.join(", ")),

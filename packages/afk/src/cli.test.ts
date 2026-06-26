@@ -471,6 +471,8 @@ test("runCli creates local catalog profiles with repeated skill flags", async ()
         "tailwind",
         "--always-on",
         "afk-compass",
+        "--mode",
+        "context",
       ],
       { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
     ));
@@ -478,9 +480,11 @@ test("runCli creates local catalog profiles with repeated skill flags", async ()
     assert.equal(code, 0);
     assert.ok(output.join("\n").includes("Profile Create Complete"));
     const catalog = JSON.parse(readFileSync(join(cwd, "afk", "catalog", "profiles.json"), "utf8")) as {
+      mode: string;
       alwaysOn: string[];
       items: Array<{ id: string; name: string; skills: string[] }>;
     };
+    assert.equal(catalog.mode, "context");
     assert.deepEqual(catalog.alwaysOn, ["afk-compass"]);
     assert.deepEqual(catalog.items, [{ id: "video", name: "Video", skills: ["hyperframes", "tailwind"] }]);
   } finally {

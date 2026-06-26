@@ -25,6 +25,7 @@ import type {
   SkillCategorizationMode,
   SkillCategorizationRunner,
   SkillOpenApp,
+  SkillProfileMode,
   SkillsListScope,
   SkillsListStorage,
   SkillsUpgradeScope,
@@ -772,11 +773,13 @@ const commandHelps: Record<string, CommandHelp> = {
       "--name <name>                     Set profile name for create/edit",
       "--skill <skill>                   Add profile skill; repeatable",
       "--always-on <skill>               Add global always-on skill; repeatable",
+      "--mode strict|context             Set profile reconciliation mode",
       "--json                            Print JSON for list/show",
     ],
     examples: [
       "afk catalog profiles list",
       "afk catalog profiles create video --name Video --skill hyperframes --skill tailwind",
+      "afk catalog profiles edit video --mode context",
       "afk catalog profiles edit video --skill hyperframes-cli",
       "afk catalog profiles show video --json",
     ],
@@ -1005,6 +1008,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillProfileName: string | undefined;
   const skillProfileSkills: string[] = [];
   const skillProfileAlwaysOn: string[] = [];
+  let skillProfileMode: SkillProfileMode | undefined;
   let uiCategory = "";
   let manifestShowReact = false;
   let manifestShowVisualize = false;
@@ -1380,6 +1384,16 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (isAfkCatalogProfilesCommand && arg === "--mode") {
+      const value = args[index + 1];
+      if (value !== "strict" && value !== "context") {
+        return { help: false, kind: "error", error: `Invalid --mode value: ${value ?? "(missing)"}` };
+      }
+      skillProfileMode = value;
+      index += 1;
+      continue;
+    }
+
     if (isAfkSkillsCommand && arg === "--runner") {
       const value = args[index + 1];
       if (value !== "codex-exec") {
@@ -1482,6 +1496,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillProfileName,
       skillProfileSkills,
       skillProfileAlwaysOn,
+      skillProfileMode,
       uiCategory,
       manifestShowReact,
       manifestShowVisualize,

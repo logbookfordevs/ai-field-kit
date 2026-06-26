@@ -16,6 +16,7 @@ import {
   type EditableManifest,
 } from "./manifest-editor.js";
 import type { SkillManifest } from "./manifest.js";
+import type { SkillProfileMode } from "./types.js";
 
 test("inferId prefers URL filename stems", () => {
   assert.equal(
@@ -317,6 +318,32 @@ test("runManifestConfigureWithPrompts toggles profile alwaysOn skills", async ()
   assert.deepEqual(written.alwaysOn, ["alpha"]);
 });
 
+test("runManifestConfigureWithPrompts sets profile mode", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
+    version: 1,
+    alwaysOn: [],
+    items: [],
+  }, null, 2)}\n`);
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: ["profiles", "finish"],
+      actions: ["set-profile-mode", "back"],
+      profileModes: ["context"],
+      confirms: [true],
+    }),
+  );
+
+  assert.equal(code, 0);
+  const written = JSON.parse(readFileSync(join(manifestDir, "profiles.json"), "utf8")) as { mode: string };
+  assert.equal(written.mode, "context");
+});
+
 test("runManifestConfigureWithPrompts edits project manifests for local configure", async () => {
   const cwd = mkdtempSync(join(tmpdir(), "afk-configure-project-"));
   const manifestDir = join(cwd, "afk", "catalog");
@@ -520,6 +547,7 @@ function scriptedPrompts(script: {
   items?: string[];
   inputs?: string[];
   confirms?: boolean[];
+  profileModes?: SkillProfileMode[];
   toggleValues?: Array<Record<string, boolean>>;
   onSelectItemChoices?: (choices: Array<{ name: string; value: string; description?: string }>) => void;
   onToggleChoices?: (choices: Array<{ name: string; value: string; enabled: boolean; description?: string }>) => void;
@@ -530,6 +558,7 @@ function scriptedPrompts(script: {
   const items = [...(script.items ?? [])];
   const inputs = [...(script.inputs ?? [])];
   const confirms = [...(script.confirms ?? [])];
+  const profileModes = [...(script.profileModes ?? [])];
   const toggleValues = [...(script.toggleValues ?? [])];
 
   return {
@@ -539,6 +568,7 @@ function scriptedPrompts(script: {
       script.onSelectItemChoices?.(choices);
       return nextValue(items, "item");
     },
+    selectProfileMode: async () => nextValue(profileModes, "profile mode"),
     toggleBooleans: async (_area, choices) => {
       script.onToggleChoices?.(choices);
       return nextValue(toggleValues, "toggle values");
