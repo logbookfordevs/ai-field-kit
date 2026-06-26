@@ -71,7 +71,7 @@
                 "command": "sh",
                 "args": [
                     "-c",
-                    "cd \"$HOME\" && npx --yes impeccable install --global --force -y"
+                    "npx --yes impeccable install --scope=global --providers=claude,codex --force -y"
                 ]
             },
             "default": false
