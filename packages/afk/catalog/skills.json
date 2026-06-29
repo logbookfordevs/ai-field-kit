@@ -395,6 +395,20 @@
             "composes": []
         },
         {
+            "id": "animation-vocabulary",
+            "label": "Animation Vocabulary",
+            "source": "https://github.com/emilkowalski/skills",
+            "args": [
+                "--skill",
+                "animation-vocabulary",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "writing-great-skills",
             "label": "Writing Great Skills",
             "source": "https://github.com/mattpocock/skills",

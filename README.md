@@ -310,7 +310,7 @@ AFK is strongest when it shapes the work first, then hands off to the best exter
 
 - **Grill With Docs (Matt Pocock Skills)**  
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs`  
-  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. In AFK Workflow, use it for brownfield work before PRD/spec creation and before executable slicing. It complements `afk-code-grill`: use code grill when implementation decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy. Matt's current version relies on `codebase-design` and `domain-modeling`, so install those alongside it.
+  Stress-test a draft, ADR, or plan against the project's domain language, existing code, `CONTEXT.md`, and prior ADRs. In AFK Workflow, use it for brownfield work before PRD/spec creation and before executable slicing. It complements `afk-code-grill`: use code grill when implementation decisions are fuzzy, and Grill With Docs when domain language or code/docs consistency is fuzzy. Matt's current version composes `grilling` with `domain-modeling`, so install those alongside it.
 
 - **Grill Me (Matt Pocock Skills)**
   Install: `npx skills add https://github.com/mattpocock/skills --skill grill-me`

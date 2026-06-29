@@ -11,6 +11,9 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+- `skills:` added Emil Kowalski's optional `animation-vocabulary` utility to the bundled catalog with invocation off.
+- `docs:` corrected the `grill-with-docs` companion-skill guidance to reflect its current `grilling` and `domain-modeling` composition.
+
 ## v1.0.3 - 2026-06-23
 
 ### Added
