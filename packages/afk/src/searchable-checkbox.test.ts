@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 import {
   filterSearchableCheckboxChoices,
+  filterSearchableCheckboxChoicesByTerms,
   normalizeSearchableCheckboxChoices,
   selectedSearchableCheckboxValues,
   toggleSearchableCheckboxChoice,
@@ -15,6 +16,16 @@ test("filterSearchableCheckboxChoices filters by name, short label, and descript
 
   assert.deepEqual(filterSearchableCheckboxChoices(choices, "docs").map((choice) => choice.value), ["alpha"]);
   assert.deepEqual(filterSearchableCheckboxChoices(choices, "beta skill").map((choice) => choice.value), ["beta"]);
+});
+
+test("filterSearchableCheckboxChoices filters by aliases and combined terms", () => {
+  const choices = normalizeSearchableCheckboxChoices([
+    { name: "Alpha Skill", value: "alpha", searchAliases: ["auto:on", "default:on"] },
+    { name: "Beta Skill", value: "beta", searchAliases: ["auto:off", "default:off"] },
+  ]);
+
+  assert.deepEqual(filterSearchableCheckboxChoices(choices, "auto:on").map((choice) => choice.value), ["alpha"]);
+  assert.deepEqual(filterSearchableCheckboxChoicesByTerms(choices, ["default:on", "auto:on"]).map((choice) => choice.value), ["alpha"]);
 });
 
 test("toggleSearchableCheckboxChoice keeps selection state outside filtered results", () => {

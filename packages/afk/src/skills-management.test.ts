@@ -29,7 +29,7 @@ import {
   skillProfilePaths,
   type SkillProfileCatalog,
 } from "./skills/profiles.js";
-import { renderSkillChoice, renderSkillDetails, renderSkillDeleteBatch, renderSkillProfileApply } from "./skills/render.js";
+import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch, renderSkillProfileApply } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 import { localManifestDir, projectManifestDir, type SkillManifest } from "./manifest.js";
@@ -266,6 +266,7 @@ test("filterSkillRecords filters by category, tag, and uncategorized", () => {
   writeSkill(join(homeDir, ".agents", "skills"), "doc-helper", "Doc Helper");
   writeSkill(join(homeDir, ".agents", "skills"), "review-helper", "Review Helper");
   writeSkill(join(homeDir, ".agents", "skills"), "plain-helper", "Plain Helper");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-helper", "Disabled Helper");
   writeSkillCatalog(homeDir, {
     version: 1,
     scopes: [
@@ -281,7 +282,9 @@ test("filterSkillRecords filters by category, tag, and uncategorized", () => {
 
   assert.deepEqual(filterSkillRecords(snapshot.records, { category: "Docs" }).map((record) => record.folder), ["doc-helper"]);
   assert.deepEqual(filterSkillRecords(snapshot.records, { tag: "critique" }).map((record) => record.folder), ["review-helper"]);
-  assert.deepEqual(filterSkillRecords(snapshot.records, { uncategorized: true }).map((record) => record.folder), ["plain-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { uncategorized: true }).map((record) => record.folder), ["plain-helper", "disabled-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "active" }).map((record) => record.folder), ["doc-helper", "plain-helper", "review-helper"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "disabled" }).map((record) => record.folder), ["disabled-helper"]);
 });
 
 test("filterSkillRecords filters by enabled and disabled storage", () => {
@@ -513,10 +516,71 @@ test("multiple enabled profiles keep the union of profile skills", () => {
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "gamma")), true);
 });
 
-test("runSkillsCommand profiles create writes profile catalog", async () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-command-"));
+test("context profile mode keeps cataloged manual skills active", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-context-mode-"));
   const homeDir = join(root, "home");
+  const cwd = join(root, "project");
   writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "manual", "Manual");
+  writeSkill(join(homeDir, ".agents", "skills"), "unknown", "Unknown");
+  writeSkillCatalog(homeDir, {
+    skills: [
+      { folder: "alpha", scope: "uncategorized" },
+      { folder: "manual", scope: "uncategorized" },
+    ],
+    items: [
+      { id: "alpha", label: "Alpha", source: "owner/kit", args: ["--skill", "alpha"], default: false, autoInvocation: true },
+      { id: "manual", label: "Manual", source: "owner/kit", args: ["--skill", "manual"], default: false, autoInvocation: false },
+    ],
+  });
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "focus", name: "Focus", skills: ["alpha"] }],
+  });
+
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "focus", false);
+
+  assert.deepEqual(enabled.state.profileMovedSkills, ["unknown"]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "manual")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "unknown")), true);
+});
+
+test("context profile mode restores manual skills moved by strict mode", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-context-restore-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "manual", "Manual");
+  writeSkillCatalog(homeDir, {
+    skills: [{ folder: "manual", scope: "uncategorized" }],
+    items: [
+      { id: "manual", label: "Manual", source: "owner/kit", args: ["--skill", "manual"], default: false, autoInvocation: false },
+    ],
+  });
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    mode: "strict",
+    alwaysOn: [],
+    items: [{ id: "focus", name: "Focus", skills: ["alpha"] }],
+  });
+
+  enableSkillProfile({ homeDir, cwd, local: false }, "focus", false);
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "focus", name: "Focus", skills: ["alpha"] }],
+  });
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "focus", false);
+
+  assert.deepEqual(enabled.state.profileMovedSkills, []);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "manual")), true);
+});
+
+test("runSkillsCommand rejects profile definition writes under skills profiles", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-command-"));
   const output: string[] = [];
 
   const code = await runSkillsCommand(["skills", "profiles", "create", "engineering"], outputRuntime(output), {
@@ -526,11 +590,8 @@ test("runSkillsCommand profiles create writes profile catalog", async () => {
     skillProfileAlwaysOn: ["afk-compass"],
   });
 
-  assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("Profile Create Complete"));
-  const catalog = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
-  assert.deepEqual(catalog.alwaysOn, ["afk-compass"]);
-  assert.deepEqual(catalog.items, [{ id: "engineering", name: "Engineering", skills: ["alpha"] }]);
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Use afk catalog profiles create instead."));
 });
 
 test("runSkillsCommand add delegates to skills add and imports installed skills into catalog", async () => {
@@ -772,6 +833,26 @@ test("runSkillsCommand deletes agent-specific global skills with --agent", async
   assert.ok(output.join("\n").includes(".claude/skills/frontend-design"));
 });
 
+test("runSkillsCommand deletes only disabled shared skills with --enabled false", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-shared-skill-delete-enabled-filter-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "active-demo", "Active Demo");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-demo", "Disabled Demo");
+
+  const code = await runSkillsCommand(["skills", "delete", "disabled-demo"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+    skillsAgent: "shared",
+    skillsListStorage: "disabled",
+  });
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("Delete Preview"));
+  assert.ok(output.join("\n").includes(".agents/skills/.disabled/disabled-demo"));
+  assert.ok(!output.join("\n").includes("active-demo"));
+});
+
 test("runSkillsCommand disables agent-specific global skills with --agent", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-disable-command-"));
   const homeDir = join(root, "home");
@@ -860,7 +941,7 @@ test("renderSkillDeleteBatch summarizes multiple selected skills", () => {
 
 test("renderSkillProfileApply summarizes profile movements compactly", () => {
   assert.equal(renderSkillProfileApply({
-    catalog: { version: 1, alwaysOn: [], items: [] },
+    catalog: { version: 1, mode: "strict", alwaysOn: [], items: [] },
     state: { version: 1, enabledProfileIds: ["frontend"], profileMovedSkills: ["api"], preExistingDisabledSkills: [] },
     paths: {
       catalogPath: "/tmp/catalog/profiles.json",
@@ -878,6 +959,7 @@ test("renderSkillProfileApply summarizes profile movements compactly", () => {
   }), [
     "◆ Profile Move Complete",
     "Profiles   frontend",
+    "Mode       strict",
     "enabled  disabled  kept",
     "1        2         1   ",
     "Enabled    react",
@@ -920,7 +1002,7 @@ test("buildSkillOpenCommand targets files, folders, and supported apps", () => {
   });
 });
 
-test("renderSkillChoice separates core picker fields", () => {
+test("renderSkillChoice keeps picker rows compact", () => {
   assert.equal(renderSkillChoice({
     folder: "demo",
     name: "Demo Skill",
@@ -939,7 +1021,7 @@ test("renderSkillChoice separates core picker fields", () => {
     autoInvocation: "enabled",
     autoInvocationSources: ["SKILL.md"],
     autoInvocationDetails: ["SKILL.md enables"],
-  }), "Demo Skill [demo] Global Library · active · managed · auto · Docs");
+  }), "Demo Skill [demo] Global Library");
 
   assert.equal(renderSkillChoice({
     folder: "disabled-demo",
@@ -959,7 +1041,32 @@ test("renderSkillChoice separates core picker fields", () => {
     autoInvocation: "disabled",
     autoInvocationSources: ["agents/openai.yaml"],
     autoInvocationDetails: ["agents/openai.yaml disables"],
-  }), "Disabled Demo [disabled-demo] Global Library / Disabled · disabled · managed · manual");
+  }), "Disabled Demo [disabled-demo] Global Library / Disabled");
+});
+
+test("renderSkillChoiceDescription adds hovered skill metadata below the picker", () => {
+  assert.equal(renderSkillChoiceDescription({
+    folder: "demo",
+    name: "Demo Skill",
+    originalName: "Demo Skill",
+    description: "Demo description",
+    rootLabel: "Global Library",
+    rootPath: "/tmp/skills",
+    skillFilePath: "/tmp/skills/demo/SKILL.md",
+    storage: "active",
+    rootKind: "global-library",
+    readOnly: false,
+    agent: "codex",
+    category: "Docs",
+    categoryId: "docs",
+    tags: ["writing"],
+    autoInvocation: "enabled",
+    autoInvocationSources: ["SKILL.md"],
+    autoInvocationDetails: ["SKILL.md enables"],
+  }), [
+    "Demo description",
+    "Status: active · Invocation: auto · Agent: codex · Category: Docs · Tags: writing",
+  ].join("\n"));
 });
 
 test("renderSkillDetails shows mixed auto invocation diagnostics", () => {
@@ -1252,7 +1359,7 @@ function writeSkillCatalog(homeDir: string, content: unknown, options: { legacy?
   writeFileSync(path, `${JSON.stringify(options.legacy ? content : skillManifestFixture(content), null, 2)}\n`);
 }
 
-function writeSkillProfiles(homeDir: string, content: SkillProfileCatalog): void {
+function writeSkillProfiles(homeDir: string, content: SkillProfileCatalog | Omit<SkillProfileCatalog, "mode">): void {
   const path = join(localManifestDir(homeDir), "profiles.json");
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(content, null, 2)}\n`);
@@ -1267,13 +1374,14 @@ function skillManifestFixture(content: unknown): unknown {
     version?: number;
     scopes?: Array<{ id: string; label: string; description?: string }>;
     skills?: Array<{ folder: string; name?: string; scope: string; tags?: string[] }>;
+    items?: unknown[];
   };
 
   return {
     version: definition.version ?? 1,
     defaultSource: "",
     scopes: definition.scopes ?? [],
-    items: (definition.skills ?? []).map((skill) => ({
+    items: definition.items ?? (definition.skills ?? []).map((skill) => ({
       id: skill.folder,
       label: skill.name ?? skill.folder,
       source: "",

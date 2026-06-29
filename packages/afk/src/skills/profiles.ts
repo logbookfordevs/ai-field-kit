@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { localAfkDir, localManifestDir, projectManifestDir } from "../manifest.js";
+import { localAfkDir, localManifestDir, projectManifestDir, type SkillManifestItem } from "../manifest.js";
+import type { SkillProfileMode } from "../types.js";
 
 export const skillProfilesFileName = "profiles.json";
 export const skillProfilesStateFileName = "skill-profiles.json";
@@ -13,6 +14,7 @@ export type SkillProfileItem = {
 
 export type SkillProfileCatalog = {
   version: number;
+  mode: SkillProfileMode;
   alwaysOn: string[];
   items: SkillProfileItem[];
 };
@@ -110,6 +112,7 @@ export function upsertSkillProfile(context: SkillProfileContext, input: {
   name?: string;
   skills: string[];
   alwaysOn: string[];
+  mode?: SkillProfileMode;
   dryRun: boolean;
 }): { catalog: SkillProfileCatalog; paths: SkillProfilePaths; profile: SkillProfileItem; created: boolean; dryRun: boolean } {
   const id = normalizeId(input.id);
@@ -126,6 +129,7 @@ export function upsertSkillProfile(context: SkillProfileContext, input: {
   };
   const next: SkillProfileCatalog = {
     ...catalog,
+    mode: input.mode ?? catalog.mode,
     alwaysOn: uniqueNormalized([...catalog.alwaysOn, ...input.alwaysOn]),
     items: existing
       ? catalog.items.map((item) => item.id === id ? profile : item)
@@ -262,6 +266,7 @@ function applySkillProfileState(
   const currentState = loadSkillProfileState(context);
   const active = existingSkillFolders(paths.skillsRoot);
   const disabled = existingSkillFolders(paths.disabledRoot);
+  const autoInvocationBySkill = skillAutoInvocationById(paths.catalogPath);
   const kept = new Set(keptSkillsFor(catalog, requestedState).map((skill) => skill.toLowerCase()));
   const hasEnabledProfiles = requestedState.enabledProfileIds.length > 0;
   const moved = new Set(currentState.profileMovedSkills.map((skill) => skill.toLowerCase()));
@@ -283,6 +288,10 @@ function applySkillProfileState(
       continue;
     }
 
+    if (!shouldProfileDisableSkill(folder, catalog.mode, autoInvocationBySkill) && !shouldReturnToDisabled) {
+      continue;
+    }
+
     movements.push({
       folder,
       source: join(paths.skillsRoot, folder),
@@ -298,7 +307,11 @@ function applySkillProfileState(
     const normalized = folder.toLowerCase();
     const wasProfileMoved = moved.has(normalized);
     const wasPreExistingDisabled = preExistingDisabled.has(normalized);
-    const shouldRestoreMoved = wasProfileMoved && (!hasEnabledProfiles || kept.has(normalized));
+    const shouldRestoreMoved = wasProfileMoved && (
+      !hasEnabledProfiles ||
+      kept.has(normalized) ||
+      !shouldProfileDisableSkill(folder, catalog.mode, autoInvocationBySkill)
+    );
     const shouldBorrowPreDisabled = wasPreExistingDisabled && hasEnabledProfiles && kept.has(normalized);
     if (!shouldRestoreMoved && !shouldBorrowPreDisabled) {
       continue;
@@ -317,7 +330,10 @@ function applySkillProfileState(
     version: 1,
     enabledProfileIds: requestedState.enabledProfileIds,
     profileMovedSkills: hasEnabledProfiles
-      ? [...profileMoved].filter((folder) => !kept.has(folder.toLowerCase())).sort()
+      ? [...profileMoved]
+        .filter((folder) => !kept.has(folder.toLowerCase()))
+        .filter((folder) => shouldProfileDisableSkill(folder, catalog.mode, autoInvocationBySkill))
+        .sort()
       : [],
     preExistingDisabledSkills: [...preExistingDisabled].sort(),
   };
@@ -375,6 +391,32 @@ function keptSkillsFor(catalog: SkillProfileCatalog, state: SkillProfileState): 
   ]);
 }
 
+function shouldProfileDisableSkill(folder: string, mode: SkillProfileMode, autoInvocationBySkill: Map<string, boolean>): boolean {
+  if (mode === "strict") {
+    return true;
+  }
+
+  return autoInvocationBySkill.get(folder.toLowerCase()) !== false;
+}
+
+function skillAutoInvocationById(profileCatalogPath: string): Map<string, boolean> {
+  const skillsCatalogPath = join(dirname(profileCatalogPath), "skills.json");
+  if (!existsSync(skillsCatalogPath)) {
+    return new Map();
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(skillsCatalogPath, "utf8")) as { items?: unknown[] };
+    return new Map(
+      (Array.isArray(parsed.items) ? parsed.items : [])
+        .filter((item): item is SkillManifestItem => isRecord(item) && typeof item.id === "string")
+        .map((item) => [item.id.toLowerCase(), item.autoInvocation !== false]),
+    );
+  } catch {
+    return new Map();
+  }
+}
+
 function existingSkillFolders(root: string): string[] {
   if (!existsSync(root)) {
     return [];
@@ -396,7 +438,7 @@ function readdirSafe(root: string): string[] {
 }
 
 function emptySkillProfileCatalog(): SkillProfileCatalog {
-  return { version: 1, alwaysOn: [], items: [] };
+  return { version: 1, mode: "strict", alwaysOn: [], items: [] };
 }
 
 function emptySkillProfileState(): SkillProfileState {
@@ -406,6 +448,7 @@ function emptySkillProfileState(): SkillProfileState {
 function normalizeSkillProfileCatalog(catalog: SkillProfileCatalog): SkillProfileCatalog {
   return {
     version: Math.max(catalog.version, 1),
+    mode: catalog.mode === "context" ? "context" : "strict",
     alwaysOn: uniqueNormalized(catalog.alwaysOn),
     items: catalog.items.map((item) => ({
       id: normalizeId(item.id),
@@ -427,6 +470,7 @@ function normalizeSkillProfileState(state: SkillProfileState): SkillProfileState
 function isSkillProfileCatalog(value: unknown): value is SkillProfileCatalog {
   return isRecord(value) &&
     typeof value.version === "number" &&
+    (value.mode === undefined || value.mode === "strict" || value.mode === "context") &&
     Array.isArray(value.alwaysOn) &&
     value.alwaysOn.every((item) => typeof item === "string") &&
     Array.isArray(value.items) &&
