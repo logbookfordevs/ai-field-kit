@@ -1,6 +1,6 @@
 ---
 name: afk-doc-craft
-description: Write, improve, or critique documentation using a reader-first playbook. Use when the user asks to create, rewrite, restructure, polish, or critique human-facing docs such as READMEs, guides, API docs, onboarding, troubleshooting, runbooks, implementation docs, and PR descriptions. Do not use for agent-facing instruction surfaces such as AGENTS.md, CLAUDE.md, SKILL.md, prompts, agent rules/policies, or skill content; also skip read-only documentation lookup, summarization, or context gathering.
+description: "Human-facing documentation only. Use when the user asks to create, rewrite, restructure, polish, or critique reader-facing docs such as READMEs, guides, API docs, onboarding, troubleshooting, runbooks, implementation docs, and PR descriptions. Do not use for agent-facing instruction work: AGENTS.md, CLAUDE.md, SKILL.md, prompts, agent rules, policies, workflows, skill/plugin content, or other harness instructions. Skip read-only documentation lookup, summarization, or context gathering."
 ---
 
 # AFK Doc Craft
