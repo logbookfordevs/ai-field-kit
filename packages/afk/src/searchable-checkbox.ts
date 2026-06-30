@@ -165,6 +165,36 @@ export function selectedSearchableCheckboxValues<Value>(
     .map((choice) => choice.value);
 }
 
+export function renderSearchableCheckboxBody(parts: {
+  page: string;
+  description?: string | undefined;
+  filterLine?: string | undefined;
+  selectedLine?: string | undefined;
+  errorLine?: string | undefined;
+  helpLine?: string | undefined;
+}): string {
+  const trailingLines = [
+    parts.filterLine,
+    parts.selectedLine,
+    parts.errorLine,
+    parts.helpLine,
+  ].filter((line): line is string => Boolean(line));
+  const lines = [parts.page];
+
+  if (parts.description) {
+    lines.push("", parts.description);
+  }
+
+  if (trailingLines.length > 0) {
+    if (!parts.description) {
+      lines.push("");
+    }
+    lines.push(...trailingLines);
+  }
+
+  return lines.join("\n").trimEnd();
+}
+
 export const searchableCheckbox = createPrompt(<Value>(config: {
   message: string;
   choices: ReadonlyArray<SearchableCheckboxChoice<Value>>;
@@ -175,7 +205,7 @@ export const searchableCheckbox = createPrompt(<Value>(config: {
   theme?: SearchableCheckboxThemeConfig;
   validate?: (choices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>) => boolean | string | Promise<boolean | string>;
 }, done: (value: Value[]) => void) => {
-  const { pageSize = 10, required = false, validate = () => true } = config;
+  const { pageSize = 12, required = false, validate = () => true } = config;
   const theme = makeTheme<SearchableCheckboxTheme>(defaultTheme, config.theme);
   const [status, setStatus] = useState("idle");
   const [searchTerm, setSearchTerm] = useState("");
@@ -291,15 +321,14 @@ export const searchableCheckbox = createPrompt(<Value>(config: {
         ["space", "toggle"],
         ["⏎", "submit"],
       ]);
-  const body = [
-    visibleItems.length > 0 ? page : theme.style.noMatches("No matches"),
-    " ",
+  const body = renderSearchableCheckboxBody({
+    page: visibleItems.length > 0 ? page : theme.style.noMatches("No matches"),
     description,
     filterLine,
     selectedLine,
-    error ? theme.style.error(error) : "",
+    errorLine: error ? theme.style.error(error) : "",
     helpLine,
-  ].filter(Boolean).join("\n").trimEnd();
+  });
 
   return [header, body];
 });

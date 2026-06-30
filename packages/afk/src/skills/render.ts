@@ -264,7 +264,7 @@ export function renderSkillChoiceDescription(record: SkillRecord): string {
   return [
     truncate(record.description, 160),
     renderSkillMetadataLine(record, { includeScope: false }),
-  ].filter(Boolean).join("\n");
+  ].filter(Boolean).join("\n\n");
 }
 
 function renderSkillGroup(label: string, records: SkillRecord[]): string[] {

@@ -1065,6 +1065,7 @@ test("renderSkillChoiceDescription adds hovered skill metadata below the picker"
     autoInvocationDetails: ["SKILL.md enables"],
   }), [
     "Demo description",
+    "",
     "Status: active · Invocation: auto · Agent: codex · Category: Docs · Tags: writing",
   ].join("\n"));
 });

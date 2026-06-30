@@ -4,6 +4,7 @@ import {
   filterSearchableCheckboxChoices,
   filterSearchableCheckboxChoicesByTerms,
   normalizeSearchableCheckboxChoices,
+  renderSearchableCheckboxBody,
   selectedSearchableCheckboxValues,
   toggleSearchableCheckboxChoice,
 } from "./searchable-checkbox.js";
@@ -46,4 +47,26 @@ test("toggleSearchableCheckboxChoice ignores disabled choices", () => {
   ]);
 
   assert.deepEqual(selectedSearchableCheckboxValues(toggleSearchableCheckboxChoice(choices, 0)), []);
+});
+
+test("renderSearchableCheckboxBody lets description metadata touch help text", () => {
+  assert.equal(
+    renderSearchableCheckboxBody({
+      page: "□ alpha\n◆ □ beta",
+      description: [
+        "Beta helps with browser automation.",
+        "",
+        "Status: active · Invocation: auto",
+      ].join("\n"),
+      helpLine: "Use space to toggle, enter to continue.",
+    }),
+    [
+      "□ alpha\n◆ □ beta",
+      "",
+      "Beta helps with browser automation.",
+      "",
+      "Status: active · Invocation: auto",
+      "Use space to toggle, enter to continue.",
+    ].join("\n"),
+  );
 });
