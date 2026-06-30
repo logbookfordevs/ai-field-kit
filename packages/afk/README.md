@@ -126,7 +126,7 @@ afk setup hooks --dry-run
 afk refresh
 
 # Edit writable local catalog files
-afk configure
+afk config
 
 # Inspect the local catalog cache
 afk show
@@ -137,7 +137,7 @@ afk ui list --category motion
 afk ui get baseline-ui
 
 # Backfill skills catalog entries from installed skills
-afk catalog import --dry-run
+afk catalog skills import --dry-run
 ```
 
 Compatibility aliases such as `afk setup skills install` and
@@ -317,16 +317,21 @@ that browser handoff.
 
 ### Catalog Import
 
-Use `afk catalog import` when skills are already installed through the official
+Use `afk catalog skills import` when skills are already installed through the official
 `skills` CLI and you want AFK's local catalog to catch up.
 
 ```bash
-afk catalog import --dry-run
-afk catalog import
-afk catalog import --local
+afk catalog skills import-status
+afk catalog skills import --dry-run
+afk catalog skills import
+afk catalog skills import --local
 ```
 
-The command scans installed skill folders, reads the `skills` CLI lockfile, and
+`import-status` compares installed shared skills with `skills.json`, showing
+how many skills are not imported yet and how many catalog entries are not
+currently installed.
+
+`import` scans installed skill folders, reads the `skills` CLI lockfile, and
 adds only missing entries to `skills.json`. It does not remove or overwrite
 existing catalog entries.
 
@@ -381,7 +386,7 @@ hooks.json
 AFK has a small cache/source split:
 
 - `afk refresh` updates local catalog cache files.
-- `afk catalog import` backfills `skills.json` from installed skills with lock metadata.
+- `afk catalog skills import` backfills `skills.json` from installed skills with lock metadata.
 - `afk show` inspects the cache by default.
 - `afk setup` applies the cache by default.
 - `--source` reads a source for one command without changing the cache or saved default.
@@ -478,7 +483,7 @@ afk show skills --source your-org/dev-kit
 afk refresh --default-source your-org/dev-kit
 ```
 
-Use `afk configure` for small edits to writable local catalog files. It edits
+Use `afk config` for small edits to writable local catalog files. It edits
 the global AFK catalog cache by default, or `./afk/catalog` with `--local`.
 For shared defaults, prefer editing the source repository directly and then
 refreshing from that source.
@@ -731,6 +736,7 @@ Manage local skills:
 ```bash
 afk skills list
 afk skills list --scope global --json
+afk skills list --agent shared --enabled false
 afk skills list --scope global --agent codex
 afk skills list --scope project --agent claude
 afk skills list --category Docs --tag writing
@@ -741,10 +747,11 @@ afk skills show afk-note
 afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
 afk skills enable old-skill
+afk skills invocation disable afk-doc-craft --dry-run
 afk skills delete old-skill --dry-run
 afk skills upgrade --all
 afk skills categorize --dry-run
-afk catalog profiles create video --name Video --skill hyperframes --skill tailwind
+afk catalog profiles create video --name Video --skill hyperframes --skill tailwind --mode context
 afk skills profiles enable video --dry-run
 afk skills profiles status
 ```
@@ -774,26 +781,63 @@ remain easy to read.
 `afk skills list` reads the shared global library, current-project Codex and
 Claude roots, and installed-agent roots such as Codex, Claude, Gemini,
 OpenCode, Cursor, Zed, and Kiro when they exist. Use `--scope
-global|project|all` to choose root families, `--agent` to focus on an agent,
-and `--category`, `--tag`, or `--uncategorized` to filter AFK catalog
-metadata.
+global|project|all` to choose root families, `--agent shared` to focus on the
+shared library, `--agent <agent>` to focus on one agent, `--enabled
+true|false` to filter active or disabled folders, and `--category`, `--tag`,
+or `--uncategorized` to filter AFK catalog metadata. The same `--enabled
+true|false` folder filter is also available on `afk skills show`, `open`,
+`delete`, and `invocation` when a command needs to choose from discovered skill
+folders.
 
 `afk skills disable`, `afk skills enable`, and `afk skills delete` can manage
-the shared global library by default, or agent-specific roots when `--agent` is
-provided. Delete is permanent; use `--dry-run` to preview the selected folders
-before removing them.
+the shared global library by default, or explicitly with `--agent shared`.
+They can manage agent-specific roots when `--agent <agent>` is provided.
+`afk skills delete --enabled false` is useful when pruning disabled skills.
+Delete is permanent; use `--dry-run` to preview the selected folders before
+removing them.
 
 `afk catalog profiles` edits focus profile definitions in `profiles.json`. A
 profile is a named group of skill folders. `afk skills profiles
 enable|disable|status` applies those definitions to the shared global skill
-library. Enabling one or more profiles keeps the union of their skills plus
-top-level `alwaysOn` skills enabled, temporarily moves other active global
-skills into `.disabled`, and can temporarily enable a previously disabled skill
-when an enabled profile keeps it. Disabling profiles restores AFK-moved skills
-and returns previously disabled skills to disabled once no enabled profile keeps
-them.
-`afk configure` can edit profile-level `alwaysOn` skills from the Profiles
-catalog area.
+library.
+
+#### Profile math: what stays on
+
+Profiles are reconciled from the desired final state each time you enable or
+disable one. AFK does not treat a skill's absence from a profile as a negative
+rule. Instead, it keeps this set active:
+
+```text
+alwaysOn + skills from every currently enabled profile
+```
+
+The top-level `profiles.json` `mode` controls what happens to skills outside
+that set:
+
+| Mode | Behavior |
+|---|---|
+| `strict` | Default. Profiles act like an availability sandbox: active skills outside the kept set move to `.disabled`. |
+| `context` | Profiles act like a context filter: cataloged manual skills with `autoInvocation: false` stay active, while discoverable or uncataloged skills outside the kept set move to `.disabled`. |
+
+Use `afk catalog profiles create|edit --mode strict|context` to set the mode,
+or use the Profiles area in `afk config`.
+
+For example, if `captions` is not in profile X, is in profile Y, and is not in
+profile Z, enabling X, then Y, then Z keeps `captions` active because Y is still
+enabled. If Y is disabled later and no remaining enabled profile includes
+`captions`, AFK can move it back to `.disabled`.
+
+While profiles are enabled, AFK temporarily moves other active global skills
+into `.disabled`. If a profile needs a skill that was already disabled before
+profiles touched it, AFK can temporarily enable it, then return it to disabled
+once no enabled profile keeps it.
+
+`afk config` can edit profile-level `alwaysOn` skills from the Profiles
+catalog area. In the interactive always-on picker, existing `alwaysOn` skills
+start checked. Use search to filter by text, or press `1` for auto-invocation
+on, `2` for auto-invocation off, `3` for default on, and `4` for
+start-disabled skills. Press the same number again to clear that shortcut
+filter.
 
 Global profile definitions live at:
 
@@ -810,10 +854,8 @@ Runtime restore state lives separately at:
 Use `--local` with `afk catalog profiles ...` to read and write profile
 definitions in the current project under `./afk/catalog/profiles.json`. Use
 `--local` with `afk skills profiles ...` when applying project-local profile
-state under `./afk/state/skill-profiles.json`. During the transition, `afk
-skills profiles create|edit|delete` remain aliases for definition edits. V1
-still applies the resulting profile filter to the shared global skill library
-at `~/.agents/skills`.
+state under `./afk/state/skill-profiles.json`. V1 still applies the resulting
+profile filter to the shared global skill library at `~/.agents/skills`.
 
 `afk skills open` can open a skill file or folder in Finder, VS Code, Cursor,
 Zed, or Antigravity.

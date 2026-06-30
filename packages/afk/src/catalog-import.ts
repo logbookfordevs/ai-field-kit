@@ -25,6 +25,15 @@ type ImportPlan = {
   targetCatalogPath: string;
 };
 
+export type CatalogSkillsImportStatus = {
+  notImported: string[];
+  catalogOnly: string[];
+  installed: string[];
+  cataloged: string[];
+  sourceSkillsDir: string;
+  targetCatalogPath: string;
+};
+
 type CatalogImportOptions = Pick<CliOptions, "homeDir" | "cwd" | "dryRun" | "manifestLocal"> & {
   startDisabled?: boolean;
 };
@@ -50,6 +59,11 @@ export async function runCatalogImport(runtime: Runtime, options: CliOptions): P
   }
 
   runtime.io.stdout(renderImportComplete(plan, summarizeOperations(plan.operations)));
+  return 0;
+}
+
+export async function runCatalogImportStatus(runtime: Runtime, options: CliOptions): Promise<number> {
+  runtime.io.stdout(renderImportStatus(planCatalogImportStatus(options), options.manifestLocal ? "project" : "global"));
   return 0;
 }
 
@@ -97,6 +111,25 @@ export function planCatalogImport(options: CatalogImportOptions): ImportPlan {
     skippedExisting,
     sourceSkillsDir,
     sourceLockPath,
+    targetCatalogPath,
+  };
+}
+
+export function planCatalogImportStatus(options: CatalogImportOptions): CatalogSkillsImportStatus {
+  const sourceSkillsDir = sourceSkillsDirForOptions(options);
+  const targetCatalogPath = join(options.manifestLocal ? projectManifestDir(options.cwd) : localManifestDir(options.homeDir), "skills.json");
+  const catalog = readSkillCatalog(targetCatalogPath);
+  const installed = installedSkillIdsWithDisabledFrom(sourceSkillsDir);
+  const installedIds = new Set(installed);
+  const cataloged = catalog.items.map((item) => item.id).filter(Boolean).sort((left, right) => left.localeCompare(right));
+  const catalogedIds = new Set(cataloged);
+
+  return {
+    notImported: installed.filter((id) => !catalogedIds.has(id)),
+    catalogOnly: cataloged.filter((id) => !installedIds.has(id)),
+    installed,
+    cataloged,
+    sourceSkillsDir,
     targetCatalogPath,
   };
 }
@@ -170,6 +203,17 @@ function installedSkillIdsFrom(skillsDir: string): string[] {
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith(".") && existsSync(join(skillsDir, entry.name, "SKILL.md")))
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right));
+}
+
+function installedSkillIdsWithDisabledFrom(skillsDir: string): string[] {
+  return uniqueSorted([
+    ...installedSkillIdsFrom(skillsDir),
+    ...installedSkillIdsFrom(join(skillsDir, ".disabled")),
+  ]);
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }
 
 function skillManifestItemFromInstalledSkill(id: string, skillsDir: string, source: string, startDisabled: boolean): SkillManifestItem {
@@ -278,6 +322,24 @@ function renderImportSummary(plan: ImportPlan): string {
     renderCountBlock("Imported", plan.imported.length, plan.imported.map((item) => item.id), terminalPalette.harbor),
     renderCountBlock("Already cataloged", plan.skippedExisting.length, [], terminalPalette.driftwood),
     renderCountBlock("Missing lock metadata", plan.skippedNoLock.length, plan.skippedNoLock, terminalPalette.ember),
+  ].join("\n");
+}
+
+function renderImportStatus(status: CatalogSkillsImportStatus, scope: "global" | "project"): string {
+  return [
+    "",
+    sectionTitle("Catalog Skills Status"),
+    muted(`Compare installed shared skills with the ${scope} AFK skills catalog.`),
+    "",
+    renderPathRow("Scope", scope),
+    renderPathRow("Skills", status.sourceSkillsDir),
+    renderPathRow("Catalog", status.targetCatalogPath),
+    "",
+    sectionTitle("Import Status"),
+    renderCountBlock("Installed", status.installed.length, [], terminalPalette.harbor),
+    renderCountBlock("Cataloged", status.cataloged.length, [], terminalPalette.driftwood),
+    renderCountBlock("Not imported yet", status.notImported.length, status.notImported, terminalPalette.ember),
+    renderCountBlock("Catalog only", status.catalogOnly.length, status.catalogOnly, terminalPalette.brass),
   ].join("\n");
 }
 

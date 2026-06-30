@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { emitKeypressEvents } from "node:readline";
 import { confirm, input, select } from "@inquirer/prompts";
 import {
   addManifestItem,
@@ -32,11 +31,12 @@ import {
 } from "./manifest.js";
 import type { SkillProfileCatalog } from "./skills/profiles.js";
 import { afkPromptTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
-import type { Area, CliOptions, Runtime } from "./types.js";
+import { searchableCheckbox } from "./searchable-checkbox.js";
+import type { Area, CliOptions, Runtime, SkillProfileMode } from "./types.js";
 
 type ManifestArea = Area | "profiles";
 type ManifestAreaChoice = ManifestArea | "finish";
-export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "edit-rules" | "back";
+export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "edit-rules" | "back";
 type EditableDraft = EditableManifest | SkillProfileCatalog;
 type Drafts = Record<ManifestArea, EditableDraft>;
 type SerializedDrafts = Partial<Record<`${ManifestArea}.json`, string>>;
@@ -55,12 +55,14 @@ type BooleanToggleChoice = {
   value: string;
   enabled: boolean;
   description?: string;
+  searchAliases?: string[];
 };
 
 export type ManifestConfigurePrompts = {
   selectArea: (choices: Array<SelectChoice<ManifestAreaChoice>>) => Promise<ManifestAreaChoice>;
   selectAction: (area: ManifestArea, choices: Array<SelectChoice<ManifestAction>>) => Promise<ManifestAction>;
   selectItem: (area: ManifestArea, choices: Array<SelectChoice<string>>, message: string) => Promise<string>;
+  selectProfileMode: (current: SkillProfileMode) => Promise<SkillProfileMode>;
   toggleBooleans: (area: ManifestArea, choices: BooleanToggleChoice[], message: string) => Promise<Record<string, boolean>>;
   input: (config: InputConfig) => Promise<string>;
   confirm: (message: string, defaultValue: boolean) => Promise<boolean>;
@@ -88,7 +90,7 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
   const touched = new Set<ManifestArea>();
 
   resetPromptSteps();
-  runtime.io.stdout("\nAFK configure");
+  runtime.io.stdout("\nAFK config");
   runtime.io.stdout(`Writing to: ${outputDir}`);
   runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
 
@@ -248,6 +250,13 @@ async function applyProfileAction(
   action: ManifestAction,
 ): Promise<SkillProfileCatalog> {
   const profileCatalog = normalizeProfileDraft(manifest);
+  if (action === "set-profile-mode") {
+    return {
+      ...profileCatalog,
+      mode: await prompts.selectProfileMode(profileCatalog.mode),
+    };
+  }
+
   if (action !== "toggle-always-on") {
     return profileCatalog;
   }
@@ -486,6 +495,7 @@ function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<Selec
 
   if (area === "profiles") {
     return [
+      { name: "Set profile mode", value: "set-profile-mode", description: "Choose strict availability or context-only filtering." },
       { name: "Toggle alwaysOn", value: "toggle-always-on", description: "Choose skills that stay active across enabled profiles." },
       { name: "Back to catalog", value: "back" },
     ];
@@ -533,6 +543,7 @@ function renderAreaSummary(area: ManifestArea, manifest: EditableDraft): string 
     return [
       "",
       "Profiles entries",
+      `- mode: ${profiles.mode}`,
       `- alwaysOn: ${profiles.alwaysOn.length > 0 ? profiles.alwaysOn.join(", ") : "(none)"}`,
       `- profiles: ${profiles.items.length}`,
     ].join("\n");
@@ -615,6 +626,8 @@ function actionLabel(action: ManifestAction): string {
       return "Toggle autoInvocation for";
     case "toggle-always-on":
       return "Toggle alwaysOn for";
+    case "set-profile-mode":
+      return "Set profile mode for";
     default:
       return "Select";
   }
@@ -685,12 +698,28 @@ function alwaysOnToggleChoices(profiles: SkillProfileCatalog, skillsManifest: Ed
       value: id,
       enabled,
       description: item ? itemDescription(item) : "Missing from skills catalog",
+      searchAliases: item ? alwaysOnSearchAliases(item) : ["missing:true"],
     };
   });
 }
 
+function alwaysOnSearchAliases(item: EditableManifestItem): string[] {
+  const aliases = [
+    `default:${booleanState(item.default)}`,
+  ];
+  if ("autoInvocation" in item) {
+    aliases.push(`auto:${booleanState(item.autoInvocation ?? true)}`);
+    aliases.push(`autoInvocation:${booleanState(item.autoInvocation ?? true)}`);
+  }
+  if ("startDisabled" in item) {
+    aliases.push(`startDisabled:${booleanState(item.startDisabled ?? false)}`);
+    aliases.push(`start-disabled:${booleanState(item.startDisabled ?? false)}`);
+  }
+  return aliases;
+}
+
 function emptyProfileCatalog(): SkillProfileCatalog {
-  return { version: 1, alwaysOn: [], items: [] };
+  return { version: 1, mode: "strict", alwaysOn: [], items: [] };
 }
 
 function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
@@ -700,6 +729,7 @@ function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
 
   return {
     version: Math.max(value.version, 1),
+    mode: value.mode === "context" ? "context" : "strict",
     alwaysOn: uniqueStrings(value.alwaysOn),
     items: value.items
       .map((item) => ({
@@ -715,6 +745,7 @@ function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
 function isProfileCatalogDraft(value: unknown): value is SkillProfileCatalog {
   return isRecord(value) &&
     typeof value.version === "number" &&
+    (value.mode === undefined || value.mode === "strict" || value.mode === "context") &&
     Array.isArray(value.alwaysOn) &&
     value.alwaysOn.every((item) => typeof item === "string") &&
     Array.isArray(value.items) &&
@@ -805,6 +836,23 @@ function inquirerPrompts(): ManifestConfigurePrompts {
       pageSize: 12,
       theme: afkSelectTheme,
     }),
+    selectProfileMode: async (current) => select<SkillProfileMode>({
+      message: "Choose profile mode",
+      choices: [
+        {
+          name: "strict",
+          value: "strict",
+          description: "Only alwaysOn and enabled profile skills stay active.",
+        },
+        {
+          name: "context",
+          value: "context",
+          description: "Keep manual skills active; filter discoverable skills by profile.",
+        },
+      ],
+      default: current,
+      theme: afkSelectTheme,
+    }),
     toggleBooleans: async (_area, choices, message) => toggleBooleanPrompt(message, choices),
     input: askInput,
     confirm: askConfirm,
@@ -816,99 +864,31 @@ async function toggleBooleanPrompt(message: string, choices: BooleanToggleChoice
     return {};
   }
 
-  const stdin = process.stdin;
-  const stdout = process.stdout;
-  const values = choices.map((choice) => choice.enabled);
-
-  if (!stdin.isTTY || !stdout.isTTY) {
-    return booleanRecord(choices, values);
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return booleanRecord(choices, choices.map((choice) => choice.enabled));
   }
 
-  return new Promise<Record<string, boolean>>((resolve, reject) => {
-    let index = 0;
-    let renderedLines = 0;
-    const wasRaw = stdin.isRaw;
-
-    const cleanup = (): void => {
-      stdin.off("keypress", onKeypress);
-      if (typeof stdin.setRawMode === "function") {
-        stdin.setRawMode(wasRaw);
-      }
-      stdout.write("\x1b[?25h\n");
-    };
-
-    const render = (): void => {
-      if (renderedLines > 0) {
-        stdout.write(`\x1b[${renderedLines}A`);
-      }
-
-      const lines = [
-        `◇ ${message}`,
-        "  ↑/↓ move · ← off · → on · space toggle · enter save",
-        ...choices.map((choice, choiceIndex) => {
-          const cursor = choiceIndex === index ? "◆" : " ";
-          const description = choice.description ? ` · ${choice.description}` : "";
-          return `${cursor} ${booleanSwitch(values[choiceIndex] ?? false)} ${choice.name.replace(/^\[(?:on |off)\]\s+/, "")}${description}`;
-        }),
-      ];
-
-      stdout.write(lines.map((line) => `\x1b[2K${line}`).join("\n"));
-      renderedLines = lines.length;
-    };
-
-    const onKeypress = (_input: string, key: KeypressInfo): void => {
-      if (key.ctrl && key.name === "c") {
-        cleanup();
-        const error = new Error("User force closed the prompt with SIGINT");
-        error.name = "ExitPromptError";
-        reject(error);
-        return;
-      }
-
-      if (key.name === "up") {
-        index = index === 0 ? choices.length - 1 : index - 1;
-        render();
-        return;
-      }
-
-      if (key.name === "down") {
-        index = index === choices.length - 1 ? 0 : index + 1;
-        render();
-        return;
-      }
-
-      if (key.name === "left") {
-        values[index] = false;
-        render();
-        return;
-      }
-
-      if (key.name === "right") {
-        values[index] = true;
-        render();
-        return;
-      }
-
-      if (key.name === "space") {
-        values[index] = !(values[index] ?? false);
-        render();
-        return;
-      }
-
-      if (key.name === "return" || key.name === "enter") {
-        cleanup();
-        resolve(booleanRecord(choices, values));
-      }
-    };
-
-    emitKeypressEvents(stdin);
-    if (typeof stdin.setRawMode === "function") {
-      stdin.setRawMode(true);
-    }
-    stdin.on("keypress", onKeypress);
-    stdout.write("\x1b[?25l");
-    render();
+  const selected = await searchableCheckbox<string>({
+    message,
+    choices: choices.map((choice) => ({
+      name: choice.name.replace(/^\[(?:on |off)\]\s+/, ""),
+      value: choice.value,
+      checked: choice.enabled,
+      short: choice.value,
+      ...(choice.description ? { description: choice.description } : {}),
+      searchAliases: choice.searchAliases ?? [],
+    })),
+    pageSize: 12,
+    instructions: "Use space to toggle, type to filter, enter to save.",
+    filterShortcuts: [
+      { key: "1", label: "auto on", term: "auto:on" },
+      { key: "2", label: "auto off", term: "auto:off" },
+      { key: "3", label: "default on", term: "default:on" },
+      { key: "4", label: "start disabled", term: "start-disabled:on" },
+    ],
   });
+  const selectedIds = new Set(selected);
+  return Object.fromEntries(choices.map((choice) => [choice.value, selectedIds.has(choice.value)]));
 }
 
 function booleanRecord(choices: BooleanToggleChoice[], values: boolean[]): Record<string, boolean> {
@@ -922,11 +902,6 @@ function booleanRecord(choices: BooleanToggleChoice[], values: boolean[]): Recor
 
   return record;
 }
-
-type KeypressInfo = {
-  name?: string;
-  ctrl?: boolean;
-};
 
 async function askInput(config: InputConfig): Promise<string> {
   return input({

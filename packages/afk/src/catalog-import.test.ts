@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { planCatalogImport, runCatalogImport } from "./catalog-import.js";
+import { planCatalogImport, planCatalogImportStatus, runCatalogImport, runCatalogImportStatus } from "./catalog-import.js";
 import type { CliOptions, Runtime } from "./types.js";
 
 test("planCatalogImport imports installed skills with lock metadata into global catalog", () => {
@@ -106,6 +106,49 @@ test("planCatalogImport does not duplicate existing catalog skills", () => {
   assert.equal(JSON.parse(readFileSync(join(catalogDir, "skills.json"), "utf8")).defaultSource, "acme/default-kit");
 });
 
+test("planCatalogImportStatus compares installed active and disabled skills with catalog entries", () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-import-status-"));
+  const catalogDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(join(catalogDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "installed-active",
+        label: "Installed Active",
+        source: "acme/kit",
+        args: ["--skill", "installed-active"],
+        default: true,
+      },
+      {
+        id: "installed-disabled",
+        label: "Installed Disabled",
+        source: "acme/kit",
+        args: ["--skill", "installed-disabled"],
+        default: true,
+      },
+      {
+        id: "catalog-only",
+        label: "Catalog Only",
+        source: "acme/kit",
+        args: ["--skill", "catalog-only"],
+        default: true,
+      },
+    ],
+  }, null, 2)}\n`);
+  writeInstalledSkill(homeDir, "installed-active", "---\nname: Installed Active\n---\n");
+  writeDisabledInstalledSkill(homeDir, "installed-disabled", "---\nname: Installed Disabled\n---\n");
+  writeInstalledSkill(homeDir, "not-imported", "---\nname: Not Imported\n---\n");
+
+  const status = planCatalogImportStatus({ homeDir, cwd: mkdtempSync(join(tmpdir(), "afk-project-")), dryRun: false, manifestLocal: false });
+
+  assert.deepEqual(status.installed, ["installed-active", "installed-disabled", "not-imported"]);
+  assert.deepEqual(status.cataloged, ["catalog-only", "installed-active", "installed-disabled"]);
+  assert.deepEqual(status.notImported, ["not-imported"]);
+  assert.deepEqual(status.catalogOnly, ["catalog-only"]);
+});
+
 test("runCatalogImport renders a branded, scannable summary", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-import-"));
   writeInstalledSkill(homeDir, "afk-code-grill", "---\nname: AFK Code Grill\n---\n");
@@ -132,6 +175,37 @@ test("runCatalogImport renders a branded, scannable summary", async () => {
   assert.ok(text.includes("• afk-code-grill"));
   assert.ok(text.includes("Missing lock metadata"));
   assert.ok(text.includes("• local-only"));
+});
+
+test("runCatalogImportStatus renders status counts", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-import-status-render-"));
+  const catalogDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(join(catalogDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "catalog-only",
+        label: "Catalog Only",
+        source: "acme/kit",
+        args: ["--skill", "catalog-only"],
+        default: true,
+      },
+    ],
+  }, null, 2)}\n`);
+  writeInstalledSkill(homeDir, "not-imported", "---\nname: Not Imported\n---\n");
+  const output: string[] = [];
+
+  const code = await runCatalogImportStatus(captureRuntime(output), cliOptions({ homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("◆ Catalog Skills Status"));
+  assert.ok(text.includes("Not imported yet"));
+  assert.ok(text.includes("• not-imported"));
+  assert.ok(text.includes("Catalog only"));
+  assert.ok(text.includes("• catalog-only"));
 });
 
 function captureRuntime(output: string[]): Runtime {
@@ -184,6 +258,12 @@ function cliOptions(overrides: Partial<CliOptions>): CliOptions {
 
 function writeInstalledSkill(root: string, id: string, skillMd: string): void {
   const skillDir = join(root, ".agents", "skills", id);
+  mkdirSync(skillDir, { recursive: true });
+  writeFileSync(join(skillDir, "SKILL.md"), skillMd);
+}
+
+function writeDisabledInstalledSkill(root: string, id: string, skillMd: string): void {
+  const skillDir = join(root, ".agents", "skills", ".disabled", id);
   mkdirSync(skillDir, { recursive: true });
   writeFileSync(join(skillDir, "SKILL.md"), skillMd);
 }

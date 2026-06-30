@@ -805,8 +805,8 @@ function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
   ];
 }
 
-export function managedSkillAgents(): ManagedSkillAgent[] {
-  return knownAgentRoots.map((root) => root.agent);
+export function managedSkillAgents(): SkillAgentFilter[] {
+  return ["shared", ...knownAgentRoots.map((root) => root.agent)];
 }
 
 const knownAgentRoots: Array<{
