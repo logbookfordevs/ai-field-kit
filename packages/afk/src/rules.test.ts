@@ -114,10 +114,27 @@ test("planRulesSync includes Claude-specific host when Claude is selected", () =
   assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.claude/CLAUDE.md" && operation.content.includes("<!-- AFK:RULES:START -->")));
 });
 
+test("planRulesSync includes Pi-specific host when Pi is selected", () => {
+  const operations = planRulesSync(
+    {
+      agents: ["pi"],
+      homeDir: "/tmp/home",
+      cwd: "/tmp/project",
+      setupScope: "global",
+    },
+    {
+      afk: "# AFK\n",
+    },
+  );
+
+  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.pi/agent/AGENTS.md"));
+  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.pi/agent/AGENTS.md" && operation.content.includes("<!-- AFK:RULES:START -->")));
+});
+
 test("planRulesSync writes project rule hosts for project scope", () => {
   const operations = planRulesSync(
     {
-      agents: ["antigravity", "claude", "codex", "opencode"],
+      agents: ["antigravity", "claude", "codex", "opencode", "pi"],
       homeDir: "/tmp/home",
       cwd: "/tmp/project",
       setupScope: "project",
@@ -130,6 +147,7 @@ test("planRulesSync writes project rule hosts for project scope", () => {
   assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/project/AGENTS.md"));
   assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/project/CLAUDE.md"));
   assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/project/GEMINI.md"));
+  assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/project/.pi/agent/AGENTS.md"));
   assert.equal(operations.filter((operation) => operation.type === "write" && operation.path === "/tmp/project/AGENTS.md").length, 1);
   assert.ok(!operations.some((operation) => operation.type === "symlink"));
 });

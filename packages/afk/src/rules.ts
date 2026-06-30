@@ -7,7 +7,7 @@ const afkRegionStart = "<!-- AFK:RULES:START -->";
 const afkRegionEnd = "<!-- AFK:RULES:END -->";
 const legacyImportStart = "<!-- AFK:IMPORT:START -->";
 const legacyImportEnd = "<!-- AFK:IMPORT:END -->";
-const globalRulesAgents: AgentId[] = ["antigravity", "codex", "opencode"];
+const globalRulesAgents: AgentId[] = ["antigravity", "codex", "opencode", "pi"];
 
 type RulesContent = {
   afk: string;
@@ -60,7 +60,7 @@ function planProjectRules(
   timestamp: string,
 ): PathOperation[] {
   const operations: PathOperation[] = [];
-  const selected = options.agents.filter((agent) => ["antigravity", "claude", "codex", "opencode"].includes(agent));
+  const selected = options.agents.filter((agent) => ["antigravity", "claude", "codex", "opencode", "pi"].includes(agent));
   const hostPaths = new Set<string>();
 
   for (const agent of selected) {
@@ -209,6 +209,8 @@ function agentRulesDestination(homeDir: string, agent: AgentId): string {
       return join(homeDir, ".gemini", "GEMINI.md");
     case "opencode":
       return join(homeDir, ".config", "opencode", "AGENTS.md");
+    case "pi":
+      return join(homeDir, ".pi", "agent", "AGENTS.md");
     default:
       throw new Error(`Unsupported linked rules agent: ${agent}`);
   }
@@ -223,6 +225,8 @@ function projectRulesDestination(cwd: string, agent: AgentId): string {
     case "codex":
     case "opencode":
       return join(cwd, "AGENTS.md");
+    case "pi":
+      return join(cwd, ".pi", "agent", "AGENTS.md");
     case "cursor-local":
       return join(cwd, ".cursor", "rules", "afk.mdc");
   }

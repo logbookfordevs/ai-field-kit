@@ -5,7 +5,8 @@ export type AgentId =
   | "claude"
   | "codex"
   | "cursor-local"
-  | "opencode";
+  | "opencode"
+  | "pi";
 
 export type SkillAgentId = "claude-code" | "kiro-cli" | "kilo" | "pi" | "droid";
 

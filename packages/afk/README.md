@@ -629,6 +629,7 @@ Global rule sync supports:
 | Claude Code | `~/.claude/CLAUDE.md` |
 | Codex | `~/.codex/AGENTS.md` |
 | OpenCode | `~/.config/opencode/AGENTS.md` |
+| Pi | `~/.pi/agent/AGENTS.md` |
 
 Project rule sync supports:
 
@@ -638,6 +639,7 @@ Project rule sync supports:
 | Claude Code | `CLAUDE.md` |
 | Codex | `AGENTS.md` |
 | OpenCode | `AGENTS.md` |
+| Pi | `.pi/agent/AGENTS.md` |
 | Cursor local | `.cursor/rules/afk.mdc` |
 
 AFK updates only the `AFK:RULES` managed region. User-owned content outside
