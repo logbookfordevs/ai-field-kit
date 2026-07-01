@@ -48,33 +48,48 @@ export function planSkillStartupStorage(options: Pick<CliOptions, "homeDir" | "c
   return planSkillStartupStorageForItems(options, selected);
 }
 
+export function snapshotDisabledStartupSkills(
+  options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "selectedSkillIds" | "manifestContents"> & { allSkills?: boolean },
+): string[] {
+  const manifest = loadSkillManifest(options);
+  const selected = selectedSkillManifestItems(manifest.items, options);
+  const disabledRoot = join(sharedSkillsRoot(options), ".disabled");
+
+  return selected
+    .filter((item) => isDirectory(join(disabledRoot, item.id)))
+    .map((item) => item.id);
+}
+
 export function planSkillStartupStorageForItems(
   options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,
   items: SkillManifestItem[],
+  previouslyDisabledSkillIds: string[] = [],
 ): PathOperation[] {
   const operations: PathOperation[] = [];
+  const previouslyDisabled = new Set(previouslyDisabledSkillIds.map((id) => id.toLowerCase()));
 
   for (const item of items) {
-    if (item.startDisabled !== true) {
+    if (item.startDisabled !== true && !previouslyDisabled.has(item.id.toLowerCase())) {
       continue;
     }
 
     const activeDir = sharedSkillDirectory(options, item);
     const disabledDir = join(sharedSkillsRoot(options), ".disabled", item.id);
+    if (isDirectory(activeDir) && pathExists(disabledDir)) {
+      operations.push({ type: "remove", path: disabledDir });
+      operations.push({
+        type: "move",
+        source: activeDir,
+        target: disabledDir,
+      });
+      continue;
+    }
+
     if (!isDirectory(activeDir)) {
       operations.push({
         type: "skip",
         path: activeDir,
         reason: isDirectory(disabledDir) ? "already disabled" : "installed skill not found",
-      });
-      continue;
-    }
-
-    if (pathExists(disabledDir)) {
-      operations.push({
-        type: "skip",
-        path: disabledDir,
-        reason: "disabled destination already exists",
       });
       continue;
     }
@@ -89,8 +104,10 @@ export function planSkillStartupStorageForItems(
   return operations;
 }
 
-export function syncSkillStartupStorage(runtime: Runtime, options: CliOptions): void {
-  const operations = planSkillStartupStorage(options);
+export function syncSkillStartupStorage(runtime: Runtime, options: CliOptions, previouslyDisabledSkillIds: string[] = []): void {
+  const manifest = loadSkillManifest(options);
+  const selected = selectedSkillManifestItems(manifest.items, options);
+  const operations = planSkillStartupStorageForItems(options, selected, previouslyDisabledSkillIds);
 
   if (operations.length === 0) {
     return;

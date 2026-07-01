@@ -344,7 +344,8 @@ test("runCli prints contextual skills help", async () => {
   assert.ok(output.join("\n").includes("AFK skills list"));
   assert.ok(output.join("\n").includes("--scope global|project|all"));
   assert.ok(output.join("\n").includes("--agent shared|<agent>"));
-  assert.ok(output.join("\n").includes("--enabled true|false"));
+  assert.ok(output.join("\n").includes("--enabled"));
+  assert.ok(output.join("\n").includes("--disabled"));
   assert.ok(output.join("\n").includes("--category <id-or-label>"));
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
 });
@@ -384,7 +385,8 @@ test("runCli prints contextual skills open help", async () => {
   assert.ok(output.join("\n").includes("AFK skills open"));
   assert.ok(output.join("\n").includes("--app finder|code|cursor|zed|agy"));
   assert.ok(output.join("\n").includes("--agent shared|<agent>"));
-  assert.ok(output.join("\n").includes("--enabled true|false"));
+  assert.ok(output.join("\n").includes("--enabled"));
+  assert.ok(output.join("\n").includes("--disabled"));
 });
 
 test("runCli prints contextual skills upgrade help", async () => {
@@ -407,7 +409,8 @@ test("runCli prints contextual skills delete help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills delete"));
   assert.ok(text.includes("--agent shared|<agent>"));
-  assert.ok(text.includes("--enabled true|false"));
+  assert.ok(text.includes("--enabled"));
+  assert.ok(text.includes("--disabled"));
   assert.ok(text.includes("--manifest-only"));
 });
 
@@ -420,7 +423,8 @@ test("runCli prints contextual skills invocation help", async () => {
   assert.ok(text.includes("AFK skills invocation"));
   assert.ok(text.includes("invocation [disable|enable] [folder]"));
   assert.ok(text.includes("--agent shared|<agent>"));
-  assert.ok(text.includes("--enabled true|false"));
+  assert.ok(text.includes("--enabled"));
+  assert.ok(text.includes("--disabled"));
 });
 
 test("runCli prints contextual skills profiles help", async () => {
@@ -492,6 +496,26 @@ test("runCli creates local catalog profiles with repeated skill flags", async ()
   }
 });
 
+test("runCli accepts storage filters for catalog profile skill selection", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-cli-catalog-profile-filter-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  mkdirSync(join(homeDir, ".agents", "afk", "catalog"), { recursive: true });
+  writeFileSync(join(homeDir, ".agents", "afk", "catalog", "skills.json"), JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [{ id: "disabled-demo", label: "Disabled Demo", source: "", args: [], default: false }],
+  }));
+
+  const code = await withConsole(output, () => runCli(
+    ["catalog", "profiles", "create", "quiet", "--name", "Quiet", "--disabled", "--skill", "disabled-demo"],
+    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+  ));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("Profile Create Complete"));
+});
+
 test("runCli keeps profile definition operations under catalog profiles", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["skills", "profiles", "create", "video"]));
@@ -537,17 +561,17 @@ test("runCli accepts skills delete manifest-only flag", async () => {
   assert.ok(output.join("\n").includes("Skill not found in skills.json manifest: beta"));
 });
 
-test("runCli validates skills enabled filter values", async () => {
+test("runCli rejects boolean values for skills storage filters", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "list", "--enabled", "maybe"]));
+  const code = await withConsole(output, () => runCli(["skills", "list", "--enabled", "false"]));
 
   assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("Invalid --enabled value: maybe"));
+  assert.ok(output.join("\n").includes("Use --enabled or --disabled without a value"));
 });
 
 test("runCli rejects skills enabled filter where it is not meaningful", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "enable", "--enabled", "false"]));
+  const code = await withConsole(output, () => runCli(["skills", "enable", "--enabled"]));
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Unknown option: --enabled"));

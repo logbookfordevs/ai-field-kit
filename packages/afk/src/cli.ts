@@ -502,7 +502,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills list",
       "afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes",
       "afk skills list --scope global --json",
-      "afk skills list --agent shared --enabled false",
+      "afk skills list --agent shared --disabled",
       "afk skills disable old-skill --dry-run",
       "afk skills invocation disable afk-doc-craft",
       "afk skills upgrade --all",
@@ -586,18 +586,17 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--scope global|project|all        Choose which skill roots to list",
       "--agent shared|<agent>            Limit shared, project, or agent roots",
-      "--enabled true|false              Filter active or disabled skill folders",
+      "--enabled                         Show enabled skills only",
+      "--disabled                        Show disabled skills only",
       "--category <id-or-label>          Filter by AFK category",
       "--tag <tag>                       Filter by AFK tag",
       "--uncategorized                   Show records without an AFK category",
-      "--enabled                         Show enabled skills only",
-      "--disabled                        Show disabled skills only",
       "--json                            Print JSON records",
     ],
     examples: [
       "afk skills list",
       "afk skills list --scope global",
-      "afk skills list --agent shared --enabled false",
+      "afk skills list --agent shared --enabled",
       "afk skills list --agent shared",
       "afk skills list --agent shared --disabled",
       "afk skills list --scope global --agent codex",
@@ -610,7 +609,8 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills show <folder> [options]",
     options: [
       "--agent shared|<agent>            Limit lookup to shared or agent roots",
-      "--enabled true|false              Filter active or disabled skill folders",
+      "--enabled                         Show enabled skills only",
+      "--disabled                        Show disabled skills only",
       "--json                            Print JSON record",
     ],
     examples: [
@@ -627,7 +627,8 @@ const commandHelps: Record<string, CommandHelp> = {
       "--folder                          Open the skill folder",
       "--app finder|code|cursor|zed|agy  Choose the app command",
       "--agent shared|<agent>            Limit lookup to shared or agent roots",
-      "--enabled true|false              Filter active or disabled skill folders",
+      "--enabled                         Show enabled skills only",
+      "--disabled                        Show disabled skills only",
     ],
     examples: [
       "afk skills open afk-note",
@@ -673,7 +674,8 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
       "--agent shared|<agent>            Target shared or one agent-specific root",
-      "--enabled true|false              Filter active or disabled skill folders",
+      "--enabled                         Show enabled skills only",
+      "--disabled                        Show disabled skills only",
       "--dry-run                         Preview metadata writes without applying them",
     ],
     examples: [
@@ -690,7 +692,8 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
       "--agent shared|<agent>            Target shared or one agent-specific root",
-      "--enabled true|false              Filter active or disabled skill folders",
+      "--enabled                         Show enabled skills only",
+      "--disabled                        Show disabled skills only",
       "--dry-run                         Preview the delete without applying it",
       "--yes, -y                         Skip confirmation",
       "--manifest-only                   Show only skills from AFK's setup skills manifest",
@@ -772,6 +775,8 @@ const commandHelps: Record<string, CommandHelp> = {
       "--local                           Use ./afk/catalog for profile data",
       "--name <name>                     Set profile name for create/edit",
       "--skill <skill>                   Add profile skill; repeatable",
+      "--enabled                         Choose from enabled skills in the interactive picker",
+      "--disabled                        Choose from disabled skills in the interactive picker",
       "--always-on <skill>               Add global always-on skill; repeatable",
       "--mode strict|context             Set profile reconciliation mode",
       "--json                            Print JSON for list/show",
@@ -1024,6 +1029,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const isAfkSkillsAddCommand = commandPath[0] === "skills" && commandPath[1] === "add";
   const isAfkSkillsProfilesCommand = commandPath[0] === "skills" && commandPath[1] === "profiles";
   const isAfkCatalogProfilesCommand = commandPath[0] === "catalog" && commandPath[1] === "profiles";
+  const acceptsSkillStorageFilter =
+    (isAfkSkillsCommand && ["list", "show", "open", "delete", "invocation"].includes(commandPath[1] ?? "")) ||
+    (isAfkCatalogProfilesCommand && ["create", "edit"].includes(commandPath[2] ?? ""));
   const isAfkProfileCommand = isAfkSkillsProfilesCommand || isAfkCatalogProfilesCommand;
   const isAfkUiCommand = commandPath[0] === "ui";
   let skillAddArgs: string[] = [];
@@ -1178,22 +1186,22 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsCommand && arg === "--enabled") {
-      const command = commandPath[1];
-      if (command !== "list" && command !== "show" && command !== "open" && command !== "delete" && command !== "invocation") {
+    if ((isAfkSkillsCommand || isAfkCatalogProfilesCommand) && arg === "--enabled") {
+      if (!acceptsSkillStorageFilter) {
         return { help: false, kind: "error", error: "Unknown option: --enabled" };
       }
 
       const value = args[index + 1];
-      if (value !== "true" && value !== "false") {
-        if (command === "list" && (value === undefined || value.startsWith("-"))) {
-          skillsListStorage = "active";
-          continue;
-        }
-        return { help: false, kind: "error", error: `Invalid --enabled value: ${value ?? "(missing)"}` };
+      if (value === "true" || value === "false") {
+        return { help: false, kind: "error", error: "Use --enabled or --disabled without a value" };
       }
-      skillsListStorage = value === "true" ? "active" : "disabled";
-      index += 1;
+
+      const nextStorage: SkillsListStorage = "active";
+      if (skillsListStorage && skillsListStorage !== nextStorage) {
+        return { help: false, kind: "error", error: "Use only one of --enabled or --disabled" };
+      }
+
+      skillsListStorage = nextStorage;
       continue;
     }
 
@@ -1340,8 +1348,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsCommand && arg === "--disabled") {
-      if (commandPath[1] !== "list") {
+    if ((isAfkSkillsCommand || isAfkCatalogProfilesCommand) && arg === "--disabled") {
+      if (!acceptsSkillStorageFilter) {
         return { help: false, kind: "error", error: `Unknown option: ${arg}` };
       }
 

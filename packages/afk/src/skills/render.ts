@@ -56,6 +56,23 @@ export function renderSkillMove(input: {
   ].join("\n");
 }
 
+export function renderSkillMoveBatch(input: {
+  items: Array<{ folder: string; movement: string }>;
+  enabled: boolean;
+  dryRun: boolean;
+}): string {
+  const count = input.items.length;
+  const verb = input.enabled ? "enable" : "disable";
+  const title = input.dryRun ? "Skill Move Preview" : "Skill Move Complete";
+  return [
+    sectionTitle(title),
+    input.dryRun
+      ? `${muted("Would")} ${accent(verb)} ${accent(String(count))} ${muted(count === 1 ? "skill" : "skills")}`
+      : `${accent(input.enabled ? "Enabled" : "Disabled")} ${accent(String(count))} ${muted(count === 1 ? "skill" : "skills")}`,
+    ...input.items.map((item) => `${paint(terminalPalette.sienna, "•")} ${strong(item.folder)} ${muted(item.movement)}`),
+  ].join("\n");
+}
+
 export function renderSkillInvocationPolicy(input: {
   folder: string;
   allowInvocation: boolean;

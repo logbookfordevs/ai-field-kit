@@ -294,6 +294,56 @@ test("runArea skills moves start-disabled skills into disabled storage after ins
   assert.ok(output.join("\n").includes("Skill startup storage synced"));
 });
 
+test("runArea skills preserves manually disabled skills after upstream reinstall", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        {
+          id: "quiet-skill",
+          label: "Quiet Skill",
+          source: "example/skills",
+          args: ["--skill", "quiet-skill"],
+          default: true,
+          startDisabled: false,
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  const disabledDir = join(homeDir, ".agents", "skills", ".disabled", "quiet-skill");
+  mkdirSync(disabledDir, { recursive: true });
+  writeFileSync(join(disabledDir, "SKILL.md"), "---\nname: quiet-skill\n---\n\n# Old Quiet\n");
+  const output: string[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      const activeDir = join(homeDir, ".agents", "skills", "quiet-skill");
+      mkdirSync(activeDir, { recursive: true });
+      writeFileSync(join(activeDir, "SKILL.md"), "---\nname: quiet-skill\n---\n\n# Fresh Quiet\n");
+      return { code: 0 };
+    },
+  };
+
+  const code = await runArea("skills", runtime, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    setupManifestsPrepared: true,
+    yes: true,
+    defaultsSource: "local",
+    defaultsSourceExplicit: true,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "quiet-skill")), false);
+  assert.equal(existsSync(disabledDir), true);
+  assert.match(readFileSync(join(disabledDir, "SKILL.md"), "utf8"), /Fresh Quiet/);
+});
+
 test("runSetup skips the source prompt when a default source is saved", async () => {
   const homeDir = localHomeWithManifests({
     "presets.json": { version: 1, defaultsSource: "acme/saved-kit", presets: [] },

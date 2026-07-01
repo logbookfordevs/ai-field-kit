@@ -80,6 +80,11 @@ export type SkillCatalogManifestSyncResult = {
   added: string[];
 };
 
+export type SkillCatalogStartDisabledResult = {
+  path: string;
+  updated: string[];
+};
+
 type SkillRoot = {
   kind: SkillRootKind;
   label: string;
@@ -444,6 +449,35 @@ export function syncSkillCatalogFromManifest(options: {
   }
 
   return { path, added };
+}
+
+export function markSkillCatalogItemsStartDisabled(options: {
+  homeDir: string;
+  skillIds: string[];
+  dryRun: boolean;
+}): SkillCatalogStartDisabledResult {
+  const manifest = loadSkillManifest(options);
+  const selectedIds = new Set(options.skillIds.map((id) => id.toLowerCase()));
+  const updated = manifest.items
+    .filter((item) => selectedIds.has(item.id.toLowerCase()) && item.startDisabled !== true)
+    .map((item) => item.id);
+  const path = skillCatalogPath(options.homeDir);
+
+  if (updated.length === 0) {
+    return { path, updated };
+  }
+
+  if (!options.dryRun) {
+    const updatedIds = new Set(updated.map((id) => id.toLowerCase()));
+    const nextManifest: SkillManifest = {
+      ...manifest,
+      items: manifest.items.map((item) => updatedIds.has(item.id.toLowerCase()) ? { ...item, startDisabled: true } : item),
+    };
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(nextManifest, null, 2)}\n`);
+  }
+
+  return { path, updated };
 }
 
 export function parseOpenAiImplicitInvocation(contents: string): boolean | undefined {
