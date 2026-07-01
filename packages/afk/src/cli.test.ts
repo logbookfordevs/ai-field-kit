@@ -285,7 +285,18 @@ test("runCli accepts skills CLI agent targets for noninteractive skill installs"
 
   assert.equal(code, 0);
   assert.ok(text.includes("$ npx skills add https://github.com/logbookfordevs/ai-field-kit"));
+  assert.ok(text.includes("--agent universal"));
   assert.ok(text.includes("--agent claude-code"));
+});
+
+test("runCli setup skills help uses skills CLI agent names", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "skills", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("afk setup skills --local --agent claude-code"));
+  assert.equal(/^  afk setup skills --local --agent claude$/m.test(text), false);
 });
 
 test("runCli keeps old area command forms as aliases", async () => {
