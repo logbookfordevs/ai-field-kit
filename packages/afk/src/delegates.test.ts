@@ -98,6 +98,10 @@ test("buildSkillCommands uses the official skills CLI", () => {
   assert.ok(commands[0]?.args.includes("--yes"));
   assert.ok(commands[0]?.args.includes("--skill"));
   assert.ok(commands[0]?.args.includes("afk-note"));
+  assert.deepEqual(
+    commands[0]?.args.filter((arg, index, args) => arg === "--agent" || args[index - 1] === "--agent"),
+    ["--agent", "universal"],
+  );
   assert.ok(!commands[0]?.args.includes("--copy"));
 });
 
@@ -169,7 +173,6 @@ test("buildSkillCommands all installs default and non-default skills", () => {
 test("buildSkillCommands does not add a duplicate Claude-only install", () => {
   const commands = buildSkillCommands({ ...options, agents: ["codex", "claude"] });
   assert.equal(commands.length, 1);
-  assert.ok(!commands[0]?.args.includes("--agent"));
   assert.ok(!commands[0]?.args.includes("claude-code"));
 });
 
@@ -178,7 +181,10 @@ test("buildSkillCommands relies on the skills CLI default symlink fanout", () =>
   assert.equal(commands.length, 1);
   assert.ok(commands[0]?.args.includes("--yes"));
   assert.ok(!commands[0]?.args.includes("--copy"));
-  assert.ok(!commands[0]?.args.includes("--agent"));
+  assert.deepEqual(
+    commands[0]?.args.filter((arg, index, args) => arg === "--agent" || args[index - 1] === "--agent"),
+    ["--agent", "universal"],
+  );
 });
 
 test("buildSkillCommands passes additional skill agents to the skills CLI", () => {
@@ -186,7 +192,7 @@ test("buildSkillCommands passes additional skill agents to the skills CLI", () =
 
   assert.deepEqual(
     commands[0]?.args.filter((arg, index, args) => arg === "--agent" || args[index - 1] === "--agent"),
-    ["--agent", "claude-code", "--agent", "kiro-cli", "--agent", "kilo", "--agent", "pi", "--agent", "droid"],
+    ["--agent", "universal", "--agent", "claude-code", "--agent", "kiro-cli", "--agent", "kilo", "--agent", "pi", "--agent", "droid"],
   );
 });
 
