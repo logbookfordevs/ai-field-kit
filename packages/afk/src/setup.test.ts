@@ -233,7 +233,7 @@ test("runArea skills adds selected setup skills to AFK skill catalog after insta
   assert.equal(code, 0);
   assert.deepEqual(spawned, [{
     command: "npx",
-    args: ["skills", "add", "example/skills", "--global", "--yes", "--skill", "beta", "--agent", "claude-code"],
+    args: ["skills", "add", "example/skills", "--global", "--yes", "--skill", "beta", "--agent", "universal", "--agent", "claude-code"],
   }]);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
     items: Array<{ id: string; catalog?: { scope?: string } }>;
@@ -457,7 +457,7 @@ test("runArea uses explicit source manifests without writing cache before instal
 
   assert.equal(code, 0);
   assert.equal(commands[0]?.command, "npx");
-  assert.deepEqual(commands[0]?.args, ["skills", "add", "remote/source", "--global", "--yes", "--skill", "remote-skill"]);
+  assert.deepEqual(commands[0]?.args, ["skills", "add", "remote/source", "--global", "--yes", "--skill", "remote-skill", "--agent", "universal"]);
   assert.ok(!output.join("\n").includes("Local catalog prepared"));
   const cached = readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8");
   assert.ok(cached.includes("stale/source"));

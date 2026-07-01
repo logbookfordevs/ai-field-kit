@@ -22,7 +22,7 @@ export function buildSkillCommands(options: CliOptions): DelegateCommand[] {
       ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))
       : manifest.items.filter((item) => item.default || options.allSkills);
 
-  return buildSkillSourceCommands(selected, "Shared skills", buildSkillsAgentArgs(options.selectedSkillAgentIds), options.setupScope);
+  return buildSkillSourceCommands(selected, "Shared skills", buildSkillsAgentArgs(["universal", ...options.selectedSkillAgentIds]), options.setupScope);
 }
 
 export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "homeDir" | "selectedMcpIds" | "setupScope">): DelegateCommand[] {
@@ -192,7 +192,7 @@ function buildPluginPostInstallCommands(item: PluginManifestItem): DelegateComma
   return [];
 }
 
-function buildSkillsAgentArgs(agents: SkillAgentId[]): string[] {
+function buildSkillsAgentArgs(agents: Array<SkillAgentId | "universal">): string[] {
   return agents.flatMap((agent) => ["--agent", agent]);
 }
 

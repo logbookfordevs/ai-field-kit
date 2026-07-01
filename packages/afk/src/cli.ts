@@ -407,7 +407,7 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk setup skills --dry-run",
       "afk setup skills --yes",
-      "afk setup skills --local --agent claude",
+      "afk setup skills --local --agent claude-code",
     ],
   },
   "setup skills install": {
@@ -421,7 +421,7 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk setup skills --dry-run",
       "afk setup skills --yes",
-      "afk setup skills --local --agent claude",
+      "afk setup skills --local --agent claude-code",
     ],
   },
   "setup mcps": {
