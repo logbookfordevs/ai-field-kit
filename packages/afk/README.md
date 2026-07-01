@@ -736,7 +736,7 @@ Manage local skills:
 ```bash
 afk skills list
 afk skills list --scope global --json
-afk skills list --agent shared --enabled false
+afk skills list --agent shared --disabled
 afk skills list --scope global --agent codex
 afk skills list --scope project --agent claude
 afk skills list --category Docs --tag writing
@@ -782,17 +782,17 @@ remain easy to read.
 Claude roots, and installed-agent roots such as Codex, Claude, Gemini,
 OpenCode, Cursor, Zed, and Kiro when they exist. Use `--scope
 global|project|all` to choose root families, `--agent shared` to focus on the
-shared library, `--agent <agent>` to focus on one agent, `--enabled
-true|false` to filter active or disabled folders, and `--category`, `--tag`,
-or `--uncategorized` to filter AFK catalog metadata. The same `--enabled
-true|false` folder filter is also available on `afk skills show`, `open`,
-`delete`, and `invocation` when a command needs to choose from discovered skill
-folders.
+shared library, `--agent <agent>` to focus on one agent, `--enabled` to show
+active folders, `--disabled` to show disabled folders, and `--category`,
+`--tag`, or `--uncategorized` to filter AFK catalog metadata. The same
+`--enabled` and `--disabled` folder filters are also available on `afk skills
+show`, `open`, `delete`, and `invocation`, plus `afk catalog profiles
+create|edit` when those commands need to choose from discovered skill folders.
 
 `afk skills disable`, `afk skills enable`, and `afk skills delete` can manage
 the shared global library by default, or explicitly with `--agent shared`.
 They can manage agent-specific roots when `--agent <agent>` is provided.
-`afk skills delete --enabled false` is useful when pruning disabled skills.
+`afk skills delete --disabled` is useful when pruning disabled skills.
 Delete is permanent; use `--dry-run` to preview the selected folders before
 removing them.
 

@@ -6,6 +6,7 @@ import { test } from "vitest";
 import {
   filterSkillRecords,
   legacySkillCatalogPath,
+  markSkillCatalogItemsStartDisabled,
   loadSkillCatalog,
   moveSkillRecord,
   moveGlobalSkill,
@@ -29,7 +30,7 @@ import {
   skillProfilePaths,
   type SkillProfileCatalog,
 } from "./skills/profiles.js";
-import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch, renderSkillProfileApply } from "./skills/render.js";
+import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch, renderSkillMoveBatch, renderSkillProfileApply } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 import { localManifestDir, projectManifestDir, type SkillManifest } from "./manifest.js";
@@ -833,7 +834,7 @@ test("runSkillsCommand deletes agent-specific global skills with --agent", async
   assert.ok(output.join("\n").includes(".claude/skills/frontend-design"));
 });
 
-test("runSkillsCommand deletes only disabled shared skills with --enabled false", async () => {
+test("runSkillsCommand deletes only disabled shared skills with storage filter", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-shared-skill-delete-enabled-filter-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
@@ -867,6 +868,22 @@ test("runSkillsCommand disables agent-specific global skills with --agent", asyn
   assert.equal(code, 0);
   assert.equal(existsSync(join(homeDir, ".codex", "skills", "demo")), false);
   assert.equal(existsSync(join(homeDir, ".codex", "skills", ".disabled", "demo")), true);
+});
+
+test("renderSkillMoveBatch summarizes multiple disabled skills", () => {
+  const output = renderSkillMoveBatch({
+    enabled: false,
+    dryRun: true,
+    items: [
+      { folder: "alpha", movement: "/tmp/skills/alpha -> /tmp/skills/.disabled/alpha" },
+      { folder: "beta", movement: "/tmp/skills/beta -> /tmp/skills/.disabled/beta" },
+    ],
+  });
+
+  assert.ok(output.includes("Would disable"));
+  assert.ok(output.includes("2"));
+  assert.ok(output.includes("alpha"));
+  assert.ok(output.includes("beta"));
 });
 
 test("runSkillsCommand disables auto invocation metadata for one skill", async () => {
@@ -1242,6 +1259,26 @@ test("syncSkillCatalogFromManifest adds setup skills to canonical catalog", () =
       { id: "beta", imported: true, scope: "uncategorized" },
     ],
   );
+});
+
+test("markSkillCatalogItemsStartDisabled updates selected catalog records", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-catalog-start-disabled-"));
+  const homeDir = join(root, "home");
+  writeSkillManifest(homeDir, ["alpha", "beta"]);
+
+  const result = markSkillCatalogItemsStartDisabled({
+    homeDir,
+    skillIds: ["beta"],
+    dryRun: false,
+  });
+
+  assert.equal(result.path, skillCatalogPath(homeDir));
+  assert.deepEqual(result.updated, ["beta"]);
+  const written = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
+    items: Array<{ id: string; startDisabled?: boolean }>;
+  };
+  assert.equal(written.items.find((item) => item.id === "alpha")?.startDisabled, undefined);
+  assert.equal(written.items.find((item) => item.id === "beta")?.startDisabled, true);
 });
 
 test("syncSkillCatalogFromManifest preserves existing legacy catalog entries and writes canonical catalog", () => {

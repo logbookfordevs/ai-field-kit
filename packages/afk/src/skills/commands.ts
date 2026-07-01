@@ -12,6 +12,7 @@ import { planCatalogImport } from "../catalog-import.js";
 import {
   filterSkillRecords,
   loadSkillCatalog,
+  markSkillCatalogItemsStartDisabled,
   moveSkillRecord,
   deleteSkillRecords,
   type SkillRecord,
@@ -41,6 +42,7 @@ import {
   renderSkillDetails,
   renderSkillList,
   renderSkillMove,
+  renderSkillMoveBatch,
   renderSkillOpen,
   renderSkillDeleteBatch,
   renderSkillInvocationPolicy,
@@ -273,9 +275,16 @@ async function runSkillProfileDefinitionsCommand(operands: string[], runtime: Ru
         return 1;
       }
       const profileName = options.skillProfileName ?? (command === "create" ? await promptOptionalSkillProfileName(selectedId) : undefined);
-      const skills = options.skillProfileSkills && options.skillProfileSkills.length > 0
-        ? options.skillProfileSkills
-        : (await promptSkillRecords(loadMutationSkillRecords(options), `Select skills for ${selectedId}:`)).map((record) => record.folder);
+      const explicitSkills = options.skillProfileSkills && options.skillProfileSkills.length > 0;
+      const selectedRecords = explicitSkills
+        ? []
+        : await promptSkillRecords(loadMutationSkillRecords(options), `Select skills for ${selectedId}:`);
+      const skills = explicitSkills
+        ? options.skillProfileSkills ?? []
+        : selectedRecords.map((record) => record.folder);
+      const profileOnlyActivation = command === "create" && selectedRecords.length > 0
+        ? await promptProfileOnlyActivation()
+        : false;
       const result = upsertSkillProfile(context, {
         id: selectedId,
         skills,
@@ -291,6 +300,9 @@ async function runSkillProfileDefinitionsCommand(operands: string[], runtime: Ru
         dryRun: result.dryRun,
         created: result.created,
       }));
+      if (profileOnlyActivation) {
+        runtime.io.stdout(renderProfileOnlyActivation(applyProfileOnlyActivation(options, selectedRecords)));
+      }
       return 0;
     }
     case "delete": {
@@ -506,31 +518,41 @@ async function runSkillsShow(folder: string | undefined, runtime: Runtime, optio
 async function runSkillsMove(folder: string | undefined, enabled: boolean, runtime: Runtime, options: CliOptions): Promise<number> {
   const candidates = loadMutationSkillRecords(options)
     .filter((record) => record.storage === (enabled ? "disabled" : "active"));
-  const record = folder
-    ? findSkillRecord(candidates, folder)
-    : await promptSkillRecord(candidates, enabled
-      ? `Select ${mutationTargetLabel(options)} skill to enable:`
-      : `Select ${mutationTargetLabel(options)} skill to disable:`);
+  const records = folder
+    ? [findSkillRecord(candidates, folder)].filter((record): record is SkillRecord => Boolean(record))
+    : enabled
+      ? [await promptSkillRecord(candidates, `Select ${mutationTargetLabel(options)} skill to enable:`)].filter((record): record is SkillRecord => Boolean(record))
+      : await promptSkillRecords(candidates, `Select ${mutationTargetLabel(options)} skill to disable:`);
 
-  if (!record) {
+  if (records.length === 0) {
     runtime.io.stderr(folder
       ? `Skill not found: ${folder}`
       : `No ${enabled ? "disabled" : "active"} ${mutationTargetLabel(options)} skills found.`);
     return 1;
   }
 
-  const movement = moveSkillRecord({
-    record,
-    enabled,
-    dryRun: options.dryRun,
-  });
-
-  runtime.io.stdout(renderSkillMove({
+  const movements = records.map((record) => ({
     folder: record.folder,
-    enabled,
-    dryRun: options.dryRun,
-    movement,
+    movement: moveSkillRecord({
+      record,
+      enabled,
+      dryRun: options.dryRun,
+    }),
   }));
+
+  const firstMovement = movements[0];
+  runtime.io.stdout(movements.length === 1 && firstMovement
+    ? renderSkillMove({
+      folder: firstMovement.folder,
+      movement: firstMovement.movement,
+      enabled,
+      dryRun: options.dryRun,
+    })
+    : renderSkillMoveBatch({
+      items: movements,
+      enabled,
+      dryRun: options.dryRun,
+    }));
   return 0;
 }
 
@@ -756,6 +778,64 @@ async function promptOptionalSkillProfileName(id: string): Promise<string | unde
     theme: afkPromptTheme,
   });
   return value.trim() || undefined;
+}
+
+async function promptProfileOnlyActivation(): Promise<boolean> {
+  return confirm({
+    message: "Keep selected skills inactive except when this profile is enabled?",
+    default: false,
+    theme: afkPromptTheme,
+  });
+}
+
+function applyProfileOnlyActivation(options: CliOptions, records: SkillRecord[]): {
+  dryRun: boolean;
+  moved: Array<{ folder: string; movement: string }>;
+  catalogPath: string;
+  catalogUpdated: string[];
+} {
+  const skillIds = records.map((record) => record.folder);
+  const catalog = markSkillCatalogItemsStartDisabled({
+    homeDir: options.homeDir,
+    skillIds,
+    dryRun: options.dryRun,
+  });
+  const moved = records
+    .filter((record) => record.storage === "active")
+    .map((record) => ({
+      folder: record.folder,
+      movement: moveSkillRecord({
+        record,
+        enabled: false,
+        dryRun: options.dryRun,
+      }),
+    }));
+
+  return {
+    dryRun: options.dryRun,
+    moved,
+    catalogPath: catalog.path,
+    catalogUpdated: catalog.updated,
+  };
+}
+
+function renderProfileOnlyActivation(input: {
+  dryRun: boolean;
+  moved: Array<{ folder: string; movement: string }>;
+  catalogPath: string;
+  catalogUpdated: string[];
+}): string {
+  return [
+    section(input.dryRun ? "Profile Skills Preview" : "Profile Skills"),
+    input.dryRun
+      ? `${muted("Would mark")} ${accent(String(input.catalogUpdated.length))} ${muted("catalog skills start-disabled")}`
+      : `${accent("Marked")} ${accent(String(input.catalogUpdated.length))} ${muted("catalog skills start-disabled")}`,
+    input.moved.length === 0
+      ? muted("No active selected skills needed to move.")
+      : `${input.dryRun ? muted("Would disable") : accent("Disabled")} ${accent(String(input.moved.length))} ${muted(input.moved.length === 1 ? "skill" : "skills")}`,
+    ...input.moved.map((item) => `${paint(terminalPalette.sienna, "•")} ${strong(item.folder)} ${muted(item.movement)}`),
+    muted(input.catalogPath),
+  ].join("\n");
 }
 
 async function promptSkillProfile(profiles: SkillProfileItem[], message: string): Promise<SkillProfileItem | undefined> {
