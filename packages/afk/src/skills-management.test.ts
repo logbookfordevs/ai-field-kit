@@ -713,6 +713,7 @@ test("runSkillsCommand add appends imported skills to a profile", async () => {
     ...baseOptions(root),
     skillAddArgs: ["--skill", "demo-skill", "--global", "--yes"],
     skillAddProfileIds: ["video"],
+    skillAddProfileOnlyIds: [],
   });
 
   assert.equal(code, 0);
@@ -761,6 +762,7 @@ test("runSkillsCommand add reapplies active profile state after appending to an 
     ...baseOptions(root),
     skillAddArgs: ["--skill", "demo-skill", "--global", "--yes"],
     skillAddProfileIds: ["video"],
+    skillAddProfileOnlyIds: [],
   });
 
   assert.equal(code, 0);
@@ -769,6 +771,52 @@ test("runSkillsCommand add reapplies active profile state after appending to an 
   const state = loadSkillProfileState({ homeDir, cwd: join(root, "project"), local: false });
   assert.deepEqual(state.enabledProfileIds, ["writing"]);
   assert.deepEqual(state.profileMovedSkills, ["demo-skill"]);
+});
+
+test("runSkillsCommand add profile-only appends every imported skill as disabled profile members", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-profile-only-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  const output: string[] = [];
+  const spawned: Array<{ command: string; args: string[]; cwd?: string; verbose?: boolean }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args, spawnCwd, behavior) => {
+      spawned.push({ command, args, ...(spawnCwd ? { cwd: spawnCwd } : {}), ...(behavior?.verbose !== undefined ? { verbose: behavior.verbose } : {}) });
+      writeSkill(join(homeDir, ".agents", "skills"), "demo-one", "Demo One");
+      writeSkill(join(homeDir, ".agents", "skills"), "demo-two", "Demo Two");
+      writeGlobalSkillLock(homeDir, {
+        "demo-one": { source: "owner/skills", sourceType: "github" },
+        "demo-two": { source: "owner/skills", sourceType: "github" },
+      });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "add", "owner/skills"], runtime, {
+    ...baseOptions(root),
+    skillAddArgs: ["--skill", "demo-one", "--skill", "demo-two", "--global", "--yes"],
+    skillAddProfileIds: [],
+    skillAddProfileOnlyIds: ["video"],
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned[0]?.args, ["skills", "add", "owner/skills", "--skill", "demo-one", "--skill", "demo-two", "--global", "--yes"]);
+  const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
+  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["demo-one", "demo-two"] }]);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.deepEqual(catalog.items.map((item) => item.startDisabled), [true, true]);
+  assert.deepEqual(loadSkillProfileState({ homeDir, cwd, local: false }).enabledProfileIds, []);
+  assert.ok(output.join("\n").includes("Profile"));
+  assert.ok(output.join("\n").includes("video created with 2 skills."));
+
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo-one")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo-two")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "demo-one")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "demo-two")), true);
 });
 
 test("deleteSkillRecords permanently deletes agent-specific skills", () => {
@@ -1448,6 +1496,7 @@ function baseOptions(root: string) {
     selectedSkillAgentIds: [],
     skillAddArgs: [],
     skillAddProfileIds: [],
+    skillAddProfileOnlyIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
     selectedPluginIds: [],

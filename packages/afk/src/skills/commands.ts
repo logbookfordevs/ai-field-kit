@@ -127,7 +127,7 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     cwd: options.cwd,
     dryRun: false,
     manifestLocal: false,
-    startDisabled: options.skillAddStartDisabled,
+    startDisabled: options.skillAddStartDisabled || options.skillAddProfileOnlyIds.length > 0,
   });
 
   for (const operation of plan.operations) {
@@ -142,7 +142,7 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     applyOperation(operation);
   }
 
-  const profileResults = options.skillAddProfileIds.length > 0 && plan.imported.length > 0
+  const profileResults = (options.skillAddProfileIds.length > 0 || options.skillAddProfileOnlyIds.length > 0) && plan.imported.length > 0
     ? syncAddedSkillsToProfiles(options, plan.imported.map((item) => item.id))
     : [];
 
@@ -168,7 +168,7 @@ function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Arr
   const state = loadSkillProfileState(context);
   const results: Array<{ profile: { id: string }; created: boolean }> = [];
 
-  for (const profileId of options.skillAddProfileIds) {
+  for (const profileId of uniqueProfileIds([...options.skillAddProfileIds, ...options.skillAddProfileOnlyIds])) {
     const result = appendSkillsToSkillProfile(context, {
       id: profileId,
       skills: skillIds,
@@ -182,6 +182,17 @@ function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Arr
   }
 
   return results;
+}
+
+function uniqueProfileIds(ids: string[]): string[] {
+  const unique = new Map<string, string>();
+  for (const id of ids) {
+    const trimmed = id.trim();
+    if (trimmed) {
+      unique.set(trimmed.toLowerCase(), trimmed);
+    }
+  }
+  return [...unique.values()];
 }
 
 export async function runCatalogProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {

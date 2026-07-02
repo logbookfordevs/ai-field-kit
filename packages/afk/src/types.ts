@@ -52,6 +52,7 @@ export type CliOptions = {
   selectedSkillAgentIds: SkillAgentId[];
   skillAddArgs: string[];
   skillAddProfileIds: string[];
+  skillAddProfileOnlyIds: string[];
   skillAddStartDisabled: boolean;
   selectedMcpIds: string[];
   selectedPluginIds: string[];
