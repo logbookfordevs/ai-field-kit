@@ -59,6 +59,8 @@ Allowed review gates are `code`, `design`, and `product`. Every implementation c
 
 When a checkpoint reaches review, recommend `/plannotator-review` for a better guided review experience when available.
 
+If `/plannotator-review` runs during a checkpoint and the user approves it, treat the `code` review gate as accepted and update the checkpoint packet's `review_gates.code` value accordingly.
+
 Do not name gates after evidence sources such as tests, lint, Figma, or backend contracts. Record those under validation or discipline evidence.
 
 Use `blocked_by` for checkpoint dependencies, human decisions, missing context, or external blockers.

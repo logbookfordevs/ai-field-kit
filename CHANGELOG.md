@@ -21,6 +21,7 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` renamed `afk-execution-tracking` to `afk-implement-tasks` so the workflow command names the implementation job rather than the tracking mechanism.
 - `skills:` aligned `afk-to-spec` and `afk-to-tasks` with the upstream `to-prd`/`to-issues` structures while adapting them to AFK spec artifacts, checkpoint packets, optional tracker publication, and Plannotator review.
 - `skills:` clarified that `afk-to-spec` and `afk-to-tasks` must reopen the Plannotator annotation gate after feedback until the user approves or stops the loop.
+- `skills:` clarified that an approved `/plannotator-review` during `afk-implement-tasks` can mark the checkpoint packet's `code` review gate accepted.
 - `rules:` clarified that explicit skill-driven background-agent or fresh-context review instructions count as delegation approval for bounded sub-agent use.
 - `cli:` fixed `afk setup skills --yes` so detected single-agent installs still create the shared `~/.agents/skills` library before adding agent-specific targets.
 - `skills:` added Emil Kowalski's optional `animation-vocabulary` utility to the bundled catalog with invocation off.
