@@ -1,35 +1,33 @@
 ---
 name: afk-to-spec
-description: Turn conversation context, grilled plans, PM PRDs, or feature notes into an agent-ready PRD/spec artifact.
+description: Turn the current conversation into a spec and save it as an AFK artifact, or publish it to the project issue tracker when requested — no interview, just synthesis of what you've already discussed.
 metadata:
-  short-description: Create or normalize an agent-ready PRD/spec.
+  short-description: Create or normalize an agent-ready spec.
 ---
 
 # To Spec
 
-This skill takes the current conversation context and codebase understanding and produces an agent-ready PRD/spec. Do NOT interview the user by default — synthesize what you already know.
+This skill takes the current conversation context and codebase understanding and produces a spec. Do NOT interview the user — just synthesize what you already know.
 
-If `grill-me` or `grill-with-docs` already sharpened the context, use that output. This skill turns available context into the artifact; it does not replace grilling when the user still wants that pressure step.
-
-The artifact location should follow the repo convention or AFK artifact conventions. If no convention exists, write to `docs/<task-slug>/<task-slug>.prd-spec.md`. If issue tracker context exists and the user expects tracker publication, publish or prepare tracker-ready markdown instead.
+Save the spec as a local AFK artifact by default. The artifact location should follow the repo convention or AFK artifact conventions. If no convention exists, write to `docs/<task-slug>/<task-slug>.spec.md`.
 
 ## Process
 
-1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD/spec, and respect any ADRs in the area you're touching.
+1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the spec, and respect any ADRs in the area you're touching.
 
-2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest meaningful seam possible. The fewer seams across the codebase, the better; one honest high-level seam is ideal when it covers the behavior.
+2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
 
 Check with the user that these seams match their expectations.
 
-3. Write the PRD/spec using the template below. If a PM PRD already exists, preserve its product intent and strengthen only what is missing for agent execution: behavior, acceptance criteria, implementation decisions, testing seams, or out-of-scope boundaries.
+3. Write the spec using the template below. Publish it to the project issue tracker only when the user requested tracker publication or existing project context clearly expects it. If publishing, apply the `ready-for-agent` triage label when the label vocabulary is known.
 
-4. After writing a local PRD/spec, run `plannotator annotate --gate <path-to-prd-spec>` when Plannotator is available. Treat returned annotations as requested changes and update the artifact before handing it to slicing or execution. If Plannotator is unavailable, say the artifact path and continue.
+4. After writing a local spec, run `plannotator annotate --gate <path-to-spec>` when Plannotator is available. Treat returned annotations as requested changes and update the artifact before handing it to slicing or execution. If Plannotator is unavailable, say the artifact path and continue.
 
-<prd-spec-template>
+<spec-template>
 
 ## Problem Statement
 
-The problem that the user or stakeholder is facing, from their perspective.
+The problem that the user is facing, from the user's perspective.
 
 ## Solution
 
@@ -37,7 +35,7 @@ The solution to the problem, from the user's perspective.
 
 ## User Stories
 
-A long, numbered list of user stories. Each user story should be in the format of:
+A LONG, numbered list of user stories. Each user story should be in the format of:
 
 1. As an <actor>, I want a <feature>, so that <benefit>
 
@@ -45,15 +43,7 @@ A long, numbered list of user stories. Each user story should be in the format o
 1. As a mobile bank customer, I want to see balance on my accounts, so that I can make better informed decisions about my spending
 </user-story-example>
 
-This list of user stories should cover all meaningful aspects of the feature.
-
-## Behavior
-
-Describe the expected user flow, states, permissions, edge cases, error handling, empty states, and any behavior that must be true for implementation.
-
-## Acceptance Criteria
-
-A checklist of observable conditions that prove the feature is complete.
+This list of user stories should be extremely extensive and cover all aspects of the feature.
 
 ## Implementation Decisions
 
@@ -73,18 +63,20 @@ Exception: if a prototype produced a snippet that encodes a decision more precis
 
 ## Testing Decisions
 
-A list of testing decisions that were made. Include:
+A list of testing decisions that were made.
+
+Include:
 
 - A description of what makes a good test (only test external behavior, not implementation details)
-- Which modules or seams will be tested
+- Which modules will be tested
 - Prior art for the tests (i.e. similar types of tests in the codebase)
 
 ## Out of Scope
 
-A description of the things that are out of scope for this PRD/spec.
+A description of the things that are out of scope for this spec.
 
 ## Further Notes
 
 Any further notes about the feature.
 
-</prd-spec-template>
+</spec-template>

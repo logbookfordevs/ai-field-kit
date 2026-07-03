@@ -1,4 +1,4 @@
-# Resume Execution Tracking
+# Resume Task Implementation
 
 Resume from checkpoint packets, not chat memory.
 
@@ -8,4 +8,4 @@ Read the smallest useful set: active checkpoints, blockers, handoff notes, packe
 
 Report done, active, blocked, and the next useful checkpoint.
 
-Then continue the normal execution-tracking loop from the selected checkpoint.
+Then continue the normal task implementation loop from the selected checkpoint.

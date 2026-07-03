@@ -120,12 +120,12 @@
             "composes": []
         },
         {
-            "id": "afk-execution-tracking",
-            "label": "AFK - Execution Tracking",
+            "id": "afk-implement-tasks",
+            "label": "AFK - Implement Tasks",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-execution-tracking",
+                "afk-implement-tasks",
                 "--global"
             ],
             "default": true,
@@ -190,7 +190,7 @@
             "composes": [
                 "plannotator-setup-goal",
                 "afk-to-tasks",
-                "afk-execution-tracking"
+                "afk-implement-tasks"
             ]
         },
         {

@@ -132,13 +132,13 @@ The current AFK catalog keeps execution packages explicit and manual:
 afk-sprint
   plannotator-setup-goal
   afk-to-tasks
-  afk-execution-tracking
+  afk-implement-tasks
 
 afk-turbo
   grilling
   plannotator-setup-goal
 ```
 
-Resume behavior is no longer a standalone skill. It lives as a mode inside `afk-turbo` and `afk-execution-tracking`, with `afk-compass` routing the user to the right mode.
+Resume behavior is no longer a standalone skill. It lives as a mode inside `afk-turbo` and `afk-implement-tasks`, with `afk-compass` routing the user to the right mode.
 
 Delegation is also represented as a utility: `afk-delegate` owns live/background external-agent supervision, while cmux and tmux are transport details disclosed inside that skill rather than catalog skills.

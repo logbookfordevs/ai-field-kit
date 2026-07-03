@@ -24,11 +24,11 @@ So the emerging rule is:
 
 Addy's skills are excellent when the agent is too eager to code. They put up rails: specify first, plan clearly, write tests, review the result, ship with evidence. That posture makes sense for large, long-lived systems where regression costs are high and process protects teams from invisible drift.
 
-Matt's skills are excellent when the agent is too verbose, too generic, or too detached from the actual engineering surface. They push for sharper loops: grill the idea, write a PRD from the context you already have, split work vertically, test behavior through public interfaces, and avoid making the workflow bigger than the work.
+Matt's skills are excellent when the agent is too verbose, too generic, or too detached from the actual engineering surface. They push for sharper loops: grill the idea, write a spec from the context you already have, split work vertically, test behavior through public interfaces, and avoid making the workflow bigger than the work.
 
 That difference matters for AFK because AFK is not trying to become a giant external process. It is trying to become Leonardo's engineering workflow: human-in-the-middle, ownership-preserving, compact, and practical.
 
-## PRD / Spec: Why AFK Forked Instead Of Reusing Raw
+## spec / Spec: Why AFK Forked Instead Of Reusing Raw
 
 ### Addy's `spec-driven-development`
 
@@ -47,15 +47,15 @@ The friction for AFK is that the skill tries to own too much of the lifecycle:
 - testing strategy
 - always / ask-first / never boundaries
 
-For AFK, that is both powerful and too broad. AFK already has Compass, Grill, artifact workflow, execution tracking, and separate execution disciplines. Letting one imported skill own the whole middle of the workflow creates overlap.
+For AFK, that is both powerful and too broad. AFK already has Compass, Grill, artifact workflow, task implementation, and separate execution disciplines. Letting one imported skill own the whole middle of the workflow creates overlap.
 
 ### Matt's `to-prd`
 
-Matt's `to-prd` is much smaller. It synthesizes the current context into a PRD, asks the agent to inspect the repo, identify testing seams, and write the artifact. It does not interview by default.
+Matt's `to-prd` is much smaller. It synthesizes the current context into a spec, asks the agent to inspect the repo, identify testing seams, and write the artifact. It does not interview by default.
 
-That shape matched AFK better. But the raw skill assumes setup around an issue tracker and publishes the PRD there. AFK needed a local-first, tracker-aware PRD/spec artifact that can normalize PM PRDs, preserve product intent, and add behavior, acceptance criteria, implementation decisions, and testing seams.
+That shape matched AFK better. But the raw skill assumes setup around an issue tracker and publishes the spec there. AFK needed a local-first, tracker-aware spec artifact that can normalize PM specs, preserve product intent, and add behavior, acceptance criteria, implementation decisions, and testing seams.
 
-So AFK created `afk-to-prd-spec`.
+So AFK created `afk-to-spec`.
 
 That was the right kind of fork: keep the small Matt shape, change the destination and artifact contract.
 
@@ -72,7 +72,7 @@ The mismatch is subtler: it still outputs a plan-shaped artifact. AFK discovered
 That created a two-step translation:
 
 ```text
-plan file -> execution tracking slices
+plan file -> task implementation slices
 ```
 
 Once we noticed that, the better shape became obvious:
@@ -83,11 +83,11 @@ source artifact -> executable checkpoint packets
 
 ### Matt's `to-issues`
 
-Matt's `to-issues` already had the right planning instinct: split a plan, spec, or PRD into independently grabbable vertical slices, quiz the user on granularity and dependencies, then publish the slices.
+Matt's `to-issues` already had the right planning instinct: split a plan, spec, or spec into independently grabbable vertical slices, quiz the user on granularity and dependencies, then publish the slices.
 
 The raw skill's center of gravity is the issue tracker. AFK's center of gravity is local checkpoint packets that can optionally be mirrored to a tracker.
 
-So AFK created `afk-to-issues`.
+So AFK created `afk-to-tasks`.
 
 This was not a brand-new Leo skill wearing Matt's jacket. It kept the spine:
 
@@ -170,8 +170,8 @@ That is valuable. But AFK already has its own pressure surfaces. Importing all o
 
 Matt's skills fit AFK well when the desired behavior is small and sharp:
 
-- `to-prd` becomes `afk-to-prd-spec`
-- `to-issues` becomes `afk-to-issues`
+- `to-prd` becomes `afk-to-spec`
+- `to-issues` becomes `afk-to-tasks`
 - `tdd` replaces heavier generic TDD guidance
 
 The common thread is compactness plus engineering taste.
@@ -194,9 +194,9 @@ That is a real point of view.
 
 | Area | Previous default | Current AFK decision | Why |
 |---|---|---|---|
-| PRD/spec | Addy's `spec-driven-development` | `afk-to-prd-spec`, adapted from Matt `to-prd` | Keep compact synthesis, add AFK local-first PRD/spec behavior |
-| Planning | Addy's `planning-and-task-breakdown` / Matt raw `to-issues` as optional | `afk-to-issues`, adapted from Matt `to-issues` | Produce executable checkpoint packets directly |
-| Tracking | Core tracking index plus checkpoint files | Packet-only execution tracking | Remove duplicate state and hidden markers |
+| spec | Addy's `spec-driven-development` | `afk-to-spec`, adapted from Matt `to-prd` | Keep compact synthesis, add AFK local-first spec behavior |
+| Planning | Addy's `planning-and-task-breakdown` / Matt raw `to-issues` as optional | `afk-to-tasks`, adapted from Matt `to-issues` | Produce executable checkpoint packets directly |
+| Tracking | Core tracking index plus checkpoint files | Packet-only task implementation | Remove duplicate state and hidden markers |
 | TDD | Addy's `test-driven-development` | Matt `tdd` | Keep red-green-refactor, reduce over-testing of implementation details |
 
 ## The Mental Model Going Forward

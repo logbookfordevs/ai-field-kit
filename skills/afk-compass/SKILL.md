@@ -46,9 +46,9 @@ AFK stays composable. A lane names the likely path, but only the current phase s
 Use when a feature, product change, or technical slice needs to become code.
 
 1. `grill-me`, `grill-with-docs`, or `afk-code-grill` when the idea or trade-offs are not settled.
-2. `afk-to-spec` when the conversation needs an agent-ready PRD/spec.
+2. `afk-to-spec` when the conversation needs an agent-ready spec.
 3. `afk-to-tasks` when the spec needs executable slices.
-4. `afk-execution-tracking`, `afk-sprint`, or `afk-turbo` when checkpointed execution begins.
+4. `afk-implement-tasks`, `afk-sprint`, or `afk-turbo` when checkpointed implementation begins.
 
 ### Existing-work continuation
 
@@ -56,7 +56,7 @@ Use when the user is resuming a feature, workflow, branch, packet, or previous s
 
 - `afk-turbo` resume mode for durable Turbo goal packages, handoffs, or board context.
 - `afk-pickup` for disposable handoff notes.
-- `afk-execution-tracking` resume mode when checkpoint packets already exist and need state, validation, or handoff updates.
+- `afk-implement-tasks` resume mode when checkpoint packets already exist and need implementation, validation, or handoff updates.
 
 ### Design and frontend judgment
 
@@ -86,15 +86,15 @@ Task arrives
 +-- Explicit AFK Sprint or goal run with Markdown tracking? -> afk-sprint
 +-- Explicit AFK workflow / Flow / run? --------> route only the current phase
 +-- Resuming Turbo goal/board work? -----------> afk-turbo resume mode
-+-- Resuming checkpointed work? ---------------> afk-execution-tracking resume mode
++-- Resuming checkpointed work? ---------------> afk-implement-tasks resume mode
 +-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
-+-- Need an agent-ready PRD/spec before code? ---> afk-to-spec
++-- Need an agent-ready spec before code? ------> afk-to-spec
 +-- Need executable slices/checkpoints? ---------> afk-to-tasks
 +-- Need code choices or implementation trade-offs grilled? -> afk-code-grill
 +-- Need docs/domain/terminology pressure? ------> grill-with-docs
 +-- Implementing or delegating a change? --------> execution bundle selection
 |   +-- Needs checkpoint packets first? ---------> afk-to-tasks
-|   +-- Needs tracked checkpoint execution? -----> afk-execution-tracking
+|   +-- Needs checkpoint task implementation? --> afk-implement-tasks
 +-- Reviewing code or PR quality? ----------------> normal review workflow
 +-- Need a quick throwaway experiment? -----------> prototype
 +-- Need external-model perspective? -------------> afk-ask
@@ -104,7 +104,7 @@ Task arrives
 
 Only invoke skills that are installed or clearly available. If a routed skill is missing, state the gap and continue with the best available installed skill or normal workflow.
 
-For explicit AFK workflow requests, explain that AFK is composable and route the current phase. Add Grill, PRD/spec, issues, tracking, or execution discipline only when that is the current need.
+For explicit AFK workflow requests, explain that AFK is composable and route the current phase. Add Grill, spec, slicing, tracking, or execution discipline only when that is the current need.
 
 ## Manual Wrappers
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "AFK To Spec"
-  short_description: "Create or normalize an agent-ready PRD/spec"
-  default_prompt: "Create or normalize an agent-ready PRD/spec from this context."
+  short_description: "Create or normalize an agent-ready spec"
+  default_prompt: "Create or normalize an agent-ready spec from this context."

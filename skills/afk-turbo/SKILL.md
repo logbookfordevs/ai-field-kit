@@ -20,7 +20,7 @@ Turbo combines `plannotator-setup-goal` with GoalBuddy's local live board and PM
 5. After the user triggers launch, run GoalBuddy from that goal package.
 6. Start or register the local board before execution and include a clickable board URL when available.
 
-Do not also use `afk-execution-tracking`; the GoalBuddy board is the continuity surface.
+Do not also use `afk-implement-tasks`; the GoalBuddy board is the continuity surface.
 
 Preserve execution discipline in GoalBuddy tasks: `tdd` for behavior, source checks for APIs/libs, doubt checks for risky decisions, and concrete validation.
 
