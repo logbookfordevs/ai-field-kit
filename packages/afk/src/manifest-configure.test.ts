@@ -344,6 +344,84 @@ test("runManifestConfigureWithPrompts sets profile mode", async () => {
   assert.equal(written.mode, "context");
 });
 
+test("runManifestConfigureWithPrompts can enter one catalog area directly", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-area-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "mcps.json"), `${JSON.stringify({
+    version: 1,
+    items: [
+      {
+        id: "stitch",
+        label: "Stitch MCP",
+        source: "https://stitch.googleapis.com/mcp",
+        args: ["--name", "stitchmcp"],
+        default: true,
+      },
+    ],
+  }, null, 2)}\n`);
+  const selectedAreas: string[] = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    {
+      ...scriptedPrompts({
+        areas: ["finish"],
+        actions: ["toggle-default", "back"],
+        toggleValues: [{ stitch: false }],
+        confirms: [true],
+      }),
+      selectArea: async (choices) => {
+        selectedAreas.push(...choices.map((choice) => choice.value));
+        return "finish";
+      },
+    },
+    { area: "mcps" },
+  );
+
+  const written = JSON.parse(readFileSync(join(manifestDir, "mcps.json"), "utf8")) as { items: Array<{ id: string; default: boolean }> };
+  assert.equal(code, 0);
+  assert.deepEqual(selectedAreas, []);
+  assert.equal(written.items[0]?.default, false);
+});
+
+test("runManifestConfigureWithPrompts can run one catalog action directly", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-action-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "strict",
+    alwaysOn: [],
+    items: [],
+  }, null, 2)}\n`);
+  const selectedActions: string[] = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    {
+      ...scriptedPrompts({
+        areas: ["finish"],
+        actions: ["back"],
+        profileModes: ["context"],
+        confirms: [true],
+      }),
+      selectAction: async (_area, choices) => {
+        selectedActions.push(...choices.map((choice) => choice.value));
+        return "back";
+      },
+    },
+    { area: "profiles", action: "set-profile-mode" },
+  );
+
+  const written = JSON.parse(readFileSync(join(manifestDir, "profiles.json"), "utf8")) as { mode: string };
+  assert.equal(code, 0);
+  assert.deepEqual(selectedActions, []);
+  assert.equal(written.mode, "context");
+});
+
 test("runManifestConfigureWithPrompts edits project manifests for local configure", async () => {
   const cwd = mkdtempSync(join(tmpdir(), "afk-configure-project-"));
   const manifestDir = join(cwd, "afk", "catalog");

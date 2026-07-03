@@ -131,7 +131,7 @@ The current AFK catalog keeps execution packages explicit and manual:
 ```text
 afk-sprint
   plannotator-setup-goal
-  afk-to-issues
+  afk-to-tasks
   afk-execution-tracking
 
 afk-turbo

@@ -78,12 +78,12 @@
             ]
         },
         {
-            "id": "afk-to-prd-spec",
-            "label": "AFK - To PRD Spec",
+            "id": "afk-to-spec",
+            "label": "AFK - To Spec",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-to-prd-spec",
+                "afk-to-spec",
                 "--global"
             ],
             "default": true,
@@ -92,12 +92,12 @@
             "composes": []
         },
         {
-            "id": "afk-to-issues",
-            "label": "AFK - To Issues",
+            "id": "afk-to-tasks",
+            "label": "AFK - To Tasks",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-to-issues",
+                "afk-to-tasks",
                 "--global"
             ],
             "default": true,
@@ -189,7 +189,7 @@
             "role": "workflow",
             "composes": [
                 "plannotator-setup-goal",
-                "afk-to-issues",
+                "afk-to-tasks",
                 "afk-execution-tracking"
             ]
         },
@@ -337,6 +337,20 @@
             "composes": [
                 "codebase-design"
             ]
+        },
+        {
+            "id": "research",
+            "label": "Research",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "research",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
         },
         {
             "id": "source-driven-development",

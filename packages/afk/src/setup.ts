@@ -7,12 +7,12 @@ import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateC
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
 import { selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
-import { builtInDefaultsSource, ensureLocalManifests, loadSourceManifestContents, readRememberedDefaultsSource } from "./manifest.js";
+import { builtInDefaultsSource, ensureLocalManifests, loadSourceManifestContents, localManifestDir, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
-import { basename } from "node:path";
-import type { Area, CliOptions, ManifestFilename, PathOperation, Runtime } from "./types.js";
+import { basename, join } from "node:path";
+import type { Area, CliOptions, ManifestCategory, ManifestFilename, PathOperation, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
   const updateNotice = options.yes
@@ -160,7 +160,11 @@ function sameTargets(left: string[], right: string[]): boolean {
 }
 
 export async function runArea(area: Area, runtime: Runtime, options: CliOptions): Promise<number> {
-  const prepared = options.setupManifestsPrepared ? { code: 0, options } : await prepareSetupManifests(runtime, options);
+  const profileManifestCategory: ManifestCategory[] = ["profiles"];
+  const areaOptions = area === "profiles" && options.selectedManifestCategories.length === 0
+    ? { ...options, selectedManifestCategories: profileManifestCategory }
+    : options;
+  const prepared = areaOptions.setupManifestsPrepared ? { code: 0, options: areaOptions } : await prepareSetupManifests(runtime, areaOptions);
   if (prepared.code !== 0 || prepared.options.initOnly) {
     return prepared.code;
   }
@@ -186,6 +190,11 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       }
 
       return code;
+    }
+    case "profiles": {
+      runtime.io.stdout("\nProfile catalog prepared.");
+      runtime.io.stdout(`- ${profileCatalogPath(prepared.options)}`);
+      return 0;
     }
     case "mcps": {
       const selectedOptions = await resolveMcpOptions(prepared.options);
@@ -374,8 +383,19 @@ async function prepareSetupManifests(runtime: Runtime, options: CliOptions): Pro
     return { code: 0, options: { ...options, manifestContents, rememberDefaultsSource: false } };
   }
 
-  if (readRememberedDefaultsSource(options)) {
+  const rememberedSource = readRememberedDefaultsSource(options);
+  if (rememberedSource && options.selectedManifestCategories.length === 0) {
     return { code: 0, options };
+  }
+
+  if (rememberedSource) {
+    return prepareManifestFiles(runtime, {
+      ...options,
+      defaultsSource: rememberedSource,
+      defaultsSourceExplicit: true,
+      refreshDefaults: true,
+      rememberDefaultsSource: false,
+    });
   }
 
   const selectedSource = options.yes ? builtInDefaultsSource : (await selectDefaultsSource(builtInDefaultsSource)).trim();
@@ -433,6 +453,7 @@ function manifestContentsFromOperations(operations: PathOperation[]): Partial<Re
 
 function isManifestFilename(value: string | undefined): value is ManifestFilename {
   return value === "skills.json" ||
+    value === "profiles.json" ||
     value === "mcps.json" ||
     value === "presets.json" ||
     value === "rules.json" ||
@@ -446,6 +467,8 @@ function areaLabel(area: Area): string {
       return "Rules";
     case "skills":
       return "Skills";
+    case "profiles":
+      return "Profiles";
     case "mcps":
       return "MCPs";
     case "plugins":
@@ -453,6 +476,13 @@ function areaLabel(area: Area): string {
     case "hooks":
       return "Hooks";
   }
+}
+
+function profileCatalogPath(options: CliOptions): string {
+  const manifestDir = options.setupScope === "project" || options.manifestLocal
+    ? projectManifestDir(options.cwd)
+    : localManifestDir(options.homeDir);
+  return join(manifestDir, "profiles.json");
 }
 
 function scopeLabel(scope: CliOptions["setupScope"], cwd: string): string {

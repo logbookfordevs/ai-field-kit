@@ -41,6 +41,12 @@ const setupAreaChoices: Choice<Area>[] = [
     description: "Delegate AFK and recommended skill installs to the skills CLI.",
   },
   {
+    name: "Profiles",
+    value: "profiles",
+    checked: DEFAULT_CHECKED,
+    description: "Prepare AFK focus profile definitions from profiles.json.",
+  },
+  {
     name: "MCPs",
     value: "mcps",
     checked: DEFAULT_CHECKED,

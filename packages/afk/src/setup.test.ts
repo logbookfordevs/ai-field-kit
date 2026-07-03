@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
@@ -379,7 +379,7 @@ test("runSetup skips the source prompt when a default source is saved", async ()
 });
 
 test("runArea prompts for a source only on first-run interactive setup areas", async () => {
-  const areas = ["rules", "skills", "mcps", "plugins", "hooks"] as const;
+  const areas = ["rules", "skills", "profiles", "mcps", "plugins", "hooks"] as const;
 
   for (const area of areas) {
     const homeDir = localHomeWithManifests();
@@ -401,6 +401,40 @@ test("runArea prompts for a source only on first-run interactive setup areas", a
     assert.equal(code, 0);
     assert.deepEqual(promptState.rememberedSources, [builtInDefaultsSource], area);
   }
+});
+
+test("runArea profiles prepares the profile catalog from the saved setup source", async () => {
+  const sourceDir = localDefaultsSource({
+    "profiles.json": {
+      version: 1,
+      mode: "context",
+      alwaysOn: ["afk-doc-craft"],
+      items: [{ id: "context", name: "Context", skills: ["afk-doc-craft"] }],
+    },
+  });
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: sourceDir, presets: [] },
+  });
+  const repoDir = localRepoWithRules();
+  const profilesPath = join(localManifestDir(homeDir), "profiles.json");
+  rmSync(profilesPath);
+  const output: string[] = [];
+
+  promptState.rememberedSources = [];
+  const code = await runArea("profiles", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    rulesSource: "github",
+  });
+  const text = output.join("\n");
+  const profiles = JSON.parse(readFileSync(profilesPath, "utf8")) as { mode?: string; alwaysOn?: string[] };
+
+  assert.equal(code, 0);
+  assert.equal(profiles.mode, "context");
+  assert.deepEqual(profiles.alwaysOn, ["afk-doc-craft"]);
+  assert.deepEqual(promptState.rememberedSources, []);
+  assert.ok(text.includes("Profile catalog prepared."));
+  assert.ok(text.includes(profilesPath));
 });
 
 test("runArea uses explicit source manifests without writing cache before installing selected skills", async () => {
@@ -587,6 +621,7 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
 
   const manifests: Record<string, unknown> = {
     "skills.json": { version: 1, defaultSource: "", items: [] },
+    "profiles.json": { version: 1, mode: "strict", alwaysOn: [], items: [] },
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "local", url: "rules/AGENTS.md" },
@@ -620,6 +655,7 @@ function localDefaultsSource(overrides: Record<string, unknown> = {}): string {
 
   const manifests: Record<string, unknown> = {
     "skills.json": { version: 1, defaultSource: "", items: [] },
+    "profiles.json": { version: 1, mode: "strict", alwaysOn: [], items: [] },
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "github", url: "" },

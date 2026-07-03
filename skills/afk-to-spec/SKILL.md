@@ -1,11 +1,11 @@
 ---
-name: afk-to-prd-spec
+name: afk-to-spec
 description: Turn conversation context, grilled plans, PM PRDs, or feature notes into an agent-ready PRD/spec artifact.
 metadata:
   short-description: Create or normalize an agent-ready PRD/spec.
 ---
 
-# To PRD Spec
+# To Spec
 
 This skill takes the current conversation context and codebase understanding and produces an agent-ready PRD/spec. Do NOT interview the user by default — synthesize what you already know.
 

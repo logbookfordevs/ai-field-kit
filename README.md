@@ -168,8 +168,8 @@ plugins.
 | `afk-delegate` | Assigns work to another local agent and supervises it through live or background terminal lanes |
 | `afk-brainstorming-facilitator` | Runs guided brainstorming sessions with technique selection, divergence, and synthesis |
 | `afk-code-grill` | Grill-style pressure on UX and implementation choices inside a defined coding scope |
-| `afk-to-prd-spec` | Turns grilled context, PM PRDs, or feature notes into an agent-ready PRD/spec |
-| `afk-to-issues` | Turns PRDs, plans, goal packages, or tracker issues into executable checkpoint packets |
+| `afk-to-spec` | Turns grilled context, PM PRDs, or feature notes into an agent-ready PRD/spec |
+| `afk-to-tasks` | Turns PRDs, plans, goal packages, or tracker issues into executable checkpoint packets |
 | `afk-ui-registry-preferences` | Reference map for choosing shadcn, community registries, icons, and headless primitives |
 | `afk-pickup` | Explicitly resumes from disposable handoff notes saved in the OS temp directory |
 
@@ -183,8 +183,8 @@ They are intentionally similar, but they are not redundant:
 |---|---|---|
 | `afk-brainstorming-facilitator` | You need divergence, lots of options, or fresh directions before narrowing anything down | Idea inventory, themes, promising directions |
 | `afk-code-grill` | You already know the feature or slice of work and need to lock high-leverage UX or implementation trade-offs before coding | Tiny decision note or ADR only when the decision deserves one |
-| `afk-to-prd-spec` | You need to create or normalize a PRD/spec after Grill or Grill With Docs | Agent-ready PRD/spec with behavior, acceptance criteria, implementation decisions, and testing seams |
-| `afk-to-issues` | You have a PRD/spec, plan, goal package, tracker issue, or rough context that needs executable slices | Local AFK checkpoint packets, external tracker issues, or both |
+| `afk-to-spec` | You need to create or normalize a PRD/spec after Grill or Grill With Docs | Agent-ready PRD/spec with behavior, acceptance criteria, implementation decisions, and testing seams |
+| `afk-to-tasks` | You have a PRD/spec, plan, goal package, tracker issue, or rough context that needs executable slices | Local AFK checkpoint packets, external tracker issues, or both |
 | `afk-execution-tracking` | You have checkpoint packets and want checkpointed execution, including resume, instead of one long build run | Updated checkpoint packets with status, review gates, validation, implementation notes, and handoff notes |
 | `afk-pickup` | A previous session wrote a disposable handoff and this session needs to find and resume it | Verified pickup summary with live references and next action |
 | `afk-ask` | You want an outside perspective, alternate framing, or a second opinion from another local AI CLI | External-model artifact with summary and next steps |
@@ -197,9 +197,9 @@ They are intentionally similar, but they are not redundant:
 | Artifact conventions | `afk-compass/references/artifacts.md` |
 | Open / clarify | `afk-brainstorming-facilitator` |
 | Pressure-test / decide | `grill-me`, `afk-code-grill` |
-| PRD/spec creation | `afk-to-prd-spec` |
+| PRD/spec creation | `afk-to-spec` |
 | RFC creation | Flexible for now; create a dedicated AFK skill only if the RFC shape becomes worth standardizing |
-| Executable slicing | `afk-to-issues` |
+| Executable slicing | `afk-to-tasks` |
 | Execution control | `afk-execution-tracking` plus the selected execution bundle; use its resume mode after context resets |
 | Validation / testing | Flexible for now; use project checks directly, with `diagnosing-bugs` when something fails |
 | Support | `afk-pickup`, `afk-ask`, `afk-delegate`, `afk-doc-craft`, `diagnosing-bugs` |
@@ -215,8 +215,8 @@ If you're unsure which one to reach for, use this shortcut:
 - "Run AFK Turbo" -> `afk-turbo`
 - "Run AFK Turbo with human review gates" -> `afk-turbo` review-gated mode
 - "We need AFK artifact boundaries or storage conventions" -> `afk-compass`
-- "We need to create or normalize a PRD/spec after grilling" -> `afk-to-prd-spec`
-- "We need to split this into executable slices/checkpoints" -> `afk-to-issues`
+- "We need to create or normalize a PRD/spec after grilling" -> `afk-to-spec`
+- "We need to split this into executable slices/checkpoints" -> `afk-to-tasks`
 - "Grill me on this plan/design before we commit" -> `grill-me`
 - "We know the feature, but important UX or implementation trade-offs are still fuzzy" -> `afk-code-grill`
 - "We have checkpoint packets and need tracked execution or resume" -> `afk-execution-tracking`
@@ -247,9 +247,9 @@ AFK Workflow is a human-facing recommendation, not a required agent pipeline. Us
 1. Start with `afk-brainstorming-facilitator` when the idea space is still wide open.
 2. Use `grill-me` when a plan or design needs relentless questioning before you commit.
 3. Use `grill-me` for greenfield work or `grill-with-docs` for brownfield work before PRD/spec creation.
-4. Write or refine the PRD/spec with `afk-to-prd-spec`.
+4. Write or refine the PRD/spec with `afk-to-spec`.
 5. Use `afk-code-grill` when a known slice still has UX, behavior, or implementation decisions to lock. It asks one sharp trade-off question at a time.
-6. Create executable slices with `afk-to-issues`. It turns the PRD/spec, plan, goal package, tracker issue, or current context into AFK checkpoint packets.
+6. Create executable slices with `afk-to-tasks`. It turns the PRD/spec, plan, goal package, tracker issue, or current context into AFK checkpoint packets.
 7. Use `afk-execution-tracking` when execution needs status, resume safety, parallel coordination, review gates, or checkpointed implementation notes.
 8. Select the execution bundle for each task: use `tdd` for behavior changes, `source-driven-development` for framework/library/API correctness, and `doubt-driven-development` for risky non-trivial decisions.
 9. When tracking is active, record the selected execution bundle and evidence before the checkpoint moves to review.
@@ -365,7 +365,7 @@ Installer-based companions belong in Plugins. Keep `skills.json` focused on skil
 - `afk-brainstorming-facilitator` is for divergence. Do not reach for it if you already know what you want and just need tighter requirements.
 - `grill-me` pressures the plan or design through one-question-at-a-time interrogation.
 - `afk-code-grill` is Grill for code decisions: one meaningful trade-off at a time, with a recommendation when the evidence is enough.
-- `afk-to-issues` replaces one-file implementation planning with executable checkpoint packets.
+- `afk-to-tasks` replaces one-file implementation planning with executable checkpoint packets.
 - `afk-execution-tracking` starts after checkpoint packets exist. Use it when execution needs status, resume safety, review gates, or parallel coordination.
 - `afk-pickup`, `afk-ask`, and `afk-delegate` are support skills. They pair well with the others but usually are not the main event.
 

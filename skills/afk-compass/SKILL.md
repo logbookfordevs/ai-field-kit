@@ -46,8 +46,8 @@ AFK stays composable. A lane names the likely path, but only the current phase s
 Use when a feature, product change, or technical slice needs to become code.
 
 1. `grill-me`, `grill-with-docs`, or `afk-code-grill` when the idea or trade-offs are not settled.
-2. `afk-to-prd-spec` when the conversation needs an agent-ready PRD/spec.
-3. `afk-to-issues` when the spec needs executable slices.
+2. `afk-to-spec` when the conversation needs an agent-ready PRD/spec.
+3. `afk-to-tasks` when the spec needs executable slices.
 4. `afk-execution-tracking`, `afk-sprint`, or `afk-turbo` when checkpointed execution begins.
 
 ### Existing-work continuation
@@ -88,12 +88,12 @@ Task arrives
 +-- Resuming Turbo goal/board work? -----------> afk-turbo resume mode
 +-- Resuming checkpointed work? ---------------> afk-execution-tracking resume mode
 +-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
-+-- Need an agent-ready PRD/spec before code? ---> afk-to-prd-spec
-+-- Need executable slices/checkpoints? ---------> afk-to-issues
++-- Need an agent-ready PRD/spec before code? ---> afk-to-spec
++-- Need executable slices/checkpoints? ---------> afk-to-tasks
 +-- Need code choices or implementation trade-offs grilled? -> afk-code-grill
 +-- Need docs/domain/terminology pressure? ------> grill-with-docs
 +-- Implementing or delegating a change? --------> execution bundle selection
-|   +-- Needs checkpoint packets first? ---------> afk-to-issues
+|   +-- Needs checkpoint packets first? ---------> afk-to-tasks
 |   +-- Needs tracked checkpoint execution? -----> afk-execution-tracking
 +-- Reviewing code or PR quality? ----------------> normal review workflow
 +-- Need a quick throwaway experiment? -----------> prototype

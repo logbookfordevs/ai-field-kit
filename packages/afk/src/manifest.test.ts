@@ -242,6 +242,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     const name = String(input).split("/").pop();
     const bodies: Record<string, string> = {
       "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
@@ -267,11 +268,13 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     });
 
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("skills.json")));
+    assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("profiles.json")));
     const presetsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("presets.json"));
     assert.ok(presetsWrite && presetsWrite.type === "write");
     assert.ok(presetsWrite.content.includes("\"defaultsSource\": \"acme/dev-kit\""));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/rules.json")));
+    assert.ok(requestedUrls.some((url) => url.endsWith("/profiles.json")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/hooks.json")));
     assert.ok(!requestedUrls.some((url) => url.endsWith("/workflows.json")));
   } finally {
@@ -288,6 +291,7 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
     const name = String(input).split("/").pop();
     const bodies: Record<string, string> = {
       "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
@@ -330,6 +334,7 @@ test("ensureLocalManifests can refresh project-local catalog", async () => {
     const name = String(input).split("/").pop();
     const bodies: Record<string, string> = {
       "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
@@ -358,6 +363,7 @@ test("ensureLocalManifests can refresh project-local catalog", async () => {
 
     assert.ok(operations.some((operation) => operation.type === "mkdir" && operation.path === manifestDir));
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path === join(manifestDir, "skills.json")));
+    assert.ok(operations.some((operation) => operation.type === "write" && operation.path === join(manifestDir, "profiles.json")));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
   } finally {
     globalThis.fetch = originalFetch;
@@ -382,6 +388,7 @@ test("ensureLocalManifests preserves imported skills that are absent from refres
           },
         ],
       }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
@@ -454,6 +461,7 @@ test("ensureLocalManifests turns imported skills into source skills when refresh
           },
         ],
       }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
@@ -524,6 +532,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
     const name = url.split("/").pop();
     const bodies: Record<string, string> = {
       "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),

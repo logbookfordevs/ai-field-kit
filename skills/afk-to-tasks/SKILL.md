@@ -1,14 +1,14 @@
 ---
-name: afk-to-issues
+name: afk-to-tasks
 description: Create an implementation plan as AFK execution checkpoint packets from a PRD/spec, implementation plan, goal package, tracker issue, or rough context using tracer-bullet vertical slices.
 metadata:
   short-description: Create AFK execution checkpoint packets.
 ---
 
-# To Issues
+# To Tasks
 Create an implementation plan as independently-grabbable AFK execution checkpoint packets using vertical slices (tracer bullets).
 
-AFK issues are local checkpoint packets by default. They may be mirrored to an external tracker, but the local tracking files are the AFK execution source of truth unless the user chooses another destination.
+AFK tasks are local checkpoint packets by default. They may be mirrored to an external tracker, but the local tracking files are the AFK execution source of truth unless the user chooses another destination.
 
 ## Process
 
@@ -38,8 +38,8 @@ Ask whether the granularity and dependencies are right. Confirm whether approved
 
 Iterate until the user approves the breakdown.
 
-### 5. Write the issues
-For each approved slice, write or publish a new issue in dependency order (blockers first).
+### 5. Write the tasks
+For each approved slice, write a local task or publish a new tracker issue in dependency order (blockers first).
 
 For local AFK tracking, create one checkpoint packet per slice under `docs/<task-slug>/tracking/I001-short-title.md`.
 

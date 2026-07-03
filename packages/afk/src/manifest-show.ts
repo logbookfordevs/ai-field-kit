@@ -15,6 +15,7 @@ type ManifestShowCategory = {
 const categories: ManifestShowCategory[] = [
   { id: "rules", label: "Rules", filename: "rules.json" },
   { id: "skills", label: "Skills", filename: "skills.json" },
+  { id: "profiles", label: "Profiles", filename: "profiles.json" },
   { id: "mcps", label: "MCPs", filename: "mcps.json" },
   { id: "plugins", label: "Plugins", filename: "plugins.json" },
   { id: "hooks", label: "Hooks", filename: "hooks.json" },
@@ -214,6 +215,8 @@ function renderManifestSummary(category: ManifestCategory, manifest: unknown, op
       return renderRules(manifest);
     case "skills":
       return options.manifestShowReact ? renderSkillsAsReact(manifest) : renderSkills(manifest);
+    case "profiles":
+      return renderProfiles(manifest);
     case "mcps":
       return renderItems(manifest, "MCP");
     case "plugins":
@@ -223,6 +226,17 @@ function renderManifestSummary(category: ManifestCategory, manifest: unknown, op
     case "presets":
       return renderPresets(manifest);
   }
+}
+
+function renderProfiles(manifest: Record<string, unknown>): string {
+  const alwaysOn = Array.isArray(manifest.alwaysOn) ? manifest.alwaysOn.filter((item) => typeof item === "string") : [];
+  const items = Array.isArray(manifest.items) ? manifest.items : [];
+  return [
+    summaryLine("version", valueOrUnknown(manifest.version)),
+    summaryLine("mode", typeof manifest.mode === "string" ? manifest.mode : "strict"),
+    summaryLine("always-on", alwaysOn.length.toString()),
+    summaryLine("profiles", items.length.toString()),
+  ].join("\n");
 }
 
 function renderRules(manifest: Record<string, unknown>): string {

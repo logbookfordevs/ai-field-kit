@@ -85,6 +85,22 @@ test("normalizeSetupSelection keeps item areas when at least one item is selecte
   assert.deepEqual(selection.skillAgents, ["kiro-cli"]);
 });
 
+test("normalizeSetupSelection keeps profile setup because it is catalog-level", () => {
+  const selection = normalizeSetupSelection({
+    areas: ["profiles"],
+    agents: [],
+    hookAgents: [],
+    setupScope: "project",
+    skillIds: [],
+    skillAgents: [],
+    mcpIds: [],
+    pluginIds: [],
+    hookIds: [],
+  });
+
+  assert.deepEqual(selection.areas, ["profiles"]);
+});
+
 test("normalizeSetupSelection keeps hooks when at least one hook is selected", () => {
   const selection = normalizeSetupSelection({
     areas: ["hooks"],
@@ -143,6 +159,16 @@ test("selectSetup does not ask for agent targets when only plugins are selected"
   assert.deepEqual(selection.pluginIds, ["sample-plugin"]);
   assert.deepEqual(selection.agents, []);
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
+});
+
+test("selectSetup offers profiles as a setup area", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxChoices = {};
+  promptState.setupAreas = ["profiles"];
+  const selection = await selectSetup(defaultOptions(localHomeWithPluginManifest()));
+
+  assert.deepEqual(selection.areas, ["profiles"]);
+  assert.ok(promptState.checkboxChoices["Choose what AFK should prepare"]?.some((choice) => choice.name === "Profiles" && choice.value === "profiles"));
 });
 
 test("selectPluginsInstall does not ask for agent targets when installing plugins", async () => {
@@ -243,6 +269,7 @@ test("selectSetup yes mode uses detected targets", async () => {
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
   const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true });
 
+  assert.ok(selection.areas.includes("profiles"));
   assert.deepEqual(selection.agents, ["codex"]);
   assert.deepEqual(selection.hookAgents, ["codex"]);
   assert.deepEqual(selection.skillIds, ["afk-default"]);

@@ -595,6 +595,35 @@ test("runSkillsCommand rejects profile definition writes under skills profiles",
   assert.ok(output.join("\n").includes("Use afk catalog profiles create instead."));
 });
 
+test("runSkillsCommand catalog profiles edit profile-only disables explicit profile skills", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-edit-profile-only-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
+  writeSkillManifest(homeDir, ["alpha", "beta"]);
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "video", name: "Video", skills: ["alpha"] }],
+  });
+
+  const code = await runSkillsCommand(["catalog", "profiles", "edit", "video"], outputRuntime(output), {
+    ...baseOptions(root),
+    skillProfileSkills: ["beta"],
+    skillProfileOnly: true,
+  });
+
+  assert.equal(code, 0, output.join("\n"));
+  const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
+  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["beta"] }]);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.equal(catalog.items.find((item) => item.id === "beta")?.startDisabled, true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "beta")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "beta")), true);
+  assert.ok(output.join("\n").includes("Profile Skills"));
+});
+
 test("runSkillsCommand add delegates to skills add and imports installed skills into catalog", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-add-command-"));
   const homeDir = join(root, "home");

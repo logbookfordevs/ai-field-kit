@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, ManifestCategory, ManifestFilename, PathOperation } from "./types.js";
 
-export const manifestNames = ["skills.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
+export const manifestNames = ["skills.json", "profiles.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 export const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -237,6 +237,8 @@ export function manifestNameForCategory(category: ManifestCategory): ManifestNam
       return "rules.json";
     case "skills":
       return "skills.json";
+    case "profiles":
+      return "profiles.json";
     case "mcps":
       return "mcps.json";
     case "plugins":
@@ -484,6 +486,10 @@ function defaultRepoManifestUrls(owner: string, repo: string, ref: string): stri
 function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): string {
   if (name === "skills.json") {
     return `${JSON.stringify({ version: 1, defaultSource: "", scopes: [], items: [] }, null, 2)}\n`;
+  }
+
+  if (name === "profiles.json") {
+    return `${JSON.stringify({ version: 1, mode: "strict", alwaysOn: [], items: [] }, null, 2)}\n`;
   }
 
   if (name === "mcps.json") {

@@ -14,7 +14,7 @@ AFK Sprint is a named execution package with Markdown checkpoint tracking.
 1. Use existing AFK artifacts as Plannotator input when present.
 2. If no useful preflight exists, or the current context is too thin for good facts, run a short grilling pass before Plannotator.
 3. Use `plannotator-setup-goal` to create reviewed facts, plan, and `goal.md`.
-4. Ask the user to invoke `afk-to-issues` next. It creates executable checkpoint packets from the goal package.
+4. Ask the user to invoke `afk-to-tasks` next. It creates executable checkpoint packets from the goal package.
 5. After checkpoint packets exist, ask the user to invoke `afk-execution-tracking` when they are ready to execute.
 6. During execution tracking, run native `/goal` for the prepared `goal.md` and keep checkpoint packets current.
 
