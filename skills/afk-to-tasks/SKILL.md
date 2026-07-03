@@ -62,7 +62,11 @@ For local AFK tracking, create one checkpoint packet per slice under `docs/<task
 
 Publish new tracker issues only when the user requested tracker publication or existing project context clearly expects it. If writing both local packets and external issues, create local files first and add tracker links after publication.
 
-After writing local checkpoint packets, run `plannotator annotate --gate <tracking-folder>` when Plannotator is available. Treat returned annotations as requested changes across the packet set before handing off to execution. If only external tracker issues were created, skip this gate unless a local draft folder exists.
+After writing local checkpoint packets, run `plannotator annotate --gate <tracking-folder>` when Plannotator is available. Treat returned annotations or user feedback as requested changes across the packet set before handing off to execution.
+
+If the user does not approve the gate, apply their feedback, then run `plannotator annotate --gate <tracking-folder>` again for the revised packet set. Keep reopening the annotation gate until the user approves or explicitly asks to stop the review loop.
+
+If only external tracker issues were created, skip this gate unless a local draft folder exists.
 
 Do NOT close or modify any parent issue.
 

@@ -21,7 +21,11 @@ Check with the user that these seams match their expectations.
 
 3. Write the spec using the template below. Publish it to the project issue tracker only when the user requested tracker publication or existing project context clearly expects it. If publishing, apply the `ready-for-agent` triage label when the label vocabulary is known.
 
-4. After writing a local spec, run `plannotator annotate --gate <path-to-spec>` when Plannotator is available. Treat returned annotations as requested changes and update the artifact before handing it to slicing or execution. If Plannotator is unavailable, say the artifact path and continue.
+4. After writing a local spec, run `plannotator annotate --gate <path-to-spec>` when Plannotator is available. Treat returned annotations or user feedback as requested changes and update the artifact before handing it to slicing or execution.
+
+If the user does not approve the gate, apply their feedback, then run `plannotator annotate --gate <path-to-spec>` again for the revised file. Keep reopening the annotation gate until the user approves or explicitly asks to stop the review loop.
+
+If Plannotator is unavailable, say the artifact path and continue.
 
 <spec-template>
 
