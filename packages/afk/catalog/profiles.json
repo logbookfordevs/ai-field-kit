@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "mode": "context",
+  "alwaysOn": [
+    "grilling",
+    "afk-doc-craft",
+    "code-simplification",
+    "diagnosing-bugs",
+    "truss-evaluation"
+  ],
+  "items": [
+    {
+      "id": "stitch",
+      "name": "Stitch",
+      "skills": [
+        "design-md",
+        "enhance-prompt",
+        "react-components",
+        "stitch-loop",
+        "stitch-remotion"
+      ]
+    },
+    {
+      "id": "video",
+      "name": "Video",
+      "skills": [
+        "embedded-captions",
+        "faceless-explainer",
+        "general-video",
+        "graphic-overlays",
+        "hyperframes-animation",
+        "hyperframes-core",
+        "hyperframes-creative",
+        "hyperframes-media",
+        "motion-graphics",
+        "music-to-video",
+        "pr-to-video",
+        "product-launch-video",
+        "remotion-to-hyperframes",
+        "slideshow",
+        "website-to-video"
+      ]
+    }
+  ]
+}

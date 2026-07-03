@@ -44,6 +44,7 @@ Scripted setup can use `--yes` to accept defaults after the cache exists, or
 |---|---|---|
 | Rules | `afk setup rules` | Syncs AFK rules into managed regions of supported agent rule files. |
 | Skills | `afk setup skills` | Delegates selected skill installs to `npx skills add`. |
+| Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `npx add-mcp`. |
 | Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |
 | Hooks | `afk setup hooks` | Copies hook scripts and merges hook commands into supported agent configs. |
@@ -126,7 +127,7 @@ afk setup hooks --dry-run
 afk refresh
 
 # Edit writable local catalog files
-afk config
+afk catalog
 
 # Inspect the local catalog cache
 afk show
@@ -376,6 +377,7 @@ The expected files are:
 
 ```text
 skills.json
+profiles.json
 mcps.json
 presets.json
 rules.json
@@ -460,6 +462,7 @@ The registry item writes:
 
 ```text
 ./afk/catalog/skills.json
+./afk/catalog/profiles.json
 ./afk/catalog/mcps.json
 ./afk/catalog/rules.json
 ./afk/catalog/plugins.json
@@ -483,7 +486,7 @@ afk show skills --source your-org/dev-kit
 afk refresh --default-source your-org/dev-kit
 ```
 
-Use `afk config` for small edits to writable local catalog files. It edits
+Use `afk catalog` for small edits to writable local catalog files. It edits
 the global AFK catalog cache by default, or `./afk/catalog` with `--local`.
 For shared defaults, prefer editing the source repository directly and then
 refreshing from that source.
@@ -670,6 +673,13 @@ The bundled plugin catalog currently includes Plannotator, GoalBuddy,
 Plannotator Tot, Yggtree, and Impeccable. Plugin setup is best-effort
 because these installers are owned by their upstream tools.
 
+### Profiles
+
+Profile setup prepares the local `profiles.json` catalog file from the
+remembered or selected setup source. Profiles are definitions, not installs:
+use `afk skills profiles enable <profile>` after the referenced skills exist
+to apply one.
+
 ## Troubleshooting
 
 ### `afk` runs a local checkout
@@ -823,7 +833,7 @@ that set:
 | `context` | Profiles act like a context filter: cataloged manual skills with `autoInvocation: false` stay active, while discoverable or uncataloged skills outside the kept set move to `.disabled`. |
 
 Use `afk catalog profiles create|edit --mode strict|context` to set the mode,
-or use the Profiles area in `afk config`.
+or use `afk catalog profiles set-mode`.
 
 For example, if `captions` is not in profile X, is in profile Y, and is not in
 profile Z, enabling X, then Y, then Z keeps `captions` active because Y is still
@@ -835,8 +845,8 @@ into `.disabled`. If a profile needs a skill that was already disabled before
 profiles touched it, AFK can temporarily enable it, then return it to disabled
 once no enabled profile keeps it.
 
-`afk config` can edit profile-level `alwaysOn` skills from the Profiles
-catalog area. In the interactive always-on picker, existing `alwaysOn` skills
+`afk catalog profiles toggle-always-on` can edit profile-level `alwaysOn`
+skills. In the interactive always-on picker, existing `alwaysOn` skills
 start checked. Use search to filter by text, or press `1` for auto-invocation
 on, `2` for auto-invocation off, `3` for default on, and `4` for
 start-disabled skills. Press the same number again to clear that shortcut

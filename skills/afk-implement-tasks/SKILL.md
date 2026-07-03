@@ -1,17 +1,17 @@
 ---
-name: afk-execution-tracking
-description: Track executable AFK checkpoint packets with statuses, review gates, handoff notes, parallel-agent coordination, interruption recovery, and durable progress state.
+name: afk-implement-tasks
+description: Implement AFK checkpoint packets with statuses, review gates, handoff notes, parallel-agent coordination, interruption recovery, and durable progress state.
 metadata:
-  short-description: Track implementation checkpoints, statuses, validation, and handoffs across agent sessions.
+  short-description: Implement checkpoint packets with status, validation, and handoff tracking.
 ---
 
-# Execution Tracking
+# Implement Tasks
 Keep implementation state visible in the checkpoint packet itself. The packet is the source of truth for its slice.
 
 ## Activation
-Use after executable checkpoint packets exist. If there is only a PRD/spec, plan, goal package, tracker issue, or rough implementation context, create checkpoint packets first, typically with `afk-to-issues` or another approved slicing source.
+Use after executable checkpoint packets exist. If there is only a spec, plan, goal package, tracker issue, or rough implementation context, create checkpoint packets first, typically with `afk-to-tasks` or another approved slicing source.
 
-If the user asks to resume tracked work, use [resume.md](references/resume.md).
+If the user asks to resume task implementation, use [resume.md](references/resume.md).
 
 Skip tiny one-shot edits unless the user asks.
 
@@ -92,7 +92,7 @@ For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.
 
 ## Operating Loop
 1. Locate checkpoint packet files.
-2. If checkpoint files do not exist, route to `afk-to-issues`.
+2. If checkpoint files do not exist, route to `afk-to-tasks`.
 3. Select the active checkpoint.
 4. Read blockers and relevant previous handoff notes.
 5. Record the selected execution bundle.
@@ -105,4 +105,4 @@ For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.
 12. Move to `done` only after the checkpoint is accepted.
 13. Update `updated_at` whenever the checkpoint changes.
 
-Tracking may mention commits as receipts, but never as permission to create them. Do not commit tracking artifacts unless the user explicitly asks.
+Task implementation may mention commits as receipts, but never as permission to create them. Do not commit tracking artifacts unless the user explicitly asks.

@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import {
+  catalogSkillsLobbyChoices,
   catalogProfilesLobbyChoices,
   compassLobbyChoices,
   renderCompassLobbyIntro,
+  routeForCatalogSkillsLobbyChoice,
   routeForCatalogProfilesLobbyChoice,
   routeForLobbyChoice,
   routeForSkillProfilesLobbyChoice,
@@ -34,7 +36,7 @@ test("compass lobby choices route intents to existing command paths", () => {
   assert.deepEqual(routeForLobbyChoice("setup"), ["setup"]);
   assert.deepEqual(routeForLobbyChoice("source", "acme/dev-kit"), ["refresh", "--default-source", "acme/dev-kit"]);
   assert.deepEqual(routeForLobbyChoice("refresh"), ["refresh"]);
-  assert.deepEqual(routeForLobbyChoice("configure"), ["config"]);
+  assert.deepEqual(routeForLobbyChoice("catalog"), ["catalog"]);
   assert.deepEqual(routeForLobbyChoice("skills"), ["setup", "skills"]);
   assert.deepEqual(routeForLobbyChoice("skill-management"), ["skills"]);
   assert.deepEqual(routeForLobbyChoice("mcps"), ["setup", "mcps"]);
@@ -70,7 +72,19 @@ test("skill profiles lobby choices route runtime intents", () => {
   assert.deepEqual(routeForSkillProfilesLobbyChoice("profiles-manage-definitions"), ["catalog", "profiles"]);
 });
 
+test("catalog skills lobby choices route catalog intents", () => {
+  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-import"), ["catalog", "skills", "import"]);
+  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-import-status"), ["catalog", "skills", "import-status"]);
+  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-add"), ["catalog", "skills", "add"]);
+  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-edit"), ["catalog", "skills", "edit"]);
+  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-remove"), ["catalog", "skills", "remove"]);
+  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-toggle-default"), ["catalog", "skills", "toggle-default"]);
+  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-toggle-auto"), ["catalog", "skills", "toggle-auto"]);
+});
+
 test("catalog profiles lobby choices route definition intents", () => {
+  assert.deepEqual(routeForCatalogProfilesLobbyChoice("profiles-set-mode"), ["catalog", "profiles", "set-mode"]);
+  assert.deepEqual(routeForCatalogProfilesLobbyChoice("profiles-toggle-always-on"), ["catalog", "profiles", "toggle-always-on"]);
   assert.deepEqual(routeForCatalogProfilesLobbyChoice("profiles-list"), ["catalog", "profiles", "list"]);
   assert.deepEqual(routeForCatalogProfilesLobbyChoice("profiles-show"), ["catalog", "profiles", "show"]);
   assert.deepEqual(routeForCatalogProfilesLobbyChoice("profiles-create"), ["catalog", "profiles", "create"]);
@@ -94,7 +108,7 @@ test("compass lobby labels stay intent-oriented while descriptions teach command
   assert.ok(labels.includes("Import installed skills into a catalog"));
   assert.ok(descriptions.some((description) => description.includes("afk setup skills")));
   assert.ok(descriptions.some((description) => description.includes("afk refresh --default-source")));
-  assert.ok(descriptions.some((description) => description.includes("afk config")));
+  assert.ok(descriptions.some((description) => description.includes("afk catalog")));
   assert.ok(descriptions.some((description) => description.includes("afk show skills --react")));
   assert.ok(descriptions.some((description) => description.includes("afk show skills --visualize")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog skills import")));
@@ -136,5 +150,21 @@ test("catalog profiles lobby labels include definition actions", () => {
   assert.ok(labels.includes("Create a profile definition"));
   assert.ok(labels.includes("Edit a profile definition"));
   assert.ok(labels.includes("Delete a profile definition"));
+  assert.ok(labels.includes("Set profile mode"));
+  assert.ok(labels.includes("Toggle always-on skills"));
   assert.ok(descriptions.some((description) => description.includes("afk catalog profiles create")));
+  assert.ok(descriptions.some((description) => description.includes("afk catalog profiles set-mode")));
+});
+
+test("catalog skills lobby labels include catalog actions", () => {
+  const labels = catalogSkillsLobbyChoices.map((choice) => choice.name);
+  const descriptions = catalogSkillsLobbyChoices.map((choice) => choice.description ?? "");
+
+  assert.ok(labels.includes("Import installed skills"));
+  assert.ok(labels.includes("Check import status"));
+  assert.ok(labels.includes("Add a skill catalog item"));
+  assert.ok(labels.includes("Toggle skill autoInvocation"));
+  assert.ok(descriptions.some((description) => description.includes("afk catalog skills import")));
+  assert.ok(descriptions.some((description) => description.includes("afk catalog skills import-status")));
+  assert.ok(descriptions.some((description) => description.includes("afk catalog skills toggle-auto")));
 });

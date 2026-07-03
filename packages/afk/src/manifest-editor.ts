@@ -11,7 +11,7 @@ import type {
 } from "./manifest.js";
 import type { Area } from "./types.js";
 
-export type EditableManifestArea = Area;
+export type EditableManifestArea = Exclude<Area, "profiles">;
 export type EditableManifest = RulesManifest | SkillManifest | McpManifest | PluginManifest | HookManifest | Record<string, unknown>;
 export type EditableManifestItem = SkillManifestItem | McpManifestItem | PluginManifestItem | HookManifestItem;
 

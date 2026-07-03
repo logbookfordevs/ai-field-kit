@@ -1,4 +1,4 @@
 interface:
-  display_name: "AFK To Issues"
+  display_name: "AFK To Tasks"
   short_description: "Create AFK execution checkpoint packets"
   default_prompt: "Create thin vertical-slice AFK checkpoint packets from this context."

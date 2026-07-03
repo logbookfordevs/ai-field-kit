@@ -8,6 +8,7 @@ import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
 import { selectCatalogProfilesLobbyRoute, selectSkillProfilesLobbyRoute, selectSkillsLobbyRoute } from "../lobby.js";
 import { loadSkillManifest } from "../manifest.js";
+import { runManifestConfigureAreaAction } from "../manifest-configure.js";
 import { planCatalogImport } from "../catalog-import.js";
 import {
   filterSkillRecords,
@@ -58,12 +59,20 @@ import { planSkillStartupStorageForItems, upsertFrontmatterBoolean, upsertOpenAi
 type SkillCommandName = "list" | "show" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "upgrade" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  if (commandPath[0] === "catalog" && commandPath[1] === "profiles") {
+    return runCatalogProfilesCommand(commandPath.slice(2), runtime, options);
+  }
+
   const command = commandPath[1] as SkillCommandName | undefined;
   const operands = commandPath.slice(2);
 
   try {
     if (!command) {
       const route = await selectSkillsLobbyRoute(runtime);
+      if (!route) {
+        return 0;
+      }
+
       return runSkillsCommand(route, runtime, options);
     }
 
@@ -200,10 +209,21 @@ function uniqueProfileIds(ids: string[]): string[] {
 export async function runCatalogProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   if (operands.length === 0) {
     const route = await selectCatalogProfilesLobbyRoute(runtime);
+    if (!route) {
+      return 0;
+    }
+
     return runCatalogProfilesCommand(route.slice(2), runtime, options);
   }
 
   const command = operands[0] ?? "list";
+  if (command === "set-mode") {
+    return runManifestConfigureAreaAction(runtime, options, "profiles", "set-profile-mode");
+  }
+  if (command === "toggle-always-on") {
+    return runManifestConfigureAreaAction(runtime, options, "profiles", "toggle-always-on");
+  }
+
   if (command === "enable" || command === "disable" || command === "status") {
     runtime.io.stderr(`afk catalog profiles ${command} is a runtime profile operation. Use afk skills profiles ${command} instead.`);
     return 1;
@@ -215,6 +235,10 @@ export async function runCatalogProfilesCommand(operands: string[], runtime: Run
 async function runSkillProfilesCommand(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   if (operands.length === 0) {
     const route = await selectSkillProfilesLobbyRoute(runtime);
+    if (!route) {
+      return 0;
+    }
+
     if (route[0] === "catalog" && route[1] === "profiles") {
       return runCatalogProfilesCommand(route.slice(2), runtime, options);
     }
@@ -293,9 +317,12 @@ async function runSkillProfileDefinitionsCommand(operands: string[], runtime: Ru
       const skills = explicitSkills
         ? options.skillProfileSkills ?? []
         : selectedRecords.map((record) => record.folder);
-      const profileOnlyActivation = command === "create" && selectedRecords.length > 0
+      const profileOnlyRecords = selectedRecords.length > 0
+        ? selectedRecords
+        : skillRecordsForProfileOnly(options, skills);
+      const profileOnlyActivation = options.skillProfileOnly || (selectedRecords.length > 0
         ? await promptProfileOnlyActivation()
-        : false;
+        : false);
       const result = upsertSkillProfile(context, {
         id: selectedId,
         skills,
@@ -312,7 +339,7 @@ async function runSkillProfileDefinitionsCommand(operands: string[], runtime: Ru
         created: result.created,
       }));
       if (profileOnlyActivation) {
-        runtime.io.stdout(renderProfileOnlyActivation(applyProfileOnlyActivation(options, selectedRecords)));
+        runtime.io.stdout(renderProfileOnlyActivation(applyProfileOnlyActivation(options, skills, profileOnlyRecords)));
       }
       return 0;
     }
@@ -799,13 +826,24 @@ async function promptProfileOnlyActivation(): Promise<boolean> {
   });
 }
 
-function applyProfileOnlyActivation(options: CliOptions, records: SkillRecord[]): {
+function skillRecordsForProfileOnly(options: CliOptions, skillIds: string[]): SkillRecord[] {
+  const wanted = new Set(skillIds.map((id) => id.trim().toLowerCase()).filter(Boolean));
+  if (wanted.size === 0) {
+    return [];
+  }
+
+  return loadMutationSkillRecords(options).filter((record) =>
+    wanted.has(record.folder.toLowerCase()) ||
+    wanted.has(record.name.toLowerCase()) ||
+    wanted.has(record.originalName.toLowerCase()));
+}
+
+function applyProfileOnlyActivation(options: CliOptions, skillIds: string[], records: SkillRecord[]): {
   dryRun: boolean;
   moved: Array<{ folder: string; movement: string }>;
   catalogPath: string;
   catalogUpdated: string[];
 } {
-  const skillIds = records.map((record) => record.folder);
   const catalog = markSkillCatalogItemsStartDisabled({
     homeDir: options.homeDir,
     skillIds,

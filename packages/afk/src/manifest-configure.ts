@@ -14,6 +14,7 @@ import {
   updateManifestItem,
   validateEditableManifest,
   type EditableManifest,
+  type EditableManifestArea,
   type EditableManifestItem,
 } from "./manifest-editor.js";
 import {
@@ -32,9 +33,9 @@ import {
 import type { SkillProfileCatalog } from "./skills/profiles.js";
 import { afkPromptTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import { searchableCheckbox } from "./searchable-checkbox.js";
-import type { Area, CliOptions, Runtime, SkillProfileMode } from "./types.js";
+import type { CliOptions, Runtime, SkillProfileMode } from "./types.js";
 
-type ManifestArea = Area | "profiles";
+export type ManifestArea = EditableManifestArea | "profiles";
 type ManifestAreaChoice = ManifestArea | "finish";
 export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "edit-rules" | "back";
 type EditableDraft = EditableManifest | SkillProfileCatalog;
@@ -83,24 +84,42 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
   return runManifestConfigureWithPrompts(runtime, options, inquirerPrompts());
 }
 
-export async function runManifestConfigureWithPrompts(runtime: Runtime, options: CliOptions, prompts: ManifestConfigurePrompts): Promise<number> {
+export async function runManifestConfigureArea(runtime: Runtime, options: CliOptions, area: ManifestArea): Promise<number> {
+  return runManifestConfigureWithPrompts(runtime, options, inquirerPrompts(), { area });
+}
+
+export async function runManifestConfigureAreaAction(runtime: Runtime, options: CliOptions, area: ManifestArea, action: ManifestAction): Promise<number> {
+  return runManifestConfigureWithPrompts(runtime, options, inquirerPrompts(), { area, action });
+}
+
+export async function runManifestConfigureWithPrompts(
+  runtime: Runtime,
+  options: CliOptions,
+  prompts: ManifestConfigurePrompts,
+  initial?: { area: ManifestArea; action?: ManifestAction },
+): Promise<number> {
   const outputDir = options.manifestConfigureLocal ? join(options.cwd, "afk", "catalog") : localManifestDir(options.homeDir);
   const original = readEditableManifests(outputDir);
   const drafts = cloneDrafts(original);
   const touched = new Set<ManifestArea>();
 
   resetPromptSteps();
-  runtime.io.stdout("\nAFK config");
+  runtime.io.stdout("\nAFK catalog");
   runtime.io.stdout(`Writing to: ${outputDir}`);
-  runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
+  if (initial) {
+    runtime.io.stdout(renderPromptStep("Catalog editor", `Editing ${catalogFilename(initial.area)}.`));
+    await editManifestArea(runtime, prompts, drafts, touched, initial.area, options, initial.action);
+  } else {
+    runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
 
-  while (true) {
-    const area = await prompts.selectArea(areaChoices(drafts));
-    if (area === "finish") {
-      break;
+    while (true) {
+      const area = await prompts.selectArea(areaChoices(drafts));
+      if (area === "finish") {
+        break;
+      }
+
+      await editManifestArea(runtime, prompts, drafts, touched, area, options);
     }
-
-    await editManifestArea(runtime, prompts, drafts, touched, area, options);
   }
 
   const validationErrors = validationErrorsFor(drafts, touched);
@@ -151,12 +170,14 @@ async function editManifestArea(
   touched: Set<ManifestArea>,
   area: ManifestArea,
   options: CliOptions,
+  initialAction?: ManifestAction,
 ): Promise<void> {
   runtime.io.stdout(renderPromptStep(areaTitle(area), areaDescriptions[area]));
+  let action = initialAction;
 
   while (true) {
     runtime.io.stdout(renderAreaSummary(area, drafts[area]));
-    const action = await prompts.selectAction(area, actionChoices(area, drafts[area]));
+    action = action ?? await prompts.selectAction(area, actionChoices(area, drafts[area]));
     if (action === "back") {
       return;
     }
@@ -164,12 +185,20 @@ async function editManifestArea(
     if (area === "rules") {
       drafts.rules = await configureRules(prompts, drafts.rules);
       touched.add("rules");
+      if (initialAction) {
+        return;
+      }
+      action = undefined;
       continue;
     }
 
     if (area === "profiles") {
       drafts.profiles = await applyProfileAction(prompts, drafts.profiles, drafts.skills, action);
       touched.add("profiles");
+      if (initialAction) {
+        return;
+      }
+      action = undefined;
       continue;
     }
 
@@ -180,15 +209,22 @@ async function editManifestArea(
     try {
       drafts[area] = await applyItemAction(prompts, area, drafts[area] as EditableManifest, action, options);
       touched.add(area);
+      if (initialAction) {
+        return;
+      }
     } catch (error) {
       runtime.io.stderr(`\n${error instanceof Error ? error.message : String(error)}`);
+      if (initialAction) {
+        return;
+      }
     }
+    action = undefined;
   }
 }
 
 async function applyItemAction(
   prompts: ManifestConfigurePrompts,
-  area: Exclude<Area, "rules">,
+  area: Exclude<EditableManifestArea, "rules">,
   manifest: EditableManifest,
   action: ManifestAction,
   options: CliOptions,
@@ -284,7 +320,7 @@ async function configureRules(prompts: ManifestConfigurePrompts, manifest: Edita
   };
 }
 
-async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<Area, "rules">, existing?: EditableManifestItem): Promise<EditableManifestItem> {
+async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<EditableManifestArea, "rules">, existing?: EditableManifestItem): Promise<EditableManifestItem> {
   switch (area) {
     case "skills":
       return promptSkill(prompts, existing as SkillManifestItem | undefined);
@@ -412,7 +448,7 @@ function readEditableManifests(outputDir: string): Drafts {
   };
 }
 
-function readManifestOrEmpty(outputDir: string, area: Area): EditableManifest {
+function readManifestOrEmpty(outputDir: string, area: EditableManifestArea): EditableManifest {
   const path = join(outputDir, catalogFilename(area));
   if (!existsSync(path)) {
     return emptyEditableManifest(area);
@@ -650,7 +686,7 @@ function areaTitle(area: ManifestArea): string {
   }
 }
 
-function singularArea(area: Exclude<Area, "rules"> | "profiles"): string {
+function singularArea(area: Exclude<EditableManifestArea, "rules"> | "profiles"): string {
   switch (area) {
     case "skills":
       return "skill";

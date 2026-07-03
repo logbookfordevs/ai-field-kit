@@ -10,7 +10,7 @@ export type AgentId =
 
 export type SkillAgentId = "claude-code" | "kiro-cli" | "kilo" | "pi" | "droid";
 
-export type Area = "rules" | "skills" | "mcps" | "plugins" | "hooks";
+export type Area = "rules" | "skills" | "profiles" | "mcps" | "plugins" | "hooks";
 export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "all";
 export type SkillsListStorage = "active" | "disabled";
@@ -37,8 +37,8 @@ export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
 export type SkillProfileMode = "strict" | "context";
 export type SkillOpenApp = "finder" | "code" | "cursor" | "zed" | "agy";
-export type ManifestCategory = "rules" | "skills" | "mcps" | "plugins" | "hooks" | "presets";
-export type ManifestFilename = "skills.json" | "mcps.json" | "presets.json" | "rules.json" | "plugins.json" | "hooks.json";
+export type ManifestCategory = "rules" | "skills" | "profiles" | "mcps" | "plugins" | "hooks" | "presets";
+export type ManifestFilename = "skills.json" | "profiles.json" | "mcps.json" | "presets.json" | "rules.json" | "plugins.json" | "hooks.json";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -90,6 +90,7 @@ export type CliOptions = {
   skillProfileSkills?: string[] | undefined;
   skillProfileAlwaysOn?: string[] | undefined;
   skillProfileMode?: SkillProfileMode | undefined;
+  skillProfileOnly?: boolean;
   uiCategory?: string;
   manifestShowReact: boolean;
   manifestShowVisualize: boolean;

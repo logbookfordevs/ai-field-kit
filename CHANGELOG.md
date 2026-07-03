@@ -12,7 +12,14 @@ This changelog tracks meaningful updates by version and date.
 ## TBD - TBD
 
 - `cli:` added profile reconciliation modes in `profiles.json`, with `strict` preserving existing profile filtering and `context` keeping cataloged manual skills active while profiles filter discoverable skills.
+- `cli:` added `profiles.json` to the default catalog refresh/setup flow and `afk show profiles`, with bundled defaults for context mode, always-on profile skills, and the existing Stitch and Video profiles.
+- `cli:` replaced the `afk config` command surface with `afk catalog`, including direct area menus for rules, skills, profiles, MCPs, plugins, and hooks.
+- `cli:` added an `afk catalog skills` menu and made nested AFK lobbies use Ctrl/Cmd-C as a shared back action.
 - `cli:` added `afk skills add --profile-only <profile>` to add imported skills to a profile while importing them as `startDisabled: true` and moving their shared folders into `.disabled`.
+- `cli:` added `--profile-only` and the matching interactive prompt to `afk catalog profiles create|edit`, so profile members can start disabled outside that profile.
+- `skills:` renamed `afk-to-prd-spec` to `afk-to-spec` and `afk-to-issues` to `afk-to-tasks` across the bundled catalog and workflow routing.
+- `skills:` renamed `afk-execution-tracking` to `afk-implement-tasks` so the workflow command names the implementation job rather than the tracking mechanism.
+- `skills:` aligned `afk-to-spec` and `afk-to-tasks` with the upstream `to-prd`/`to-issues` structures while adapting them to AFK spec artifacts, checkpoint packets, optional tracker publication, and Plannotator review.
 - `cli:` fixed `afk setup skills --yes` so detected single-agent installs still create the shared `~/.agents/skills` library before adding agent-specific targets.
 - `skills:` added Emil Kowalski's optional `animation-vocabulary` utility to the bundled catalog with invocation off.
 - `docs:` corrected the `grill-with-docs` companion-skill guidance to reflect its current `grilling` and `domain-modeling` composition.
