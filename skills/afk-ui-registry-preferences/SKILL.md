@@ -18,17 +18,18 @@ Pick the best-fit mature source for the UX problem, not a default registry by ha
 
 ## Preferred Sources
 
-- `shadcn/ui`: app primitives, forms, tables, dialogs, sheets, sidebars, command menus, and dashboard surfaces.
+- `Shadcn`: app primitives, forms, tables, dialogs, sheets, sidebars, command menus, and dashboard surfaces.
 - `Shadcn IO - AI`: AI-focused shadcn component references.
 - `AI Elements`, `Assistant UI`: AI chat, assistant, and generative interface components.
 - `KiboUI`: richer shadcn-compatible app components when the base primitive is too plain, especially kanban and data-table surfaces.
 - `COSS`: scroll areas and mixed app primitives.
-- `MagicUI`, `Aceternity UI`, `React Bits`, `Animate UI`, `EldoraUI`, `PaceUI`, `Watermelon`, `Hover`, `Neobrutalism`: expressive sections, motion-heavy UI, animated interactions, and visual delight.
+- `BK Lit UI`: data visualization components, charts, and utilities.
+- `Terminal-Kit`: terminal UI components.
+- `MagicUI`, `Acerternity`, `React Bits`, `Animate UI`, `EldoraUI`, `PaceUI`, `Watermelon`, `Hover`, `Neobrutalism`: expressive sections, motion-heavy UI, animated interactions, and visual delight.
 - `Motion Examples`: React animation reference when the interaction depends on Motion patterns.
 - `Remocn`: Remotion-related UI and video composition references.
 - `Soundcn`: sound-effect references when audio feedback is part of the UX.
 - `HeadlessUI`: headless component reference when it fits the existing project foundation.
-- `Lucide React`: default icon family unless the repo already uses another one.
 
 ## Selection Heuristic
 
