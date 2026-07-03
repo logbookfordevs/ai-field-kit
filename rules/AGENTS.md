@@ -26,6 +26,10 @@ Use `afk-compass` for broad, ambiguous, multi-phase, phase changes, execution-di
 Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
 Treat explicit "AFK workflow" or "feature workflow" requests as composable AFK work: use `afk-compass` to choose the next useful skill, not to force a lifecycle. Treat explicit "AFK Sprint" or "AFK Turbo" requests as named execution packages.
 
+## Agent Delegation
+When the user invokes a skill that explicitly asks for a background agent, child agent, sub-agent, fresh-context review, or delegated reading/research pass, treat that skill instruction as explicit user approval to use available sub-agent tooling for that bounded task.
+Do not degrade to self-review only because the host requires explicit delegation; the selected skill is the delegation request.
+
 ## Imports
 - Always prioritize absolute imports (e.g. `@/components/...`) over relative paths when available.
 

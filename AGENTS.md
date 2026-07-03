@@ -27,3 +27,7 @@ Do not spend context on instructions the model can already infer, and do not bur
 - **Plugin**: packaging for Codex-native surfaces such as skills, MCP servers, apps/connectors, and metadata. A local skill-only plugin must beat `npx skills add <repo>` on user value before becoming the default recommendation.
 - **Just / focus just on**: an explicit scope limiter. Stop widening the task and do only the narrowed request.
 - **BMAD / Get Shit Done / spec-driven workflow**: structured clarification and implementation workflows, not generic surveys. If referenced in planning, preserve interactive question flows and adaptive follow-ups.
+
+## Agent Delegation
+
+When the user invokes a skill that explicitly asks for a background agent, child agent, sub-agent, fresh-context review, or delegated reading/research pass, treat that skill instruction as explicit user approval to use available sub-agent tooling for that bounded task. Do not degrade to self-review only because the host requires explicit delegation; the selected skill is the delegation request.
