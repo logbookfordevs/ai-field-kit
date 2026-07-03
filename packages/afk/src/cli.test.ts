@@ -633,7 +633,16 @@ test("runCli prints contextual skills add help", async () => {
   assert.ok(text.includes("afk skills add <source>"));
   assert.ok(text.includes("Forwarded to skills add"));
   assert.ok(text.includes("--profile"));
+  assert.ok(text.includes("--profile-only"));
   assert.ok(text.includes("--start-disabled"));
+});
+
+test("runCli validates skills add profile-only value", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "add", "owner/skills", "--profile-only"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Missing --profile-only value"));
 });
 
 test("runCli prints contextual manifest show help", async () => {

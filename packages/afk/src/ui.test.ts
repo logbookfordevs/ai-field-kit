@@ -102,6 +102,7 @@ function baseOptions(cwd: string): CliOptions {
     selectedSkillAgentIds: [],
     skillAddArgs: [],
     skillAddProfileIds: [],
+    skillAddProfileOnlyIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
     selectedPluginIds: [],
