@@ -281,6 +281,20 @@
             "composes": []
         },
         {
+            "id": "design-artifact",
+            "label": "Design Artifact",
+            "source": "https://github.com/plannotator/design-artifact",
+            "args": [
+                "--skill",
+                "design-artifact",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": true,
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "html",
             "label": "Effective HTML",
             "source": "https://github.com/plannotator/effective-html",
