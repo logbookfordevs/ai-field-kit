@@ -526,16 +526,34 @@
             "composes": []
         },
         {
-            "id": "afk-interactive-code-review",
-            "label": "AFK - Interactive Code Review",
+            "id": "wayfinder",
+            "label": "Wayfinder",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "wayfinder",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "workflow",
+            "composes": [
+                "grilling",
+                "domain-modeling",
+                "prototype"
+            ]
+        },
+        {
+            "id": "afk-code-review",
+            "label": "AFK - Code Review",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-interactive-code-review",
+                "afk-code-review",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "autoInvocation": true,
             "role": "wrapper",
             "composes": []
         },

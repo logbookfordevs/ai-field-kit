@@ -1,0 +1,3 @@
+display_name: AFK Code Review
+short_description: Review a diff along Standards and Spec axes, with impact mapping for contract changes.
+default_prompt: Review this change with the AFK Code Review workflow.

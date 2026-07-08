@@ -33,9 +33,18 @@ Break the plan into **tracer bullet** checkpoint packets. Each packet is a thin 
 
 - Each slice delivers a narrow but COMPLETE path through every layer (schema, API, UI, tests)
 - A completed slice is demoable or verifiable on its own
+- Each slice is sized to fit in a single fresh context window
 - Any prefactoring should be done first
 
 </vertical-slice-rules>
+
+Wide refactors are the exception to vertical slicing. A wide refactor is one mechanical change whose blast radius fans across the codebase, so a single edit breaks too many call sites for a vertical slice to land green. Sequence these as expand-contract instead:
+
+- Expand: add the new form beside the old so existing behavior keeps working.
+- Migrate: move call sites in batches sized by blast radius, such as per package or directory, each blocked by the expand packet.
+- Contract: delete the old form once no caller remains, blocked by every migration packet.
+
+When even migration batches cannot stay green alone, keep the sequence but let them share an integration branch that all block a final integrate-and-verify packet.
 
 ### 4. Quiz the user
 
@@ -44,6 +53,7 @@ Present the proposed breakdown as a numbered list. For each slice, show:
 - **Title**: short descriptive name
 - **Blocked by**: which other slices (if any) must complete first
 - **User stories covered**: which user stories this addresses (if the source material has them)
+- **What it delivers**: the end-to-end behavior this checkpoint makes work
 
 Ask the user:
 

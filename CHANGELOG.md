@@ -11,6 +11,15 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `skills:` added Matt Pocock's `wayfinder` workflow to the bundled catalog as an optional shared skill.
+
+### Changed
+
+- `skills:` replaced `afk-interactive-code-review` with `afk-code-review`, a two-axis Standards/Spec review workflow with contract-impact mapping and an optional guided walkthrough mode.
+- `skills:` updated `afk-to-tasks` with fresh-context sizing and expand-contract guidance for wide refactors.
+
 ## v1.1.0 - 2026-07-06
 
 ### Added
