@@ -1057,12 +1057,12 @@
       &lt;PrimitiveSkill ref="codebase-design" autoDiscovery defaultInstalled /&gt;
     &lt;/WrapperSkill&gt;
     &lt;WrapperSkill id="afk-to-spec" autoDiscovery={false} defaultInstalled /&gt;
-    &lt;WrapperSkill id="afk-to-tasks" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;WrapperSkill id="afk-to-tickets" autoDiscovery={false} defaultInstalled /&gt;
     &lt;WorkflowSkill id="afk-implement-tasks" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="afk-pickup" autoDiscovery={false} defaultInstalled /&gt;
     &lt;WorkflowSkill id="afk-sprint" autoDiscovery={false} defaultInstalled&gt;
       &lt;PrimitiveSkill ref="plannotator-setup-goal" autoDiscovery defaultInstalled /&gt;
-      &lt;WrapperSkill ref="afk-to-tasks" autoDiscovery={false} defaultInstalled /&gt;
+      &lt;WrapperSkill ref="afk-to-tickets" autoDiscovery={false} defaultInstalled /&gt;
       &lt;WorkflowSkill ref="afk-implement-tasks" autoDiscovery={false} defaultInstalled /&gt;
     &lt;/WorkflowSkill&gt;
     &lt;WorkflowSkill id="afk-turbo" autoDiscovery={false} defaultInstalled&gt;
@@ -1085,7 +1085,8 @@
     &lt;/WrapperSkill&gt;
     &lt;WrapperSkill id="prototype" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="handoff" autoDiscovery={false} defaultInstalled /&gt;
-    &lt;WrapperSkill id="afk-interactive-code-review" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;WorkflowSkill id="wayfinder" autoDiscovery={false} /&gt;
+    &lt;WrapperSkill id="afk-code-review" autoDiscovery defaultInstalled /&gt;
     &lt;WrapperSkill id="afk-pr-story-flow-mermaid" autoDiscovery={false} defaultInstalled /&gt;
   &lt;/ExplicitInvocation&gt;
 &lt;/AFKSkillTree&gt;</pre>

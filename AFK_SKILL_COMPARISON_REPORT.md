@@ -81,13 +81,13 @@ Once we noticed that, the better shape became obvious:
 source artifact -> executable checkpoint packets
 ```
 
-### Matt's `to-issues`
+### Matt's `to-tickets`
 
-Matt's `to-issues` already had the right planning instinct: split a plan, spec, or spec into independently grabbable vertical slices, quiz the user on granularity and dependencies, then publish the slices.
+Matt's `to-tickets` already had the right planning instinct: split a plan, spec, or conversation into independently grabbable vertical slices, quiz the user on granularity and dependencies, then publish the slices.
 
 The raw skill's center of gravity is the issue tracker. AFK's center of gravity is local checkpoint packets that can optionally be mirrored to a tracker.
 
-So AFK created `afk-to-tasks`.
+So AFK created `afk-to-tickets`.
 
 This was not a brand-new Leo skill wearing Matt's jacket. It kept the spine:
 
@@ -171,7 +171,7 @@ That is valuable. But AFK already has its own pressure surfaces. Importing all o
 Matt's skills fit AFK well when the desired behavior is small and sharp:
 
 - `to-prd` becomes `afk-to-spec`
-- `to-issues` becomes `afk-to-tasks`
+- `to-tickets` becomes `afk-to-tickets`
 - `tdd` replaces heavier generic TDD guidance
 
 The common thread is compactness plus engineering taste.
@@ -195,7 +195,7 @@ That is a real point of view.
 | Area | Previous default | Current AFK decision | Why |
 |---|---|---|---|
 | spec | Addy's `spec-driven-development` | `afk-to-spec`, adapted from Matt `to-prd` | Keep compact synthesis, add AFK local-first spec behavior |
-| Planning | Addy's `planning-and-task-breakdown` / Matt raw `to-issues` as optional | `afk-to-tasks`, adapted from Matt `to-issues` | Produce executable checkpoint packets directly |
+| Planning | Addy's `planning-and-task-breakdown` / Matt raw `to-tickets` as optional | `afk-to-tickets`, adapted from Matt `to-tickets` | Produce executable checkpoint packets directly |
 | Tracking | Core tracking index plus checkpoint files | Packet-only task implementation | Remove duplicate state and hidden markers |
 | TDD | Addy's `test-driven-development` | Matt `tdd` | Keep red-green-refactor, reduce over-testing of implementation details |
 
@@ -223,7 +223,7 @@ The nicest version of AFK is not maximal. It is selective.
 
 - Matt Pocock Skills README: https://github.com/mattpocock/skills
 - Matt `to-prd`: https://github.com/mattpocock/skills/blob/main/skills/engineering/to-prd/SKILL.md
-- Matt `to-issues`: https://github.com/mattpocock/skills/blob/main/skills/engineering/to-issues/SKILL.md
+- Matt `to-tickets`: https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md
 - Matt `tdd`: https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md
 - Addy Osmani Agent Skills: https://github.com/addyosmani/agent-skills
 - Addy `spec-driven-development`: https://github.com/addyosmani/agent-skills/blob/main/skills/spec-driven-development/SKILL.md

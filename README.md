@@ -199,6 +199,16 @@ Start here:
   visual companion.
 - [`skills/`](./skills) contains the authored AFK skill packages.
 
+For planning, choose the smallest surface that fits the fog:
+
+- Use `grill-with-docs` for focused work that can be understood, pressured, and
+  planned inside one agent session. It is the direct path when the docs or code
+  need sharper questions before implementation.
+- Use `wayfinder` when the idea is too large for one session or the route is
+  still foggy. It creates a shared issue-tracker map, breaks the unknowns into
+  ticket-sized investigations, and lets multiple sessions clear the path one
+  decision at a time.
+
 If you only want the AFK-authored skill files, install directly from GitHub
 using the [`skills` CLI](https://skills.sh/):
 

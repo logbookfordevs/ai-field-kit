@@ -45,10 +45,11 @@ AFK stays composable. A lane names the likely path, but only the current phase s
 
 Use when a feature, product change, or technical slice needs to become code.
 
-1. `grill-me`, `grill-with-docs`, or `afk-code-grill` when the idea or trade-offs are not settled.
-2. `afk-to-spec` when the conversation needs an agent-ready spec.
-3. `afk-to-tasks` when the spec needs executable slices.
-4. `afk-implement-tasks`, `afk-sprint`, or `afk-turbo` when checkpointed implementation begins.
+1. `grill-me`, `grill-with-docs`, or `afk-code-grill` when the idea or trade-offs are not settled and the planning fits in one session.
+2. `wayfinder` when the effort is too large for one session, wrapped in fog, or needs a shared issue-tracker map of decisions and investigations.
+3. `afk-to-spec` when the conversation needs an agent-ready spec.
+4. `afk-to-tickets` when the spec needs executable slices.
+5. `afk-implement-tasks`, `afk-sprint`, or `afk-turbo` when checkpointed implementation begins.
 
 ### Existing-work continuation
 
@@ -89,11 +90,12 @@ Task arrives
 +-- Resuming checkpointed work? ---------------> afk-implement-tasks resume mode
 +-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
 +-- Need an agent-ready spec before code? ------> afk-to-spec
-+-- Need executable slices/checkpoints? ---------> afk-to-tasks
++-- Need executable slices/checkpoints? ---------> afk-to-tickets
 +-- Need code choices or implementation trade-offs grilled? -> afk-code-grill
-+-- Need docs/domain/terminology pressure? ------> grill-with-docs
++-- Need focused docs/domain pressure in one session? -> grill-with-docs
++-- Need a multi-session map through fog? -------> wayfinder
 +-- Implementing or delegating a change? --------> execution bundle selection
-|   +-- Needs checkpoint packets first? ---------> afk-to-tasks
+|   +-- Needs checkpoint packets first? ---------> afk-to-tickets
 |   +-- Needs checkpoint task implementation? --> afk-implement-tasks
 +-- Reviewing code or PR quality? ----------------> normal review workflow
 +-- Need a quick throwaway experiment? -----------> prototype
