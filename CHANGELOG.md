@@ -17,7 +17,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
-- `skills:` replaced `afk-interactive-code-review` with `afk-code-review`, a two-axis Standards/Spec review workflow with contract-impact mapping and an optional guided walkthrough mode.
+- `skills:` replaced `afk-interactive-code-review` with `afk-code-review`, an AFK-compatible fork of Matt Pocock's two-axis Standards/Spec review workflow.
 - `skills:` updated `afk-to-tasks` with fresh-context sizing and expand-contract guidance for wide refactors.
 
 ## v1.1.0 - 2026-07-06
