@@ -92,12 +92,12 @@
             "composes": []
         },
         {
-            "id": "afk-to-tasks",
-            "label": "AFK - To Tasks",
+            "id": "afk-to-tickets",
+            "label": "AFK - To Tickets",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-to-tasks",
+                "afk-to-tickets",
                 "--global"
             ],
             "default": true,
@@ -189,7 +189,7 @@
             "role": "workflow",
             "composes": [
                 "plannotator-setup-goal",
-                "afk-to-tasks",
+                "afk-to-tickets",
                 "afk-implement-tasks"
             ]
         },

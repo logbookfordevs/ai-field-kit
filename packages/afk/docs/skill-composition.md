@@ -131,7 +131,7 @@ The current AFK catalog keeps execution packages explicit and manual:
 ```text
 afk-sprint
   plannotator-setup-goal
-  afk-to-tasks
+  afk-to-tickets
   afk-implement-tasks
 
 afk-turbo
@@ -142,3 +142,5 @@ afk-turbo
 Resume behavior is no longer a standalone skill. It lives as a mode inside `afk-turbo` and `afk-implement-tasks`, with `afk-compass` routing the user to the right mode.
 
 Delegation is also represented as a utility: `afk-delegate` owns live/background external-agent supervision, while cmux and tmux are transport details disclosed inside that skill rather than catalog skills.
+
+For planning pressure, use `grill-with-docs` when the work is focused enough to question and plan in one agent session. Use `wayfinder` when the idea is too large for one context window, has foggy unknowns, or needs an issue-tracker map that multiple sessions can work through.

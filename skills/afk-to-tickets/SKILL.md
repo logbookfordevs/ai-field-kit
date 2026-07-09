@@ -1,15 +1,15 @@
 ---
-name: afk-to-tasks
+name: afk-to-tickets
 description: Break a plan, spec, goal package, tracker issue, or rough context into independently-grabbable AFK checkpoint packets using tracer-bullet vertical slices.
 metadata:
   short-description: Create AFK execution checkpoint packets.
 ---
 
-# To Tasks
+# To Tickets
 
 Break a plan into independently-grabbable AFK checkpoint packets using vertical slices (tracer bullets).
 
-AFK tasks are local checkpoint packets by default. They may be mirrored to an external tracker when requested, but the local tracking files are the AFK execution source of truth unless the user chooses another destination.
+AFK tickets are local checkpoint packets by default. They may be mirrored to an external tracker when requested, but the local tracking files are the AFK execution source of truth unless the user chooses another destination.
 
 ## Process
 
@@ -21,7 +21,7 @@ Use any available source artifact: plan, spec, goal package, tracker issue, hand
 
 ### 2. Explore the codebase (optional)
 
-If you have not already explored the codebase, do so to understand the current state of the code. Task titles and descriptions should use the project's domain glossary vocabulary, and respect ADRs in the area you're touching.
+If you have not already explored the codebase, do so to understand the current state of the code. Ticket titles and descriptions should use the project's domain glossary vocabulary, and respect ADRs in the area you're touching.
 
 Look for opportunities to prefactor the code to make the implementation easier. "Make the change easy, then make the easy change."
 
@@ -64,7 +64,7 @@ Ask the user:
 
 Iterate until the user approves the breakdown.
 
-### 5. Write the tasks
+### 5. Write the tickets
 
 For each approved slice, write a local checkpoint packet. Use the checkpoint packet template below.
 

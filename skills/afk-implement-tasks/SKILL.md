@@ -9,7 +9,7 @@ metadata:
 Keep implementation state visible in the checkpoint packet itself. The packet is the source of truth for its slice.
 
 ## Activation
-Use after executable checkpoint packets exist. If there is only a spec, plan, goal package, tracker issue, or rough implementation context, create checkpoint packets first, typically with `afk-to-tasks` or another approved slicing source.
+Use after executable checkpoint packets exist. If there is only a spec, plan, goal package, tracker issue, or rough implementation context, create checkpoint packets first, typically with `afk-to-tickets` or another approved slicing source.
 
 If the user asks to resume task implementation, use [resume.md](references/resume.md).
 
@@ -94,7 +94,7 @@ For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.
 
 ## Operating Loop
 1. Locate checkpoint packet files.
-2. If checkpoint files do not exist, route to `afk-to-tasks`.
+2. If checkpoint files do not exist, route to `afk-to-tickets`.
 3. Select the active checkpoint.
 4. Read blockers and relevant previous handoff notes.
 5. Record the selected execution bundle.

@@ -17,8 +17,10 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
-- `skills:` replaced `afk-interactive-code-review` with `afk-code-review`, a two-axis Standards/Spec review workflow with contract-impact mapping and an optional guided walkthrough mode.
-- `skills:` updated `afk-to-tasks` with fresh-context sizing and expand-contract guidance for wide refactors.
+- `skills:` replaced `afk-interactive-code-review` with `afk-code-review`, an AFK-compatible fork of Matt Pocock's two-axis Standards/Spec review workflow.
+- `skills:` renamed `afk-to-tasks` to `afk-to-tickets` so AFK's fork keeps the same public shape as Matt Pocock's `to-tickets` skill.
+- `skills:` updated `afk-to-tickets` with fresh-context sizing and expand-contract guidance for wide refactors.
+- `docs:` explained when to use `grill-with-docs` versus `wayfinder`, and taught `afk-compass` the same routing distinction.
 
 ## v1.1.0 - 2026-07-06
 
