@@ -849,6 +849,107 @@ test("runSkillsCommand add profile-only appends every imported skill as disabled
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "demo-two")), true);
 });
 
+test("runSkillsCommand add consumes profile-only from interactive lobby routes", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-profile-only-route-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  const spawned: Array<{ command: string; args: string[] }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      writeSkill(join(homeDir, ".agents", "skills"), "pixijs", "PixiJS");
+      writeGlobalSkillLock(homeDir, {
+        pixijs: { source: "https://github.com/pixijs/pixijs-skills", sourceType: "github" },
+      });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(
+    ["skills", "add", "https://github.com/pixijs/pixijs-skills", "--profile-only", "gaming"],
+    runtime,
+    baseOptions(root),
+  );
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned[0]?.args, ["skills", "add", "https://github.com/pixijs/pixijs-skills"]);
+  const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
+  assert.deepEqual(profiles.items, [{ id: "gaming", name: "Gaming", skills: ["pixijs"] }]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "pixijs")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "pixijs")), true);
+  assert.ok(output.join("\n").includes("gaming created with 1 skill."));
+});
+
+test("runSkillsCommand add profile-only applies to already cataloged skills from the same source", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-profile-only-existing-source-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  const spawned: Array<{ command: string; args: string[] }> = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "pixijs", "PixiJS");
+  writeSkill(join(homeDir, ".agents", "skills"), "pixijs-assets", "PixiJS Assets");
+  writeSkillCatalog(homeDir, {
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "pixijs",
+        label: "PixiJS",
+        source: "pixijs/pixijs-skills",
+        args: ["--skill", "pixijs"],
+        default: false,
+        autoInvocation: true,
+        role: "utility",
+        imported: true,
+      },
+      {
+        id: "pixijs-assets",
+        label: "PixiJS Assets",
+        source: "pixijs/pixijs-skills",
+        args: ["--skill", "pixijs-assets"],
+        default: false,
+        autoInvocation: true,
+        role: "utility",
+        imported: true,
+      },
+    ],
+  });
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(
+    ["skills", "add", "https://github.com/pixijs/pixijs-skills.git", "--profile-only", "gaming"],
+    runtime,
+    baseOptions(root),
+  );
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned[0]?.args, ["skills", "add", "https://github.com/pixijs/pixijs-skills.git"]);
+  const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
+  assert.deepEqual(profiles.items, [{ id: "gaming", name: "Gaming", skills: ["pixijs", "pixijs-assets"] }]);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.deepEqual(catalog.items.map((item) => ({ id: item.id, startDisabled: item.startDisabled })), [
+    { id: "pixijs", startDisabled: true },
+    { id: "pixijs-assets", startDisabled: true },
+  ]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "pixijs")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "pixijs-assets")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "pixijs")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "pixijs-assets")), true);
+  assert.ok(output.join("\n").includes("gaming created with 2 skills."));
+});
+
 test("deleteSkillRecords permanently deletes agent-specific skills", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-agent-skill-delete-"));
   const homeDir = join(root, "home");
@@ -876,8 +977,8 @@ test("filterManifestSkillRecords keeps only global skills from AFK skills manife
   assert.deepEqual(filterManifestSkillRecords(snapshot.records, { homeDir }).map((record) => record.folder), ["alpha"]);
 });
 
-test("runSkillsCommand delete --manifest-only rejects explicit skills outside AFK manifest", async () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-manifest-explicit-"));
+test("runSkillsCommand delete --catalog-only rejects explicit skills outside AFK catalog", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-catalog-explicit-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
   writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
@@ -887,11 +988,59 @@ test("runSkillsCommand delete --manifest-only rejects explicit skills outside AF
   const code = await runSkillsCommand(["skills", "delete", "beta"], outputRuntime(output), {
     ...baseOptions(root),
     dryRun: true,
-    skillsDeleteManifestOnly: true,
+    skillsDeleteCatalogOnly: true,
   });
 
   assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("Skill not found in skills.json manifest: beta"));
+  assert.ok(output.join("\n").includes("Skill not found in skills.json catalog: beta"));
+});
+
+test("runSkillsCommand delete --profile deletes installed skills from a profile", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-profile-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills"), "beta", "Beta");
+  writeSkill(join(homeDir, ".agents", "skills"), "shared", "Shared");
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [
+      { id: "video", name: "Video", skills: ["alpha", "beta"] },
+      { id: "writing", name: "Writing", skills: ["shared", "beta"] },
+    ],
+  });
+
+  const code = await runSkillsCommand(["skills", "delete", "video"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+    skillsDeleteByProfile: true,
+  });
+
+  assert.equal(code, 0);
+  const text = output.join("\n");
+  assert.ok(text.includes("Delete Preview"));
+  assert.ok(text.includes("alpha"));
+  assert.ok(text.includes("beta"));
+  assert.ok(!text.includes("shared"));
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "alpha")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "beta")), true);
+});
+
+test("runSkillsCommand delete --profile rejects catalog-only mode", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-profile-catalog-only-"));
+  const output: string[] = [];
+
+  const code = await runSkillsCommand(["skills", "delete", "video"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+    skillsDeleteByProfile: true,
+    skillsDeleteCatalogOnly: true,
+  });
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Use only one of --profile or --catalog-only."));
 });
 
 test("runSkillsCommand deletes agent-specific global skills with --agent", async () => {
@@ -1584,7 +1733,8 @@ function baseOptions(root: string) {
     skillsListStorage: undefined,
     skillsUpgradeScope: "global" as const,
     skillsUpgradeAll: false,
-    skillsDeleteManifestOnly: false,
+    skillsDeleteCatalogOnly: false,
+    skillsDeleteByProfile: false,
     skillsAgent: undefined,
     skillsJson: false,
     skillsCategory: "",

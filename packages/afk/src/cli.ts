@@ -711,13 +711,16 @@ const commandHelps: Record<string, CommandHelp> = {
       "--disabled                        Show disabled skills only",
       "--dry-run                         Preview the delete without applying it",
       "--yes, -y                         Skip confirmation",
-      "--manifest-only                   Show only skills from AFK's setup skills manifest",
+      "--catalog-only                    Limit deletion to skills present in AFK's skills catalog",
+      "--profile                         Choose a profile and delete its installed skills",
     ],
     examples: [
       "afk skills delete",
       "afk skills delete --scope global --agent codex",
       "afk skills delete --scope project --agent claude",
-      "afk skills delete --manifest-only",
+      "afk skills delete --catalog-only",
+      "afk skills delete --profile",
+      "afk skills delete video --profile",
       "afk skills delete old-skill --dry-run",
       "afk skills delete old-skill --yes",
     ],
@@ -1066,7 +1069,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsListStorage: SkillsListStorage | undefined;
   let skillsUpgradeScope: SkillsUpgradeScope = "global";
   let skillsUpgradeAll = false;
-  let skillsDeleteManifestOnly = false;
+  let skillsDeleteCatalogOnly = false;
+  let skillsDeleteByProfile = false;
   let skillsAgent: SkillAgentFilter | undefined;
   let skillsJson = false;
   let skillsCategory = "";
@@ -1256,11 +1260,19 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsCommand && arg === "--manifest-only") {
+    if (isAfkSkillsCommand && arg === "--catalog-only") {
       if (commandPath[1] !== "delete") {
-        return { help: false, kind: "error", error: "Unknown option: --manifest-only" };
+        return { help: false, kind: "error", error: "Unknown option: --catalog-only" };
       }
-      skillsDeleteManifestOnly = true;
+      skillsDeleteCatalogOnly = true;
+      continue;
+    }
+
+    if (isAfkSkillsCommand && arg === "--profile") {
+      if (commandPath[1] !== "delete") {
+        return { help: false, kind: "error", error: "Unknown option: --profile" };
+      }
+      skillsDeleteByProfile = true;
       continue;
     }
 
@@ -1577,7 +1589,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsListStorage,
       skillsUpgradeAll,
       skillsUpgradeScope,
-      skillsDeleteManifestOnly,
+      skillsDeleteCatalogOnly,
+      skillsDeleteByProfile,
       skillsAgent,
       skillsJson,
       skillsCategory,

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "vitest";
+import { test, vi } from "vitest";
 import {
   catalogSkillsLobbyChoices,
   catalogProfilesLobbyChoices,
@@ -10,10 +10,21 @@ import {
   routeForLobbyChoice,
   routeForSkillProfilesLobbyChoice,
   routeForSkillsLobbyChoice,
+  selectSkillsLobbyRoute,
   skillProfilesLobbyChoices,
   shouldOpenCompassLobby,
   skillsLobbyChoices,
 } from "./lobby.js";
+
+const promptState = vi.hoisted(() => ({
+  selectResponses: [] as string[],
+  inputResponses: [] as string[],
+}));
+
+vi.mock("@inquirer/prompts", () => ({
+  select: vi.fn(async () => promptState.selectResponses.shift() ?? "skills-list"),
+  input: vi.fn(async () => promptState.inputResponses.shift() ?? "logbookfordevs/ai-field-kit"),
+}));
 
 test("shouldOpenCompassLobby only opens plain afk in an interactive terminal", () => {
   assert.equal(shouldOpenCompassLobby([], {}, { stdin: true, stdout: true }), true);
@@ -54,6 +65,24 @@ test("skills lobby choices route skill-management intents", () => {
   assert.deepEqual(routeForSkillsLobbyChoice("skills-show"), ["skills", "show"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-open"), ["skills", "open"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-add"), ["skills", "add"]);
+  assert.deepEqual(routeForSkillsLobbyChoice("skills-add", {
+    source: "logbookfordevs/ai-field-kit",
+    mode: "normal",
+  }), ["skills", "add", "logbookfordevs/ai-field-kit"]);
+  assert.deepEqual(routeForSkillsLobbyChoice("skills-add", {
+    source: "logbookfordevs/ai-field-kit",
+    mode: "start-disabled",
+  }), ["skills", "add", "logbookfordevs/ai-field-kit", "--start-disabled"]);
+  assert.deepEqual(routeForSkillsLobbyChoice("skills-add", {
+    source: "logbookfordevs/ai-field-kit",
+    mode: "profile",
+    profileId: "video",
+  }), ["skills", "add", "logbookfordevs/ai-field-kit", "--profile", "video"]);
+  assert.deepEqual(routeForSkillsLobbyChoice("skills-add", {
+    source: "logbookfordevs/ai-field-kit",
+    mode: "profile-only",
+    profileId: "video",
+  }), ["skills", "add", "logbookfordevs/ai-field-kit", "--profile-only", "video"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-disable"), ["skills", "disable"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-enable"), ["skills", "enable"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-invocation"), ["skills", "invocation"]);
@@ -63,6 +92,36 @@ test("skills lobby choices route skill-management intents", () => {
   assert.deepEqual(routeForSkillsLobbyChoice("skills-catalog-import"), ["catalog", "skills", "import"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-profiles"), ["skills", "profiles"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-profile-status"), ["skills", "profiles", "status"]);
+});
+
+test("skills lobby prompts for a source before routing add skill", async () => {
+  promptState.selectResponses = ["skills-add", "normal"];
+  promptState.inputResponses = ["logbookfordevs/ai-field-kit"];
+
+  const route = await selectSkillsLobbyRoute({
+    io: {
+      stdout: () => undefined,
+      stderr: () => undefined,
+    },
+    spawn: async () => ({ code: 0 }),
+  });
+
+  assert.deepEqual(route, ["skills", "add", "logbookfordevs/ai-field-kit"]);
+});
+
+test("skills lobby prompts for a profile id before routing profile-only add skill", async () => {
+  promptState.selectResponses = ["skills-add", "profile-only"];
+  promptState.inputResponses = ["logbookfordevs/ai-field-kit", "video"];
+
+  const route = await selectSkillsLobbyRoute({
+    io: {
+      stdout: () => undefined,
+      stderr: () => undefined,
+    },
+    spawn: async () => ({ code: 0 }),
+  });
+
+  assert.deepEqual(route, ["skills", "add", "logbookfordevs/ai-field-kit", "--profile-only", "video"]);
 });
 
 test("skill profiles lobby choices route runtime intents", () => {

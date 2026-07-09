@@ -7,7 +7,7 @@ import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
 import { selectCatalogProfilesLobbyRoute, selectSkillProfilesLobbyRoute, selectSkillsLobbyRoute } from "../lobby.js";
-import { loadSkillManifest } from "../manifest.js";
+import { loadSkillManifest, type SkillManifestItem } from "../manifest.js";
 import { runManifestConfigureAreaAction } from "../manifest-configure.js";
 import { planCatalogImport } from "../catalog-import.js";
 import {
@@ -122,7 +122,16 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     return 1;
   }
 
-  const upstreamArgs = ["skills", "add", source, ...operands.slice(1), ...(options.skillAddArgs ?? [])];
+  const parsedAddOptions = parseSkillAddOperands(operands.slice(1));
+  const effectiveOptions = {
+    ...options,
+    skillAddArgs: [...parsedAddOptions.upstreamArgs, ...(options.skillAddArgs ?? [])],
+    skillAddProfileIds: [...options.skillAddProfileIds, ...parsedAddOptions.profileIds],
+    skillAddProfileOnlyIds: [...options.skillAddProfileOnlyIds, ...parsedAddOptions.profileOnlyIds],
+    skillAddStartDisabled: options.skillAddStartDisabled || parsedAddOptions.startDisabled,
+  };
+
+  const upstreamArgs = ["skills", "add", source, ...effectiveOptions.skillAddArgs];
   runtime.io.stdout([
     section("Skill Add"),
     `${accent("Route")} npx ${upstreamArgs.map(quoteArg).join(" ")}`,
@@ -138,7 +147,7 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     cwd: options.cwd,
     dryRun: false,
     manifestLocal: false,
-    startDisabled: options.skillAddStartDisabled || options.skillAddProfileOnlyIds.length > 0,
+    startDisabled: effectiveOptions.skillAddStartDisabled || effectiveOptions.skillAddProfileOnlyIds.length > 0,
   });
 
   for (const operation of plan.operations) {
@@ -153,9 +162,15 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     applyOperation(operation);
   }
 
-  const profileResults = (options.skillAddProfileIds.length > 0 || options.skillAddProfileOnlyIds.length > 0) && plan.imported.length > 0
-    ? syncAddedSkillsToProfiles(options, plan.imported.map((item) => item.id))
+  const profileSkillIds = effectiveOptions.skillAddProfileIds.length > 0 || effectiveOptions.skillAddProfileOnlyIds.length > 0
+    ? skillIdsForAddProfileSync(source, plan.imported, effectiveOptions)
     : [];
+  const profileResults = profileSkillIds.length > 0
+    ? syncAddedSkillsToProfiles(effectiveOptions, profileSkillIds)
+    : [];
+  const profileOnlyActivation = effectiveOptions.skillAddProfileOnlyIds.length > 0 && profileSkillIds.length > 0
+    ? applyProfileOnlyActivation(effectiveOptions, profileSkillIds, skillRecordsForProfileOnly(effectiveOptions, profileSkillIds))
+    : undefined;
 
   runtime.io.stdout([
     "",
@@ -166,12 +181,88 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     startupOperations.length > 0
       ? `${accent("Storage")} ${summarizeOperations(startupOperations)}`
       : "",
-    ...profileResults.map((result) => `${accent("Profile")} ${result.profile.id} ${result.created ? "created with" : "updated with"} ${plan.imported.length} skill${plan.imported.length === 1 ? "" : "s"}.`),
+    ...profileResults.map((result) => `${accent("Profile")} ${result.profile.id} ${result.created ? "created with" : "updated with"} ${profileSkillIds.length} skill${profileSkillIds.length === 1 ? "" : "s"}.`),
+    profileOnlyActivation ? renderProfileOnlyActivation(profileOnlyActivation) : "",
     plan.imported.length > 0
       ? `${accent("Imported")} ${plan.imported.map((item) => item.id).join(", ")}`
       : muted("No new shared skills found to import."),
   ].filter(Boolean).join("\n"));
   return 0;
+}
+
+function skillIdsForAddProfileSync(source: string, imported: SkillManifestItem[], options: CliOptions): string[] {
+  if (imported.length > 0) {
+    return imported.map((item) => item.id);
+  }
+
+  const sourceKey = normalizedSkillSource(source);
+  const installed = new Set(loadMutationSkillRecords(options).map((record) => record.folder.toLowerCase()));
+  return loadSkillManifest(options).items
+    .filter((item) => normalizedSkillSource(item.source) === sourceKey)
+    .map((item) => item.id)
+    .filter((id) => installed.has(id.toLowerCase()));
+}
+
+function normalizedSkillSource(source: string): string {
+  const trimmed = source.trim().toLowerCase().replace(/\.git$/, "");
+  const githubUrl = trimmed.match(/^https?:\/\/github\.com\/([^/]+\/[^/#?]+)(?:[/#?].*)?$/);
+  if (githubUrl?.[1]) {
+    return githubUrl[1];
+  }
+  return trimmed.replace(/^git\+/, "");
+}
+
+function parseSkillAddOperands(operands: string[]): {
+  upstreamArgs: string[];
+  profileIds: string[];
+  profileOnlyIds: string[];
+  startDisabled: boolean;
+} {
+  const upstreamArgs: string[] = [];
+  const profileIds: string[] = [];
+  const profileOnlyIds: string[] = [];
+  let startDisabled = false;
+
+  for (let index = 0; index < operands.length; index += 1) {
+    const arg = operands[index];
+    if (!arg) {
+      continue;
+    }
+
+    if (arg === "--start-disabled") {
+      startDisabled = true;
+      continue;
+    }
+
+    if (arg === "--profile") {
+      const value = operands[index + 1]?.trim();
+      if (!value) {
+        throw new Error("Missing --profile value");
+      }
+      profileIds.push(value);
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--profile-only") {
+      const value = operands[index + 1]?.trim();
+      if (!value) {
+        throw new Error("Missing --profile-only value");
+      }
+      profileOnlyIds.push(value);
+      index += 1;
+      continue;
+    }
+
+    upstreamArgs.push(arg);
+  }
+
+  return {
+    upstreamArgs,
+    profileIds,
+    profileOnlyIds,
+    startDisabled,
+  };
 }
 
 function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Array<{ profile: { id: string }; created: boolean }> {
@@ -621,8 +712,12 @@ async function runSkillsInvocation(operands: string[], runtime: Runtime, options
 }
 
 async function runSkillsDelete(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
+  if (options.skillsDeleteByProfile) {
+    return runSkillsDeleteProfile(folder, runtime, options);
+  }
+
   const globalCandidates = loadMutationSkillRecords(options);
-  const candidates = options.skillsDeleteManifestOnly
+  const candidates = options.skillsDeleteCatalogOnly
     ? filterManifestSkillRecords(globalCandidates, options)
     : globalCandidates;
   const records = folder
@@ -631,9 +726,9 @@ async function runSkillsDelete(folder: string | undefined, runtime: Runtime, opt
 
   if (records.length === 0) {
     runtime.io.stderr(folder
-      ? options.skillsDeleteManifestOnly ? `Skill not found in skills.json manifest: ${folder}` : `Skill not found: ${folder}`
-      : options.skillsDeleteManifestOnly
-        ? `No ${mutationTargetLabel(options)} skills from skills.json manifest found.`
+      ? options.skillsDeleteCatalogOnly ? `Skill not found in skills.json catalog: ${folder}` : `Skill not found: ${folder}`
+      : options.skillsDeleteCatalogOnly
+        ? `No ${mutationTargetLabel(options)} skills from skills.json catalog found.`
         : `No ${mutationTargetLabel(options)} skills found.`);
     return 1;
   }
@@ -667,6 +762,80 @@ async function runSkillsDelete(folder: string | undefined, runtime: Runtime, opt
     dryRun: options.dryRun,
   }));
   return 0;
+}
+
+async function runSkillsDeleteProfile(profileId: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
+  if (options.skillsDeleteCatalogOnly) {
+    runtime.io.stderr("Use only one of --profile or --catalog-only.");
+    return 1;
+  }
+
+  const profiles = listSkillProfiles(skillProfileContext(options)).catalog.items;
+  const profile = profileId
+    ? findSkillProfile(profiles, profileId)
+    : await promptSkillProfile(profiles, "Select a profile whose skills should be deleted:");
+  if (!profile) {
+    runtime.io.stderr(profileId ? `Skill profile not found: ${profileId}` : "No skill profiles found.");
+    return 1;
+  }
+
+  const records = skillRecordsForProfile(options, profile);
+  if (records.length === 0) {
+    runtime.io.stderr(`No installed skills found for profile: ${profile.id}`);
+    return 1;
+  }
+
+  const readOnlyRecord = records.find((record) => record.readOnly);
+  if (readOnlyRecord) {
+    runtime.io.stderr(`Cannot delete ${readOnlyRecord.folder}; ${readOnlyRecord.rootLabel} is read-only.`);
+    return 1;
+  }
+
+  if (!options.yes && !options.dryRun) {
+    const count = records.length;
+    const accepted = await confirm({
+      message: `Permanently delete ${count} ${count === 1 ? "skill" : "skills"} from profile ${profile.id}?`,
+      default: false,
+      theme: afkPromptTheme,
+    });
+    if (!accepted) {
+      runtime.io.stdout("Delete cancelled. Nothing was changed.");
+      return 0;
+    }
+
+    const acceptedSharedUse = await confirm({
+      message: "These skills may be used in other profiles too. Delete them anyway?",
+      default: false,
+      theme: afkPromptTheme,
+    });
+    if (!acceptedSharedUse) {
+      runtime.io.stdout("Delete cancelled. Nothing was changed.");
+      return 0;
+    }
+  }
+
+  const movements = deleteSkillRecords({
+    homeDir: options.homeDir,
+    records,
+    dryRun: options.dryRun,
+  });
+  runtime.io.stdout(renderSkillDeleteBatch({
+    items: movements,
+    dryRun: options.dryRun,
+  }));
+  return 0;
+}
+
+function skillRecordsForProfile(options: CliOptions, profile: SkillProfileItem): SkillRecord[] {
+  const records = loadMutationSkillRecords(options);
+  const selected = new Map<string, SkillRecord>();
+  for (const skill of profile.skills) {
+    const record = findSkillRecord(records, skill);
+    if (record) {
+      selected.set(`${record.rootPath}:${record.folder}`, record);
+    }
+  }
+  return [...selected.values()];
 }
 
 function setSkillInvocationPolicy(options: {
