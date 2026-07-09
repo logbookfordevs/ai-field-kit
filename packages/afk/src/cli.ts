@@ -205,7 +205,7 @@ const setupOptions = {
   initOnly: "--init-only                       Create/update the local catalog only, then exit",
   empty: "--empty                           Create empty catalog files with --init-only or refresh",
   defaultSource: "--default-source <source>         Save the default source and refresh the cache",
-  allSkills: "--all                            Include all skills when installing skills",
+  allSkills: "--all                            Include imported skills when installing skills",
 };
 
 const setupAreaOptions = [
@@ -395,8 +395,8 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Delegate selected skills to the official skills CLI.",
     usage: "afk setup skills [options]",
     notes: [
-      "Interactive runs let you choose skills from the catalog.",
-      "--all makes non-interactive installs include every catalog skill, not just defaults.",
+      "Setup considers source-owned catalog skills by default; imported skills are excluded.",
+      "--all includes imported skills and makes non-interactive installs include every catalog skill.",
     ],
     options: [
       ...setupAreaOptions,

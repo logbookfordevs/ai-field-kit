@@ -20,7 +20,7 @@ export function buildSkillCommands(options: CliOptions): DelegateCommand[] {
   const selected =
     options.selectedSkillIds.length > 0
       ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))
-      : manifest.items.filter((item) => item.default || options.allSkills);
+      : manifest.items.filter((item) => (item.default && item.imported !== true) || options.allSkills);
 
   return buildSkillSourceCommands(selected, "Shared skills", buildSkillsAgentArgs(["universal", ...options.selectedSkillAgentIds]), options.setupScope);
 }

@@ -259,7 +259,7 @@ detected paths into this file automatically.
 
 | Flag | Meaning |
 |---|---|
-| `--all` | Include every skill in the catalog, not only default skills. |
+| `--all` | Include imported skills as well as source-owned catalog skills. |
 | `--agent <skill-agent>` | Override detected skill providers and add direct installs for supported skill hosts. Repeatable. |
 
 Skill-agent values are:

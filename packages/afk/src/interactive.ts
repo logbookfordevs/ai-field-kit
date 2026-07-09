@@ -330,15 +330,13 @@ async function selectAgentChoices(
 
 async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills" | "manifestContents">): Promise<string[]> {
   const manifest = loadSkillManifest(options);
-  if (options.allSkills) {
-    return manifest.items.map((item) => item.id);
-  }
+  const items = setupSkillItems(manifest.items, options.allSkills);
 
   const selected = uniqueStrings(await selectCheckbox(
     "Choose skills to install",
-    skillChoices(manifest.items),
+    skillChoices(items),
   ));
-  const expanded = expandComposedSkillIds(manifest.items, selected);
+  const expanded = expandComposedSkillIds(items, selected);
   if (expanded.length === selected.length) {
     return selected;
   }
@@ -347,12 +345,12 @@ async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills" | 
   const composedSelection = await selectCheckbox(
     "Choose composed skills to include",
     composed.map((id) => {
-      const item = manifest.items.find((candidate) => candidate.id === id);
+      const item = items.find((candidate) => candidate.id === id);
       return {
         name: item?.label ?? id,
         value: id,
         checked: true,
-        description: composedSkillDescription(manifest.items, id),
+        description: composedSkillDescription(items, id),
       };
     }),
   );
@@ -362,10 +360,19 @@ async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills" | 
 
 function nonInteractiveSkillIds(options: Pick<CliOptions, "homeDir" | "allSkills" | "manifestContents">): string[] {
   const manifest = loadSkillManifest(options);
-  const selected = manifest.items
+  const items = setupSkillItems(manifest.items, options.allSkills);
+  const selected = items
     .filter((item) => item.default || options.allSkills)
     .map((item) => item.id);
-  return options.allSkills ? selected : expandComposedSkillIds(manifest.items, selected);
+  return options.allSkills ? selected : expandComposedSkillIds(items, selected);
+}
+
+function setupSkillItems(items: SkillManifestItem[], includeImported: boolean): SkillManifestItem[] {
+  if (includeImported) {
+    return items;
+  }
+
+  return items.filter((item) => item.imported !== true);
 }
 
 function skillChoices(items: SkillManifestItem[]): Choice<string>[] {

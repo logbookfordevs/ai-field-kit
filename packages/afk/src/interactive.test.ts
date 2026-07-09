@@ -285,15 +285,27 @@ test("selectSetup yes mode includes all skills when requested", async () => {
   assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
 });
 
-test("selectSetup guided mode includes all skills when requested", async () => {
+test("selectSetup excludes imported skills by default", async () => {
+  const homeDir = localHomeWithAllManifests();
+  const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true });
+
+  assert.deepEqual(selection.skillIds, ["afk-default"]);
+});
+
+test("selectSetup guided mode lists all skills without selecting them when requested", async () => {
   promptState.checkboxMessages = [];
-  promptState.checkboxResponses = {};
+  promptState.checkboxChoices = {};
+  promptState.checkboxResponses = { "Choose skills to install": [] };
   promptState.setupAreas = ["skills"];
   const homeDir = localHomeWithAllManifests();
   const selection = await selectSetup({ ...defaultOptions(homeDir), allSkills: true });
 
-  assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
-  assert.ok(!promptState.checkboxMessages.includes("Choose skills to install"));
+  assert.deepEqual(selection.skillIds, []);
+  assert.ok(promptState.checkboxMessages.includes("Choose skills to install"));
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose skills to install"]?.map((choice) => [choice.value, choice.checked]),
+    [["afk-default", false], ["afk-spline", false], ["external-helper", false]],
+  );
 });
 
 test("selectSkillsInstall presents composed skills for selected wrappers", async () => {
@@ -324,6 +336,23 @@ test("selectSkillsInstall presents composed skills for selected wrappers", async
     promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
     /role: primitive · auto-invocation: on/,
   );
+});
+
+test("selectSkillsInstall excludes imported skills unless all is requested", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxChoices = {};
+  promptState.checkboxResponses = { "Choose skills to install": [] };
+  const homeDir = localHomeWithAllManifests();
+
+  await selectSkillsInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose skills to install"]?.map((choice) => choice.value),
+    ["afk-default", "afk-spline"],
+  );
+
+  const selection = await selectSkillsInstall({ ...defaultOptions(homeDir), yes: true, allSkills: true });
+  assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
 });
 
 test("selectSetup yes mode includes composed skills for default wrappers", async () => {
@@ -482,6 +511,7 @@ function localHomeWithAllManifests(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "external-helper", "--global"],
           default: false,
+          imported: true,
         },
       ],
     },

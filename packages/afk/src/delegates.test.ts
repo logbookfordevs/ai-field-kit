@@ -134,7 +134,7 @@ test("buildSkillCommands omits skill filter for whole-source skill entries", () 
   )));
 });
 
-test("buildSkillCommands all installs default and non-default skills", () => {
+test("buildSkillCommands excludes imported skills by default and includes them with all", () => {
   const homeDir = localHomeWithManifest("skills.json", {
     version: 1,
     defaultSource: "",
@@ -159,9 +159,16 @@ test("buildSkillCommands all installs default and non-default skills", () => {
         source: "https://github.com/example/external",
         args: ["--skill", "external-helper", "--global"],
         default: false,
+        imported: true,
       },
     ],
   });
+
+  const defaultText = buildSkillCommands({ ...options, homeDir })
+    .map((command) => command.args.join(" "))
+    .join("\n");
+  assert.ok(defaultText.includes("afk-default"));
+  assert.ok(!defaultText.includes("external-helper"));
 
   const commands = buildSkillCommands({ ...options, homeDir, allSkills: true });
   const text = commands.map((command) => command.args.join(" ")).join("\n");
