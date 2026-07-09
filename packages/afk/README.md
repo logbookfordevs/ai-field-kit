@@ -760,6 +760,8 @@ afk skills disable old-skill --dry-run
 afk skills enable old-skill
 afk skills invocation disable afk-doc-craft --dry-run
 afk skills delete old-skill --dry-run
+afk skills delete --catalog-only --dry-run
+afk skills delete --profile
 afk skills upgrade --all
 afk skills categorize --dry-run
 afk catalog profiles create video --name Video --skill hyperframes --skill tailwind --mode context
@@ -783,10 +785,12 @@ automatically inserted into this catalog as imported, uncategorized entries
 after a successful upstream `skills add` run.
 Use `afk skills add --start-disabled` to mark those new catalog entries with
 `startDisabled: true` and move their shared skill folders into `.disabled`.
-Use `afk skills add --profile <profile>` to append imported skills to a new or
-existing profile in `profiles.json`. Use `--profile-only <profile>` to append
-the same imported skills as `startDisabled: true` entries and move their shared
-skill folders into `.disabled`.
+Use `afk skills add --profile <profile>` to append installed skills from that
+source to a new or existing profile in `profiles.json`. Use `--profile-only
+<profile>` to append those skills as `startDisabled: true` entries and move
+their shared skill folders into `.disabled`. If a retry finds the skills already
+cataloged, AFK matches them by source and still applies the requested profile
+behavior.
 AFK categorization metadata lives in top-level `scopes` plus each item's nested
 `catalog` object, so `id`, `source`, `args`, `default`, and other install fields
 remain easy to read.
@@ -805,7 +809,11 @@ create|edit` when those commands need to choose from discovered skill folders.
 `afk skills disable`, `afk skills enable`, and `afk skills delete` can manage
 the shared global library by default, or explicitly with `--agent shared`.
 They can manage agent-specific roots when `--agent <agent>` is provided.
-`afk skills delete --disabled` is useful when pruning disabled skills.
+`afk skills delete --disabled` is useful when pruning disabled skills. Use
+`--catalog-only` to limit deletion candidates to installed skills represented
+in AFK's `skills.json` catalog. Use `--profile` to choose a profile and delete
+the installed skills referenced by it; AFK asks for an extra confirmation
+because those skills may also be used by other profiles.
 Delete is permanent; use `--dry-run` to preview the selected folders before
 removing them.
 

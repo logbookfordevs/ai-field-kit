@@ -75,7 +75,8 @@ export type CliOptions = {
   skillsListStorage?: SkillsListStorage | undefined;
   skillsUpgradeAll?: boolean;
   skillsUpgradeScope?: SkillsUpgradeScope;
-  skillsDeleteManifestOnly?: boolean;
+  skillsDeleteCatalogOnly?: boolean;
+  skillsDeleteByProfile?: boolean;
   skillsAgent?: SkillAgentFilter | undefined;
   skillsJson?: boolean;
   skillsCategory?: string;

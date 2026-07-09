@@ -1,4 +1,4 @@
-import { input } from "@inquirer/prompts";
+import { input, select } from "@inquirer/prompts";
 import { renderBanner, muted, sectionTitle } from "./brand.js";
 import { afkPromptTheme, afkSelectTheme } from "./prompt-ui.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
@@ -59,6 +59,8 @@ export type CatalogSkillsLobbyChoiceValue =
   | "catalog-skills-toggle-auto"
   | "catalog-skills-import"
   | "catalog-skills-import-status";
+
+type SkillAddMode = "normal" | "start-disabled" | "profile" | "profile-only";
 
 type TtyState = {
   stdin: boolean;
@@ -387,7 +389,8 @@ export async function selectSkillsLobbyRoute(runtime: Runtime, options: { canGoB
       return route;
     }
 
-    return routeForSkillsLobbyChoice(selected);
+    const addOptions = selected === "skills-add" ? await promptSkillAddOptions() : undefined;
+    return routeForSkillsLobbyChoice(selected, addOptions);
   }
 }
 
@@ -476,7 +479,11 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
   }
 }
 
-export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue): string[] {
+export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue, addOptions?: {
+  source?: string;
+  mode?: SkillAddMode;
+  profileId?: string;
+}): string[] {
   switch (value) {
     case "skills-list":
       return ["skills", "list"];
@@ -485,7 +492,7 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue): string
     case "skills-open":
       return ["skills", "open"];
     case "skills-add":
-      return ["skills", "add"];
+      return routeForSkillAdd(addOptions);
     case "skills-disable":
       return ["skills", "disable"];
     case "skills-enable":
@@ -608,6 +615,79 @@ async function promptDefaultSource(): Promise<string> {
     required: true,
     theme: afkPromptTheme,
   });
+}
+
+async function promptSkillSource(): Promise<string> {
+  return input({
+    message: "Skill source",
+    required: true,
+    theme: afkPromptTheme,
+  });
+}
+
+async function promptSkillAddOptions(): Promise<{ source: string; mode: SkillAddMode; profileId?: string }> {
+  const source = await promptSkillSource();
+  const mode = await select<SkillAddMode>({
+    message: "Add mode",
+    choices: [
+      {
+        name: "Add normally",
+        value: "normal",
+        description: "Route: afk skills add <source>",
+      },
+      {
+        name: "Start disabled",
+        value: "start-disabled",
+        description: "Route: afk skills add <source> --start-disabled",
+      },
+      {
+        name: "Add to profile",
+        value: "profile",
+        description: "Route: afk skills add <source> --profile <profile>",
+      },
+      {
+        name: "Add to profile only",
+        value: "profile-only",
+        description: "Route: afk skills add <source> --profile-only <profile>",
+      },
+    ],
+    theme: afkSelectTheme,
+  });
+  const profileId = mode === "profile" || mode === "profile-only"
+    ? await promptSkillProfileId()
+    : undefined;
+  return { source, mode, ...(profileId ? { profileId } : {}) };
+}
+
+async function promptSkillProfileId(): Promise<string> {
+  return input({
+    message: "Profile id",
+    required: true,
+    theme: afkPromptTheme,
+  });
+}
+
+function routeForSkillAdd(addOptions?: {
+  source?: string;
+  mode?: SkillAddMode;
+  profileId?: string;
+}): string[] {
+  const route = ["skills", "add"];
+  if (!addOptions?.source) {
+    return route;
+  }
+
+  route.push(addOptions.source);
+  if (addOptions.mode === "start-disabled") {
+    route.push("--start-disabled");
+  }
+  if (addOptions.mode === "profile" && addOptions.profileId) {
+    route.push("--profile", addOptions.profileId);
+  }
+  if (addOptions.mode === "profile-only" && addOptions.profileId) {
+    route.push("--profile-only", addOptions.profileId);
+  }
+  return route;
 }
 
 function renderRoutePreview(route: string[]): string {

@@ -473,7 +473,8 @@ test("runCli prints contextual skills delete help", async () => {
   assert.ok(text.includes("--agent shared|<agent>"));
   assert.ok(text.includes("--enabled"));
   assert.ok(text.includes("--disabled"));
-  assert.ok(text.includes("--manifest-only"));
+  assert.ok(text.includes("--catalog-only"));
+  assert.ok(text.includes("--profile"));
 });
 
 test("runCli prints contextual skills invocation help", async () => {
@@ -595,7 +596,7 @@ test("runCli keeps runtime profile operations under skills profiles", async () =
   assert.ok(output.join("\n").includes("Use afk skills profiles enable instead."));
 });
 
-test("runCli accepts skills delete manifest-only flag", async () => {
+test("runCli accepts skills delete catalog-only flag", async () => {
   const homeDir = localHomeWithManifests({
     "skills.json": {
       version: 1,
@@ -616,12 +617,12 @@ test("runCli accepts skills delete manifest-only flag", async () => {
   const output: string[] = [];
 
   const code = await withConsole(output, () => runCli(
-    ["skills", "delete", "beta", "--manifest-only", "--dry-run"],
+    ["skills", "delete", "beta", "--catalog-only", "--dry-run"],
     { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
   ));
 
   assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("Skill not found in skills.json manifest: beta"));
+  assert.ok(output.join("\n").includes("Skill not found in skills.json catalog: beta"));
 });
 
 test("runCli rejects boolean values for skills storage filters", async () => {

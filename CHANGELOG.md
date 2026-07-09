@@ -13,14 +13,20 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added `afk skills delete --profile` to delete installed skills referenced by a selected profile, with an extra warning that those skills may be shared by other profiles.
 - `skills:` added Matt Pocock's `wayfinder` workflow to the bundled catalog as an optional shared skill.
 
 ### Changed
 
+- `cli:` renamed the `afk skills delete --manifest-only` filter to `--catalog-only` so the flag matches its `skills.json` catalog behavior.
 - `skills:` replaced `afk-interactive-code-review` with `afk-code-review`, an AFK-compatible fork of Matt Pocock's two-axis Standards/Spec review workflow.
 - `skills:` renamed `afk-to-tasks` to `afk-to-tickets` so AFK's fork keeps the same public shape as Matt Pocock's `to-tickets` skill.
 - `skills:` updated `afk-to-tickets` with fresh-context sizing and expand-contract guidance for wide refactors.
 - `docs:` explained when to use `grill-with-docs` versus `wayfinder`, and taught `afk-compass` the same routing distinction.
+
+### Fixed
+
+- `cli:` fixed interactive `afk skills add` profile modes so `--profile`, `--profile-only`, and `--start-disabled` apply as AFK post-install behavior instead of being forwarded to the upstream skills CLI.
 
 ## v1.1.0 - 2026-07-06
 
