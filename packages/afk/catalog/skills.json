@@ -101,7 +101,7 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
+            "autoInvocation": false,
             "role": "primitive",
             "composes": []
         },
