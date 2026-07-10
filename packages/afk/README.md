@@ -259,8 +259,13 @@ detected paths into this file automatically.
 
 | Flag | Meaning |
 |---|---|
-| `--all` | Include every skill in the catalog, not only default skills. |
+| `--all` | Show imported skills alongside source-owned catalog skills. With `--yes`, install every listed skill. |
 | `--agent <skill-agent>` | Override detected skill providers and add direct installs for supported skill hosts. Repeatable. |
+
+By default, setup only considers source-owned catalog skills; locally imported
+entries stay out of the list. Use `--all` when you want to review or include
+those imported entries too. Interactive setup still asks you to select the
+skills you want. Add `--yes` only when you want every listed skill installed.
 
 Skill-agent values are:
 
