@@ -675,8 +675,8 @@ scope.
 ### Plugins
 
 The bundled plugin catalog currently includes Plannotator, GoalBuddy,
-Plannotator Tot, Yggtree, and Impeccable. Plugin setup is best-effort
-because these installers are owned by their upstream tools.
+Plannotator Tot, Yggtree, Impeccable, and Orchestrator. Plugin setup is
+best-effort because these installers are owned by their upstream tools.
 
 ### Profiles
 
