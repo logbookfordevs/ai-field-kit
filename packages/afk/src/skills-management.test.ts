@@ -1459,7 +1459,7 @@ test("runSkillsCommand upgrade explicit names invokes global update by default",
   }]);
 });
 
-test("syncSkillCatalogFromManifest adds setup skills to canonical catalog", () => {
+test("syncSkillCatalogFromManifest keeps setup skills source-owned in the canonical catalog", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-catalog-sync-"));
   const homeDir = join(root, "home");
   writeSkillManifest(homeDir, ["alpha", "beta"]);
@@ -1482,7 +1482,7 @@ test("syncSkillCatalogFromManifest adds setup skills to canonical catalog", () =
     written.items.map((item) => ({ id: item.id, imported: item.imported, scope: item.catalog?.scope })),
     [
       { id: "alpha", imported: undefined, scope: undefined },
-      { id: "beta", imported: true, scope: "uncategorized" },
+      { id: "beta", imported: undefined, scope: "uncategorized" },
     ],
   );
 });

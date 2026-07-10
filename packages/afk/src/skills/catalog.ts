@@ -421,11 +421,8 @@ export function syncSkillCatalogFromManifest(options: {
   const uncategorized = ensureUncategorizedScope(definition);
   const existingFolders = new Set(definition.skills.map((skill) => skill.folder.toLowerCase()));
   const added = folders.filter((folder) => !existingFolders.has(folder.toLowerCase()));
-  const syncedFolders = new Set(folders);
-  const shouldMarkImported = (definition.items ?? manifest.items)
-    .some((item) => syncedFolders.has(item.id) && item.imported !== true);
 
-  if (added.length === 0 && !shouldMarkImported) {
+  if (added.length === 0) {
     return { path, added };
   }
 
@@ -444,7 +441,6 @@ export function syncSkillCatalogFromManifest(options: {
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, `${JSON.stringify({
       ...nextManifest,
-      items: nextManifest.items.map((item) => syncedFolders.has(item.id) ? { ...item, imported: true } : item),
     }, null, 2)}\n`);
   }
 
