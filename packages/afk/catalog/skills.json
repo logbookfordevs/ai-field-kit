@@ -32,20 +32,6 @@
             "composes": []
         },
         {
-            "id": "afk-delegate",
-            "label": "AFK - Delegate",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-delegate",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
-            "role": "utility",
-            "composes": []
-        },
-        {
             "id": "afk-brainstorming-facilitator",
             "label": "AFK - Brainstorming Facilitator",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -276,6 +262,20 @@
                 "--global"
             ],
             "default": true,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "orchestrator",
+            "label": "Orchestrator",
+            "source": "backnotprop/orchestrator",
+            "args": [
+                "--skill",
+                "orchestrator",
+                "--global"
+            ],
+            "default": false,
             "autoInvocation": false,
             "role": "utility",
             "composes": []

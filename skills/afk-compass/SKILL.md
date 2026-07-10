@@ -71,7 +71,6 @@ Use when the task is UI, frontend architecture, or interaction quality.
 Use when the task is about AFK itself, skill selection, or external-model perspective.
 
 - `afk-ask` for an outside model's opinion.
-- `afk-delegate` when another local agent should do supervised work.
 - `handoff` or `afk-pickup` for session crossing.
 
 ## Routing Map
@@ -100,7 +99,7 @@ Task arrives
 +-- Reviewing code or PR quality? ----------------> normal review workflow
 +-- Need a quick throwaway experiment? -----------> prototype
 +-- Need external-model perspective? -------------> afk-ask
-+-- Need another local agent to do work? ---------> afk-delegate
++-- Need another local agent to do work? ---------> orchestrator
 +-- Need disposable session handoff? -------------> handoff, then afk-pickup
 ```
 

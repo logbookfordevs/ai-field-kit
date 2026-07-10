@@ -75,6 +75,20 @@
                 ]
             },
             "default": false
+        },
+        {
+            "id": "orchestrator",
+            "label": "Orchestrator",
+            "description": "Install Orchestrator's CLI for launching, coordinating, and supervising work across coding-agent runtimes.",
+            "install": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "@backnotprop/orchestrator-cli"
+                ]
+            },
+            "default": false
         }
     ]
 }
