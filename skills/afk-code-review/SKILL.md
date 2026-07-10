@@ -26,7 +26,7 @@ Look for the originating spec, in this order:
 
 1. Issue references in commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), PR metadata, branch names, or user-provided context.
 2. A path the user passed as an argument.
-3. A PRD, spec, goal, or AFK tracking packet under `docs/`, `specs/`, `.scratch/`, `goals/`, or tracking folders matching the branch name or feature.
+3. A PRD/spec file under docs/, specs/, or .scratch/ matching the branch name or feature.
 4. If nothing is found, ask the user where the spec is. If they say there is not one, the **Spec** axis will skip and report "no spec available".
 
 ### 3. Identify the standards sources
@@ -53,23 +53,23 @@ Each smell reads *what it is* -> *how to fix*; match it against the diff:
 - **Middle Man** - a class or function that mostly just delegates onward. -> cut it, call the real target direct.
 - **Refused Bequest** - a subclass or implementer that ignores or overrides most of what it inherits. -> drop the inheritance, use composition.
 
-### 4. Run both axes
+### 4. Spawn both sub-agents in parallel
 
-Run both axes in parallel sub-agents when available. If sub-agents are unavailable, run the axes in separate fresh contexts or separate passes.
+Send a single message with two sub-agent calls.
 
-**Standards axis prompt** - include:
+**Standards sub-agent prompt** - include:
 
 - The full diff command and commit list.
 - The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full; the reviewer has no other access to it.
 - The brief: "Report, per file/hunk where relevant: (a) every place the diff violates a documented standard, citing the standard file and rule; and (b) any baseline smell you spot, naming it and quoting the hunk. Distinguish hard violations from judgement calls. Documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words."
 
-**Spec axis prompt** - include:
+**Spec sub-agent prompt** - include:
 
 - The diff command and commit list.
 - The path or fetched contents of the spec.
 - The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behavior in the diff that was not asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
 
-If the spec is missing, skip the Spec axis and note this in the final report.
+If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
 ### 5. Aggregate
 
