@@ -1,6 +1,6 @@
 ---
 name: afk-code-review
-description: Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards and Spec. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to review since a commit/branch/tag.
+description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards and Spec. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to review since a commit/branch/tag."
 ---
 
 Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
