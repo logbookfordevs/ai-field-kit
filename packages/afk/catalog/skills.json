@@ -362,7 +362,7 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false,
+            "autoInvocation": true,
             "role": "utility",
             "composes": []
         },

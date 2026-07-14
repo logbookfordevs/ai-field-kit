@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ManagedSkillAgent, SkillAgentFilter, SkillsListScope, SkillsListStorage } from "../types.js";
+import type { ManagedSkillAgent, SkillAgentFilter, SkillsListAutoInvocation, SkillsListScope, SkillsListStorage } from "../types.js";
 import { loadSkillManifest, localManifestDir, type SkillManifest, type SkillManifestItem } from "../manifest.js";
 
 export const skillCatalogFileName = "skills.json";
@@ -9,7 +9,7 @@ export const legacySkillCatalogFileName = "afk-skills.json";
 
 export type SkillStorage = "active" | "disabled";
 export type SkillRootKind = "global-library" | "project-agent" | "agent-library";
-export type SkillAutoInvocationState = "enabled" | "disabled" | "mixed" | "default";
+export type SkillAutoInvocationState = SkillsListAutoInvocation;
 
 export type SkillRecord = {
   folder: string;
@@ -119,6 +119,7 @@ export function loadSkillCatalog(options: {
 }
 
 export type SkillListFilters = {
+  autoInvocation?: SkillAutoInvocationState | undefined;
   category?: string | undefined;
   tag?: string | undefined;
   uncategorized?: boolean | undefined;
@@ -127,6 +128,10 @@ export type SkillListFilters = {
 
 export function filterSkillRecords(records: SkillRecord[], filters: SkillListFilters): SkillRecord[] {
   return records.filter((record) => {
+    if (filters.autoInvocation && record.autoInvocation !== filters.autoInvocation) {
+      return false;
+    }
+
     if (filters.storage && record.storage !== filters.storage) {
       return false;
     }
