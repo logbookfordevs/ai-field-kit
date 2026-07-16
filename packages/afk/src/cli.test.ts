@@ -408,8 +408,17 @@ test("runCli prints contextual skills help", async () => {
   assert.ok(output.join("\n").includes("--agent shared|<agent>"));
   assert.ok(output.join("\n").includes("--enabled"));
   assert.ok(output.join("\n").includes("--disabled"));
+  assert.ok(output.join("\n").includes("--auto-invocation <state>"));
   assert.ok(output.join("\n").includes("--category <id-or-label>"));
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
+});
+
+test("runCli validates skills list auto invocation filters", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "list", "--auto-invocation", "invalid"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Invalid --auto-invocation value: invalid"));
 });
 
 test("runCli prints contextual ui help", async () => {

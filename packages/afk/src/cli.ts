@@ -27,6 +27,7 @@ import type {
   SkillCategorizationRunner,
   SkillOpenApp,
   SkillProfileMode,
+  SkillsListAutoInvocation,
   SkillsListScope,
   SkillsListStorage,
   SkillsUpgradeScope,
@@ -603,6 +604,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent shared|<agent>            Limit shared, project, or agent roots",
       "--enabled                         Show enabled skills only",
       "--disabled                        Show disabled skills only",
+      "--auto-invocation <state>         Filter by enabled, disabled, mixed, or default",
       "--category <id-or-label>          Filter by AFK category",
       "--tag <tag>                       Filter by AFK tag",
       "--uncategorized                   Show records without an AFK category",
@@ -614,6 +616,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills list --agent shared --enabled",
       "afk skills list --agent shared",
       "afk skills list --agent shared --disabled",
+      "afk skills list --auto-invocation disabled",
       "afk skills list --scope global --agent codex",
       "afk skills list --scope project --agent codex",
     ],
@@ -1069,6 +1072,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let manifestConfigureFromCurrent = false;
   let skillsListScope: SkillsListScope = "all";
   let skillsListStorage: SkillsListStorage | undefined;
+  let skillsListAutoInvocation: SkillsListAutoInvocation | undefined;
   let skillsUpgradeScope: SkillsUpgradeScope = "global";
   let skillsUpgradeAll = false;
   let skillsDeleteCatalogOnly = false;
@@ -1412,6 +1416,21 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (isAfkSkillsCommand && arg === "--auto-invocation") {
+      if (commandPath[1] !== "list") {
+        return { help: false, kind: "error", error: "Unknown option: --auto-invocation" };
+      }
+
+      const value = args[index + 1];
+      if (value !== "enabled" && value !== "disabled" && value !== "mixed" && value !== "default") {
+        return { help: false, kind: "error", error: `Invalid --auto-invocation value: ${value ?? "(missing)"}` };
+      }
+
+      skillsListAutoInvocation = value;
+      index += 1;
+      continue;
+    }
+
     if (isAfkUiCommand && arg === "--category") {
       if (commandPath[1] !== "list") {
         return { help: false, kind: "error", error: "Unknown option: --category" };
@@ -1598,6 +1617,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       manifestConfigureFromCurrent,
       skillsListScope,
       skillsListStorage,
+      skillsListAutoInvocation,
       skillsUpgradeAll,
       skillsUpgradeScope,
       skillsDeleteCatalogOnly,

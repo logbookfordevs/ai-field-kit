@@ -539,6 +539,7 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
   });
 
   const records = filterSkillRecords(snapshot.records, {
+    autoInvocation: options.skillsListAutoInvocation,
     category: options.skillsCategory,
     tag: options.skillsTag,
     uncategorized: options.skillsUncategorized,
