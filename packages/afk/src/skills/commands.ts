@@ -279,8 +279,9 @@ function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Arr
     results.push({ profile: result.profile, created: result.created });
   }
 
-  if (state.enabledProfileIds[0]) {
-    enableSkillProfile(context, state.enabledProfileIds[0], false);
+  const activeProfile = state.activations[0];
+  if (activeProfile) {
+    enableSkillProfile(context, activeProfile.profileId, false, activeProfile.mode);
   }
 
   return results;
@@ -468,7 +469,8 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
         runtime.io.stderr("No skill profiles found.");
         return 1;
       }
-      runtime.io.stdout(renderSkillProfileApply(enableSkillProfile(context, selectedId, options.dryRun)));
+      const activationMode = options.skillProfileAdditive ? "additive" : "focus";
+      runtime.io.stdout(renderSkillProfileApply(enableSkillProfile(context, selectedId, options.dryRun, activationMode)));
       return 0;
     }
     case "disable": {
