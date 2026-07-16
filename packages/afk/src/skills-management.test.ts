@@ -235,6 +235,10 @@ test("loadSkillCatalog resolves auto invocation states from SKILL and OpenAI met
   assert.deepEqual(byFolder.get("auto-skill")?.autoInvocationDetails, ["agents/openai.yaml enables"]);
   assert.equal(byFolder.get("mixed-skill")?.autoInvocation, "mixed");
   assert.deepEqual(byFolder.get("mixed-skill")?.autoInvocationDetails, ["SKILL.md disables", "agents/openai.yaml enables"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { autoInvocation: "enabled" }).map((record) => record.folder), ["auto-skill"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { autoInvocation: "disabled" }).map((record) => record.folder), ["manual-skill"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { autoInvocation: "mixed" }).map((record) => record.folder), ["mixed-skill"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { autoInvocation: "default" }).map((record) => record.folder), ["default-skill"]);
 });
 
 test("filterSkillChoices searches folders, names, categories, tags, and roots", () => {
@@ -1199,15 +1203,23 @@ test("renderSkillProfileApply summarizes profile movements compactly", () => {
       { folder: "react", source: "/tmp/skills/.disabled/react", destination: "/tmp/skills/react", action: "enable" },
     ],
     dryRun: false,
+    profileChange: { action: "enable", profileId: "frontend" },
   }), [
-    "◆ Profile Move Complete",
-    "Profiles   frontend",
+    "◆ Profile enabled: frontend",
     "Mode       strict",
-    "enabled  disabled  kept",
-    "1        2         1   ",
-    "Enabled    react",
-    "Disabled   api, docs",
-    "Kept       react",
+    "Active profiles frontend",
+    "",
+    "Changes",
+    "+ Activated (1)",
+    "    react",
+    "",
+    "− Deactivated (2)",
+    "    api, docs",
+    "",
+    "Unchanged",
+    "= Kept active (1)",
+    "    react",
+    "",
     "State      /tmp/state/skill-profiles.json",
   ].join("\n"));
 });
@@ -1731,6 +1743,7 @@ function baseOptions(root: string) {
     manifestShowVisualize: false,
     skillsListScope: "all" as const,
     skillsListStorage: undefined,
+    skillsListAutoInvocation: undefined,
     skillsUpgradeScope: "global" as const,
     skillsUpgradeAll: false,
     skillsDeleteCatalogOnly: false,

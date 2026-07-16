@@ -1,4 +1,4 @@
 interface:
-  display_name: "AFK To Tickets"
-  short_description: "Create AFK execution checkpoint packets"
-  default_prompt: "Create thin vertical-slice AFK checkpoint packets from this context."
+  display_name: "To Tickets"
+  short_description: "Create tracer-bullet tickets with blocking edges"
+  default_prompt: "Create thin vertical-slice tickets from this context."

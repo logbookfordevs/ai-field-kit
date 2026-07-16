@@ -21,6 +21,7 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` made skill setup consider source-owned catalog entries by default, with `afk setup --all` and `afk setup skills --all` including imported entries; interactive runs now show the expanded list for review, while `--yes --all` installs every listed skill.
 - `cli:` renamed the `afk skills delete --manifest-only` filter to `--catalog-only` so the flag matches its `skills.json` catalog behavior.
 - `skills:` made `afk-doc-craft` manually invoked by default, so documentation craft runs only when explicitly selected instead of sitting in automatic discovery.
+- `skills:` made Matt Pocock's optional `research` skill auto-invoked when installed.
 - `skills:` replaced `afk-interactive-code-review` with `afk-code-review`, an AFK-compatible fork of Matt Pocock's two-axis Standards/Spec review workflow.
 - `skills:` renamed `afk-to-tasks` to `afk-to-tickets` so AFK's fork keeps the same public shape as Matt Pocock's `to-tickets` skill.
 - `skills:` updated `afk-to-tickets` with fresh-context sizing and expand-contract guidance for wide refactors.

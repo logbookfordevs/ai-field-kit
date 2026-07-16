@@ -53,6 +53,10 @@ export type SkillProfileApplyResult = {
   keptSkills: string[];
   movements: SkillProfileMovement[];
   dryRun: boolean;
+  profileChange?: {
+    action: "enable" | "disable";
+    profileId: string;
+  };
 };
 
 export function skillProfilePaths(context: SkillProfileContext): SkillProfilePaths {
@@ -224,7 +228,10 @@ export function enableSkillProfile(context: SkillProfileContext, idValue: string
     enabledProfileIds: uniqueNormalized([...current.enabledProfileIds, id]),
   };
 
-  return applySkillProfileState(context, catalog, state, dryRun);
+  return applySkillProfileState(context, catalog, state, dryRun, {
+    action: "enable",
+    profileId: id,
+  });
 }
 
 export function disableSkillProfile(context: SkillProfileContext, idValue: string, dryRun: boolean): SkillProfileApplyResult {
@@ -240,7 +247,10 @@ export function disableSkillProfile(context: SkillProfileContext, idValue: strin
     enabledProfileIds: current.enabledProfileIds.filter((profileId) => profileId !== id),
   };
 
-  return applySkillProfileState(context, catalog, state, dryRun);
+  return applySkillProfileState(context, catalog, state, dryRun, {
+    action: "disable",
+    profileId: id,
+  });
 }
 
 export function skillProfileStatus(context: SkillProfileContext): SkillProfileApplyResult {
@@ -261,6 +271,7 @@ function applySkillProfileState(
   catalog: SkillProfileCatalog,
   requestedState: SkillProfileState,
   dryRun: boolean,
+  profileChange?: SkillProfileApplyResult["profileChange"],
 ): SkillProfileApplyResult {
   const paths = skillProfilePaths(context);
   const currentState = loadSkillProfileState(context);
@@ -350,6 +361,7 @@ function applySkillProfileState(
     keptSkills: [...kept].sort(),
     movements,
     dryRun,
+    ...(profileChange ? { profileChange } : {}),
   };
 }
 

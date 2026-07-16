@@ -234,17 +234,23 @@ export function renderSkillProfileDelete(input: {
 export function renderSkillProfileApply(input: SkillProfileApplyResult): string {
   const enabled = input.movements.filter((movement) => movement.action === "enable").map((movement) => movement.folder).sort();
   const disabled = input.movements.filter((movement) => movement.action === "disable").map((movement) => movement.folder).sort();
+  const title = renderSkillProfileApplyTitle(input);
 
   return [
-    sectionTitle(input.dryRun ? "Profile Move Preview" : "Profile Move Complete"),
-    renderField("Profiles", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
+    sectionTitle(title),
     renderField("Mode", input.catalog.mode),
-    renderSkillProfileApplyTable(enabled.length, disabled.length, input.keptSkills.length),
-    renderSkillProfileApplyList("Enabled", enabled),
-    renderSkillProfileApplyList("Disabled", disabled),
-    renderSkillProfileApplyList("Kept", input.keptSkills),
+    renderField("Active profiles", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
+    "",
+    strong("Changes"),
+    renderSkillProfileApplyGroup("+", "Activated", enabled, "success"),
+    "",
+    renderSkillProfileApplyGroup("−", "Deactivated", disabled, "warn"),
+    "",
+    strong("Unchanged"),
+    renderSkillProfileApplyGroup("=", "Kept active", input.keptSkills, "muted"),
+    "",
     renderField("State", input.paths.statePath),
-  ].filter((line): line is string => Boolean(line)).join("\n");
+  ].join("\n");
 }
 
 export function renderSkillProfileStatus(input: SkillProfileApplyResult): string {
@@ -337,22 +343,52 @@ function renderMetadataField(label: string, value: string): string {
   return `${muted(`${label}:`)} ${value}`;
 }
 
-function renderSkillProfileApplyTable(enabled: number, disabled: number, kept: number): string {
-  const headers = ["enabled", "disabled", "kept"];
-  const values = [enabled, disabled, kept].map(String);
-  const widths = headers.map((header, index) => Math.max(header.length, values[index]?.length ?? 0));
-  return [
-    widths.map((width, index) => muted(headers[index]?.padEnd(width) ?? "")).join("  "),
-    values.map((value, index) => accent(value.padEnd(widths[index] ?? value.length))).join("  "),
-  ].join("\n");
-}
-
-function renderSkillProfileApplyList(label: string, skills: string[]): string | undefined {
-  if (skills.length === 0) {
-    return undefined;
+function renderSkillProfileApplyTitle(input: SkillProfileApplyResult): string {
+  if (!input.profileChange) {
+    return input.dryRun ? "Profile Move Preview" : "Profile Move Complete";
   }
 
-  return `${muted(`${label.padEnd(10)} ${skills.join(", ")}`)}`;
+  const verb = input.profileChange.action === "enable" ? "enabled" : "disabled";
+  if (input.dryRun) {
+    return `Would ${input.profileChange.action} profile: ${input.profileChange.profileId}`;
+  }
+
+  return `Profile ${verb}: ${input.profileChange.profileId}`;
+}
+
+function renderSkillProfileApplyGroup(
+  marker: string,
+  label: string,
+  skills: string[],
+  tone: "success" | "warn" | "muted",
+): string {
+  const renderMarker = tone === "success" ? success : tone === "warn" ? warn : muted;
+  const heading = `${renderMarker(marker)} ${strong(`${label} (${skills.length})`)}`;
+  const names = skills.length === 0 ? ["none"] : skills;
+
+  return [heading, ...wrapSkillProfileNames(names).map((line) => muted(line))].join("\n");
+}
+
+function wrapSkillProfileNames(skills: string[]): string[] {
+  const indent = "    ";
+  const width = Math.max(40, process.stdout.columns ?? 100);
+  const lines: string[] = [];
+  let line = indent;
+
+  skills.forEach((skill, index) => {
+    const token = `${skill}${index === skills.length - 1 ? "" : ","}`;
+    const separator = line === indent ? "" : " ";
+    if (line.length + separator.length + token.length > width && line !== indent) {
+      lines.push(line);
+      line = `${indent}${token}`;
+      return;
+    }
+
+    line += `${separator}${token}`;
+  });
+
+  lines.push(line);
+  return lines;
 }
 
 function renderAutoInvocation(record: SkillRecord): string {

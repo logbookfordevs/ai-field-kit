@@ -14,6 +14,7 @@ export type Area = "rules" | "skills" | "profiles" | "mcps" | "plugins" | "hooks
 export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "all";
 export type SkillsListStorage = "active" | "disabled";
+export type SkillsListAutoInvocation = "enabled" | "disabled" | "mixed" | "default";
 export type SkillsUpgradeScope = "global" | "project" | "all";
 export type ManagedSkillAgent =
   | "codex"
@@ -73,6 +74,7 @@ export type CliOptions = {
   manifestConfigureFromCurrent: boolean;
   skillsListScope?: SkillsListScope;
   skillsListStorage?: SkillsListStorage | undefined;
+  skillsListAutoInvocation?: SkillsListAutoInvocation | undefined;
   skillsUpgradeAll?: boolean;
   skillsUpgradeScope?: SkillsUpgradeScope;
   skillsDeleteCatalogOnly?: boolean;
