@@ -567,11 +567,6 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
         agent: undefined,
       }).records;
       const profileRecords = profile.skills.map((skillId) => findSkillRecord(records, skillId));
-      const missingSkills = profile.skills.filter((_, index) => !profileRecords[index]);
-      if (missingSkills.length > 0) {
-        runtime.io.stderr(`Profile ${profile.id} references missing local skills: ${missingSkills.join(", ")}`);
-        return 1;
-      }
 
       runtime.io.stdout(renderSkillProfileContext({
         profile,

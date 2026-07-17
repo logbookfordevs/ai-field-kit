@@ -405,13 +405,14 @@ test("runSkillsCommand profiles use --all prints every complete skill", async ()
   assert.ok(!text.includes('get="afk skills get alpha"'));
 });
 
-test("runSkillsCommand profiles use rejects missing local profile skills", async () => {
+test("runSkillsCommand profiles use skips missing local profile skills", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-profile-use-missing-"));
   const homeDir = join(root, "home");
+  writeSkill(join(homeDir, ".agents", "skills"), "available-skill", "Available Skill");
   writeSkillProfiles(homeDir, {
     version: 1,
     alwaysOn: [],
-    items: [{ id: "video", name: "Video", skills: ["missing-skill"] }],
+    items: [{ id: "video", name: "Video", skills: ["available-skill", "missing-skill"] }],
   });
   const output: string[] = [];
 
@@ -421,8 +422,11 @@ test("runSkillsCommand profiles use rejects missing local profile skills", async
     baseOptions(root),
   );
 
-  assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("Profile video references missing local skills: missing-skill"));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes('id="available-skill"'));
+  assert.ok(!text.includes("missing-skill"));
 });
 
 test("moveGlobalSkill supports dry-run and active to disabled moves", () => {
