@@ -1277,6 +1277,7 @@ test("runSkillsCommand add imports uncataloged installed skills before adding an
   const homeDir = join(root, "home");
   const output: string[] = [];
   writeSkill(join(homeDir, ".agents", "skills"), "existing", "Existing");
+  writeSkill(join(homeDir, ".agents", "skills"), "plugin-owned", "Plugin Owned");
   writeGlobalSkillLock(homeDir, {
     existing: { source: "existing/skills", sourceType: "github" },
   });
@@ -1308,10 +1309,11 @@ test("runSkillsCommand add imports uncataloged installed skills before adding an
   assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["new-skill"] }]);
   assert.ok(output.join("\n").includes("Catalog Required"));
   assert.ok(output.join("\n").includes("Route afk catalog skills import"));
+  assert.ok(!output.join("\n").includes("plugin-owned"));
 });
 
-test("runSkillsCommand add blocks when catalog import cannot resolve an installed skill", async () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-catalog-blocked-"));
+test("runSkillsCommand add ignores uncataloged installed skills without lock metadata", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-catalog-untracked-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
   let spawned = false;
@@ -1333,10 +1335,10 @@ test("runSkillsCommand add blocks when catalog import cannot resolve an installe
     { ...baseOptions(root), yes: true },
   );
 
-  assert.equal(code, 1);
-  assert.equal(spawned, false);
-  assert.ok(output.join("\n").includes("Catalog import could not catalog every installed skill"));
-  assert.ok(output.join("\n").includes("Resolve them through afk catalog skills"));
+  assert.equal(code, 0);
+  assert.equal(spawned, true);
+  assert.ok(!output.join("\n").includes("Catalog Required"));
+  assert.ok(!output.join("\n").includes("local-only"));
 });
 
 test("deleteSkillRecords permanently deletes agent-specific skills", () => {

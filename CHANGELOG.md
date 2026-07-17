@@ -25,7 +25,7 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` made catalog refresh preserve local profile definitions absent from the refreshed source while source definitions and top-level profile policy remain authoritative.
 - `cli:` made global skill setup reconcile newly installed skills against enabled focus profiles according to strict or context policy, while additive-only profiles continue to preserve unrelated active skills.
 - `cli:` made skill upgrades restore pre-upgrade disabled storage after the upstream content reinstall completes.
-- `cli:` made `afk skills add` catalog existing installs before installation, treat source-cataloged first installs as new, apply add-time profile and storage flags only to genuinely new skills, and refresh existing content without changing storage or profile membership.
+- `cli:` made `afk skills add` offer preflight import only for existing installs tracked by the skills CLI, ignore plugin- or CLI-owned skills without lock metadata, treat source-cataloged first installs as new, apply add-time flags only to genuinely new skills, and refresh existing content without changing storage or profile membership.
 - `cli:` made skill setup consider source-owned catalog entries by default, with `afk setup --all` and `afk setup skills --all` including imported entries; interactive runs now show the expanded list for review, while `--yes --all` installs every listed skill.
 - `cli:` renamed the `afk skills delete --manifest-only` filter to `--catalog-only` so the flag matches its `skills.json` catalog behavior.
 - `skills:` made `afk-doc-craft` manually invoked by default, so documentation craft runs only when explicitly selected instead of sitting in automatic discovery.

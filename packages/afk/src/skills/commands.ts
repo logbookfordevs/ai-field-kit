@@ -9,7 +9,7 @@ import { quoteArg } from "../delegates.js";
 import { selectCatalogProfilesLobbyRoute, selectSkillProfilesLobbyRoute, selectSkillsLobbyRoute } from "../lobby.js";
 import { loadSkillManifest } from "../manifest.js";
 import { runManifestConfigureAreaAction } from "../manifest-configure.js";
-import { planCatalogImport, planCatalogImportStatus, runCatalogImport } from "../catalog-import.js";
+import { planCatalogImport, planCatalogImportStatus } from "../catalog-import.js";
 import {
   filterSkillRecords,
   loadSkillCatalog,
@@ -221,16 +221,16 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
 
 async function ensureSkillsAddCatalogReady(runtime: Runtime, options: CliOptions): Promise<number | undefined> {
   const catalogOptions = { ...options, dryRun: false, manifestLocal: false };
-  const status = planCatalogImportStatus(catalogOptions);
-  if (status.notImported.length === 0) {
+  const importPlan = planCatalogImport(catalogOptions);
+  if (importPlan.imported.length === 0) {
     return undefined;
   }
 
   runtime.io.stdout([
     "",
     section("Catalog Required"),
-    muted("AFK found installed skills that are not in the current skills catalog."),
-    ...status.notImported.map((id) => `  ${accent("•")} ${id}`),
+    muted("AFK found skills tracked by the skills CLI that are installed but missing from the current catalog."),
+    ...importPlan.imported.map((item) => `  ${accent("•")} ${item.id}`),
   ].join("\n"));
 
   const accepted = options.yes || await confirm({
@@ -244,15 +244,14 @@ async function ensureSkillsAddCatalogReady(runtime: Runtime, options: CliOptions
   }
 
   runtime.io.stdout(`${accent("Route")} afk catalog skills import`);
-  const importCode = await runCatalogImport(runtime, catalogOptions);
-  if (importCode !== 0) {
-    return importCode;
+  for (const operation of importPlan.operations) {
+    applyOperation(operation);
   }
 
-  const remaining = planCatalogImportStatus(catalogOptions).notImported;
+  const remaining = planCatalogImport(catalogOptions).imported.map((item) => item.id);
   if (remaining.length > 0) {
     runtime.io.stderr([
-      "Catalog import could not catalog every installed skill:",
+      "Catalog import could not catalog every lock-tracked installed skill:",
       ...remaining.map((id) => `  - ${id}`),
       "Resolve them through afk catalog skills before trying skills add again.",
     ].join("\n"));

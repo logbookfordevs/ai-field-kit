@@ -811,13 +811,15 @@ Setup-selected source catalog entries remain source-owned. After a successful
 direct `afk skills add`, newly installed skills absent from the catalog are
 inserted as imported, uncategorized entries.
 
-Before `afk skills add` starts, AFK checks for installed skills that are not in
-`skills.json` and routes them through `afk catalog skills import`. The add
-continues only after the existing installed library is fully cataloged, so add
-flags apply only to skills introduced by that installation. AFK determines
-that set from the active and disabled skill folders before and after the
-upstream add, so a source-cataloged skill is still treated as new when it is
-installed for the first time.
+Before `afk skills add` starts, AFK offers to import installed skills that are
+missing from `skills.json` when their source is recoverable from the official
+skills CLI lock. Installs owned by plugins or other CLIs without lock metadata
+are ignored by this preflight and remain under their owning catalog; users can
+still add them to the skills catalog manually when they want AFK to manage
+them. Add flags remain scoped to skills introduced by the current installation
+because AFK compares the active and disabled folders before and after the
+upstream add. A source-cataloged skill is therefore still treated as new when
+it is installed for the first time.
 
 Use `afk skills add --start-disabled` to mark newly installed skills with
 `startDisabled: true` and move their shared folders into `.disabled`, including
