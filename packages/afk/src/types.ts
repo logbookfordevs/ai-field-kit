@@ -77,6 +77,7 @@ export type CliOptions = {
   skillsListAutoInvocation?: SkillsListAutoInvocation | undefined;
   skillsUpgradeAll?: boolean;
   skillsUpgradeScope?: SkillsUpgradeScope;
+  skillsUpgradeByProfile?: boolean;
   skillsDeleteCatalogOnly?: boolean;
   skillsDeleteByProfile?: boolean;
   skillsAgent?: SkillAgentFilter | undefined;

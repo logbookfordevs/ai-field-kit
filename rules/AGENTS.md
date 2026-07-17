@@ -31,6 +31,9 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 - Do not use ternaries inside JSX content. For one optional branch, use a positive `&&` check. For mutually exclusive branches or conditions with more than two checks, compute named variables before the return or extract a helper/component.
 - Conditional JSX should use named booleans, not chained `||` expressions inside `{condition && (...)}` blocks. Hoist OR logic above the return, such as `const showActions = isReady && canEdit`, then use `&&` with those names in JSX. For repeated status unions like `active | pending` or `loading | refreshing`, use shared helpers in `utils/`, such as `isActiveStatus`, instead of duplicating OR expressions.
 
+## Browser Testing
+- Prefer `agent-browser` CLI when available over playwright CLI.
+
 ## Commands
 - Don't run dev server commands (like `npm run dev`) - assume it's already running.
 
