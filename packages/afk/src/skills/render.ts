@@ -159,6 +159,28 @@ export function renderSkillUpgradeRoute(input: {
   ].join("\n");
 }
 
+export function renderSkillUpgradeComplete(input: {
+  scopes: Array<"global" | "project">;
+  skillNames: string[];
+}): string {
+  const uniqueSkillNames = [...new Set(input.skillNames)];
+  const result = uniqueSkillNames.length === 0
+    ? `${success("All tracked skills")} ${muted("are up to date")}`
+    : uniqueSkillNames.length === 1
+      ? `${success(uniqueSkillNames[0] ?? "Selected skill")} ${muted("is up to date")}`
+      : `${success(`${uniqueSkillNames.length} selected skills`)} ${muted("are up to date")}`;
+  const scope = input.scopes.length === 1
+    ? `${input.scopes[0] === "global" ? "Global" : "Project"} skill library`
+    : "Global and project skill libraries";
+
+  return [
+    sectionTitle("Skill Upgrade Complete"),
+    result,
+    uniqueSkillNames.length > 1 ? muted(uniqueSkillNames.join(", ")) : undefined,
+    muted(`${scope} refreshed through the official skills CLI.`),
+  ].filter((line): line is string => Boolean(line)).join("\n");
+}
+
 export function renderSkillProfileList(input: {
   catalog: SkillProfileCatalog;
   state: SkillProfileState;

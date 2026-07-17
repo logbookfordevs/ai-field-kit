@@ -30,7 +30,7 @@ import {
   skillProfilePaths,
   type SkillProfileCatalog,
 } from "./skills/profiles.js";
-import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch, renderSkillMoveBatch, renderSkillProfileApply } from "./skills/render.js";
+import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch, renderSkillMoveBatch, renderSkillProfileApply, renderSkillUpgradeComplete } from "./skills/render.js";
 import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
 import type { Runtime } from "./types.js";
 import { localManifestDir, projectManifestDir, type SkillManifest } from "./manifest.js";
@@ -1863,6 +1863,7 @@ test("buildSkillUpgradeCommands delegates through npx skills update", () => {
     args: ["--yes", "skills", "update", "frontend-design", "web-design-guidelines", "-g", "-y"],
     cwd: "/tmp/project",
     scope: "global",
+    skillNames: ["frontend-design", "web-design-guidelines"],
   }]);
 
   assert.deepEqual(buildSkillUpgradeCommands({
@@ -1874,6 +1875,29 @@ test("buildSkillUpgradeCommands delegates through npx skills update", () => {
     ["--yes", "skills", "update", "-g"],
     ["--yes", "skills", "update", "-p"],
   ]);
+});
+
+test("renderSkillUpgradeComplete closes a selected upgrade with its refreshed library", () => {
+  assert.equal(renderSkillUpgradeComplete({
+    scopes: ["global"],
+    skillNames: ["notion-issues"],
+  }), [
+    "◆ Skill Upgrade Complete",
+    "notion-issues is up to date",
+    "Global skill library refreshed through the official skills CLI.",
+  ].join("\n"));
+});
+
+test("renderSkillUpgradeComplete summarizes all-scope upgrades without duplicate skill names", () => {
+  assert.equal(renderSkillUpgradeComplete({
+    scopes: ["global", "project"],
+    skillNames: ["notion-issues", "frontend-design", "notion-issues", "frontend-design"],
+  }), [
+    "◆ Skill Upgrade Complete",
+    "2 selected skills are up to date",
+    "notion-issues, frontend-design",
+    "Global and project skill libraries refreshed through the official skills CLI.",
+  ].join("\n"));
 });
 
 test("formatLockedSkillChoice separates name scope and source", () => {
@@ -1920,9 +1944,10 @@ test("runSkillsCommand upgrade explicit names invokes global update by default",
     },
   });
   const spawned: Array<{ command: string; args: string[]; cwd?: string }> = [];
+  const output: string[] = [];
   const runtime: Runtime = {
     io: {
-      stdout: () => undefined,
+      stdout: (message) => output.push(message),
       stderr: () => undefined,
     },
     spawn: async (command, args, cwd) => {
@@ -1939,6 +1964,8 @@ test("runSkillsCommand upgrade explicit names invokes global update by default",
     args: ["--yes", "skills", "update", "demo", "-g"],
     cwd: join(root, "project"),
   }]);
+  assert.ok(output.join("\n").includes("Skill Upgrade Complete"));
+  assert.ok(output.join("\n").includes("demo is up to date"));
 });
 
 test("runSkillsCommand upgrade selects tracked profile skills and preserves disabled storage", async () => {

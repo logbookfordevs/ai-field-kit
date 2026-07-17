@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { quoteArg } from "../delegates.js";
 import type { Runtime } from "../types.js";
-import { renderSkillUpgradeRoute } from "./render.js";
+import { renderSkillUpgradeComplete, renderSkillUpgradeRoute } from "./render.js";
 
 export type SkillUpgradeScope = "global" | "project" | "all";
 
@@ -23,6 +23,7 @@ export type SkillUpgradeCommand = {
   args: string[];
   cwd: string;
   scope: LockedSkillScope;
+  skillNames: string[];
 };
 
 type LockEntry = {
@@ -87,6 +88,7 @@ export function buildSkillUpgradeCommands(options: {
       args,
       cwd: options.cwd,
       scope,
+      skillNames: options.skills,
     };
   });
 }
@@ -108,6 +110,11 @@ export async function runSkillUpgradeCommands(
     }
     afterSuccess?.(command);
   }
+
+  runtime.io.stdout(renderSkillUpgradeComplete({
+    scopes: commands.map((command) => command.scope),
+    skillNames: commands.flatMap((command) => command.skillNames),
+  }));
 
   return 0;
 }
