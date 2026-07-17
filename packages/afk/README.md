@@ -762,14 +762,15 @@ Manage local skills:
 ```bash
 afk skills list
 afk skills list --scope global --json
-afk skills list --agent shared --disabled
+afk skills list --disabled
 afk skills list --scope global --agent codex
 afk skills list --scope project --agent claude
+afk skills list --agent custom --agent-path ~/.my-agent/skills
 afk skills list --category Docs --tag writing
-afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes
-afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --profile video
-afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --profile-only video
-afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --start-disabled
+afk skills add logbookfordevs/ai-field-kit --skill afk-compass --yes
+afk skills add logbookfordevs/ai-field-kit --skill hyperframes --yes --profile video
+afk skills add logbookfordevs/ai-field-kit --skill hyperframes --yes --profile-only video
+afk skills add logbookfordevs/ai-field-kit --skill hyperframes --yes --start-disabled
 afk skills show afk-note
 afk skills get afk-note
 afk skills open afk-note --folder --app cursor
@@ -791,8 +792,12 @@ afk skills profiles status
 ```
 
 `afk skills` is separate from `afk setup skills install`. Setup remains the
-catalog-driven install flow, while `afk skills add` is a direct convenience
-wrapper around the official `skills add` command for one-off installs.
+catalog-driven install flow, while `afk skills add` is a convenience wrapper
+around the official `skills add` command for one-off installs. AFK always
+includes the shared global target first; each explicit `--agent <agent>` adds
+an upstream-supported agent projection. Literal `--agent custom` paths apply
+only to AFK-owned inspection and mutation commands because the upstream
+installer does not accept arbitrary destination directories.
 
 `afk skills upgrade --profile` selects a global profile interactively, or use
 `afk skills upgrade <profile> --profile` to select it directly. AFK upgrades
@@ -837,20 +842,21 @@ AFK categorization metadata lives in top-level `scopes` plus each item's nested
 `catalog` object, so `id`, `source`, `args`, `default`, and other install fields
 remain easy to read.
 
-`afk skills list` reads the shared global library, current-project Codex and
-Claude roots, and installed-agent roots such as Codex, Claude, Gemini,
-OpenCode, Cursor, Zed, and Kiro when they exist. Use `--scope
-global|project|all` to choose root families, `--agent shared` to focus on the
-shared library, `--agent <agent>` to focus on one agent, `--enabled` to show
-active folders, `--disabled` to show disabled folders, and `--category`,
-`--tag`, or `--uncategorized` to filter AFK catalog metadata. The same
+`afk skills list` reads only the shared global library by default. Use
+`--agent <agent>` to select a preset agent root and `--scope
+global|project|all` to choose that preset's root family. Use `--agent custom
+--agent-path <folder>` to select an exact custom skills root; custom paths do
+not combine with `--scope`. Use `--enabled` to show active folders,
+`--disabled` to show disabled folders, and `--category`, `--tag`, or
+`--uncategorized` to filter AFK catalog metadata. The same
 `--enabled` and `--disabled` folder filters are also available on `afk skills
 show`, `open`, `delete`, and `invocation`, plus `afk catalog profiles
 create|edit` when those commands need to choose from discovered skill folders.
 
 `afk skills disable`, `afk skills enable`, and `afk skills delete` can manage
-the shared global library by default, or explicitly with `--agent shared`.
-They can manage agent-specific roots when `--agent <agent>` is provided.
+the shared global library by default. They can manage preset agent roots with
+`--agent <agent>` or a literal root with `--agent custom --agent-path
+<folder>`.
 `afk skills delete --disabled` is useful when pruning disabled skills. Use
 `--catalog-only` to limit deletion candidates to installed skills represented
 in AFK's `skills.json` catalog. Use `--profile` to choose a profile and delete

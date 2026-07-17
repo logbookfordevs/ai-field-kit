@@ -22,6 +22,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `cli:` made the shared global skills library the default across `afk skills`, with explicit preset-agent targeting, literal custom roots through `--agent custom --agent-path <folder>`, and shared-first installs before optional agent fanout.
 - `cli:` made catalog refresh preserve local profile definitions absent from the refreshed source while source definitions and top-level profile policy remain authoritative.
 - `cli:` made global skill setup reconcile newly installed skills against enabled focus profiles according to strict or context policy, while additive-only profiles continue to preserve unrelated active skills.
 - `cli:` made skill upgrades restore pre-upgrade disabled storage after the upstream content reinstall completes.

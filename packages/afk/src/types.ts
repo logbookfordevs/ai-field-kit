@@ -33,7 +33,7 @@ export type ManagedSkillAgent =
   | "kiro"
   | "jules"
   | "openhands";
-export type SkillAgentFilter = ManagedSkillAgent | "shared";
+export type SkillAgentFilter = ManagedSkillAgent | "custom";
 export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
 export type SkillProfileMode = "strict" | "context";
@@ -81,6 +81,7 @@ export type CliOptions = {
   skillsDeleteCatalogOnly?: boolean;
   skillsDeleteByProfile?: boolean;
   skillsAgent?: SkillAgentFilter | undefined;
+  skillsAgentPath?: string | undefined;
   skillsJson?: boolean;
   skillsCategory?: string;
   skillsTag?: string;

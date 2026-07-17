@@ -95,7 +95,7 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
       case "open":
         return runSkillsOpen(operands[0], runtime, options);
       case "add":
-        return runSkillsAdd(operands, runtime, options);
+        return await runSkillsAdd(operands, runtime, options);
       case "disable":
         return runSkillsMove(operands[0], false, runtime, options);
       case "enable":
@@ -133,10 +133,13 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     return 1;
   }
 
-  const parsedAddOptions = parseSkillAddOperands(operands.slice(1));
+  const parsedAddOptions = parseSkillAddOperands([
+    ...operands.slice(1),
+    ...(options.skillAddArgs ?? []),
+  ]);
   const effectiveOptions = {
     ...options,
-    skillAddArgs: [...parsedAddOptions.upstreamArgs, ...(options.skillAddArgs ?? [])],
+    skillAddArgs: sharedGlobalSkillAddArgs(parsedAddOptions.upstreamArgs),
     skillAddProfileIds: [...options.skillAddProfileIds, ...parsedAddOptions.profileIds],
     skillAddProfileOnlyIds: [...options.skillAddProfileOnlyIds, ...parsedAddOptions.profileOnlyIds],
     skillAddStartDisabled: options.skillAddStartDisabled || parsedAddOptions.startDisabled,
@@ -312,6 +315,41 @@ function parseSkillAddOperands(operands: string[]): {
     profileOnlyIds,
     startDisabled,
   };
+}
+
+function sharedGlobalSkillAddArgs(args: string[]): string[] {
+  if (args.includes("--agent-path")) {
+    throw new Error("--agent-path is not supported by afk skills add; use it with AFK-owned skills commands");
+  }
+  if (skillAddAgentValues(args).includes("custom")) {
+    throw new Error("--agent custom is not supported by the upstream skills installer");
+  }
+  if (args.includes("--project") || args.includes("-p")) {
+    throw new Error("afk skills add installs the canonical shared global library; remove --project");
+  }
+
+  const withoutGlobal = args.filter((arg) => arg !== "--global" && arg !== "-g");
+  const sharedAgentArgs = skillAddAgentValues(args).includes("universal")
+    ? []
+    : ["--agent", "universal"];
+  return ["--global", ...sharedAgentArgs, ...withoutGlobal];
+}
+
+function skillAddAgentValues(args: string[]): string[] {
+  const values: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] !== "--agent" && args[index] !== "-a") {
+      continue;
+    }
+    for (let valueIndex = index + 1; valueIndex < args.length; valueIndex += 1) {
+      const value = args[valueIndex];
+      if (!value || value.startsWith("-")) {
+        break;
+      }
+      values.push(value);
+    }
+  }
+  return values;
 }
 
 function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Array<{ profile: { id: string }; created: boolean }> {
@@ -526,7 +564,7 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
         homeDir: options.homeDir,
         cwd: options.cwd,
         scope: "global",
-        agent: "shared",
+        agent: undefined,
       }).records;
       const profileRecords = profile.skills.map((skillId) => findSkillRecord(records, skillId));
       const missingSkills = profile.skills.filter((_, index) => !profileRecords[index]);
@@ -672,8 +710,9 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
   const snapshot = loadSkillCatalog({
     homeDir: options.homeDir,
     cwd: options.cwd,
-    scope: options.skillsListScope ?? "all",
+    scope: skillsCommandScope(options),
     agent: options.skillsAgent,
+    agentPath: options.skillsAgentPath,
   });
 
   const records = filterSkillRecords(snapshot.records, {
@@ -727,8 +766,9 @@ async function runSkillsOpen(folder: string | undefined, runtime: Runtime, optio
   const snapshot = loadSkillCatalog({
     homeDir: options.homeDir,
     cwd: options.cwd,
-    scope: "all",
+    scope: skillsCommandScope(options),
     agent: options.skillsAgent,
+    agentPath: options.skillsAgentPath,
   });
   const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage });
   const record = folder
@@ -763,8 +803,9 @@ async function runSkillsGet(folder: string | undefined, runtime: Runtime, option
   const snapshot = loadSkillCatalog({
     homeDir: options.homeDir,
     cwd: options.cwd,
-    scope: options.scopeExplicit ? options.skillsListScope ?? "all" : "all",
+    scope: skillsCommandScope(options),
     agent: options.skillsAgent,
+    agentPath: options.skillsAgentPath,
   });
   const record = folder
     ? findSkillRecord(snapshot.records, folder)
@@ -783,8 +824,9 @@ async function runSkillsShow(folder: string | undefined, runtime: Runtime, optio
   const snapshot = loadSkillCatalog({
     homeDir: options.homeDir,
     cwd: options.cwd,
-    scope: "all",
+    scope: skillsCommandScope(options),
     agent: options.skillsAgent,
+    agentPath: options.skillsAgentPath,
   });
   const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage });
   const record = folder
@@ -1094,29 +1136,29 @@ export function filterManifestSkillRecords(records: SkillRecord[], options: Pick
 }
 
 function loadMutationSkillRecords(options: CliOptions): SkillRecord[] {
-  const scope = options.scopeExplicit ? options.skillsListScope ?? "global" : "global";
+  const scope = skillsCommandScope(options);
   const snapshot = loadSkillCatalog({
     homeDir: options.homeDir,
     cwd: options.cwd,
     scope,
     agent: options.skillsAgent,
+    agentPath: options.skillsAgentPath,
   });
 
-  const records = options.skillsAgent
-    ? snapshot.records
-    : snapshot.records.filter((record) => record.rootKind === "global-library");
+  return filterSkillRecords(snapshot.records, { storage: options.skillsListStorage });
+}
 
-  return filterSkillRecords(records, { storage: options.skillsListStorage });
+function skillsCommandScope(options: CliOptions): "global" | "project" | "all" {
+  return options.scopeExplicit ? options.skillsListScope ?? "global" : "global";
 }
 
 function mutationTargetLabel(options: CliOptions): string {
   if (options.skillsAgent) {
-    if (options.skillsAgent === "shared") {
-      return "shared";
+    if (options.skillsAgent === "custom") {
+      return `custom (${options.skillsAgentPath ?? "missing path"})`;
     }
 
-    const scope = options.scopeExplicit ? options.skillsListScope ?? "global" : "global";
-    return `${scope} ${options.skillsAgent}`;
+    return `${skillsCommandScope(options)} ${options.skillsAgent}`;
   }
 
   return "global";
