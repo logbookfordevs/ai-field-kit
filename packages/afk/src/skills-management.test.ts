@@ -1185,7 +1185,7 @@ test("runSkillsCommand add consumes profile-only from interactive lobby routes",
   assert.ok(output.join("\n").includes("gaming created with 1 skill."));
 });
 
-test("runSkillsCommand add profile-only applies to already cataloged skills from the same source", async () => {
+test("runSkillsCommand add ignores profile-only for already cataloged skills from the same source", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-add-profile-only-existing-source-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
@@ -1237,18 +1237,166 @@ test("runSkillsCommand add profile-only applies to already cataloged skills from
 
   assert.equal(code, 0);
   assert.deepEqual(spawned[0]?.args, ["skills", "add", "https://github.com/pixijs/pixijs-skills.git", "--global", "--agent", "universal"]);
-  const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
-  assert.deepEqual(profiles.items, [{ id: "gaming", name: "Gaming", skills: ["pixijs", "pixijs-assets"] }]);
+  assert.equal(existsSync(join(localManifestDir(homeDir), "profiles.json")), false);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
   assert.deepEqual(catalog.items.map((item) => ({ id: item.id, startDisabled: item.startDisabled })), [
-    { id: "pixijs", startDisabled: true },
-    { id: "pixijs-assets", startDisabled: true },
+    { id: "pixijs", startDisabled: undefined },
+    { id: "pixijs-assets", startDisabled: undefined },
   ]);
-  assert.equal(existsSync(join(homeDir, ".agents", "skills", "pixijs")), false);
-  assert.equal(existsSync(join(homeDir, ".agents", "skills", "pixijs-assets")), false);
-  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "pixijs")), true);
-  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "pixijs-assets")), true);
-  assert.ok(output.join("\n").includes("gaming created with 2 skills."));
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "pixijs")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "pixijs-assets")), true);
+  assert.ok(output.join("\n").includes("No new shared skills installed; existing storage and profile state were preserved."));
+});
+
+test("runSkillsCommand add refreshes existing disabled content without applying add flags", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-existing-disabled-"));
+  const homeDir = join(root, "home");
+  mkdirSync(localManifestDir(homeDir), { recursive: true });
+  writeFileSync(skillCatalogPath(homeDir), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [{
+      id: "demo",
+      label: "Demo",
+      source: "owner/skills",
+      args: ["--skill", "demo"],
+      default: false,
+    }],
+  }, null, 2)}\n`);
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "demo", "Old Demo");
+  writeGlobalSkillLock(homeDir, {
+    demo: { source: "owner/skills", sourceType: "github" },
+  });
+  const output: string[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      writeSkill(join(homeDir, ".agents", "skills"), "demo", "Fresh Demo");
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "add", "owner/skills", "--profile-only", "video"], runtime, baseOptions(root));
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo")), false);
+  assert.match(readFileSync(join(homeDir, ".agents", "skills", ".disabled", "demo", "SKILL.md"), "utf8"), /Fresh Demo/);
+  assert.equal(existsSync(join(localManifestDir(homeDir), "profiles.json")), false);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.equal(catalog.items[0]?.startDisabled, undefined);
+  assert.ok(output.join("\n").includes("existing storage and profile state were preserved"));
+});
+
+test("runSkillsCommand add applies flags to a newly installed source-cataloged skill", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-source-cataloged-"));
+  const homeDir = join(root, "home");
+  mkdirSync(localManifestDir(homeDir), { recursive: true });
+  writeFileSync(skillCatalogPath(homeDir), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [{
+      id: "demo",
+      label: "Demo",
+      source: "owner/skills",
+      args: ["--skill", "demo"],
+      default: false,
+    }],
+  }, null, 2)}\n`);
+  const runtime: Runtime = {
+    io: {
+      stdout: () => undefined,
+      stderr: () => undefined,
+    },
+    spawn: async () => {
+      writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo");
+      writeGlobalSkillLock(homeDir, {
+        demo: { source: "owner/skills", sourceType: "github" },
+      });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "add", "owner/skills", "--profile-only", "video"], runtime, baseOptions(root));
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "demo")), true);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.equal(catalog.items[0]?.startDisabled, true);
+  const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
+  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["demo"] }]);
+});
+
+test("runSkillsCommand add imports uncataloged installed skills before adding and profiles only new skills", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-catalog-preflight-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "existing", "Existing");
+  writeSkill(join(homeDir, ".agents", "skills"), "plugin-owned", "Plugin Owned");
+  writeGlobalSkillLock(homeDir, {
+    existing: { source: "existing/skills", sourceType: "github" },
+  });
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      writeSkill(join(homeDir, ".agents", "skills"), "new-skill", "New Skill");
+      writeGlobalSkillLock(homeDir, {
+        existing: { source: "existing/skills", sourceType: "github" },
+        "new-skill": { source: "new/skills", sourceType: "github" },
+      });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(
+    ["skills", "add", "new/skills", "--profile", "video"],
+    runtime,
+    { ...baseOptions(root), yes: true },
+  );
+
+  assert.equal(code, 0);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.deepEqual(catalog.items.map((item) => item.id), ["existing", "new-skill"]);
+  const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
+  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["new-skill"] }]);
+  assert.ok(output.join("\n").includes("Catalog Required"));
+  assert.ok(output.join("\n").includes("Route afk catalog skills import"));
+  assert.ok(!output.join("\n").includes("plugin-owned"));
+});
+
+test("runSkillsCommand add ignores uncataloged installed skills without lock metadata", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-catalog-untracked-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  let spawned = false;
+  writeSkill(join(homeDir, ".agents", "skills"), "local-only", "Local Only");
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      spawned = true;
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(
+    ["skills", "add", "new/skills"],
+    runtime,
+    { ...baseOptions(root), yes: true },
+  );
+
+  assert.equal(code, 0);
+  assert.equal(spawned, true);
+  assert.ok(!output.join("\n").includes("Catalog Required"));
+  assert.ok(!output.join("\n").includes("local-only"));
 });
 
 test("deleteSkillRecords permanently deletes agent-specific skills", () => {
@@ -1789,6 +1937,78 @@ test("runSkillsCommand upgrade explicit names invokes global update by default",
   }]);
 });
 
+test("runSkillsCommand upgrade selects tracked profile skills and preserves disabled storage", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-profile-"));
+  const homeDir = join(root, "home");
+  writeGlobalSkillLock(homeDir, {
+    demo: {
+      source: "owner/demo",
+      sourceType: "github",
+      skillPath: "skills/demo/SKILL.md",
+      skillFolderHash: "abc",
+    },
+  });
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "strict",
+    alwaysOn: [],
+    items: [{ id: "video", name: "Video", skills: ["demo", "untracked"] }],
+  }, null, 2)}\n`);
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "demo", "Old Demo");
+  const output: string[] = [];
+  const spawned: Array<{ command: string; args: string[] }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      writeSkill(join(homeDir, ".agents", "skills"), "demo", "Fresh Demo");
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "upgrade", "video"], runtime, {
+    ...baseOptions(root),
+    skillsUpgradeByProfile: true,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["--yes", "skills", "update", "demo", "-g"],
+  }]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo")), false);
+  assert.match(readFileSync(join(homeDir, ".agents", "skills", ".disabled", "demo", "SKILL.md"), "utf8"), /Fresh Demo/);
+  assert.ok(output.join("\n").includes("Skipped untracked profile skills: untracked."));
+});
+
+test("runSkillsCommand upgrade rejects profiles outside global scope", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-profile-scope-"));
+  const output: string[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      throw new Error("spawn should not run");
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "upgrade", "video"], runtime, {
+    ...baseOptions(root),
+    skillsUpgradeByProfile: true,
+    skillsUpgradeScope: "project",
+  });
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Profile upgrades use the global skill library"));
+});
+
 test("syncSkillCatalogFromManifest keeps setup skills source-owned in the canonical catalog", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-catalog-sync-"));
   const homeDir = join(root, "home");
@@ -2064,6 +2284,7 @@ function baseOptions(root: string) {
     skillsListAutoInvocation: undefined,
     skillsUpgradeScope: "global" as const,
     skillsUpgradeAll: false,
+    skillsUpgradeByProfile: false,
     skillsDeleteCatalogOnly: false,
     skillsDeleteByProfile: false,
     skillsAgent: undefined,

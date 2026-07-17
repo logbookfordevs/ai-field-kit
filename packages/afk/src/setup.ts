@@ -1,6 +1,7 @@
 import { syncRules } from "./rules.js";
 import { syncHooks } from "./hooks.js";
 import { snapshotDisabledStartupSkills, syncSkillInvocationPolicy, syncSkillStartupStorage } from "./skills.js";
+import { loadSkillProfileState, reconcileSkillProfiles } from "./skills/profiles.js";
 import { syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
@@ -187,6 +188,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         syncSkillInvocationPolicy(runtime, selectedOptions);
         syncSkillStartupStorage(runtime, selectedOptions, disabledBeforeInstall);
         syncSetupSkillCatalog(runtime, selectedOptions);
+        reconcileEnabledSetupSkillProfiles(runtime, selectedOptions);
       }
 
       return code;
@@ -231,6 +233,22 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 
       return syncHooks(runtime, selectedOptions);
     }
+  }
+}
+
+function reconcileEnabledSetupSkillProfiles(runtime: Runtime, options: CliOptions): void {
+  if (options.setupScope !== "global") {
+    return;
+  }
+
+  const context = { homeDir: options.homeDir, cwd: options.cwd, local: false };
+  if (loadSkillProfileState(context).activations.length === 0) {
+    return;
+  }
+
+  const result = reconcileSkillProfiles(context, options.dryRun);
+  if (result.movements.length > 0) {
+    runtime.io.stdout(`\nFocus profile storage reconciled: ${result.movements.map((movement) => `${movement.action}d ${movement.folder}`).join(", ")}.`);
   }
 }
 

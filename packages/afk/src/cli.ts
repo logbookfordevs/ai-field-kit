@@ -760,11 +760,14 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--scope global|project|all        Choose tracked skills to upgrade (default: global)",
       "--all                             Upgrade every tracked skill in the selected scope",
+      "--profile                         Choose a global profile and upgrade its tracked skills",
       "--yes, -y                         Forward non-interactive confirmation to skills update",
     ],
     examples: [
       "afk skills upgrade",
       "afk skills upgrade --all",
+      "afk skills upgrade --profile",
+      "afk skills upgrade video --profile",
       "afk skills upgrade --scope project",
       "afk skills upgrade frontend-design web-design-guidelines",
     ],
@@ -1104,6 +1107,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsListAutoInvocation: SkillsListAutoInvocation | undefined;
   let skillsUpgradeScope: SkillsUpgradeScope = "global";
   let skillsUpgradeAll = false;
+  let skillsUpgradeByProfile = false;
   let skillsDeleteCatalogOnly = false;
   let skillsDeleteByProfile = false;
   let skillsAgent: SkillAgentFilter | undefined;
@@ -1315,6 +1319,10 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (isAfkSkillsCommand && arg === "--profile") {
+      if (commandPath[1] === "upgrade") {
+        skillsUpgradeByProfile = true;
+        continue;
+      }
       if (commandPath[1] !== "delete") {
         return { help: false, kind: "error", error: "Unknown option: --profile" };
       }
@@ -1690,6 +1698,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsListAutoInvocation,
       skillsUpgradeAll,
       skillsUpgradeScope,
+      skillsUpgradeByProfile,
       skillsDeleteCatalogOnly,
       skillsDeleteByProfile,
       skillsAgent,
