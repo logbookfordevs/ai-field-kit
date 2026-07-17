@@ -294,6 +294,15 @@ export function skillProfileStatus(context: SkillProfileContext): SkillProfileAp
   };
 }
 
+export function reconcileSkillProfiles(context: SkillProfileContext, dryRun: boolean): SkillProfileApplyResult {
+  return applySkillProfileState(
+    context,
+    loadSkillProfileCatalog(context),
+    loadSkillProfileState(context),
+    dryRun,
+  );
+}
+
 function applySkillProfileState(
   context: SkillProfileContext,
   catalog: SkillProfileCatalog,

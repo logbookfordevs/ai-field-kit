@@ -60,9 +60,17 @@ export function snapshotDisabledStartupSkills(
     .map((item) => item.id);
 }
 
+export function snapshotDisabledSkillIds(
+  options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,
+  skillIds: string[],
+): string[] {
+  const disabledRoot = join(sharedSkillsRoot(options), ".disabled");
+  return skillIds.filter((id) => isDirectory(join(disabledRoot, id)));
+}
+
 export function planSkillStartupStorageForItems(
   options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,
-  items: SkillManifestItem[],
+  items: Array<Pick<SkillManifestItem, "id" | "startDisabled">>,
   previouslyDisabledSkillIds: string[] = [],
 ): PathOperation[] {
   const operations: PathOperation[] = [];
@@ -104,16 +112,30 @@ export function planSkillStartupStorageForItems(
   return operations;
 }
 
+export function syncPreviouslyDisabledSkillStorage(
+  runtime: Runtime,
+  options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "dryRun">,
+  skillIds: string[],
+): void {
+  const items = skillIds.map((id) => ({ id, startDisabled: false }));
+  const operations = planSkillStartupStorageForItems(options, items, skillIds);
+  applySkillStartupStorageOperations(runtime, operations, options.dryRun);
+}
+
 export function syncSkillStartupStorage(runtime: Runtime, options: CliOptions, previouslyDisabledSkillIds: string[] = []): void {
   const manifest = loadSkillManifest(options);
   const selected = selectedSkillManifestItems(manifest.items, options);
   const operations = planSkillStartupStorageForItems(options, selected, previouslyDisabledSkillIds);
 
+  applySkillStartupStorageOperations(runtime, operations, options.dryRun);
+}
+
+function applySkillStartupStorageOperations(runtime: Runtime, operations: PathOperation[], dryRun: boolean): void {
   if (operations.length === 0) {
     return;
   }
 
-  if (options.dryRun) {
+  if (dryRun) {
     runtime.io.stdout("\nSkill startup storage plan");
     for (const operation of operations) {
       runtime.io.stdout(`- ${formatOperation(operation)}`);
@@ -153,7 +175,7 @@ function sharedSkillsRoot(options: Pick<CliOptions, "homeDir" | "cwd" | "setupSc
   return join(root, ".agents", "skills");
 }
 
-function sharedSkillDirectory(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">, item: SkillManifestItem): string {
+function sharedSkillDirectory(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">, item: Pick<SkillManifestItem, "id">): string {
   return join(sharedSkillsRoot(options), item.id);
 }
 

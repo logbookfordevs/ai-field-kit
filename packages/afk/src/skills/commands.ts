@@ -7,9 +7,9 @@ import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
 import { selectCatalogProfilesLobbyRoute, selectSkillProfilesLobbyRoute, selectSkillsLobbyRoute } from "../lobby.js";
-import { loadSkillManifest, type SkillManifestItem } from "../manifest.js";
+import { loadSkillManifest } from "../manifest.js";
 import { runManifestConfigureAreaAction } from "../manifest-configure.js";
-import { planCatalogImport } from "../catalog-import.js";
+import { planCatalogImport, planCatalogImportStatus, runCatalogImport } from "../catalog-import.js";
 import {
   filterSkillRecords,
   loadSkillCatalog,
@@ -28,6 +28,7 @@ import {
   listSkillProfiles,
   loadSkillProfileCatalog,
   loadSkillProfileState,
+  reconcileSkillProfiles,
   skillProfileStatus,
   upsertSkillProfile,
   type SkillProfileContext,
@@ -56,7 +57,13 @@ import {
   runSkillUpgradeCommands,
   type LockedSkillRecord,
 } from "./upgrade.js";
-import { planSkillStartupStorageForItems, upsertFrontmatterBoolean, upsertOpenAiImplicitInvocation } from "../skills.js";
+import {
+  planSkillStartupStorageForItems,
+  snapshotDisabledSkillIds,
+  syncPreviouslyDisabledSkillStorage,
+  upsertFrontmatterBoolean,
+  upsertOpenAiImplicitInvocation,
+} from "../skills.js";
 
 type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "upgrade" | "categorize" | "profiles";
 
@@ -135,6 +142,16 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     skillAddStartDisabled: options.skillAddStartDisabled || parsedAddOptions.startDisabled,
   };
 
+  const catalogPreflightCode = await ensureSkillsAddCatalogReady(runtime, effectiveOptions);
+  if (catalogPreflightCode !== undefined) {
+    return catalogPreflightCode;
+  }
+
+  const storageOptions = { homeDir: options.homeDir, cwd: options.cwd, setupScope: "global" as const };
+  const installedBefore = planCatalogImportStatus({ ...effectiveOptions, manifestLocal: false }).installed;
+  const installedBeforeIds = new Set(installedBefore);
+  const disabledBefore = snapshotDisabledSkillIds(storageOptions, installedBefore);
+
   const upstreamArgs = ["skills", "add", source, ...effectiveOptions.skillAddArgs];
   runtime.io.stdout([
     section("Skill Add"),
@@ -146,35 +163,41 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     return result.code;
   }
 
+  const installedAfter = planCatalogImportStatus({ ...effectiveOptions, manifestLocal: false }).installed;
+  const newSkillIds = installedAfter.filter((id) => !installedBeforeIds.has(id));
+  const startNewSkillsDisabled = effectiveOptions.skillAddStartDisabled || effectiveOptions.skillAddProfileOnlyIds.length > 0;
+
   const plan = planCatalogImport({
     homeDir: options.homeDir,
     cwd: options.cwd,
     dryRun: false,
     manifestLocal: false,
-    startDisabled: effectiveOptions.skillAddStartDisabled || effectiveOptions.skillAddProfileOnlyIds.length > 0,
+    startDisabled: false,
   });
 
   for (const operation of plan.operations) {
     applyOperation(operation);
   }
 
+  const catalogStorage = startNewSkillsDisabled
+    ? markSkillCatalogItemsStartDisabled({ homeDir: options.homeDir, skillIds: newSkillIds, dryRun: false })
+    : undefined;
+  syncPreviouslyDisabledSkillStorage(runtime, { ...storageOptions, dryRun: false }, disabledBefore);
   const startupOperations = planSkillStartupStorageForItems(
-    { homeDir: options.homeDir, cwd: options.cwd, setupScope: "global" },
-    plan.imported,
+    storageOptions,
+    newSkillIds.map((id) => ({ id, startDisabled: startNewSkillsDisabled })),
   ).filter((operation) => operation.type !== "skip");
   for (const operation of startupOperations) {
     applyOperation(operation);
   }
 
   const profileSkillIds = effectiveOptions.skillAddProfileIds.length > 0 || effectiveOptions.skillAddProfileOnlyIds.length > 0
-    ? skillIdsForAddProfileSync(source, plan.imported, effectiveOptions)
+    ? newSkillIds
     : [];
   const profileResults = profileSkillIds.length > 0
     ? syncAddedSkillsToProfiles(effectiveOptions, profileSkillIds)
     : [];
-  const profileOnlyActivation = effectiveOptions.skillAddProfileOnlyIds.length > 0 && profileSkillIds.length > 0
-    ? applyProfileOnlyActivation(effectiveOptions, profileSkillIds, skillRecordsForProfileOnly(effectiveOptions, profileSkillIds))
-    : undefined;
+  reconcileEnabledSkillProfiles(effectiveOptions);
 
   runtime.io.stdout([
     "",
@@ -185,35 +208,58 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
     startupOperations.length > 0
       ? `${accent("Storage")} ${summarizeOperations(startupOperations)}`
       : "",
+    catalogStorage && catalogStorage.updated.length > 0
+      ? `${accent("Policy")} marked ${catalogStorage.updated.length} new skill${catalogStorage.updated.length === 1 ? "" : "s"} start-disabled.`
+      : "",
     ...profileResults.map((result) => `${accent("Profile")} ${result.profile.id} ${result.created ? "created with" : "updated with"} ${profileSkillIds.length} skill${profileSkillIds.length === 1 ? "" : "s"}.`),
-    profileOnlyActivation ? renderProfileOnlyActivation(profileOnlyActivation) : "",
-    plan.imported.length > 0
-      ? `${accent("Imported")} ${plan.imported.map((item) => item.id).join(", ")}`
-      : muted("No new shared skills found to import."),
+    newSkillIds.length > 0
+      ? `${accent("Installed")} ${newSkillIds.join(", ")}`
+      : muted("No new shared skills installed; existing storage and profile state were preserved."),
   ].filter(Boolean).join("\n"));
   return 0;
 }
 
-function skillIdsForAddProfileSync(source: string, imported: SkillManifestItem[], options: CliOptions): string[] {
-  if (imported.length > 0) {
-    return imported.map((item) => item.id);
+async function ensureSkillsAddCatalogReady(runtime: Runtime, options: CliOptions): Promise<number | undefined> {
+  const catalogOptions = { ...options, dryRun: false, manifestLocal: false };
+  const status = planCatalogImportStatus(catalogOptions);
+  if (status.notImported.length === 0) {
+    return undefined;
   }
 
-  const sourceKey = normalizedSkillSource(source);
-  const installed = new Set(loadMutationSkillRecords(options).map((record) => record.folder.toLowerCase()));
-  return loadSkillManifest(options).items
-    .filter((item) => normalizedSkillSource(item.source) === sourceKey)
-    .map((item) => item.id)
-    .filter((id) => installed.has(id.toLowerCase()));
-}
+  runtime.io.stdout([
+    "",
+    section("Catalog Required"),
+    muted("AFK found installed skills that are not in the current skills catalog."),
+    ...status.notImported.map((id) => `  ${accent("•")} ${id}`),
+  ].join("\n"));
 
-function normalizedSkillSource(source: string): string {
-  const trimmed = source.trim().toLowerCase().replace(/\.git$/, "");
-  const githubUrl = trimmed.match(/^https?:\/\/github\.com\/([^/]+\/[^/#?]+)(?:[/#?].*)?$/);
-  if (githubUrl?.[1]) {
-    return githubUrl[1];
+  const accepted = options.yes || await confirm({
+    message: "Import these installed skills into the AFK catalog before continuing?",
+    default: true,
+    theme: afkPromptTheme,
+  });
+  if (!accepted) {
+    runtime.io.stdout("Skill add cancelled. Import the existing skills through afk catalog skills before trying again.");
+    return 0;
   }
-  return trimmed.replace(/^git\+/, "");
+
+  runtime.io.stdout(`${accent("Route")} afk catalog skills import`);
+  const importCode = await runCatalogImport(runtime, catalogOptions);
+  if (importCode !== 0) {
+    return importCode;
+  }
+
+  const remaining = planCatalogImportStatus(catalogOptions).notImported;
+  if (remaining.length > 0) {
+    runtime.io.stderr([
+      "Catalog import could not catalog every installed skill:",
+      ...remaining.map((id) => `  - ${id}`),
+      "Resolve them through afk catalog skills before trying skills add again.",
+    ].join("\n"));
+    return 1;
+  }
+
+  return undefined;
 }
 
 function parseSkillAddOperands(operands: string[]): {
@@ -271,7 +317,6 @@ function parseSkillAddOperands(operands: string[]): {
 
 function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Array<{ profile: { id: string }; created: boolean }> {
   const context = skillProfileContext(options);
-  const state = loadSkillProfileState(context);
   const results: Array<{ profile: { id: string }; created: boolean }> = [];
 
   for (const profileId of uniqueProfileIds([...options.skillAddProfileIds, ...options.skillAddProfileOnlyIds])) {
@@ -283,12 +328,14 @@ function syncAddedSkillsToProfiles(options: CliOptions, skillIds: string[]): Arr
     results.push({ profile: result.profile, created: result.created });
   }
 
-  const activeProfile = state.activations[0];
-  if (activeProfile) {
-    enableSkillProfile(context, activeProfile.profileId, false, activeProfile.mode);
-  }
-
   return results;
+}
+
+function reconcileEnabledSkillProfiles(options: CliOptions): void {
+  const context = skillProfileContext(options);
+  if (loadSkillProfileState(context).activations.length > 0) {
+    reconcileSkillProfiles(context, false);
+  }
 }
 
 function uniqueProfileIds(ids: string[]): string[] {
@@ -528,6 +575,18 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
 
 async function runSkillsUpgrade(skillNames: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   const scope = options.skillsUpgradeScope ?? "global";
+  if (options.skillsUpgradeByProfile && scope !== "global") {
+    runtime.io.stderr("Profile upgrades use the global skill library. Remove --scope or use --scope global.");
+    return 1;
+  }
+  if (options.skillsUpgradeByProfile && options.skillsUpgradeAll) {
+    runtime.io.stderr("Use either --profile or --all when upgrading skills, not both.");
+    return 1;
+  }
+  if (options.skillsUpgradeByProfile && skillNames.length > 1) {
+    runtime.io.stderr("Pass at most one profile id with --profile.");
+    return 1;
+  }
   if (scope === "all" && skillNames.length > 0) {
     runtime.io.stderr("Use --scope global or --scope project when passing explicit skill names.");
     return 1;
@@ -538,11 +597,13 @@ async function runSkillsUpgrade(skillNames: string[], runtime: Runtime, options:
     cwd: options.cwd,
     scope,
   });
-  const selectedNames = skillNames.length > 0
-    ? skillNames
-    : options.skillsUpgradeAll
-      ? []
-      : await promptLockedSkills(lockedSkills, scope);
+  const selectedNames = options.skillsUpgradeByProfile
+    ? await upgradeSkillNamesForProfile(skillNames[0], lockedSkills, runtime, options)
+    : skillNames.length > 0
+      ? skillNames
+      : options.skillsUpgradeAll
+        ? []
+        : await promptLockedSkills(lockedSkills, scope);
 
   if (!options.skillsUpgradeAll && selectedNames.length === 0) {
     runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}tracked skills selected.`);
@@ -560,8 +621,52 @@ async function runSkillsUpgrade(skillNames: string[], runtime: Runtime, options:
     skills: selectedNames,
     yes: options.yes,
   });
+  const disabledByScope = new Map(commands.map((command) => {
+    const names = selectedNames.length > 0
+      ? selectedNames
+      : lockedSkills.filter((record) => record.scope === command.scope).map((record) => record.name);
+    const storageOptions = {
+      homeDir: options.homeDir,
+      cwd: options.cwd,
+      setupScope: command.scope,
+    };
+    return [command.scope, snapshotDisabledSkillIds(storageOptions, names)] as const;
+  }));
 
-  return runSkillUpgradeCommands(runtime, commands);
+  return runSkillUpgradeCommands(runtime, commands, (command) => {
+    syncPreviouslyDisabledSkillStorage(runtime, {
+      homeDir: options.homeDir,
+      cwd: options.cwd,
+      setupScope: command.scope,
+      dryRun: false,
+    }, disabledByScope.get(command.scope) ?? []);
+  });
+}
+
+async function upgradeSkillNamesForProfile(
+  profileId: string | undefined,
+  lockedSkills: LockedSkillRecord[],
+  runtime: Runtime,
+  options: CliOptions,
+): Promise<string[]> {
+  const profiles = listSkillProfiles({ homeDir: options.homeDir, cwd: options.cwd, local: false }).catalog.items;
+  const profile = profileId
+    ? findSkillProfile(profiles, profileId)
+    : await promptSkillProfile(profiles, "Select a profile whose skills should be upgraded:");
+  if (!profile) {
+    throw new Error(profileId ? `Skill profile not found: ${profileId}` : "No skill profiles found.");
+  }
+
+  const trackedByName = new Map(lockedSkills.map((record) => [record.name.toLowerCase(), record.name]));
+  const selected = profile.skills.flatMap((skill) => {
+    const tracked = trackedByName.get(skill.toLowerCase());
+    return tracked ? [tracked] : [];
+  });
+  const skipped = profile.skills.filter((skill) => !trackedByName.has(skill.toLowerCase()));
+  if (skipped.length > 0) {
+    runtime.io.stdout(`Skipped untracked profile skills: ${skipped.join(", ")}.`);
+  }
+  return selected;
 }
 
 function runSkillsList(runtime: Runtime, options: CliOptions): number {
