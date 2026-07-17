@@ -21,6 +21,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `cli:` made the shared global skills library the default across `afk skills`, with explicit preset-agent targeting, literal custom roots through `--agent custom --agent-path <folder>`, and shared-first installs before optional agent fanout.
 - `cli:` made skill setup consider source-owned catalog entries by default, with `afk setup --all` and `afk setup skills --all` including imported entries; interactive runs now show the expanded list for review, while `--yes --all` installs every listed skill.
 - `cli:` renamed the `afk skills delete --manifest-only` filter to `--catalog-only` so the flag matches its `skills.json` catalog behavior.
 - `skills:` made `afk-doc-craft` manually invoked by default, so documentation craft runs only when explicitly selected instead of sitting in automatic discovery.

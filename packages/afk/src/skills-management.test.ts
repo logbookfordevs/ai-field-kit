@@ -115,7 +115,7 @@ test("parseSkillFile skips standalone blockquote markers in body fallback", () =
   assert.equal(metadata.description, "Use this skill for demos.");
 });
 
-test("loadSkillCatalog orders global active, global disabled, then project roots", () => {
+test("loadSkillCatalog orders shared global active before disabled and excludes implicit agent roots", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skills-list-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
@@ -134,12 +134,10 @@ test("loadSkillCatalog orders global active, global disabled, then project roots
   assert.deepEqual(snapshot.records.map((record) => record.folder), [
     "z-active",
     "a-disabled",
-    "codex-skill",
-    "claude-skill",
   ]);
   assert.equal(snapshot.records[0]?.name, "Z Active");
   assert.equal(snapshot.records[0]?.category, "Docs");
-  assert.equal(snapshot.records[2]?.readOnly, false);
+  assert.equal(snapshot.records[1]?.readOnly, false);
 });
 
 test("loadSkillCatalog filters project roots by agent", () => {
@@ -154,7 +152,7 @@ test("loadSkillCatalog filters project roots by agent", () => {
   assert.deepEqual(snapshot.records.map((record) => record.folder), ["codex-skill"]);
 });
 
-test("loadSkillCatalog includes installed agent roots with --scope global", () => {
+test("loadSkillCatalog defaults to the shared global library", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skills-installed-agent-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
@@ -165,9 +163,9 @@ test("loadSkillCatalog includes installed agent roots with --scope global", () =
 
   const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
 
-  assert.deepEqual(snapshot.records.map((record) => record.folder), ["shared-global", "codex-global", "gemini-global"]);
-  assert.deepEqual(snapshot.records.map((record) => record.rootKind), ["global-library", "agent-library", "agent-library"]);
-  assert.deepEqual(snapshot.records.map((record) => record.readOnly), [false, false, false]);
+  assert.deepEqual(snapshot.records.map((record) => record.folder), ["shared-global"]);
+  assert.deepEqual(snapshot.records.map((record) => record.rootKind), ["global-library"]);
+  assert.deepEqual(snapshot.records.map((record) => record.readOnly), [false]);
 });
 
 test("loadSkillCatalog filters installed agent roots with --scope global --agent", () => {
@@ -183,7 +181,7 @@ test("loadSkillCatalog filters installed agent roots with --scope global --agent
   assert.deepEqual(snapshot.records.map((record) => record.folder), ["gemini-global"]);
 });
 
-test("loadSkillCatalog filters shared global library roots with --agent shared", () => {
+test("loadSkillCatalog keeps shared global library roots as the default across scopes", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skills-shared-filter-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
@@ -192,10 +190,28 @@ test("loadSkillCatalog filters shared global library roots with --agent shared",
   writeSkill(join(homeDir, ".codex", "skills"), "codex-global", "Codex Global");
   writeSkill(join(cwd, ".codex", "skills"), "codex-project", "Codex Project");
 
-  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "all", agent: "shared" });
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "all", agent: undefined });
 
   assert.deepEqual(snapshot.records.map((record) => record.folder), ["shared-global", "shared-disabled"]);
   assert.deepEqual(snapshot.records.map((record) => record.rootKind), ["global-library", "global-library"]);
+});
+
+test("loadSkillCatalog reads a literal custom agent root", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-custom-agent-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  const agentPath = join(root, "my-agent", "skills");
+  writeSkill(agentPath, "custom-active", "Custom Active");
+  writeSkill(join(agentPath, ".disabled"), "custom-disabled", "Custom Disabled");
+  writeSkill(join(homeDir, ".agents", "skills"), "shared-global", "Shared Global");
+
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "all", agent: "custom", agentPath });
+
+  assert.deepEqual(snapshot.records.map((record) => [record.folder, record.storage, record.agent]), [
+    ["custom-active", "active", "custom"],
+    ["custom-disabled", "disabled", "custom"],
+  ]);
+  assert.ok(snapshot.records.every((record) => record.rootPath.startsWith(agentPath)));
 });
 
 test("loadSkillCatalog includes disabled installed agent roots with --scope global --agent", () => {
@@ -298,7 +314,7 @@ test("filterSkillRecords filters by enabled and disabled storage", () => {
   const cwd = join(root, "project");
   writeSkill(join(homeDir, ".agents", "skills"), "active-helper", "Active Helper");
   writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-helper", "Disabled Helper");
-  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: "shared" });
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
 
   assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "active" }).map((record) => record.folder), ["active-helper"]);
   assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "disabled" }).map((record) => record.folder), ["disabled-helper"]);
@@ -897,7 +913,7 @@ test("runSkillsCommand add delegates to skills add and imports installed skills 
   assert.equal(code, 0);
   assert.deepEqual(spawned, [{
     command: "npx",
-    args: ["skills", "add", "owner/skills", "--skill", "demo-skill", "--global", "--yes"],
+    args: ["skills", "add", "owner/skills", "--global", "--agent", "universal", "--skill", "demo-skill", "--yes"],
     cwd: join(root, "project"),
     verbose: true,
   }]);
@@ -945,7 +961,7 @@ test("runSkillsCommand add handles start-disabled as an AFK flag", async () => {
   assert.equal(code, 0);
   assert.deepEqual(spawned, [{
     command: "npx",
-    args: ["skills", "add", "owner/skills", "--skill", "demo-skill", "--global", "--yes"],
+    args: ["skills", "add", "owner/skills", "--global", "--agent", "universal", "--skill", "demo-skill", "--yes"],
     cwd: join(root, "project"),
     verbose: true,
   }]);
@@ -954,6 +970,48 @@ test("runSkillsCommand add handles start-disabled as an AFK flag", async () => {
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo-skill")), false);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "demo-skill")), true);
   assert.ok(output.join("\n").includes("Storage"));
+});
+
+test("runSkillsCommand add rejects custom agent paths unsupported by the upstream installer", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-custom-agent-"));
+  const output: string[] = [];
+  let spawnCount = 0;
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      spawnCount += 1;
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "add", "owner/skills", "--agent", "custom", "--agent-path", "/tmp/my-agent/skills"], runtime, baseOptions(root));
+
+  assert.equal(code, 1);
+  assert.equal(spawnCount, 0);
+  assert.ok(output.join("\n").includes("--agent-path is not supported by afk skills add"));
+});
+
+test("runSkillsCommand add keeps registered agents as fanout after the shared target", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-agent-fanout-"));
+  const spawned: string[][] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: () => undefined,
+      stderr: () => undefined,
+    },
+    spawn: async (_command, args) => {
+      spawned.push(args);
+      return { code: 1 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "add", "owner/skills", "--agent", "codex"], runtime, baseOptions(root));
+
+  assert.equal(code, 1);
+  assert.deepEqual(spawned, [["skills", "add", "owner/skills", "--global", "--agent", "universal", "--agent", "codex"]]);
 });
 
 test("runSkillsCommand add appends imported skills to a profile", async () => {
@@ -990,7 +1048,7 @@ test("runSkillsCommand add appends imported skills to a profile", async () => {
   });
 
   assert.equal(code, 0);
-  assert.deepEqual(spawned[0]?.args, ["skills", "add", "owner/skills", "--skill", "demo-skill", "--global", "--yes"]);
+  assert.deepEqual(spawned[0]?.args, ["skills", "add", "owner/skills", "--global", "--agent", "universal", "--skill", "demo-skill", "--yes"]);
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
   assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["alpha", "demo-skill"] }]);
   assert.ok(output.join("\n").includes("Profile"));
@@ -1077,7 +1135,7 @@ test("runSkillsCommand add profile-only appends every imported skill as disabled
   });
 
   assert.equal(code, 0);
-  assert.deepEqual(spawned[0]?.args, ["skills", "add", "owner/skills", "--skill", "demo-one", "--skill", "demo-two", "--global", "--yes"]);
+  assert.deepEqual(spawned[0]?.args, ["skills", "add", "owner/skills", "--global", "--agent", "universal", "--skill", "demo-one", "--skill", "demo-two", "--yes"]);
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
   assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["demo-one", "demo-two"] }]);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
@@ -1119,7 +1177,7 @@ test("runSkillsCommand add consumes profile-only from interactive lobby routes",
   );
 
   assert.equal(code, 0);
-  assert.deepEqual(spawned[0]?.args, ["skills", "add", "https://github.com/pixijs/pixijs-skills"]);
+  assert.deepEqual(spawned[0]?.args, ["skills", "add", "https://github.com/pixijs/pixijs-skills", "--global", "--agent", "universal"]);
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
   assert.deepEqual(profiles.items, [{ id: "gaming", name: "Gaming", skills: ["pixijs"] }]);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "pixijs")), false);
@@ -1178,7 +1236,7 @@ test("runSkillsCommand add profile-only applies to already cataloged skills from
   );
 
   assert.equal(code, 0);
-  assert.deepEqual(spawned[0]?.args, ["skills", "add", "https://github.com/pixijs/pixijs-skills.git"]);
+  assert.deepEqual(spawned[0]?.args, ["skills", "add", "https://github.com/pixijs/pixijs-skills.git", "--global", "--agent", "universal"]);
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
   assert.deepEqual(profiles.items, [{ id: "gaming", name: "Gaming", skills: ["pixijs", "pixijs-assets"] }]);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
@@ -1313,7 +1371,6 @@ test("runSkillsCommand deletes only disabled shared skills with storage filter",
   const code = await runSkillsCommand(["skills", "delete", "disabled-demo"], outputRuntime(output), {
     ...baseOptions(root),
     dryRun: true,
-    skillsAgent: "shared",
     skillsListStorage: "disabled",
   });
 
@@ -1337,6 +1394,23 @@ test("runSkillsCommand disables agent-specific global skills with --agent", asyn
   assert.equal(code, 0);
   assert.equal(existsSync(join(homeDir, ".codex", "skills", "demo")), false);
   assert.equal(existsSync(join(homeDir, ".codex", "skills", ".disabled", "demo")), true);
+});
+
+test("runSkillsCommand disables skills in a custom agent path", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-custom-agent-skill-disable-command-"));
+  const agentPath = join(root, "my-agent", "skills");
+  const output: string[] = [];
+  writeSkill(agentPath, "demo", "Demo");
+
+  const code = await runSkillsCommand(["skills", "disable", "demo"], outputRuntime(output), {
+    ...baseOptions(root),
+    skillsAgent: "custom",
+    skillsAgentPath: agentPath,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(agentPath, "demo")), false);
+  assert.equal(existsSync(join(agentPath, ".disabled", "demo")), true);
 });
 
 test("renderSkillMoveBatch summarizes multiple disabled skills", () => {

@@ -405,7 +405,8 @@ test("runCli prints contextual skills help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK skills list"));
   assert.ok(output.join("\n").includes("--scope global|project|all"));
-  assert.ok(output.join("\n").includes("--agent shared|<agent>"));
+  assert.ok(output.join("\n").includes("--agent <agent>|custom"));
+  assert.ok(output.join("\n").includes("--agent-path <folder>"));
   assert.ok(output.join("\n").includes("--enabled"));
   assert.ok(output.join("\n").includes("--disabled"));
   assert.ok(output.join("\n").includes("--auto-invocation <state>"));
@@ -463,7 +464,8 @@ test("runCli prints contextual skills open help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK skills open"));
   assert.ok(output.join("\n").includes("--app finder|code|cursor|zed|agy"));
-  assert.ok(output.join("\n").includes("--agent shared|<agent>"));
+  assert.ok(output.join("\n").includes("--agent <agent>|custom"));
+  assert.ok(output.join("\n").includes("--agent-path <folder>"));
   assert.ok(output.join("\n").includes("--enabled"));
   assert.ok(output.join("\n").includes("--disabled"));
 });
@@ -519,7 +521,8 @@ test("runCli prints contextual skills delete help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills delete"));
-  assert.ok(text.includes("--agent shared|<agent>"));
+  assert.ok(text.includes("--agent <agent>|custom"));
+  assert.ok(text.includes("--agent-path <folder>"));
   assert.ok(text.includes("--enabled"));
   assert.ok(text.includes("--disabled"));
   assert.ok(text.includes("--catalog-only"));
@@ -534,7 +537,8 @@ test("runCli prints contextual skills invocation help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills invocation"));
   assert.ok(text.includes("invocation [disable|enable] [folder]"));
-  assert.ok(text.includes("--agent shared|<agent>"));
+  assert.ok(text.includes("--agent <agent>|custom"));
+  assert.ok(text.includes("--agent-path <folder>"));
   assert.ok(text.includes("--enabled"));
   assert.ok(text.includes("--disabled"));
 });
@@ -724,7 +728,7 @@ test("runCli rejects skills enabled filter where it is not meaningful", async ()
   assert.ok(output.join("\n").includes("Unknown option: --enabled"));
 });
 
-test("runCli accepts explicit shared skill agent", async () => {
+test("runCli rejects shared as an agent because shared is the default", async () => {
   const homeDir = localHomeWithManifests({});
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(
@@ -732,7 +736,63 @@ test("runCli accepts explicit shared skill agent", async () => {
     { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
   ));
 
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Invalid --agent value: shared"));
+});
+
+test("runCli accepts a custom skill agent with a literal path", async () => {
+  const homeDir = localHomeWithManifests({});
+  const agentPath = join(homeDir, "my-agent", "skills");
+  writeSkill(agentPath, "custom-demo", "Custom Demo");
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(
+    ["skills", "list", "--agent", "custom", "--agent-path", agentPath],
+    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+  ));
+
   assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("custom-demo"));
+});
+
+test("runCli defaults an explicit preset agent to its global root", async () => {
+  const homeDir = localHomeWithManifests({});
+  const projectDir = mkdtempSync(join(tmpdir(), "afk-skills-preset-scope-"));
+  const originalCwd = process.cwd();
+  writeSkill(join(homeDir, ".codex", "skills"), "global-demo", "Global Demo");
+  writeSkill(join(projectDir, ".codex", "skills"), "project-demo", "Project Demo");
+  const output: string[] = [];
+
+  try {
+    process.chdir(projectDir);
+    const code = await withConsole(output, () => runCli(
+      ["skills", "list", "--agent", "codex"],
+      { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    ));
+    const text = output.join("\n");
+
+    assert.equal(code, 0);
+    assert.ok(text.includes("global-demo"));
+    assert.ok(!text.includes("project-demo"));
+  } finally {
+    process.chdir(originalCwd);
+  }
+});
+
+test("runCli validates the custom skill agent path contract", async () => {
+  const output: string[] = [];
+  const missingPathCode = await withConsole(output, () => runCli(["skills", "list", "--agent", "custom"]));
+  assert.equal(missingPathCode, 1);
+  assert.ok(output.join("\n").includes("--agent custom requires --agent-path <folder>"));
+
+  output.length = 0;
+  const missingAgentCode = await withConsole(output, () => runCli(["skills", "list", "--agent-path", "/tmp/my-agent/skills"]));
+  assert.equal(missingAgentCode, 1);
+  assert.ok(output.join("\n").includes("--agent-path requires --agent custom"));
+
+  output.length = 0;
+  const scopeCode = await withConsole(output, () => runCli(["skills", "list", "--agent", "custom", "--agent-path", "/tmp/my-agent/skills", "--scope", "global"]));
+  assert.equal(scopeCode, 1);
+  assert.ok(output.join("\n").includes("Do not combine --scope with --agent custom"));
 });
 
 test("runCli validates skills upgrade scope", async () => {
@@ -741,6 +801,14 @@ test("runCli validates skills upgrade scope", async () => {
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Invalid --scope value: agent"));
+});
+
+test("runCli rejects root targeting flags on unrelated skills commands", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--agent", "codex"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown option: --agent"));
 });
 
 test("runCli validates skills open app", async () => {

@@ -22,7 +22,7 @@ export type SkillRecord = {
   storage: SkillStorage;
   rootKind: SkillRootKind;
   readOnly: boolean;
-  agent: ManagedSkillAgent | undefined;
+  agent: SkillAgentFilter | undefined;
   category: string | undefined;
   categoryId: string | undefined;
   tags: string[];
@@ -91,7 +91,7 @@ type SkillRoot = {
   path: string;
   storage: SkillStorage;
   readOnly: boolean;
-  agent?: ManagedSkillAgent;
+  agent?: SkillAgentFilter;
 };
 
 type FrontmatterMetadata = {
@@ -105,9 +105,10 @@ export function loadSkillCatalog(options: {
   cwd: string;
   scope: SkillsListScope;
   agent: SkillAgentFilter | undefined;
+  agentPath?: string | undefined;
 }): SkillCatalogSnapshot {
   const categorization = loadCategorizationState(options.homeDir);
-  const roots = skillRoots(options.homeDir, options.cwd)
+  const roots = skillRoots(options.homeDir, options.cwd, options.agentPath)
     .filter((root) => rootMatchesScope(root, options.scope))
     .filter((root) => rootMatchesAgent(root, options.agent));
 
@@ -788,7 +789,7 @@ function humanizeSkillId(id: string): string {
     .join(" ");
 }
 
-function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
+function skillRoots(homeDir: string, cwd: string, customAgentPath?: string): SkillRoot[] {
   return [
     {
       kind: "global-library",
@@ -837,11 +838,12 @@ function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
       agent: "claude",
     },
     ...agentSkillRoots(homeDir),
+    ...(customAgentPath ? customAgentRoots(customAgentPath) : []),
   ];
 }
 
 export function managedSkillAgents(): SkillAgentFilter[] {
-  return ["shared", ...knownAgentRoots.map((root) => root.agent)];
+  return [...knownAgentRoots.map((root) => root.agent), "custom"];
 }
 
 const knownAgentRoots: Array<{
@@ -888,6 +890,27 @@ function agentSkillRoots(homeDir: string): SkillRoot[] {
   ] satisfies SkillRoot[]);
 }
 
+function customAgentRoots(path: string): SkillRoot[] {
+  return [
+    {
+      kind: "agent-library",
+      label: "Custom Agent",
+      path,
+      storage: "active",
+      readOnly: false,
+      agent: "custom",
+    },
+    {
+      kind: "agent-library",
+      label: "Custom Agent / Disabled",
+      path: join(path, ".disabled"),
+      storage: "disabled",
+      readOnly: false,
+      agent: "custom",
+    },
+  ];
+}
+
 function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
   if (scope === "all") {
     return true;
@@ -902,10 +925,6 @@ function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
 
 function rootMatchesAgent(root: SkillRoot, agent: SkillAgentFilter | undefined): boolean {
   if (!agent) {
-    return true;
-  }
-
-  if (agent === "shared") {
     return root.kind === "global-library";
   }
 
