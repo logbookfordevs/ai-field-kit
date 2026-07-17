@@ -61,7 +61,10 @@ Challenge product or implementation directions that trade away user value mainly
 - Never add glossary, dictionary, taxonomy, ticket-note, or line-by-line explanation blocks in implementation files.
 - Use a short comment only to preserve a non-obvious constraint, dangerous edge case, external contract, or trade-off.
 
+## Sub-agents
+Before spawning any sub-agent, deliberately choose the model and reasoning effort best suited to that specific task. Do not inherit either by default; use inheritance only when you have affirmatively determined that it is the best fit.
+
 ## Dictionary
 - Team of agents/multi agents = spawn sub-agents/child agents
 - Users/developers = people using the product or tooling being built;
-- Just/focus = this is a hard scope limiter. Do the narrowed request only; do not widen into adjacent cleanup, refactors, docs, or “while I’m here” improvements unless asked.
+- Just/focus = this is a hard scope limiter. Do the narrowed request only\
