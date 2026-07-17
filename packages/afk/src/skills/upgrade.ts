@@ -91,7 +91,11 @@ export function buildSkillUpgradeCommands(options: {
   });
 }
 
-export async function runSkillUpgradeCommands(runtime: Runtime, commands: SkillUpgradeCommand[]): Promise<number> {
+export async function runSkillUpgradeCommands(
+  runtime: Runtime,
+  commands: SkillUpgradeCommand[],
+  afterSuccess?: (command: SkillUpgradeCommand) => void,
+): Promise<number> {
   for (const command of commands) {
     runtime.io.stdout(renderSkillUpgradeRoute({
       label: command.label,
@@ -102,6 +106,7 @@ export async function runSkillUpgradeCommands(runtime: Runtime, commands: SkillU
     if (result.code !== 0) {
       return result.code;
     }
+    afterSuccess?.(command);
   }
 
   return 0;

@@ -743,6 +743,24 @@ test("runCli validates skills upgrade scope", async () => {
   assert.ok(output.join("\n").includes("Invalid --scope value: agent"));
 });
 
+test("runCli documents profile-selected skill upgrades", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("--profile"));
+  assert.ok(text.includes("afk skills upgrade video --profile"));
+});
+
+test("runCli routes profile-selected upgrades through global scope validation", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "upgrade", "video", "--profile", "--scope", "project"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Profile upgrades use the global skill library"));
+});
+
 test("runCli validates skills open app", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["skills", "open", "demo", "--app", "vim"]));
