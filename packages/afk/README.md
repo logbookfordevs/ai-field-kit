@@ -837,18 +837,38 @@ profile state or moving folders. Add `--all` to include every profile skill's
 complete `SKILL.md` content. `afk skills get` wraps complete local skill
 content with its absolute root so referenced files remain resolvable.
 
+By default, enabling a profile focuses the library by filtering unrelated
+skills according to the configured `strict` or `context` mode. Use
+`--additive` when you only want its skills for the current activity:
+
+```bash
+afk skills profiles enable video --additive
+```
+
+Additive activation leaves unrelated active skills alone. AFK remembers how
+the profile was enabled, so the ordinary disable command restores only the
+skills that were disabled before the additive activation:
+
+```bash
+afk skills profiles disable video
+```
+
+Disable a profile before switching it between normal and additive activation.
+This keeps restoration predictable instead of changing an active profile's
+behavior in place.
+
 #### Profile math: what stays on
 
 Profiles are reconciled from the desired final state each time you enable or
-disable one. AFK does not treat a skill's absence from a profile as a negative
-rule. Instead, it keeps this set active:
+disable one. The kept set includes every active profile, regardless of how it
+was enabled:
 
 ```text
 alwaysOn + skills from every currently enabled profile
 ```
 
 The top-level `profiles.json` `mode` controls what happens to skills outside
-that set:
+that set while at least one normally enabled focus profile is active:
 
 | Mode | Behavior |
 |---|---|
@@ -857,6 +877,10 @@ that set:
 
 Use `afk catalog profiles create|edit --mode strict|context` to set the mode,
 or use `afk catalog profiles set-mode`.
+
+If every enabled profile is additive, AFK does not filter skills outside the
+kept set. If focus and additive profiles are enabled together, focus filtering
+still applies, and the additive profile skills join the kept set.
 
 For example, if `captions` is not in profile X, is in profile Y, and is not in
 profile Z, enabling X, then Y, then Z keeps `captions` active because Y is still
