@@ -94,6 +94,7 @@ export type CliOptions = {
   skillProfileAlwaysOn?: string[] | undefined;
   skillProfileMode?: SkillProfileMode | undefined;
   skillProfileOnly?: boolean;
+  skillProfileUseAll?: boolean;
   uiCategory?: string;
   manifestShowReact: boolean;
   manifestShowVisualize: boolean;

@@ -413,6 +413,14 @@ test("runCli prints contextual skills help", async () => {
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
 });
 
+test("runCli lists get in the skills command help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "--help"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("get <folder>"));
+});
+
 test("runCli validates skills list auto invocation filters", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["skills", "list", "--auto-invocation", "invalid"]));
@@ -458,6 +466,38 @@ test("runCli prints contextual skills open help", async () => {
   assert.ok(output.join("\n").includes("--agent shared|<agent>"));
   assert.ok(output.join("\n").includes("--enabled"));
   assert.ok(output.join("\n").includes("--disabled"));
+});
+
+test("runCli prints contextual skills get help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "get", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK skills get"));
+  assert.ok(text.includes("Print one local skill as agent context"));
+});
+
+test("runCli accepts --all for profile use and prints complete skill content", async () => {
+  const homeDir = localHomeWithManifests({
+    "profiles.json": {
+      version: 1,
+      alwaysOn: [],
+      items: [{ id: "video", name: "Video", skills: ["demo"] }],
+    },
+  });
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "demo", "Demo");
+  const output: string[] = [];
+
+  const code = await withConsole(output, () =>
+    runCli(["skills", "profiles", "use", "video", "--all"], { HOME: homeDir })
+  );
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("The user wants you to take into account the skills listed below."));
+  assert.ok(text.includes("# Demo"));
+  assert.ok(text.includes('storage="disabled"'));
 });
 
 test("runCli prints contextual skills upgrade help", async () => {

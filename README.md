@@ -129,6 +129,8 @@ without AFK reimplementing their installers.
 | Inspect skills as a composition tree | `afk show skills --react` |
 | Generate the local skill composition page | `afk show skills --visualize` |
 | Backfill installed skills into the catalog | `afk catalog skills import --dry-run` |
+| Load one local skill into agent context | `afk skills get <skill>` |
+| Use a skill profile for the current request | `afk skills profiles use <profile>` |
 | Route UI work through UI Skills | `afk ui start` |
 
 Compatibility aliases such as `afk setup skills install` and
