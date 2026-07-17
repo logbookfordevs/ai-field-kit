@@ -760,6 +760,7 @@ afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --
 afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --profile-only video
 afk skills add logbookfordevs/ai-field-kit --skill hyperframes --global --yes --start-disabled
 afk skills show afk-note
+afk skills get afk-note
 afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
 afk skills enable old-skill
@@ -770,6 +771,8 @@ afk skills delete --profile
 afk skills upgrade --all
 afk skills categorize --dry-run
 afk catalog profiles create video --name Video --skill hyperframes --skill tailwind --mode context
+afk skills profiles use video
+afk skills profiles use video --all
 afk skills profiles enable video --dry-run
 afk skills profiles status
 ```
@@ -826,6 +829,13 @@ removing them.
 profile is a named group of skill folders. `afk skills profiles
 enable|disable|status` applies those definitions to the shared global skill
 library.
+
+`afk skills profiles use <profile>` prints a compact agent-context list with
+each profile skill's local description and matching `afk skills get <skill>`
+command. It reads both active and `.disabled` shared skills without changing
+profile state or moving folders. Add `--all` to include every profile skill's
+complete `SKILL.md` content. `afk skills get` wraps complete local skill
+content with its absolute root so referenced files remain resolvable.
 
 By default, enabling a profile focuses the library by filtering unrelated
 skills according to the configured `strict` or `context` mode. Use

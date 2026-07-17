@@ -304,6 +304,111 @@ test("filterSkillRecords filters by enabled and disabled storage", () => {
   assert.deepEqual(filterSkillRecords(snapshot.records, { storage: "disabled" }).map((record) => record.folder), ["disabled-helper"]);
 });
 
+test("runSkillsCommand get prints complete local skill content with its absolute root", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-get-"));
+  const homeDir = join(root, "home");
+  const skillRoot = join(homeDir, ".agents", "skills", ".disabled");
+  writeSkill(skillRoot, "manual-skill", "Manual Skill");
+  const output: string[] = [];
+
+  const code = await runSkillsCommand(
+    ["skills", "get", "manual-skill"],
+    outputRuntime(output),
+    baseOptions(root),
+  );
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes(`<afk-skill id="manual-skill" root="${join(skillRoot, "manual-skill")}" storage="disabled">`));
+  assert.ok(text.includes("# Manual Skill"));
+  assert.ok(text.endsWith("</afk-skill>"));
+});
+
+test("runSkillsCommand profiles use prints a concise local skill list without loading runtime state", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-profile-use-"));
+  const homeDir = join(root, "home");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "beta", "Beta");
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    alwaysOn: ["unlisted"],
+    items: [{ id: "video", name: "Video", skills: ["alpha", "beta"] }],
+  });
+  const statePath = skillProfilePaths({ homeDir, cwd: join(root, "project"), local: false }).statePath;
+  mkdirSync(dirname(statePath), { recursive: true });
+  writeFileSync(statePath, "{\"invalid\":true}\n");
+  const output: string[] = [];
+
+  const code = await runSkillsCommand(
+    ["skills", "profiles", "use", "video"],
+    outputRuntime(output),
+    baseOptions(root),
+  );
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes('<afk-profile id="video" scope="current-request">'));
+  assert.ok(text.includes("The user wants you to take into account the skills listed below."));
+  assert.ok(text.includes('id="alpha"'));
+  assert.ok(text.includes('description="Alpha description"'));
+  assert.ok(text.includes('get="afk skills get alpha"'));
+  assert.ok(text.includes('id="beta"'));
+  assert.ok(text.includes('storage="disabled"'));
+  assert.ok(text.includes('get="afk skills get beta"'));
+  assert.ok(!text.includes("# Alpha"));
+  assert.ok(!text.includes("unlisted"));
+});
+
+test("runSkillsCommand profiles use --all prints every complete skill", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-profile-use-all-"));
+  const homeDir = join(root, "home");
+  writeSkill(join(homeDir, ".agents", "skills"), "alpha", "Alpha");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "beta", "Beta");
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    alwaysOn: [],
+    items: [{ id: "video", name: "Video", skills: ["alpha", "beta"] }],
+  });
+  const output: string[] = [];
+
+  const code = await runSkillsCommand(
+    ["skills", "profiles", "use", "video"],
+    outputRuntime(output),
+    {
+      ...baseOptions(root),
+      skillProfileUseAll: true,
+    },
+  );
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("# Alpha"));
+  assert.ok(text.includes("# Beta"));
+  assert.ok(text.includes('storage="active"'));
+  assert.ok(text.includes('storage="disabled"'));
+  assert.ok(!text.includes('get="afk skills get alpha"'));
+});
+
+test("runSkillsCommand profiles use rejects missing local profile skills", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-profile-use-missing-"));
+  const homeDir = join(root, "home");
+  writeSkillProfiles(homeDir, {
+    version: 1,
+    alwaysOn: [],
+    items: [{ id: "video", name: "Video", skills: ["missing-skill"] }],
+  });
+  const output: string[] = [];
+
+  const code = await runSkillsCommand(
+    ["skills", "profiles", "use", "video"],
+    outputRuntime(output),
+    baseOptions(root),
+  );
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Profile video references missing local skills: missing-skill"));
+});
+
 test("moveGlobalSkill supports dry-run and active to disabled moves", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-disable-"));
   const homeDir = join(root, "home");

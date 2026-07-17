@@ -13,8 +13,10 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added `afk skills get <skill>` for printing local skill instructions and `afk skills profiles use <profile>` for on-demand profile context, with `--all` to include every profile skill in full.
 - `cli:` added `afk skills profiles enable <profile> --additive` to activate a profile on demand without filtering unrelated active skills, with activation-aware restoration when the profile is disabled.
 - `cli:` added `afk skills delete --profile` to delete installed skills referenced by a selected profile, with an extra warning that those skills may be shared by other profiles.
+- `skills:` added the manual-only `afk-profile-use` router for loading local profile members into the current request through the AFK CLI.
 - `skills:` added Matt Pocock's `wayfinder` workflow to the bundled catalog as an optional shared skill.
 
 ### Changed

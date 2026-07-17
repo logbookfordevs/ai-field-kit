@@ -162,6 +162,20 @@
             "composes": []
         },
         {
+            "id": "afk-profile-use",
+            "label": "AFK - Profile Use",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-profile-use",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": false,
+            "role": "router",
+            "composes": []
+        },
+        {
             "id": "afk-sprint",
             "label": "AFK - Sprint",
             "source": "https://github.com/logbookfordevs/ai-field-kit",

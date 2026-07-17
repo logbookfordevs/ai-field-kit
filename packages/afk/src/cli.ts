@@ -503,6 +503,7 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "list                              List global and project skills",
       "show <folder>                     Show one skill",
+      "get <folder>                      Print one local skill as agent context",
       "open <folder>                     Open SKILL.md or the skill folder",
       "add <source> [flags...]           Delegate to skills add, then sync the AFK catalog",
       "disable <folder>                  Move a global skill into .disabled",
@@ -636,6 +637,19 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills show afk-note --json",
     ],
   },
+  "skills get": {
+    title: "AFK skills get",
+    summary: "Print one local skill as agent context, including disabled skills.",
+    usage: "afk skills get <folder> [options]",
+    options: [
+      "--scope global|project|all        Choose which skill roots to search",
+      "--agent shared|<agent>            Limit lookup to shared or agent roots",
+    ],
+    examples: [
+      "afk skills get motion-graphics",
+      "afk skills get afk-note --agent shared",
+    ],
+  },
   "skills open": {
     title: "AFK skills open",
     summary: "Open a skill file or folder in Finder or a supported editor.",
@@ -767,14 +781,18 @@ const commandHelps: Record<string, CommandHelp> = {
       "Use afk catalog profiles to manage profile definitions.",
     ],
     options: [
+      "use <profile>                     Print the profile skill list as agent context",
       "enable <profile>                  Enable a profile and apply filtering",
       "disable <profile>                 Disable a profile and restore eligible skills",
       "status                            Show enabled profiles and state",
+      "--all                             Include every profile skill's full content with use",
       "--additive                        Enable profile skills without filtering unrelated active skills",
       "--local                           Use ./afk/catalog and ./afk/state for profile runtime data",
       "--dry-run                         Preview filesystem-changing operations",
     ],
     examples: [
+      "afk skills profiles use video",
+      "afk skills profiles use video --all",
       "afk skills profiles enable video --dry-run",
       "afk skills profiles enable video --additive",
       "afk skills profiles status --local",
@@ -1093,6 +1111,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillProfileMode: SkillProfileMode | undefined;
   let skillProfileAdditive = false;
   let skillProfileOnly = false;
+  let skillProfileUseAll = false;
   let uiCategory = "";
   let manifestShowReact = false;
   let manifestShowVisualize = false;
@@ -1255,11 +1274,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (isAfkSkillsCommand && arg === "--all") {
-      if (commandPath[1] !== "upgrade") {
-        return { help: false, kind: "error", error: "Unknown option: --all" };
+      if (commandPath[1] === "upgrade") {
+        skillsUpgradeAll = true;
+        continue;
       }
-      skillsUpgradeAll = true;
-      continue;
+      if (commandPath[1] === "profiles" && commandPath[2] === "use") {
+        skillProfileUseAll = true;
+        continue;
+      }
+      return { help: false, kind: "error", error: "Unknown option: --all" };
     }
 
     if (arg === "--all") {
@@ -1638,6 +1661,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillProfileMode,
       skillProfileAdditive,
       skillProfileOnly,
+      skillProfileUseAll,
       uiCategory,
       manifestShowReact,
       manifestShowVisualize,

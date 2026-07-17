@@ -19,12 +19,14 @@ import {
   type SkillRecord,
 } from "./catalog.js";
 import { runCodexCategorization } from "./categorization.js";
+import { renderSkillContext, renderSkillProfileContext } from "./context.js";
 import {
   appendSkillsToSkillProfile,
   deleteSkillProfile,
   disableSkillProfile,
   enableSkillProfile,
   listSkillProfiles,
+  loadSkillProfileCatalog,
   loadSkillProfileState,
   skillProfileStatus,
   upsertSkillProfile,
@@ -56,7 +58,7 @@ import {
 } from "./upgrade.js";
 import { planSkillStartupStorageForItems, upsertFrontmatterBoolean, upsertOpenAiImplicitInvocation } from "../skills.js";
 
-type SkillCommandName = "list" | "show" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "upgrade" | "categorize" | "profiles";
+type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "upgrade" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   if (commandPath[0] === "catalog" && commandPath[1] === "profiles") {
@@ -81,6 +83,8 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
         return runSkillsList(runtime, options);
       case "show":
         return runSkillsShow(operands[0], runtime, options);
+      case "get":
+        return runSkillsGet(operands[0], runtime, options);
       case "open":
         return runSkillsOpen(operands[0], runtime, options);
       case "add":
@@ -462,6 +466,36 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
   const context = skillProfileContext(options);
 
   switch (command) {
+    case "use": {
+      const profiles = loadSkillProfileCatalog(context).items;
+      const profile = id
+        ? findSkillProfile(profiles, id)
+        : await promptSkillProfile(profiles, "Select a profile to use:");
+      if (!profile) {
+        runtime.io.stderr(id ? `Skill profile not found: ${id}` : "No skill profiles found.");
+        return 1;
+      }
+
+      const records = loadSkillCatalog({
+        homeDir: options.homeDir,
+        cwd: options.cwd,
+        scope: "global",
+        agent: "shared",
+      }).records;
+      const profileRecords = profile.skills.map((skillId) => findSkillRecord(records, skillId));
+      const missingSkills = profile.skills.filter((_, index) => !profileRecords[index]);
+      if (missingSkills.length > 0) {
+        runtime.io.stderr(`Profile ${profile.id} references missing local skills: ${missingSkills.join(", ")}`);
+        return 1;
+      }
+
+      runtime.io.stdout(renderSkillProfileContext({
+        profile,
+        records: profileRecords.filter((record): record is SkillRecord => Boolean(record)),
+        includeContent: options.skillProfileUseAll === true,
+      }));
+      return 0;
+    }
     case "enable": {
       const profiles = listSkillProfiles(context).catalog.items;
       const selectedId = id ?? (await promptSkillProfile(profiles, "Select a profile to enable:"))?.id;
@@ -619,6 +653,26 @@ async function runSkillsOpen(folder: string | undefined, runtime: Runtime, optio
   }
 
   return result.code;
+}
+
+async function runSkillsGet(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
+  const snapshot = loadSkillCatalog({
+    homeDir: options.homeDir,
+    cwd: options.cwd,
+    scope: options.scopeExplicit ? options.skillsListScope ?? "all" : "all",
+    agent: options.skillsAgent,
+  });
+  const record = folder
+    ? findSkillRecord(snapshot.records, folder)
+    : await promptSkillRecord(snapshot.records, "Select a skill to get:");
+
+  if (!record) {
+    runtime.io.stderr(folder ? `Skill not found: ${folder}` : "No skills found.");
+    return 1;
+  }
+
+  runtime.io.stdout(renderSkillContext(record));
+  return 0;
 }
 
 async function runSkillsShow(folder: string | undefined, runtime: Runtime, options: CliOptions): Promise<number> {
