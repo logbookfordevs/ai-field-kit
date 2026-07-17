@@ -267,9 +267,10 @@ entries stay out of the list. Use `--all` when you want to review or include
 those imported entries too. Interactive setup still asks you to select the
 skills you want. Add `--yes` only when you want every listed skill installed.
 After a successful global install, setup restores skills that were already
-disabled and reconciles the library against any enabled focus profiles. New
-skills outside the focused set therefore start disabled while focus mode is
-active; additive-only profiles continue to leave unrelated skills active.
+disabled and reconciles the library against any enabled focus profiles. In
+`strict` mode, new skills outside the focused set move to `.disabled`; in
+`context` mode, cataloged manual skills remain active. Additive-only profiles
+continue to leave unrelated skills active.
 
 Skill-agent values are:
 
@@ -806,9 +807,10 @@ enrichment:
 ~/.agents/afk/catalog/skills.json
 ```
 
-Skills installed through `afk setup skills` or `afk skills add` are
-automatically inserted into this catalog as imported, uncategorized entries
-after a successful upstream `skills add` run.
+Setup-selected source catalog entries remain source-owned. After a successful
+direct `afk skills add`, newly installed skills absent from the catalog are
+inserted as imported, uncategorized entries.
+
 Before `afk skills add` starts, AFK checks for installed skills that are not in
 `skills.json` and routes them through `afk catalog skills import`. The add
 continues only after the existing installed library is fully cataloged, so add
@@ -816,13 +818,17 @@ flags apply only to skills introduced by that installation. AFK determines
 that set from the active and disabled skill folders before and after the
 upstream add, so a source-cataloged skill is still treated as new when it is
 installed for the first time.
-Use `afk skills add --start-disabled` to mark those new catalog entries with
-`startDisabled: true` and move their shared skill folders into `.disabled`.
-Use `afk skills add --profile <profile>` to append installed skills from that
-source to a new or existing profile in `profiles.json`. Use `--profile-only
-<profile>` to append those skills as `startDisabled: true` entries and move
-their shared skill folders into `.disabled`. Reinstalling an already cataloged
-and installed skill refreshes its content without reapplying add-time flags.
+
+Use `afk skills add --start-disabled` to mark newly installed skills with
+`startDisabled: true` and move their shared folders into `.disabled`, including
+first installs whose definitions were already in the source catalog. Use
+`afk skills add --profile <profile>` to append only newly installed skills to a
+new or existing profile in `profiles.json`. Use `--profile-only <profile>` to
+append those new skills as `startDisabled: true` entries and move their shared
+folders into `.disabled`.
+
+Reinstalling an already installed skill refreshes its content without
+reapplying add-time flags.
 AFK restores its previous active or disabled storage and preserves existing
 profile membership; use the profile commands to change that membership.
 AFK categorization metadata lives in top-level `scopes` plus each item's nested
