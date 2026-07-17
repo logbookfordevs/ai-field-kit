@@ -232,7 +232,7 @@ plugins, catalog composition, or setup policy.
 | [`packages/afk/catalog/`](./packages/afk/catalog) | Default setup catalog read by AFK. |
 | [`rules/`](./rules) | Shared AFK rules source for managed agent instruction regions. |
 | [`skills/`](./skills) | Authored AFK skills and workflow-style skill packages. |
-| [`mcps/`](./mcps) | MCP server recommendations for delegated setup through official tooling. |
+| [`packages/afk/catalog/mcps.json`](./packages/afk/catalog/mcps.json) | MCP server recommendations for delegated setup through official tooling. |
 | [`registry.json`](./registry.json) | shadcn-compatible registry entrypoint for project-local AFK catalog bundles. |
 | [`apps/site/`](./apps/site) | React/Vite site for AI Field Kit. |
 
@@ -336,8 +336,20 @@ projects without AFK reimplementing their installers.
 ## Acknowledgements
 
 AI Field Kit is heavily inspired by the open-source AI coding community and the
-people publishing their methods in public. This repo is its own opinionated kit,
-but it has learned a lot from these projects:
+people publishing their methods in public.
+
+Two upstream CLIs are part of AFK's core command surface:
+
+- The open [`skills` CLI](https://github.com/vercel-labs/skills) from Vercel
+  Labs provides the installation and update lifecycle behind the AFK setup,
+  add, and upgrade commands. AFK adds catalog policy, invocation metadata,
+  disabled storage, and profile reconciliation around that upstream lifecycle.
+- [UI Skills](https://github.com/ibelick/ui-skills) by Ibelick powers the
+  `afk ui` command family and remains the source of truth for its UI skill
+  registry and Markdown.
+
+This repo is its own opinionated kit, but it has also learned a lot from these
+projects:
 
 - [OpenSpec](https://github.com/Fission-AI/OpenSpec/)
 - [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex)
@@ -358,7 +370,8 @@ If this kit saves you time, consider buying me a coffee.
 
 | | |
 |---|---|
-| Ko-fi - quick coffee | [![Ko-fi](https://img.shields.io/badge/Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/logbookfordevs) |
+| Ko-fi | [![Ko-fi](https://img.shields.io/badge/Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/logbookfordevs) |
+| Ko-fi $5 | [![Ko-fi $5](https://img.shields.io/badge/Ko--fi%20%245-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/logbookfordevs?amount=5) |
 | Ko-fi $15 | [![Ko-fi $15](https://img.shields.io/badge/Ko--fi%20%2415-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/logbookfordevs?amount=15) |
 | Ko-fi $30 | [![Ko-fi $30](https://img.shields.io/badge/Ko--fi%20%2430-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/logbookfordevs?amount=30) |
 | Buy Me a Coffee | [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/logbookfordevs) |

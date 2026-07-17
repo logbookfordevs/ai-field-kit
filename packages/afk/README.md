@@ -14,6 +14,27 @@ utilities, references, and routers. That shape keeps automatic model discovery
 small while still giving people named workflows to invoke directly. See
 [Skill Composition](docs/skill-composition.md) for the full mental model.
 
+## How to Use This Reference
+
+This README documents the public CLI in the current checkout. Start with the
+[complete command reference](#complete-command-reference) when you know the
+operation you need, then use the deeper sections for behavior and storage
+details:
+
+- [Flag Reference](#flag-reference) explains shared setup, refresh, and skill
+  flags.
+- [Catalog Model](#catalog-model) explains source, cache, and project-local
+  catalog ownership.
+- [Skills and Profiles](#skills-and-profiles) explains installation, storage,
+  invocation policy, profile reconciliation, and recovery behavior.
+- [Troubleshooting](#troubleshooting) covers common installation and cache
+  problems.
+
+`afk <command> --help` is the compact terminal companion to this document. If
+the behavior of an installed release differs from this checkout, use that
+release's `--help` output and version (`afk --version`) together: this README
+tracks the repository version, not every older installed binary.
+
 ## Quick Start
 
 Install the latest AFK CLI release:
@@ -145,6 +166,206 @@ Compatibility aliases such as `afk setup skills install` and
 `afk setup rules sync` still work, but the shorter forms above are the
 preferred command shape.
 
+## Complete Command Reference
+
+AFK has four kinds of commands:
+
+- **Read-only inspection** commands print catalog or skill state without
+  changing it.
+- **AFK-owned mutation** commands edit catalog JSON, skill folders, invocation
+  metadata, or profile runtime state.
+- **Setup/delegation** commands invoke the upstream tool that owns an ecosystem
+  surface.
+- **Interactive routers** open a picker when a required command, profile, or
+  skill is omitted and the terminal supports prompts.
+
+Use `--dry-run` wherever it is listed before a write, move, deletion, install,
+or delegated command. Read-only commands do not need it.
+
+### Top-Level Commands
+
+| Command | Purpose | State or delegation |
+|---|---|---|
+| `afk` | Open the interactive AFK lobby. | Routes to another command; the selected command owns any effects. |
+| `afk --version`, `afk -v` | Print the installed AFK version. | Read-only. |
+| `afk <command> --help`, `-h` | Print command-specific usage, options, and examples. | Read-only. |
+| `afk setup` | Preview or apply rules, skills, profiles, MCPs, plugins, and hooks. | AFK writes owned files and delegates ecosystem installs. |
+| `afk refresh [category...]` | Refresh cached catalog files from the remembered or selected source. | Writes the global or project-local catalog cache. |
+| `afk show [category...]` | Inspect cached catalog data or a one-off source. | Read-only, except `--visualize` writes an HTML file. |
+| `afk catalog` | Interactively edit writable catalog files. | Writes catalog JSON. |
+| `afk skills <command>` | Inspect or manage local skill libraries and profile runtime state. | Read-only or mutating, depending on the subcommand. |
+| `afk ui <command>` | Route UI skill discovery to the upstream UI Skills CLI. | Delegates to `npx --yes ui-skills`. |
+| `afk update` | Update AFK through the hosted release installer. | Replaces the installed AFK release. |
+
+### Setup Commands
+
+All setup areas accept the shared setup flags described in
+[Setup Flags](#setup-flags). Without a specific area, `afk setup` offers all
+areas in one guided flow. A failure in one delegated area does not prevent AFK
+from attempting the remaining selected areas; the overall command exits
+non-zero when any selected area fails.
+
+| Command | What it does | Owner of the effect |
+|---|---|---|
+| `afk setup rules` | Merge the configured rules source into AFK-managed regions without replacing user-owned content outside those regions. | AFK. |
+| `afk setup skills` | Select catalog skills, delegate installation, restore previously disabled storage, apply invocation policy, and reconcile enabled profiles. | Official `skills` CLI for installation; AFK for policy and reconciliation. |
+| `afk setup profiles` | Prepare `profiles.json` definitions from the selected source. It does not install skills or enable a profile. | AFK. |
+| `afk setup mcps` | Select catalog MCPs and delegate their installation for supported agents/scopes. | `add-mcp`. |
+| `afk setup plugins` | Run selected catalog installer commands and supported post-install commands. | Each plugin installer. |
+| `afk setup hooks` | Copy selected hook scripts and merge commands into supported native hook configs. | AFK. |
+
+Setup aliases retained for compatibility:
+
+| Alias | Preferred command |
+|---|---|
+| `afk setup rules sync` | `afk setup rules` |
+| `afk setup skills install` | `afk setup skills` |
+| `afk setup mcps install` | `afk setup mcps` |
+| `afk setup hooks install` | `afk setup hooks` |
+| `afk setup refresh` | `afk refresh` |
+| `--defaults-source <source>` | `--default-source <source>` with `afk refresh` |
+
+### Refresh and Show Commands
+
+Catalog categories are `rules`, `skills`, `profiles`, `mcps`, `plugins`,
+`hooks`, and `presets`. Pass one or more categories to limit output or refresh
+writes:
+
+```bash
+afk refresh skills profiles
+afk show skills profiles
+```
+
+| Command | Behavior |
+|---|---|
+| `afk refresh` | Refresh every managed catalog file in the global cache. |
+| `afk refresh <category...>` | Refresh only the named catalog categories. |
+| `afk refresh --local` | Refresh `./afk/catalog` instead of the global cache. |
+| `afk refresh --source <source>` | Refresh once from a source without remembering it as the default. |
+| `afk refresh --default-source <source>` | Save the source in `presets.json` and refresh from it. |
+| `afk refresh --empty` | Prepare empty catalog files instead of seeding source defaults. |
+| `afk show` | Print every cached catalog category. |
+| `afk show <category...>` | Print only the named categories. |
+| `afk show rules` | Inspect the rules source AFK would merge into managed regions. |
+| `afk show skills` | Inspect skill install metadata, invocation policy, roles, and composition. |
+| `afk show profiles` | Inspect profile definitions and catalog-wide reconciliation policy. |
+| `afk show mcps` | Inspect MCP recommendations before delegated installation. |
+| `afk show plugins` | Inspect plugin installers and post-install commands. |
+| `afk show hooks` | Inspect lifecycle hook definitions and supported targets. |
+| `afk show presets` | Inspect remembered source metadata such as `defaultSource`. |
+| `afk show --source <source>` | Read a source for this invocation without changing the cache. |
+| `afk show <category> --source <source> --ref <git-ref>` | Inspect a specific Git ref from a GitHub-backed source. |
+| `afk show --local` | Read project-local `./afk/catalog`. |
+| `afk show skills --react` | Render the skill catalog as a terminal composition tree. |
+| `afk show skills --visualize` | Write and open a self-contained `afk-skills.html` composition map. |
+
+`afk manifests show` and `afk manifest show` are compatibility aliases for
+`afk show`.
+
+### Catalog Editing Commands
+
+`afk catalog` edits the global cache under `~/.agents/afk/catalog` by default.
+Add `--local` to edit `./afk/catalog`. Running an area without an action opens
+its interactive editor. Use `--dry-run` to preview supported writes.
+
+| Family | Commands | What changes |
+|---|---|---|
+| Rules | `afk catalog rules [edit]` | The rules source URL or local path in `rules.json`. |
+| Skills | `afk catalog skills add`, `edit`, `remove` | Skill definitions and installation metadata in `skills.json`. |
+| Skills policy | `afk catalog skills toggle-default` | Which catalog skills non-interactive default setup selects. |
+| Skills policy | `afk catalog skills toggle-auto` | Catalog-owned `autoInvocation` policy. |
+| Skills import | `afk catalog skills import-status` | Read-only comparison of installed shared skills and catalog entries. |
+| Skills import | `afk catalog skills import` | Missing catalog entries recovered from official `skills` CLI lock metadata. Existing entries are preserved. |
+| Profiles | `afk catalog profiles list`, `show` | Read-only profile definition inspection. Add `--json` for machine-readable output. |
+| Profiles | `afk catalog profiles create`, `edit`, `delete` | Profile definitions in `profiles.json`. |
+| Profile policy | `afk catalog profiles set-mode` | Top-level `strict` or `context` reconciliation mode. |
+| Profile policy | `afk catalog profiles toggle-always-on` | Top-level skills kept by every active profile. |
+| MCPs | `afk catalog mcps add`, `edit`, `remove`, `toggle-default` | MCP recommendations in `mcps.json`. |
+| Plugins | `afk catalog plugins add`, `edit`, `remove`, `toggle-default` | Installer definitions in `plugins.json`. |
+| Hooks | `afk catalog hooks add`, `edit`, `remove`, `toggle-default` | Lifecycle hook definitions in `hooks.json`. |
+
+The profile definition commands support these non-interactive flags:
+
+| Flag | Applies to | Meaning |
+|---|---|---|
+| `--local` | All profile definition commands | Use `./afk/catalog/profiles.json`. |
+| `--json` | `list`, `show` | Print JSON instead of formatted text. |
+| `--name <name>` | `create`, `edit` | Set the display name. |
+| `--skill <skill>` | `create`, `edit` | Repeat to define the member set. On `edit`, an explicit set replaces existing members; omitting it preserves them. |
+| `--enabled` / `--disabled` | Interactive `create`, `edit` | Limit the skill picker to one storage state. |
+| `--always-on <skill>` | `create`, `edit` | Repeat to append skills to the catalog-wide `alwaysOn` set. |
+| `--mode <mode>` | `create`, `edit` | Set the catalog-wide reconciliation mode to `strict` or `context` while saving the profile. |
+| `--profile-only` | `create`, `edit` | Mark selected skills `startDisabled` and move active shared folders into `.disabled`. |
+| `--dry-run` | Mutating actions | Preview catalog and folder changes. |
+
+Profile definitions and profile runtime are deliberately separate. Use
+`afk catalog profiles ...` to edit desired configuration; use
+`afk skills profiles ...` to apply or inspect runtime state.
+
+### Skills Commands
+
+AFK's shared skill library defaults to `~/.agents/skills`. Preset agent roots
+can be selected with `--agent`; exact custom roots require both
+`--agent custom` and `--agent-path <folder>`. For root-aware commands,
+`--scope global|project|all` chooses which preset root family to inspect.
+
+| Command | Purpose | Important options and effects |
+|---|---|---|
+| `afk skills list` | List discovered skills. | Filters: `--enabled`, `--disabled`, `--auto-invocation` with `enabled`, `disabled`, `mixed`, or `default`, `--category`, `--tag`, `--uncategorized`; `--json` prints records. |
+| `afk skills show <folder>` | Show one discovered skill's metadata and paths. | Supports root selection, storage filters, and `--json`. |
+| `afk skills get <folder>` | Print one skill as agent context, including disabled skills. | Read-only; includes the absolute skill root so referenced files remain resolvable. |
+| `afk skills open <folder>` | Open `SKILL.md` or its folder. | `--file` is the default; use `--folder` or select `finder`, `code`, `cursor`, `zed`, or `agy` with `--app`. |
+| `afk skills add <source> [flags...]` | Delegate installation to `skills add`, then synchronize AFK catalog and profile state. | Supports upstream `--skill`, `--agent`, `--global`, `--yes`; AFK adds `--profile`, `--profile-only`, and `--start-disabled`. |
+| `afk skills disable [folder]` | Move active skill folders into `.disabled`. | Omit the folder for an interactive multi-select; supports `--dry-run`. |
+| `afk skills enable [folder]` | Move disabled skill folders back to active storage. | Omit the folder for an interactive picker; supports `--dry-run`. |
+| `afk skills invocation disable [folder]`, `enable [folder]` | Change installed-skill invocation metadata. | Writes `disable-model-invocation` in `SKILL.md` and `allow_implicit_invocation` in `agents/openai.yaml` when needed; supports `--dry-run`. |
+| `afk skills delete [folder]` | Permanently remove selected skill folders. | `--catalog-only`, `--profile`, storage filters, `--yes`, and `--dry-run`; profile deletion mode deletes referenced folders, not the profile definition. |
+| `afk skills upgrade [skills...]` | Select tracked skills and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
+| `afk skills categorize` | Ask `codex exec` to create or update catalog categorization metadata. | `--mode` with `append-missing` or `recategorize-all`, `--instruction`, `--runner codex-exec`, `--dry-run`. |
+| `afk skills profiles <command>` | Read or apply profile runtime state. | Detailed below. |
+
+`afk skills add` always includes the shared global target. `--profile <id>` and
+`--profile-only <id>` are repeatable and apply only to skills introduced by the
+current installation. `--profile-only` also records `startDisabled: true` and
+moves those new shared folders into `.disabled`. Reinstalling an existing skill
+refreshes its content while preserving its prior storage and profile membership.
+
+`afk skills invocation` defaults to the `disable` action when `enable` or
+`disable` is omitted. If the skill folder is also omitted, AFK opens an
+interactive picker.
+
+`afk skills delete --profile` accepts zero or one profile ID. Without an ID it
+prompts for a profile. AFK warns again because a referenced skill may belong to
+other profiles. Deleting by profile does not delete the profile definition from
+`profiles.json`; use `afk catalog profiles delete` for that.
+
+### Profile Runtime Commands
+
+| Command | Behavior | Writes or movement |
+|---|---|---|
+| `afk skills profiles use <profile>` | Print the profile's locally available skills as compact agent context. | Read-only. Add `--all` for full `SKILL.md` content. |
+| `afk skills profiles enable <profile>` | Activate a focus profile and reconcile desired skill storage. | Writes runtime state and may move folders. Add `--additive` to avoid filtering unrelated active skills. |
+| `afk skills profiles disable <profile>` | Remove one activation and recompute the desired state from the remaining activations. | Writes runtime state and restores or disables eligible folders. |
+| `afk skills profiles status` | Show active profiles, activation modes, kept skills, and runtime paths. | Read-only. |
+
+Add `--local` to use project-local profile definitions and runtime state under
+`./afk/catalog` and `./afk/state`. In v1, reconciliation still moves folders in
+the shared global skill library. Add `--dry-run` to `enable` or `disable` to
+preview all state and folder changes.
+
+### UI and Update Commands
+
+| Command | Delegation or effect |
+|---|---|
+| `afk ui` | Run the upstream UI Skills CLI without a subcommand. |
+| `afk ui start` | Print the upstream UI routing skill. |
+| `afk ui categories` | List UI Skills categories. |
+| `afk ui list [--category <category>]` | List upstream UI skills, optionally filtered. |
+| `afk ui get <skill>` | Print upstream skill Markdown; it does not install the skill. |
+| `afk ui ... --dry-run` | Print the exact delegated `npx --yes ui-skills ...` command. |
+| `afk update --dry-run` | Print the hosted installer command without running it. |
+| `afk update` | Run the hosted AFK installer against the latest published release. |
+
 ## UI Skills Delegation
 
 `afk ui` is a thin convenience wrapper around the MIT-licensed
@@ -176,10 +397,11 @@ These flags apply to `afk setup` and most area commands.
 | `--yes`, `-y` | Accept defaults and skip prompts. Useful for scripts. |
 | `--scope global/project` | Choose machine-wide setup or current-project setup. |
 | `--local` | Alias for `--scope project`. |
-| `--agent <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
+| `--agent <agent>`, `-a <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
 | `--source <source>` | Use a catalog source for this run only, without changing the cache or default source. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
 | `--init-only` | Legacy cache-prep flag; prefer `afk refresh`. |
+| `--empty` | With cache preparation, create empty catalog files instead of seeding source defaults. |
 
 ### Refresh Flags
 
@@ -325,6 +547,10 @@ local HTML artifact. AFK writes `afk-skills.html` in the current directory; the
 file is self-contained and does not start a server. In an interactive terminal,
 AFK opens the file automatically after writing it. Set `AFK_NO_OPEN=1` to skip
 that browser handoff.
+
+For an interactive state machine across skill commands, profile commands,
+storage, catalog policy, and recovery paths, open the published
+[AFK skills and profiles switchyard](https://tot.page/13T7lSXk6SIhvGNt0aa_tw).
 
 ### Catalog Import
 
@@ -757,7 +983,14 @@ AFK can show which delegated command it planned with:
 afk setup plugins --dry-run
 ```
 
-Manage local skills:
+## Skills and Profiles
+
+This section is the behavioral reference for the `afk skills`,
+`afk catalog profiles`, and `afk skills profiles` families. The command tables
+above provide the syntax; this section explains how commands compose and what
+AFK preserves.
+
+### Command Examples
 
 ```bash
 afk skills list
@@ -791,7 +1024,9 @@ afk skills profiles enable video --dry-run
 afk skills profiles status
 ```
 
-`afk skills` is separate from `afk setup skills install`. Setup remains the
+### Installation and Catalog Synchronization
+
+`afk skills` is separate from `afk setup skills`. Setup remains the
 catalog-driven install flow, while `afk skills add` is a convenience wrapper
 around the official `skills add` command for one-off installs. AFK always
 includes the shared global target first; each explicit `--agent <agent>` adds
@@ -842,6 +1077,8 @@ AFK categorization metadata lives in top-level `scopes` plus each item's nested
 `catalog` object, so `id`, `source`, `args`, `default`, and other install fields
 remain easy to read.
 
+### Discovery, Roots, and Storage
+
 `afk skills list` reads only the shared global library by default. Use
 `--agent <agent>` to select a preset agent root and `--scope
 global|project|all` to choose that preset's root family. Use `--agent custom
@@ -864,6 +1101,8 @@ the installed skills referenced by it; AFK asks for an extra confirmation
 because those skills may also be used by other profiles.
 Delete is permanent; use `--dry-run` to preview the selected folders before
 removing them.
+
+### Profile Definitions and Runtime
 
 `afk catalog profiles` edits focus profile definitions in `profiles.json`. A
 profile is a named group of skill folders. `afk skills profiles
@@ -897,7 +1136,7 @@ Disable a profile before switching it between normal and additive activation.
 This keeps restoration predictable instead of changing an active profile's
 behavior in place.
 
-#### Profile math: what stays on
+### Profile Reconciliation Math
 
 Profiles are reconciled from the desired final state each time you enable or
 disable one. The kept set includes every active profile, regardless of how it
