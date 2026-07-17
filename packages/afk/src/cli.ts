@@ -770,11 +770,13 @@ const commandHelps: Record<string, CommandHelp> = {
       "enable <profile>                  Enable a profile and apply filtering",
       "disable <profile>                 Disable a profile and restore eligible skills",
       "status                            Show enabled profiles and state",
+      "--additive                        Enable profile skills without filtering unrelated active skills",
       "--local                           Use ./afk/catalog and ./afk/state for profile runtime data",
       "--dry-run                         Preview filesystem-changing operations",
     ],
     examples: [
       "afk skills profiles enable video --dry-run",
+      "afk skills profiles enable video --additive",
       "afk skills profiles status --local",
       "afk catalog profiles create video --name Video --skill hyperframes --skill tailwind",
     ],
@@ -1089,6 +1091,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const skillProfileSkills: string[] = [];
   const skillProfileAlwaysOn: string[] = [];
   let skillProfileMode: SkillProfileMode | undefined;
+  let skillProfileAdditive = false;
   let skillProfileOnly = false;
   let uiCategory = "";
   let manifestShowReact = false;
@@ -1519,6 +1522,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (isAfkSkillsProfilesCommand && arg === "--additive") {
+      if (commandPath[2] !== "enable") {
+        return { help: false, kind: "error", error: "--additive is only available for afk skills profiles enable" };
+      }
+      skillProfileAdditive = true;
+      continue;
+    }
+
     if (isAfkSkillsCommand && arg === "--runner") {
       const value = args[index + 1];
       if (value !== "codex-exec") {
@@ -1625,6 +1636,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillProfileSkills,
       skillProfileAlwaysOn,
       skillProfileMode,
+      skillProfileAdditive,
       skillProfileOnly,
       uiCategory,
       manifestShowReact,

@@ -507,9 +507,43 @@ test("runCli prints contextual skills profiles help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills profiles"));
   assert.ok(text.includes("enable <profile>"));
+  assert.ok(text.includes("--additive"));
   assert.ok(text.includes("--local"));
   assert.ok(!text.includes("--always-on <skill>"));
   assert.ok(!text.includes("create <profile>"));
+});
+
+test("runCli enables a profile additively through the runtime flag", async () => {
+  const homeDir = localHomeWithManifests({
+    "profiles.json": {
+      version: 1,
+      alwaysOn: [],
+      items: [{ id: "video", name: "Video", skills: ["video"] }],
+    },
+  });
+  writeSkill(join(homeDir, ".agents", "skills"), "baseline", "Baseline");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "video", "Video");
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(
+    ["skills", "profiles", "enable", "video", "--additive", "--dry-run"],
+    { HOME: homeDir },
+  ));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("video (additive)"));
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "baseline")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "video")), true);
+});
+
+test("runCli rejects additive mode outside profile enable", async () => {
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(["skills", "profiles", "disable", "video", "--additive"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("--additive is only available for afk skills profiles enable"));
 });
 
 test("runCli prints contextual catalog profiles help", async () => {
@@ -1022,7 +1056,7 @@ test("runCli includes skill profiles in the visualization HTML", async () => {
     assert.equal(code, 0);
     assert.ok(html.includes("Focus profiles."));
     assert.ok(html.includes("Video Editing"));
-    assert.ok(html.includes("video · enabled · 2 skills · 1 missing"));
+    assert.ok(html.includes("video · enabled focus · 2 skills · 1 missing"));
     assert.ok(html.includes("Always-on skills"));
     assert.ok(html.includes("missing-skill missing"));
     assert.ok(html.includes("FocusProfiles"));

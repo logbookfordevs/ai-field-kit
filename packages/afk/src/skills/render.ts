@@ -172,13 +172,13 @@ export function renderSkillProfileList(input: {
     ].join("\n");
   }
 
-  const enabled = new Set(input.state.enabledProfileIds);
+  const activations = new Map(input.state.activations.map((activation) => [activation.profileId, activation.mode]));
   return [
     sectionTitle("Skill Profiles"),
-    muted(`${input.catalog.items.length} profiles · ${enabled.size} enabled · ${input.catalog.alwaysOn.length} always-on · ${input.catalog.mode} mode`),
+    muted(`${input.catalog.items.length} profiles · ${activations.size} enabled · ${input.catalog.alwaysOn.length} always-on · ${input.catalog.mode} mode`),
     renderField("Catalog", input.catalogPath),
     "",
-    ...input.catalog.items.map((profile) => renderSkillProfileRow(profile, enabled.has(profile.id))),
+    ...input.catalog.items.map((profile) => renderSkillProfileRow(profile, activations.get(profile.id))),
   ].join("\n");
 }
 
@@ -188,11 +188,12 @@ export function renderSkillProfileDetail(input: {
   state: SkillProfileState;
   catalogPath: string;
 }): string {
-  const enabled = input.state.enabledProfileIds.includes(input.profile.id);
+  const activation = input.state.activations.find((item) => item.profileId === input.profile.id);
   return [
     sectionTitle("Skill Profile"),
     `${strong(accent(input.profile.name))} ${muted(`[${input.profile.id}]`)}`,
-    renderField("State", enabled ? success("enabled") : muted("disabled")),
+    renderField("State", activation ? success("enabled") : muted("disabled")),
+    renderField("Activation", activation?.mode ?? muted("none")),
     renderField("Mode", input.catalog.mode),
     renderField("Skills", input.profile.skills.length === 0 ? muted("none") : input.profile.skills.join(", ")),
     renderField("Always-on", input.catalog.alwaysOn.length === 0 ? muted("none") : input.catalog.alwaysOn.join(", ")),
@@ -239,7 +240,7 @@ export function renderSkillProfileApply(input: SkillProfileApplyResult): string 
   return [
     sectionTitle(title),
     renderField("Mode", input.catalog.mode),
-    renderField("Active profiles", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
+    renderField("Active profiles", renderSkillProfileActivations(input.state)),
     "",
     strong("Changes"),
     renderSkillProfileApplyGroup("+", "Activated", enabled, "success"),
@@ -256,7 +257,7 @@ export function renderSkillProfileApply(input: SkillProfileApplyResult): string 
 export function renderSkillProfileStatus(input: SkillProfileApplyResult): string {
   return [
     sectionTitle("Skill Profile Status"),
-    renderField("Enabled", input.state.enabledProfileIds.length === 0 ? muted("none") : input.state.enabledProfileIds.join(", ")),
+    renderField("Enabled", renderSkillProfileActivations(input.state)),
     renderField("Mode", input.catalog.mode),
     renderField("Always-on", input.catalog.alwaysOn.length === 0 ? muted("none") : input.catalog.alwaysOn.join(", ")),
     renderField("Kept", input.keptSkills.length === 0 ? muted("none") : input.keptSkills.join(", ")),
@@ -265,6 +266,16 @@ export function renderSkillProfileStatus(input: SkillProfileApplyResult): string
     renderField("Catalog", input.paths.catalogPath),
     renderField("State", input.paths.statePath),
   ].join("\n");
+}
+
+function renderSkillProfileActivations(state: SkillProfileState): string {
+  if (state.activations.length === 0) {
+    return muted("none");
+  }
+
+  return state.activations
+    .map((activation) => activation.mode === "additive" ? `${activation.profileId} (additive)` : activation.profileId)
+    .join(", ");
 }
 
 export function renderPromptPreview(prompt: string): string {
@@ -303,8 +314,8 @@ function renderSkillRow(record: SkillRecord, isLast: boolean): string {
   return `${branch} ${strong(record.name)} ${muted(`[${record.folder}]`)} ${muted(record.rootLabel)}`;
 }
 
-function renderSkillProfileRow(profile: SkillProfileItem, enabled: boolean): string {
-  const status = enabled ? success("enabled") : muted("disabled");
+function renderSkillProfileRow(profile: SkillProfileItem, activationMode: "focus" | "additive" | undefined): string {
+  const status = activationMode ? success(`enabled (${activationMode})`) : muted("disabled");
   return `${paint(terminalPalette.sienna, "•")} ${strong(profile.name)} ${muted(`[${profile.id}]`)} ${status}\n  ${muted(profile.skills.length === 0 ? "No skills assigned." : profile.skills.join(", "))}`;
 }
 
