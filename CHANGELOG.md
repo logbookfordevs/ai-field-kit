@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Fixed
+
+- `install:` resolved the latest AFK release through GitHub's release redirect instead of the rate-limited unauthenticated REST API.
+
 ## v1.2.0 - 2026-07-20
 
 ### Added

@@ -153,6 +153,28 @@ require_node() {
   fi
 }
 
+resolve_latest_version() {
+  local latest_url="https://github.com/$REPO/releases/latest"
+  local resolved_url
+
+  if ! resolved_url="$(curl -fsSL -o /dev/null -w '%{url_effective}' "$latest_url")"; then
+    fail "could not resolve latest release for $REPO"
+  fi
+
+  local tag_prefix="https://github.com/$REPO/releases/tag/"
+  case "$resolved_url" in
+    "$tag_prefix"*) ;;
+    *) fail "could not resolve latest release for $REPO" ;;
+  esac
+
+  local resolved_version="${resolved_url#"$tag_prefix"}"
+  case "$resolved_version" in
+    ""|*/*|*\?*|*\#*) fail "could not resolve latest release for $REPO" ;;
+  esac
+
+  printf '%s' "$resolved_version"
+}
+
 write_launcher() {
   local entry_path="$1"
 
@@ -258,8 +280,7 @@ require_node
 
 if [[ "$VERSION" = "latest" ]]; then
   info "fetching latest release"
-  VERSION="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
-  [[ -n "$VERSION" ]] || fail "could not resolve latest release for $REPO"
+  VERSION="$(resolve_latest_version)"
 fi
 
 case "$VERSION" in

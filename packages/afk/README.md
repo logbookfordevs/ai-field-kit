@@ -25,6 +25,8 @@ details:
   flags.
 - [Catalog Model](#catalog-model) explains source, cache, and project-local
   catalog ownership.
+- [Compose a Catalog from Multiple Sources](#compose-a-catalog-from-multiple-sources)
+  shows how to assemble one setup from independent catalog repositories.
 - [Skills and Profiles](#skills-and-profiles) explains installation, storage,
   invocation policy, profile reconciliation, and recovery behavior.
 - [Troubleshooting](#troubleshooting) covers common installation and cache
@@ -688,6 +690,77 @@ refreshes the cache from it. Later `afk setup`, `afk setup --yes`, and
 `afk refresh` can reuse the remembered source without repeating the flag.
 `presets.json` is not used for local detected-agent state; custom local target
 evidence belongs in `~/.agents/afk/setup-targets.json`.
+
+### Compose a Catalog from Multiple Sources
+
+A complete AFK setup does not have to come from one repository. You can keep
+skills in one catalog, profiles in another, and infrastructure recommendations
+somewhere else, then materialize those pieces into one local AFK catalog.
+
+Start by establishing a remembered base source. This gives first-run setup a
+stable fallback and fills any categories you do not replace later:
+
+```bash
+afk refresh --default-source your-org/base-kit
+```
+
+Layer independent sources over individual catalog categories:
+
+```bash
+afk refresh skills --source your-org/skills-kit
+afk refresh profiles --source your-org/profile-kit
+afk refresh mcps --source your-org/platform-kit
+afk refresh hooks --source your-org/automation-kit
+```
+
+Each targeted refresh writes only the named category. After those commands,
+the global cache is an assembled catalog:
+
+```text
+~/.agents/afk/catalog/
+├── rules.json      # base-kit
+├── skills.json     # skills-kit
+├── profiles.json   # profile-kit
+├── mcps.json       # platform-kit
+├── plugins.json    # base-kit
+├── hooks.json      # automation-kit
+└── presets.json    # remembers base-kit as the default source
+```
+
+Inspect the assembled result before applying it:
+
+```bash
+afk show rules skills profiles mcps plugins hooks
+afk setup --dry-run
+```
+
+When the preview looks right, ordinary setup uses the currently materialized
+catalog files; it does not refresh them first:
+
+```bash
+afk setup
+```
+
+The source model has two deliberate constraints:
+
+- AFK remembers one `defaultsSource`, not a permanent source URL for every
+  category. The mixed catalog is the current set of files produced by your
+  targeted refresh commands.
+- A later unrestricted `afk refresh` refreshes every category from the one
+  remembered default source. Continue using
+  `afk refresh <category> --source <source>` when you want to preserve or
+  update the mix.
+
+For a one-off operation, you can skip materializing the source:
+
+```bash
+afk setup skills --source your-org/skills-kit
+```
+
+That command uses the custom source for the current skills setup only. It does
+not replace the cached `skills.json` or change the remembered default source.
+Use targeted `refresh` when you want later general setup commands to reuse the
+same assembled catalog.
 
 ## Install Catalog From the shadcn Registry
 
