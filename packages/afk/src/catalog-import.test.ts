@@ -37,6 +37,23 @@ test("planCatalogImport imports installed skills with lock metadata into global 
   assert.equal(write?.path, join(homeDir, ".agents", "afk", "catalog", "skills.json"));
 });
 
+test("planCatalogImport imports disabled skills as start-disabled catalog entries", () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-import-disabled-"));
+  writeDisabledInstalledSkill(homeDir, "disabled-skill", "---\nname: Disabled Skill\n---\n");
+  writeSkillLock(homeDir, {
+    "disabled-skill": {
+      source: "acme/skills",
+      sourceType: "github",
+    },
+  });
+
+  const plan = planCatalogImport({ homeDir, cwd: mkdtempSync(join(tmpdir(), "afk-project-")), dryRun: false, manifestLocal: false });
+
+  assert.deepEqual(plan.imported.map((item) => ({ id: item.id, startDisabled: item.startDisabled })), [
+    { id: "disabled-skill", startDisabled: true },
+  ]);
+});
+
 test("planCatalogImport skips installed skills without lock metadata", () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-import-"));
   writeInstalledSkill(homeDir, "local-only", "---\nname: Local Only\n---\n");

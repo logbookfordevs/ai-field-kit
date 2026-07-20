@@ -429,11 +429,29 @@ test("runCli prints contextual skills help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK skills list"));
   assert.ok(output.join("\n").includes("--scope global|project|all"));
-  assert.ok(output.join("\n").includes("--agent shared|<agent>"));
+  assert.ok(output.join("\n").includes("--agent <agent>|custom"));
+  assert.ok(output.join("\n").includes("--agent-path <folder>"));
   assert.ok(output.join("\n").includes("--enabled"));
   assert.ok(output.join("\n").includes("--disabled"));
+  assert.ok(output.join("\n").includes("--auto-invocation <state>"));
   assert.ok(output.join("\n").includes("--category <id-or-label>"));
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
+});
+
+test("runCli lists get in the skills command help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "--help"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("get <folder>"));
+});
+
+test("runCli validates skills list auto invocation filters", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "list", "--auto-invocation", "invalid"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Invalid --auto-invocation value: invalid"));
 });
 
 test("runCli prints contextual ui help", async () => {
@@ -470,9 +488,42 @@ test("runCli prints contextual skills open help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("AFK skills open"));
   assert.ok(output.join("\n").includes("--app finder|code|cursor|zed|agy"));
-  assert.ok(output.join("\n").includes("--agent shared|<agent>"));
+  assert.ok(output.join("\n").includes("--agent <agent>|custom"));
+  assert.ok(output.join("\n").includes("--agent-path <folder>"));
   assert.ok(output.join("\n").includes("--enabled"));
   assert.ok(output.join("\n").includes("--disabled"));
+});
+
+test("runCli prints contextual skills get help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "get", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK skills get"));
+  assert.ok(text.includes("Print one local skill as agent context"));
+});
+
+test("runCli accepts --all for profile use and prints complete skill content", async () => {
+  const homeDir = localHomeWithManifests({
+    "profiles.json": {
+      version: 1,
+      alwaysOn: [],
+      items: [{ id: "video", name: "Video", skills: ["demo"] }],
+    },
+  });
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "demo", "Demo");
+  const output: string[] = [];
+
+  const code = await withConsole(output, () =>
+    runCli(["skills", "profiles", "use", "video", "--all"], { HOME: homeDir })
+  );
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("The user wants you to take into account the skills listed below."));
+  assert.ok(text.includes("# Demo"));
+  assert.ok(text.includes('storage="disabled"'));
 });
 
 test("runCli prints contextual skills upgrade help", async () => {
@@ -494,7 +545,8 @@ test("runCli prints contextual skills delete help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills delete"));
-  assert.ok(text.includes("--agent shared|<agent>"));
+  assert.ok(text.includes("--agent <agent>|custom"));
+  assert.ok(text.includes("--agent-path <folder>"));
   assert.ok(text.includes("--enabled"));
   assert.ok(text.includes("--disabled"));
   assert.ok(text.includes("--catalog-only"));
@@ -509,7 +561,8 @@ test("runCli prints contextual skills invocation help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills invocation"));
   assert.ok(text.includes("invocation [disable|enable] [folder]"));
-  assert.ok(text.includes("--agent shared|<agent>"));
+  assert.ok(text.includes("--agent <agent>|custom"));
+  assert.ok(text.includes("--agent-path <folder>"));
   assert.ok(text.includes("--enabled"));
   assert.ok(text.includes("--disabled"));
 });
@@ -522,9 +575,43 @@ test("runCli prints contextual skills profiles help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills profiles"));
   assert.ok(text.includes("enable <profile>"));
+  assert.ok(text.includes("--additive"));
   assert.ok(text.includes("--local"));
   assert.ok(!text.includes("--always-on <skill>"));
   assert.ok(!text.includes("create <profile>"));
+});
+
+test("runCli enables a profile additively through the runtime flag", async () => {
+  const homeDir = localHomeWithManifests({
+    "profiles.json": {
+      version: 1,
+      alwaysOn: [],
+      items: [{ id: "video", name: "Video", skills: ["video"] }],
+    },
+  });
+  writeSkill(join(homeDir, ".agents", "skills"), "baseline", "Baseline");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "video", "Video");
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(
+    ["skills", "profiles", "enable", "video", "--additive", "--dry-run"],
+    { HOME: homeDir },
+  ));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("video (additive)"));
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "baseline")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "video")), true);
+});
+
+test("runCli rejects additive mode outside profile enable", async () => {
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(["skills", "profiles", "disable", "video", "--additive"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("--additive is only available for afk skills profiles enable"));
 });
 
 test("runCli prints contextual catalog profiles help", async () => {
@@ -665,7 +752,7 @@ test("runCli rejects skills enabled filter where it is not meaningful", async ()
   assert.ok(output.join("\n").includes("Unknown option: --enabled"));
 });
 
-test("runCli accepts explicit shared skill agent", async () => {
+test("runCli rejects shared as an agent because shared is the default", async () => {
   const homeDir = localHomeWithManifests({});
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(
@@ -673,7 +760,63 @@ test("runCli accepts explicit shared skill agent", async () => {
     { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
   ));
 
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Invalid --agent value: shared"));
+});
+
+test("runCli accepts a custom skill agent with a literal path", async () => {
+  const homeDir = localHomeWithManifests({});
+  const agentPath = join(homeDir, "my-agent", "skills");
+  writeSkill(agentPath, "custom-demo", "Custom Demo");
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(
+    ["skills", "list", "--agent", "custom", "--agent-path", agentPath],
+    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+  ));
+
   assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("custom-demo"));
+});
+
+test("runCli defaults an explicit preset agent to its global root", async () => {
+  const homeDir = localHomeWithManifests({});
+  const projectDir = mkdtempSync(join(tmpdir(), "afk-skills-preset-scope-"));
+  const originalCwd = process.cwd();
+  writeSkill(join(homeDir, ".codex", "skills"), "global-demo", "Global Demo");
+  writeSkill(join(projectDir, ".codex", "skills"), "project-demo", "Project Demo");
+  const output: string[] = [];
+
+  try {
+    process.chdir(projectDir);
+    const code = await withConsole(output, () => runCli(
+      ["skills", "list", "--agent", "codex"],
+      { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    ));
+    const text = output.join("\n");
+
+    assert.equal(code, 0);
+    assert.ok(text.includes("global-demo"));
+    assert.ok(!text.includes("project-demo"));
+  } finally {
+    process.chdir(originalCwd);
+  }
+});
+
+test("runCli validates the custom skill agent path contract", async () => {
+  const output: string[] = [];
+  const missingPathCode = await withConsole(output, () => runCli(["skills", "list", "--agent", "custom"]));
+  assert.equal(missingPathCode, 1);
+  assert.ok(output.join("\n").includes("--agent custom requires --agent-path <folder>"));
+
+  output.length = 0;
+  const missingAgentCode = await withConsole(output, () => runCli(["skills", "list", "--agent-path", "/tmp/my-agent/skills"]));
+  assert.equal(missingAgentCode, 1);
+  assert.ok(output.join("\n").includes("--agent-path requires --agent custom"));
+
+  output.length = 0;
+  const scopeCode = await withConsole(output, () => runCli(["skills", "list", "--agent", "custom", "--agent-path", "/tmp/my-agent/skills", "--scope", "global"]));
+  assert.equal(scopeCode, 1);
+  assert.ok(output.join("\n").includes("Do not combine --scope with --agent custom"));
 });
 
 test("runCli validates skills upgrade scope", async () => {
@@ -682,6 +825,32 @@ test("runCli validates skills upgrade scope", async () => {
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Invalid --scope value: agent"));
+});
+
+test("runCli rejects root targeting flags on unrelated skills commands", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--agent", "codex"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown option: --agent"));
+});
+
+test("runCli documents profile-selected skill upgrades", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("--profile"));
+  assert.ok(text.includes("afk skills upgrade video --profile"));
+});
+
+test("runCli routes profile-selected upgrades through global scope validation", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "upgrade", "video", "--profile", "--scope", "project"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Profile upgrades use the global skill library"));
 });
 
 test("runCli validates skills open app", async () => {
@@ -1037,7 +1206,7 @@ test("runCli includes skill profiles in the visualization HTML", async () => {
     assert.equal(code, 0);
     assert.ok(html.includes("Focus profiles."));
     assert.ok(html.includes("Video Editing"));
-    assert.ok(html.includes("video · enabled · 2 skills · 1 missing"));
+    assert.ok(html.includes("video · enabled focus · 2 skills · 1 missing"));
     assert.ok(html.includes("Always-on skills"));
     assert.ok(html.includes("missing-skill missing"));
     assert.ok(html.includes("FocusProfiles"));

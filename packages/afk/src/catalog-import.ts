@@ -74,12 +74,13 @@ export function planCatalogImport(options: CatalogImportOptions): ImportPlan {
   const existing = readSkillCatalog(targetCatalogPath);
   const existingIds = new Set(existing.items.map((item) => item.id));
   const lock = readSkillLock(sourceLockPath);
-  const installedSkillIds = installedSkillIdsFrom(sourceSkillsDir);
+  const installedSkills = installedSkillsForImport(sourceSkillsDir);
   const imported: SkillManifestItem[] = [];
   const skippedNoLock: string[] = [];
   const skippedExisting: string[] = [];
 
-  for (const id of installedSkillIds) {
+  for (const installed of installedSkills) {
+    const { id } = installed;
     if (existingIds.has(id)) {
       skippedExisting.push(id);
       continue;
@@ -91,7 +92,12 @@ export function planCatalogImport(options: CatalogImportOptions): ImportPlan {
       continue;
     }
 
-    imported.push(skillManifestItemFromInstalledSkill(id, sourceSkillsDir, lockEntry.source, options.startDisabled === true));
+    imported.push(skillManifestItemFromInstalledSkill(
+      id,
+      installed.root,
+      lockEntry.source,
+      options.startDisabled === true || installed.startDisabled,
+    ));
   }
 
   const operations: PathOperation[] = [];
@@ -212,12 +218,24 @@ function installedSkillIdsWithDisabledFrom(skillsDir: string): string[] {
   ]);
 }
 
+function installedSkillsForImport(skillsDir: string): Array<{ id: string; root: string; startDisabled: boolean }> {
+  const active = installedSkillIdsFrom(skillsDir);
+  const activeIds = new Set(active);
+  const disabledRoot = join(skillsDir, ".disabled");
+  const disabled = installedSkillIdsFrom(disabledRoot).filter((id) => !activeIds.has(id));
+
+  return [
+    ...active.map((id) => ({ id, root: skillsDir, startDisabled: false })),
+    ...disabled.map((id) => ({ id, root: disabledRoot, startDisabled: true })),
+  ].sort((left, right) => left.id.localeCompare(right.id));
+}
+
 function uniqueSorted(values: string[]): string[] {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }
 
-function skillManifestItemFromInstalledSkill(id: string, skillsDir: string, source: string, startDisabled: boolean): SkillManifestItem {
-  const skillPath = join(skillsDir, id, "SKILL.md");
+function skillManifestItemFromInstalledSkill(id: string, skillRoot: string, source: string, startDisabled: boolean): SkillManifestItem {
+  const skillPath = join(skillRoot, id, "SKILL.md");
   const content = existsSync(skillPath) ? readFileSync(skillPath, "utf8") : "";
   const frontmatter = frontmatterFields(content);
   const item: SkillManifestItem = {

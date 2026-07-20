@@ -201,11 +201,7 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
     const rawContent = options.empty
       ? emptyManifestContent(name, options, effectiveDefaultsSource)
       : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
-    const content = rawContent && name === "skills.json"
-      ? mergedSkillsManifestContent(rawContent, target)
-      : rawContent && name === "agents.json"
-        ? mergedCustomAgentManifestContent(rawContent, target)
-        : rawContent;
+    const content = rawContent ? mergedManifestContent(name, rawContent, target) : rawContent;
     if (content) {
       operations.push({ type: "write", path: target, content });
     } else if (existsSync(target)) {
@@ -216,6 +212,22 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
   }
 
   return operations;
+}
+
+function mergedManifestContent(name: ManifestName, content: string, targetPath: string): string {
+  if (name === "skills.json") {
+    return mergedSkillsManifestContent(content, targetPath);
+  }
+
+  if (name === "profiles.json") {
+    return mergedProfilesManifestContent(content, targetPath);
+  }
+
+  if (name === "agents.json") {
+    return mergedCustomAgentManifestContent(content, targetPath);
+  }
+
+  return content;
 }
 
 export async function loadDefaultManifestContent(name: ManifestName, options: ManifestOptions): Promise<string | null> {
@@ -701,6 +713,65 @@ function readExistingCustomAgentManifest(path: string): CustomAgentManifest | nu
   }
 }
 
+function mergedProfilesManifestContent(content: string, targetPath: string): string {
+  const refreshed = parseProfilesManifest(content);
+  const existing = readProfilesManifest(targetPath);
+  if (!refreshed || !existing) {
+    return content;
+  }
+
+  const refreshedIds = new Set(refreshed.items.map((item) => item.id));
+  const localItems = existing.items.filter((item) => !refreshedIds.has(item.id));
+  return `${JSON.stringify({ ...refreshed, items: [...refreshed.items, ...localItems] }, null, 2)}\n`;
+}
+
+type ProfilesManifest = {
+  version: number;
+  mode?: "strict" | "context";
+  alwaysOn: string[];
+  items: Array<{ id: string; name: string; skills: string[] }>;
+};
+
+function readProfilesManifest(path: string): ProfilesManifest | undefined {
+  if (!existsSync(path)) {
+    return undefined;
+  }
+
+  try {
+    return parseProfilesManifest(readFileSync(path, "utf8"));
+  } catch {
+    return undefined;
+  }
+}
+
+function parseProfilesManifest(content: string): ProfilesManifest | undefined {
+  try {
+    const parsed: unknown = JSON.parse(content);
+    if (!isRecord(parsed) || typeof parsed.version !== "number" || !Array.isArray(parsed.alwaysOn) || !Array.isArray(parsed.items)) {
+      return undefined;
+    }
+
+    if (!parsed.alwaysOn.every((item) => typeof item === "string") || !parsed.items.every(isProfileManifestItem)) {
+      return undefined;
+    }
+
+    if (parsed.mode !== undefined && parsed.mode !== "strict" && parsed.mode !== "context") {
+      return undefined;
+    }
+
+    return parsed as ProfilesManifest;
+  } catch {
+    return undefined;
+  }
+}
+
+function isProfileManifestItem(value: unknown): value is ProfilesManifest["items"][number] {
+  return isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    Array.isArray(value.skills) &&
+    value.skills.every((skill) => typeof skill === "string");
+}
 function stripRetiredSkillManifestFields(item: SkillManifestItem): SkillManifestItem {
   const next = { ...item } as SkillManifestItem & { profiles?: unknown };
   delete next.profiles;

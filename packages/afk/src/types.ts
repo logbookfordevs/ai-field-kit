@@ -14,6 +14,7 @@ export type Area = "rules" | "skills" | "profiles" | "agents" | "mcps" | "plugin
 export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "all";
 export type SkillsListStorage = "active" | "disabled";
+export type SkillsListAutoInvocation = "enabled" | "disabled" | "mixed" | "default";
 export type SkillsUpgradeScope = "global" | "project" | "all";
 export type ManagedSkillAgent =
   | "codex"
@@ -32,7 +33,7 @@ export type ManagedSkillAgent =
   | "kiro"
   | "jules"
   | "openhands";
-export type SkillAgentFilter = ManagedSkillAgent | "shared";
+export type SkillAgentFilter = ManagedSkillAgent | "custom";
 export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
 export type SkillProfileMode = "strict" | "context";
@@ -75,11 +76,14 @@ export type CliOptions = {
   manifestConfigureFromCurrent: boolean;
   skillsListScope?: SkillsListScope;
   skillsListStorage?: SkillsListStorage | undefined;
+  skillsListAutoInvocation?: SkillsListAutoInvocation | undefined;
   skillsUpgradeAll?: boolean;
   skillsUpgradeScope?: SkillsUpgradeScope;
+  skillsUpgradeByProfile?: boolean;
   skillsDeleteCatalogOnly?: boolean;
   skillsDeleteByProfile?: boolean;
   skillsAgent?: SkillAgentFilter | undefined;
+  skillsAgentPath?: string | undefined;
   skillsJson?: boolean;
   skillsCategory?: string;
   skillsTag?: string;
@@ -93,7 +97,9 @@ export type CliOptions = {
   skillProfileSkills?: string[] | undefined;
   skillProfileAlwaysOn?: string[] | undefined;
   skillProfileMode?: SkillProfileMode | undefined;
+  skillProfileAdditive?: boolean;
   skillProfileOnly?: boolean;
+  skillProfileUseAll?: boolean;
   uiCategory?: string;
   manifestShowReact: boolean;
   manifestShowVisualize: boolean;

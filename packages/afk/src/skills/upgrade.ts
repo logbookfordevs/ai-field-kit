@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { quoteArg } from "../delegates.js";
 import type { Runtime } from "../types.js";
-import { renderSkillUpgradeRoute } from "./render.js";
+import { renderSkillUpgradeComplete, renderSkillUpgradeRoute } from "./render.js";
 
 export type SkillUpgradeScope = "global" | "project" | "all";
 
@@ -23,6 +23,7 @@ export type SkillUpgradeCommand = {
   args: string[];
   cwd: string;
   scope: LockedSkillScope;
+  skillNames: string[];
 };
 
 type LockEntry = {
@@ -87,11 +88,16 @@ export function buildSkillUpgradeCommands(options: {
       args,
       cwd: options.cwd,
       scope,
+      skillNames: options.skills,
     };
   });
 }
 
-export async function runSkillUpgradeCommands(runtime: Runtime, commands: SkillUpgradeCommand[]): Promise<number> {
+export async function runSkillUpgradeCommands(
+  runtime: Runtime,
+  commands: SkillUpgradeCommand[],
+  afterSuccess?: (command: SkillUpgradeCommand) => void,
+): Promise<number> {
   for (const command of commands) {
     runtime.io.stdout(renderSkillUpgradeRoute({
       label: command.label,
@@ -102,7 +108,13 @@ export async function runSkillUpgradeCommands(runtime: Runtime, commands: SkillU
     if (result.code !== 0) {
       return result.code;
     }
+    afterSuccess?.(command);
   }
+
+  runtime.io.stdout(renderSkillUpgradeComplete({
+    scopes: commands.map((command) => command.scope),
+    skillNames: commands.flatMap((command) => command.skillNames),
+  }));
 
   return 0;
 }

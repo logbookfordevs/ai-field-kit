@@ -26,6 +26,7 @@ export type LobbyChoiceValue =
 export type SkillsLobbyChoiceValue =
   | "skills-list"
   | "skills-show"
+  | "skills-get"
   | "skills-open"
   | "skills-add"
   | "skills-disable"
@@ -39,6 +40,7 @@ export type SkillsLobbyChoiceValue =
   | "skills-profile-status";
 
 export type SkillProfilesLobbyChoiceValue =
+  | "profiles-use"
   | "profiles-enable"
   | "profiles-disable"
   | "profiles-status"
@@ -168,6 +170,11 @@ export const skillsLobbyChoices: Array<{
     description: "Route: afk skills show",
   },
   {
+    name: "Get skill instructions",
+    value: "skills-get",
+    description: "Route: afk skills get",
+  },
+  {
     name: "Open a skill file or folder",
     value: "skills-open",
     description: "Route: afk skills open",
@@ -267,6 +274,11 @@ export const skillProfilesLobbyChoices: Array<{
   value: SkillProfilesLobbyChoiceValue;
   description: string;
 }> = [
+  {
+    name: "Use a profile for this request",
+    value: "profiles-use",
+    description: "Route: afk skills profiles use",
+  },
   {
     name: "Enable a profile",
     value: "profiles-enable",
@@ -505,6 +517,8 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue, addOpti
       return ["skills", "list"];
     case "skills-show":
       return ["skills", "show"];
+    case "skills-get":
+      return ["skills", "get"];
     case "skills-open":
       return ["skills", "open"];
     case "skills-add":
@@ -532,6 +546,8 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue, addOpti
 
 export function routeForSkillProfilesLobbyChoice(value: SkillProfilesLobbyChoiceValue): string[] {
   switch (value) {
+    case "profiles-use":
+      return ["skills", "profiles", "use"];
     case "profiles-enable":
       return ["skills", "profiles", "enable"];
     case "profiles-disable":

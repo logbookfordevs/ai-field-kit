@@ -27,6 +27,7 @@ import type {
   SkillCategorizationRunner,
   SkillOpenApp,
   SkillProfileMode,
+  SkillsListAutoInvocation,
   SkillsListScope,
   SkillsListStorage,
   SkillsUpgradeScope,
@@ -527,8 +528,9 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Inspect and manage local AFK skill libraries.",
     usage: "afk skills <command> [options]",
     options: [
-      "list                              List global and project skills",
+      "list                              List shared global skills or an explicit agent root",
       "show <folder>                     Show one skill",
+      "get <folder>                      Print one local skill as agent context",
       "open <folder>                     Open SKILL.md or the skill folder",
       "add <source> [flags...]           Delegate to skills add, then sync the AFK catalog",
       "disable <folder>                  Move a global skill into .disabled",
@@ -541,9 +543,9 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk skills list",
-      "afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes",
+      "afk skills add logbookfordevs/ai-field-kit --skill afk-compass --yes",
       "afk skills list --scope global --json",
-      "afk skills list --agent shared --disabled",
+      "afk skills list --disabled",
       "afk skills disable old-skill --dry-run",
       "afk skills invocation disable afk-doc-craft",
       "afk skills upgrade --all",
@@ -552,15 +554,16 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills add": {
     title: "AFK skills add",
-    summary: "Delegate to the official skills add command, then sync AFK's skills catalog.",
+    summary: "Install into the shared global library, optionally fan out to registered agents, then sync AFK's catalog.",
     usage: "afk skills add <source> [skills add flags...]",
     notes: [
-      "AFK forwards flags after <source> to the official skills CLI.",
+      "AFK always adds the shared global target before forwarding supported flags to the official skills CLI.",
       "After a successful install, AFK imports new shared skills into ~/.agents/afk/catalog/skills.json as imported and uncategorized.",
+      "Custom agent paths apply to AFK-owned inspection and mutation commands, not skills add.",
     ],
     options: [
       "--skill <skill>                   Forwarded to skills add",
-      "--global                          Forwarded to skills add",
+      "--global                          Accepted as an explicit form of AFK's default",
       "--yes, -y                         Forwarded to skills add",
       "--agent <agent>                   Forwarded to skills add when supported upstream",
       "--profile <profile>               AFK: add imported skills to a new or existing profile",
@@ -568,8 +571,8 @@ const commandHelps: Record<string, CommandHelp> = {
       "--start-disabled                  AFK: import new skills as disabled and move shared folders into .disabled",
     ],
     examples: [
-      "afk skills add logbookfordevs/ai-field-kit --skill afk-compass --global --yes",
-      "afk skills add https://github.com/mattpocock/skills --skill tdd --global",
+      "afk skills add logbookfordevs/ai-field-kit --skill afk-compass --yes",
+      "afk skills add https://github.com/mattpocock/skills --skill tdd --agent codex",
     ],
   },
   ui: {
@@ -623,13 +626,15 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills list": {
     title: "AFK skills list",
-    summary: "List shared, project, and agent-specific skill roots.",
+    summary: "List shared global skills by default or one explicit agent root.",
     usage: "afk skills list [options]",
     options: [
-      "--scope global|project|all        Choose which skill roots to list",
-      "--agent shared|<agent>            Limit shared, project, or agent roots",
+      "--scope global|project|all        Choose a preset agent scope; shared defaults to global",
+      "--agent <agent>|custom            Select one explicit agent root",
+      "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only",
       "--disabled                        Show disabled skills only",
+      "--auto-invocation <state>         Filter by enabled, disabled, mixed, or default",
       "--category <id-or-label>          Filter by AFK category",
       "--tag <tag>                       Filter by AFK tag",
       "--uncategorized                   Show records without an AFK category",
@@ -638,11 +643,12 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk skills list",
       "afk skills list --scope global",
-      "afk skills list --agent shared --enabled",
-      "afk skills list --agent shared",
-      "afk skills list --agent shared --disabled",
+      "afk skills list --enabled",
+      "afk skills list --disabled",
+      "afk skills list --auto-invocation disabled",
       "afk skills list --scope global --agent codex",
       "afk skills list --scope project --agent codex",
+      "afk skills list --agent custom --agent-path ~/.my-agent/skills",
     ],
   },
   "skills show": {
@@ -650,7 +656,9 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Show details for one discovered skill.",
     usage: "afk skills show <folder> [options]",
     options: [
-      "--agent shared|<agent>            Limit lookup to shared or agent roots",
+      "--scope global|project|all        Choose the preset agent scope",
+      "--agent <agent>|custom            Select one explicit agent root",
+      "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only",
       "--disabled                        Show disabled skills only",
       "--json                            Print JSON record",
@@ -658,6 +666,20 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk skills show afk-note",
       "afk skills show afk-note --json",
+    ],
+  },
+  "skills get": {
+    title: "AFK skills get",
+    summary: "Print one local skill as agent context, including disabled skills.",
+    usage: "afk skills get <folder> [options]",
+    options: [
+      "--scope global|project|all        Choose which skill roots to search",
+      "--agent <agent>|custom            Select one explicit agent root",
+      "--agent-path <folder>             Required with --agent custom",
+    ],
+    examples: [
+      "afk skills get motion-graphics",
+      "afk skills get afk-note --agent custom --agent-path ~/.my-agent/skills",
     ],
   },
   "skills open": {
@@ -668,7 +690,9 @@ const commandHelps: Record<string, CommandHelp> = {
       "--file                            Open SKILL.md (default)",
       "--folder                          Open the skill folder",
       "--app finder|code|cursor|zed|agy  Choose the app command",
-      "--agent shared|<agent>            Limit lookup to shared or agent roots",
+      "--scope global|project|all        Choose the preset agent scope",
+      "--agent <agent>|custom            Select one explicit agent root",
+      "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only",
       "--disabled                        Show disabled skills only",
     ],
@@ -683,7 +707,8 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills disable <folder> [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
-      "--agent shared|<agent>            Target shared or one agent-specific root",
+      "--agent <agent>|custom            Target one explicit agent root",
+      "--agent-path <folder>             Required with --agent custom",
       "--dry-run                         Preview the move without applying it",
     ],
     examples: [
@@ -699,7 +724,8 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills enable <folder> [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
-      "--agent shared|<agent>            Target shared or one agent-specific root",
+      "--agent <agent>|custom            Target one explicit agent root",
+      "--agent-path <folder>             Required with --agent custom",
       "--dry-run                         Preview the move without applying it",
     ],
     examples: [
@@ -715,7 +741,8 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills invocation [disable|enable] [folder] [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
-      "--agent shared|<agent>            Target shared or one agent-specific root",
+      "--agent <agent>|custom            Target one explicit agent root",
+      "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only",
       "--disabled                        Show disabled skills only",
       "--dry-run                         Preview metadata writes without applying them",
@@ -733,7 +760,8 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk skills delete [folder] [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
-      "--agent shared|<agent>            Target shared or one agent-specific root",
+      "--agent <agent>|custom            Target one explicit agent root",
+      "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only",
       "--disabled                        Show disabled skills only",
       "--dry-run                         Preview the delete without applying it",
@@ -759,11 +787,14 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--scope global|project|all        Choose tracked skills to upgrade (default: global)",
       "--all                             Upgrade every tracked skill in the selected scope",
+      "--profile                         Choose a global profile and upgrade its tracked skills",
       "--yes, -y                         Forward non-interactive confirmation to skills update",
     ],
     examples: [
       "afk skills upgrade",
       "afk skills upgrade --all",
+      "afk skills upgrade --profile",
+      "afk skills upgrade video --profile",
       "afk skills upgrade --scope project",
       "afk skills upgrade frontend-design web-design-guidelines",
     ],
@@ -791,14 +822,20 @@ const commandHelps: Record<string, CommandHelp> = {
       "Use afk catalog profiles to manage profile definitions.",
     ],
     options: [
+      "use <profile>                     Print the profile skill list as agent context",
       "enable <profile>                  Enable a profile and apply filtering",
       "disable <profile>                 Disable a profile and restore eligible skills",
       "status                            Show enabled profiles and state",
+      "--all                             Include every profile skill's full content with use",
+      "--additive                        Enable profile skills without filtering unrelated active skills",
       "--local                           Use ./afk/catalog and ./afk/state for profile runtime data",
       "--dry-run                         Preview filesystem-changing operations",
     ],
     examples: [
+      "afk skills profiles use video",
+      "afk skills profiles use video --all",
       "afk skills profiles enable video --dry-run",
+      "afk skills profiles enable video --additive",
       "afk skills profiles status --local",
       "afk catalog profiles create video --name Video --skill hyperframes --skill tailwind",
     ],
@@ -1126,13 +1163,16 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let manifestLocal = false;
   let manifestConfigureLocal = false;
   let manifestConfigureFromCurrent = false;
-  let skillsListScope: SkillsListScope = "all";
+  let skillsListScope: SkillsListScope = "global";
   let skillsListStorage: SkillsListStorage | undefined;
+  let skillsListAutoInvocation: SkillsListAutoInvocation | undefined;
   let skillsUpgradeScope: SkillsUpgradeScope = "global";
   let skillsUpgradeAll = false;
+  let skillsUpgradeByProfile = false;
   let skillsDeleteCatalogOnly = false;
   let skillsDeleteByProfile = false;
   let skillsAgent: SkillAgentFilter | undefined;
+  let skillsAgentPath: string | undefined;
   let skillsJson = false;
   let skillsCategory = "";
   let skillsTag = "";
@@ -1146,7 +1186,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const skillProfileSkills: string[] = [];
   const skillProfileAlwaysOn: string[] = [];
   let skillProfileMode: SkillProfileMode | undefined;
+  let skillProfileAdditive = false;
   let skillProfileOnly = false;
+  let skillProfileUseAll = false;
   let uiCategory = "";
   let manifestShowReact = false;
   let manifestShowVisualize = false;
@@ -1290,6 +1332,10 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
           continue;
         }
 
+        if (!isSkillRootCommand(commandPath)) {
+          return { help: false, kind: "error", error: "Unknown option: --scope" };
+        }
+
         if (value !== "global" && value !== "project" && value !== "all") {
           return { help: false, kind: "error", error: `Invalid --scope value: ${value ?? "(missing)"}` };
         }
@@ -1309,11 +1355,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (isAfkSkillsCommand && arg === "--all") {
-      if (commandPath[1] !== "upgrade") {
-        return { help: false, kind: "error", error: "Unknown option: --all" };
+      if (commandPath[1] === "upgrade") {
+        skillsUpgradeAll = true;
+        continue;
       }
-      skillsUpgradeAll = true;
-      continue;
+      if (commandPath[1] === "profiles" && commandPath[2] === "use") {
+        skillProfileUseAll = true;
+        continue;
+      }
+      return { help: false, kind: "error", error: "Unknown option: --all" };
     }
 
     if (arg === "--all") {
@@ -1350,6 +1400,10 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (isAfkSkillsCommand && arg === "--profile") {
+      if (commandPath[1] === "upgrade") {
+        skillsUpgradeByProfile = true;
+        continue;
+      }
       if (commandPath[1] !== "delete") {
         return { help: false, kind: "error", error: "Unknown option: --profile" };
       }
@@ -1463,6 +1517,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
       const value = args[index + 1];
       if (isAfkSkillsCommand) {
+        if (!isSkillRootCommand(commandPath)) {
+          return { help: false, kind: "error", error: "Unknown option: --agent" };
+        }
         if (!value || !isSkillAgentFilter(value)) {
           return { help: false, kind: "error", error: `Invalid --agent value: ${value ?? "(missing)"}` };
         }
@@ -1480,12 +1537,40 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (isAfkSkillsCommand && arg === "--agent-path") {
+      if (!isSkillRootCommand(commandPath)) {
+        return { help: false, kind: "error", error: "Unknown option: --agent-path" };
+      }
+      const value = args[index + 1]?.trim();
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --agent-path value" };
+      }
+      skillsAgentPath = resolveAgentPath(value, homeDir, cwd);
+      index += 1;
+      continue;
+    }
+
     if (isAfkSkillsCommand && arg === "--category") {
       const value = args[index + 1];
       if (!value) {
         return { help: false, kind: "error", error: "Missing --category value" };
       }
       skillsCategory = value;
+      index += 1;
+      continue;
+    }
+
+    if (isAfkSkillsCommand && arg === "--auto-invocation") {
+      if (commandPath[1] !== "list") {
+        return { help: false, kind: "error", error: "Unknown option: --auto-invocation" };
+      }
+
+      const value = args[index + 1];
+      if (value !== "enabled" && value !== "disabled" && value !== "mixed" && value !== "default") {
+        return { help: false, kind: "error", error: `Invalid --auto-invocation value: ${value ?? "(missing)"}` };
+      }
+
+      skillsListAutoInvocation = value;
       index += 1;
       continue;
     }
@@ -1581,6 +1666,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (isAfkSkillsProfilesCommand && arg === "--additive") {
+      if (commandPath[2] !== "enable") {
+        return { help: false, kind: "error", error: "--additive is only available for afk skills profiles enable" };
+      }
+      skillProfileAdditive = true;
+      continue;
+    }
+
     if (isAfkSkillsCommand && arg === "--runner") {
       const value = args[index + 1];
       if (value !== "codex-exec") {
@@ -1634,6 +1727,21 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     return { help: false, kind: "error", error: `Unknown option: ${arg}` };
   }
 
+  if (isAfkSkillsCommand && !isAfkSkillsAddCommand) {
+    if (skillsAgent === "custom" && !skillsAgentPath) {
+      return { help: false, kind: "error", error: "--agent custom requires --agent-path <folder>" };
+    }
+    if (skillsAgent !== "custom" && skillsAgentPath) {
+      return { help: false, kind: "error", error: "--agent-path requires --agent custom" };
+    }
+    if (skillsAgent === "custom" && scopeExplicit) {
+      return { help: false, kind: "error", error: "Do not combine --scope with --agent custom; --agent-path already selects the root" };
+    }
+    if (!skillsAgent && scopeExplicit && skillsListScope !== "global" && commandPath[1] !== "upgrade") {
+      return { help: false, kind: "error", error: `--scope ${skillsListScope} requires --agent <agent>` };
+    }
+  }
+
   return {
     help: false,
     kind: "command",
@@ -1670,11 +1778,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       manifestConfigureFromCurrent,
       skillsListScope,
       skillsListStorage,
+      skillsListAutoInvocation,
       skillsUpgradeAll,
       skillsUpgradeScope,
+      skillsUpgradeByProfile,
       skillsDeleteCatalogOnly,
       skillsDeleteByProfile,
       skillsAgent,
+      skillsAgentPath,
       skillsJson,
       skillsCategory,
       skillsTag,
@@ -1688,7 +1799,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillProfileSkills,
       skillProfileAlwaysOn,
       skillProfileMode,
+      skillProfileAdditive,
       skillProfileOnly,
+      skillProfileUseAll,
       uiCategory,
       manifestShowReact,
       manifestShowVisualize,
@@ -1948,6 +2061,29 @@ function canonicalShowHelpPath(commandPath: string[]): string[] {
 
 function isSkillAgentId(value: string): value is SkillAgentId {
   return value === "claude-code" || value === "kiro-cli" || value === "kilo" || value === "pi" || value === "droid";
+}
+
+function isSkillRootCommand(commandPath: string[]): boolean {
+  return commandPath[0] === "skills" && [
+    "list",
+    "show",
+    "get",
+    "open",
+    "disable",
+    "enable",
+    "invocation",
+    "delete",
+  ].includes(commandPath[1] ?? "");
+}
+
+function resolveAgentPath(value: string, homeDir: string, cwd: string): string {
+  if (value === "~") {
+    return homeDir;
+  }
+  if (value.startsWith("~/")) {
+    return resolve(homeDir, value.slice(2));
+  }
+  return resolve(cwd, value);
 }
 
 function readOptionValues(args: string[], startIndex: number): string[] {

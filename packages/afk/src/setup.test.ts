@@ -367,6 +367,66 @@ test("runArea skills preserves manually disabled skills after upstream reinstall
   assert.match(readFileSync(join(disabledDir, "SKILL.md"), "utf8"), /Fresh Quiet/);
 });
 
+test("runArea skills reconciles newly installed skills against an enabled focus profile", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{
+        id: "new-skill",
+        label: "New Skill",
+        source: "example/skills",
+        args: ["--skill", "new-skill"],
+        default: true,
+      }],
+    },
+    "profiles.json": {
+      version: 1,
+      mode: "strict",
+      alwaysOn: [],
+      items: [{ id: "video", name: "Video", skills: ["video-skill"] }],
+    },
+  });
+  const stateDir = join(homeDir, ".agents", "afk", "state");
+  mkdirSync(stateDir, { recursive: true });
+  writeFileSync(join(stateDir, "skill-profiles.json"), `${JSON.stringify({
+    version: 2,
+    activations: [{ profileId: "video", mode: "focus" }],
+    profileMovedSkills: [],
+    preExistingDisabledSkills: [],
+  }, null, 2)}\n`);
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      const activeDir = join(homeDir, ".agents", "skills", "new-skill");
+      mkdirSync(activeDir, { recursive: true });
+      writeFileSync(join(activeDir, "SKILL.md"), "---\nname: new-skill\n---\n\n# New Skill\n");
+      return { code: 0 };
+    },
+  };
+
+  const code = await runArea("skills", runtime, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    setupManifestsPrepared: true,
+    yes: true,
+    defaultsSource: "local",
+    defaultsSourceExplicit: true,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "new-skill")), false);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "new-skill")), true);
+  const state = JSON.parse(readFileSync(join(stateDir, "skill-profiles.json"), "utf8")) as { profileMovedSkills: string[] };
+  assert.deepEqual(state.profileMovedSkills, ["new-skill"]);
+  assert.ok(output.join("\n").includes("Focus profile storage reconciled: disabled new-skill."));
+});
+
 test("runSetup skips the source prompt when a default source is saved", async () => {
   const homeDir = localHomeWithManifests({
     "presets.json": { version: 1, defaultsSource: "acme/saved-kit", presets: [] },

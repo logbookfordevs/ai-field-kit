@@ -185,11 +185,13 @@ test("skills lobby labels include catalog and profile management", () => {
   const descriptions = skillsLobbyChoices.map((choice) => choice.description ?? "");
 
   assert.ok(labels.includes("Add a skill"));
+  assert.ok(labels.includes("Get skill instructions"));
   assert.ok(labels.includes("Change invocation policy"));
   assert.ok(labels.includes("Import installed skills into the catalog"));
   assert.ok(labels.includes("Manage skill profiles"));
   assert.ok(labels.includes("Show profile status"));
   assert.ok(descriptions.some((description) => description.includes("afk skills add")));
+  assert.ok(descriptions.some((description) => description.includes("afk skills get")));
   assert.ok(descriptions.some((description) => description.includes("afk skills invocation")));
   assert.ok(descriptions.some((description) => description.includes("Open profile list")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog skills import")));
@@ -199,10 +201,12 @@ test("skill profiles lobby labels include profile actions", () => {
   const labels = skillProfilesLobbyChoices.map((choice) => choice.name);
   const descriptions = skillProfilesLobbyChoices.map((choice) => choice.description ?? "");
 
+  assert.ok(labels.includes("Use a profile for this request"));
   assert.ok(labels.includes("Enable a profile"));
   assert.ok(labels.includes("Disable a profile"));
   assert.ok(labels.includes("Show profile status"));
   assert.ok(labels.includes("Manage profile definitions"));
+  assert.ok(descriptions.some((description) => description.includes("afk skills profiles use")));
   assert.ok(descriptions.some((description) => description.includes("afk skills profiles enable")));
   assert.ok(descriptions.some((description) => description.includes("afk skills profiles status")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog profiles")));

@@ -30,7 +30,7 @@ Implemented in `packages/afk/src/skills/`:
 - `afk skills upgrade`
 - `afk skills categorize`
 
-The implementation intentionally uses `~/.agents/afk/catalog/skills.json` as the single source for setup metadata and AFK-owned categorization enrichment. Mutations now cover the shared global library by default and agent-specific roots when `--agent` selects one.
+The implementation intentionally uses `~/.agents/afk/catalog/skills.json` as the single source for setup metadata and AFK-owned categorization enrichment. Inspection and mutations cover only the shared global library by default. Preset roots require `--agent <agent>`, while literal roots require `--agent custom --agent-path <folder>`.
 Skill rename is intentionally not exposed until AFK can support a real managed customization flow that updates agent-visible metadata without breaking upstream upgrade identity.
 
 ## AppKit Features Already Covered
@@ -88,13 +88,13 @@ AppKit has install-state modeling for:
 - selected agents and extra agent IDs
 - generated `npx --yes skills add ...` arguments
 
-AFK currently keeps install behavior in `afk setup skills install`, but it does not provide the AppKit-style ad-hoc source flow under `afk skills`.
+AFK exposes the ad-hoc source flow through `afk skills add`, always installing the shared global target first and treating registered `--agent` values as additional upstream fanout targets.
 
 Recommended CLI shape:
 
 ```bash
 afk skills add <source> [--list]
-afk skills add <source> [--skill <name>] [--global|--project] [--agent <id>...] [--yes]
+afk skills add <source> [--skill <name>] [--agent <id>...] [--yes]
 ```
 
 This should still delegate to the official `skills` CLI. AFK should be the ergonomic wrapper, not the installer owner.

@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sectionTitle, muted } from "./brand.js";
 import { loadDefaultManifestContent, localManifestDir, readRememberedDefaultsSource, type ManifestName } from "./manifest.js";
-import { skillProfileStatus, type SkillProfileApplyResult } from "./skills/profiles.js";
+import { enabledSkillProfileIds, skillProfileStatus, type SkillProfileApplyResult } from "./skills/profiles.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, ManifestCategory, Runtime } from "./types.js";
 
@@ -570,9 +570,9 @@ function renderProfilesSectionHtml(profiles: VisualizationProfiles | null, items
     return `<div class="profile-empty">Could not load profiles: ${escapeHtml(profiles.error)}</div>`;
   }
 
-  const enabled = new Set(profiles.state.enabledProfileIds);
+  const activations = new Map(profiles.state.activations.map((activation) => [activation.profileId, activation.mode]));
   const itemIds = new Set(items.map((item) => stringValue(item.id, "unnamed")));
-  const cards = profiles.catalog.items.map((profile) => renderProfileCardHtml(profile, enabled.has(profile.id), itemIds));
+  const cards = profiles.catalog.items.map((profile) => renderProfileCardHtml(profile, activations.get(profile.id), itemIds));
   const alwaysOn = profiles.catalog.alwaysOn.length > 0 ? renderAlwaysOnProfileCardHtml(profiles.catalog.alwaysOn, itemIds) : "";
 
   if (cards.length === 0 && !alwaysOn) {
@@ -587,16 +587,21 @@ function renderProfilesSectionHtml(profiles: VisualizationProfiles | null, items
     alwaysOn,
     ...cards,
     `</div>`,
-    `<div class="profile-empty">${escapeHtml(profiles.catalog.items.length.toString())} profiles · ${escapeHtml(enabled.size.toString())} enabled · ${escapeHtml(profiles.catalog.alwaysOn.length.toString())} always-on · ${escapeHtml(profiles.paths.catalogPath)}</div>`,
+    `<div class="profile-empty">${escapeHtml(profiles.catalog.items.length.toString())} profiles · ${escapeHtml(activations.size.toString())} enabled · ${escapeHtml(profiles.catalog.alwaysOn.length.toString())} always-on · ${escapeHtml(profiles.paths.catalogPath)}</div>`,
   ].join("");
 }
 
-function renderProfileCardHtml(profile: { id: string; name: string; skills: string[] }, enabled: boolean, itemIds: Set<string>): string {
+function renderProfileCardHtml(
+  profile: { id: string; name: string; skills: string[] },
+  activationMode: "focus" | "additive" | undefined,
+  itemIds: Set<string>,
+): string {
   const missing = profile.skills.filter((skill) => !itemIds.has(skill));
   const skills = profile.skills.length > 0
     ? profile.skills.map((skill) => renderProfileSkillPill(skill, itemIds.has(skill))).join("")
     : `<span class="profile-skill missing">empty</span>`;
-  return `<article class="profile-card${enabled ? " enabled" : ""}"><b>${escapeHtml(profile.name)}</b><span class="profile-meta">${escapeHtml(profile.id)} · ${enabled ? "enabled" : "disabled"} · ${profile.skills.length} skill${profile.skills.length === 1 ? "" : "s"}${missing.length > 0 ? ` · ${missing.length} missing` : ""}</span><div class="profile-skills">${skills}</div></article>`;
+  const status = activationMode ? `enabled ${activationMode}` : "disabled";
+  return `<article class="profile-card${activationMode ? " enabled" : ""}"><b>${escapeHtml(profile.name)}</b><span class="profile-meta">${escapeHtml(profile.id)} · ${status} · ${profile.skills.length} skill${profile.skills.length === 1 ? "" : "s"}${missing.length > 0 ? ` · ${missing.length} missing` : ""}</span><div class="profile-skills">${skills}</div></article>`;
 }
 
 function renderAlwaysOnProfileCardHtml(skills: string[], itemIds: Set<string>): string {
@@ -626,7 +631,7 @@ function profileVisualizationSummary(profiles: VisualizationProfiles | null, ite
   const profileSkills = profiles.catalog.items.flatMap((profile) => profile.skills);
   return {
     profileCount: profiles.catalog.items.length,
-    enabledCount: profiles.state.enabledProfileIds.length,
+    enabledCount: enabledSkillProfileIds(profiles.state).length,
     alwaysOnCount: profiles.catalog.alwaysOn.length,
     missingSkillCount: [...new Set([...profileSkills, ...profiles.catalog.alwaysOn])].filter((skill) => !itemIds.has(skill)).length,
   };
@@ -653,7 +658,7 @@ function renderProfilesReactPlain(profiles: VisualizationProfiles | null, byId: 
 
   const indent = "  ".repeat(indentLevel);
   const childIndent = "  ".repeat(indentLevel + 1);
-  const enabled = new Set(profiles.state.enabledProfileIds);
+  const activations = new Map(profiles.state.activations.map((activation) => [activation.profileId, activation.mode]));
   return [
     `${indent}<FocusProfiles>`,
     ...(profiles.catalog.alwaysOn.length > 0
@@ -664,7 +669,7 @@ function renderProfilesReactPlain(profiles: VisualizationProfiles | null, byId: 
         ]
       : []),
     ...profiles.catalog.items.flatMap((profile) => [
-      `${childIndent}<SkillProfile id="${escapeJsxAttribute(profile.id)}"${enabled.has(profile.id) ? " enabled" : ""}>`,
+      `${childIndent}<SkillProfile id="${escapeJsxAttribute(profile.id)}"${activations.has(profile.id) ? ` enabled activation="${activations.get(profile.id)}"` : ""}>`,
       ...profile.skills.map((skill) => renderSkillReferencePlain(skill, byId, indentLevel + 2)),
       `${childIndent}</SkillProfile>`,
     ]),

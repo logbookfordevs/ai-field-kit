@@ -14,14 +14,33 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `cli:` added portable Custom Agents as a first-class `agents.json` catalog area, with refresh merging, show/catalog menus, interactive and scripted setup, and AFK-owned adapters for Codex, Claude Code, and Pi through `pi-subagents`; the portable contract preserves per-harness model and effort pins plus Codex display nicknames.
+
+### Fixed
+
+- `install:` resolved the latest AFK release through GitHub's release redirect instead of the rate-limited unauthenticated REST API.
+
+## v1.2.0 - 2026-07-20
+
+### Added
+
+- `cli:` added global `afk skills upgrade --profile` selection for upgrading every tracked skill in a chosen profile without changing profile membership or activation.
+- `cli:` added `afk skills get <skill>` for printing local skill instructions and `afk skills profiles use <profile>` for on-demand profile context, with `--all` to include every profile skill in full.
+- `cli:` added `afk skills profiles enable <profile> --additive` to activate a profile on demand without filtering unrelated active skills, with activation-aware restoration when the profile is disabled.
 - `cli:` added `afk skills delete --profile` to delete installed skills referenced by a selected profile, with an extra warning that those skills may be shared by other profiles.
+- `skills:` added the manual-only `afk-profile-use` router for loading local profile members into the current request through the AFK CLI.
 - `skills:` added Matt Pocock's `wayfinder` workflow to the bundled catalog as an optional shared skill.
 
 ### Changed
 
+- `cli:` made the shared global skills library the default across `afk skills`, with explicit preset-agent targeting, literal custom roots through `--agent custom --agent-path <folder>`, and shared-first installs before optional agent fanout.
+- `cli:` made catalog refresh preserve local profile definitions absent from the refreshed source while source definitions and top-level profile policy remain authoritative.
+- `cli:` made global skill setup reconcile newly installed skills against enabled focus profiles according to strict or context policy, while additive-only profiles continue to preserve unrelated active skills.
+- `cli:` made skill upgrades restore pre-upgrade disabled storage after the upstream content reinstall completes.
+- `cli:` made `afk skills add` offer preflight import only for existing installs tracked by the skills CLI, ignore plugin- or CLI-owned skills without lock metadata, treat source-cataloged first installs as new, apply add-time flags only to genuinely new skills, and refresh existing content without changing storage or profile membership.
 - `cli:` made skill setup consider source-owned catalog entries by default, with `afk setup --all` and `afk setup skills --all` including imported entries; interactive runs now show the expanded list for review, while `--yes --all` installs every listed skill.
 - `cli:` renamed the `afk skills delete --manifest-only` filter to `--catalog-only` so the flag matches its `skills.json` catalog behavior.
 - `skills:` made `afk-doc-craft` manually invoked by default, so documentation craft runs only when explicitly selected instead of sitting in automatic discovery.
+- `skills:` made Matt Pocock's optional `research` skill auto-invoked when installed.
 - `skills:` replaced `afk-interactive-code-review` with `afk-code-review`, an AFK-compatible fork of Matt Pocock's two-axis Standards/Spec review workflow.
 - `skills:` renamed `afk-to-tasks` to `afk-to-tickets` so AFK's fork keeps the same public shape as Matt Pocock's `to-tickets` skill.
 - `skills:` updated `afk-to-tickets` with fresh-context sizing and expand-contract guidance for wide refactors.

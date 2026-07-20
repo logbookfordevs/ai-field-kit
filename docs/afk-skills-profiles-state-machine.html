@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AFK Skills &amp; Profiles — Interactive State Machine</title>
+<script>
+  (() => {
+    const saved = localStorage.getItem("afk-state-machine-theme");
+    const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.classList.toggle("dark", dark);
+  })();
+</script>
+<style>
+  :root {
+    --bg: #f4f0e7;
+    --surface: #fffdf8;
+    --surface-2: #eae4d7;
+    --surface-glass: rgba(255, 253, 248, 0.92);
+    --ink: #1d1b20;
+    --body: #4c4850;
+    --muted: #7c7780;
+    --line: #cfc7b8;
+    --line-soft: #e4ddcf;
+    --grid: rgba(84, 77, 88, 0.07);
+    --plum: #6e4f75;
+    --plum-soft: rgba(110, 79, 117, 0.12);
+    --plum-node: #f2ebf3;
+    --coral: #c8664d;
+    --coral-soft: rgba(200, 102, 77, 0.12);
+    --coral-node: #f7e9e4;
+    --teal: #397d78;
+    --teal-soft: rgba(57, 125, 120, 0.12);
+    --teal-node: #e6f0ed;
+    --gold: #aa7d2d;
+    --gold-soft: rgba(170, 125, 45, 0.13);
+    --gold-node: #f4ecdc;
+    --blue: #4f7198;
+    --blue-soft: rgba(79, 113, 152, 0.12);
+    --blue-node: #e7edf3;
+    --green: #66824b;
+    --green-soft: rgba(102, 130, 75, 0.12);
+    --green-node: #ebf0e4;
+    --red: #a94d4d;
+    --red-soft: rgba(169, 77, 77, 0.11);
+    --red-node: #f4e6e6;
+    --edge-opacity: .42;
+    --shadow: 0 14px 42px rgba(50, 42, 31, 0.14);
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+
+  html.dark {
+    --bg: #151417;
+    --surface: #211f23;
+    --surface-2: #2c2930;
+    --surface-glass: rgba(33, 31, 35, 0.94);
+    --ink: #f7f2e8;
+    --body: #d6d0d8;
+    --muted: #99929d;
+    --line: #4b4650;
+    --line-soft: #343138;
+    --grid: rgba(233, 226, 238, 0.055);
+    --plum: #b891c0;
+    --plum-soft: rgba(184, 145, 192, 0.15);
+    --plum-node: #302737;
+    --coral: #e4866d;
+    --coral-soft: rgba(228, 134, 109, 0.15);
+    --coral-node: #392724;
+    --teal: #72b4ad;
+    --teal-soft: rgba(114, 180, 173, 0.14);
+    --teal-node: #203330;
+    --gold: #d7ad5d;
+    --gold-soft: rgba(215, 173, 93, 0.15);
+    --gold-node: #352f22;
+    --blue: #85a7d0;
+    --blue-soft: rgba(133, 167, 208, 0.14);
+    --blue-node: #24303c;
+    --green: #9fbb7c;
+    --green-soft: rgba(159, 187, 124, 0.14);
+    --green-node: #293223;
+    --red: #dd8585;
+    --red-soft: rgba(221, 133, 133, 0.13);
+    --red-node: #382426;
+    --edge-opacity: .34;
+    --shadow: 0 16px 48px rgba(0, 0, 0, 0.34);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--body);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font: inherit; }
+  button { color: inherit; }
+
+  .app { height: 100%; display: flex; flex-direction: column; }
+  .topbar {
+    flex: none;
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px 12px 20px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--surface-glass);
+    backdrop-filter: blur(16px);
+    position: relative;
+    z-index: 20;
+  }
+  .brand { min-width: 250px; }
+  .brand h1 {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 520;
+    letter-spacing: -0.02em;
+  }
+  .brand p {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .toolbar { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .toolbar.grow { flex: 1; }
+  .segmented {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+  .segmented button,
+  .tool,
+  .flow-chip {
+    appearance: none;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 7px;
+    padding: 6px 9px;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.03em;
+    transition: color 140ms ease, background 140ms ease, border-color 140ms ease, transform 140ms ease;
+  }
+  .segmented button:hover,
+  .tool:hover,
+  .flow-chip:hover { color: var(--ink); border-color: var(--line); }
+  .segmented button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .tool { border-color: var(--line); background: var(--surface); white-space: nowrap; }
+  .tool:active, .flow-chip:active { transform: translateY(1px); }
+  .search {
+    width: min(260px, 22vw);
+    min-width: 150px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    padding: 7px 10px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    outline: none;
+  }
+  .search:focus { border-color: var(--plum); box-shadow: 0 0 0 3px var(--plum-soft); }
+  .zoom-readout { min-width: 46px; text-align: center; }
+
+  .subbar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 43px;
+    padding: 7px 16px 7px 20px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg);
+    overflow-x: auto;
+    scrollbar-width: thin;
+    position: relative;
+    z-index: 19;
+  }
+  .subbar .label {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-right: 3px;
+    white-space: nowrap;
+  }
+  .flow-chip { border-color: var(--line); background: var(--surface); white-space: nowrap; }
+  .flow-chip.on { border-color: var(--coral); color: var(--coral); background: var(--coral-soft); }
+  .catalog-filters { display: none; }
+  body.catalog-view .machine-flows { display: none; }
+  body.catalog-view .catalog-filters { display: flex; }
+
+  .stage { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+  .stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+  #diagram {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+  #diagram.grabbing { cursor: grabbing; }
+  #machine-view[hidden], #catalog-view[hidden] { display: none; }
+
+  .zone > rect {
+    fill: var(--surface);
+    fill-opacity: .54;
+    stroke: var(--line);
+    stroke-width: 1.2;
+    stroke-dasharray: 5 7;
+    rx: 18;
+  }
+  .zone-title,
+  .zone-kicker,
+  .zone-note {
+    paint-order: stroke fill;
+    stroke: var(--surface);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+  }
+  .zone-title { fill: var(--ink); font-family: var(--serif); font-size: 22px; }
+  .zone-kicker { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+  .zone-note { fill: var(--muted); font-family: var(--sans); font-size: 11px; }
+
+  .node { cursor: pointer; transition: opacity 180ms ease; }
+  .node > rect,
+  .node > path.node-shape,
+  .node > circle.node-shape {
+    fill: var(--surface);
+    stroke: var(--line);
+    stroke-width: 1.4;
+    transition: stroke 150ms ease, fill 150ms ease, filter 150ms ease;
+  }
+  .node:hover > rect,
+  .node:hover > path.node-shape,
+  .node:hover > circle.node-shape { stroke: var(--plum); filter: drop-shadow(0 5px 7px rgba(0,0,0,.10)); }
+  .node.selected > rect,
+  .node.selected > path.node-shape,
+  .node.selected > circle.node-shape { stroke: var(--coral); stroke-width: 2.6; }
+  .node .title { fill: var(--ink); font-family: var(--sans); font-size: 14px; font-weight: 650; pointer-events: none; }
+  .node .mono { fill: var(--muted); font-family: var(--mono); font-size: 10px; pointer-events: none; }
+  .node .micro { fill: var(--muted); font-family: var(--mono); font-size: 8.7px; pointer-events: none; letter-spacing: .02em; }
+  .node .eyebrow { fill: var(--plum); font-family: var(--mono); font-size: 8px; letter-spacing: .1em; text-transform: uppercase; pointer-events: none; }
+  .node.command > rect { fill: var(--blue-node); stroke: var(--blue); }
+  .node.catalog > rect { fill: var(--gold-node); stroke: var(--gold); }
+  .node.profile > rect { fill: var(--plum-node); stroke: var(--plum); }
+  .node.storage > rect { fill: var(--teal-node); stroke: var(--teal); }
+  .node.engine > rect,
+  .node.engine > path.node-shape { fill: var(--coral-node); stroke: var(--coral); }
+  .node.heal > rect { fill: var(--green-node); stroke: var(--green); }
+  .node.danger > rect { fill: var(--red-node); stroke: var(--red); }
+  .node.readonly > rect { stroke-dasharray: 5 4; }
+  .node.dim { opacity: 1; }
+  .node.dim > rect,
+  .node.dim > path.node-shape,
+  .node.dim > circle.node-shape { fill: var(--surface); stroke: var(--line-soft); }
+  .node.dim text { opacity: .16; }
+  .node.match > rect { stroke: var(--coral); stroke-width: 2.3; }
+
+  .edge {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1.35;
+    stroke-linecap: round;
+    opacity: var(--edge-opacity);
+    marker-end: url(#arrow-muted);
+    pointer-events: none;
+    transition: opacity 180ms ease, stroke 180ms ease;
+  }
+  .edge.dashed { stroke-dasharray: 6 6; }
+  .edge.heal-edge { stroke: var(--green); marker-end: url(#arrow-green); stroke-dasharray: 4 6; }
+  .edge.danger-edge { stroke: var(--red); marker-end: url(#arrow-red); }
+  .edge-label { fill: var(--muted); font-family: var(--mono); font-size: 9px; pointer-events: none; transition: opacity 180ms ease; }
+  .stage.flowing .edge { opacity: .08; }
+  .stage.flowing .edge-label { opacity: .08; }
+  .stage.flowing .node { opacity: 1; }
+  .stage.flowing .node:not(.lit) > rect,
+  .stage.flowing .node:not(.lit) > path.node-shape,
+  .stage.flowing .node:not(.lit) > circle.node-shape { fill: var(--surface); stroke: var(--line-soft); }
+  .stage.flowing .node:not(.lit) text { opacity: .18; }
+  .stage.flowing .zone { opacity: .35; }
+  .stage.flowing #machine-zone-labels { opacity: .35; }
+  .stage.flowing .node.lit { opacity: 1; }
+  .stage.flowing .node.lit > rect,
+  .stage.flowing .node.lit > path.node-shape { stroke: var(--coral); stroke-width: 2.2; }
+  .stage.flowing .edge.lit {
+    opacity: 1;
+    stroke: var(--coral);
+    stroke-width: 2.5;
+    marker-end: url(#arrow-coral);
+    stroke-dasharray: 8 6;
+    animation: march 800ms linear infinite;
+  }
+  .stage.flowing .edge-label.lit { opacity: 1; fill: var(--coral); }
+  @keyframes march { to { stroke-dashoffset: -14; } }
+
+  .machine-heading { fill: var(--ink); font-family: var(--serif); font-size: 34px; letter-spacing: -.02em; }
+  .machine-sub { fill: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: .06em; }
+  .equation { fill: var(--surface); stroke: var(--plum); stroke-width: 1.5; rx: 16; }
+  .equation-text { fill: var(--ink); font-family: var(--mono); font-size: 14px; }
+  .equation-accent { fill: var(--plum); font-family: var(--serif); font-size: 18px; }
+
+  .skill-role > rect { fill: var(--surface); fill-opacity: .5; stroke: var(--line); stroke-dasharray: 5 7; rx: 18; }
+  .skill-role-title { fill: var(--ink); font-family: var(--serif); font-size: 20px; }
+  .skill-role-count { fill: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; }
+  .skill-node > rect { fill: var(--surface); stroke: var(--line); rx: 8; }
+  .skill-node.auto > rect { fill: var(--teal-node); stroke: var(--teal); }
+  .skill-node.manual > rect { fill: var(--plum-node); stroke: var(--plum); }
+  .skill-node .skill-name { fill: var(--ink); font-family: var(--mono); font-size: 10.5px; pointer-events: none; }
+  .skill-node .skill-mark { fill: var(--muted); font-family: var(--mono); font-size: 8px; pointer-events: none; }
+  .compose-edge { fill: none; stroke: var(--gold); stroke-width: 1.5; stroke-linecap: round; opacity: .18; pointer-events: none; marker-end: url(#arrow-gold); }
+  .compose-edge.lit { opacity: 1; stroke-width: 2.6; stroke-dasharray: 7 5; animation: march 900ms linear infinite; }
+  .profile-band { fill: var(--surface); stroke: var(--plum); stroke-width: 1.2; rx: 14; }
+
+  .overlay {
+    position: absolute;
+    z-index: 12;
+    background: var(--surface-glass);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+  }
+  .overlay[hidden] { display: none; }
+  .close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    appearance: none;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+  }
+  .close:hover { color: var(--ink); border-color: var(--muted); }
+  #detail {
+    right: 16px;
+    bottom: 16px;
+    width: min(390px, calc(100vw - 32px));
+    max-height: min(520px, calc(100vh - 160px));
+    overflow: auto;
+    padding: 18px 18px 17px;
+  }
+  #detail h2 { margin: 0 42px 4px 0; color: var(--ink); font-family: var(--serif); font-size: 21px; font-weight: 520; line-height: 1.2; }
+  #detail .meta { color: var(--plum); font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 12px; }
+  #detail p { margin: 0 0 11px; font-size: 12.5px; line-height: 1.55; }
+  #detail code { color: var(--coral); font-family: var(--mono); font-size: 10.8px; }
+  #detail ul { margin: 8px 0 0; padding-left: 18px; }
+  #detail li { margin: 5px 0; font-size: 11.5px; line-height: 1.45; }
+  #detail .tagrow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+  .tag { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--muted); font-family: var(--mono); font-size: 8.5px; }
+
+  #legend { left: 16px; top: 16px; width: 286px; padding: 16px; }
+  #legend h2, #flow-panel h2 { margin: 0 38px 10px 0; color: var(--ink); font-family: var(--serif); font-size: 17px; font-weight: 520; }
+  .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 10.5px; }
+  .swatch { width: 22px; height: 13px; border: 1.5px solid var(--line); border-radius: 4px; background: var(--surface); }
+  .swatch.command { background: var(--blue-node); border-color: var(--blue); }
+  .swatch.catalog { background: var(--gold-node); border-color: var(--gold); }
+  .swatch.profile { background: var(--plum-node); border-color: var(--plum); }
+  .swatch.storage { background: var(--teal-node); border-color: var(--teal); }
+  .swatch.engine { background: var(--coral-node); border-color: var(--coral); }
+  .swatch.heal { background: var(--green-node); border-color: var(--green); }
+  .legend-note { border-top: 1px solid var(--line-soft); margin-top: 12px; padding-top: 10px; color: var(--muted); font-family: var(--mono); font-size: 9px; line-height: 1.5; }
+
+  #flow-panel { left: 16px; bottom: 16px; width: min(430px, calc(100vw - 32px)); padding: 16px 17px; }
+  #flow-panel .flow-name { color: var(--coral); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 5px; }
+  #flow-panel ol { margin: 0; padding-left: 21px; }
+  #flow-panel li { margin: 5px 0; font-size: 11.5px; line-height: 1.45; }
+
+  .corner-note {
+    position: absolute;
+    right: 16px;
+    top: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 8.5px;
+    letter-spacing: .03em;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  @media (max-width: 1040px) {
+    .brand { min-width: 220px; }
+    .brand p { display: none; }
+    .topbar { gap: 9px; }
+    .search { width: 170px; }
+  }
+  @media (max-width: 760px) {
+    .topbar { align-items: flex-start; flex-wrap: wrap; min-height: auto; padding: 10px 12px; }
+    .brand { min-width: 0; flex: 1; }
+    .brand h1 { font-size: 17px; }
+    .toolbar.grow { order: 3; width: 100%; }
+    .search { flex: 1; width: auto; }
+    .subbar { padding-left: 12px; }
+    #legend { width: min(286px, calc(100vw - 24px)); left: 12px; top: 12px; }
+    #detail { right: 12px; bottom: 12px; max-height: 46vh; }
+    #flow-panel { left: 12px; bottom: 12px; }
+    .corner-note { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>AFK skills &amp; profiles switchyard</h1>
+      <p>43 catalog skills · 30 command surfaces · reversible profile focus</p>
+    </div>
+
+    <div class="segmented" aria-label="Diagram view">
+      <button class="view-button on" data-view="machine">State machine</button>
+      <button class="view-button" data-view="catalog">Skill constellation</button>
+    </div>
+
+    <div class="toolbar grow">
+      <input id="search" class="search" type="search" placeholder="Find command, state, or skill…" aria-label="Find command, state, or skill">
+      <button class="tool" id="legend-button">Legend</button>
+      <button class="tool" id="reset-button">Reset · <span id="zoom-level" class="zoom-readout">100%</span></button>
+    </div>
+
+    <div class="toolbar">
+      <button class="tool" id="theme-button" aria-label="Toggle theme">Theme</button>
+    </div>
+  </header>
+
+  <nav class="subbar machine-flows" aria-label="State machine sequences">
+    <span class="label">Animate a route</span>
+    <button class="flow-chip on" data-flow="all">Everything</button>
+    <button class="flow-chip" data-flow="setup">Setup install</button>
+    <button class="flow-chip" data-flow="add">Direct add</button>
+    <button class="flow-chip" data-flow="focus">Focus profile</button>
+    <button class="flow-chip" data-flow="additive">Additive profile</button>
+    <button class="flow-chip" data-flow="restore">Disable &amp; restore</button>
+    <button class="flow-chip" data-flow="upgrade">Upgrade safely</button>
+    <button class="flow-chip" data-flow="refresh">Refresh &amp; merge</button>
+  </nav>
+
+  <nav class="subbar catalog-filters" aria-label="Skill constellation filters">
+    <span class="label">Filter catalog</span>
+    <button class="flow-chip on" data-skill-filter="all">All 43</button>
+    <button class="flow-chip" data-skill-filter="auto">Auto · 15</button>
+    <button class="flow-chip" data-skill-filter="manual">Manual · 28</button>
+    <button class="flow-chip" data-skill-filter="default">Default · 28</button>
+    <button class="flow-chip" data-skill-filter="composes">Composes others · 8</button>
+  </nav>
+
+  <main class="stage" id="stage">
+    <svg id="diagram" viewBox="0 0 2400 1500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Interactive AFK skills and profiles state machine">
+      <defs>
+        <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"></path>
+        </marker>
+        <marker id="arrow-coral" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" style="fill: var(--coral)"></path>
+        </marker>
+        <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" style="fill: var(--green)"></path>
+        </marker>
+        <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" style="fill: var(--red)"></path>
+        </marker>
+        <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" style="fill: var(--gold)"></path>
+        </marker>
+      </defs>
+
+      <g id="svg-content">
+        <g id="machine-view"></g>
+        <g id="catalog-view" hidden></g>
+      </g>
+    </svg>
+
+    <div class="corner-note">drag to pan · wheel to zoom · click any node</div>
+
+    <aside class="overlay" id="legend">
+      <button class="close" data-close="legend" aria-label="Close legend">×</button>
+      <h2>How to read the switchyard</h2>
+      <div class="legend-grid">
+        <div class="legend-item"><span class="swatch command"></span> command</div>
+        <div class="legend-item"><span class="swatch catalog"></span> catalog</div>
+        <div class="legend-item"><span class="swatch profile"></span> profile</div>
+        <div class="legend-item"><span class="swatch storage"></span> storage</div>
+        <div class="legend-item"><span class="swatch engine"></span> decision</div>
+        <div class="legend-item"><span class="swatch heal"></span> healing loop</div>
+      </div>
+      <div class="legend-note">Solid arrows change or read state. Dashed green arrows preserve, reconcile, or restore it. In the constellation, teal skills auto-invoke and plum skills are manual.</div>
+    </aside>
+
+    <aside class="overlay" id="detail">
+      <button class="close" data-close="detail" aria-label="Close detail panel">×</button>
+      <h2 id="detail-title">Click any command or state</h2>
+      <div class="meta" id="detail-meta">interactive reference</div>
+      <div id="detail-body">
+        <p>The map separates catalog definitions, runtime profile state, local folders, and invocation metadata. Route chips animate the paths that are hardest to infer from CLI help.</p>
+      </div>
+    </aside>
+
+    <aside class="overlay" id="flow-panel" hidden>
+      <button class="close" data-close="flow-panel" aria-label="Close sequence panel">×</button>
+      <div class="flow-name" id="flow-name"></div>
+      <h2 id="flow-title"></h2>
+      <ol id="flow-steps"></ol>
+    </aside>
+  </main>
+</div>
+
+<script>
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+const SKILLS = [
+  ["afk-animated-driven-frontend","wrapper",true,false,"ai-field-kit",[]],
+  ["afk-ask","utility",true,false,"ai-field-kit",[]],
+  ["afk-brainstorming-facilitator","wrapper",true,false,"ai-field-kit",[]],
+  ["afk-code-grill","wrapper",true,false,"ai-field-kit",["grilling","truss-evaluation","codebase-design"]],
+  ["afk-to-spec","wrapper",true,false,"ai-field-kit",[]],
+  ["afk-to-tickets","wrapper",true,false,"ai-field-kit",[]],
+  ["afk-doc-craft","primitive",true,false,"ai-field-kit",[]],
+  ["afk-implement-tasks","workflow",true,false,"ai-field-kit",[]],
+  ["afk-ui-registry-preferences","reference",true,true,"ai-field-kit",[]],
+  ["afk-pickup","utility",true,false,"ai-field-kit",[]],
+  ["afk-compass","router",true,true,"ai-field-kit",[]],
+  ["afk-profile-use","router",true,false,"ai-field-kit",[]],
+  ["afk-sprint","workflow",true,false,"ai-field-kit",["plannotator-setup-goal","afk-to-tickets","afk-implement-tasks"]],
+  ["afk-turbo","workflow",true,false,"ai-field-kit",["grilling","plannotator-setup-goal"]],
+  ["truss-evaluation","primitive",true,true,"truss-framework",[]],
+  ["diagnosing-bugs","primitive",true,true,"mattpocock/skills",[]],
+  ["plannotator-compound","utility",true,false,"plannotator",[]],
+  ["plannotator-setup-goal","primitive",true,true,"plannotator",[]],
+  ["plannotator-visual-explainer","utility",true,false,"plannotator",[]],
+  ["orchestrator","utility",false,false,"orchestrator",[]],
+  ["design-artifact","utility",true,true,"design-artifact",[]],
+  ["html","utility",false,false,"effective-html",[]],
+  ["html-plan","utility",false,false,"effective-html",[]],
+  ["html-diagram","utility",false,false,"effective-html",[]],
+  ["tdd","primitive",false,true,"mattpocock/skills",["codebase-design"]],
+  ["research","utility",false,true,"mattpocock/skills",[]],
+  ["source-driven-development","primitive",false,true,"agent-skills",[]],
+  ["doubt-driven-development","primitive",false,true,"agent-skills",[]],
+  ["code-simplification","primitive",false,true,"agent-skills",[]],
+  ["review-animations","utility",false,false,"emilkowalski/skills",[]],
+  ["animation-vocabulary","utility",false,false,"emilkowalski/skills",[]],
+  ["writing-great-skills","reference",true,false,"mattpocock/skills",[]],
+  ["teach","wrapper",false,false,"mattpocock/skills",[]],
+  ["grill-with-docs","wrapper",false,false,"mattpocock/skills",["grilling","domain-modeling"]],
+  ["grill-me","wrapper",false,false,"mattpocock/skills",["grilling"]],
+  ["prototype","wrapper",true,false,"mattpocock/skills",[]],
+  ["handoff","utility",true,false,"mattpocock/skills",[]],
+  ["wayfinder","workflow",false,false,"mattpocock/skills",["grilling","domain-modeling","prototype"]],
+  ["afk-code-review","wrapper",true,true,"ai-field-kit",[]],
+  ["afk-pr-story-flow-mermaid","wrapper",true,false,"ai-field-kit",[]],
+  ["grilling","primitive",true,true,"mattpocock/skills",[]],
+  ["domain-modeling","primitive",true,true,"mattpocock/skills",[]],
+  ["codebase-design","primitive",true,true,"mattpocock/skills",[]]
+].map(([id, role, isDefault, auto, source, composes]) => ({ id, role, isDefault, auto, source, composes }));
+
+const DETAILS = {
+  "cmd-setup": {
+    title: "afk setup skills",
+    meta: "catalog-driven install",
+    body: "Selects source-owned catalog skills by default, delegates installs to the official skills CLI, then applies AFK policy and storage rules.",
+    bullets: ["Always installs the shared <code>universal</code> target first.", "Interactive <code>--all</code> broadens the picker; <code>--yes --all</code> installs every listed skill.", "After success: sync invocation metadata, restore prior disabled state, sync catalog enrichment, reconcile enabled profiles."],
+    tags: ["install", "source-owned", "heals profile drift"]
+  },
+  "cmd-add": {
+    title: "afk skills add",
+    meta: "one-off install wrapper",
+    body: "Runs <code>npx skills add</code>, detects only skills introduced by this run, imports them into AFK's catalog, and optionally attaches them to profiles or disabled storage.",
+    bullets: ["Preflight offers to import lock-tracked installed skills missing from the catalog.", "<code>--profile</code> adds new skills to a profile.", "<code>--profile-only</code> also marks them <code>startDisabled</code> and moves them into <code>.disabled</code>.", "Reinstalling an existing skill preserves storage and membership; add-time flags do not reapply."],
+    tags: ["direct", "imported", "profile bridge"]
+  },
+  "cmd-upgrade": {
+    title: "afk skills upgrade",
+    meta: "tracked update route",
+    body: "Selects official skills-lock entries, delegates to <code>npx skills update</code>, and restores any previously disabled storage after the reinstall-like update.",
+    bullets: ["<code>--all</code> upgrades every tracked skill in scope.", "<code>--profile</code> upgrades only tracked members and reports untracked members it skips.", "Explicit names require global or project scope, not <code>all</code>."],
+    tags: ["lockfile", "preserves disabled state"]
+  },
+  "cmd-refresh": {
+    title: "afk refresh skills",
+    meta: "catalog cache refresh",
+    body: "Refreshes catalog files from the selected or remembered source. Matching source IDs win, while AFK preserves locally imported skill entries that the source does not contain.",
+    bullets: ["Profiles use the parallel merge rule: source definitions win on matching IDs; locally created profile IDs survive.", "<code>--default-source</code> both remembers the source and refreshes.", "Refresh changes catalog cache, not installed skill folders."],
+    tags: ["merge", "source wins", "local additions survive"]
+  },
+  "cmd-visualize": {
+    title: "afk show skills --visualize",
+    meta: "read-only composition map",
+    body: "Writes the existing self-contained <code>afk-skills.html</code> composition view. It explains catalog composition; this switchyard adds command, storage, profile, and healing-state interactions.",
+    tags: ["read only", "HTML"]
+  },
+  "cmd-setup-profiles": { title:"afk setup profiles", meta:"prepare definitions", body:"Prepares the local <code>profiles.json</code> catalog from the selected source. It does not install skills or activate a profile; use <code>afk skills profiles enable</code> after referenced folders exist.", tags:["catalog prep","no activation"] },
+  "cmd-show-catalog": { title:"afk show skills | profiles", meta:"inspect cached catalog", body:"Reads the cached skills or profiles catalog without installing, refreshing, or moving folders. <code>--source</code> inspects a source for one run; <code>--local</code> reads the project catalog.", tags:["read only","catalog"] },
+  "cmd-list": { title:"afk skills list", meta:"inspect discovered roots", body:"Lists shared, project, and agent-specific skill roots with filters for scope, agent, active/disabled storage, invocation state, category, tag, and uncategorized entries. Supports JSON output.", tags:["read only","filters"] },
+  "cmd-show": { title:"afk skills show", meta:"inspect one record", body:"Shows one discovered skill's metadata. Can filter by agent and active/disabled storage, and can emit the record as JSON.", tags:["read only"] },
+  "cmd-get": { title:"afk skills get", meta:"agent-context export", body:"Prints complete local skill content with its absolute root so referenced files remain resolvable. Includes disabled skills and does not change storage.", tags:["read only","full content"] },
+  "cmd-open": { title:"afk skills open", meta:"open local source", body:"Opens <code>SKILL.md</code> or the folder in Finder, VS Code, Cursor, Zed, or Antigravity. Filters can choose an agent root and active/disabled storage.", tags:["read only","GUI handoff"] },
+  "cmd-disable": { title:"afk skills disable", meta:"active → .disabled", body:"Moves one or more selected skill folders from the active root into its sibling <code>.disabled</code> folder. Defaults to the shared global library unless an agent root is explicit.", bullets:["<code>--dry-run</code> previews the move.", "Fails if the destination already exists."], tags:["reversible","filesystem"] },
+  "cmd-enable": { title:"afk skills enable", meta:".disabled → active", body:"Moves a disabled skill folder back to its active root. This is a direct storage operation; profile reconciliation can later move it again if a focus profile excludes it.", tags:["reversible","filesystem"] },
+  "cmd-invocation": { title:"afk skills invocation", meta:"metadata policy", body:"Enables or disables auto invocation by synchronizing two installed metadata surfaces: <code>disable-model-invocation</code> in <code>SKILL.md</code> and <code>allow_implicit_invocation</code> in <code>agents/openai.yaml</code>.", bullets:["Without an explicit action, the command defaults to disable.", "This changes discovery policy, not active/disabled folder storage."], tags:["SKILL.md","openai.yaml"] },
+  "cmd-delete": { title:"afk skills delete", meta:"permanent removal", body:"Permanently removes selected skill folders and prunes matching imported catalog entries for shared global skills.", bullets:["<code>--catalog-only</code> limits candidates to installed skills represented in <code>skills.json</code>.", "<code>--profile</code> deletes installed members of a chosen profile and asks a second confirmation because other profiles may share them.", "Deleting profile skills does not delete the profile definition."], tags:["destructive","double confirm by profile"] },
+  "cmd-categorize": { title:"afk skills categorize", meta:"Codex-assisted enrichment", body:"Uses <code>codex exec</code> to append missing categories or recategorize all discovered skills inside <code>skills.json</code>. Install fields stay separate from nested catalog enrichment.", tags:["catalog write","AI-assisted"] },
+  "cat-skills": { title:"afk catalog skills", meta:"skills.json definition editor", body:"Owns install metadata and catalog enrichment. Definition commands are <code>add</code>, <code>edit</code>, <code>remove</code>, <code>toggle-default</code>, and <code>toggle-auto</code>; recovery commands are <code>import</code> and <code>import-status</code>.", tags:["definitions","source of truth"] },
+  "cat-skill-add": { title:"catalog skills add", meta:"definition operation", body:"Adds a skill item to <code>skills.json</code>; it does not install the skill folder by itself.", tags:["catalog only"] },
+  "cat-skill-edit": { title:"catalog skills edit", meta:"definition operation", body:"Edits an existing catalog item, preserving the catalog schema and source fields.", tags:["catalog only"] },
+  "cat-skill-remove": { title:"catalog skills remove", meta:"definition operation", body:"Removes the catalog definition. This is distinct from <code>afk skills delete</code>, which removes installed folders.", tags:["catalog only"] },
+  "cat-skill-default": { title:"catalog skills toggle-default", meta:"setup selection policy", body:"Controls which source-owned skills setup selects by default. Imported entries are still excluded from normal setup defaults.", tags:["setup policy"] },
+  "cat-skill-auto": { title:"catalog skills toggle-auto", meta:"invocation source policy", body:"Changes catalog <code>autoInvocation</code>. Setup later compiles that value into installed <code>SKILL.md</code> and OpenAI policy metadata.", tags:["policy input"] },
+  "cat-skill-import": { title:"catalog skills import", meta:"recovery operation", body:"Backfills missing catalog entries from installed shared skills only when the official skills CLI lock can recover their source. Imported entries are marked <code>imported: true</code>.", tags:["healing","lock metadata required"] },
+  "cat-skill-import-status": { title:"catalog skills import-status", meta:"drift inspection", body:"Compares installed shared skills with catalog entries so missing, catalog-only, active, and disabled states are visible without changing them.", tags:["read only","drift"] },
+  "cat-profiles": { title:"afk catalog profiles", meta:"profiles.json definitions", body:"Creates and edits named profile membership, top-level mode, and global <code>alwaysOn</code> skills. These commands define desired state; they do not activate profiles.", tags:["definitions","desired state"] },
+  "profile-list": { title:"catalog profiles list", meta:"definition operation", body:"Lists profile definitions and their current enabled state. Supports JSON.", tags:["read only"] },
+  "profile-show": { title:"catalog profiles show", meta:"definition operation", body:"Shows one profile's name and skill membership, plus the surrounding catalog mode and runtime state.", tags:["read only"] },
+  "profile-create": { title:"catalog profiles create", meta:"definition operation", body:"Creates a named group of skills. <code>--profile-only</code> also marks selected skills start-disabled and moves active folders into <code>.disabled</code>.", tags:["membership","optional storage change"] },
+  "profile-edit": { title:"catalog profiles edit", meta:"definition operation", body:"Replaces or updates a profile definition. A profile cannot be switched between focus and additive while active; runtime activation mode is handled separately.", tags:["membership"] },
+  "profile-delete": { title:"catalog profiles delete", meta:"definition operation", body:"Deletes only the profile definition. It does not delete installed skill folders and does not automatically remove another profile's membership.", tags:["catalog only"] },
+  "profile-mode": { title:"catalog profiles set-mode", meta:"strict | context", body:"Sets how focus profiles treat active skills outside the kept set. Strict disables all outsiders; context keeps cataloged manual skills active and disables discoverable or uncataloged outsiders.", tags:["reconciliation policy"] },
+  "profile-always": { title:"catalog profiles toggle-always-on", meta:"global kept set", body:"Chooses skills that remain in the kept set across every enabled profile. The picker can filter by invocation, default, and start-disabled policy.", tags:["always kept"] },
+  "profile-use": { title:"afk skills profiles use", meta:"context without activation", body:"Prints a compact profile skill list with descriptions and matching <code>afk skills get</code> commands. It reads active and disabled shared skills without moving folders or changing profile state.", bullets:["<code>--all</code> includes every member's complete <code>SKILL.md</code> content.", "Fails when the profile references missing local skills."], tags:["read only","agent context"] },
+  "profile-enable": { title:"afk skills profiles enable", meta:"apply desired state", body:"Adds a profile activation and reconciles the shared global library from the complete desired final state.", bullets:["Default activation is <code>focus</code>.", "<code>--additive</code> keeps unrelated active skills alone.", "Disable before changing an active profile between focus and additive."], tags:["runtime","filesystem"] },
+  "profile-disable": { title:"afk skills profiles disable", meta:"restore eligible state", body:"Removes one activation, recomputes the kept set from every remaining profile, restores skills that profiles moved when eligible, and returns borrowed pre-disabled skills when no profile keeps them.", tags:["runtime","restoration"] },
+  "profile-status": { title:"afk skills profiles status", meta:"inspect runtime state", body:"Shows activations, kept skills, profile-moved skills, pre-existing disabled skills, and the catalog/state paths without mutating folders.", tags:["read only","runtime"] },
+  "upstream": { title:"Official skills CLI", meta:"npx skills add / update", body:"Owns the actual install and update operation plus lock metadata. AFK wraps it, then adds catalog, invocation, storage, and profile semantics.", tags:["upstream","lockfiles"] },
+  "preflight": { title:"Catalog preflight", meta:"healing gate before add", body:"If lock-tracked installed skills are missing from AFK's catalog, direct add pauses to import them first. If import cannot catalog all recoverable entries, add stops instead of compounding drift.", tags:["healing","guard"] },
+  "skills-catalog": { title:"skills.json", meta:"catalog + setup metadata", body:"The single AFK catalog for install source, args, default selection, role, invocation policy, start-disabled policy, composition, import ownership, categories, and tags.", bullets:["Current source: 43 skills.", "15 allow auto invocation; 28 are manual.", "28 are selected by default."], tags:["catalog","43 items"] },
+  "policy-compiler": { title:"Invocation policy compiler", meta:"catalog → installed metadata", body:"Compiles catalog <code>autoInvocation</code> into host-facing files after setup: inverse <code>disable-model-invocation</code> in <code>SKILL.md</code> and matching <code>allow_implicit_invocation</code> in OpenAI metadata.", tags:["synchronization"] },
+  "startup-storage": { title:"Startup storage policy", meta:"startDisabled + preservation", body:"Moves installed skills marked <code>startDisabled</code> into <code>.disabled</code>. It snapshots disabled skills before setup/add/upgrade so upstream reinstalls cannot accidentally reactivate them.", tags:["healing","storage"] },
+  "refresh-merge": { title:"Refresh merge boundary", meta:"source wins; local additions survive", body:"For skills, refreshed source entries become source-owned and matching IDs win; imported entries absent from the source survive. For profiles, source IDs win while local-only profile IDs survive.", tags:["merge","non-destructive"] },
+  "profile-catalog": { title:"profiles.json", meta:"profile desired state", body:"Stores top-level <code>mode</code>, <code>alwaysOn</code>, and named profile membership. Global definitions live under <code>~/.agents/afk/catalog</code>; <code>--local</code> uses <code>./afk/catalog</code>.", tags:["desired state"] },
+  "profile-state": { title:"skill-profiles.json", meta:"runtime restoration ledger", body:"Stores focus/additive activations, skills moved by profiles, and skills that were disabled before profiles touched them. This separation makes disable and multi-profile restoration predictable.", tags:["runtime state","version 2"] },
+  "kept-set": { title:"Kept set", meta:"alwaysOn + every active profile", body:"The union of global <code>alwaysOn</code> skills and every skill from every currently enabled profile, regardless of focus or additive activation.", tags:["set union","desired final state"] },
+  "reconcile": { title:"Profile reconciler", meta:"state machine core", body:"Recomputes movements from current folders plus requested final activations. Focus activation filters outsiders; additive activation contributes to the kept set without filtering by itself.", bullets:["Strict: every outsider is eligible to disable.", "Context: cataloged <code>autoInvocation:false</code> outsiders remain active.", "Pre-existing disabled members can be borrowed while kept, then returned."], tags:["strict","context","additive"] },
+  "active-store": { title:"Active shared library", meta:"~/.agents/skills/&lt;id&gt;", body:"Folders here are available to the shared skill discovery surface. Agent-specific roots and symlinks can fan out from the official skills CLI install.", tags:["filesystem","active"] },
+  "disabled-store": { title:"Disabled shared library", meta:"~/.agents/skills/.disabled/&lt;id&gt;", body:"A reversible holding area. Direct commands, start-disabled policy, and focus profiles all use folder movement rather than deleting content.", tags:["filesystem","reversible"] },
+  "agent-roots": { title:"Project &amp; agent roots", meta:"Codex · Claude · Gemini · editors", body:"List/show/open can inspect shared, project, and installed-agent roots. Direct mutation defaults to the global shared library unless <code>--agent</code> and scope explicitly target another root.", tags:["fanout","multiple hosts"] },
+  "heal-reconcile": { title:"Post-install profile healing", meta:"setup + add", body:"Whenever setup or direct add succeeds and profiles are already enabled, AFK immediately reconciles the new folder against the active desired state. A strict focus profile can therefore send a newly installed outsider straight to <code>.disabled</code>.", tags:["automatic","profile drift"] },
+  "heal-preserve": { title:"Disabled-state preservation", meta:"add + setup + upgrade", body:"AFK snapshots disabled folders before upstream content changes, then moves any reinstalled folders back to disabled storage. Existing profile membership is preserved on reinstall.", tags:["automatic","storage drift"] },
+  "heal-restore": { title:"Profile restoration memory", meta:"moved vs pre-existing", body:"The runtime ledger distinguishes skills profiles moved from skills already disabled beforehand. That lets AFK restore only what it borrowed or filtered, even across multiple active profiles.", tags:["automatic","reversible"] }
+};
+
+const MACHINE_NODES = [
+  {id:"cmd-list", x:80,y:225,w:215,h:55,label:"list",sub:"filter all roots",kind:"command"},
+  {id:"cmd-show", x:310,y:225,w:215,h:55,label:"show",sub:"one metadata record",kind:"command"},
+  {id:"cmd-get", x:80,y:295,w:215,h:55,label:"get",sub:"full agent context",kind:"command"},
+  {id:"cmd-open", x:310,y:295,w:215,h:55,label:"open",sub:"file or folder",kind:"command"},
+  {id:"cmd-visualize", x:80,y:365,w:445,h:55,label:"show skills --visualize",sub:"existing composition HTML",kind:"command readonly"},
+
+  {id:"cmd-setup", x:80,y:545,w:215,h:62,label:"setup skills",sub:"catalog-driven install",kind:"command"},
+  {id:"cmd-add", x:310,y:545,w:215,h:62,label:"skills add",sub:"one-off wrapper",kind:"command"},
+  {id:"cmd-upgrade", x:80,y:622,w:215,h:62,label:"skills upgrade",sub:"tracked updates",kind:"command"},
+  {id:"cmd-refresh", x:310,y:622,w:215,h:62,label:"refresh skills",sub:"catalog cache",kind:"command"},
+  {id:"cmd-categorize", x:80,y:699,w:445,h:55,label:"skills categorize",sub:"Codex → catalog enrichment",kind:"command"},
+
+  {id:"cmd-disable", x:80,y:865,w:215,h:58,label:"disable",sub:"active → .disabled",kind:"command"},
+  {id:"cmd-enable", x:310,y:865,w:215,h:58,label:"enable",sub:".disabled → active",kind:"command"},
+  {id:"cmd-invocation", x:80,y:938,w:215,h:58,label:"invocation",sub:"host policy metadata",kind:"command"},
+  {id:"cmd-delete", x:310,y:938,w:215,h:58,label:"delete",sub:"permanent + prune",kind:"danger"},
+
+  {id:"cat-skills", x:705,y:225,w:300,h:70,label:"catalog skills",sub:"definitions + import",kind:"catalog"},
+  {id:"cat-skill-add",x:720,y:310,w:125,h:46,label:"add",sub:"definition",kind:"catalog"},
+  {id:"cat-skill-edit",x:860,y:310,w:125,h:46,label:"edit",sub:"definition",kind:"catalog"},
+  {id:"cat-skill-remove",x:720,y:368,w:125,h:46,label:"remove",sub:"catalog only",kind:"catalog"},
+  {id:"cat-skill-default",x:860,y:368,w:125,h:46,label:"toggle-default",sub:"setup policy",kind:"catalog"},
+  {id:"cat-skill-auto",x:720,y:426,w:125,h:46,label:"toggle-auto",sub:"invoke policy",kind:"catalog"},
+  {id:"cat-skill-import",x:860,y:426,w:125,h:46,label:"import",sub:"backfill",kind:"heal"},
+  {id:"cat-skill-import-status",x:720,y:484,w:265,h:46,label:"import-status",sub:"inspect catalog drift",kind:"heal readonly"},
+
+  {id:"preflight",x:1080,y:230,w:285,h:70,label:"catalog preflight",sub:"missing lock-tracked installs?",kind:"heal"},
+  {id:"upstream",x:1080,y:340,w:285,h:78,label:"official skills CLI",sub:"add · update · lockfiles",kind:"engine"},
+  {id:"skills-catalog",x:1080,y:465,w:285,h:90,label:"skills.json",sub:"43 items · policy + catalog",kind:"catalog"},
+  {id:"policy-compiler",x:1080,y:600,w:285,h:78,label:"invocation compiler",sub:"SKILL.md + openai.yaml",kind:"engine"},
+  {id:"startup-storage",x:1080,y:720,w:285,h:78,label:"startup storage",sub:"startDisabled + snapshot",kind:"engine"},
+  {id:"refresh-merge",x:1080,y:840,w:285,h:78,label:"refresh merge",sub:"source wins · locals survive",kind:"heal"},
+
+  {id:"cat-profiles",x:670,y:1060,w:335,h:68,label:"catalog profiles",sub:"definition family",kind:"profile"},
+  {id:"profile-list",x:690,y:1150,w:130,h:44,label:"list",sub:"definitions",kind:"profile"},
+  {id:"profile-show",x:835,y:1150,w:130,h:44,label:"show",sub:"one profile",kind:"profile"},
+  {id:"profile-create",x:690,y:1202,w:130,h:44,label:"create",sub:"membership",kind:"profile"},
+  {id:"profile-edit",x:835,y:1202,w:130,h:44,label:"edit",sub:"membership",kind:"profile"},
+  {id:"profile-delete",x:690,y:1254,w:130,h:44,label:"delete",sub:"definition",kind:"profile"},
+  {id:"profile-mode",x:835,y:1254,w:130,h:44,label:"set-mode",sub:"strict/context",kind:"profile"},
+  {id:"profile-always",x:690,y:1306,w:275,h:44,label:"toggle-always-on",sub:"global kept set",kind:"profile"},
+
+  {id:"profile-use",x:80,y:1135,w:215,h:58,label:"profiles use",sub:"context only",kind:"command readonly"},
+  {id:"profile-enable",x:310,y:1135,w:215,h:58,label:"profiles enable",sub:"focus | additive",kind:"command"},
+  {id:"profile-disable",x:80,y:1207,w:215,h:58,label:"profiles disable",sub:"remove activation",kind:"command"},
+  {id:"profile-status",x:310,y:1207,w:215,h:58,label:"profiles status",sub:"runtime ledger",kind:"command readonly"},
+  {id:"cmd-setup-profiles",x:80,y:1280,w:215,h:48,label:"setup profiles",sub:"prepare definitions",kind:"command"},
+  {id:"cmd-show-catalog",x:310,y:1280,w:215,h:48,label:"show skills | profiles",sub:"inspect cached catalog",kind:"command readonly"},
+
+  {id:"profile-catalog",x:1080,y:1060,w:285,h:82,label:"profiles.json",sub:"mode · alwaysOn · items",kind:"profile"},
+  {id:"profile-state",x:1080,y:1160,w:285,h:82,label:"skill-profiles.json",sub:"activations · restore ledger",kind:"profile"},
+  {id:"kept-set",x:1455,y:1060,w:285,h:82,label:"kept set",sub:"alwaysOn + active profiles",kind:"engine"},
+  {id:"reconcile",x:1455,y:1190,w:285,h:104,label:"reconcile final state",sub:"strict · context · additive",kind:"engine",shape:"diamond"},
+
+  {id:"active-store",x:1890,y:365,w:380,h:105,label:"active shared library",sub:"~/.agents/skills/<id>",kind:"storage"},
+  {id:"disabled-store",x:1890,y:565,w:380,h:105,label:"disabled library",sub:"~/.agents/skills/.disabled/<id>",kind:"storage"},
+  {id:"agent-roots",x:1890,y:765,w:380,h:95,label:"project & agent roots",sub:"Codex · Claude · Gemini · editors",kind:"storage readonly"},
+  {id:"heal-preserve",x:1510,y:210,w:290,h:78,label:"preserve disabled state",sub:"snapshot → restore storage",kind:"heal"},
+  {id:"heal-reconcile",x:1510,y:680,w:290,h:78,label:"post-install reconcile",sub:"new folders meet active profile",kind:"heal"},
+  {id:"heal-restore",x:1890,y:1120,w:380,h:92,label:"restoration memory",sub:"profile-moved ≠ pre-disabled",kind:"heal"}
+];
+
+const MACHINE_EDGES = [
+  ["e-setup-up","cmd-setup","upstream"],["e-add-pre","cmd-add","preflight"],["e-pre-up","preflight","upstream"],
+  ["e-pre-import","preflight","cat-skill-import",true],["e-up-cat","upstream","skills-catalog"],["e-cat-policy","skills-catalog","policy-compiler"],
+  ["e-policy-active","policy-compiler","active-store"],["e-up-start","upstream","startup-storage"],["e-start-active","startup-storage","active-store"],
+  ["e-start-disabled","startup-storage","disabled-store"],["e-up-preserve","upstream","heal-preserve",true],["e-preserve-disabled","heal-preserve","disabled-store",true],
+  ["e-setup-heal","cmd-setup","heal-reconcile",true],["e-add-heal","cmd-add","heal-reconcile",true],["e-heal-rec","heal-reconcile","reconcile",true],
+  ["e-refresh-merge","cmd-refresh","refresh-merge"],["e-merge-cat","refresh-merge","skills-catalog",true],["e-merge-profile","refresh-merge","profile-catalog",true],
+  ["e-upgrade-up","cmd-upgrade","upstream"],["e-invoke-policy","cmd-invocation","policy-compiler"],
+  ["e-disable-disabled","cmd-disable","disabled-store"],["e-enable-active","cmd-enable","active-store"],["e-delete-active","cmd-delete","active-store"],
+  ["e-list-roots","cmd-list","agent-roots"],["e-show-roots","cmd-show","agent-roots"],["e-get-roots","cmd-get","agent-roots"],["e-open-roots","cmd-open","agent-roots"],
+  ["e-cat-cat","cat-skills","skills-catalog"],["e-categorize-cat","cmd-categorize","skills-catalog"],
+  ["e-catprofiles-def","cat-profiles","profile-catalog"],["e-use-cat","profile-use","profile-catalog"],["e-use-active","profile-use","active-store",true],
+  ["e-setup-profiles","cmd-setup-profiles","profile-catalog"],["e-show-catalog","cmd-show-catalog","profile-catalog"],
+  ["e-enable-cat","profile-enable","profile-catalog"],["e-enable-state","profile-enable","profile-state"],["e-disable-state","profile-disable","profile-state"],
+  ["e-status-state","profile-status","profile-state"],["e-cat-kept","profile-catalog","kept-set"],["e-state-kept","profile-state","kept-set"],
+  ["e-kept-rec","kept-set","reconcile"],["e-state-rec","profile-state","reconcile"],["e-rec-active","reconcile","active-store"],
+  ["e-rec-disabled","reconcile","disabled-store"],["e-rec-ledger","reconcile","heal-restore",true],["e-restore-active","heal-restore","active-store",true],
+  ["e-restore-disabled","heal-restore","disabled-store",true]
+];
+
+const FLOWS = {
+  setup: { name:"Install route", title:"Catalog-driven setup", nodes:["cmd-setup","upstream","skills-catalog","policy-compiler","startup-storage","heal-preserve","heal-reconcile","reconcile","active-store","disabled-store"], edges:["e-setup-up","e-up-cat","e-cat-policy","e-policy-active","e-up-start","e-start-active","e-start-disabled","e-up-preserve","e-preserve-disabled","e-setup-heal","e-heal-rec","e-rec-active","e-rec-disabled"], steps:["Select source-owned defaults (or reviewed explicit choices).","Install through the official skills CLI into the shared universal root first.","Compile invocation metadata and apply start-disabled policy.","Restore anything disabled before the install, then reconcile new folders against enabled profiles."] },
+  add: { name:"One-off install route", title:"Direct add with a healing preflight", nodes:["cmd-add","preflight","cat-skill-import","upstream","skills-catalog","startup-storage","profile-catalog","heal-preserve","heal-reconcile","reconcile","active-store","disabled-store"], edges:["e-add-pre","e-pre-import","e-pre-up","e-up-cat","e-up-start","e-start-active","e-start-disabled","e-up-preserve","e-preserve-disabled","e-add-heal","e-heal-rec","e-rec-active","e-rec-disabled"], steps:["Compare lock-tracked installed skills with AFK's catalog; import recoverable gaps first.","Run upstream add and diff storage before/after so only new skills receive add-time flags.","Import new shared skills into skills.json; optionally attach them to a profile or disabled storage.","Preserve prior storage and reconcile any already-enabled profile."] },
+  focus: { name:"Profile route", title:"Focus activation filters the library", nodes:["profile-enable","profile-catalog","profile-state","kept-set","reconcile","active-store","disabled-store","heal-restore"], edges:["e-enable-cat","e-enable-state","e-cat-kept","e-state-kept","e-kept-rec","e-state-rec","e-rec-active","e-rec-disabled","e-rec-ledger"], steps:["Record a focus activation.","Compute alwaysOn + skills from every active focus or additive profile.","Strict disables every outsider; context spares cataloged manual outsiders.","Record which folders profiles moved so later restoration is reversible."] },
+  additive: { name:"Profile route", title:"Additive activation grows the kept set", nodes:["profile-enable","profile-catalog","profile-state","kept-set","reconcile","active-store"], edges:["e-enable-cat","e-enable-state","e-cat-kept","e-state-kept","e-kept-rec","e-state-rec","e-rec-active"], steps:["Record the activation as additive.","Add its members to the same union kept set.","If every active profile is additive, unrelated active skills stay untouched.","If any focus profile remains active, its filtering still applies; additive members are simply protected by the kept set."] },
+  restore: { name:"Restoration route", title:"Disable recomputes, then restores only eligible state", nodes:["profile-disable","profile-state","kept-set","reconcile","heal-restore","active-store","disabled-store"], edges:["e-disable-state","e-state-kept","e-kept-rec","e-state-rec","e-rec-ledger","e-restore-active","e-restore-disabled"], steps:["Remove one activation; do not toggle its behavior in place.","Recompute the kept set from every profile that is still active.","Restore profile-moved outsiders when filtering no longer applies.","Return borrowed pre-disabled members when no active profile keeps them."] },
+  upgrade: { name:"Maintenance route", title:"Upgrade content without reactivating skills", nodes:["cmd-upgrade","upstream","heal-preserve","disabled-store","active-store"], edges:["e-upgrade-up","e-up-preserve","e-preserve-disabled"], steps:["Select explicit, all, or profile-tracked lock entries.","Snapshot which selected skills are disabled.","Run upstream update for global or project scope.","Move reinstalled disabled skills back into .disabled."] },
+  refresh: { name:"Catalog route", title:"Refresh source truth without erasing local extensions", nodes:["cmd-refresh","refresh-merge","skills-catalog","profile-catalog"], edges:["e-refresh-merge","e-merge-cat","e-merge-profile"], steps:["Fetch the selected or remembered source catalog.","Source entries win on matching IDs.","Preserve imported skill entries absent from the source.","Preserve locally created profile IDs absent from the source; installed folders remain untouched."] }
+};
+
+const ROLE_LAYOUT = {
+  wrapper: {x:60,y:155,w:540,h:690,title:"Wrappers",note:"adapt or compose an interaction"},
+  primitive: {x:630,y:155,w:540,h:690,title:"Primitives",note:"reusable reasoning or execution behavior"},
+  utility: {x:1200,y:155,w:540,h:800,title:"Utilities",note:"focused support surfaces"},
+  workflow: {x:1770,y:155,w:570,h:300,title:"Workflows",note:"durable multi-step coordination"},
+  router: {x:1770,y:485,w:570,h:180,title:"Routers",note:"choose the next surface"},
+  reference: {x:1770,y:695,w:570,h:180,title:"References",note:"policy and selection knowledge"}
+};
+
+const stage = document.getElementById("stage");
+const svg = document.getElementById("diagram");
+const content = document.getElementById("svg-content");
+const machineView = document.getElementById("machine-view");
+const catalogView = document.getElementById("catalog-view");
+let currentView = "machine";
+let currentFlow = "all";
+let currentSkillFilter = "all";
+let scale = 1;
+let panX = 0;
+let panY = 0;
+let dragStart = null;
+let dragged = false;
+let suppressNextClick = false;
+
+function el(name, attrs = {}, text = "") {
+  const node = document.createElementNS(SVG_NS, name);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+  if (text) node.textContent = text;
+  return node;
+}
+
+function addText(parent, x, y, className, text, anchor) {
+  const attrs = {x, y, class:className};
+  if (anchor) attrs["text-anchor"] = anchor;
+  const node = el("text", attrs, text);
+  parent.appendChild(node);
+  return node;
+}
+
+function renderZone(parent, {x,y,w,h,kicker,title,note}) {
+  const g = el("g", {class:"zone"});
+  g.appendChild(el("rect", {x,y,width:w,height:h}));
+  addText(g,x+22,y+30,"zone-kicker",kicker);
+  addText(g,x+22,y+58,"zone-title",title);
+  addText(g,x+22,y+79,"zone-note",note);
+  parent.appendChild(g);
+}
+
+function renderNode(parent, node) {
+  const g = el("g", {class:`node ${node.kind || ""}`, "data-k":node.id, "data-search":`${node.label} ${node.sub || ""} ${node.id}`});
+  if (node.shape === "diamond") {
+    const x = node.x, y = node.y, w = node.w, h = node.h;
+    g.appendChild(el("path", {class:"node-shape", d:`M${x+w/2},${y} L${x+w},${y+h/2} L${x+w/2},${y+h} L${x},${y+h/2} Z`}));
+    addText(g,x+w/2,y+h/2-3,"title",node.label,"middle");
+    addText(g,x+w/2,y+h/2+17,"mono",node.sub,"middle");
+  } else {
+    g.appendChild(el("rect", {x:node.x,y:node.y,width:node.w,height:node.h,rx:10}));
+    addText(g,node.x+15,node.y+node.h/2-3,"title",node.label);
+    addText(g,node.x+15,node.y+node.h/2+17,"mono",node.sub || "");
+  }
+  parent.appendChild(g);
+  return g;
+}
+
+function nodeCenter(id) {
+  const node = MACHINE_NODES.find(item => item.id === id);
+  return node ? {x:node.x+node.w/2,y:node.y+node.h/2} : {x:0,y:0};
+}
+
+function edgePath(fromId, toId) {
+  const from = MACHINE_NODES.find(item => item.id === fromId);
+  const to = MACHINE_NODES.find(item => item.id === toId);
+  if (!from || !to) return "";
+  const a = nodeCenter(fromId), b = nodeCenter(toId);
+  const horizontal = Math.abs(b.x-a.x) >= Math.abs(b.y-a.y);
+  if (horizontal) {
+    const sx = b.x >= a.x ? from.x+from.w : from.x;
+    const tx = b.x >= a.x ? to.x : to.x+to.w;
+    const bend = (sx+tx)/2;
+    return `M${sx},${a.y} C${bend},${a.y} ${bend},${b.y} ${tx},${b.y}`;
+  }
+  const sy = b.y >= a.y ? from.y+from.h : from.y;
+  const ty = b.y >= a.y ? to.y : to.y+to.h;
+  const bend = (sy+ty)/2;
+  return `M${a.x},${sy} C${a.x},${bend} ${b.x},${bend} ${b.x},${ty}`;
+}
+
+function renderMachine() {
+  addText(machineView,60,72,"machine-heading","The AFK skills switchyard");
+  addText(machineView,60,98,"machine-sub","COMMANDS ENTER ON THE LEFT · CATALOG AND POLICY DECIDE IN THE MIDDLE · FOLDERS MOVE ON THE RIGHT");
+  renderZone(machineView,{x:45,y:145,w:510,h:310,kicker:"01 · inspect",title:"Read the library",note:"No state changes"});
+  renderZone(machineView,{x:45,y:475,w:510,h:300,kicker:"02 · acquire",title:"Install & maintain",note:"Upstream work, then AFK policy"});
+  renderZone(machineView,{x:45,y:800,w:510,h:220,kicker:"03 · mutate",title:"Direct local state",note:"Folders or invocation metadata"});
+  renderZone(machineView,{x:45,y:1040,w:510,h:300,kicker:"04 · apply",title:"Profile runtime",note:"Use is read-only; enable/disable reconcile"});
+  renderZone(machineView,{x:640,y:145,w:395,h:390,kicker:"05 · define",title:"Skill catalog commands",note:"Definition edits are not installs"});
+  renderZone(machineView,{x:1045,y:145,w:355,h:790,kicker:"06 · decide",title:"Policy & healing engines",note:"The non-obvious behavior lives here"});
+  renderZone(machineView,{x:640,y:980,w:395,h:385,kicker:"07 · define",title:"Profile catalog commands",note:"Definitions are separate from activation"});
+  renderZone(machineView,{x:1045,y:980,w:730,h:360,kicker:"08 · reconcile",title:"Profile state machine",note:"Desired final state, recomputed every time"});
+  renderZone(machineView,{x:1845,y:145,w:470,h:780,kicker:"09 · materialize",title:"Installed skill surfaces",note:"Availability is folder placement"});
+  renderZone(machineView,{x:1845,y:1010,w:470,h:260,kicker:"10 · remember",title:"Reversible restoration",note:"Profiles track what they changed"});
+
+  machineView.appendChild(el("rect",{x:1385,y:1370,width:900,height:82,class:"equation"}));
+  addText(machineView,1410,1403,"equation-accent","Profile math");
+  addText(machineView,1410,1430,"equation-text","kept = alwaysOn ∪ skills from every active focus or additive profile");
+
+  const edgeLayer = el("g", {id:"machine-edges"});
+  for (const [id,from,to,healing] of MACHINE_EDGES) {
+    edgeLayer.appendChild(el("path",{id,class:`edge${healing ? " heal-edge dashed" : ""}`,d:edgePath(from,to),"data-from":from,"data-to":to}));
+  }
+  machineView.appendChild(edgeLayer);
+  const zoneLabelLayer = el("g", {id:"machine-zone-labels"});
+  machineView.querySelectorAll(".zone text").forEach(label => zoneLabelLayer.appendChild(label));
+  machineView.appendChild(zoneLabelLayer);
+  const nodeLayer = el("g", {id:"machine-nodes"});
+  MACHINE_NODES.forEach(node => renderNode(nodeLayer,node));
+  machineView.appendChild(nodeLayer);
+}
+
+function renderCatalog() {
+  addText(catalogView,60,72,"machine-heading","The 43-skill constellation");
+  addText(catalogView,60,98,"machine-sub","GROUPED BY CATALOG ROLE · TEAL AUTO-INVOKES · PLUM IS MANUAL · GOLD LINES SHOW COMPOSITION");
+  addText(catalogView,2320,72,"machine-sub","15 AUTO · 28 MANUAL · 28 DEFAULT", "end");
+  const roleGroups = {};
+  Object.entries(ROLE_LAYOUT).forEach(([role, layout]) => {
+    const group = el("g",{class:"skill-role"});
+    group.appendChild(el("rect",{x:layout.x,y:layout.y,width:layout.w,height:layout.h}));
+    addText(group,layout.x+20,layout.y+34,"skill-role-title",layout.title);
+    const count = SKILLS.filter(skill => skill.role === role).length;
+    addText(group,layout.x+layout.w-20,layout.y+31,"skill-role-count",`${count} SKILLS`,"end");
+    addText(group,layout.x+20,layout.y+55,"zone-note",layout.note);
+    roleGroups[role] = group;
+    catalogView.appendChild(group);
+  });
+
+  const positions = new Map();
+  Object.keys(ROLE_LAYOUT).forEach(role => {
+    const layout = ROLE_LAYOUT[role];
+    const skills = SKILLS.filter(skill => skill.role === role);
+    const columns = role === "utility" ? 2 : role === "workflow" || role === "router" || role === "reference" ? 2 : 2;
+    const nodeW = (layout.w - 58) / columns;
+    const nodeH = 44;
+    skills.forEach((skill,index) => {
+      const col = index % columns;
+      const row = Math.floor(index / columns);
+      const x = layout.x + 20 + col * (nodeW + 18);
+      const y = layout.y + 78 + row * 54;
+      positions.set(skill.id,{x,y,w:nodeW,h:nodeH});
+    });
+  });
+
+  const composeLayer = el("g",{id:"compose-edges"});
+  SKILLS.forEach(skill => {
+    const from = positions.get(skill.id);
+    if (!from) return;
+    skill.composes.forEach(targetId => {
+      const to = positions.get(targetId);
+      if (!to) return;
+      const x1=from.x+from.w, y1=from.y+from.h/2, x2=to.x, y2=to.y+to.h/2;
+      composeLayer.appendChild(el("path",{class:"compose-edge",d:`M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}`,"data-source":skill.id,"data-target":targetId}));
+    });
+  });
+  catalogView.appendChild(composeLayer);
+
+  const roleLabelLayer = el("g", {id:"catalog-role-labels"});
+  catalogView.querySelectorAll(".skill-role text").forEach(label => roleLabelLayer.appendChild(label));
+  catalogView.appendChild(roleLabelLayer);
+
+  const skillLayer = el("g",{id:"skill-nodes"});
+  SKILLS.forEach(skill => {
+    const pos = positions.get(skill.id);
+    const g = el("g",{class:`node skill-node ${skill.auto ? "auto" : "manual"}`,"data-k":`skill:${skill.id}`,"data-skill":skill.id,"data-role":skill.role,"data-auto":String(skill.auto),"data-default":String(skill.isDefault),"data-composes":String(skill.composes.length>0),"data-search":`${skill.id} ${skill.role} ${skill.source} ${skill.composes.join(" ")}`});
+    g.appendChild(el("rect",{x:pos.x,y:pos.y,width:pos.w,height:pos.h,rx:8}));
+    addText(g,pos.x+11,pos.y+19,"skill-name",skill.id);
+    const marks = `${skill.auto ? "AUTO" : "MANUAL"}${skill.isDefault ? " · DEFAULT" : ""}${skill.composes.length ? ` · →${skill.composes.length}` : ""}`;
+    addText(g,pos.x+11,pos.y+35,"skill-mark",marks);
+    skillLayer.appendChild(g);
+  });
+  catalogView.appendChild(skillLayer);
+
+  const profileY = 1010;
+  addText(catalogView,60,profileY-28,"zone-kicker","CURRENT SOURCE PROFILE DEFINITIONS");
+  catalogView.appendChild(el("rect",{x:60,y:profileY,width:2280,height:205,class:"profile-band"}));
+  addText(catalogView,90,profileY+42,"skill-role-title","stitch");
+  addText(catalogView,90,profileY+67,"zone-note","5 external members · definition only until enabled");
+  addText(catalogView,90,profileY+105,"mono","design-md · enhance-prompt · react-components · stitch-loop · stitch-remotion");
+  addText(catalogView,90,profileY+157,"skill-role-title","video");
+  addText(catalogView,90,profileY+182,"zone-note","15 external members · may borrow disabled skills while active");
+  addText(catalogView,1110,profileY+42,"skill-role-title","alwaysOn");
+  addText(catalogView,1110,profileY+67,"zone-note","5 source-catalog members protected across every profile");
+  addText(catalogView,1110,profileY+105,"mono","grilling · afk-doc-craft · code-simplification · diagnosing-bugs · truss-evaluation");
+  addText(catalogView,1110,profileY+157,"skill-role-title","mode = context");
+  addText(catalogView,1110,profileY+182,"zone-note","manual cataloged outsiders stay active; discoverable or uncataloged outsiders filter out");
+
+  addText(catalogView,60,1290,"machine-sub","SOURCE SNAPSHOT · packages/afk/catalog/skills.json + profiles.json · 2026-07-17");
+}
+
+function attachNodeEvents() {
+  document.querySelectorAll(".node").forEach(node => {
+    node.addEventListener("click", () => {
+      document.querySelectorAll(".node.selected").forEach(item => item.classList.remove("selected"));
+      node.classList.add("selected");
+      showDetail(node.dataset.k);
+      if (node.dataset.skill) highlightCompositions(node.dataset.skill);
+    });
+  });
+}
+
+function showDetail(key) {
+  const panel = document.getElementById("detail");
+  panel.hidden = false;
+  if (key.startsWith("skill:")) {
+    const id = key.slice(6);
+    const skill = SKILLS.find(item => item.id === id);
+    if (!skill) return;
+    document.getElementById("detail-title").textContent = skill.id;
+    document.getElementById("detail-meta").textContent = `${skill.role} · ${skill.auto ? "auto invocation" : "manual invocation"}`;
+    const composed = skill.composes.length ? `<p><strong>Composes:</strong> ${skill.composes.map(item => `<code>${item}</code>`).join(" · ")}</p>` : "<p>This catalog entry does not declare composed skills.</p>";
+    document.getElementById("detail-body").innerHTML = `<p><strong>Source:</strong> <code>${skill.source}</code></p>${composed}<div class="tagrow"><span class="tag">${skill.isDefault ? "setup default" : "opt-in"}</span><span class="tag">${skill.auto ? "plain-language discoverable" : "explicit/manual"}</span></div>`;
+    return;
+  }
+  const detail = DETAILS[key];
+  if (!detail) return;
+  document.getElementById("detail-title").textContent = detail.title;
+  document.getElementById("detail-meta").textContent = detail.meta;
+  document.getElementById("detail-body").innerHTML = `<p>${detail.body}</p>${detail.bullets ? `<ul>${detail.bullets.map(item => `<li>${item}</li>`).join("")}</ul>` : ""}${detail.tags ? `<div class="tagrow">${detail.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div>` : ""}`;
+}
+
+function highlightCompositions(skillId) {
+  document.querySelectorAll(".compose-edge").forEach(edge => edge.classList.toggle("lit", edge.dataset.source === skillId || edge.dataset.target === skillId));
+  document.querySelectorAll(".skill-node").forEach(node => {
+    const skill = SKILLS.find(item => item.id === skillId);
+    const related = node.dataset.skill === skillId || skill?.composes.includes(node.dataset.skill) || SKILLS.find(item => item.id === node.dataset.skill)?.composes.includes(skillId);
+    node.classList.toggle("dim", !related);
+  });
+}
+
+function setView(view) {
+  currentView = view;
+  document.body.classList.toggle("catalog-view", view === "catalog");
+  machineView.toggleAttribute("hidden", view !== "machine");
+  catalogView.toggleAttribute("hidden", view !== "catalog");
+  document.querySelectorAll(".view-button").forEach(button => button.classList.toggle("on", button.dataset.view === view));
+  document.getElementById("search").placeholder = view === "machine" ? "Find command, state, or skill…" : "Find skill, role, or source…";
+  clearSearch();
+  resetCamera();
+  if (view === "machine") {
+    setFlow(currentFlow);
+  } else {
+    stage.classList.remove("flowing");
+    document.getElementById("flow-panel").hidden = true;
+    setSkillFilter(currentSkillFilter);
+  }
+}
+
+function setFlow(key) {
+  currentFlow = key;
+  document.querySelectorAll("[data-flow]").forEach(button => button.classList.toggle("on", button.dataset.flow === key));
+  stage.classList.toggle("flowing", key !== "all");
+  document.querySelectorAll("#machine-view .node, #machine-view .edge, #machine-view .edge-label").forEach(item => item.classList.remove("lit"));
+  if (key === "all") {
+    document.getElementById("flow-panel").hidden = true;
+    return;
+  }
+  const flow = FLOWS[key];
+  flow.nodes.forEach(id => document.querySelector(`#machine-view .node[data-k="${id}"]`)?.classList.add("lit"));
+  flow.edges.forEach(id => document.getElementById(id)?.classList.add("lit"));
+  document.getElementById("flow-name").textContent = flow.name;
+  document.getElementById("flow-title").textContent = flow.title;
+  document.getElementById("flow-steps").innerHTML = flow.steps.map(step => `<li>${step}</li>`).join("");
+  document.getElementById("flow-panel").hidden = false;
+}
+
+function setSkillFilter(filter) {
+  currentSkillFilter = filter;
+  document.querySelectorAll("[data-skill-filter]").forEach(button => button.classList.toggle("on", button.dataset.skillFilter === filter));
+  document.querySelectorAll(".skill-node").forEach(node => {
+    const visible = filter === "all" ||
+      (filter === "auto" && node.dataset.auto === "true") ||
+      (filter === "manual" && node.dataset.auto === "false") ||
+      (filter === "default" && node.dataset.default === "true") ||
+      (filter === "composes" && node.dataset.composes === "true");
+    node.classList.toggle("dim", !visible);
+  });
+  document.querySelectorAll(".compose-edge").forEach(edge => edge.classList.remove("lit"));
+}
+
+function clearSearch() {
+  document.getElementById("search").value = "";
+  document.querySelectorAll(".node").forEach(node => node.classList.remove("match","dim"));
+  if (currentView === "catalog") setSkillFilter(currentSkillFilter);
+}
+
+document.getElementById("search").addEventListener("input", event => {
+  const term = event.target.value.trim().toLowerCase();
+  if (!term && currentView === "catalog") {
+    setSkillFilter(currentSkillFilter);
+    return;
+  }
+  const selector = currentView === "machine" ? "#machine-view .node" : "#catalog-view .skill-node";
+  document.querySelectorAll(selector).forEach(node => {
+    const matches = !term || (node.dataset.search || "").toLowerCase().includes(term);
+    node.classList.toggle("match", Boolean(term && matches));
+    node.classList.toggle("dim", Boolean(term && !matches));
+  });
+});
+
+document.querySelectorAll(".view-button").forEach(button => button.addEventListener("click", () => setView(button.dataset.view)));
+document.querySelectorAll("[data-flow]").forEach(button => button.addEventListener("click", () => setFlow(button.dataset.flow)));
+document.querySelectorAll("[data-skill-filter]").forEach(button => button.addEventListener("click", () => setSkillFilter(button.dataset.skillFilter)));
+
+document.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", () => {
+  document.getElementById(button.dataset.close).hidden = true;
+}));
+document.getElementById("legend-button").addEventListener("click", () => { document.getElementById("legend").hidden = false; });
+
+document.getElementById("theme-button").addEventListener("click", () => {
+  const dark = !document.documentElement.classList.contains("dark");
+  document.documentElement.classList.toggle("dark", dark);
+  localStorage.setItem("afk-state-machine-theme", dark ? "dark" : "light");
+});
+
+function updateTransform() {
+  content.setAttribute("transform", `translate(${panX} ${panY}) scale(${scale})`);
+  document.getElementById("zoom-level").textContent = `${Math.round(scale * 100)}%`;
+}
+
+function resetCamera() {
+  scale = 1;
+  panX = 0;
+  panY = 0;
+  updateTransform();
+}
+
+function svgPoint(clientX, clientY) {
+  const point = svg.createSVGPoint();
+  point.x = clientX;
+  point.y = clientY;
+  return point.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+svg.addEventListener("pointerdown", event => {
+  if (event.button !== 0) return;
+  const point = svgPoint(event.clientX,event.clientY);
+  dragStart = {clientX:event.clientX,clientY:event.clientY,x:point.x,y:point.y,panX,panY};
+  dragged = false;
+});
+
+svg.addEventListener("pointermove", event => {
+  if (!dragStart) return;
+  const point = svgPoint(event.clientX,event.clientY);
+  const dxClient = event.clientX-dragStart.clientX;
+  const dyClient = event.clientY-dragStart.clientY;
+  if (!dragged && Math.hypot(dxClient,dyClient) > 5) {
+    dragged = true;
+    svg.setPointerCapture(event.pointerId);
+    svg.classList.add("grabbing");
+  }
+  if (!dragged) return;
+  panX = dragStart.panX + (point.x-dragStart.x);
+  panY = dragStart.panY + (point.y-dragStart.y);
+  updateTransform();
+});
+
+function finishDrag(event) {
+  if (!dragStart) return;
+  if (dragged) suppressNextClick = true;
+  dragStart = null;
+  svg.classList.remove("grabbing");
+  if (svg.hasPointerCapture(event.pointerId)) svg.releasePointerCapture(event.pointerId);
+}
+svg.addEventListener("pointerup", finishDrag);
+svg.addEventListener("pointercancel", finishDrag);
+svg.addEventListener("click", event => {
+  if (!suppressNextClick) return;
+  event.preventDefault();
+  event.stopPropagation();
+  suppressNextClick = false;
+}, true);
+
+svg.addEventListener("wheel", event => {
+  event.preventDefault();
+  const cursor = svgPoint(event.clientX,event.clientY);
+  const contentX = (cursor.x-panX)/scale;
+  const contentY = (cursor.y-panY)/scale;
+  const factor = Math.exp(-event.deltaY * 0.0012);
+  const next = Math.min(2.6,Math.max(.42,scale*factor));
+  panX = cursor.x-contentX*next;
+  panY = cursor.y-contentY*next;
+  scale = next;
+  updateTransform();
+},{passive:false});
+
+document.getElementById("reset-button").addEventListener("click", resetCamera);
+
+renderMachine();
+renderCatalog();
+attachNodeEvents();
+updateTransform();
+</script>
+</body>
+</html>

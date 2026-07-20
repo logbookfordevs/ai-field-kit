@@ -1,4 +1,4 @@
 interface:
-  display_name: "AFK Implement Tasks"
-  short_description: "Implement checkpointed tasks with statuses, reviews, validation, and handoffs."
-  default_prompt: "Implement the existing AFK checkpoint packets."
+  display_name: "Implement Tasks"
+  short_description: "Implement ticket files with statuses, reviews, validation, and handoffs."
+  default_prompt: "Implement the existing ticket files."

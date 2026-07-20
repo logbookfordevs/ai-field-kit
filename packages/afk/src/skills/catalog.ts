@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ManagedSkillAgent, SkillAgentFilter, SkillsListScope, SkillsListStorage } from "../types.js";
+import type { ManagedSkillAgent, SkillAgentFilter, SkillsListAutoInvocation, SkillsListScope, SkillsListStorage } from "../types.js";
 import { loadSkillManifest, localManifestDir, type SkillManifest, type SkillManifestItem } from "../manifest.js";
 
 export const skillCatalogFileName = "skills.json";
@@ -9,7 +9,7 @@ export const legacySkillCatalogFileName = "afk-skills.json";
 
 export type SkillStorage = "active" | "disabled";
 export type SkillRootKind = "global-library" | "project-agent" | "agent-library";
-export type SkillAutoInvocationState = "enabled" | "disabled" | "mixed" | "default";
+export type SkillAutoInvocationState = SkillsListAutoInvocation;
 
 export type SkillRecord = {
   folder: string;
@@ -22,7 +22,7 @@ export type SkillRecord = {
   storage: SkillStorage;
   rootKind: SkillRootKind;
   readOnly: boolean;
-  agent: ManagedSkillAgent | undefined;
+  agent: SkillAgentFilter | undefined;
   category: string | undefined;
   categoryId: string | undefined;
   tags: string[];
@@ -91,7 +91,7 @@ type SkillRoot = {
   path: string;
   storage: SkillStorage;
   readOnly: boolean;
-  agent?: ManagedSkillAgent;
+  agent?: SkillAgentFilter;
 };
 
 type FrontmatterMetadata = {
@@ -105,9 +105,10 @@ export function loadSkillCatalog(options: {
   cwd: string;
   scope: SkillsListScope;
   agent: SkillAgentFilter | undefined;
+  agentPath?: string | undefined;
 }): SkillCatalogSnapshot {
   const categorization = loadCategorizationState(options.homeDir);
-  const roots = skillRoots(options.homeDir, options.cwd)
+  const roots = skillRoots(options.homeDir, options.cwd, options.agentPath)
     .filter((root) => rootMatchesScope(root, options.scope))
     .filter((root) => rootMatchesAgent(root, options.agent));
 
@@ -119,6 +120,7 @@ export function loadSkillCatalog(options: {
 }
 
 export type SkillListFilters = {
+  autoInvocation?: SkillAutoInvocationState | undefined;
   category?: string | undefined;
   tag?: string | undefined;
   uncategorized?: boolean | undefined;
@@ -127,6 +129,10 @@ export type SkillListFilters = {
 
 export function filterSkillRecords(records: SkillRecord[], filters: SkillListFilters): SkillRecord[] {
   return records.filter((record) => {
+    if (filters.autoInvocation && record.autoInvocation !== filters.autoInvocation) {
+      return false;
+    }
+
     if (filters.storage && record.storage !== filters.storage) {
       return false;
     }
@@ -783,7 +789,7 @@ function humanizeSkillId(id: string): string {
     .join(" ");
 }
 
-function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
+function skillRoots(homeDir: string, cwd: string, customAgentPath?: string): SkillRoot[] {
   return [
     {
       kind: "global-library",
@@ -832,11 +838,12 @@ function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
       agent: "claude",
     },
     ...agentSkillRoots(homeDir),
+    ...(customAgentPath ? customAgentRoots(customAgentPath) : []),
   ];
 }
 
 export function managedSkillAgents(): SkillAgentFilter[] {
-  return ["shared", ...knownAgentRoots.map((root) => root.agent)];
+  return [...knownAgentRoots.map((root) => root.agent), "custom"];
 }
 
 const knownAgentRoots: Array<{
@@ -883,6 +890,27 @@ function agentSkillRoots(homeDir: string): SkillRoot[] {
   ] satisfies SkillRoot[]);
 }
 
+function customAgentRoots(path: string): SkillRoot[] {
+  return [
+    {
+      kind: "agent-library",
+      label: "Custom Agent",
+      path,
+      storage: "active",
+      readOnly: false,
+      agent: "custom",
+    },
+    {
+      kind: "agent-library",
+      label: "Custom Agent / Disabled",
+      path: join(path, ".disabled"),
+      storage: "disabled",
+      readOnly: false,
+      agent: "custom",
+    },
+  ];
+}
+
 function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
   if (scope === "all") {
     return true;
@@ -897,10 +925,6 @@ function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
 
 function rootMatchesAgent(root: SkillRoot, agent: SkillAgentFilter | undefined): boolean {
   if (!agent) {
-    return true;
-  }
-
-  if (agent === "shared") {
     return root.kind === "global-library";
   }
 

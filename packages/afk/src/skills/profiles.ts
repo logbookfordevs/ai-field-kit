@@ -19,9 +19,24 @@ export type SkillProfileCatalog = {
   items: SkillProfileItem[];
 };
 
+export type SkillProfileActivationMode = "focus" | "additive";
+
+export type SkillProfileActivation = {
+  profileId: string;
+  mode: SkillProfileActivationMode;
+};
+
 export type SkillProfileState = {
   version: number;
-  enabledProfileIds: string[];
+  activations: SkillProfileActivation[];
+  profileMovedSkills: string[];
+  preExistingDisabledSkills: string[];
+};
+
+type StoredSkillProfileState = {
+  version: number;
+  activations?: SkillProfileActivation[];
+  enabledProfileIds?: string[];
   profileMovedSkills: string[];
   preExistingDisabledSkills: string[];
 };
@@ -53,6 +68,10 @@ export type SkillProfileApplyResult = {
   keptSkills: string[];
   movements: SkillProfileMovement[];
   dryRun: boolean;
+  profileChange?: {
+    action: "enable" | "disable";
+    profileId: string;
+  };
 };
 
 export function skillProfilePaths(context: SkillProfileContext): SkillProfilePaths {
@@ -211,7 +230,12 @@ export function deleteSkillProfile(context: SkillProfileContext, idValue: string
   return { catalog: next, paths: skillProfilePaths(context), removed, dryRun };
 }
 
-export function enableSkillProfile(context: SkillProfileContext, idValue: string, dryRun: boolean): SkillProfileApplyResult {
+export function enableSkillProfile(
+  context: SkillProfileContext,
+  idValue: string,
+  dryRun: boolean,
+  mode: SkillProfileActivationMode = "focus",
+): SkillProfileApplyResult {
   const id = normalizeId(idValue);
   const catalog = loadSkillProfileCatalog(context);
   if (!catalog.items.some((item) => item.id === id)) {
@@ -219,28 +243,42 @@ export function enableSkillProfile(context: SkillProfileContext, idValue: string
   }
 
   const current = loadSkillProfileState(context);
+  const existingActivation = current.activations.find((activation) => activation.profileId === id);
+  if (existingActivation && existingActivation.mode !== mode) {
+    throw new Error(
+      `Skill profile ${id} is already enabled in ${existingActivation.mode} mode. Disable it before enabling it in ${mode} mode.`,
+    );
+  }
   const state = {
     ...current,
-    enabledProfileIds: uniqueNormalized([...current.enabledProfileIds, id]),
+    activations: existingActivation
+      ? current.activations
+      : normalizeSkillProfileActivations([...current.activations, { profileId: id, mode }]),
   };
 
-  return applySkillProfileState(context, catalog, state, dryRun);
+  return applySkillProfileState(context, catalog, state, dryRun, {
+    action: "enable",
+    profileId: id,
+  });
 }
 
 export function disableSkillProfile(context: SkillProfileContext, idValue: string, dryRun: boolean): SkillProfileApplyResult {
   const id = normalizeId(idValue);
   const catalog = loadSkillProfileCatalog(context);
   const current = loadSkillProfileState(context);
-  if (!current.enabledProfileIds.includes(id) && !catalog.items.some((item) => item.id === id)) {
+  if (!current.activations.some((activation) => activation.profileId === id) && !catalog.items.some((item) => item.id === id)) {
     throw new Error(`Skill profile not found: ${idValue}`);
   }
 
   const state = {
     ...current,
-    enabledProfileIds: current.enabledProfileIds.filter((profileId) => profileId !== id),
+    activations: current.activations.filter((activation) => activation.profileId !== id),
   };
 
-  return applySkillProfileState(context, catalog, state, dryRun);
+  return applySkillProfileState(context, catalog, state, dryRun, {
+    action: "disable",
+    profileId: id,
+  });
 }
 
 export function skillProfileStatus(context: SkillProfileContext): SkillProfileApplyResult {
@@ -256,11 +294,21 @@ export function skillProfileStatus(context: SkillProfileContext): SkillProfileAp
   };
 }
 
+export function reconcileSkillProfiles(context: SkillProfileContext, dryRun: boolean): SkillProfileApplyResult {
+  return applySkillProfileState(
+    context,
+    loadSkillProfileCatalog(context),
+    loadSkillProfileState(context),
+    dryRun,
+  );
+}
+
 function applySkillProfileState(
   context: SkillProfileContext,
   catalog: SkillProfileCatalog,
   requestedState: SkillProfileState,
   dryRun: boolean,
+  profileChange?: SkillProfileApplyResult["profileChange"],
 ): SkillProfileApplyResult {
   const paths = skillProfilePaths(context);
   const currentState = loadSkillProfileState(context);
@@ -268,7 +316,8 @@ function applySkillProfileState(
   const disabled = existingSkillFolders(paths.disabledRoot);
   const autoInvocationBySkill = skillAutoInvocationById(paths.catalogPath);
   const kept = new Set(keptSkillsFor(catalog, requestedState).map((skill) => skill.toLowerCase()));
-  const hasEnabledProfiles = requestedState.enabledProfileIds.length > 0;
+  const hasEnabledProfiles = requestedState.activations.length > 0;
+  const hasEnabledFocusProfiles = requestedState.activations.some((activation) => activation.mode === "focus");
   const moved = new Set(currentState.profileMovedSkills.map((skill) => skill.toLowerCase()));
   const preExistingDisabled = new Set([
     ...currentState.preExistingDisabledSkills,
@@ -280,7 +329,7 @@ function applySkillProfileState(
   for (const folder of active) {
     const normalized = folder.toLowerCase();
     const shouldReturnToDisabled = preExistingDisabled.has(normalized) && !kept.has(normalized);
-    if (!hasEnabledProfiles && !shouldReturnToDisabled) {
+    if (!hasEnabledFocusProfiles && !shouldReturnToDisabled) {
       continue;
     }
 
@@ -308,7 +357,7 @@ function applySkillProfileState(
     const wasProfileMoved = moved.has(normalized);
     const wasPreExistingDisabled = preExistingDisabled.has(normalized);
     const shouldRestoreMoved = wasProfileMoved && (
-      !hasEnabledProfiles ||
+      !hasEnabledFocusProfiles ||
       kept.has(normalized) ||
       !shouldProfileDisableSkill(folder, catalog.mode, autoInvocationBySkill)
     );
@@ -327,9 +376,9 @@ function applySkillProfileState(
   }
 
   const nextState: SkillProfileState = {
-    version: 1,
-    enabledProfileIds: requestedState.enabledProfileIds,
-    profileMovedSkills: hasEnabledProfiles
+    version: 2,
+    activations: requestedState.activations,
+    profileMovedSkills: hasEnabledFocusProfiles
       ? [...profileMoved]
         .filter((folder) => !kept.has(folder.toLowerCase()))
         .filter((folder) => shouldProfileDisableSkill(folder, catalog.mode, autoInvocationBySkill))
@@ -350,6 +399,7 @@ function applySkillProfileState(
     keptSkills: [...kept].sort(),
     movements,
     dryRun,
+    ...(profileChange ? { profileChange } : {}),
   };
 }
 
@@ -382,13 +432,17 @@ function writeSkillProfileState(context: SkillProfileContext, state: SkillProfil
 }
 
 function keptSkillsFor(catalog: SkillProfileCatalog, state: SkillProfileState): string[] {
-  const enabled = new Set(state.enabledProfileIds);
+  const enabled = new Set(enabledSkillProfileIds(state));
   return uniqueNormalized([
     ...catalog.alwaysOn,
     ...catalog.items
       .filter((profile) => enabled.has(profile.id))
       .flatMap((profile) => profile.skills),
   ]);
+}
+
+export function enabledSkillProfileIds(state: SkillProfileState): string[] {
+  return state.activations.map((activation) => activation.profileId);
 }
 
 function shouldProfileDisableSkill(folder: string, mode: SkillProfileMode, autoInvocationBySkill: Map<string, boolean>): boolean {
@@ -442,7 +496,7 @@ function emptySkillProfileCatalog(): SkillProfileCatalog {
 }
 
 function emptySkillProfileState(): SkillProfileState {
-  return { version: 1, enabledProfileIds: [], profileMovedSkills: [], preExistingDisabledSkills: [] };
+  return { version: 2, activations: [], profileMovedSkills: [], preExistingDisabledSkills: [] };
 }
 
 function normalizeSkillProfileCatalog(catalog: SkillProfileCatalog): SkillProfileCatalog {
@@ -458,13 +512,28 @@ function normalizeSkillProfileCatalog(catalog: SkillProfileCatalog): SkillProfil
   };
 }
 
-function normalizeSkillProfileState(state: SkillProfileState): SkillProfileState {
+function normalizeSkillProfileState(state: StoredSkillProfileState): SkillProfileState {
+  const activations = state.activations ?? state.enabledProfileIds?.map((profileId) => ({ profileId, mode: "focus" as const })) ?? [];
   return {
-    version: Math.max(state.version, 1),
-    enabledProfileIds: uniqueNormalized(state.enabledProfileIds),
+    version: Math.max(state.version, 2),
+    activations: normalizeSkillProfileActivations(activations),
     profileMovedSkills: uniqueNormalized(state.profileMovedSkills),
     preExistingDisabledSkills: uniqueNormalized(state.preExistingDisabledSkills),
   };
+}
+
+function normalizeSkillProfileActivations(activations: SkillProfileActivation[]): SkillProfileActivation[] {
+  const byProfileId = new Map<string, SkillProfileActivationMode>();
+  for (const activation of activations) {
+    const profileId = normalizeId(activation.profileId);
+    if (profileId) {
+      byProfileId.set(profileId, activation.mode);
+    }
+  }
+
+  return [...byProfileId]
+    .map(([profileId, mode]) => ({ profileId, mode }))
+    .sort((left, right) => left.profileId.localeCompare(right.profileId));
 }
 
 function isSkillProfileCatalog(value: unknown): value is SkillProfileCatalog {
@@ -483,11 +552,24 @@ function isSkillProfileCatalog(value: unknown): value is SkillProfileCatalog {
     );
 }
 
-function isSkillProfileState(value: unknown): value is SkillProfileState {
+function isSkillProfileState(value: unknown): value is StoredSkillProfileState {
   return isRecord(value) &&
     typeof value.version === "number" &&
-    Array.isArray(value.enabledProfileIds) &&
-    value.enabledProfileIds.every((item) => typeof item === "string") &&
+    (
+      (
+        Array.isArray(value.activations) &&
+        value.activations.every((activation) =>
+          isRecord(activation) &&
+          typeof activation.profileId === "string" &&
+          (activation.mode === "focus" || activation.mode === "additive")
+        )
+      ) ||
+      (
+        value.activations === undefined &&
+        Array.isArray(value.enabledProfileIds) &&
+        value.enabledProfileIds.every((item) => typeof item === "string")
+      )
+    ) &&
     Array.isArray(value.profileMovedSkills) &&
     value.profileMovedSkills.every((item) => typeof item === "string") &&
     Array.isArray(value.preExistingDisabledSkills) &&
