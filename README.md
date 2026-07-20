@@ -26,6 +26,7 @@ entries instead of release versions.
 - [What AFK Sets Up](#what-afk-sets-up)
 - [Common CLI Paths](#common-cli-paths)
 - [Catalogs and Sources](#catalogs-and-sources)
+- [Portable Custom Agents](#portable-custom-agents)
 - [Skills and Workflows](#skills-and-workflows)
 - [Repository Map](#repository-map)
 - [Contributing](#contributing)
@@ -195,6 +196,76 @@ are translated only when `afk setup agents` runs.
 
 ---
 
+## Portable Custom Agents
+
+Custom Agents let one agent definition travel across supported harnesses. You
+write its identity, instructions, model preferences, access, and capabilities
+once; AFK translates that source into the native format expected by Codex,
+Claude Code, or Pi. AFK provisions those files—it does not launch, coordinate,
+or replace the harness's own subagent runtime.
+
+The usual path is inspect, preview, then provision:
+
+```bash
+# See what is available
+afk show agents
+
+# Preview one agent in Codex
+afk setup agents --custom-agent notion_assistant --agent codex --dry-run
+
+# Provision it after reviewing the target file
+afk setup agents --custom-agent notion_assistant --agent codex --yes
+```
+
+Interactive setup opens a checkbox picker with every Custom Agent unchecked.
+For scripts, selection stays explicit: repeat `--custom-agent <id>` or use
+`--all`. `--yes` confirms the operation, but never selects agents on its own.
+
+Catalog entries stay deliberately small. Each one gives AFK a stable ID, a
+human label, and a direct URL or path to a Portable Agent File:
+
+```json
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "notion_assistant",
+      "label": "Notion Assistant",
+      "source": "https://example.com/agents/notion-assistant.md"
+    }
+  ]
+}
+```
+
+The Portable Agent File is Markdown with YAML frontmatter. It owns the agent's
+description and instructions, while optional `models` and `effort` fields can
+set exact values per harness. Omit either field to inherit that harness's
+current setting. AFK does not inspect skill names mentioned in the instructions
+or install those skills; those dependencies remain under the user's control.
+
+| Harness | Personal target | Project target |
+|---|---|---|
+| Codex | `~/.codex/agents/<name>.toml` | `.codex/agents/<name>.toml` |
+| Claude Code | `~/.claude/agents/<name>.md` | `.claude/agents/<name>.md` |
+| Pi | `~/.pi/agent/agents/<name>.md` | `.pi/agents/<name>.md` |
+
+Generated targets are source-owned: running setup again replaces the selected
+native files with a fresh translation. Keep durable changes in the Portable
+Agent File rather than editing generated targets. Pi additionally needs the
+`pi-subagents` extension; if it is missing, AFK suggests the install command,
+skips Pi, and asks you to rerun setup afterward.
+
+Use `afk catalog agents` to add, edit, or remove cached catalog entries.
+`afk refresh` includes `agents.json` and merges entries by ID, so new source
+entries are added, matching source entries are updated, and unrelated local
+entries remain. Refresh changes catalog data only; provisioning happens during
+setup.
+
+For the complete Portable Agent File schema, capability behavior, adapter
+mapping, and Pi setup, read [Portable Custom Agents](./packages/afk/docs/custom-agents.md).
+
+---
+
 ## Skills and Workflows
 
 Skills are still a core part of AI Field Kit, but they are no longer the front
@@ -238,6 +309,7 @@ plugins, catalog composition, or setup policy.
 |---|---|
 | [`packages/afk/`](./packages/afk) | AFK CLI package, command reference, catalog model, and local development flow. |
 | [`packages/afk/catalog/`](./packages/afk/catalog) | Default setup catalog read by AFK. |
+| [`packages/afk/docs/custom-agents.md`](./packages/afk/docs/custom-agents.md) | Portable Custom Agent source format, adapters, and provisioning behavior. |
 | [`rules/`](./rules) | Shared AFK rules source for managed agent instruction regions. |
 | [`skills/`](./skills) | Authored AFK skills and workflow-style skill packages. |
 | [`packages/afk/catalog/mcps.json`](./packages/afk/catalog/mcps.json) | MCP server recommendations for delegated setup through official tooling. |
@@ -284,6 +356,22 @@ useful, open a PR.
 For explicit multi-step procedures, use `autoInvocation: true` when normal
 language should discover the skill, and reserve `autoInvocation: false` for
 slash-only or attached-only procedures.
+
+**Adding a Custom Agent:**
+
+1. Author one Portable Agent File with YAML frontmatter and a Markdown
+   instruction body.
+2. Add its `id`, `label`, and direct source URL or path to `agents.json`. The
+   catalog ID must match the portable file's `name`.
+3. Inspect it with `afk show agents --source <source>`.
+4. Preview each intended adapter with a dry run:
+
+   ```bash
+   afk setup agents --source <source> --custom-agent <id> --agent <harness> --dry-run
+   ```
+
+Keep runtime behavior in the portable source. AFK-owned adapters should only
+translate that behavior into the native harness formats.
 
 **Adding an MCP server:**
 

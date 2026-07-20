@@ -195,7 +195,7 @@ or delegated command. Read-only commands do not need it.
 | `afk` | Open the interactive AFK lobby. | Routes to another command; the selected command owns any effects. |
 | `afk --version`, `afk -v` | Print the installed AFK version. | Read-only. |
 | `afk <command> --help`, `-h` | Print command-specific usage, options, and examples. | Read-only. |
-| `afk setup` | Preview or apply rules, skills, profiles, MCPs, plugins, and hooks. | AFK writes owned files and delegates ecosystem installs. |
+| `afk setup` | Preview or apply rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks. | AFK writes owned files and delegates ecosystem installs. |
 | `afk refresh [category...]` | Refresh cached catalog files from the remembered or selected source. | Writes the global or project-local catalog cache. |
 | `afk show [category...]` | Inspect cached catalog data or a one-off source. | Read-only, except `--visualize` writes an HTML file. |
 | `afk catalog` | Interactively edit writable catalog files. | Writes catalog JSON. |
@@ -216,6 +216,7 @@ non-zero when any selected area fails.
 | `afk setup rules` | Merge the configured rules source into AFK-managed regions without replacing user-owned content outside those regions. | AFK. |
 | `afk setup skills` | Select catalog skills, delegate installation, restore previously disabled storage, apply invocation policy, and reconcile enabled profiles. | Official `skills` CLI for installation; AFK for policy and reconciliation. |
 | `afk setup profiles` | Prepare `profiles.json` definitions from the selected source. It does not install skills or enable a profile. | AFK. |
+| `afk setup agents` | Select portable Custom Agents and translate them into native Codex, Claude Code, or Pi definitions. | AFK adapters; the harness owns orchestration. |
 | `afk setup mcps` | Select catalog MCPs and delegate their installation for supported agents/scopes. | `add-mcp`. |
 | `afk setup plugins` | Run selected catalog installer commands and supported post-install commands. | Each plugin installer. |
 | `afk setup hooks` | Copy selected hook scripts and merge commands into supported native hook configs. | AFK. |
@@ -233,7 +234,7 @@ Setup aliases retained for compatibility:
 
 ### Refresh and Show Commands
 
-Catalog categories are `rules`, `skills`, `profiles`, `mcps`, `plugins`,
+Catalog categories are `rules`, `skills`, `profiles`, `agents`, `mcps`, `plugins`,
 `hooks`, and `presets`. Pass one or more categories to limit output or refresh
 writes:
 
@@ -255,6 +256,7 @@ afk show skills profiles
 | `afk show rules` | Inspect the rules source AFK would merge into managed regions. |
 | `afk show skills` | Inspect skill install metadata, invocation policy, roles, and composition. |
 | `afk show profiles` | Inspect profile definitions and catalog-wide reconciliation policy. |
+| `afk show agents` | Inspect portable Custom Agent catalog entries before provisioning. |
 | `afk show mcps` | Inspect MCP recommendations before delegated installation. |
 | `afk show plugins` | Inspect plugin installers and post-install commands. |
 | `afk show hooks` | Inspect lifecycle hook definitions and supported targets. |
@@ -286,6 +288,7 @@ its interactive editor. Use `--dry-run` to preview supported writes.
 | Profiles | `afk catalog profiles create`, `edit`, `delete` | Profile definitions in `profiles.json`. |
 | Profile policy | `afk catalog profiles set-mode` | Top-level `strict` or `context` reconciliation mode. |
 | Profile policy | `afk catalog profiles toggle-always-on` | Top-level skills kept by every active profile. |
+| Custom Agents | `afk catalog agents add`, `edit`, `remove` | Portable agent source references in `agents.json`. |
 | MCPs | `afk catalog mcps add`, `edit`, `remove`, `toggle-default` | MCP recommendations in `mcps.json`. |
 | Plugins | `afk catalog plugins add`, `edit`, `remove`, `toggle-default` | Installer definitions in `plugins.json`. |
 | Hooks | `afk catalog hooks add`, `edit`, `remove`, `toggle-default` | Lifecycle hook definitions in `hooks.json`. |
@@ -644,7 +647,9 @@ Refresh replaces source-owned catalog content while preserving local catalog
 extensions. In `skills.json`, imported skills absent from the refreshed source
 survive. In `profiles.json`, locally created profiles whose IDs are absent from
 the refreshed source survive. The refreshed source wins on matching IDs and
-owns top-level profile policy such as `mode` and `alwaysOn`.
+owns top-level profile policy such as `mode` and `alwaysOn`. In `agents.json`,
+refresh updates matching IDs, appends new source entries, and preserves local
+entries absent from the source.
 
 Use these commands to prepare catalog files without running setup:
 
@@ -869,6 +874,31 @@ readable as a skill system instead of a flat install list. For example, a
 wrapper can stay manually invoked while composing smaller primitives that remain
 available to automatic model discovery.
 
+### Custom Agents
+
+```json
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "notion_assistant",
+      "label": "Notion Assistant",
+      "source": "https://example.com/agents/notion-assistant.md"
+    }
+  ]
+}
+```
+
+The catalog stores discovery metadata and a direct Portable Agent File source;
+the linked Markdown file owns the runtime description and behavior. The
+catalog `id` must match the portable file's `name`. Custom Agents have no
+default-selection field: interactive setup starts with every item unchecked,
+and scripted setup requires `--custom-agent <id>` or `--all`.
+
+See [Portable Custom Agents](docs/custom-agents.md) for the source schema,
+per-harness model and effort fields, capabilities, target paths, and adapter
+behavior.
+
 ### MCPs
 
 ```json
@@ -1003,6 +1033,27 @@ Profile setup prepares the local `profiles.json` catalog file from the
 remembered or selected setup source. Profiles are definitions, not installs:
 use `afk skills profiles enable <profile>` after the referenced skills exist
 to apply one.
+
+### Custom Agents
+
+AFK translates one portable Markdown definition into native Codex, Claude
+Code, or Pi agent files. Setup is provisioning only; the selected harness owns
+execution and orchestration. Generated native files are replaced on the next
+setup, so lasting edits belong in the portable source.
+
+Use `afk setup agents` for the unchecked interactive picker, or make scripted
+selection explicit:
+
+```bash
+afk setup agents --custom-agent notion_assistant --agent codex --dry-run
+afk setup agents --custom-agent notion_assistant --agent codex --yes
+afk setup agents --all --agent claude --agent pi --yes
+```
+
+`--yes` confirms but does not select. Pi requires `pi-subagents`; AFK suggests
+the extension command and skips Pi when it is unavailable rather than
+installing it automatically. For the full contract, see
+[Portable Custom Agents](docs/custom-agents.md).
 
 ## Troubleshooting
 
