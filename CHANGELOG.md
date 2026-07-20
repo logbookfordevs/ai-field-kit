@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v1.2.0 - 2026-07-20
+
 ### Added
 
 - `cli:` added global `afk skills upgrade --profile` selection for upgrading every tracked skill in a chosen profile without changing profile membership or activation.
