@@ -23,6 +23,7 @@ import {
   localManifestDir,
   type HookManifest,
   type HookManifestItem,
+  type CustomAgentManifestItem,
   type McpManifestItem,
   type RulesManifest,
   type SkillManifest,
@@ -69,12 +70,13 @@ export type ManifestConfigurePrompts = {
   confirm: (message: string, defaultValue: boolean) => Promise<boolean>;
 };
 
-const manifestAreas: ManifestArea[] = ["rules", "skills", "profiles", "mcps", "plugins", "hooks"];
+const manifestAreas: ManifestArea[] = ["rules", "skills", "profiles", "agents", "mcps", "plugins", "hooks"];
 
 const areaDescriptions: Record<ManifestArea, string> = {
   rules: "Point rules sync at one AGENTS.md source.",
   skills: "Add, edit, remove, and toggle skills.",
   profiles: "Edit profile-level always-on skills.",
+  agents: "Add, edit, and remove portable Custom Agent sources.",
   mcps: "Add, edit, remove, and toggle MCP recommendations.",
   plugins: "Add, edit, remove, and toggle plugin installers.",
   hooks: "Add, edit, remove, and toggle lifecycle hooks.",
@@ -250,7 +252,7 @@ async function applyItemAction(
     return shouldRemove ? removeManifestItem(area, manifest, selectedId) : manifest;
   }
 
-  if (action === "toggle-default") {
+  if (action === "toggle-default" && area !== "agents") {
     return setManifestItemDefaultValues(
       area,
       manifest,
@@ -324,6 +326,8 @@ async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<Edita
   switch (area) {
     case "skills":
       return promptSkill(prompts, existing as SkillManifestItem | undefined);
+    case "agents":
+      return promptCustomAgent(prompts, existing as CustomAgentManifestItem | undefined);
     case "mcps":
       return promptMcp(prompts, existing as McpManifestItem | undefined);
     case "plugins":
@@ -331,6 +335,13 @@ async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<Edita
     case "hooks":
       return promptHook(prompts, existing as HookManifestItem | undefined);
   }
+}
+
+async function promptCustomAgent(prompts: ManifestConfigurePrompts, existing?: CustomAgentManifestItem): Promise<CustomAgentManifestItem> {
+  const source = await prompts.input({ message: "Portable Agent File URL or path", default: existing?.source ?? "", required: true });
+  const id = await prompts.input({ message: "Agent id (must match the file name field)", default: existing?.id ?? inferId(source), required: true });
+  const label = await prompts.input({ message: "Agent label", default: existing?.label ?? inferLabel(id), required: true });
+  return { id, label, source };
 }
 
 async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillManifestItem): Promise<SkillManifestItem> {
@@ -442,6 +453,7 @@ function readEditableManifests(outputDir: string): Drafts {
     rules: readManifestOrEmpty(outputDir, "rules"),
     skills: readManifestOrEmpty(outputDir, "skills"),
     profiles: readProfilesOrEmpty(outputDir),
+    agents: readManifestOrEmpty(outputDir, "agents"),
     mcps: readManifestOrEmpty(outputDir, "mcps"),
     plugins: readManifestOrEmpty(outputDir, "plugins"),
     hooks: readManifestOrEmpty(outputDir, "hooks"),
@@ -471,6 +483,7 @@ function cloneDrafts(drafts: Drafts): Drafts {
     rules: cloneDraft(drafts.rules),
     skills: cloneDraft(drafts.skills),
     profiles: cloneProfileDraft(drafts.profiles),
+    agents: cloneDraft(drafts.agents),
     mcps: cloneDraft(drafts.mcps),
     plugins: cloneDraft(drafts.plugins),
     hooks: cloneDraft(drafts.hooks),
@@ -542,7 +555,7 @@ function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<Selec
     { name: `Add ${singularArea(area)}`, value: "add" },
     ...(hasItems ? [{ name: `Edit ${singularArea(area)}`, value: "edit" as const }] : []),
     ...(hasItems ? [{ name: `Remove ${singularArea(area)}`, value: "remove" as const }] : []),
-    ...(hasItems ? [{ name: "Toggle default", value: "toggle-default" as const }] : []),
+    ...(hasItems && area !== "agents" ? [{ name: "Toggle default", value: "toggle-default" as const }] : []),
     ...(area === "skills" && hasItems ? [{ name: "Toggle autoInvocation", value: "toggle-auto" as const }] : []),
     { name: "Back to catalog", value: "back" },
   ];
@@ -558,7 +571,7 @@ function itemChoices(manifest: EditableManifest): Array<SelectChoice<string>> {
 
 function booleanToggleChoices(manifest: EditableManifest, field: "default" | "autoInvocation"): BooleanToggleChoice[] {
   return itemsFromManifest(manifest).map((item) => {
-    const enabled = field === "default" ? item.default : autoInvocationValue(item);
+    const enabled = field === "default" ? item.default ?? false : autoInvocationValue(item);
     return {
       name: `${booleanSwitch(enabled)} ${itemLabel(item)}`,
       value: item.id,
@@ -593,7 +606,7 @@ function renderAreaSummary(area: ManifestArea, manifest: EditableDraft): string 
   return [
     "",
     `${areaTitle(area)} entries`,
-    ...items.map((item) => `- ${itemLabel(item)}${item.default ? " [default]" : ""}`),
+    ...items.map((item) => `- ${itemLabel(item)}${"default" in item && item.default ? " [default]" : ""}`),
   ].join("\n");
 }
 
@@ -631,7 +644,7 @@ function ensureSkillDefaultSource(manifest: SkillManifest, item: SkillManifestIt
 }
 
 function itemDescription(item: EditableManifestItem): string {
-  const states = [`default: ${booleanState(item.default)}`];
+  const states = "default" in item ? [`default: ${booleanState(item.default)}`] : [];
   if ("autoInvocation" in item) {
     states.push(`autoInvocation: ${booleanState(item.autoInvocation ?? true)}`);
   }
@@ -677,6 +690,8 @@ function areaTitle(area: ManifestArea): string {
       return "Skills";
     case "profiles":
       return "Profiles";
+    case "agents":
+      return "Custom Agents";
     case "mcps":
       return "MCPs";
     case "plugins":
@@ -692,6 +707,8 @@ function singularArea(area: Exclude<EditableManifestArea, "rules"> | "profiles")
       return "skill";
     case "profiles":
       return "profile";
+    case "agents":
+      return "Custom Agent";
     case "mcps":
       return "MCP";
     case "plugins":
@@ -741,7 +758,7 @@ function alwaysOnToggleChoices(profiles: SkillProfileCatalog, skillsManifest: Ed
 
 function alwaysOnSearchAliases(item: EditableManifestItem): string[] {
   const aliases = [
-    `default:${booleanState(item.default)}`,
+    `default:${booleanState(item.default ?? false)}`,
   ];
   if ("autoInvocation" in item) {
     aliases.push(`auto:${booleanState(item.autoInvocation ?? true)}`);
@@ -1016,7 +1033,7 @@ function isRulesDraft(value: EditableManifest): value is RulesManifest {
 }
 
 function isEditableItem(value: unknown): value is EditableManifestItem {
-  return isRecord(value) && typeof value.id === "string" && typeof value.label === "string" && typeof value.default === "boolean";
+  return isRecord(value) && typeof value.id === "string" && typeof value.label === "string";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

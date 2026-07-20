@@ -16,6 +16,7 @@ const categories: ManifestShowCategory[] = [
   { id: "rules", label: "Rules", filename: "rules.json" },
   { id: "skills", label: "Skills", filename: "skills.json" },
   { id: "profiles", label: "Profiles", filename: "profiles.json" },
+  { id: "agents", label: "Custom Agents", filename: "agents.json" },
   { id: "mcps", label: "MCPs", filename: "mcps.json" },
   { id: "plugins", label: "Plugins", filename: "plugins.json" },
   { id: "hooks", label: "Hooks", filename: "hooks.json" },
@@ -217,6 +218,8 @@ function renderManifestSummary(category: ManifestCategory, manifest: unknown, op
       return options.manifestShowReact ? renderSkillsAsReact(manifest) : renderSkills(manifest);
     case "profiles":
       return renderProfiles(manifest);
+    case "agents":
+      return renderCustomAgents(manifest);
     case "mcps":
       return renderItems(manifest, "MCP");
     case "plugins":
@@ -226,6 +229,21 @@ function renderManifestSummary(category: ManifestCategory, manifest: unknown, op
     case "presets":
       return renderPresets(manifest);
   }
+}
+
+function renderCustomAgents(manifest: Record<string, unknown>): string {
+  const items = Array.isArray(manifest.items) ? manifest.items : [];
+  const lines = [
+    summaryLine("version", valueOrUnknown(manifest.version)),
+    summaryLine("agents", items.length.toString()),
+  ];
+  for (const item of items) {
+    if (!isRecord(item)) {
+      continue;
+    }
+    lines.push(itemLine(`${String(item.label ?? item.id ?? "unnamed")} ${muted(String(item.source ?? "(no source)"))}`));
+  }
+  return lines.join("\n");
 }
 
 function renderProfiles(manifest: Record<string, unknown>): string {

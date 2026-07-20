@@ -50,6 +50,8 @@ test("compass lobby choices route intents to existing command paths", () => {
   assert.deepEqual(routeForLobbyChoice("catalog"), ["catalog"]);
   assert.deepEqual(routeForLobbyChoice("skills"), ["setup", "skills"]);
   assert.deepEqual(routeForLobbyChoice("skill-management"), ["skills"]);
+  assert.deepEqual(routeForLobbyChoice("agents"), ["setup", "agents"]);
+  assert.deepEqual(routeForLobbyChoice("catalog-agents"), ["catalog", "agents"]);
   assert.deepEqual(routeForLobbyChoice("mcps"), ["setup", "mcps"]);
   assert.deepEqual(routeForLobbyChoice("plugins"), ["setup", "plugins"]);
   assert.deepEqual(routeForLobbyChoice("hooks"), ["setup", "hooks"]);
@@ -162,10 +164,14 @@ test("compass lobby labels stay intent-oriented while descriptions teach command
   assert.ok(labels.includes("Edit local catalog"));
   assert.ok(labels.includes("Install skills"));
   assert.ok(labels.includes("Manage installed skills"));
+  assert.ok(labels.includes("Provision Custom Agents"));
+  assert.ok(labels.includes("Manage Custom Agent catalog"));
   assert.ok(labels.includes("View skills as React composition"));
   assert.ok(labels.includes("Open the skills visual map"));
   assert.ok(labels.includes("Import installed skills into a catalog"));
   assert.ok(descriptions.some((description) => description.includes("afk setup skills")));
+  assert.ok(descriptions.some((description) => description.includes("afk setup agents")));
+  assert.ok(descriptions.some((description) => description.includes("afk catalog agents")));
   assert.ok(descriptions.some((description) => description.includes("afk refresh --default-source")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog")));
   assert.ok(descriptions.some((description) => description.includes("afk show skills --react")));

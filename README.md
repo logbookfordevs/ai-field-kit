@@ -4,11 +4,13 @@
 
 AI Field Kit starts with the `afk` command. The CLI previews and applies the
 parts of an AI development setup that should move together: shared rules,
-skills, MCPs, plugins, hooks, setup profiles, and project-local catalogs.
+skills, Custom Agents, MCPs, plugins, hooks, setup profiles, and project-local
+catalogs.
 
 The important bit: AFK is a router, not a replacement for every ecosystem tool.
 It owns AFK-specific rule and hook behavior, then delegates skills, MCPs, and
-plugins to the tools that already own those surfaces.
+plugins to the tools that already own those surfaces. AFK provisions Custom
+Agents through its own harness adapters without orchestrating them.
 
 Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated
 entries instead of release versions.
@@ -59,7 +61,8 @@ Working from this checkout? Build and link the local CLI:
 ### Preview setup
 
 Start with a dry run. AFK prints the exact actions it would take before writing
-rules, installing skills, adding MCPs, installing plugins, or merging hooks.
+rules, installing skills, provisioning Custom Agents, adding MCPs, installing
+plugins, or merging hooks.
 
 ```bash
 afk setup --dry-run
@@ -70,6 +73,7 @@ You can preview one area at a time:
 ```bash
 afk setup rules --dry-run
 afk setup skills --dry-run
+afk setup agents --dry-run
 afk setup mcps --dry-run
 afk setup plugins --dry-run
 afk setup hooks --dry-run
@@ -103,6 +107,7 @@ install flow, and custom defaults workflow, read the
 | Rules | `afk setup rules` | Syncs AFK rules into managed regions of supported agent instruction files. |
 | Skills | `afk setup skills` | Delegates selected skill installs to the official `skills` CLI. |
 | Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
+| Custom Agents | `afk setup agents` | Provisions selected portable agent files into Codex, Claude Code, or Pi. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `add-mcp`. |
 | Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |
 | Hooks | `afk setup hooks` | Copies hook scripts and merges hook commands into supported agent configs. |
@@ -111,9 +116,9 @@ install flow, and custom defaults workflow, read the
 independently: if one delegated installer fails, AFK still tries the remaining
 selected areas, then exits non-zero with a failure summary.
 
-AFK-owned rules currently target a focused v1 set. Skills and MCP installation
-are delegated to official CLIs, so broader support can come from those projects
-without AFK reimplementing their installers.
+AFK-owned rules and Custom Agent adapters target a focused set. Skills and MCP
+installation are delegated to official CLIs, so broader tool support can come
+from those projects without AFK reimplementing their installers.
 
 ---
 
@@ -126,6 +131,8 @@ without AFK reimplementing their installers.
 | Run project-local setup | `afk setup --local` |
 | Refresh the global catalog cache | `afk refresh` |
 | Inspect the cached catalog | `afk show` |
+| Provision portable Custom Agents | `afk setup agents` |
+| Edit Custom Agent sources | `afk catalog agents` |
 | Inspect skills as a composition tree | `afk show skills --react` |
 | Generate the local skill composition page | `afk show skills --visualize` |
 | Backfill installed skills into the catalog | `afk catalog skills import --dry-run` |
@@ -140,8 +147,8 @@ preferred command shape.
 ## Catalogs and Sources
 
 AFK setup is catalog-driven. A catalog describes the recommended rules, skills,
-MCPs, plugins, hooks, profiles, and presets for a machine or project while
-keeping installation delegated to the right upstream tool.
+Custom Agents, MCPs, plugins, hooks, profiles, and presets for a machine or
+project while keeping installation delegated to the right upstream tool.
 
 The global catalog cache lives here:
 
@@ -181,7 +188,8 @@ afk setup --local --dry-run
 The registry item writes the same fragmented catalog files AFK already reads
 under `./afk/catalog/`. shadcn handles distribution; AFK still owns setup
 semantics such as defaults, scopes, managed rules, hooks, plugins, and
-delegated skill/MCP installers.
+delegated skill/MCP installers. Custom Agent sources live in `agents.json` and
+are translated only when `afk setup agents` runs.
 
 ---
 
@@ -301,7 +309,8 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use
 
 **I only want the skills** - Use
 `npx skills add https://github.com/logbookfordevs/ai-field-kit`. Use AFK when
-you also want rules, hooks, MCPs, plugins, profiles, and catalog policy.
+you also want rules, hooks, Custom Agents, MCPs, plugins, profiles, and catalog
+policy.
 
 **I want to see what setup will do first** - Run `afk setup --dry-run` or a
 narrow command such as `afk setup hooks --dry-run`.
@@ -318,16 +327,17 @@ when supported.
 
 ## Agents Supported
 
-AFK-owned rules currently target a focused v1 set. Skills and MCP installation
-are delegated to the official CLIs, so broader tool support can come from those
-projects without AFK reimplementing their installers.
+AFK-owned rules and Custom Agent adapters target a focused set. Skills and MCP
+installation are delegated to the official CLIs, so broader tool support can
+come from those projects without AFK reimplementing their installers.
 
-| Agent | Rules | MCP delegation |
-|---|---|---|
-| Codex | via managed rules region | via `add-mcp` |
-| Claude Code | via managed rules region | via `add-mcp` |
-| Antigravity / Agy | via managed rules region | via `add-mcp` |
-| OpenCode | via managed rules region | via `add-mcp` |
+| Agent | Rules | Custom Agents | MCP delegation |
+|---|---|---|---|
+| Codex | via managed rules region | native subagents | via `add-mcp` |
+| Claude Code | via managed rules region | native subagents | via `add-mcp` |
+| Pi | — | via `pi-subagents` | — |
+| Antigravity / Agy | via managed rules region | — | via `add-mcp` |
+| OpenCode | via managed rules region | — | via `add-mcp` |
 
 ---
 

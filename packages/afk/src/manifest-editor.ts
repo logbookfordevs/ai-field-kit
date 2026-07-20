@@ -1,6 +1,8 @@
 import type {
   HookManifest,
   HookManifestItem,
+  CustomAgentManifest,
+  CustomAgentManifestItem,
   McpManifest,
   McpManifestItem,
   RulesManifest,
@@ -12,8 +14,8 @@ import type {
 import type { Area } from "./types.js";
 
 export type EditableManifestArea = Exclude<Area, "profiles">;
-export type EditableManifest = RulesManifest | SkillManifest | McpManifest | PluginManifest | HookManifest | Record<string, unknown>;
-export type EditableManifestItem = SkillManifestItem | McpManifestItem | PluginManifestItem | HookManifestItem;
+export type EditableManifest = RulesManifest | SkillManifest | CustomAgentManifest | McpManifest | PluginManifest | HookManifest | Record<string, unknown>;
+export type EditableManifestItem = SkillManifestItem | CustomAgentManifestItem | McpManifestItem | PluginManifestItem | HookManifestItem;
 
 type ItemManifest = {
   version: number;
@@ -21,12 +23,18 @@ type ItemManifest = {
   items: EditableManifestItem[];
 };
 
-export function emptyEditableManifest(area: EditableManifestArea): RulesManifest | SkillManifest | McpManifest | PluginManifest | HookManifest {
+type DefaultedManifestArea = Exclude<EditableManifestArea, "rules" | "agents">;
+type DefaultedManifestItem = Exclude<EditableManifestItem, CustomAgentManifestItem>;
+type DefaultedItemManifest = Omit<ItemManifest, "items"> & { items: DefaultedManifestItem[] };
+
+export function emptyEditableManifest(area: EditableManifestArea): RulesManifest | SkillManifest | CustomAgentManifest | McpManifest | PluginManifest | HookManifest {
   switch (area) {
     case "rules":
       return { version: 1, source: "github", url: "" };
     case "skills":
       return { version: 1, defaultSource: "", items: [] };
+    case "agents":
+      return { version: 1, items: [] };
     case "mcps":
       return { version: 1, items: [] };
     case "plugins":
@@ -81,8 +89,8 @@ export function removeManifestItem(area: Exclude<EditableManifestArea, "rules">,
   return { ...draft, items: draft.items.filter((item) => item.id !== id).map(cloneItem) };
 }
 
-export function toggleManifestItemDefault(area: Exclude<EditableManifestArea, "rules">, manifest: EditableManifest, id: string): ItemManifest {
-  const draft = itemManifestOrThrow(area, manifest);
+export function toggleManifestItemDefault(area: DefaultedManifestArea, manifest: EditableManifest, id: string): ItemManifest {
+  const draft = defaultedItemManifestOrThrow(area, manifest);
   return {
     ...draft,
     items: draft.items.map((item) => {
@@ -90,22 +98,22 @@ export function toggleManifestItemDefault(area: Exclude<EditableManifestArea, "r
         return cloneItem(item);
       }
 
-      return { ...cloneItem(item), default: !item.default };
+      return { ...cloneItem(item), default: !(item.default ?? false) };
     }),
   };
 }
 
 export function setManifestItemDefaultValues(
-  area: Exclude<EditableManifestArea, "rules">,
+  area: DefaultedManifestArea,
   manifest: EditableManifest,
   values: Record<string, boolean>,
 ): ItemManifest {
-  const draft = itemManifestOrThrow(area, manifest);
+  const draft = defaultedItemManifestOrThrow(area, manifest);
   return {
     ...draft,
     items: draft.items.map((item) => {
       const nextValue = values[item.id];
-      return { ...cloneItem(item), default: nextValue ?? item.default };
+      return { ...cloneItem(item), default: nextValue ?? item.default ?? false };
     }),
   };
 }
@@ -193,12 +201,19 @@ function itemManifestOrThrow(area: Exclude<EditableManifestArea, "rules">, manif
   };
 }
 
+function defaultedItemManifestOrThrow(area: DefaultedManifestArea, manifest: EditableManifest): DefaultedItemManifest {
+  const draft = itemManifestOrThrow(area, manifest);
+  return { ...draft, items: draft.items as DefaultedManifestItem[] };
+}
+
 function isManifestForArea(area: EditableManifestArea, manifest: EditableManifest): boolean {
   switch (area) {
     case "rules":
       return isRulesManifest(manifest);
     case "skills":
       return isSkillManifest(manifest);
+    case "agents":
+      return isCustomAgentManifest(manifest);
     case "mcps":
       return isMcpManifest(manifest);
     case "plugins":
@@ -259,6 +274,22 @@ function isMcpManifest(value: EditableManifest): value is McpManifest {
       typeof item.source === "string" &&
       isStringArray(item.args) &&
       typeof item.default === "boolean"
+    ))
+  );
+}
+
+function isCustomAgentManifest(value: EditableManifest): value is CustomAgentManifest {
+  const record = toRecord(value);
+  return (
+    Boolean(record) &&
+    typeof record?.version === "number" &&
+    Array.isArray(record.items) &&
+    record.items.every((item: unknown) => (
+      isRecord(item) &&
+      typeof item.id === "string" &&
+      typeof item.label === "string" &&
+      typeof item.source === "string" &&
+      item.default === undefined
     ))
   );
 }

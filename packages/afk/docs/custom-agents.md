@@ -1,0 +1,127 @@
+# Portable Custom Agents
+
+AFK provisions portable Custom Agent definitions into supported harnesses. It
+does not launch or coordinate the resulting agents.
+
+## Commands
+
+```bash
+# Refresh agents.json together with the other catalog files
+afk refresh
+
+# Inspect or edit the catalog
+afk show agents
+afk catalog agents
+afk catalog agents add
+afk catalog agents edit
+afk catalog agents remove
+
+# Interactive setup: every agent starts unchecked
+afk setup agents
+
+# Scripted setup: selection is always explicit
+afk setup agents --custom-agent notion_assistant --agent codex --yes
+afk setup agents --all --agent claude --agent pi --yes
+```
+
+`--yes` only skips confirmation. It never selects Custom Agents. A scripted
+`afk setup agents` run must pass one or more `--custom-agent` values or `--all`.
+
+## Catalog
+
+`agents.json` contains presentation metadata and a direct link or path to each
+Portable Agent File:
+
+```json
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "notion_assistant",
+      "label": "Notion Assistant",
+      "source": "https://example.com/agents/notion-assistant.md"
+    }
+  ]
+}
+```
+
+The catalog `id` must match the Portable Agent File's `name`. `label` is only
+for catalog presentation; the portable file owns runtime description and
+behavior.
+
+Refresh merges `agents.json` by id. Incoming matches replace existing entries,
+new incoming entries are appended, and existing entries absent from the source
+remain until explicitly removed. Refresh never provisions agents.
+
+## Portable Agent File
+
+Each source is one Markdown file with YAML frontmatter and an instruction body:
+
+```markdown
+---
+name: notion_assistant
+description: Works with Notion content while preserving existing data.
+models:
+  codex: gpt-5.6-luna
+  claude: claude-sonnet-5
+  pi: openai/gpt-5.6
+effort:
+  codex: medium
+  claude: medium
+  pi: medium
+nicknames:
+  - Notion Scout
+  - Workspace Librarian
+  - Ledger Keeper
+access: workspace-write
+capabilities:
+  required:
+    - read
+    - search
+  optional:
+    - write
+    - web
+---
+
+Use the Notion CLI and preserve existing content.
+```
+
+| Field | Required | Meaning |
+|---|---:|---|
+| `name` | Yes | Stable agent identity using lowercase letters, numbers, hyphens, or underscores. |
+| `description` | Yes | Harness-facing guidance for when the agent should be used. |
+| `models` | No | Exact model identifier or native alias per harness. Omission inherits the harness model. |
+| `effort` | No | Exact per-harness effort or thinking value. Omission inherits the harness setting. |
+| `nicknames` | No | Portable display-name candidates. Codex emits them natively; unsupported harnesses report their omission. |
+| `access` | No | `read-only` or `workspace-write`. Omission leaves access under harness control. |
+| `capabilities.required` | No | Facilities the target must support or AFK skips that target. |
+| `capabilities.optional` | No | Facilities AFK may omit while still provisioning and reporting the omission. |
+| Markdown body | Yes | Runtime instructions translated into the native agent definition. |
+
+V1 recognizes `read`, `search`, `shell`, `write`, `web`, and `subagents`.
+Unknown required capabilities block provisioning for that target. Unknown or
+unsupported optional capabilities are reported and omitted. Agent instructions
+may mention skills or other user-managed facilities, but AFK does not discover,
+install, or validate those references. Effort maps to
+`model_reasoning_effort` in Codex, `effort` in Claude Code, and `thinking` in Pi.
+
+## Native Targets
+
+| Harness | Personal scope | Project scope |
+|---|---|---|
+| Codex | `~/.codex/agents/<name>.toml` | `.codex/agents/<name>.toml` |
+| Claude Code | `~/.claude/agents/<name>.md` | `.claude/agents/<name>.md` |
+| Pi | `~/.pi/agent/agents/<name>.md` | `.pi/agents/<name>.md` |
+
+AFK owns these translations and writes selected source state over the native
+target files. It does not merge or preserve manual edits in generated targets.
+
+Pi support uses the `pi-subagents` extension. When Pi is selected without that
+extension, AFK suggests:
+
+```bash
+pi install npm:pi-subagents
+```
+
+AFK skips Pi instead of installing the extension, then asks the user to rerun
+`afk setup agents` after installation.

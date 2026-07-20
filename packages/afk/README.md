@@ -1,8 +1,8 @@
 # AFK CLI
 
 AFK is the setup router for AI Field Kit. It gives developers one place to
-preview and apply the parts of the kit they want: shared rules, skills, MCPs,
-plugins, hooks, and custom setup catalogs.
+preview and apply the parts of the kit they want: shared rules, skills, Custom
+Agents, MCPs, plugins, hooks, and custom setup catalogs.
 
 The CLI is intentionally a router, not a replacement for every ecosystem tool.
 AFK owns the AFK-specific rule and hook behavior. It delegates skills to the
@@ -13,6 +13,8 @@ AFK skills are modeled as composable parts: primitives, wrappers, workflows,
 utilities, references, and routers. That shape keeps automatic model discovery
 small while still giving people named workflows to invoke directly. See
 [Skill Composition](docs/skill-composition.md) for the full mental model.
+See [Portable Custom Agents](docs/custom-agents.md) for the agent source
+contract, adapter behavior, and native target paths.
 
 ## Quick Start
 
@@ -45,6 +47,7 @@ Scripted setup can use `--yes` to accept defaults after the cache exists, or
 | Rules | `afk setup rules` | Syncs AFK rules into managed regions of supported agent rule files. |
 | Skills | `afk setup skills` | Delegates selected skill installs to `npx skills add`. |
 | Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
+| Custom Agents | `afk setup agents` | Translates portable agent files into native Codex, Claude Code, or Pi definitions. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `npx add-mcp`. |
 | Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |
 | Hooks | `afk setup hooks` | Copies hook scripts and merges hook commands into supported agent configs. |
@@ -119,6 +122,7 @@ afk setup --local
 # Run only one area
 afk setup rules --dry-run
 afk setup skills --dry-run
+afk setup agents --dry-run
 afk setup mcps --dry-run
 afk setup plugins --dry-run
 afk setup hooks --dry-run
@@ -177,6 +181,8 @@ These flags apply to `afk setup` and most area commands.
 | `--scope global/project` | Choose machine-wide setup or current-project setup. |
 | `--local` | Alias for `--scope project`. |
 | `--agent <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
+| `--custom-agent <id>` | Select one cataloged Custom Agent. Repeat the flag for multiple agents. |
+| `--all` | With `afk setup agents`, select every cataloged Custom Agent. |
 | `--source <source>` | Use a catalog source for this run only, without changing the cache or default source. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
 | `--init-only` | Legacy cache-prep flag; prefer `afk refresh`. |
@@ -197,7 +203,7 @@ These flags apply to `afk refresh`.
 General setup agent values are:
 
 ```text
-antigravity, claude, codex, cursor-local, opencode
+antigravity, claude, codex, cursor-local, opencode, pi
 ```
 
 Aliases:
@@ -212,6 +218,7 @@ Area support is narrower than the full alias list:
 | Area | Supported AFK targets |
 |---|---|
 | Rules | `antigravity`, `claude`, `codex`, `opencode`; project scope also supports `cursor-local`. |
+| Custom Agents | `codex`, `claude`, `pi`; Pi additionally requires the `pi-subagents` extension. |
 | MCPs | `antigravity`, `claude`, `codex`, `opencode`; project scope skips Antigravity because `add-mcp` does not support that target locally. |
 | Hooks | `codex`, `claude`, `cursor-local`. |
 | Plugins | Plugin installers run independently and may define generic post-install commands. |
@@ -383,6 +390,7 @@ The expected files are:
 ```text
 skills.json
 profiles.json
+agents.json
 mcps.json
 presets.json
 rules.json
@@ -468,6 +476,7 @@ The registry item writes:
 ```text
 ./afk/catalog/skills.json
 ./afk/catalog/profiles.json
+./afk/catalog/agents.json
 ./afk/catalog/mcps.json
 ./afk/catalog/rules.json
 ./afk/catalog/plugins.json

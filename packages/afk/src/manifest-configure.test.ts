@@ -38,9 +38,35 @@ test("inferLabel creates editable title defaults", () => {
 test("emptyEditableManifest creates typed empty manifests", () => {
   assert.deepEqual(emptyEditableManifest("rules"), { version: 1, source: "github", url: "" });
   assert.deepEqual(emptyEditableManifest("skills"), { version: 1, defaultSource: "", items: [] });
+  assert.deepEqual(emptyEditableManifest("agents"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("mcps"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("plugins"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("hooks"), { version: 1, items: [] });
+});
+
+test("runManifestConfigureWithPrompts adds a Custom Agent without default metadata", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-agents-"));
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: ["agents", "finish"],
+      actions: ["add", "back"],
+      inputs: ["https://example.com/agents/notion-assistant.md", "notion_assistant", "Notion Assistant"],
+      confirms: [true],
+    }),
+  );
+
+  const written = JSON.parse(readFileSync(join(homeDir, ".agents", "afk", "catalog", "agents.json"), "utf8")) as {
+    items: Array<Record<string, unknown>>;
+  };
+  assert.equal(code, 0);
+  assert.deepEqual(written.items, [{
+    id: "notion_assistant",
+    label: "Notion Assistant",
+    source: "https://example.com/agents/notion-assistant.md",
+  }]);
 });
 
 test("addManifestItem rejects duplicate ids", () => {
@@ -621,7 +647,7 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
 }
 
 function scriptedPrompts(script: {
-  areas: Array<"rules" | "skills" | "profiles" | "mcps" | "plugins" | "hooks" | "finish">;
+  areas: Array<"rules" | "skills" | "profiles" | "agents" | "mcps" | "plugins" | "hooks" | "finish">;
   actions: ManifestAction[];
   items?: string[];
   inputs?: string[];

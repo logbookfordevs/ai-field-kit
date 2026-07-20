@@ -8,12 +8,37 @@ import {
   defaultsManifestBaseUrls,
   ensureLocalManifests,
   loadPluginManifest,
+  mergedCustomAgentManifestContent,
   localManifestDir,
   planRememberedDefaultsSourceUpdate,
   projectManifestDir,
   readRememberedDefaultsSource,
   type SkillManifest,
 } from "./manifest.js";
+
+test("Custom Agent refresh replaces matches, appends incoming entries, and preserves local-only entries", () => {
+  const directory = mkdtempSync(join(tmpdir(), "afk-agent-merge-"));
+  const target = join(directory, "agents.json");
+  writeFileSync(target, `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "existing", label: "Old label", source: "old.md" },
+      { id: "local-only", label: "Local only", source: "local.md" },
+    ],
+  }, null, 2)}\n`);
+
+  const merged = JSON.parse(mergedCustomAgentManifestContent(`${JSON.stringify({
+    version: 2,
+    items: [
+      { id: "existing", label: "New label", source: "new.md" },
+      { id: "incoming", label: "Incoming", source: "incoming.md" },
+    ],
+  })}\n`, target)) as { version: number; items: Array<{ id: string; label: string }> };
+
+  assert.equal(merged.version, 2);
+  assert.deepEqual(merged.items.map((item) => item.id), ["existing", "local-only", "incoming"]);
+  assert.equal(merged.items[0]?.label, "New label");
+});
 
 type PluginManifestFile = {
   items: Array<{

@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added portable Custom Agents as a first-class `agents.json` catalog area, with refresh merging, show/catalog menus, interactive and scripted setup, and AFK-owned adapters for Codex, Claude Code, and Pi through `pi-subagents`; the portable contract preserves per-harness model and effort pins plus Codex display nicknames.
 - `cli:` added `afk skills delete --profile` to delete installed skills referenced by a selected profile, with an extra warning that those skills may be shared by other profiles.
 - `skills:` added Matt Pocock's `wayfinder` workflow to the bundled catalog as an optional shared skill.
 

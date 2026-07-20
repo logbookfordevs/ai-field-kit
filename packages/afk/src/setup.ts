@@ -1,11 +1,12 @@
 import { syncRules } from "./rules.js";
 import { syncHooks } from "./hooks.js";
+import { syncCustomAgents } from "./custom-agents.js";
 import { snapshotDisabledStartupSkills, syncSkillInvocationPolicy, syncSkillStartupStorage } from "./skills.js";
 import { syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
+import { selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { builtInDefaultsSource, ensureLocalManifests, loadSourceManifestContents, localManifestDir, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
@@ -40,6 +41,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     scopeExplicit: true,
     setupManifestsPrepared: true,
     selectedSkillIds: selection.skillIds,
+    selectedCustomAgentIds: selection.customAgentIds ?? [],
     selectedSkillAgentIds: selection.skillAgents,
     selectedMcpIds: selection.mcpIds,
     selectedPluginIds: selection.pluginIds,
@@ -196,6 +198,18 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       runtime.io.stdout(`- ${profileCatalogPath(prepared.options)}`);
       return 0;
     }
+    case "agents": {
+      const selectedOptions = await resolveCustomAgentOptions(prepared.options);
+      if ((selectedOptions.selectedCustomAgentIds?.length ?? 0) === 0 && !selectedOptions.allCustomAgents) {
+        if (selectedOptions.yes) {
+          runtime.io.stderr("Select at least one Custom Agent with --custom-agent <id>, or use --all.");
+          return 1;
+        }
+        runtime.io.stdout("\nNo Custom Agents selected. No changes planned.");
+        return 0;
+      }
+      return syncCustomAgents(runtime, selectedOptions);
+    }
     case "mcps": {
       const selectedOptions = await resolveMcpOptions(prepared.options);
       if (!selectedOptions.yes && selectedOptions.selectedMcpIds.length === 0) {
@@ -314,6 +328,18 @@ async function resolveMcpOptions(options: CliOptions): Promise<CliOptions> {
     ...options,
     agents: selection.agents,
     selectedMcpIds: selection.mcpIds,
+  };
+}
+
+async function resolveCustomAgentOptions(options: CliOptions): Promise<CliOptions> {
+  if ((options.selectedCustomAgentIds?.length ?? 0) > 0 && options.agents.length > 0) {
+    return options;
+  }
+  const selection = await selectCustomAgentsInstall(options);
+  return {
+    ...options,
+    agents: selection.agents,
+    selectedCustomAgentIds: selection.customAgentIds ?? [],
   };
 }
 
@@ -454,6 +480,7 @@ function manifestContentsFromOperations(operations: PathOperation[]): Partial<Re
 function isManifestFilename(value: string | undefined): value is ManifestFilename {
   return value === "skills.json" ||
     value === "profiles.json" ||
+    value === "agents.json" ||
     value === "mcps.json" ||
     value === "presets.json" ||
     value === "rules.json" ||
@@ -469,6 +496,8 @@ function areaLabel(area: Area): string {
       return "Skills";
     case "profiles":
       return "Profiles";
+    case "agents":
+      return "Custom Agents";
     case "mcps":
       return "MCPs";
     case "plugins":

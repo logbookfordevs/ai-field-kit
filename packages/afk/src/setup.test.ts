@@ -248,6 +248,28 @@ test("runArea skills adds selected setup skills to AFK skill catalog after insta
   );
 });
 
+test("runArea agents requires an explicit non-interactive selection", async () => {
+  const homeDir = localHomeWithManifests({
+    "agents.json": {
+      version: 1,
+      items: [{ id: "notion_assistant", label: "Notion Assistant", source: "/tmp/not-used.md" }],
+    },
+  });
+  const output: string[] = [];
+
+  const code = await runArea("agents", fakeRuntime(output), {
+    ...defaultOptions(homeDir, localRepoWithRules()),
+    agents: ["codex"],
+    yes: true,
+    setupManifestsPrepared: true,
+    allCustomAgents: false,
+    selectedCustomAgentIds: [],
+  });
+
+  assert.equal(code, 1);
+  assert.ok(output.some((line) => line.includes("--custom-agent <id>, or use --all")));
+});
+
 test("runArea skills moves start-disabled skills into disabled storage after install", async () => {
   const homeDir = localHomeWithManifests({
     "skills.json": {
@@ -622,6 +644,7 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
   const manifests: Record<string, unknown> = {
     "skills.json": { version: 1, defaultSource: "", items: [] },
     "profiles.json": { version: 1, mode: "strict", alwaysOn: [], items: [] },
+    "agents.json": { version: 1, items: [] },
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "local", url: "rules/AGENTS.md" },
@@ -656,6 +679,7 @@ function localDefaultsSource(overrides: Record<string, unknown> = {}): string {
   const manifests: Record<string, unknown> = {
     "skills.json": { version: 1, defaultSource: "", items: [] },
     "profiles.json": { version: 1, mode: "strict", alwaysOn: [], items: [] },
+    "agents.json": { version: 1, items: [] },
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "github", url: "" },

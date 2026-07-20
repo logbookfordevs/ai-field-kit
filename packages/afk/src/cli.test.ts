@@ -65,6 +65,30 @@ test("runCli prints contextual update help", async () => {
   assert.ok(text.includes("afk update --dry-run"));
 });
 
+test("runCli exposes Custom Agents as a first-class command family", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "agents", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK setup agents"));
+  assert.ok(text.includes("--custom-agent <id>"));
+  assert.ok(text.includes("--all"));
+  assert.ok(text.includes("--yes confirms the operation; it never selects Custom Agents"));
+
+  output.length = 0;
+  const catalogCode = await withConsole(output, () => runCli(["catalog", "agents", "add", "--help"]));
+  const catalogText = output.join("\n");
+  assert.equal(catalogCode, 0);
+  assert.ok(catalogText.includes("AFK catalog agents"));
+  assert.ok(!catalogText.includes("toggle-default"));
+
+  output.length = 0;
+  const showCode = await withConsole(output, () => runCli(["show", "agents", "--help"]));
+  assert.equal(showCode, 0);
+  assert.ok(output.join("\n").includes("AFK show agents"));
+});
+
 test("runCli dry-runs CLI update", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["update", "--dry-run"]));
