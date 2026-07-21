@@ -16,6 +16,7 @@ export type PortableAgent = {
   models: Partial<Record<CustomAgentHarness, string>>;
   effort: Partial<Record<CustomAgentHarness, string>>;
   nicknames: string[];
+  skills: string[];
   access?: PortableAgentAccess;
   capabilities: {
     required: string[];
@@ -143,6 +144,7 @@ export function parsePortableAgentFile(content: string): PortableAgent {
   const models = optionalHarnessStrings(frontmatter.models, "models");
   const effort = optionalHarnessStrings(frontmatter.effort, "effort");
   const nicknames = optionalNicknames(frontmatter.nicknames);
+  const skills = optionalStringArray(frontmatter.skills, "skills");
   const access = optionalAccess(frontmatter.access);
   const capabilities = optionalCapabilities(frontmatter.capabilities);
   if (access === "read-only" && capabilities.required.includes("write")) {
@@ -156,12 +158,13 @@ export function parsePortableAgentFile(content: string): PortableAgent {
     models,
     effort,
     nicknames,
+    skills,
     ...(access ? { access } : {}),
     capabilities,
   };
 }
 
-export function renderCodexAgent(agent: PortableAgent): string {
+export function renderCodexAgent(agent: PortableAgent, skillsRoot: string): string {
   const lines = [
     `name = ${tomlString(agent.name)}`,
     `description = ${tomlString(agent.description)}`,
@@ -179,6 +182,9 @@ export function renderCodexAgent(agent: PortableAgent): string {
   if (agent.nicknames.length > 0) {
     lines.push(`nickname_candidates = [${agent.nicknames.map(tomlString).join(", ")}]`);
   }
+  for (const skillPath of portableSkillPaths(agent.skills, skillsRoot)) {
+    lines.push("", "[[skills.config]]", `path = ${tomlString(skillPath)}`, "enabled = true");
+  }
   return `${lines.join("\n")}\n`;
 }
 
@@ -193,6 +199,9 @@ export function renderClaudeAgent(agent: PortableAgent, capabilities: string[]):
   if (agent.effort.claude) {
     frontmatter.effort = agent.effort.claude;
   }
+  if (agent.skills.length > 0) {
+    frontmatter.skills = agent.skills;
+  }
   const tools = claudeTools(capabilities);
   if (tools.length > 0) {
     frontmatter.tools = tools.join(", ");
@@ -204,7 +213,7 @@ export function renderClaudeAgent(agent: PortableAgent, capabilities: string[]):
   return markdownAgent(frontmatter, agent.instructions);
 }
 
-export function renderPiAgent(agent: PortableAgent, capabilities: string[]): string {
+export function renderPiAgent(agent: PortableAgent, capabilities: string[], skillsRoot: string): string {
   const frontmatter: Record<string, unknown> = {
     name: agent.name,
     description: agent.description,
@@ -214,6 +223,10 @@ export function renderPiAgent(agent: PortableAgent, capabilities: string[]): str
   }
   if (agent.effort.pi) {
     frontmatter.thinking = agent.effort.pi;
+  }
+  if (agent.skills.length > 0) {
+    frontmatter.skills = agent.skills;
+    frontmatter.skillPath = portableSkillPaths(agent.skills, skillsRoot);
   }
   const tools = piTools(capabilities, agent.access);
   if (tools.length > 0) {
@@ -259,11 +272,12 @@ function provisioningTarget(
   const omittedCapabilities = agent.capabilities.optional.filter((capability) => !isAvailable(capability));
   const omittedMetadata = harness === "codex" || agent.nicknames.length === 0 ? [] : ["nicknames"];
   const path = customAgentTargetPath(agent.name, harness, options);
+  const skillsRoot = join(options.homeDir, ".agents", "skills");
   const content = harness === "codex"
-    ? renderCodexAgent(agent)
+    ? renderCodexAgent(agent, skillsRoot)
     : harness === "claude"
       ? renderClaudeAgent(agent, effectiveCapabilities)
-      : renderPiAgent(agent, effectiveCapabilities);
+      : renderPiAgent(agent, effectiveCapabilities, skillsRoot);
   return { kind: "ready", target: { harness, path, content, omittedCapabilities, omittedMetadata } };
 }
 
@@ -382,6 +396,10 @@ function optionalNicknames(value: unknown): string[] {
     }
   }
   return nicknames;
+}
+
+function portableSkillPaths(skills: string[], skillsRoot: string): string[] {
+  return skills.map((skill) => join(skillsRoot, skill, "SKILL.md"));
 }
 
 function optionalStringArray(value: unknown, field: string): string[] {

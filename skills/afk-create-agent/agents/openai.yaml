@@ -1,0 +1,6 @@
+interface:
+  display_name: "AFK Create Agent"
+  short_description: "Create and register a portable AFK Custom Agent"
+  default_prompt: "Create a portable AFK Custom Agent, register its source in agents.json, and verify every requested harness with a dry run."
+policy:
+  allow_implicit_invocation: false

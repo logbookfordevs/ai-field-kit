@@ -64,6 +64,20 @@
             ]
         },
         {
+            "id": "afk-create-agent",
+            "label": "AFK - Create Agent",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-create-agent",
+                "--global"
+            ],
+            "default": true,
+            "autoInvocation": false,
+            "role": "workflow",
+            "composes": []
+        },
+        {
             "id": "afk-to-spec",
             "label": "AFK - To Spec",
             "source": "https://github.com/logbookfordevs/ai-field-kit",

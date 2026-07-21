@@ -12,6 +12,7 @@ test("parsePortableAgentFile reads portable metadata and exact harness model pin
     models: { codex: "gpt-5.6-luna", claude: "claude-sonnet-5", pi: "openai/gpt-5.6" },
     effort: { codex: "medium", claude: "high", pi: "medium" },
     nicknames: ["Notion Scout", "Workspace Librarian", "Ledger Keeper"],
+    skills: ["notion-cli", "logbook-notion-context"],
     access: "read-only",
     capabilities: { required: ["read", "search"], optional: ["web"] },
   }));
@@ -24,6 +25,7 @@ test("parsePortableAgentFile reads portable metadata and exact harness model pin
   assert.equal(agent.effort.claude, "high");
   assert.equal(agent.effort.pi, "medium");
   assert.deepEqual(agent.nicknames, ["Notion Scout", "Workspace Librarian", "Ledger Keeper"]);
+  assert.deepEqual(agent.skills, ["notion-cli", "logbook-notion-context"]);
   assert.equal(agent.access, "read-only");
   assert.deepEqual(agent.capabilities.required, ["read", "search"]);
   assert.deepEqual(agent.capabilities.optional, ["web"]);
@@ -32,12 +34,31 @@ test("parsePortableAgentFile reads portable metadata and exact harness model pin
 test("harness renderers omit model settings when no Model Pin is declared", () => {
   const agent = parsePortableAgentFile(portableAgent());
 
-  assert.ok(!renderCodexAgent(agent).includes("model ="));
+  assert.ok(!renderCodexAgent(agent, "/tmp/skills").includes("model ="));
   assert.ok(!renderClaudeAgent(agent, []).includes("model:"));
-  assert.ok(!renderPiAgent(agent, []).includes("model:"));
+  assert.ok(!renderPiAgent(agent, [], "/tmp/skills").includes("model:"));
 });
 
-test("Codex rendering preserves the Notion Assistant behavior without validating mentioned skills", async () => {
+test("Custom Agent skills map to native Codex, Claude, and Pi configuration", () => {
+  const agent = parsePortableAgentFile(portableAgent({
+    skills: ["notion-cli", "logbook-notion-context"],
+  }));
+  const skillsRoot = "/tmp/afk-skills";
+
+  const codex = renderCodexAgent(agent, skillsRoot);
+  assert.ok(codex.includes(`path = ${JSON.stringify(join(skillsRoot, "notion-cli", "SKILL.md"))}`));
+  assert.ok(codex.includes(`path = ${JSON.stringify(join(skillsRoot, "logbook-notion-context", "SKILL.md"))}`));
+
+  const claude = renderClaudeAgent(agent, []);
+  assert.match(claude, /skills:\n  - notion-cli\n  - logbook-notion-context/);
+
+  const pi = renderPiAgent(agent, [], skillsRoot);
+  assert.match(pi, /skills:\n  - notion-cli\n  - logbook-notion-context/);
+  assert.ok(pi.includes(join(skillsRoot, "notion-cli", "SKILL.md")));
+  assert.ok(pi.includes(join(skillsRoot, "logbook-notion-context", "SKILL.md")));
+});
+
+test("Codex rendering preserves Notion Assistant skill configuration without checking availability", async () => {
   const homeDir = localHome();
   const cwd = mkdtempSync(join(tmpdir(), "afk-notion-agent-"));
   const source = join(cwd, "notion-assistant.md");
@@ -49,6 +70,7 @@ test("Codex rendering preserves the Notion Assistant behavior without validating
     models: { codex: "gpt-5.6-luna" },
     effort: { codex: "medium" },
     nicknames: ["Notion Scout", "Workspace Librarian", "Ledger Keeper"],
+    skills: ["notion-cli", "logbook-notion-context"],
   }));
   writeAgentCatalog(homeDir, source);
 
@@ -61,7 +83,9 @@ test("Codex rendering preserves the Notion Assistant behavior without validating
   assert.ok(generated.includes('model_reasoning_effort = "medium"'));
   assert.ok(generated.includes(`developer_instructions = ${JSON.stringify(instructions)}`));
   assert.ok(generated.includes('nickname_candidates = ["Notion Scout", "Workspace Librarian", "Ledger Keeper"]'));
-  assert.ok(!generated.includes("skills.config"));
+  assert.ok(generated.includes(`path = ${JSON.stringify(join(homeDir, ".agents", "skills", "notion-cli", "SKILL.md"))}`));
+  assert.ok(generated.includes(`path = ${JSON.stringify(join(homeDir, ".agents", "skills", "logbook-notion-context", "SKILL.md"))}`));
+  assert.equal((generated.match(/\[\[skills\.config\]\]/g) ?? []).length, 2);
 });
 
 test("Claude and Pi map portable effort to native fields", () => {
@@ -70,7 +94,7 @@ test("Claude and Pi map portable effort to native fields", () => {
   }));
 
   assert.match(renderClaudeAgent(agent, []), /effort: high/);
-  assert.match(renderPiAgent(agent, []), /thinking: medium/);
+  assert.match(renderPiAgent(agent, [], "/tmp/skills"), /thinking: medium/);
 });
 
 test("syncCustomAgents overwrites native targets and renders per-harness formats", async () => {
@@ -171,6 +195,7 @@ function portableAgent(overrides: {
   models?: Record<string, string>;
   effort?: Record<string, string>;
   nicknames?: string[];
+  skills?: string[];
   access?: string;
   capabilities?: { required?: string[]; optional?: string[] };
 } = {}): string {
@@ -187,6 +212,9 @@ function portableAgent(overrides: {
   }
   if (overrides.nicknames) {
     lines.push("nicknames:", ...overrides.nicknames.map((value) => `  - ${value}`));
+  }
+  if (overrides.skills) {
+    lines.push("skills:", ...overrides.skills.map((value) => `  - ${value}`));
   }
   if (overrides.access) {
     lines.push(`access: ${overrides.access}`);

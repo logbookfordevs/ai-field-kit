@@ -73,6 +73,9 @@ nicknames:
   - Notion Scout
   - Workspace Librarian
   - Ledger Keeper
+skills:
+  - notion-cli
+  - logbook-notion-context
 access: workspace-write
 capabilities:
   required:
@@ -93,6 +96,7 @@ Use the Notion CLI and preserve existing content.
 | `models` | No | Exact model identifier or native alias per harness. Omission inherits the harness model. |
 | `effort` | No | Exact per-harness effort or thinking value. Omission inherits the harness setting. |
 | `nicknames` | No | Portable display-name candidates. Codex emits them natively; unsupported harnesses report their omission. |
+| `skills` | No | Shared AFK skill names to attach to this agent. AFK translates them into native harness configuration without installing or validating the skills. |
 | `access` | No | `read-only` or `workspace-write`. Omission leaves access under harness control. |
 | `capabilities.required` | No | Facilities the target must support or AFK skips that target. |
 | `capabilities.optional` | No | Facilities AFK may omit while still provisioning and reporting the omission. |
@@ -101,9 +105,25 @@ Use the Notion CLI and preserve existing content.
 V1 recognizes `read`, `search`, `shell`, `write`, `web`, and `subagents`.
 Unknown required capabilities block provisioning for that target. Unknown or
 unsupported optional capabilities are reported and omitted. Agent instructions
-may mention skills or other user-managed facilities, but AFK does not discover,
-install, or validate those references. Effort maps to
-`model_reasoning_effort` in Codex, `effort` in Claude Code, and `thinking` in Pi.
+may mention additional user-managed facilities without declaring them. Effort
+maps to `model_reasoning_effort` in Codex, `effort` in Claude Code, and
+`thinking` in Pi.
+
+### Skill configuration
+
+Portable `skills` entries name folders in AFK's shared `~/.agents/skills`
+library. AFK does not install, enable, inspect, or verify those folders during
+Custom Agent setup. The declaration only asks each harness to attach the named
+skills when it runs the generated agent.
+
+| Harness | Generated configuration |
+|---|---|
+| Codex | One `[[skills.config]]` block per skill, pointing to its shared `SKILL.md` with `enabled = true`. |
+| Claude Code | A native `skills` list that preloads the named skills. Claude must already be able to discover them. |
+| Pi | A native `skills` list plus absolute `skillPath` entries pointing to the shared AFK library. |
+
+If a skill is unavailable, the harness owns the resulting warning or runtime
+behavior. Omitting `skills` leaves agent-specific skill configuration unset.
 
 ## Native Targets
 

@@ -893,7 +893,9 @@ The catalog stores discovery metadata and a direct Portable Agent File source;
 the linked Markdown file owns the runtime description and behavior. The
 catalog `id` must match the portable file's `name`. Custom Agents have no
 default-selection field: interactive setup starts with every item unchecked,
-and scripted setup requires `--custom-agent <id>` or `--all`.
+and scripted setup requires `--custom-agent <id>` or `--all`. Portable files
+may declare shared AFK skill names for native per-agent configuration; Custom
+Agent setup never installs or validates those skills.
 
 See [Portable Custom Agents](docs/custom-agents.md) for the source schema,
 per-harness model and effort fields, capabilities, target paths, and adapter
@@ -1039,7 +1041,9 @@ to apply one.
 AFK translates one portable Markdown definition into native Codex, Claude
 Code, or Pi agent files. Setup is provisioning only; the selected harness owns
 execution and orchestration. Generated native files are replaced on the next
-setup, so lasting edits belong in the portable source.
+setup, so lasting edits belong in the portable source. Declared portable
+`skills` become Codex `skills.config` blocks, Claude Code's native `skills`
+list, and Pi `skills` plus `skillPath`; AFK leaves availability to the harness.
 
 Use `afk setup agents` for the unchecked interactive picker, or make scripted
 selection explicit:

@@ -240,8 +240,9 @@ human label, and a direct URL or path to a Portable Agent File:
 The Portable Agent File is Markdown with YAML frontmatter. It owns the agent's
 description and instructions, while optional `models` and `effort` fields can
 set exact values per harness. Omit either field to inherit that harness's
-current setting. AFK does not inspect skill names mentioned in the instructions
-or install those skills; those dependencies remain under the user's control.
+current setting. An optional `skills` list attaches shared AFK skills through
+each harness's native agent configuration. AFK does not install or validate
+those skills; their availability remains under the user's control.
 
 | Harness | Personal target | Project target |
 |---|---|---|
