@@ -11,8 +11,12 @@ commands.
 
 AFK skills are modeled as composable parts: primitives, wrappers, workflows,
 utilities, references, and routers. That shape keeps automatic model discovery
-small while still giving people named workflows to invoke directly. See
-[Skill Composition](docs/skill-composition.md) for the full mental model.
+small while still giving people named workflows to invoke directly. Explore the
+published [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg)
+for the full mental model, then open the
+[AFK skills and profiles switchyard](https://tot.page/13T7lSXk6SIhvGNt0aa_tw)
+to see how skill commands, profiles, catalog policy, storage, recovery paths,
+and workflow moments interact.
 
 ## How to Use This Reference
 
@@ -549,10 +553,6 @@ local HTML artifact. AFK writes `afk-skills.html` in the current directory; the
 file is self-contained and does not start a server. In an interactive terminal,
 AFK opens the file automatically after writing it. Set `AFK_NO_OPEN=1` to skip
 that browser handoff.
-
-For an interactive state machine across skill commands, profile commands,
-storage, catalog policy, and recovery paths, open the published
-[AFK skills and profiles switchyard](https://tot.page/13T7lSXk6SIhvGNt0aa_tw).
 
 ### Catalog Import
 
