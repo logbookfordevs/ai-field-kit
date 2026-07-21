@@ -1,0 +1,12 @@
+# Skills vs. custom agents in Codex
+
+**Use a skill** to make one repeatable workflow reliable: it supplies instructions, references, and optional scripts to the current agent. Codex has each installed skill's name and description available for matching, can implicitly activate a matching skill, and supports opting out of that implicit invocation. This is the lightweight choice for “how we do this task.” [OpenAI: Build skills](https://developers.openai.com/codex/skills)
+
+**Use a custom agent** when an independently delegated work package needs a specialized role or runtime: its own developer instructions, and optionally a model, reasoning effort, sandbox, MCP configuration, or skill configuration. A custom agent is a named TOML configuration layer for a *spawned* session, so it is the heavier choice for parallel, context-isolated, or tightly bounded work. [OpenAI: Subagents](https://developers.openai.com/codex/subagents)
+
+## Routing and the `notion_assistant` role
+
+They are not equivalent discovery surfaces. The current Codex docs describe implicit skill selection by matching a skill `description`; they describe subagent delegation as something Codex performs when asked directly or when applicable `AGENTS.md` or skill instructions request delegation. A custom-agent `description` is guidance for when it should be used, but the agent still has to be selected for a spawned session by its `name`. Therefore, treat a custom agent as **available to the delegation mechanism, not auto-invoked like a skill**. [Skills: implicit invocation](https://developers.openai.com/codex/skills#how-codex-uses-skills); [Subagents: delegation and custom-agent schema](https://developers.openai.com/codex/subagents)
+
+In this Codex session, `notion_assistant` is exposed as an available `spawn_agent` role in runtime tool metadata, with a dedicated Notion-work responsibility. That makes it selectable when delegation is authorized; it does **not** place it in the available-skills list or provide a skill-style implicit-invocation policy. This is an observation of the current runtime, not a portability guarantee. The AFK repository likewise models known harness targets and skill roots—not a `notion_assistant` role—while its skill commands explicitly manage auto-invocation metadata. See [agent IDs](../packages/afk/src/types.ts), [agent registry](../packages/afk/src/agents.ts), and [skills command reference](../packages/afk/README.md#skills-commands).
+
