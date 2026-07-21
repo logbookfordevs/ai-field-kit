@@ -36,8 +36,8 @@ body is sufficient for a fresh-context agent to perform the intended role.
 ## 3. Register the source
 
 Add an `agents.json` item with the same `id` as the portable file's `name`, a
-human label, and a direct URL or path to the file. Preserve unrelated catalog
-entries. Edit the source catalog when the definition is shared; use
+human label, and a repository-relative path to the file. Preserve unrelated
+catalog entries. Edit the source catalog when the definition is shared; use
 `afk catalog agents add` when the user explicitly wants a writable local cache
 entry.
 

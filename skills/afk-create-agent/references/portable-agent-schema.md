@@ -13,7 +13,7 @@ Use this reference while authoring a Portable Agent File or its catalog entry.
     {
       "id": "notion_assistant",
       "label": "Notion Assistant",
-      "source": "https://example.com/agents/notion-assistant.md"
+      "source": "agents/notion_assistant.md"
     }
   ]
 }
@@ -22,13 +22,16 @@ Use this reference while authoring a Portable Agent File or its catalog entry.
 - `id` must equal the portable file's `name`.
 - `label` is presentation text; the portable file owns runtime description and
   behavior.
-- `source` is an HTTP(S) URL, absolute path, or path resolved from the setup
-  working directory.
+- `source` is an HTTP(S) URL, absolute path, or path relative to the selected
+  catalog source root. A cache entry without source context falls back to the
+  setup working directory.
 - Custom Agents have no default-selection field. Interactive setup starts with
   every item unchecked; scripts select with `--custom-agent` or `--all`.
 
 Refresh merges `agents.json` by ID: incoming matches replace cached entries,
 new entries append, and cached entries absent from the source survive.
+During source loading, AFK materializes relative agent paths as absolute paths
+for local repositories and raw-file URLs for GitHub repositories.
 
 ## Portable Agent File
 

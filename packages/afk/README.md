@@ -883,7 +883,7 @@ available to automatic model discovery.
     {
       "id": "notion_assistant",
       "label": "Notion Assistant",
-      "source": "https://example.com/agents/notion-assistant.md"
+      "source": "agents/notion_assistant.md"
     }
   ]
 }
@@ -896,6 +896,12 @@ default-selection field: interactive setup starts with every item unchecked,
 and scripted setup requires `--custom-agent <id>` or `--all`. Portable files
 may declare shared AFK skill names for native per-agent configuration; Custom
 Agent setup never installs or validates those skills.
+
+Relative agent sources resolve from the selected catalog source root. Local
+repository sources materialize them as absolute paths; GitHub sources
+materialize them as raw-file URLs. Absolute paths and HTTP(S) sources pass
+through unchanged. A relative source read directly from a writable cache,
+without repository source context, falls back to the setup working directory.
 
 See [Portable Custom Agents](docs/custom-agents.md) for the source schema,
 per-harness model and effort fields, capabilities, target paths, and adapter

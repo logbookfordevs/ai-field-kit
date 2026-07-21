@@ -344,7 +344,32 @@ async function defaultManifestContent(
     return content ? withRememberedDefaultsSource(content, rememberedSourceForWrite) : null;
   }
 
-  return fetchDefaultManifest(name, options, defaultsSource);
+  const content = await fetchDefaultManifest(name, options, defaultsSource);
+  if (name !== "agents.json" || !content) {
+    return content;
+  }
+
+  const sourceRoot = options.rulesSource === "local" ? options.repoDir : defaultsSource;
+  return resolvedCustomAgentManifestContent(content, sourceRoot, options.rulesRef, options.cwd ?? process.cwd());
+}
+
+export function resolvedCustomAgentManifestContent(content: string, sourceRoot: string, ref: string, cwd: string): string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+  if (!isCustomAgentManifest(parsed)) {
+    return content;
+  }
+
+  const base = customAgentSourceBase(sourceRoot, ref, cwd);
+  const items = parsed.items.map((item) => ({
+    ...item,
+    source: resolvedCustomAgentSource(item.source, base),
+  }));
+  return `${JSON.stringify({ ...parsed, items }, null, 2)}\n`;
 }
 
 async function fetchDefaultManifest(name: ManifestName, options: ManifestOptions, defaultsSource: string): Promise<string | null> {
@@ -515,6 +540,54 @@ function defaultRepoManifestUrls(owner: string, repo: string, ref: string): stri
     `${base}/afk/catalog`,
     `${base}/packages/afk/catalog`,
   ];
+}
+
+function customAgentSourceBase(source: string, ref: string, cwd: string): string {
+  const normalized = source.trim().replace(/\/$/, "");
+
+  const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)(?:\/(.*))?$/);
+  if (rawMatch) {
+    const [, owner, repo, sourceRef, path] = rawMatch;
+    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+  }
+
+  const githubTreeMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)(?:\/(.*))?$/);
+  if (githubTreeMatch) {
+    const [, owner, repo, sourceRef, path] = githubTreeMatch;
+    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+  }
+
+  const githubRepoMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)$/);
+  if (githubRepoMatch) {
+    const [, owner, repo] = githubRepoMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(ref)}`;
+  }
+
+  const shorthandMatch = normalized.match(/^([^/\s]+)\/([^/\s]+)$/);
+  if (shorthandMatch) {
+    const [, owner, repo] = shorthandMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(ref)}`;
+  }
+
+  if (/^https?:\/\//.test(normalized)) {
+    return normalized;
+  }
+
+  return isAbsolute(normalized) ? normalized : resolve(cwd, normalized);
+}
+
+function resolvedCustomAgentSource(source: string, base: string): string {
+  if (/^https?:\/\//.test(source) || isAbsolute(source)) {
+    return source;
+  }
+
+  if (/^https?:\/\//.test(base)) {
+    return new URL(source, `${base.replace(/\/$/, "")}/`).toString();
+  }
+
+  return resolve(base, source);
 }
 
 function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): string {

@@ -39,7 +39,7 @@ Portable Agent File:
     {
       "id": "notion_assistant",
       "label": "Notion Assistant",
-      "source": "https://example.com/agents/notion-assistant.md"
+      "source": "agents/notion_assistant.md"
     }
   ]
 }
@@ -48,6 +48,13 @@ Portable Agent File:
 The catalog `id` must match the Portable Agent File's `name`. `label` is only
 for catalog presentation; the portable file owns runtime description and
 behavior.
+
+Relative `source` values resolve from the selected custom source root. For a
+local repository, AFK materializes an absolute filesystem path. For a GitHub
+repository shorthand or URL, AFK materializes a raw-file URL at the selected
+ref. Existing absolute paths and HTTP(S) URLs remain unchanged. Relative paths
+loaded directly from a writable cache without source context fall back to the
+setup working directory.
 
 Refresh merges `agents.json` by id. Incoming matches replace existing entries,
 new incoming entries are appended, and existing entries absent from the source

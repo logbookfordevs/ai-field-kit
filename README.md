@@ -222,7 +222,8 @@ For scripts, selection stays explicit: repeat `--custom-agent <id>` or use
 `--all`. `--yes` confirms the operation, but never selects agents on its own.
 
 Catalog entries stay deliberately small. Each one gives AFK a stable ID, a
-human label, and a direct URL or path to a Portable Agent File:
+human label, and a repository-relative path or direct location for a Portable
+Agent File:
 
 ```json
 {
@@ -231,7 +232,7 @@ human label, and a direct URL or path to a Portable Agent File:
     {
       "id": "notion_assistant",
       "label": "Notion Assistant",
-      "source": "https://example.com/agents/notion-assistant.md"
+      "source": "agents/notion_assistant.md"
     }
   ]
 }
@@ -261,6 +262,11 @@ Use `afk catalog agents` to add, edit, or remove cached catalog entries.
 entries are added, matching source entries are updated, and unrelated local
 entries remain. Refresh changes catalog data only; provisioning happens during
 setup.
+
+When a custom source is a local or GitHub repository, AFK resolves relative
+agent paths from that repository root. A self-contained source can therefore
+keep `afk/catalog/agents.json` and `agents/notion_assistant.md` in the same
+repository without embedding machine-specific paths or raw GitHub URLs.
 
 For the complete Portable Agent File schema, capability behavior, adapter
 mapping, and Pi setup, read [Portable Custom Agents](./packages/afk/docs/custom-agents.md).
@@ -362,8 +368,8 @@ slash-only or attached-only procedures.
 
 1. Author one Portable Agent File with YAML frontmatter and a Markdown
    instruction body.
-2. Add its `id`, `label`, and direct source URL or path to `agents.json`. The
-   catalog ID must match the portable file's `name`.
+2. Add its `id`, `label`, and repository-relative source path to `agents.json`.
+   The catalog ID must match the portable file's `name`.
 3. Inspect it with `afk show agents --source <source>`.
 4. Preview each intended adapter with a dry run:
 
