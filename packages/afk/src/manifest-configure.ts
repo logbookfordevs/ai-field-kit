@@ -31,13 +31,14 @@ import {
   type PluginPostInstallCommand,
 } from "./manifest.js";
 import type { SkillProfileCatalog } from "./skills/profiles.js";
+import { isPromptExit } from "./menu.js";
 import { afkPromptTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import { searchableCheckbox } from "./searchable-checkbox.js";
 import type { CliOptions, Runtime, SkillProfileMode } from "./types.js";
 
 export type ManifestArea = EditableManifestArea | "profiles";
 type ManifestAreaChoice = ManifestArea | "finish";
-export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "edit-rules" | "back";
+export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "edit-rules" | "finish" | "back";
 type EditableDraft = EditableManifest | SkillProfileCatalog;
 type Drafts = Record<ManifestArea, EditableDraft>;
 type SerializedDrafts = Partial<Record<`${ManifestArea}.json`, string>>;
@@ -106,19 +107,36 @@ export async function runManifestConfigureWithPrompts(
   resetPromptSteps();
   runtime.io.stdout("\nAFK catalog");
   runtime.io.stdout(`Writing to: ${outputDir}`);
-  if (initial) {
-    runtime.io.stdout(renderPromptStep("Catalog editor", `Editing ${catalogFilename(initial.area)}.`));
-    await editManifestArea(runtime, prompts, drafts, touched, initial.area, options, initial.action);
-  } else {
-    runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
+  try {
+    if (initial) {
+      runtime.io.stdout(renderPromptStep("Catalog editor", `Editing ${catalogFilename(initial.area)}.`));
+      await editManifestArea(runtime, prompts, drafts, touched, initial.area, options, initial.action);
+    } else {
+      runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
 
-    while (true) {
-      const area = await prompts.selectArea(areaChoices(drafts));
-      if (area === "finish") {
-        break;
+      while (true) {
+        const area = await prompts.selectArea(areaChoices(drafts));
+        if (area === "finish") {
+          break;
+        }
+
+        const navigation = await editManifestArea(runtime, prompts, drafts, touched, area, options);
+        if (navigation === "finish") {
+          break;
+        }
       }
+    }
+  } catch (error) {
+    const hasUnsavedChanges = Object.keys(changedDrafts(original, drafts, touched)).length > 0;
+    if (!isPromptExit(error) || !hasUnsavedChanges) {
+      throw error;
+    }
 
-      await editManifestArea(runtime, prompts, drafts, touched, area, options);
+    runtime.io.stdout("\nYou have unsaved catalog changes.");
+    const shouldReview = await prompts.confirm("Finish and review changes before exiting?", true);
+    if (!shouldReview) {
+      runtime.io.stdout("\nDiscarded unsaved catalog changes.");
+      return 130;
     }
   }
 
@@ -171,22 +189,25 @@ async function editManifestArea(
   area: ManifestArea,
   options: CliOptions,
   initialAction?: ManifestAction,
-): Promise<void> {
+): Promise<"back" | "finish"> {
   runtime.io.stdout(renderPromptStep(areaTitle(area), areaDescriptions[area]));
   let action = initialAction;
 
   while (true) {
     runtime.io.stdout(renderAreaSummary(area, drafts[area]));
     action = action ?? await prompts.selectAction(area, actionChoices(area, drafts[area]));
+    if (action === "finish") {
+      return "finish";
+    }
     if (action === "back") {
-      return;
+      return "back";
     }
 
     if (area === "rules") {
       drafts.rules = await configureRules(prompts, drafts.rules);
       touched.add("rules");
       if (initialAction) {
-        return;
+        return "back";
       }
       action = undefined;
       continue;
@@ -196,26 +217,29 @@ async function editManifestArea(
       drafts.profiles = await applyProfileAction(prompts, drafts.profiles, drafts.skills, action);
       touched.add("profiles");
       if (initialAction) {
-        return;
+        return "back";
       }
       action = undefined;
       continue;
     }
 
     if (!isItemManifestArea(area)) {
-      return;
+      return "back";
     }
 
     try {
       drafts[area] = await applyItemAction(prompts, area, drafts[area] as EditableManifest, action, options);
       touched.add(area);
       if (initialAction) {
-        return;
+        return "back";
       }
     } catch (error) {
+      if (isPromptExit(error)) {
+        throw error;
+      }
       runtime.io.stderr(`\n${error instanceof Error ? error.message : String(error)}`);
       if (initialAction) {
-        return;
+        return "back";
       }
     }
     action = undefined;
@@ -340,7 +364,7 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
   const id = await prompts.input({ message: "Skill id", default: existing?.id ?? inferId(skill || source), required: true });
   const label = await prompts.input({ message: "Skill label", default: existing?.label ?? inferLabel(id), required: true });
   const defaultValue = existing?.default ?? true;
-  const autoInvocationValue = existing?.autoInvocation ?? true;
+  const autoInvocationValue = existing?.autoInvocation ?? false;
   const startDisabledValue = existing?.startDisabled ?? false;
   const isDefault = await prompts.confirm(booleanPrompt("Selected by default?", defaultValue, existing ? "current" : "default"), defaultValue);
   const autoInvocation = await prompts.confirm(booleanPrompt("Allow automatic model invocation?", autoInvocationValue, existing ? "current" : "default"), autoInvocationValue);
@@ -525,7 +549,8 @@ function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<Selec
   if (area === "rules") {
     return [
       { name: "Edit rules source", value: "edit-rules", description: "Change the rules URL/path and inferred source type." },
-      { name: "Back to catalog", value: "back" },
+      finishActionChoice(),
+      manageOtherCatalogsChoice(),
     ];
   }
 
@@ -533,7 +558,8 @@ function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<Selec
     return [
       { name: "Set profile mode", value: "set-profile-mode", description: "Choose strict availability or context-only filtering." },
       { name: "Toggle alwaysOn", value: "toggle-always-on", description: "Choose skills that stay active across enabled profiles." },
-      { name: "Back to catalog", value: "back" },
+      finishActionChoice(),
+      manageOtherCatalogsChoice(),
     ];
   }
 
@@ -544,8 +570,24 @@ function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<Selec
     ...(hasItems ? [{ name: `Remove ${singularArea(area)}`, value: "remove" as const }] : []),
     ...(hasItems ? [{ name: "Toggle default", value: "toggle-default" as const }] : []),
     ...(area === "skills" && hasItems ? [{ name: "Toggle autoInvocation", value: "toggle-auto" as const }] : []),
-    { name: "Back to catalog", value: "back" },
+    finishActionChoice(),
+    manageOtherCatalogsChoice(),
   ];
+}
+
+function finishActionChoice(): SelectChoice<ManifestAction> {
+  return {
+    name: "Finish and review",
+    value: "finish",
+    description: "Preview changed catalog JSON before writing.",
+  };
+}
+
+function manageOtherCatalogsChoice(): SelectChoice<ManifestAction> {
+  return {
+    name: "Back to manage other catalogs",
+    value: "back",
+  };
 }
 
 function itemChoices(manifest: EditableManifest): Array<SelectChoice<string>> {

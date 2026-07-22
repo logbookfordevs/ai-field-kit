@@ -279,6 +279,81 @@ test("runManifestConfigureWithPrompts writes startDisabled for skill items", asy
   assert.equal(written.items[0]?.startDisabled, true);
 });
 
+test("runManifestConfigureWithPrompts defaults automatic model invocation off for new skills", async () => {
+  const confirmPrompts: Array<{ message: string; defaultValue: boolean }> = [];
+
+  await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ dryRun: true }),
+    scriptedPrompts({
+      areas: ["skills", "finish"],
+      actions: ["add", "back"],
+      inputs: ["https://github.com/example/skills", "manual-skill", "manual-skill", "Manual Skill"],
+      confirms: [true, false, false],
+      onConfirm: (message, defaultValue) => confirmPrompts.push({ message, defaultValue }),
+    }),
+  );
+
+  assert.ok(confirmPrompts.some(({ message, defaultValue }) => (
+    message === "Allow automatic model invocation? (default: off)" && defaultValue === false
+  )));
+});
+
+test("runManifestConfigureWithPrompts can finish and review from a catalog submenu", async () => {
+  const actionLabels: string[] = [];
+  const output: string[] = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo(output), spawn: async () => ({ code: 0 }) },
+    cliOptions({ dryRun: true }),
+    scriptedPrompts({
+      areas: ["skills"],
+      actions: ["add", "finish"],
+      inputs: ["https://github.com/example/skills", "manual-skill", "manual-skill", "Manual Skill"],
+      confirms: [true, false, false],
+      onSelectActionChoices: (choices) => actionLabels.push(...choices.map((choice) => choice.name)),
+    }),
+  );
+
+  assert.equal(code, 0);
+  assert.ok(actionLabels.includes("Finish and review"));
+  assert.ok(actionLabels.includes("Back to manage other catalogs"));
+  assert.ok(output.join("\n").includes("Catalog preview"));
+});
+
+test("runManifestConfigureWithPrompts offers review before Ctrl-C discards unsaved changes", async () => {
+  const confirmMessages: string[] = [];
+  const output: string[] = [];
+  const prompts = scriptedPrompts({
+    areas: ["skills"],
+    actions: ["add"],
+    inputs: ["https://github.com/example/skills", "manual-skill", "manual-skill", "Manual Skill"],
+    confirms: [true, false, false, true],
+    onConfirm: (message) => confirmMessages.push(message),
+  });
+  const selectAction = prompts.selectAction;
+  let actionCount = 0;
+  prompts.selectAction = async (...args) => {
+    actionCount += 1;
+    if (actionCount === 2) {
+      const error = new Error("User force closed the prompt with SIGINT");
+      error.name = "ExitPromptError";
+      throw error;
+    }
+    return selectAction(...args);
+  };
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo(output), spawn: async () => ({ code: 0 }) },
+    cliOptions({ dryRun: true }),
+    prompts,
+  );
+
+  assert.equal(code, 0);
+  assert.ok(confirmMessages.includes("Finish and review changes before exiting?"));
+  assert.ok(output.join("\n").includes("Catalog preview"));
+});
+
 test("runManifestConfigureWithPrompts toggles profile alwaysOn skills", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
   const manifestDir = join(homeDir, ".agents", "afk", "catalog");
@@ -629,8 +704,9 @@ function scriptedPrompts(script: {
   profileModes?: SkillProfileMode[];
   toggleValues?: Array<Record<string, boolean>>;
   onSelectItemChoices?: (choices: Array<{ name: string; value: string; description?: string }>) => void;
+  onSelectActionChoices?: (choices: Array<{ name: string; value: ManifestAction; description?: string }>) => void;
   onToggleChoices?: (choices: Array<{ name: string; value: string; enabled: boolean; description?: string }>) => void;
-  onConfirm?: (message: string) => void;
+  onConfirm?: (message: string, defaultValue: boolean) => void;
 }): ManifestConfigurePrompts {
   const areas = [...script.areas];
   const actions = [...script.actions];
@@ -642,7 +718,10 @@ function scriptedPrompts(script: {
 
   return {
     selectArea: async () => nextValue(areas, "area"),
-    selectAction: async () => nextValue(actions, "action"),
+    selectAction: async (_area, choices) => {
+      script.onSelectActionChoices?.(choices);
+      return nextValue(actions, "action");
+    },
     selectItem: async (_area, choices) => {
       script.onSelectItemChoices?.(choices);
       return nextValue(items, "item");
@@ -653,8 +732,8 @@ function scriptedPrompts(script: {
       return nextValue(toggleValues, "toggle values");
     },
     input: async () => nextValue(inputs, "input"),
-    confirm: async (message) => {
-      script.onConfirm?.(message);
+    confirm: async (message, defaultValue) => {
+      script.onConfirm?.(message, defaultValue);
       return nextValue(confirms, "confirm");
     },
   };
