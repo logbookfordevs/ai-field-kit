@@ -44,7 +44,7 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 - Check and follow the current project's package manager. Always chose pnpm in new projects.
 
 ## Tech Stack
-For web applications or React work, use Tailwind V4 and TypeScript.
+For web applications, prefer React, Tailwind V4 and TypeScript. For prototyping, you may use HTML/CSS/JS or whatever attends the needs.
 
 ## Frontend UX Defaults
 - Do not choose a simpler implementation just to avoid setup when a richer interaction, mature primitive, or small amount of extra state materially improves UX. For standard app primitives in React/Tailwind, use the `afk-ui-registry-preferences` skill before choosing custom UI or a registry.
