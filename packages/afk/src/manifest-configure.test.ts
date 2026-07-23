@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { inferId, inferLabel, runManifestConfigureWithPrompts, type ManifestAction, type ManifestConfigurePrompts } from "./manifest-configure.js";
+import { filterCatalogSelectChoices, inferId, inferLabel, runManifestConfigureWithPrompts, type ManifestAction, type ManifestConfigurePrompts } from "./manifest-configure.js";
 import {
   addManifestItem,
   emptyEditableManifest,
@@ -33,6 +33,16 @@ test("inferId normalizes free-form names", () => {
 test("inferLabel creates editable title defaults", () => {
   assert.equal(inferLabel("afk-pr-story-flow-mermaid"), "AFK / PR Story Flow Mermaid");
   assert.equal(inferLabel("stitch-mcp"), "Stitch MCP");
+});
+
+test("filterCatalogSelectChoices searches skill identity and metadata", () => {
+  const choices = [
+    { name: "alpha", value: "alpha", description: "label: Human Alpha · source: owner/skills", searchAliases: ["manual"] },
+    { name: "beta", value: "beta", description: "label: Human Beta · source: other/skills", searchAliases: ["auto"] },
+  ];
+
+  assert.deepEqual(filterCatalogSelectChoices(choices, "human alpha manual").map((choice) => choice.value), ["alpha"]);
+  assert.deepEqual(filterCatalogSelectChoices(choices, "other/skills").map((choice) => choice.value), ["beta"]);
 });
 
 test("emptyEditableManifest creates typed empty manifests", () => {
@@ -413,6 +423,7 @@ test("runManifestConfigureWithPrompts bulk edits invocation and always-on policy
     items: [],
   }, null, 2)}\n`);
   const settingMessages: string[] = [];
+  const bulkChoices: Array<{ name: string; value: string; description?: string }> = [];
 
   const code = await runManifestConfigureWithPrompts(
     { io: captureIo([]), spawn: async () => ({ code: 0 }) },
@@ -423,6 +434,7 @@ test("runManifestConfigureWithPrompts bulk edits invocation and always-on policy
       selectedItems: [["alpha", "beta"]],
       bulkSkillSettings: ["off", "on"],
       confirms: [true],
+      onSelectItemsChoices: (choices) => bulkChoices.push(...choices),
       onSelectBulkSkillSetting: (message) => settingMessages.push(message),
     }),
     { area: "skills", action: "bulk-edit" },
@@ -443,6 +455,10 @@ test("runManifestConfigureWithPrompts bulk edits invocation and always-on policy
     "Set invocation mode for selected skills",
     "Set always-on for selected skills",
   ]);
+  assert.deepEqual(bulkChoices.map((choice) => choice.name), ["alpha", "beta", "gamma"]);
+  assert.ok(bulkChoices[0]?.description?.includes("label: Alpha"));
+  assert.ok(bulkChoices[0]?.description?.includes("invocation: auto"));
+  assert.ok(bulkChoices[0]?.description?.includes("always-on: off"));
 });
 
 test("runManifestConfigureWithPrompts sets profile mode", async () => {
@@ -511,6 +527,37 @@ test("runManifestConfigureWithPrompts can enter one catalog area directly", asyn
   assert.equal(code, 0);
   assert.deepEqual(selectedAreas, []);
   assert.equal(written.items[0]?.default, false);
+});
+
+test("runManifestConfigureWithPrompts does not dump catalog entries before the action prompt", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-menu-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      { id: "alpha", label: "Alpha", source: "owner/skills", args: ["--skill", "alpha"], default: true },
+      { id: "beta", label: "Beta", source: "owner/skills", args: ["--skill", "beta"], default: false },
+    ],
+  }, null, 2)}\n`);
+  const output: string[] = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo(output), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: [],
+      actions: ["back"],
+    }),
+    { area: "skills" },
+  );
+
+  const text = output.join("\n");
+  assert.equal(code, 0);
+  assert.ok(!text.includes("Skills entries"));
+  assert.ok(!text.includes("- Alpha [default]"));
+  assert.ok(!text.includes("- Beta"));
 });
 
 test("runManifestConfigureWithPrompts can run one catalog action directly", async () => {
@@ -701,6 +748,48 @@ test("runManifestConfigureWithPrompts shows current boolean state in edit prompt
   assert.ok(confirmMessages.includes("Selected by default? (current: off)"));
 });
 
+test("runManifestConfigureWithPrompts presents skill edit choices with branded identity and metadata", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-skill-edit-picker-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "owner/skills",
+    items: [
+      {
+        id: "alpha",
+        label: "Alpha",
+        source: "owner/skills",
+        args: ["--skill", "alpha"],
+        default: false,
+        autoInvocation: false,
+        startDisabled: true,
+      },
+    ],
+  }, null, 2)}\n`);
+  const choices: Array<{ name: string; value: string; description?: string }> = [];
+
+  await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir, dryRun: true }),
+    scriptedPrompts({
+      areas: [],
+      actions: [],
+      items: ["alpha"],
+      inputs: ["owner/skills", "alpha", "alpha", "Alpha"],
+      confirms: [false, false, true],
+      onSelectItemChoices: (nextChoices) => choices.push(...nextChoices),
+    }),
+    { area: "skills", action: "edit" },
+  );
+
+  assert.equal(choices[0]?.name, "alpha");
+  assert.ok(choices[0]?.description?.includes("label: Alpha"));
+  assert.ok(choices[0]?.description?.includes("autoInvocation: off"));
+  assert.ok(choices[0]?.description?.includes("startDisabled: on"));
+  assert.ok(choices[0]?.description?.includes("owner/skills"));
+});
+
 function captureIo(output: string[]) {
   return {
     stdout: (message: string) => output.push(message),
@@ -758,6 +847,7 @@ function scriptedPrompts(script: {
   bulkSkillSettings?: Array<"on" | "off" | "unchanged">;
   toggleValues?: Array<Record<string, boolean>>;
   onSelectItemChoices?: (choices: Array<{ name: string; value: string; description?: string }>) => void;
+  onSelectItemsChoices?: (choices: Array<{ name: string; value: string; description?: string }>) => void;
   onSelectActionChoices?: (choices: Array<{ name: string; value: ManifestAction; description?: string }>) => void;
   onToggleChoices?: (choices: Array<{ name: string; value: string; enabled: boolean; description?: string }>) => void;
   onSelectBulkSkillSetting?: (message: string, onLabel: string, offLabel: string) => void;
@@ -783,7 +873,8 @@ function scriptedPrompts(script: {
       script.onSelectItemChoices?.(choices);
       return nextValue(items, "item");
     },
-    selectItems: async () => {
+    selectItems: async (_area, choices) => {
+      script.onSelectItemsChoices?.(choices);
       return nextValue(selectedItems, "selected items");
     },
     selectBulkSkillSetting: async (message, onLabel, offLabel) => {
