@@ -22,7 +22,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
-- `cli:` made GitHub-backed catalog sources fall back to existing Git credentials, so private repositories work with setup, refresh, and show commands.
+- `cli:` made GitHub-backed catalog sources fall back to existing Git credentials with visible fetch progress, so private repositories work with setup, refresh, and show commands.
 - `cli:` prompted before Ctrl-C discards unsaved catalog edits, offering to finish and review the changes first.
 - `install:` resolved the latest AFK release through GitHub's release redirect instead of the rate-limited unauthenticated REST API.
 

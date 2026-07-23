@@ -675,7 +675,8 @@ packages/afk/catalog/
 
 AFK reads public catalogs directly. When raw GitHub access is unavailable, it
 falls back to Git using your existing credentials so private repositories work
-without a separate AFK token.
+without a separate AFK token. Interactive terminals show progress while Git
+fetches the catalog.
 
 `--source` and `--default-source` accept:
 

@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
@@ -516,13 +516,16 @@ function githubSourceSpecForRepo(
 async function cloneGithubCatalogSource(source: GithubSourceSpec): Promise<GithubSourceCheckout> {
   const tempRoot = mkdtempSync(join(tmpdir(), "afk-catalog-source-"));
   const rootDir = join(tempRoot, "repo");
+  const status = startCatalogCloneStatus();
 
   try {
-    runGit(["init", rootDir], source);
-    runGit(["-C", rootDir, "remote", "add", "origin", source.cloneUrl], source);
-    runGit(["-C", rootDir, "fetch", "--depth", "1", "origin", source.ref], source);
-    runGit(["-C", rootDir, "checkout", "--detach", "FETCH_HEAD"], source);
+    await runGit(["init", rootDir], source);
+    await runGit(["-C", rootDir, "remote", "add", "origin", source.cloneUrl], source);
+    await runGit(["-C", rootDir, "fetch", "--depth", "1", "origin", source.ref], source);
+    await runGit(["-C", rootDir, "checkout", "--detach", "FETCH_HEAD"], source);
+    status.stop(true);
   } catch (error) {
+    status.stop(false);
     rmSync(tempRoot, { recursive: true, force: true });
     throw error;
   }
@@ -535,21 +538,62 @@ async function cloneGithubCatalogSource(source: GithubSourceSpec): Promise<Githu
   };
 }
 
-function runGit(args: string[], source: GithubSourceSpec): void {
-  const result = spawnSync("git", args, {
-    encoding: "utf8",
-    env: {
-      ...process.env,
-      GIT_TERMINAL_PROMPT: "0",
-    },
-  });
+function runGit(args: string[], source: GithubSourceSpec): Promise<void> {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn("git", args, {
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: "0",
+      },
+      stdio: ["ignore", "ignore", "pipe"],
+    });
+    let stderr = "";
 
-  if (!result.error && result.status === 0) {
-    return;
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+    child.on("error", (error) => {
+      rejectPromise(catalogCloneError(source, error.message));
+    });
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolvePromise();
+        return;
+      }
+
+      rejectPromise(catalogCloneError(source, stderr.trim() || `git exited with code ${code ?? "unknown"}`));
+    });
+  });
+}
+
+function catalogCloneError(source: GithubSourceSpec, detail: string): Error {
+  return new Error(`Unable to read AFK catalog from ${source.cloneUrl} at ${source.ref}: ${detail}`);
+}
+
+function startCatalogCloneStatus(): { stop: (success: boolean) => void } {
+  if (!process.stdout.isTTY || process.env.CI === "true") {
+    return { stop: () => {} };
   }
 
-  const detail = result.stderr.trim() || result.error?.message || "git exited without an error message";
-  throw new Error(`Unable to read AFK catalog from ${source.cloneUrl} at ${source.ref}: ${detail}`);
+  const start = "- Catalog source: fetching with Git...";
+  const done = "- Catalog source: ready";
+  const failed = "- Catalog source: needs attention";
+  const frames = ["-", "\\", "|", "/"];
+  let index = 0;
+
+  process.stdout.write(`${start} `);
+  const timer = setInterval(() => {
+    process.stdout.write(`\r${start} ${frames[index % frames.length]}`);
+    index += 1;
+  }, 80);
+
+  return {
+    stop: (success) => {
+      clearInterval(timer);
+      process.stdout.write(`\r${success ? done : failed}${" ".repeat(24)}\n`);
+    },
+  };
 }
 
 function unique(values: string[]): string[] {
