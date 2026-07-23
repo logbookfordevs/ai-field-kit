@@ -393,6 +393,58 @@ test("runManifestConfigureWithPrompts toggles profile alwaysOn skills", async ()
   assert.deepEqual(written.alwaysOn, ["alpha"]);
 });
 
+test("runManifestConfigureWithPrompts bulk edits invocation and always-on policy", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-bulk-edit-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      { id: "alpha", label: "Alpha", source: "owner/skills", args: ["--skill", "alpha"], default: true, autoInvocation: true },
+      { id: "beta", label: "Beta", source: "owner/skills", args: ["--skill", "beta"], default: false, autoInvocation: true },
+      { id: "gamma", label: "Gamma", source: "owner/skills", args: ["--skill", "gamma"], default: false, autoInvocation: true },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: ["gamma"],
+    items: [],
+  }, null, 2)}\n`);
+  const settingMessages: string[] = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: [],
+      actions: [],
+      selectedItems: [["alpha", "beta"]],
+      bulkSkillSettings: ["off", "on"],
+      confirms: [true],
+      onSelectBulkSkillSetting: (message) => settingMessages.push(message),
+    }),
+    { area: "skills", action: "bulk-edit" },
+  );
+
+  const skills = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as {
+    items: Array<{ id: string; autoInvocation: boolean }>;
+  };
+  const profiles = JSON.parse(readFileSync(join(manifestDir, "profiles.json"), "utf8")) as { alwaysOn: string[] };
+  assert.equal(code, 0);
+  assert.deepEqual(skills.items.map((item) => [item.id, item.autoInvocation]), [
+    ["alpha", false],
+    ["beta", false],
+    ["gamma", true],
+  ]);
+  assert.deepEqual(profiles.alwaysOn, ["alpha", "beta", "gamma"]);
+  assert.deepEqual(settingMessages, [
+    "Set invocation mode for selected skills",
+    "Set always-on for selected skills",
+  ]);
+});
+
 test("runManifestConfigureWithPrompts sets profile mode", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
   const manifestDir = join(homeDir, ".agents", "afk", "catalog");
@@ -702,10 +754,13 @@ function scriptedPrompts(script: {
   inputs?: string[];
   confirms?: boolean[];
   profileModes?: SkillProfileMode[];
+  selectedItems?: string[][];
+  bulkSkillSettings?: Array<"on" | "off" | "unchanged">;
   toggleValues?: Array<Record<string, boolean>>;
   onSelectItemChoices?: (choices: Array<{ name: string; value: string; description?: string }>) => void;
   onSelectActionChoices?: (choices: Array<{ name: string; value: ManifestAction; description?: string }>) => void;
   onToggleChoices?: (choices: Array<{ name: string; value: string; enabled: boolean; description?: string }>) => void;
+  onSelectBulkSkillSetting?: (message: string, onLabel: string, offLabel: string) => void;
   onConfirm?: (message: string, defaultValue: boolean) => void;
 }): ManifestConfigurePrompts {
   const areas = [...script.areas];
@@ -714,6 +769,8 @@ function scriptedPrompts(script: {
   const inputs = [...(script.inputs ?? [])];
   const confirms = [...(script.confirms ?? [])];
   const profileModes = [...(script.profileModes ?? [])];
+  const selectedItems = [...(script.selectedItems ?? [])];
+  const bulkSkillSettings = [...(script.bulkSkillSettings ?? [])];
   const toggleValues = [...(script.toggleValues ?? [])];
 
   return {
@@ -725,6 +782,13 @@ function scriptedPrompts(script: {
     selectItem: async (_area, choices) => {
       script.onSelectItemChoices?.(choices);
       return nextValue(items, "item");
+    },
+    selectItems: async () => {
+      return nextValue(selectedItems, "selected items");
+    },
+    selectBulkSkillSetting: async (message, onLabel, offLabel) => {
+      script.onSelectBulkSkillSetting?.(message, onLabel, offLabel);
+      return nextValue(bulkSkillSettings, "bulk skill setting");
     },
     selectProfileMode: async () => nextValue(profileModes, "profile mode"),
     toggleBooleans: async (_area, choices) => {

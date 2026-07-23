@@ -38,7 +38,8 @@ import type { CliOptions, Runtime, SkillProfileMode } from "./types.js";
 
 export type ManifestArea = EditableManifestArea | "profiles";
 type ManifestAreaChoice = ManifestArea | "finish";
-export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "edit-rules" | "finish" | "back";
+export type ManifestAction = "add" | "edit" | "bulk-edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "edit-rules" | "finish" | "back";
+type BulkSkillSetting = "on" | "off" | "unchanged";
 type EditableDraft = EditableManifest | SkillProfileCatalog;
 type Drafts = Record<ManifestArea, EditableDraft>;
 type SerializedDrafts = Partial<Record<`${ManifestArea}.json`, string>>;
@@ -52,18 +53,20 @@ type InputConfig = {
   default?: string;
   required?: boolean;
 };
-type BooleanToggleChoice = {
+type MultiSelectChoice = {
   name: string;
   value: string;
-  enabled: boolean;
   description?: string;
   searchAliases?: string[];
 };
+type BooleanToggleChoice = MultiSelectChoice & { enabled: boolean };
 
 export type ManifestConfigurePrompts = {
   selectArea: (choices: Array<SelectChoice<ManifestAreaChoice>>) => Promise<ManifestAreaChoice>;
   selectAction: (area: ManifestArea, choices: Array<SelectChoice<ManifestAction>>) => Promise<ManifestAction>;
   selectItem: (area: ManifestArea, choices: Array<SelectChoice<string>>, message: string) => Promise<string>;
+  selectItems: (area: ManifestArea, choices: MultiSelectChoice[], message: string) => Promise<string[]>;
+  selectBulkSkillSetting: (message: string, onLabel: string, offLabel: string) => Promise<BulkSkillSetting>;
   selectProfileMode: (current: SkillProfileMode) => Promise<SkillProfileMode>;
   toggleBooleans: (area: ManifestArea, choices: BooleanToggleChoice[], message: string) => Promise<Record<string, boolean>>;
   input: (config: InputConfig) => Promise<string>;
@@ -223,6 +226,19 @@ async function editManifestArea(
       continue;
     }
 
+    if (area === "skills" && action === "bulk-edit") {
+      const result = await applyBulkSkillEdit(prompts, drafts.skills as EditableManifest, drafts.profiles);
+      drafts.skills = result.skills;
+      drafts.profiles = result.profiles;
+      touched.add("skills");
+      touched.add("profiles");
+      if (initialAction) {
+        return "back";
+      }
+      action = undefined;
+      continue;
+    }
+
     if (!isItemManifestArea(area)) {
       return "back";
     }
@@ -301,6 +317,51 @@ async function applyItemAction(
   }
 
   return manifest;
+}
+
+async function applyBulkSkillEdit(
+  prompts: ManifestConfigurePrompts,
+  skillsManifest: EditableManifest,
+  profilesManifest: EditableDraft,
+): Promise<{ skills: SkillManifest; profiles: SkillProfileCatalog }> {
+  const profiles = normalizeProfileDraft(profilesManifest);
+  const selectedIds = await prompts.selectItems(
+    "skills",
+    bulkSkillChoices(skillsManifest, profiles),
+    "Select skills to bulk edit",
+  );
+
+  if (selectedIds.length === 0) {
+    return { skills: skillsManifest as SkillManifest, profiles };
+  }
+
+  const invocation = await prompts.selectBulkSkillSetting(
+    "Set invocation mode for selected skills",
+    "Auto",
+    "Manual",
+  );
+  const alwaysOn = await prompts.selectBulkSkillSetting(
+    "Set always-on for selected skills",
+    "On",
+    "Off",
+  );
+
+  const invocationValue = settingValue(invocation);
+  const skills = invocationValue === undefined
+    ? skillsManifest as SkillManifest
+    : setSkillAutoInvocationValues(
+      skillsManifest,
+      Object.fromEntries(selectedIds.map((id) => [id, invocationValue])),
+    );
+  const alwaysOnValue = settingValue(alwaysOn);
+  const nextAlwaysOn = alwaysOnValue === undefined
+    ? profiles.alwaysOn
+    : updateAlwaysOn(profiles.alwaysOn, selectedIds, alwaysOnValue);
+
+  return {
+    skills,
+    profiles: { ...profiles, alwaysOn: nextAlwaysOn },
+  };
 }
 
 async function applyProfileAction(
@@ -566,6 +627,7 @@ function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<Selec
   const hasItems = entryCount(manifest) > 0;
   return [
     { name: `Add ${singularArea(area)}`, value: "add" },
+    ...(area === "skills" && hasItems ? [{ name: "Bulk edit skills", value: "bulk-edit" as const, description: "Set invocation and always-on policy for multiple skills." }] : []),
     ...(hasItems ? [{ name: `Edit ${singularArea(area)}`, value: "edit" as const }] : []),
     ...(hasItems ? [{ name: `Remove ${singularArea(area)}`, value: "remove" as const }] : []),
     ...(hasItems ? [{ name: "Toggle default", value: "toggle-default" as const }] : []),
@@ -608,6 +670,20 @@ function booleanToggleChoices(manifest: EditableManifest, field: "default" | "au
       description: itemDescription(item),
     };
   });
+}
+
+function bulkSkillChoices(manifest: EditableManifest, profiles: SkillProfileCatalog): MultiSelectChoice[] {
+  const alwaysOnIds = new Set(profiles.alwaysOn);
+  return itemsFromManifest(manifest).map((item) => ({
+    name: itemLabel(item),
+    value: item.id,
+    description: [
+      `invocation: ${autoInvocationValue(item) ? "auto" : "manual"}`,
+      `always-on: ${alwaysOnIds.has(item.id) ? "on" : "off"}`,
+      itemDescription(item),
+    ].join(" · "),
+    searchAliases: alwaysOnSearchAliases(item),
+  }));
 }
 
 function renderAreaSummary(area: ManifestArea, manifest: EditableDraft): string {
@@ -696,6 +772,8 @@ function actionLabel(action: ManifestAction): string {
   switch (action) {
     case "edit":
       return "Edit";
+    case "bulk-edit":
+      return "Bulk edit";
     case "remove":
       return "Remove";
     case "toggle-default":
@@ -840,6 +918,21 @@ function uniqueStrings(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))].sort((left, right) => left.localeCompare(right));
 }
 
+function settingValue(setting: BulkSkillSetting): boolean | undefined {
+  if (setting === "unchanged") {
+    return undefined;
+  }
+
+  return setting === "on";
+}
+
+function updateAlwaysOn(current: string[], selectedIds: string[], enabled: boolean): string[] {
+  const selected = new Set(selectedIds);
+  return uniqueStrings(enabled
+    ? [...current, ...selectedIds]
+    : current.filter((id) => !selected.has(id)));
+}
+
 function installLineFromCommand(install?: PluginManifestItem["install"]): string {
   if (!install) {
     return "";
@@ -914,6 +1007,17 @@ function inquirerPrompts(): ManifestConfigurePrompts {
       pageSize: 12,
       theme: afkSelectTheme,
     }),
+    selectItems: async (_area, choices, message) => selectItemsPrompt(message, choices),
+    selectBulkSkillSetting: async (message, onLabel, offLabel) => select<BulkSkillSetting>({
+      message,
+      choices: [
+        { name: "Leave unchanged", value: "unchanged" },
+        { name: onLabel, value: "on" },
+        { name: offLabel, value: "off" },
+      ],
+      default: "unchanged",
+      theme: afkSelectTheme,
+    }),
     selectProfileMode: async (current) => select<SkillProfileMode>({
       message: "Choose profile mode",
       choices: [
@@ -967,6 +1071,26 @@ async function toggleBooleanPrompt(message: string, choices: BooleanToggleChoice
   });
   const selectedIds = new Set(selected);
   return Object.fromEntries(choices.map((choice) => [choice.value, selectedIds.has(choice.value)]));
+}
+
+async function selectItemsPrompt(message: string, choices: MultiSelectChoice[]): Promise<string[]> {
+  if (choices.length === 0 || !process.stdin.isTTY || !process.stdout.isTTY) {
+    return [];
+  }
+
+  return searchableCheckbox<string>({
+    message,
+    choices: choices.map((choice) => ({
+      name: choice.name,
+      value: choice.value,
+      short: choice.value,
+      ...(choice.description ? { description: choice.description } : {}),
+      searchAliases: choice.searchAliases ?? [],
+    })),
+    pageSize: 12,
+    required: true,
+    instructions: "Use space to toggle, type to filter, enter to continue.",
+  });
 }
 
 function booleanRecord(choices: BooleanToggleChoice[], values: boolean[]): Record<string, boolean> {

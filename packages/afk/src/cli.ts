@@ -1012,6 +1012,7 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "add                               Add a skill catalog item",
       "edit                              Edit a skill catalog item",
+      "bulk-edit                         Set invocation and always-on policy for multiple skills",
       "remove                            Remove a skill catalog item",
       "toggle-default                    Toggle default skills",
       "toggle-auto                       Toggle skill autoInvocation",
@@ -1021,6 +1022,7 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk catalog skills",
       "afk catalog skills add",
+      "afk catalog skills bulk-edit",
       "afk catalog skills toggle-auto",
       "afk catalog skills import-status",
       "afk catalog skills import --dry-run",
@@ -1894,6 +1896,10 @@ function catalogActionFromCommand(area: ManifestArea, value: string | undefined)
     case "edit":
     case "remove":
       return { kind: "ok", action: value };
+    case "bulk-edit":
+      return area === "skills"
+        ? { kind: "ok", action: "bulk-edit" }
+        : { kind: "error", error: `Unknown catalog ${area} command: ${value}` };
     case "toggle-default":
       return { kind: "ok", action: "toggle-default" };
     case "toggle-auto":
