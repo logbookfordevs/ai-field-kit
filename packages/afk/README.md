@@ -278,6 +278,7 @@ its interactive editor. Use `--dry-run` to preview supported writes.
 |---|---|---|
 | Rules | `afk catalog rules [edit]` | The rules source URL or local path in `rules.json`. |
 | Skills | `afk catalog skills add`, `edit`, `remove` | Skill definitions and installation metadata in `skills.json`. |
+| Skills policy | `afk catalog skills bulk-edit` | Select multiple skills, then set invocation and always-on policy together. |
 | Skills policy | `afk catalog skills toggle-default` | Which catalog skills non-interactive default setup selects. |
 | Skills policy | `afk catalog skills toggle-auto` | Catalog-owned `autoInvocation` policy. |
 | Skills import | `afk catalog skills import-status` | Read-only comparison of installed shared skills and catalog entries. |
@@ -671,6 +672,11 @@ For a normal GitHub repo, AFK looks in both of these locations:
 afk/catalog/
 packages/afk/catalog/
 ```
+
+AFK reads public catalogs directly. When raw GitHub access is unavailable, it
+falls back to Git using your existing credentials so private repositories work
+without a separate AFK token. Interactive terminals show progress while Git
+fetches the catalog.
 
 `--source` and `--default-source` accept:
 

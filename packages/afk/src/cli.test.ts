@@ -222,7 +222,7 @@ test("runCli rejects old manifest category flags", async () => {
 
 test("runCli accepts default-source aliases on refresh", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => new Response("missing", { status: 404 });
+  globalThis.fetch = async (input) => emptyCatalogResponse(input);
   const homeDir = mkdtempSync(join(tmpdir(), "afk-default-source-alias-"));
   const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
 
@@ -254,7 +254,7 @@ test("runCli keeps --source github mapped to the built-in AFK defaults source", 
   const requestedUrls: string[] = [];
   globalThis.fetch = async (input) => {
     requestedUrls.push(String(input));
-    return new Response("missing", { status: 404 });
+    return emptyCatalogResponse(input);
   };
 
   try {
@@ -366,6 +366,7 @@ test("runCli prints contextual catalog area help", async () => {
   assert.equal(skillsCode, 0);
   assert.ok(skillsText.includes("AFK catalog skills"));
   assert.ok(skillsText.includes("toggle-auto"));
+  assert.ok(skillsText.includes("bulk-edit"));
   assert.ok(skillsText.includes("import-status"));
 
   const mcpsOutput: string[] = [];
@@ -1314,4 +1315,18 @@ function localHomeWithManifests(manifests: Record<string, unknown>): string {
 function writeSkill(root: string, folder: string, name: string): void {
   mkdirSync(join(root, folder), { recursive: true });
   writeFileSync(join(root, folder, "SKILL.md"), `---\nname: ${name}\ndescription: ${name} description\n---\n\n# ${name}\n`);
+}
+
+function emptyCatalogResponse(input: string | URL | Request): Response {
+  const name = String(input).split("/").pop();
+  const manifests: Record<string, unknown> = {
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+    "profiles.json": { version: 1, mode: "context", alwaysOn: [], items: [] },
+    "mcps.json": { version: 1, items: [] },
+    "presets.json": { version: 1, defaultsSource: "", presets: [] },
+    "rules.json": { version: 1, source: "github", url: "https://example.com/AGENTS.md" },
+    "plugins.json": { version: 1, items: [] },
+    "hooks.json": { version: 1, items: [] },
+  };
+  return Response.json(manifests[name ?? ""] ?? {});
 }

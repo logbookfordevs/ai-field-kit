@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
@@ -7,6 +7,7 @@ import {
   defaultsManifestBaseUrl,
   defaultsManifestBaseUrls,
   ensureLocalManifests,
+  loadSourceManifestContents,
   loadPluginManifest,
   localManifestDir,
   planRememberedDefaultsSourceUpdate,
@@ -190,6 +191,73 @@ test("defaultsManifestBaseUrl preserves GitHub tree paths as manifest directorie
     defaultsManifestBaseUrl("https://github.com/acme/dev-kit/tree/v1/custom/manifests", "main"),
     "https://raw.githubusercontent.com/acme/dev-kit/v1/custom/manifests",
   );
+});
+
+test("loadSourceManifestContents falls back to a credential-aware GitHub checkout", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("missing", { status: 404 });
+  const checkoutRoot = mkdtempSync(join(tmpdir(), "afk-private-source-"));
+  const catalogDir = join(checkoutRoot, "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(
+    join(catalogDir, "skills.json"),
+    `${JSON.stringify({
+      version: 1,
+      defaultSource: "acme/private-kit",
+      items: [
+        {
+          id: "private-skill",
+          label: "Private Skill",
+          source: "acme/private-kit",
+          args: ["--skill", "private-skill"],
+          default: true,
+        },
+      ],
+    })}\n`,
+  );
+  let checkoutCount = 0;
+  let cleanupCount = 0;
+  let checkoutSource: { cloneUrl: string; ref: string; catalogDirs: string[] } | null = null;
+
+  try {
+    const options: Parameters<typeof loadSourceManifestContents>[0] = {
+      homeDir: mkdtempSync(join(tmpdir(), "afk-private-home-")),
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github" as const,
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/private-kit",
+      defaultsSourceExplicit: true,
+      dryRun: true,
+      selectedManifestCategories: ["skills" as const],
+      cloneGithubSource: async (source) => {
+        checkoutCount += 1;
+        checkoutSource = source;
+        return {
+          rootDir: checkoutRoot,
+          cleanup: () => {
+            cleanupCount += 1;
+          },
+        };
+      },
+    };
+
+    const contents = await loadSourceManifestContents(options);
+    const skills = JSON.parse(contents["skills.json"] ?? "{}") as SkillManifest;
+
+    assert.equal(skills.items[0]?.id, "private-skill");
+    assert.equal(checkoutCount, 1);
+    assert.equal(cleanupCount, 1);
+    assert.deepEqual(checkoutSource, {
+      cloneUrl: "https://github.com/acme/private-kit.git",
+      ref: "main",
+      catalogDirs: ["afk/catalog", "packages/afk/catalog"],
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("readRememberedDefaultsSource reads global and project-local presets", () => {
@@ -592,7 +660,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
   globalThis.fetch = async (input) => {
     const url = String(input);
     requestedUrls.push(url);
-    if (url.includes("/afk/catalog/")) {
+    if (url.includes("/main/afk/catalog/")) {
       return new Response("missing", { status: 404 });
     }
 
@@ -670,6 +738,7 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
       manifestLocal: false,
       defaultsSource: "acme/dev-kit",
       dryRun: true,
+      cloneGithubSource: emptyGithubCheckout,
     });
 
     const pluginOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("plugins.json"));
@@ -694,4 +763,14 @@ function usesNonInteractiveNpx(command: string, args: string[]): boolean {
 
 function commandLineIncludesNpx(commandLine: string): boolean {
   return /(^|[\s;&|()])npx(\s|$)/.test(commandLine);
+}
+
+async function emptyGithubCheckout(): Promise<{ rootDir: string; cleanup: () => void }> {
+  const rootDir = mkdtempSync(join(tmpdir(), "afk-empty-source-"));
+  return {
+    rootDir,
+    cleanup: () => {
+      rmSync(rootDir, { recursive: true, force: true });
+    },
+  };
 }
