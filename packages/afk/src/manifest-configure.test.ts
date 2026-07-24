@@ -263,6 +263,50 @@ test("runManifestConfigureWithPrompts preserves existing skill args during no-op
   assert.deepEqual(written.items[0]?.args, ["--skill", "afk-note", "--global"]);
 });
 
+test("runManifestConfigureWithPrompts offers setup for an edited skill", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-edit-setup-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "owner/skills",
+    items: [{
+      id: "alpha",
+      label: "Alpha",
+      source: "owner/skills",
+      args: ["--skill", "alpha"],
+      default: true,
+      autoInvocation: true,
+    }],
+  }, null, 2)}\n`);
+  const spawned: Array<{ command: string; args: string[] }> = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    {
+      io: captureIo([]),
+      spawn: async (command, args) => {
+        spawned.push({ command, args });
+        return { code: 0 };
+      },
+    },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: [],
+      actions: [],
+      items: ["alpha"],
+      inputs: ["owner/skills", "alpha", "alpha", "Alpha"],
+      confirms: [true, false, false, true, true],
+    }),
+    { area: "skills", action: "edit" },
+  );
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["skills", "add", "owner/skills", "--global", "--yes", "--skill", "alpha", "--agent", "universal"],
+  }]);
+});
+
 test("runManifestConfigureWithPrompts writes startDisabled for skill items", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
   const manifestDir = join(homeDir, ".agents", "afk", "catalog");
@@ -424,18 +468,27 @@ test("runManifestConfigureWithPrompts bulk edits invocation and always-on policy
   }, null, 2)}\n`);
   const settingMessages: string[] = [];
   const bulkChoices: Array<{ name: string; value: string; description?: string }> = [];
+  const confirmMessages: string[] = [];
+  const spawned: Array<{ command: string; args: string[] }> = [];
 
   const code = await runManifestConfigureWithPrompts(
-    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    {
+      io: captureIo([]),
+      spawn: async (command, args) => {
+        spawned.push({ command, args });
+        return { code: 0 };
+      },
+    },
     cliOptions({ homeDir }),
     scriptedPrompts({
       areas: [],
       actions: [],
       selectedItems: [["alpha", "beta"]],
       bulkSkillSettings: ["off", "on"],
-      confirms: [true],
+      confirms: [true, true],
       onSelectItemsChoices: (choices) => bulkChoices.push(...choices),
       onSelectBulkSkillSetting: (message) => settingMessages.push(message),
+      onConfirm: (message) => confirmMessages.push(message),
     }),
     { area: "skills", action: "bulk-edit" },
   );
@@ -459,6 +512,12 @@ test("runManifestConfigureWithPrompts bulk edits invocation and always-on policy
   assert.ok(bulkChoices[0]?.description?.includes("label: Alpha"));
   assert.ok(bulkChoices[0]?.description?.includes("invocation: auto"));
   assert.ok(bulkChoices[0]?.description?.includes("always-on: off"));
+  assert.ok(confirmMessages.includes("Run setup for 2 affected skills now?"));
+  assert.equal(spawned.length, 1);
+  assert.deepEqual(spawned[0], {
+    command: "npx",
+    args: ["skills", "add", "owner/skills", "--global", "--yes", "--skill", "alpha", "beta", "--agent", "universal"],
+  });
 });
 
 test("runManifestConfigureWithPrompts sets profile mode", async () => {

@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added an optional post-write setup handoff for global skill catalog `edit` and `bulk-edit`, limited to entries whose install or runtime policy changed.
 - `cli:` added `afk catalog skills bulk-edit` for setting invocation and always-on policy across multiple selected skills in one reviewed change.
 - `cli:` added `Finish and review` to each catalog submenu so changes can be previewed and written without returning to the catalog list.
 
@@ -23,6 +24,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
+- `cli:` made `afk skills invocation enable|disable` update matching shared `skills.json` policy together with installed skill metadata, preventing later setup runs from reversing the direct change.
 - `cli:` made GitHub-backed catalog sources fall back to existing Git credentials with visible fetch progress, so private repositories work with setup, refresh, and show commands.
 - `cli:` prompted before Ctrl-C discards unsaved catalog edits, offering to finish and review the changes first.
 - `install:` resolved the latest AFK release through GitHub's release redirect instead of the rate-limited unauthenticated REST API.

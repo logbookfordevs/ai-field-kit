@@ -291,6 +291,12 @@ its interactive editor. Use `--dry-run` to preview supported writes.
 | Plugins | `afk catalog plugins add`, `edit`, `remove`, `toggle-default` | Installer definitions in `plugins.json`. |
 | Hooks | `afk catalog hooks add`, `edit`, `remove`, `toggle-default` | Lifecycle hook definitions in `hooks.json`. |
 
+After a confirmed global `afk catalog skills edit` or `bulk-edit`, AFK offers
+to run skill setup for only the entries whose install source, invocation,
+startup storage, or always-on policy changed. Declining keeps the catalog
+changes without running setup. Dry runs, no-op edits, and `--local` catalog
+edits do not offer this setup shortcut.
+
 The profile definition commands support these non-interactive flags:
 
 | Flag | Applies to | Meaning |
@@ -325,7 +331,7 @@ can be selected with `--agent`; exact custom roots require both
 | `afk skills add <source> [flags...]` | Delegate installation to `skills add`, then synchronize AFK catalog and profile state. | Supports upstream `--skill`, `--agent`, `--global`, `--yes`; AFK adds `--profile`, `--profile-only`, and `--start-disabled`. |
 | `afk skills disable [folder]` | Move active skill folders into `.disabled`. | Omit the folder for an interactive multi-select; supports `--dry-run`. |
 | `afk skills enable [folder]` | Move disabled skill folders back to active storage. | Omit the folder for an interactive picker; supports `--dry-run`. |
-| `afk skills invocation disable [folder]`, `enable [folder]` | Change installed-skill invocation metadata. | Writes `disable-model-invocation` in `SKILL.md` and `allow_implicit_invocation` in `agents/openai.yaml` when needed; supports `--dry-run`. |
+| `afk skills invocation disable [folder]`, `enable [folder]` | Change invocation policy for one skill. | Updates a matching shared `skills.json` entry and writes `disable-model-invocation` in `SKILL.md` plus `allow_implicit_invocation` in `agents/openai.yaml`; supports `--dry-run`. |
 | `afk skills delete [folder]` | Permanently remove selected skill folders. | `--catalog-only`, `--profile`, storage filters, `--yes`, and `--dry-run`; profile deletion mode deletes referenced folders, not the profile definition. |
 | `afk skills upgrade [skills...]` | Select tracked skills and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
 | `afk skills categorize` | Ask `codex exec` to create or update catalog categorization metadata. | `--mode` with `append-missing` or `recategorize-all`, `--instruction`, `--runner codex-exec`, `--dry-run`. |
@@ -339,7 +345,9 @@ refreshes its content while preserving its prior storage and profile membership.
 
 `afk skills invocation` defaults to the `disable` action when `enable` or
 `disable` is omitted. If the skill folder is also omitted, AFK opens an
-interactive picker.
+interactive picker. Shared skills already represented in `skills.json` update
+catalog policy and installed metadata together. Untracked and agent-specific
+skills update only their installed metadata.
 
 `afk skills delete --profile` accepts zero or one profile ID. Without an ID it
 prompts for a profile. AFK warns again because a referenced skill may belong to

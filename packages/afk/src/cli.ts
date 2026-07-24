@@ -710,7 +710,7 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills invocation": {
     title: "AFK skills invocation",
-    summary: "Enable or disable auto invocation metadata for one skill.",
+    summary: "Enable or disable auto invocation policy for one skill.",
     usage: "afk skills invocation [disable|enable] [folder] [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
@@ -718,7 +718,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only",
       "--disabled                        Show disabled skills only",
-      "--dry-run                         Preview metadata writes without applying them",
+      "--dry-run                         Preview catalog and metadata writes",
     ],
     examples: [
       "afk skills invocation",

@@ -34,6 +34,7 @@ export function renderSkillDetails(record: SkillRecord): string {
     record.autoInvocationDetails.length > 0 ? renderField("Auto source", record.autoInvocationDetails.join(", ")) : undefined,
     record.agent ? renderField("Agent", record.agent) : undefined,
     record.category ? renderField("Category", record.category) : undefined,
+    renderField("Catalog", record.catalogOrigin),
     record.tags.length > 0 ? renderField("Tags", record.tags.join(", ")) : undefined,
     renderField("Skill file", record.skillFilePath),
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -316,10 +317,16 @@ export function renderSkillChoice(record: SkillRecord): string {
   ].join(" ");
 }
 
-export function renderSkillChoiceDescription(record: SkillRecord): string {
+export function renderSkillChoiceDescription(
+  record: SkillRecord,
+  options: { includeCatalogOrigin?: boolean } = {},
+): string {
   return [
     truncate(record.description, 160),
-    renderSkillMetadataLine(record, { includeScope: false }),
+    renderSkillMetadataLine(record, {
+      includeScope: false,
+      includeCatalogOrigin: options.includeCatalogOrigin === true,
+    }),
   ].filter(Boolean).join("\n\n");
 }
 
@@ -359,13 +366,17 @@ function renderField(label: string, value: string): string {
   return `${muted(label.padEnd(10))} ${value}`;
 }
 
-function renderSkillMetadataLine(record: SkillRecord, options: { includeScope?: boolean } = {}): string {
+function renderSkillMetadataLine(
+  record: SkillRecord,
+  options: { includeScope?: boolean; includeCatalogOrigin?: boolean } = {},
+): string {
   const fields = [
     options.includeScope === false ? undefined : renderMetadataField("Scope", muted(record.rootLabel)),
     renderMetadataField("Status", record.storage === "disabled" ? warn("disabled") : success("active")),
     renderMetadataField("Invocation", renderAutoInvocationBadge(record)),
     record.agent ? renderMetadataField("Agent", accent(record.agent)) : undefined,
     record.category ? renderMetadataField("Category", accent(record.category)) : undefined,
+    options.includeCatalogOrigin ? renderMetadataField("Catalog", accent(record.catalogOrigin)) : undefined,
     record.tags.length > 0 ? renderMetadataField("Tags", accent(record.tags.join(", "))) : undefined,
   ].filter((value): value is string => Boolean(value));
 

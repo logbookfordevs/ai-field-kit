@@ -37,6 +37,7 @@ import { afkPromptTheme, afkSearchTheme, afkSelectTheme, renderPromptStep, reset
 import { searchableCheckbox } from "./searchable-checkbox.js";
 import { paint, strong, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, Runtime, SkillProfileMode } from "./types.js";
+import { runArea } from "./setup.js";
 
 export type ManifestArea = EditableManifestArea | "profiles";
 type ManifestAreaChoice = ManifestArea | "finish";
@@ -109,6 +110,7 @@ export async function runManifestConfigureWithPrompts(
   const original = readEditableManifests(outputDir);
   const drafts = cloneDrafts(original);
   const touched = new Set<ManifestArea>();
+  const setupEligibleSkillActions = new Set<"edit" | "bulk-edit">();
 
   resetPromptSteps();
   runtime.io.stdout(`\n${sectionTitle("AFK catalog")}`);
@@ -116,7 +118,7 @@ export async function runManifestConfigureWithPrompts(
   try {
     if (initial) {
       runtime.io.stdout(renderPromptStep("Catalog editor", `Editing ${catalogFilename(initial.area)}.`));
-      await editManifestArea(runtime, prompts, drafts, touched, initial.area, options, initial.action);
+      await editManifestArea(runtime, prompts, drafts, touched, setupEligibleSkillActions, initial.area, options, initial.action);
     } else {
       runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
 
@@ -126,7 +128,7 @@ export async function runManifestConfigureWithPrompts(
           break;
         }
 
-        const navigation = await editManifestArea(runtime, prompts, drafts, touched, area, options);
+        const navigation = await editManifestArea(runtime, prompts, drafts, touched, setupEligibleSkillActions, area, options);
         if (navigation === "finish") {
           break;
         }
@@ -184,6 +186,30 @@ export async function runManifestConfigureWithPrompts(
   }
 
   runtime.io.stdout(`\nWrote ${Object.keys(serialized).length} catalog file(s) to ${outputDir}.`);
+  const affectedSkillIds = changedSkillIds(original, drafts, setupEligibleSkillActions);
+  if (!options.manifestConfigureLocal && affectedSkillIds.length > 0) {
+    runtime.io.stdout(renderPromptStep("Apply skill changes", "Run setup only for the skills changed in this catalog edit."));
+    const skillLabel = affectedSkillIds.length === 1 ? "skill" : "skills";
+    const shouldRunSetup = await prompts.confirm(
+      `Run setup for ${affectedSkillIds.length} affected ${skillLabel} now?`,
+      true,
+    );
+    if (shouldRunSetup) {
+      return runArea("skills", runtime, {
+        ...options,
+        setupScope: "global",
+        scopeExplicit: true,
+        setupManifestsPrepared: true,
+        selectedSkillIds: affectedSkillIds,
+        selectedSkillAgentIds: [],
+        manifestContents: {
+          ...options.manifestContents,
+          "skills.json": rawSerialize(drafts.skills),
+        },
+      });
+    }
+  }
+
   return 0;
 }
 
@@ -192,6 +218,7 @@ async function editManifestArea(
   prompts: ManifestConfigurePrompts,
   drafts: Drafts,
   touched: Set<ManifestArea>,
+  setupEligibleSkillActions: Set<"edit" | "bulk-edit">,
   area: ManifestArea,
   options: CliOptions,
   initialAction?: ManifestAction,
@@ -234,6 +261,7 @@ async function editManifestArea(
       drafts.profiles = result.profiles;
       touched.add("skills");
       touched.add("profiles");
+      setupEligibleSkillActions.add("bulk-edit");
       if (initialAction) {
         return "back";
       }
@@ -248,6 +276,9 @@ async function editManifestArea(
     try {
       drafts[area] = await applyItemAction(prompts, area, drafts[area] as EditableManifest, action, options);
       touched.add(area);
+      if (area === "skills" && action === "edit") {
+        setupEligibleSkillActions.add("edit");
+      }
       if (initialAction) {
         return "back";
       }
@@ -583,6 +614,43 @@ function changedDrafts(original: Drafts, drafts: Drafts, touched: Set<ManifestAr
   }
 
   return serialized;
+}
+
+function changedSkillIds(
+  original: Drafts,
+  drafts: Drafts,
+  setupEligibleSkillActions: Set<"edit" | "bulk-edit">,
+): string[] {
+  if (setupEligibleSkillActions.size === 0) {
+    return [];
+  }
+
+  const previousSkills = original.skills as SkillManifest;
+  const nextSkills = drafts.skills as SkillManifest;
+  const previousItems = new Map(previousSkills.items.map((item) => [item.id, setupSkillSignature(item)]));
+  const affected = nextSkills.items
+    .filter((item) => previousItems.get(item.id) !== setupSkillSignature(item))
+    .map((item) => item.id);
+  const originalAlwaysOn = new Set(normalizeProfileDraft(original.profiles).alwaysOn);
+  const nextAlwaysOn = new Set(normalizeProfileDraft(drafts.profiles).alwaysOn);
+
+  for (const item of nextSkills.items) {
+    if (originalAlwaysOn.has(item.id) !== nextAlwaysOn.has(item.id)) {
+      affected.push(item.id);
+    }
+  }
+
+  return [...new Set(affected)];
+}
+
+function setupSkillSignature(item: SkillManifestItem): string {
+  return JSON.stringify({
+    id: item.id,
+    source: item.source,
+    args: item.args,
+    autoInvocation: item.autoInvocation ?? true,
+    startDisabled: item.startDisabled === true,
+  });
 }
 
 function rawSerialize(manifest: EditableDraft): string {
