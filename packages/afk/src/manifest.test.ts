@@ -7,14 +7,93 @@ import {
   defaultsManifestBaseUrl,
   defaultsManifestBaseUrls,
   ensureLocalManifests,
-  loadSourceManifestContents,
   loadPluginManifest,
+  loadSourceManifestContents,
+  mergedCustomAgentManifestContent,
   localManifestDir,
   planRememberedDefaultsSourceUpdate,
   projectManifestDir,
   readRememberedDefaultsSource,
+  resolvedCustomAgentManifestContent,
   type SkillManifest,
 } from "./manifest.js";
+
+test("Custom Agent sources resolve relative to a local catalog repository", async () => {
+  const sourceRoot = mkdtempSync(join(tmpdir(), "afk-agent-source-"));
+  const cwd = mkdtempSync(join(tmpdir(), "afk-agent-cwd-"));
+  const catalogDir = join(sourceRoot, "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(join(catalogDir, "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [{ id: "notion_assistant", label: "Notion Assistant", source: "agents/notion_assistant.md" }],
+  })}\n`);
+
+  const contents = await loadSourceManifestContents({
+    homeDir: mkdtempSync(join(tmpdir(), "afk-agent-home-")),
+    repoDir: sourceRoot,
+    rulesRef: "main",
+    rulesSource: "github",
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: sourceRoot,
+    dryRun: true,
+    manifestLocal: false,
+    cwd,
+    selectedManifestCategories: ["agents"],
+  });
+  const agents = JSON.parse(contents["agents.json"] ?? "") as { items: Array<{ source: string }> };
+
+  assert.equal(agents.items[0]?.source, join(sourceRoot, "agents", "notion_assistant.md"));
+});
+
+test("Custom Agent sources resolve relative to a GitHub catalog repository", () => {
+  const content = `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "relative", label: "Relative", source: "agents/relative.md" },
+      { id: "remote", label: "Remote", source: "https://example.com/remote.md" },
+      { id: "absolute", label: "Absolute", source: "/tmp/absolute.md" },
+    ],
+  })}\n`;
+
+  const resolved = JSON.parse(resolvedCustomAgentManifestContent(
+    content,
+    "leoreisdias/productivity-skills",
+    "feature/agents",
+    "/tmp/unrelated",
+  )) as { items: Array<{ source: string }> };
+
+  assert.equal(
+    resolved.items[0]?.source,
+    "https://raw.githubusercontent.com/leoreisdias/productivity-skills/feature%2Fagents/agents/relative.md",
+  );
+  assert.equal(resolved.items[1]?.source, "https://example.com/remote.md");
+  assert.equal(resolved.items[2]?.source, "/tmp/absolute.md");
+});
+
+test("Custom Agent refresh replaces matches, appends incoming entries, and preserves local-only entries", () => {
+  const directory = mkdtempSync(join(tmpdir(), "afk-agent-merge-"));
+  const target = join(directory, "agents.json");
+  writeFileSync(target, `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "existing", label: "Old label", source: "old.md" },
+      { id: "local-only", label: "Local only", source: "local.md" },
+    ],
+  }, null, 2)}\n`);
+
+  const merged = JSON.parse(mergedCustomAgentManifestContent(`${JSON.stringify({
+    version: 2,
+    items: [
+      { id: "existing", label: "New label", source: "new.md" },
+      { id: "incoming", label: "Incoming", source: "incoming.md" },
+    ],
+  })}\n`, target)) as { version: number; items: Array<{ id: string; label: string }> };
+
+  assert.equal(merged.version, 2);
+  assert.deepEqual(merged.items.map((item) => item.id), ["existing", "local-only", "incoming"]);
+  assert.equal(merged.items[0]?.label, "New label");
+});
 
 type PluginManifestFile = {
   items: Array<{

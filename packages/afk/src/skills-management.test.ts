@@ -30,8 +30,8 @@ import {
   skillProfilePaths,
   type SkillProfileCatalog,
 } from "./skills/profiles.js";
-import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch, renderSkillMoveBatch, renderSkillProfileApply, renderSkillUpgradeComplete } from "./skills/render.js";
-import { buildSkillUpgradeCommands, loadLockedSkills } from "./skills/upgrade.js";
+import { renderSkillChoice, renderSkillChoiceDescription, renderSkillDetails, renderSkillDeleteBatch, renderSkillMoveBatch, renderSkillProfileApply, renderSkillUpdateComplete } from "./skills/render.js";
+import { buildSkillUpdateCommands, loadLockedSkills } from "./skills/update.js";
 import type { Runtime } from "./types.js";
 import { localManifestDir, projectManifestDir, type SkillManifest } from "./manifest.js";
 
@@ -1951,7 +1951,7 @@ test("renderSkillDetails shows mixed auto invocation diagnostics", () => {
 });
 
 test("loadLockedSkills reads global and project tracked skills by scope", () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-locks-"));
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-update-locks-"));
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
   writeGlobalSkillLock(homeDir, {
@@ -1981,8 +1981,8 @@ test("loadLockedSkills reads global and project tracked skills by scope", () => 
   assert.deepEqual(loadLockedSkills({ homeDir, cwd, scope: "all" }).map((record) => record.name), ["global-skill", "project-skill"]);
 });
 
-test("buildSkillUpgradeCommands delegates through npx skills update", () => {
-  assert.deepEqual(buildSkillUpgradeCommands({
+test("buildSkillUpdateCommands delegates through npx skills update", () => {
+  assert.deepEqual(buildSkillUpdateCommands({
     cwd: "/tmp/project",
     scope: "global",
     skills: ["frontend-design", "web-design-guidelines"],
@@ -1996,7 +1996,7 @@ test("buildSkillUpgradeCommands delegates through npx skills update", () => {
     skillNames: ["frontend-design", "web-design-guidelines"],
   }]);
 
-  assert.deepEqual(buildSkillUpgradeCommands({
+  assert.deepEqual(buildSkillUpdateCommands({
     cwd: "/tmp/project",
     scope: "all",
     skills: [],
@@ -2007,23 +2007,23 @@ test("buildSkillUpgradeCommands delegates through npx skills update", () => {
   ]);
 });
 
-test("renderSkillUpgradeComplete closes a selected upgrade with its refreshed library", () => {
-  assert.equal(renderSkillUpgradeComplete({
+test("renderSkillUpdateComplete closes a selected update with its refreshed library", () => {
+  assert.equal(renderSkillUpdateComplete({
     scopes: ["global"],
     skillNames: ["notion-issues"],
   }), [
-    "◆ Skill Upgrade Complete",
+    "◆ Skill Update Complete",
     "notion-issues is up to date",
     "Global skill library refreshed through the official skills CLI.",
   ].join("\n"));
 });
 
-test("renderSkillUpgradeComplete summarizes all-scope upgrades without duplicate skill names", () => {
-  assert.equal(renderSkillUpgradeComplete({
+test("renderSkillUpdateComplete summarizes all-scope updates without duplicate skill names", () => {
+  assert.equal(renderSkillUpdateComplete({
     scopes: ["global", "project"],
     skillNames: ["notion-issues", "frontend-design", "notion-issues", "frontend-design"],
   }), [
-    "◆ Skill Upgrade Complete",
+    "◆ Skill Update Complete",
     "2 selected skills are up to date",
     "notion-issues, frontend-design",
     "Global and project skill libraries refreshed through the official skills CLI.",
@@ -2041,8 +2041,8 @@ test("formatLockedSkillChoice separates name scope and source", () => {
   }), "afk-note [global] logbookfordevs/ai-field-kit");
 });
 
-test("runSkillsCommand upgrade --all skips upstream when no tracked skills exist", async () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-empty-"));
+test("runSkillsCommand update --all skips upstream when no tracked skills exist", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-update-empty-"));
   const output: string[] = [];
   const runtime: Runtime = {
     io: {
@@ -2054,17 +2054,17 @@ test("runSkillsCommand upgrade --all skips upstream when no tracked skills exist
     },
   };
 
-  const code = await runSkillsCommand(["skills", "upgrade"], runtime, {
+  const code = await runSkillsCommand(["skills", "update"], runtime, {
     ...baseOptions(root),
-    skillsUpgradeAll: true,
+    skillsUpdateAll: true,
   });
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("No global tracked skills found."));
 });
 
-test("runSkillsCommand upgrade explicit names invokes global update by default", async () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-run-"));
+test("runSkillsCommand update explicit names invokes global update by default", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-update-run-"));
   writeGlobalSkillLock(join(root, "home"), {
     demo: {
       source: "owner/demo",
@@ -2086,7 +2086,7 @@ test("runSkillsCommand upgrade explicit names invokes global update by default",
     },
   };
 
-  const code = await runSkillsCommand(["skills", "upgrade", "demo"], runtime, baseOptions(root));
+  const code = await runSkillsCommand(["skills", "update", "demo"], runtime, baseOptions(root));
 
   assert.equal(code, 0);
   assert.deepEqual(spawned, [{
@@ -2094,12 +2094,12 @@ test("runSkillsCommand upgrade explicit names invokes global update by default",
     args: ["--yes", "skills", "update", "demo", "-g"],
     cwd: join(root, "project"),
   }]);
-  assert.ok(output.join("\n").includes("Skill Upgrade Complete"));
+  assert.ok(output.join("\n").includes("Skill Update Complete"));
   assert.ok(output.join("\n").includes("demo is up to date"));
 });
 
-test("runSkillsCommand upgrade selects tracked profile skills and preserves disabled storage", async () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-profile-"));
+test("runSkillsCommand update selects tracked profile skills and preserves disabled storage", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-update-profile-"));
   const homeDir = join(root, "home");
   writeGlobalSkillLock(homeDir, {
     demo: {
@@ -2132,9 +2132,9 @@ test("runSkillsCommand upgrade selects tracked profile skills and preserves disa
     },
   };
 
-  const code = await runSkillsCommand(["skills", "upgrade", "video"], runtime, {
+  const code = await runSkillsCommand(["skills", "update", "video"], runtime, {
     ...baseOptions(root),
-    skillsUpgradeByProfile: true,
+    skillsUpdateByProfile: true,
   });
 
   assert.equal(code, 0);
@@ -2147,8 +2147,8 @@ test("runSkillsCommand upgrade selects tracked profile skills and preserves disa
   assert.ok(output.join("\n").includes("Skipped untracked profile skills: untracked."));
 });
 
-test("runSkillsCommand upgrade rejects profiles outside global scope", async () => {
-  const root = mkdtempSync(join(tmpdir(), "afk-skill-upgrade-profile-scope-"));
+test("runSkillsCommand update rejects profiles outside global scope", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-update-profile-scope-"));
   const output: string[] = [];
   const runtime: Runtime = {
     io: {
@@ -2160,14 +2160,14 @@ test("runSkillsCommand upgrade rejects profiles outside global scope", async () 
     },
   };
 
-  const code = await runSkillsCommand(["skills", "upgrade", "video"], runtime, {
+  const code = await runSkillsCommand(["skills", "update", "video"], runtime, {
     ...baseOptions(root),
-    skillsUpgradeByProfile: true,
-    skillsUpgradeScope: "project",
+    skillsUpdateByProfile: true,
+    skillsUpdateScope: "project",
   });
 
   assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("Profile upgrades use the global skill library"));
+  assert.ok(output.join("\n").includes("Profile updates use the global skill library"));
 });
 
 test("syncSkillCatalogFromManifest keeps setup skills source-owned in the canonical catalog", () => {
@@ -2443,9 +2443,9 @@ function baseOptions(root: string) {
     skillsListScope: "all" as const,
     skillsListStorage: undefined,
     skillsListAutoInvocation: undefined,
-    skillsUpgradeScope: "global" as const,
-    skillsUpgradeAll: false,
-    skillsUpgradeByProfile: false,
+    skillsUpdateScope: "global" as const,
+    skillsUpdateAll: false,
+    skillsUpdateByProfile: false,
     skillsDeleteCatalogOnly: false,
     skillsDeleteByProfile: false,
     skillsAgent: undefined,

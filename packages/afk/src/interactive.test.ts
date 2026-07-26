@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { normalizeSetupSelection, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall, selectSkillsInstall } from "./interactive.js";
+import { normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall, selectSkillsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
@@ -178,6 +178,22 @@ test("selectPluginsInstall does not ask for agent targets when installing plugin
   assert.deepEqual(selection.pluginIds, ["sample-plugin"]);
   assert.deepEqual(selection.agents, []);
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
+});
+
+test("selectCustomAgentsInstall presents every catalog entry unchecked", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxChoices = {};
+  promptState.checkboxResponses = {
+    "Choose Custom Agents to provision": ["notion_assistant"],
+    "Choose harnesses for Custom Agents": ["codex"],
+  };
+
+  const selection = await selectCustomAgentsInstall(defaultOptions(localHomeWithAgentManifest()));
+
+  assert.deepEqual(selection.customAgentIds, ["notion_assistant"]);
+  assert.deepEqual(selection.agents, ["codex"]);
+  assert.ok(promptState.checkboxChoices["Choose Custom Agents to provision"]?.every((choice) => choice.checked === false));
+  promptState.checkboxResponses = {};
 });
 
 test("selectPluginsInstall returns no plugins when the catalog has no plugin choices", async () => {
@@ -592,6 +608,18 @@ function localHomeWithComposedSkillManifest(): string {
   writeFileSync(join(manifestDir, "hooks.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
   writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({ version: 1, source: "local", url: "rules/AGENTS.md" }, null, 2)}\n`);
   writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "", presets: [] }, null, 2)}\n`);
+  return homeDir;
+}
+
+function localHomeWithAgentManifest(): string {
+  const homeDir = localHomeWithPluginManifest();
+  writeFileSync(join(localManifestDir(homeDir), "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "notion_assistant", label: "Notion Assistant", source: "agents/notion-assistant.md" },
+      { id: "goal_scout", label: "Goal Scout", source: "agents/goal-scout.md" },
+    ],
+  }, null, 2)}\n`);
   return homeDir;
 }
 

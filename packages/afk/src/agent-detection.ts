@@ -29,7 +29,7 @@ const globalAgentEvidence: Record<AgentId, string[]> = {
   codex: [".codex/AGENTS.md", ".codex/config.toml", ".codex"],
   "cursor-local": [],
   opencode: [".config/opencode/opencode.json", ".config/opencode/AGENTS.md", ".config/opencode"],
-  pi: [".pi/agent/AGENTS.md", ".pi/agent"],
+  pi: [".pi/AGENTS.md", ".pi/agents", ".pi", ".pi/agent/AGENTS.md", ".pi/agent"],
 };
 
 const projectAgentEvidence: Record<AgentId, string[]> = {
@@ -38,7 +38,7 @@ const projectAgentEvidence: Record<AgentId, string[]> = {
   codex: ["AGENTS.md", ".codex/AGENTS.md", ".codex/config.toml", ".codex"],
   "cursor-local": [],
   opencode: ["AGENTS.md", ".config/opencode/opencode.json", ".config/opencode/AGENTS.md", ".config/opencode"],
-  pi: [".pi/agent/AGENTS.md", ".pi/agent"],
+  pi: [".pi/AGENTS.md", ".pi/agents", ".pi", ".pi/agent/AGENTS.md", ".pi/agent"],
 };
 
 const globalHookEvidence: Record<AgentId, string[]> = {

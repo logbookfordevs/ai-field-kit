@@ -14,11 +14,14 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `cli:` added an optional post-write setup handoff for global skill catalog `edit` and `bulk-edit`, limited to entries whose install or runtime policy changed.
+- `cli:` added portable Custom Agents as a first-class `agents.json` catalog area, with repository-relative sources, refresh merging, show/catalog menus, interactive and scripted setup, and AFK-owned adapters for Codex, Claude Code, and Pi through `pi-subagents`; the portable contract preserves per-harness model and effort pins, Codex display nicknames, and native per-agent skill configuration without taking over skill installation or validation.
+- `skills:` added the manual-only `afk-create-agent` workflow for authoring portable agent files, registering their catalog sources, and dry-running every requested harness adapter.
 - `cli:` added `afk catalog skills bulk-edit` for setting invocation and always-on policy across multiple selected skills in one reviewed change.
 - `cli:` added `Finish and review` to each catalog submenu so changes can be previewed and written without returning to the catalog list.
 
 ### Changed
 
+- `cli:` renamed `afk skills upgrade` to `afk skills update` so AFK uses the same operation name as the official skills CLI.
 - `cli:` aligned catalog action menus with AFK's styled prompts, standardized single and bulk skill pickers on searchable ID-first identity with policy metadata, and removed the repeated full entry list before each action.
 - `cli:` made new skill catalog entries default automatic model invocation to off and renamed the submenu return action to `Back to manage other catalogs`.
 

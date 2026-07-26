@@ -148,19 +148,19 @@ export function renderCategorizationRoute(input: {
   ].join("\n");
 }
 
-export function renderSkillUpgradeRoute(input: {
+export function renderSkillUpdateRoute(input: {
   label: string;
   commandLine: string;
 }): string {
   return [
-    sectionTitle("Skill Upgrade"),
+    sectionTitle("Skill Update"),
     `${muted("Delegating")} ${accent(input.label)} ${muted("to the official skills CLI")}`,
     "",
     `${muted("$")} ${input.commandLine}`,
   ].join("\n");
 }
 
-export function renderSkillUpgradeComplete(input: {
+export function renderSkillUpdateComplete(input: {
   scopes: Array<"global" | "project">;
   skillNames: string[];
 }): string {
@@ -175,7 +175,7 @@ export function renderSkillUpgradeComplete(input: {
     : "Global and project skill libraries";
 
   return [
-    sectionTitle("Skill Upgrade Complete"),
+    sectionTitle("Skill Update Complete"),
     result,
     uniqueSkillNames.length > 1 ? muted(uniqueSkillNames.join(", ")) : undefined,
     muted(`${scope} refreshed through the official skills CLI.`),
