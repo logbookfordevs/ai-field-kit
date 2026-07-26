@@ -32,10 +32,9 @@ test("detectSetupTargets keeps project detection scoped to the project", () => {
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
   mkdirSync(join(homeDir, ".codex"), { recursive: true });
-  mkdirSync(join(cwd, ".pi", "agent"), { recursive: true });
+  mkdirSync(join(cwd, ".pi", "agents"), { recursive: true });
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
   writeFileSync(join(cwd, "AGENTS.md"), "# Project agents\n");
-  writeFileSync(join(cwd, ".pi", "agent", "AGENTS.md"), "# Pi\n");
 
   const detected = detectSetupTargets({
     homeDir,

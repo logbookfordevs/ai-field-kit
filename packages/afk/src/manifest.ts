@@ -5,7 +5,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, ManifestCategory, ManifestFilename, PathOperation } from "./types.js";
 
-export const manifestNames = ["skills.json", "profiles.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
+export const manifestNames = ["skills.json", "profiles.json", "agents.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 export const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -56,6 +56,18 @@ export type McpManifestItem = {
   source: string;
   args: string[];
   default: boolean;
+};
+
+export type CustomAgentManifest = {
+  version: number;
+  items: CustomAgentManifestItem[];
+};
+
+export type CustomAgentManifestItem = {
+  id: string;
+  label: string;
+  source: string;
+  default?: never;
 };
 
 export type RulesManifest = {
@@ -238,6 +250,10 @@ function mergedManifestContent(name: ManifestName, content: string, targetPath: 
     return mergedProfilesManifestContent(content, targetPath);
   }
 
+  if (name === "agents.json") {
+    return mergedCustomAgentManifestContent(content, targetPath);
+  }
+
   return content;
 }
 
@@ -290,6 +306,8 @@ export function manifestNameForCategory(category: ManifestCategory): ManifestNam
       return "skills.json";
     case "profiles":
       return "profiles.json";
+    case "agents":
+      return "agents.json";
     case "mcps":
       return "mcps.json";
     case "plugins":
@@ -307,6 +325,10 @@ export function loadSkillManifest(options: Pick<CliOptions, "homeDir" | "manifes
 
 export function loadMcpManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): McpManifest {
   return parseManifest<McpManifest>(options, "mcps.json", isMcpManifest);
+}
+
+export function loadCustomAgentManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): CustomAgentManifest {
+  return parseManifest<CustomAgentManifest>(options, "agents.json", isCustomAgentManifest);
 }
 
 export function loadRulesManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): RulesManifest {
@@ -362,7 +384,32 @@ async function defaultManifestContent(
     return content ? withRememberedDefaultsSource(content, rememberedSourceForWrite) : null;
   }
 
-  return fetchDefaultManifest(name, options, defaultsSource, sourceSession);
+  const content = await fetchDefaultManifest(name, options, defaultsSource, sourceSession);
+  if (name !== "agents.json" || !content) {
+    return content;
+  }
+
+  const sourceRoot = options.rulesSource === "local" ? options.repoDir : defaultsSource;
+  return resolvedCustomAgentManifestContent(content, sourceRoot, options.rulesRef, options.cwd ?? process.cwd());
+}
+
+export function resolvedCustomAgentManifestContent(content: string, sourceRoot: string, ref: string, cwd: string): string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+  if (!isCustomAgentManifest(parsed)) {
+    return content;
+  }
+
+  const base = customAgentSourceBase(sourceRoot, ref, cwd);
+  const items = parsed.items.map((item) => ({
+    ...item,
+    source: resolvedCustomAgentSource(item.source, base),
+  }));
+  return `${JSON.stringify({ ...parsed, items }, null, 2)}\n`;
 }
 
 async function fetchDefaultManifest(
@@ -698,6 +745,54 @@ function defaultRepoManifestUrls(owner: string, repo: string, ref: string): stri
   ];
 }
 
+function customAgentSourceBase(source: string, ref: string, cwd: string): string {
+  const normalized = source.trim().replace(/\/$/, "");
+
+  const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)(?:\/(.*))?$/);
+  if (rawMatch) {
+    const [, owner, repo, sourceRef, path] = rawMatch;
+    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+  }
+
+  const githubTreeMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)(?:\/(.*))?$/);
+  if (githubTreeMatch) {
+    const [, owner, repo, sourceRef, path] = githubTreeMatch;
+    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+  }
+
+  const githubRepoMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)$/);
+  if (githubRepoMatch) {
+    const [, owner, repo] = githubRepoMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(ref)}`;
+  }
+
+  const shorthandMatch = normalized.match(/^([^/\s]+)\/([^/\s]+)$/);
+  if (shorthandMatch) {
+    const [, owner, repo] = shorthandMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(ref)}`;
+  }
+
+  if (/^https?:\/\//.test(normalized)) {
+    return normalized;
+  }
+
+  return isAbsolute(normalized) ? normalized : resolve(cwd, normalized);
+}
+
+function resolvedCustomAgentSource(source: string, base: string): string {
+  if (/^https?:\/\//.test(source) || isAbsolute(source)) {
+    return source;
+  }
+
+  if (/^https?:\/\//.test(base)) {
+    return new URL(source, `${base.replace(/\/$/, "")}/`).toString();
+  }
+
+  return resolve(base, source);
+}
+
 function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): string {
   if (name === "skills.json") {
     return `${JSON.stringify({ version: 1, defaultSource: "", scopes: [], items: [] }, null, 2)}\n`;
@@ -705,6 +800,10 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
 
   if (name === "profiles.json") {
     return `${JSON.stringify({ version: 1, mode: "strict", alwaysOn: [], items: [] }, null, 2)}\n`;
+  }
+
+  if (name === "agents.json") {
+    return `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`;
   }
 
   if (name === "mcps.json") {
@@ -851,6 +950,45 @@ function mergedSkillsManifestContent(content: string, targetPath: string): strin
   return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
 }
 
+export function mergedCustomAgentManifestContent(content: string, targetPath: string): string {
+  let refreshed: unknown;
+  try {
+    refreshed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+
+  if (!isCustomAgentManifest(refreshed)) {
+    return content;
+  }
+
+  const existing = readExistingCustomAgentManifest(targetPath);
+  if (!existing) {
+    return `${JSON.stringify(refreshed, null, 2)}\n`;
+  }
+
+  const incomingById = new Map(refreshed.items.map((item) => [item.id, item]));
+  const existingIds = new Set(existing.items.map((item) => item.id));
+  const items = [
+    ...existing.items.map((item) => incomingById.get(item.id) ?? item),
+    ...refreshed.items.filter((item) => !existingIds.has(item.id)),
+  ];
+  return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
+}
+
+function readExistingCustomAgentManifest(path: string): CustomAgentManifest | null {
+  if (!existsSync(path)) {
+    return null;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    return isCustomAgentManifest(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function mergedProfilesManifestContent(content: string, targetPath: string): string {
   const refreshed = parseProfilesManifest(content);
   const existing = readProfilesManifest(targetPath);
@@ -910,7 +1048,6 @@ function isProfileManifestItem(value: unknown): value is ProfilesManifest["items
     Array.isArray(value.skills) &&
     value.skills.every((skill) => typeof skill === "string");
 }
-
 function stripRetiredSkillManifestFields(item: SkillManifestItem): SkillManifestItem {
   const next = { ...item } as SkillManifestItem & { profiles?: unknown };
   delete next.profiles;
@@ -1049,6 +1186,20 @@ function isMcpManifest(value: unknown): value is McpManifest {
       typeof item.default === "boolean"
     );
   });
+}
+
+export function isCustomAgentManifest(value: unknown): value is CustomAgentManifest {
+  if (!isRecord(value) || typeof value.version !== "number" || !Array.isArray(value.items)) {
+    return false;
+  }
+
+  return value.items.every((item) => (
+    isRecord(item) &&
+    typeof item.id === "string" &&
+    typeof item.label === "string" &&
+    typeof item.source === "string" &&
+    item.default === undefined
+  ));
 }
 
 function isRulesManifest(value: unknown): value is RulesManifest {
