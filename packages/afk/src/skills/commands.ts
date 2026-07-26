@@ -16,6 +16,7 @@ import {
   markSkillCatalogItemsStartDisabled,
   moveSkillRecord,
   deleteSkillRecords,
+  skillCatalogPath,
   type SkillRecord,
 } from "./catalog.js";
 import { runCodexCategorization } from "./categorization.js";
@@ -900,6 +901,7 @@ async function runSkillsInvocation(operands: string[], runtime: Runtime, options
   }
 
   const result = setSkillInvocationPolicy({
+    homeDir: options.homeDir,
     record,
     allowInvocation,
     dryRun: options.dryRun,
@@ -920,7 +922,11 @@ async function runSkillsDelete(folder: string | undefined, runtime: Runtime, opt
     : globalCandidates;
   const records = folder
     ? [findSkillRecord(candidates, folder)].filter((record): record is SkillRecord => Boolean(record))
-    : await promptSkillRecords(candidates, `Select ${mutationTargetLabel(options)} skill to delete:`);
+    : await promptSkillRecords(
+      candidates,
+      `Select ${mutationTargetLabel(options)} skill to delete:`,
+      { includeCatalogOrigin: true },
+    );
 
   if (records.length === 0) {
     runtime.io.stderr(folder
@@ -1037,6 +1043,7 @@ function skillRecordsForProfile(options: CliOptions, profile: SkillProfileItem):
 }
 
 function setSkillInvocationPolicy(options: {
+  homeDir: string;
   record: SkillRecord;
   allowInvocation: boolean;
   dryRun: boolean;
@@ -1046,7 +1053,10 @@ function setSkillInvocationPolicy(options: {
   dryRun: boolean;
   operations: ReturnType<typeof buildSkillInvocationPolicyOperations>;
 } {
-  const operations = buildSkillInvocationPolicyOperations(options.record, options.allowInvocation);
+  const operations = [
+    ...buildSkillInvocationPolicyOperations(options.record, options.allowInvocation),
+    ...buildSkillCatalogInvocationPolicyOperations(options.homeDir, options.record, options.allowInvocation),
+  ];
 
   if (!options.dryRun) {
     for (const operation of operations) {
@@ -1060,6 +1070,35 @@ function setSkillInvocationPolicy(options: {
     dryRun: options.dryRun,
     operations,
   };
+}
+
+function buildSkillCatalogInvocationPolicyOperations(
+  homeDir: string,
+  record: SkillRecord,
+  allowInvocation: boolean,
+) {
+  const path = skillCatalogPath(homeDir);
+  if (record.rootKind !== "global-library" || !pathExists(path)) {
+    return [];
+  }
+
+  const manifest = loadSkillManifest({ homeDir });
+  const recordIds = new Set([record.folder, record.name, record.originalName].map((value) => value.toLowerCase()));
+  const catalogItem = manifest.items.find((item) => recordIds.has(item.id.toLowerCase()));
+  if (!catalogItem || catalogItem.autoInvocation === allowInvocation) {
+    return [];
+  }
+
+  return [{
+    type: "write" as const,
+    path,
+    content: `${JSON.stringify({
+      ...manifest,
+      items: manifest.items.map((item) =>
+        item.id === catalogItem.id ? { ...item, autoInvocation: allowInvocation } : item
+      ),
+    }, null, 2)}\n`,
+  }];
 }
 
 function buildSkillInvocationPolicyOperations(record: SkillRecord, allowInvocation: boolean) {
@@ -1112,6 +1151,7 @@ export function filterSkillChoices(records: SkillRecord[], term: string | undefi
       record.category ?? "",
       record.agent ?? "",
       record.storage,
+      record.catalogOrigin,
       ...record.tags,
     ].join(" ").toLowerCase();
 
@@ -1298,7 +1338,11 @@ async function promptSkillRecord(records: SkillRecord[], message: string): Promi
   });
 }
 
-async function promptSkillRecords(records: SkillRecord[], message: string): Promise<SkillRecord[]> {
+async function promptSkillRecords(
+  records: SkillRecord[],
+  message: string,
+  options: { includeCatalogOrigin?: boolean } = {},
+): Promise<SkillRecord[]> {
   if (records.length === 0) {
     return [];
   }
@@ -1309,7 +1353,7 @@ async function promptSkillRecords(records: SkillRecord[], message: string): Prom
     choices: records.map((record) => ({
       name: renderSkillChoice(record),
       value: record,
-      description: renderSkillChoiceDescription(record),
+      description: renderSkillChoiceDescription(record, options),
       short: record.folder,
     })),
     pageSize: 12,

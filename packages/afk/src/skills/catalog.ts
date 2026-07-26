@@ -10,6 +10,7 @@ export const legacySkillCatalogFileName = "afk-skills.json";
 export type SkillStorage = "active" | "disabled";
 export type SkillRootKind = "global-library" | "project-agent" | "agent-library";
 export type SkillAutoInvocationState = SkillsListAutoInvocation;
+export type SkillCatalogOrigin = "native" | "imported" | "untracked";
 
 export type SkillRecord = {
   folder: string;
@@ -25,6 +26,7 @@ export type SkillRecord = {
   agent: SkillAgentFilter | undefined;
   category: string | undefined;
   categoryId: string | undefined;
+  catalogOrigin: SkillCatalogOrigin;
   tags: string[];
   autoInvocation: SkillAutoInvocationState;
   autoInvocationSources: string[];
@@ -112,7 +114,11 @@ export function loadSkillCatalog(options: {
     .filter((root) => rootMatchesScope(root, options.scope))
     .filter((root) => rootMatchesAgent(root, options.agent));
 
-  const records = roots.flatMap((root) => loadRootSkills(root, categorization));
+  const manifestItemsById = new Map(
+    (categorization.state === "loaded" ? categorization.definition.items ?? [] : [])
+      .map((item) => [item.id.toLowerCase(), item]),
+  );
+  const records = roots.flatMap((root) => loadRootSkills(root, categorization, manifestItemsById));
   return {
     records: sortSkillRecords(records),
     categorization,
@@ -550,7 +556,11 @@ export function sortSkillRecords(records: SkillRecord[]): SkillRecord[] {
   });
 }
 
-function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationState): SkillRecord[] {
+function loadRootSkills(
+  root: SkillRoot,
+  categorization: SkillCategorizationState,
+  manifestItemsById: Map<string, SkillManifestItem>,
+): SkillRecord[] {
   if (!existsSync(root.path)) {
     return [];
   }
@@ -579,6 +589,10 @@ function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationStat
       const taxonomyEntry = root.kind === "global-library" ? entriesByFolder.get(entry.name) : undefined;
       const scope = taxonomyEntry ? scopesById.get(taxonomyEntry.scope) : undefined;
       const originalName = metadata.name ?? entry.name;
+      const catalogItem = [entry.name, originalName, taxonomyEntry?.name]
+        .filter((value): value is string => Boolean(value))
+        .map((value) => manifestItemsById.get(value.toLowerCase()))
+        .find((item): item is SkillManifestItem => Boolean(item));
 
       return [{
         folder: entry.name,
@@ -594,12 +608,21 @@ function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationStat
         agent: root.agent,
         category: scope?.label,
         categoryId: scope?.id,
+        catalogOrigin: resolveCatalogOrigin(catalogItem),
         tags: taxonomyEntry?.tags ?? [],
         autoInvocation: autoInvocation.state,
         autoInvocationSources: autoInvocation.sources,
         autoInvocationDetails: autoInvocation.details,
       } satisfies SkillRecord];
     });
+}
+
+function resolveCatalogOrigin(item: SkillManifestItem | undefined): SkillCatalogOrigin {
+  if (!item) {
+    return "untracked";
+  }
+
+  return item.imported === true ? "imported" : "native";
 }
 
 function readOpenAiImplicitInvocation(rootPath: string, folder: string): boolean | undefined {

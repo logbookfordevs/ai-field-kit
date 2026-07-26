@@ -137,6 +137,8 @@ test("loadSkillCatalog orders shared global active before disabled and excludes 
   ]);
   assert.equal(snapshot.records[0]?.name, "Z Active");
   assert.equal(snapshot.records[0]?.category, "Docs");
+  assert.equal(snapshot.records[0]?.catalogOrigin, "native");
+  assert.equal(snapshot.records[1]?.catalogOrigin, "untracked");
   assert.equal(snapshot.records[1]?.readOnly, false);
 });
 
@@ -150,6 +152,46 @@ test("loadSkillCatalog filters project roots by agent", () => {
   const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "project", agent: "codex" });
 
   assert.deepEqual(snapshot.records.map((record) => record.folder), ["codex-skill"]);
+});
+
+test("loadSkillCatalog distinguishes native, imported, and untracked skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skills-catalog-origin-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "native", "Native");
+  writeSkill(join(homeDir, ".agents", "skills"), "imported", "Imported");
+  writeSkill(join(homeDir, ".agents", "skills"), "untracked", "Untracked");
+  writeSkillCatalog(homeDir, {
+    version: 1,
+    scopes: [],
+    skills: [],
+    items: [
+      {
+        id: "native",
+        label: "Native",
+        source: "",
+        args: ["--skill", "native"],
+        default: false,
+      },
+      {
+        id: "imported",
+        label: "Imported",
+        source: "",
+        args: ["--skill", "imported"],
+        default: false,
+        imported: true,
+      },
+    ],
+  });
+
+  const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
+  const origins = Object.fromEntries(snapshot.records.map((record) => [record.folder, record.catalogOrigin]));
+
+  assert.deepEqual(origins, {
+    imported: "imported",
+    native: "native",
+    untracked: "untracked",
+  });
 });
 
 test("loadSkillCatalog defaults to the shared global library", () => {
@@ -1585,6 +1627,19 @@ test("runSkillsCommand disables auto invocation metadata for one skill", async (
   const root = mkdtempSync(join(tmpdir(), "afk-skill-invocation-disable-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
+  writeSkillCatalog(homeDir, {
+    version: 1,
+    scopes: [],
+    skills: [],
+    items: [{
+      id: "demo",
+      label: "Demo",
+      source: "owner/skills",
+      args: ["--skill", "demo"],
+      default: false,
+      autoInvocation: true,
+    }],
+  });
   writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo", {
     disableModelInvocation: false,
     openAiImplicitInvocation: true,
@@ -1596,12 +1651,27 @@ test("runSkillsCommand disables auto invocation metadata for one skill", async (
   assert.ok(output.join("\n").includes("Auto Invocation Complete"));
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.equal(catalog.items[0]?.autoInvocation, false);
 });
 
 test("runSkillsCommand previews auto invocation enable without writing metadata", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-invocation-enable-dry-"));
   const homeDir = join(root, "home");
   const output: string[] = [];
+  writeSkillCatalog(homeDir, {
+    version: 1,
+    scopes: [],
+    skills: [],
+    items: [{
+      id: "demo",
+      label: "Demo",
+      source: "owner/skills",
+      args: ["--skill", "demo"],
+      default: false,
+      autoInvocation: false,
+    }],
+  });
   writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo", {
     disableModelInvocation: true,
     openAiImplicitInvocation: false,
@@ -1616,6 +1686,39 @@ test("runSkillsCommand previews auto invocation enable without writing metadata"
   assert.ok(output.join("\n").includes("Auto Invocation Preview"));
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.equal(catalog.items[0]?.autoInvocation, false);
+});
+
+test("runSkillsCommand enables auto invocation in installed metadata and catalog", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-invocation-enable-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkillCatalog(homeDir, {
+    version: 1,
+    scopes: [],
+    skills: [],
+    items: [{
+      id: "demo",
+      label: "Demo",
+      source: "owner/skills",
+      args: ["--skill", "demo"],
+      default: false,
+      autoInvocation: false,
+    }],
+  });
+  writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo", {
+    disableModelInvocation: true,
+    openAiImplicitInvocation: false,
+  });
+
+  const code = await runSkillsCommand(["skills", "invocation", "enable", "demo"], outputRuntime(output), baseOptions(root));
+
+  assert.equal(code, 0);
+  assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: false/);
+  assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: true/);
+  const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  assert.equal(catalog.items[0]?.autoInvocation, true);
 });
 
 test("runSkillsCommand enables agent-specific project skills with --scope project --agent", async () => {
@@ -1709,6 +1812,7 @@ test("buildSkillOpenCommand targets files, folders, and supported apps", () => {
     agent: undefined,
     category: undefined,
     categoryId: undefined,
+    catalogOrigin: "untracked",
     tags: [],
     autoInvocation: "default",
     autoInvocationSources: [],
@@ -1742,6 +1846,7 @@ test("renderSkillChoice keeps picker rows compact", () => {
     agent: undefined,
     category: "Docs",
     categoryId: "docs",
+    catalogOrigin: "native",
     tags: [],
     autoInvocation: "enabled",
     autoInvocationSources: ["SKILL.md"],
@@ -1762,6 +1867,7 @@ test("renderSkillChoice keeps picker rows compact", () => {
     agent: undefined,
     category: undefined,
     categoryId: undefined,
+    catalogOrigin: "untracked",
     tags: [],
     autoInvocation: "disabled",
     autoInvocationSources: ["agents/openai.yaml"],
@@ -1784,6 +1890,7 @@ test("renderSkillChoiceDescription adds hovered skill metadata below the picker"
     agent: "codex",
     category: "Docs",
     categoryId: "docs",
+    catalogOrigin: "imported",
     tags: ["writing"],
     autoInvocation: "enabled",
     autoInvocationSources: ["SKILL.md"],
@@ -1793,6 +1900,27 @@ test("renderSkillChoiceDescription adds hovered skill metadata below the picker"
     "",
     "Status: active · Invocation: auto · Agent: codex · Category: Docs · Tags: writing",
   ].join("\n"));
+
+  assert.match(renderSkillChoiceDescription({
+    folder: "demo",
+    name: "Demo Skill",
+    originalName: "Demo Skill",
+    description: "Demo description",
+    rootLabel: "Global Library",
+    rootPath: "/tmp/skills",
+    skillFilePath: "/tmp/skills/demo/SKILL.md",
+    storage: "active",
+    rootKind: "global-library",
+    readOnly: false,
+    agent: undefined,
+    category: "Docs",
+    categoryId: "docs",
+    catalogOrigin: "imported",
+    tags: [],
+    autoInvocation: "enabled",
+    autoInvocationSources: ["SKILL.md"],
+    autoInvocationDetails: ["SKILL.md enables"],
+  }, { includeCatalogOrigin: true }), /Category: Docs · Catalog: imported/);
 });
 
 test("renderSkillDetails shows mixed auto invocation diagnostics", () => {
@@ -1810,6 +1938,7 @@ test("renderSkillDetails shows mixed auto invocation diagnostics", () => {
     agent: undefined,
     category: undefined,
     categoryId: undefined,
+    catalogOrigin: "untracked",
     tags: [],
     autoInvocation: "mixed",
     autoInvocationSources: ["SKILL.md", "agents/openai.yaml"],
@@ -1818,6 +1947,7 @@ test("renderSkillDetails shows mixed auto invocation diagnostics", () => {
 
   assert.ok(output.includes("Auto       mixed"));
   assert.ok(output.includes("Auto source SKILL.md disables, agents/openai.yaml enables"));
+  assert.ok(output.includes("Catalog    untracked"));
 });
 
 test("loadLockedSkills reads global and project tracked skills by scope", () => {
@@ -2350,6 +2480,7 @@ function skillRecord(input: { folder: string; rootPath: string }): SkillRecord {
     agent: "codex",
     category: undefined,
     categoryId: undefined,
+    catalogOrigin: "untracked",
     tags: [],
     autoInvocation: "default",
     autoInvocationSources: [],
