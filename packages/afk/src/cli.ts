@@ -69,7 +69,7 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (parsed.help) {
     const key = commandKey(parsed.commandPath);
-    if (parsed.commandPath && !commandHelps[key]) {
+    if (parsed.commandPath && !commandHelps[helpKey(parsed.commandPath)]) {
       runtime.io.stderr(`Unknown command: ${key}`);
       runtime.io.stderr(helpText());
       return 1;
@@ -207,6 +207,8 @@ const setupOptions = {
   empty: "--empty                           Create empty catalog files with --init-only or refresh",
   defaultSource: "--default-source <source>         Save the default source and refresh the cache",
   allSkills: "--all                            Include imported skills when installing skills",
+  customAgent: "--custom-agent <id>             Select a Custom Agent; repeatable",
+  allCustomAgents: "--all                            Select every cataloged Custom Agent",
 };
 
 const setupAreaOptions = [
@@ -225,7 +227,7 @@ const setupAreaOptions = [
 const commandHelps: Record<string, CommandHelp> = {
   setup: {
     title: "AFK setup",
-    summary: "Guided setup for rules, skills, profiles, MCPs, plugins, and hooks.",
+    summary: "Guided setup for rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks.",
     usage: "afk setup [options]",
     notes: [
       "Use this when you want AFK to prepare agent-facing surfaces on this machine or in the current project.",
@@ -243,11 +245,13 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.initOnly,
       setupOptions.empty,
       setupOptions.allSkills,
+      setupOptions.customAgent,
     ],
     subcommands: [
       "afk setup rules                   Sync AFK rules into managed agent rule regions",
       "afk setup skills                  Delegate skill installation to the official skills CLI",
       "afk setup profiles                Prepare AFK focus profile definitions",
+      "afk setup agents                  Provision portable Custom Agents",
       "afk setup mcps                    Delegate MCP installation to add-mcp",
       "afk setup plugins                   Install optional developer plugins",
       "afk setup hooks                   Merge AFK lifecycle hooks into agent hook configs",
@@ -303,11 +307,13 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk catalog rules",
       "afk catalog skills",
       "afk catalog profiles",
+      "afk catalog agents",
     ],
     subcommands: [
       "afk catalog rules                 Edit rules.json",
       "afk catalog skills                Edit skills.json and import installed skills",
       "afk catalog profiles              Edit profiles.json and profile definitions",
+      "afk catalog agents                Edit agents.json portable agent sources",
       "afk catalog mcps                  Edit mcps.json",
       "afk catalog plugins               Edit plugins.json",
       "afk catalog hooks                 Edit hooks.json",
@@ -436,6 +442,27 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup profiles --dry-run",
       "afk setup profiles --yes",
       "afk setup profiles --local",
+    ],
+  },
+  "setup agents": {
+    title: "AFK setup agents",
+    summary: "Provision selected portable Custom Agents into Codex, Claude Code, or Pi.",
+    usage: "afk setup agents [options]",
+    notes: [
+      "Custom Agents start unselected. Use --custom-agent repeatedly or --all for non-interactive setup.",
+      "--yes confirms the operation; it never selects Custom Agents.",
+      "Pi requires pi-subagents. AFK suggests its install command but does not install it.",
+    ],
+    options: [
+      ...setupAreaOptions,
+      setupOptions.customAgent,
+      setupOptions.allCustomAgents,
+    ],
+    examples: [
+      "afk setup agents",
+      "afk setup agents --custom-agent goal-scout --agent codex --yes",
+      "afk setup agents --all --agent claude --agent pi --yes",
+      "afk setup agents --local --all",
     ],
   },
   "setup mcps": {
@@ -865,6 +892,23 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
   },
   "catalog mcps": catalogItemAreaHelp("AFK catalog MCPs", "mcps", "MCP recommendations"),
+  "catalog agents": {
+    title: "AFK catalog agents",
+    summary: "Edit agents.json portable Custom Agent sources.",
+    usage: "afk catalog agents [command] [options]",
+    options: [
+      "add                               Add a Custom Agent source",
+      "edit                              Edit a Custom Agent source",
+      "remove                            Remove a Custom Agent source",
+      "--local                          Edit ./afk/catalog instead of the global cache",
+      setupOptions.dryRun,
+    ],
+    examples: [
+      "afk catalog agents",
+      "afk catalog agents add",
+      "afk catalog agents remove --local",
+    ],
+  },
   "catalog plugins": catalogItemAreaHelp("AFK catalog plugins", "plugins", "plugin installers"),
   "catalog hooks": catalogItemAreaHelp("AFK catalog hooks", "hooks", "lifecycle hooks"),
   "show skills": {
@@ -918,6 +962,21 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk show mcps",
       "afk show mcps --source logbookfordevs/ai-field-kit",
       "afk show mcps --local",
+    ],
+  },
+  "show agents": {
+    title: "AFK show agents",
+    summary: "Inspect portable Custom Agent catalog entries before provisioning.",
+    usage: "afk show agents [options]",
+    options: [
+      "--source <source>                Show Custom Agents from this source for this run only",
+      "--ref <git-ref>                  Git ref for GitHub catalog sources",
+      "--local                          Show ./afk/catalog instead of the global cache",
+    ],
+    examples: [
+      "afk show agents",
+      "afk show agents --source logbookfordevs/ai-field-kit",
+      "afk show agents --local",
     ],
   },
   "show plugins": {
@@ -1093,6 +1152,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
   let allSkills = false;
+  let allCustomAgents = false;
+  const selectedCustomAgentIds: string[] = [];
   let rulesRef = "main";
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
@@ -1308,7 +1369,27 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--all") {
-      allSkills = true;
+      if (key === "setup agents") {
+        allCustomAgents = true;
+      } else if (isSetupSkillsCommand(key)) {
+        allSkills = true;
+      } else {
+        allSkills = true;
+        allCustomAgents = true;
+      }
+      continue;
+    }
+
+    if (arg === "--custom-agent") {
+      if (key !== "setup" && key !== "setup agents") {
+        return { help: false, kind: "error", error: "--custom-agent is only supported with afk setup or afk setup agents" };
+      }
+      const value = args[index + 1]?.trim();
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --custom-agent value" };
+      }
+      selectedCustomAgentIds.push(value);
+      index += 1;
       continue;
     }
 
@@ -1675,7 +1756,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       verbose,
       yes,
       allSkills,
+      allCustomAgents,
       selectedSkillIds: [],
+      selectedCustomAgentIds,
       selectedSkillAgentIds,
       skillAddArgs,
       skillAddProfileIds,
@@ -1763,6 +1846,10 @@ function commandToArea(commandPath: string[]): Area | null {
     return "profiles";
   }
 
+  if (key === "setup agents") {
+    return "agents";
+  }
+
   if (key === "setup mcps" || key === "setup mcps install") {
     return "mcps";
   }
@@ -1817,7 +1904,7 @@ function isCatalogCommand(key: string): boolean {
 }
 
 function isCatalogAreaCommand(commandPath: string[]): boolean {
-  return commandPath[0] === "catalog" && ["rules", "mcps", "plugins", "hooks"].includes(commandPath[1] ?? "");
+  return commandPath[0] === "catalog" && ["rules", "agents", "mcps", "plugins", "hooks"].includes(commandPath[1] ?? "");
 }
 
 async function runCatalogAreaCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
@@ -1854,6 +1941,7 @@ function catalogAreaFromCommand(value: string | undefined): ManifestArea | null 
     case "rules":
     case "skills":
     case "profiles":
+    case "agents":
     case "mcps":
     case "plugins":
     case "hooks":
@@ -1889,6 +1977,12 @@ function catalogActionFromCommand(area: ManifestArea, value: string | undefined)
       default:
         return { kind: "error", error: `Unknown catalog profiles command: ${value}` };
     }
+  }
+
+  if (area === "agents") {
+    return value === "add" || value === "edit" || value === "remove"
+      ? { kind: "ok", action: value }
+      : { kind: "error", error: `Unknown catalog agents command: ${value}` };
   }
 
   switch (value) {
@@ -2044,6 +2138,7 @@ Usage:
   afk setup [options]
   afk setup rules [options]
   afk setup skills [options]
+  afk setup agents [options]
   afk setup mcps [options]
   afk setup plugins [options]
   afk setup hooks [options]
@@ -2053,6 +2148,7 @@ Usage:
   afk catalog rules [options]
   afk catalog skills <command> [options]
   afk catalog profiles <command> [options]
+  afk catalog agents [options]
   afk catalog mcps [options]
   afk catalog plugins [options]
   afk catalog hooks [options]
@@ -2060,7 +2156,7 @@ Usage:
 
 Common paths:
   afk                         Open the interactive lobby when your terminal supports prompts
-  afk setup                   Prepare rules, skills, MCPs, plugins, and hooks
+  afk setup                   Prepare rules, skills, Custom Agents, MCPs, plugins, and hooks
   afk refresh                 Update the local catalog cache
   afk catalog                 Edit writable local catalog files
   afk update                  Update AFK from the latest GitHub release
@@ -2068,11 +2164,12 @@ Common paths:
   afk show skills --visualize Write and open the skills composition map
   afk catalog skills          Manage skills catalog definitions
   afk catalog profiles        Edit profile catalog data
+  afk catalog agents          Manage portable Custom Agent sources
 
 Run "afk <command> --help" for command-specific options.
 
 Agents:
-  antigravity, claude, codex, cursor-local, opencode
+  antigravity, claude, codex, cursor-local, opencode, pi
 
 Aliases:
   agy, gemini -> antigravity
@@ -2095,6 +2192,10 @@ function helpKey(commandPath: string[] = []): string {
 
   if (commandPath[0] === "catalog" && commandPath[1] === "profiles") {
     return "catalog profiles";
+  }
+
+  if (commandPath[0] === "catalog" && commandPath[1] === "agents") {
+    return "catalog agents";
   }
 
   if (commandPath[0] === "skills" && commandPath[1]) {
@@ -2180,6 +2281,9 @@ function manifestCategory(arg: string): ManifestCategory | null {
     case "profile":
     case "profiles":
       return "profiles";
+    case "agent":
+    case "agents":
+      return "agents";
     case "mcp":
     case "mcps":
       return "mcps";

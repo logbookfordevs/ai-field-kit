@@ -11,6 +11,8 @@ export type LobbyChoiceValue =
   | "refresh"
   | "catalog"
   | "skills"
+  | "agents"
+  | "catalog-agents"
   | "skill-management"
   | "mcps"
   | "plugins"
@@ -100,6 +102,16 @@ export const compassLobbyChoices: MenuChoice<LobbyChoiceValue>[] = [
     name: "Manage installed skills",
     value: "skill-management",
     description: "Open skill list, moves, updates, catalog import, and profiles",
+  },
+  {
+    name: "Provision Custom Agents",
+    value: "agents",
+    description: "Route: afk setup agents",
+  },
+  {
+    name: "Manage Custom Agent catalog",
+    value: "catalog-agents",
+    description: "Route: afk catalog agents",
   },
   {
     name: "Add MCP tools",
@@ -478,6 +490,10 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
       return ["setup", "skills"];
     case "skill-management":
       return ["skills"];
+    case "agents":
+      return ["setup", "agents"];
+    case "catalog-agents":
+      return ["catalog", "agents"];
     case "mcps":
       return ["setup", "mcps"];
     case "plugins":
