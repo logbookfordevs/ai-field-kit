@@ -201,9 +201,11 @@
   }
   .flow-chip { border-color: var(--line); background: var(--surface); white-space: nowrap; }
   .flow-chip.on { border-color: var(--coral); color: var(--coral); background: var(--coral-soft); }
-  .catalog-filters { display: none; }
-  body.catalog-view .machine-flows { display: none; }
+  .catalog-filters, .moment-filters { display: none; }
+  body.catalog-view .machine-flows,
+  body.moment-view .machine-flows { display: none; }
   body.catalog-view .catalog-filters { display: flex; }
+  body.moment-view .moment-filters { display: flex; }
 
   .stage { flex: 1; min-height: 0; position: relative; overflow: hidden; }
   .stage::before {
@@ -227,7 +229,7 @@
     user-select: none;
   }
   #diagram.grabbing { cursor: grabbing; }
-  #machine-view[hidden], #catalog-view[hidden] { display: none; }
+  #machine-view[hidden], #catalog-view[hidden], #moment-view[hidden] { display: none; }
 
   .zone > rect {
     fill: var(--surface);
@@ -339,6 +341,37 @@
   .compose-edge.lit { opacity: 1; stroke-width: 2.6; stroke-dasharray: 7 5; animation: march 900ms linear infinite; }
   .profile-band { fill: var(--surface); stroke: var(--plum); stroke-width: 1.2; rx: 14; }
 
+  .moment-track { fill: none; stroke: var(--line); stroke-width: 2; marker-end: url(#arrow-muted); opacity: .8; }
+  .moment-column > rect { fill: var(--surface); fill-opacity: .56; stroke: var(--line-soft); stroke-width: 1.2; rx: 16; }
+  .moment-header > rect { stroke: none; rx: 10; }
+  .moment-header .moment-index { fill: rgba(255,255,255,.7); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; }
+  .moment-header .moment-title { fill: #fffdf8; font-family: var(--mono); font-size: 18px; font-weight: 750; letter-spacing: .13em; }
+  .moment-header .moment-action { fill: rgba(255,255,255,.82); font-family: var(--serif); font-size: 13px; font-style: italic; }
+  .moment-define .moment-header > rect { fill: var(--plum); }
+  .moment-plan .moment-header > rect { fill: var(--blue); }
+  .moment-build .moment-header > rect { fill: var(--teal); }
+  .moment-verify .moment-header > rect { fill: var(--gold); }
+  .moment-review .moment-header > rect { fill: var(--coral); }
+  .moment-ship .moment-header > rect { fill: var(--green); }
+  .moment-skill > rect { fill: var(--surface); stroke-width: 1.25; rx: 8; }
+  .moment-define .moment-skill > rect { stroke: var(--plum); }
+  .moment-plan .moment-skill > rect { stroke: var(--blue); }
+  .moment-build .moment-skill > rect { stroke: var(--teal); }
+  .moment-verify .moment-skill > rect { stroke: var(--gold); }
+  .moment-review .moment-skill > rect { stroke: var(--coral); }
+  .moment-ship .moment-skill > rect { stroke: var(--green); }
+  .moment-skill .skill-name { fill: var(--ink); font-family: var(--mono); font-size: 10px; pointer-events: none; }
+  .moment-skill .skill-mark { fill: var(--muted); font-family: var(--mono); font-size: 8px; pointer-events: none; letter-spacing: .02em; }
+  .moment-skill.dim > rect { fill: var(--surface); stroke: var(--line-soft); }
+  .moment-skill.dim text { opacity: .15; }
+  .moment-skill.match > rect { stroke: var(--coral); stroke-width: 2.4; }
+  .moment-router-band { fill: var(--ink); stroke: var(--ink); rx: 14; }
+  .moment-router-title { fill: var(--surface); font-family: var(--serif); font-size: 20px; }
+  .moment-router-copy { fill: var(--surface-2); font-family: var(--mono); font-size: 9.5px; }
+  .moment-router-chip > rect { fill: var(--surface); stroke: var(--surface); rx: 8; }
+  .moment-router-chip .skill-name { fill: var(--ink); font-family: var(--mono); font-size: 10.5px; }
+  .moment-router-chip .skill-mark { fill: var(--muted); font-family: var(--mono); font-size: 8px; }
+
   .overlay {
     position: absolute;
     z-index: 12;
@@ -422,15 +455,19 @@
   }
   @media (max-width: 760px) {
     .topbar { align-items: flex-start; flex-wrap: wrap; min-height: auto; padding: 10px 12px; }
-    .brand { min-width: 0; flex: 1; }
+    .brand { min-width: 0; flex: 1 0 100%; }
     .brand h1 { font-size: 17px; }
+    .segmented { order: 2; width: 100%; }
+    .segmented button { flex: 1; }
     .toolbar.grow { order: 3; width: 100%; }
+    .topbar > .toolbar:not(.grow) { order: 4; margin-left: auto; }
     .search { flex: 1; width: auto; }
     .subbar { padding-left: 12px; }
     #legend { width: min(286px, calc(100vw - 24px)); left: 12px; top: 12px; }
     #detail { right: 12px; bottom: 12px; max-height: 46vh; }
     #flow-panel { left: 12px; bottom: 12px; }
     .corner-note { display: none; }
+    body.moment-view .corner-note { display: block; right: 12px; top: 10px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
@@ -448,6 +485,7 @@
     <div class="segmented" aria-label="Diagram view">
       <button class="view-button on" data-view="machine">State machine</button>
       <button class="view-button" data-view="catalog">Skill constellation</button>
+      <button class="view-button" data-view="moment">Workflow moments</button>
     </div>
 
     <div class="toolbar grow">
@@ -482,6 +520,17 @@
     <button class="flow-chip" data-skill-filter="composes">Composes others · 8</button>
   </nav>
 
+  <nav class="subbar moment-filters" aria-label="Workflow moment filters">
+    <span class="label">Follow the lifecycle</span>
+    <button class="flow-chip on" data-moment-filter="all">All 43</button>
+    <button class="flow-chip" data-moment-filter="define">Define</button>
+    <button class="flow-chip" data-moment-filter="plan">Plan</button>
+    <button class="flow-chip" data-moment-filter="build">Build</button>
+    <button class="flow-chip" data-moment-filter="verify">Verify</button>
+    <button class="flow-chip" data-moment-filter="review">Review</button>
+    <button class="flow-chip" data-moment-filter="ship">Ship</button>
+  </nav>
+
   <main class="stage" id="stage">
     <svg id="diagram" viewBox="0 0 2400 1500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Interactive AFK skills and profiles state machine">
       <defs>
@@ -505,12 +554,13 @@
       <g id="svg-content">
         <g id="machine-view"></g>
         <g id="catalog-view" hidden></g>
+        <g id="moment-view" hidden></g>
       </g>
     </svg>
 
     <div class="corner-note">drag to pan · wheel to zoom · click any node</div>
 
-    <aside class="overlay" id="legend">
+    <aside class="overlay" id="legend" hidden>
       <button class="close" data-close="legend" aria-label="Close legend">×</button>
       <h2>How to read the switchyard</h2>
       <div class="legend-grid">
@@ -521,10 +571,10 @@
         <div class="legend-item"><span class="swatch engine"></span> decision</div>
         <div class="legend-item"><span class="swatch heal"></span> healing loop</div>
       </div>
-      <div class="legend-note">Solid arrows change or read state. Dashed green arrows preserve, reconcile, or restore it. In the constellation, teal skills auto-invoke and plum skills are manual.</div>
+      <div class="legend-note">Solid arrows change or read state. Dashed green arrows preserve, reconcile, or restore it. In the constellation, teal skills auto-invoke and plum skills are manual. Workflow moments repeat cross-phase skills intentionally.</div>
     </aside>
 
-    <aside class="overlay" id="detail">
+    <aside class="overlay" id="detail" hidden>
       <button class="close" data-close="detail" aria-label="Close detail panel">×</button>
       <h2 id="detail-title">Click any command or state</h2>
       <div class="meta" id="detail-meta">interactive reference</div>
@@ -777,14 +827,84 @@ const ROLE_LAYOUT = {
   reference: {x:1770,y:695,w:570,h:180,title:"References",note:"policy and selection knowledge"}
 };
 
+const WORKFLOW_MOMENTS = [
+  {id:"define",title:"DEFINE",action:"find the right problem",skills:[
+    {id:"afk-brainstorming-facilitator",use:"diverge, then converge"},
+    {id:"grill-me",use:"sharpen the plan"},
+    {id:"grill-with-docs",use:"interview + decision docs"},
+    {id:"grilling",use:"stress-test assumptions"},
+    {id:"domain-modeling",use:"name the domain"},
+    {id:"research",use:"gather primary evidence"},
+    {id:"afk-ask",use:"consult another CLI advisor"}
+  ]},
+  {id:"plan",title:"PLAN",action:"shape a path worth taking",skills:[
+    {id:"afk-to-spec",use:"synthesize the spec"},
+    {id:"afk-to-tickets",use:"build the dependency graph"},
+    {id:"plannotator-setup-goal",use:"package a reviewed goal"},
+    {id:"wayfinder",use:"map long-horizon work"},
+    {id:"html-plan",use:"make the plan visible"},
+    {id:"afk-sprint",use:"checkpoint a fast goal"},
+    {id:"afk-turbo",use:"prepare high-throughput work"},
+    {id:"prototype",use:"probe a design question"},
+    {id:"codebase-design",use:"choose deep module seams"},
+    {id:"afk-code-grill",use:"challenge pre-build trade-offs"}
+  ]},
+  {id:"build",title:"BUILD",action:"turn intent into working form",skills:[
+    {id:"afk-implement-tasks",use:"execute checkpointed tickets"},
+    {id:"tdd",use:"grow behavior test-first"},
+    {id:"source-driven-development",use:"ground choices in official docs"},
+    {id:"doubt-driven-development",use:"verify decisions as you go"},
+    {id:"codebase-design",use:"keep module boundaries deep"},
+    {id:"afk-animated-driven-frontend",use:"craft motion-led interfaces"},
+    {id:"afk-ui-registry-preferences",use:"choose mature UI primitives"},
+    {id:"design-artifact",use:"set the visual direction"},
+    {id:"html",use:"create a self-contained artifact"},
+    {id:"html-diagram",use:"make architecture click"},
+    {id:"orchestrator",use:"coordinate specialist agents"},
+    {id:"animation-vocabulary",use:"name the intended motion"},
+    {id:"afk-sprint",use:"drive the checkpoint loop"},
+    {id:"afk-turbo",use:"run the live execution board"}
+  ]},
+  {id:"verify",title:"VERIFY",action:"earn confidence in the result",skills:[
+    {id:"diagnosing-bugs",use:"isolate failures and regressions"},
+    {id:"tdd",use:"prove behavior stays intact"},
+    {id:"truss-evaluation",use:"score decision quality"},
+    {id:"doubt-driven-development",use:"adversarially check the work"},
+    {id:"source-driven-development",use:"recheck authoritative contracts"},
+    {id:"review-animations",use:"audit motion craft"}
+  ]},
+  {id:"review",title:"REVIEW",action:"make the change legible",skills:[
+    {id:"afk-code-review",use:"review standards + spec"},
+    {id:"code-simplification",use:"remove accidental complexity"},
+    {id:"truss-evaluation",use:"expose the trade-offs"},
+    {id:"plannotator-visual-explainer",use:"explain visually"},
+    {id:"afk-pr-story-flow-mermaid",use:"tell the branch story"},
+    {id:"teach",use:"transfer the understanding"}
+  ]},
+  {id:"ship",title:"SHIP",action:"leave a trustworthy trail",skills:[
+    {id:"afk-doc-craft",use:"write human-facing docs"},
+    {id:"handoff",use:"compact context for the next agent"},
+    {id:"afk-pickup",use:"resume from a handoff"},
+    {id:"plannotator-compound",use:"compound reviewed learnings"},
+    {id:"writing-great-skills",use:"harden reusable skill contracts"}
+  ]}
+];
+
+const WORKFLOW_ROUTERS = [
+  {id:"afk-compass",use:"chooses the smallest useful skill as the moment changes"},
+  {id:"afk-profile-use",use:"loads the right skill profile for the current request"}
+];
+
 const stage = document.getElementById("stage");
 const svg = document.getElementById("diagram");
 const content = document.getElementById("svg-content");
 const machineView = document.getElementById("machine-view");
 const catalogView = document.getElementById("catalog-view");
+const momentView = document.getElementById("moment-view");
 let currentView = "machine";
 let currentFlow = "all";
 let currentSkillFilter = "all";
+let currentMomentFilter = "all";
 let scale = 1;
 let panX = 0;
 let panY = 0;
@@ -961,7 +1081,86 @@ function renderCatalog() {
   addText(catalogView,1110,profileY+157,"skill-role-title","mode = context");
   addText(catalogView,1110,profileY+182,"zone-note","manual cataloged outsiders stay active; discoverable or uncataloged outsiders filter out");
 
-  addText(catalogView,60,1290,"machine-sub","SOURCE SNAPSHOT · packages/afk/catalog/skills.json + profiles.json · 2026-07-17");
+  addText(catalogView,60,1290,"machine-sub","SOURCE SNAPSHOT · packages/afk/catalog/skills.json + profiles.json · 2026-07-20");
+}
+
+function renderMomentSkill(parent, moment, entry, x, y, width) {
+  const skill = SKILLS.find(item => item.id === entry.id);
+  if (!skill) return;
+  const g = el("g",{
+    class:"node moment-skill",
+    "data-k":`skill:${skill.id}`,
+    "data-skill":skill.id,
+    "data-moment":moment.id,
+    "data-search":`${skill.id} ${skill.role} ${moment.id} ${entry.use}`
+  });
+  g.appendChild(el("rect",{x,y,width,height:43,rx:8}));
+  addText(g,x+11,y+17,"skill-name",skill.id);
+  addText(g,x+11,y+33,"skill-mark",`${entry.use} · ${skill.role}`);
+  parent.appendChild(g);
+}
+
+function renderMoments() {
+  addText(momentView,45,48,"machine-heading","Every skill has a moment");
+  addText(momentView,45,73,"machine-sub","AN OPINIONATED LIFECYCLE MAP · REPEATED SKILLS CROSS PHASES ON PURPOSE · CLICK ANY TICKET FOR CATALOG DETAILS");
+  addText(momentView,2355,48,"machine-sub","43 UNIQUE SKILLS · 6 MOMENTS", "end");
+
+  const uniqueIds = new Set([
+    ...WORKFLOW_MOMENTS.flatMap(moment => moment.skills.map(entry => entry.id)),
+    ...WORKFLOW_ROUTERS.map(entry => entry.id)
+  ]);
+  const band = el("g",{class:"moment-router"});
+  band.appendChild(el("rect",{x:45,y:92,width:2315,height:72,class:"moment-router-band"}));
+  addText(band,70,120,"moment-router-title","Routing layer");
+  addText(band,70,143,"moment-router-copy","PRESENT WHENEVER THE WORK CHANGES SHAPE");
+  WORKFLOW_ROUTERS.forEach((entry,index) => {
+    const skill = SKILLS.find(item => item.id === entry.id);
+    if (!skill) return;
+    const x = 400 + index * 980;
+    const chip = el("g",{
+      class:"node moment-router-chip",
+      "data-k":`skill:${skill.id}`,
+      "data-skill":skill.id,
+      "data-moment":"all",
+      "data-search":`${skill.id} ${skill.role} router ${entry.use}`
+    });
+    chip.appendChild(el("rect",{x,y:105,width:930,height:46,rx:8}));
+    addText(chip,x+13,124,"skill-name",skill.id);
+    addText(chip,x+13,141,"skill-mark",entry.use);
+    band.appendChild(chip);
+  });
+  momentView.appendChild(band);
+
+  const columnX = index => 45 + index * 385;
+  const trackLayer = el("g",{id:"moment-tracks"});
+  WORKFLOW_MOMENTS.slice(0,-1).forEach((moment,index) => {
+    const start = columnX(index) + 354;
+    const end = columnX(index+1) - 9;
+    trackLayer.appendChild(el("path",{class:"moment-track",d:`M${start},236 L${end},236`}));
+  });
+  momentView.appendChild(trackLayer);
+
+  WORKFLOW_MOMENTS.forEach((moment,index) => {
+    const x = columnX(index);
+    const column = el("g",{class:`moment-column moment-${moment.id}`});
+    column.appendChild(el("rect",{x,y:180,width:350,height:900,rx:16}));
+
+    const header = el("g",{class:"moment-header"});
+    header.appendChild(el("rect",{x:x+10,y:194,width:330,height:88,rx:10}));
+    addText(header,x+28,213,"moment-index",`0${index+1} · ${moment.skills.length} PLACEMENTS`);
+    addText(header,x+28,244,"moment-title",moment.title);
+    addText(header,x+28,268,"moment-action",moment.action);
+    column.appendChild(header);
+
+    const skillLayer = el("g",{class:"moment-skill-list"});
+    moment.skills.forEach((entry,skillIndex) => {
+      renderMomentSkill(skillLayer,moment,entry,x+10,300+skillIndex*54,330);
+    });
+    column.appendChild(skillLayer);
+    momentView.appendChild(column);
+  });
+
+  addText(momentView,45,1104,"machine-sub",`COVERAGE CHECK · ${uniqueIds.size} OF ${SKILLS.length} CATALOG SKILLS PLACED · SOURCE CONTRACTS REVIEWED 2026-07-20`);
 }
 
 function attachNodeEvents() {
@@ -969,13 +1168,13 @@ function attachNodeEvents() {
     node.addEventListener("click", () => {
       document.querySelectorAll(".node.selected").forEach(item => item.classList.remove("selected"));
       node.classList.add("selected");
-      showDetail(node.dataset.k);
-      if (node.dataset.skill) highlightCompositions(node.dataset.skill);
+      showDetail(node.dataset.k, node);
+      if (node.dataset.skill && currentView === "catalog") highlightCompositions(node.dataset.skill);
     });
   });
 }
 
-function showDetail(key) {
+function showDetail(key, sourceNode) {
   const panel = document.getElementById("detail");
   panel.hidden = false;
   if (key.startsWith("skill:")) {
@@ -985,7 +1184,11 @@ function showDetail(key) {
     document.getElementById("detail-title").textContent = skill.id;
     document.getElementById("detail-meta").textContent = `${skill.role} · ${skill.auto ? "auto invocation" : "manual invocation"}`;
     const composed = skill.composes.length ? `<p><strong>Composes:</strong> ${skill.composes.map(item => `<code>${item}</code>`).join(" · ")}</p>` : "<p>This catalog entry does not declare composed skills.</p>";
-    document.getElementById("detail-body").innerHTML = `<p><strong>Source:</strong> <code>${skill.source}</code></p>${composed}<div class="tagrow"><span class="tag">${skill.isDefault ? "setup default" : "opt-in"}</span><span class="tag">${skill.auto ? "plain-language discoverable" : "explicit/manual"}</span></div>`;
+    const memberships = WORKFLOW_MOMENTS.filter(moment => moment.skills.some(entry => entry.id === skill.id));
+    const routed = WORKFLOW_ROUTERS.some(entry => entry.id === skill.id);
+    const moments = routed ? "routes across every moment" : memberships.length ? memberships.map(moment => moment.title.toLowerCase()).join(" · ") : "not placed";
+    const currentMoment = sourceNode?.dataset.moment && sourceNode.dataset.moment !== "all" ? `<span class="tag">viewing in ${sourceNode.dataset.moment}</span>` : "";
+    document.getElementById("detail-body").innerHTML = `<p><strong>Source:</strong> <code>${skill.source}</code></p><p><strong>Workflow moments:</strong> ${moments}</p>${composed}<div class="tagrow"><span class="tag">${skill.isDefault ? "setup default" : "opt-in"}</span><span class="tag">${skill.auto ? "plain-language discoverable" : "explicit/manual"}</span>${currentMoment}</div>`;
     return;
   }
   const detail = DETAILS[key];
@@ -1004,21 +1207,45 @@ function highlightCompositions(skillId) {
   });
 }
 
+function applyViewBox() {
+  if (currentView !== "moment") {
+    svg.setAttribute("viewBox","0 0 2400 1500");
+    return;
+  }
+  if (window.innerWidth <= 480) {
+    svg.setAttribute("viewBox","0 0 800 1120");
+    return;
+  }
+  svg.setAttribute("viewBox",window.innerWidth <= 760 ? "0 0 1450 1120" : "0 0 2400 1120");
+}
+
 function setView(view) {
   currentView = view;
   document.body.classList.toggle("catalog-view", view === "catalog");
+  document.body.classList.toggle("moment-view", view === "moment");
   machineView.toggleAttribute("hidden", view !== "machine");
   catalogView.toggleAttribute("hidden", view !== "catalog");
+  momentView.toggleAttribute("hidden", view !== "moment");
+  applyViewBox();
   document.querySelectorAll(".view-button").forEach(button => button.classList.toggle("on", button.dataset.view === view));
-  document.getElementById("search").placeholder = view === "machine" ? "Find command, state, or skill…" : "Find skill, role, or source…";
+  const placeholders = {
+    machine:"Find command, state, or skill…",
+    catalog:"Find skill, role, or source…",
+    moment:"Find skill, moment, or purpose…"
+  };
+  document.getElementById("search").placeholder = placeholders[view];
   clearSearch();
   resetCamera();
   if (view === "machine") {
     setFlow(currentFlow);
-  } else {
+  } else if (view === "catalog") {
     stage.classList.remove("flowing");
     document.getElementById("flow-panel").hidden = true;
     setSkillFilter(currentSkillFilter);
+  } else {
+    stage.classList.remove("flowing");
+    document.getElementById("flow-panel").hidden = true;
+    setMomentFilter(currentMomentFilter);
   }
 }
 
@@ -1054,10 +1281,20 @@ function setSkillFilter(filter) {
   document.querySelectorAll(".compose-edge").forEach(edge => edge.classList.remove("lit"));
 }
 
+function setMomentFilter(filter) {
+  currentMomentFilter = filter;
+  document.querySelectorAll("[data-moment-filter]").forEach(button => button.classList.toggle("on", button.dataset.momentFilter === filter));
+  document.querySelectorAll(".moment-skill").forEach(node => {
+    node.classList.toggle("dim", filter !== "all" && node.dataset.moment !== filter);
+  });
+  document.querySelectorAll(".moment-router-chip").forEach(node => node.classList.remove("dim"));
+}
+
 function clearSearch() {
   document.getElementById("search").value = "";
   document.querySelectorAll(".node").forEach(node => node.classList.remove("match","dim"));
   if (currentView === "catalog") setSkillFilter(currentSkillFilter);
+  if (currentView === "moment") setMomentFilter(currentMomentFilter);
 }
 
 document.getElementById("search").addEventListener("input", event => {
@@ -1066,7 +1303,24 @@ document.getElementById("search").addEventListener("input", event => {
     setSkillFilter(currentSkillFilter);
     return;
   }
-  const selector = currentView === "machine" ? "#machine-view .node" : "#catalog-view .skill-node";
+  if (!term && currentView === "moment") {
+    setMomentFilter(currentMomentFilter);
+    return;
+  }
+  if (term && currentView === "catalog" && currentSkillFilter !== "all") {
+    currentSkillFilter = "all";
+    document.querySelectorAll("[data-skill-filter]").forEach(button => button.classList.toggle("on", button.dataset.skillFilter === "all"));
+  }
+  if (term && currentView === "moment" && currentMomentFilter !== "all") {
+    currentMomentFilter = "all";
+    document.querySelectorAll("[data-moment-filter]").forEach(button => button.classList.toggle("on", button.dataset.momentFilter === "all"));
+  }
+  const selectors = {
+    machine:"#machine-view .node",
+    catalog:"#catalog-view .skill-node",
+    moment:"#moment-view .moment-skill, #moment-view .moment-router-chip"
+  };
+  const selector = selectors[currentView];
   document.querySelectorAll(selector).forEach(node => {
     const matches = !term || (node.dataset.search || "").toLowerCase().includes(term);
     node.classList.toggle("match", Boolean(term && matches));
@@ -1077,6 +1331,7 @@ document.getElementById("search").addEventListener("input", event => {
 document.querySelectorAll(".view-button").forEach(button => button.addEventListener("click", () => setView(button.dataset.view)));
 document.querySelectorAll("[data-flow]").forEach(button => button.addEventListener("click", () => setFlow(button.dataset.flow)));
 document.querySelectorAll("[data-skill-filter]").forEach(button => button.addEventListener("click", () => setSkillFilter(button.dataset.skillFilter)));
+document.querySelectorAll("[data-moment-filter]").forEach(button => button.addEventListener("click", () => setMomentFilter(button.dataset.momentFilter)));
 
 document.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", () => {
   document.getElementById(button.dataset.close).hidden = true;
@@ -1161,9 +1416,11 @@ svg.addEventListener("wheel", event => {
 },{passive:false});
 
 document.getElementById("reset-button").addEventListener("click", resetCamera);
+window.addEventListener("resize", applyViewBox);
 
 renderMachine();
 renderCatalog();
+renderMoments();
 attachNodeEvents();
 updateTransform();
 </script>

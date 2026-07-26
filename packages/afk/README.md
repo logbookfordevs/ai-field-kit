@@ -11,10 +11,14 @@ commands.
 
 AFK skills are modeled as composable parts: primitives, wrappers, workflows,
 utilities, references, and routers. That shape keeps automatic model discovery
-small while still giving people named workflows to invoke directly. See
-[Skill Composition](docs/skill-composition.md) for the full mental model.
-See [Portable Custom Agents](docs/custom-agents.md) for the agent source
-contract, adapter behavior, and native target paths.
+small while still giving people named workflows to invoke directly. Explore the
+published [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg)
+for the full mental model, then open the
+[AFK skills and profiles switchyard](https://tot.page/13T7lSXk6SIhvGNt0aa_tw)
+to see how skill commands, profiles, catalog policy, storage, recovery paths,
+and workflow moments interact. See
+[Portable Custom Agents](docs/custom-agents.md) for the agent source contract,
+adapter behavior, and native target paths.
 
 ## How to Use This Reference
 
@@ -280,6 +284,7 @@ its interactive editor. Use `--dry-run` to preview supported writes.
 |---|---|---|
 | Rules | `afk catalog rules [edit]` | The rules source URL or local path in `rules.json`. |
 | Skills | `afk catalog skills add`, `edit`, `remove` | Skill definitions and installation metadata in `skills.json`. |
+| Skills policy | `afk catalog skills bulk-edit` | Select multiple skills, then set invocation and always-on policy together. |
 | Skills policy | `afk catalog skills toggle-default` | Which catalog skills non-interactive default setup selects. |
 | Skills policy | `afk catalog skills toggle-auto` | Catalog-owned `autoInvocation` policy. |
 | Skills import | `afk catalog skills import-status` | Read-only comparison of installed shared skills and catalog entries. |
@@ -560,10 +565,6 @@ file is self-contained and does not start a server. In an interactive terminal,
 AFK opens the file automatically after writing it. Set `AFK_NO_OPEN=1` to skip
 that browser handoff.
 
-For an interactive state machine across skill commands, profile commands,
-storage, catalog policy, and recovery paths, open the published
-[AFK skills and profiles switchyard](https://tot.page/13T7lSXk6SIhvGNt0aa_tw).
-
 ### Catalog Import
 
 Use `afk catalog skills import` when skills are already installed through the official
@@ -684,6 +685,11 @@ For a normal GitHub repo, AFK looks in both of these locations:
 afk/catalog/
 packages/afk/catalog/
 ```
+
+AFK reads public catalogs directly. When raw GitHub access is unavailable, it
+falls back to Git using your existing credentials so private repositories work
+without a separate AFK token. Interactive terminals show progress while Git
+fetches the catalog.
 
 `--source` and `--default-source` accept:
 

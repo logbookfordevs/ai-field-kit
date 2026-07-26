@@ -58,6 +58,7 @@ export type CatalogProfilesLobbyChoiceValue =
 export type CatalogSkillsLobbyChoiceValue =
   | "catalog-skills-add"
   | "catalog-skills-edit"
+  | "catalog-skills-bulk-edit"
   | "catalog-skills-remove"
   | "catalog-skills-toggle-default"
   | "catalog-skills-toggle-auto"
@@ -236,6 +237,11 @@ export const catalogSkillsLobbyChoices: MenuChoice<CatalogSkillsLobbyChoiceValue
     name: "Add a skill catalog item",
     value: "catalog-skills-add",
     description: "Route: afk catalog skills add",
+  },
+  {
+    name: "Bulk edit skill policies",
+    value: "catalog-skills-bulk-edit",
+    description: "Route: afk catalog skills bulk-edit",
   },
   {
     name: "Edit a skill catalog item",
@@ -565,6 +571,8 @@ export function routeForCatalogSkillsLobbyChoice(value: CatalogSkillsLobbyChoice
       return ["catalog", "skills", "add"];
     case "catalog-skills-edit":
       return ["catalog", "skills", "edit"];
+    case "catalog-skills-bulk-edit":
+      return ["catalog", "skills", "bulk-edit"];
     case "catalog-skills-remove":
       return ["catalog", "skills", "remove"];
     case "catalog-skills-toggle-default":
