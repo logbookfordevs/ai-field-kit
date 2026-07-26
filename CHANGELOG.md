@@ -18,6 +18,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `cli:` renamed `afk skills upgrade` to `afk skills update` so AFK uses the same operation name as the official skills CLI.
 - `cli:` aligned catalog action menus with AFK's styled prompts, standardized single and bulk skill pickers on searchable ID-first identity with policy metadata, and removed the repeated full entry list before each action.
 - `cli:` made new skill catalog entries default automatic model invocation to off and renamed the submenu return action to `Back to manage other catalogs`.
 

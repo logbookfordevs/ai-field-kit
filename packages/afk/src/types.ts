@@ -15,7 +15,7 @@ export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "all";
 export type SkillsListStorage = "active" | "disabled";
 export type SkillsListAutoInvocation = "enabled" | "disabled" | "mixed" | "default";
-export type SkillsUpgradeScope = "global" | "project" | "all";
+export type SkillsUpdateScope = "global" | "project" | "all";
 export type ManagedSkillAgent =
   | "codex"
   | "claude"
@@ -75,9 +75,9 @@ export type CliOptions = {
   skillsListScope?: SkillsListScope;
   skillsListStorage?: SkillsListStorage | undefined;
   skillsListAutoInvocation?: SkillsListAutoInvocation | undefined;
-  skillsUpgradeAll?: boolean;
-  skillsUpgradeScope?: SkillsUpgradeScope;
-  skillsUpgradeByProfile?: boolean;
+  skillsUpdateAll?: boolean;
+  skillsUpdateScope?: SkillsUpdateScope;
+  skillsUpdateByProfile?: boolean;
   skillsDeleteCatalogOnly?: boolean;
   skillsDeleteByProfile?: boolean;
   skillsAgent?: SkillAgentFilter | undefined;

@@ -52,11 +52,11 @@ import {
   renderSkillInvocationPolicy,
 } from "./render.js";
 import {
-  buildSkillUpgradeCommands,
+  buildSkillUpdateCommands,
   loadLockedSkills,
-  runSkillUpgradeCommands,
+  runSkillUpdateCommands,
   type LockedSkillRecord,
-} from "./upgrade.js";
+} from "./update.js";
 import {
   planSkillStartupStorageForItems,
   snapshotDisabledSkillIds,
@@ -65,7 +65,7 @@ import {
   upsertOpenAiImplicitInvocation,
 } from "../skills.js";
 
-type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "upgrade" | "categorize" | "profiles";
+type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "update" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   if (commandPath[0] === "catalog" && commandPath[1] === "profiles") {
@@ -104,8 +104,8 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
         return runSkillsInvocation(operands, runtime, options);
       case "delete":
         return runSkillsDelete(operands[0], runtime, options);
-      case "upgrade":
-        return runSkillsUpgrade(operands, runtime, options);
+      case "update":
+        return runSkillsUpdate(operands, runtime, options);
       case "categorize":
         return runCodexCategorization(runtime, {
           homeDir: options.homeDir,
@@ -605,17 +605,17 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
   }
 }
 
-async function runSkillsUpgrade(skillNames: string[], runtime: Runtime, options: CliOptions): Promise<number> {
-  const scope = options.skillsUpgradeScope ?? "global";
-  if (options.skillsUpgradeByProfile && scope !== "global") {
-    runtime.io.stderr("Profile upgrades use the global skill library. Remove --scope or use --scope global.");
+async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const scope = options.skillsUpdateScope ?? "global";
+  if (options.skillsUpdateByProfile && scope !== "global") {
+    runtime.io.stderr("Profile updates use the global skill library. Remove --scope or use --scope global.");
     return 1;
   }
-  if (options.skillsUpgradeByProfile && options.skillsUpgradeAll) {
-    runtime.io.stderr("Use either --profile or --all when upgrading skills, not both.");
+  if (options.skillsUpdateByProfile && options.skillsUpdateAll) {
+    runtime.io.stderr("Use either --profile or --all when updating skills, not both.");
     return 1;
   }
-  if (options.skillsUpgradeByProfile && skillNames.length > 1) {
+  if (options.skillsUpdateByProfile && skillNames.length > 1) {
     runtime.io.stderr("Pass at most one profile id with --profile.");
     return 1;
   }
@@ -629,25 +629,25 @@ async function runSkillsUpgrade(skillNames: string[], runtime: Runtime, options:
     cwd: options.cwd,
     scope,
   });
-  const selectedNames = options.skillsUpgradeByProfile
-    ? await upgradeSkillNamesForProfile(skillNames[0], lockedSkills, runtime, options)
+  const selectedNames = options.skillsUpdateByProfile
+    ? await updateSkillNamesForProfile(skillNames[0], lockedSkills, runtime, options)
     : skillNames.length > 0
       ? skillNames
-      : options.skillsUpgradeAll
+      : options.skillsUpdateAll
         ? []
         : await promptLockedSkills(lockedSkills, scope);
 
-  if (!options.skillsUpgradeAll && selectedNames.length === 0) {
+  if (!options.skillsUpdateAll && selectedNames.length === 0) {
     runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}tracked skills selected.`);
     return 1;
   }
 
-  if (options.skillsUpgradeAll && lockedSkills.length === 0) {
+  if (options.skillsUpdateAll && lockedSkills.length === 0) {
     runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}tracked skills found.`);
     return 1;
   }
 
-  const commands = buildSkillUpgradeCommands({
+  const commands = buildSkillUpdateCommands({
     cwd: options.cwd,
     scope,
     skills: selectedNames,
@@ -665,7 +665,7 @@ async function runSkillsUpgrade(skillNames: string[], runtime: Runtime, options:
     return [command.scope, snapshotDisabledSkillIds(storageOptions, names)] as const;
   }));
 
-  return runSkillUpgradeCommands(runtime, commands, (command) => {
+  return runSkillUpdateCommands(runtime, commands, (command) => {
     syncPreviouslyDisabledSkillStorage(runtime, {
       homeDir: options.homeDir,
       cwd: options.cwd,
@@ -675,7 +675,7 @@ async function runSkillsUpgrade(skillNames: string[], runtime: Runtime, options:
   });
 }
 
-async function upgradeSkillNamesForProfile(
+async function updateSkillNamesForProfile(
   profileId: string | undefined,
   lockedSkills: LockedSkillRecord[],
   runtime: Runtime,
@@ -684,7 +684,7 @@ async function upgradeSkillNamesForProfile(
   const profiles = listSkillProfiles({ homeDir: options.homeDir, cwd: options.cwd, local: false }).catalog.items;
   const profile = profileId
     ? findSkillProfile(profiles, profileId)
-    : await promptSkillProfile(profiles, "Select a profile whose skills should be upgraded:");
+    : await promptSkillProfile(profiles, "Select a profile whose skills should be updated:");
   if (!profile) {
     throw new Error(profileId ? `Skill profile not found: ${profileId}` : "No skill profiles found.");
   }
@@ -741,9 +741,9 @@ async function promptLockedSkills(
     return [];
   }
 
-  console.log(renderPromptStep("Skill Upgrade", "Type to filter, use space to select one or more skills, then enter to continue."));
+  console.log(renderPromptStep("Skill Update", "Type to filter, use space to select one or more skills, then enter to continue."));
   return searchableCheckbox<string>({
-    message: scope === "all" ? "Select skills to upgrade:" : `Select ${scope} skills to upgrade:`,
+    message: scope === "all" ? "Select skills to update:" : `Select ${scope} skills to update:`,
     choices: records.map((record) => ({
       name: formatLockedSkillChoice(record),
       value: record.name,

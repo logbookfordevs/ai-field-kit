@@ -1,4 +1,4 @@
-# AFK Skills Upgrade Implementation Plan
+# AFK Skills Update Implementation Plan
 
 Date: 2026-05-27
 
@@ -6,19 +6,19 @@ Status: Implemented in `packages/afk` on 2026-05-27.
 
 ## Goal
 
-Add `afk skills upgrade` as an AFK-owned selection experience that delegates actual updates to the official `skills` CLI.
+Add `afk skills update` as an AFK-owned selection experience that delegates actual updates to the official `skills` CLI.
 
 The command should solve one specific gap: upstream `skills update` can update skills, but it does not provide AFK's searchable picker when the user wants to choose a subset. AFK should keep update ownership upstream and own only the safer command shape, scope defaults, selection UI, and argument construction.
 
 ## Command Surface
 
 ```bash
-afk skills upgrade [skills...] [--scope global|project|all] [--all] [--yes]
+afk skills update [skills...] [--scope global|project|all] [--all] [--yes]
 ```
 
 No `afk skills check` in this slice.
 
-`skills check` exists upstream, but currently routes through the same update path as `skills update` / `skills upgrade`. AFK should not expose it as a read-only command unless that behavior changes upstream or AFK intentionally builds its own checker later.
+`skills check` exists upstream, but currently routes through the same update path as `skills update`. AFK should not expose it as a read-only command unless that behavior changes upstream or AFK intentionally builds its own checker later.
 
 ## Behavior Decisions
 
@@ -37,15 +37,15 @@ Use `global` as the default because AFK's current skills-management commands pri
 If explicit skill names are passed, skip the picker:
 
 ```bash
-afk skills upgrade frontend-design web-design-guidelines
+afk skills update frontend-design web-design-guidelines
 ```
 
 If no skill names are passed and `--all` is not passed, show AFK's branded searchable selection flow for the selected scope:
 
 ```bash
-afk skills upgrade
-afk skills upgrade --scope project
-afk skills upgrade --scope all
+afk skills update
+afk skills update --scope project
+afk skills update --scope all
 ```
 
 The picker should show enough context to prevent mistakes:
@@ -62,9 +62,9 @@ For `--scope all`, group or label options so global and project records are neve
 Use a real flag for "everything":
 
 ```bash
-afk skills upgrade --all
-afk skills upgrade --scope project --all
-afk skills upgrade --scope all --all
+afk skills update --all
+afk skills update --scope project --all
+afk skills update --scope all --all
 ```
 
 Do not require users to select every row in the picker to update everything. `--all` is clearer in shell history, better for scripts, and avoids accidental partial selection.
@@ -90,12 +90,12 @@ When `--yes` is passed to AFK, forward `-y` to upstream. Without `--yes`, preser
 ## Implementation Steps
 
 1. Extend CLI parsing and help text.
-   - Add `upgrade` under `afk skills`.
+   - Add `update` under `afk skills`.
    - Parse `[skills...]`, `--scope global|project|all`, `--all`, and `--yes`.
    - Document that `global` is the default scope.
    - Do not add `check`.
 
-2. Add tracked-skill discovery for upgrade.
+2. Add tracked-skill discovery for update.
    - Read the same upstream lock data that `skills update` uses where possible.
    - Global scope should discover skills tracked by the global skills lock.
    - Project scope should discover skills tracked by the current project lock.
@@ -118,7 +118,7 @@ When `--yes` is passed to AFK, forward `-y` to upstream. Without `--yes`, preser
    - `--scope all --all`: run global and project updates separately.
 
 6. Add tests.
-   - Parser help includes `upgrade` and omits `check`.
+   - Parser help includes `update` and omits `check`.
    - Default scope is `global`.
    - Explicit skill args skip selection and build `skills update <names> -g`.
    - `--scope project` builds `skills update <names> -p`.
@@ -140,10 +140,10 @@ When `--yes` is passed to AFK, forward `-y` to upstream. Without `--yes`, preser
 
 ## Acceptance Criteria
 
-- `afk skills upgrade` defaults to a global searchable multi-select.
-- `afk skills upgrade --all` updates all global tracked skills without opening the picker.
-- `afk skills upgrade --scope project` shows only current-project tracked skills.
-- `afk skills upgrade --scope all --all` updates global and project scopes through explicit upstream calls.
+- `afk skills update` defaults to a global searchable multi-select.
+- `afk skills update --all` updates all global tracked skills without opening the picker.
+- `afk skills update --scope project` shows only current-project tracked skills.
+- `afk skills update --scope all --all` updates global and project scopes through explicit upstream calls.
 - Explicit skill names skip the picker.
 - AFK does not expose `afk skills check` in this slice.
-- AFK does not modify skill files, taxonomy metadata, or lockfiles directly during upgrade.
+- AFK does not modify skill files, taxonomy metadata, or lockfiles directly during update.

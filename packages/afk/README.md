@@ -327,7 +327,7 @@ can be selected with `--agent`; exact custom roots require both
 | `afk skills enable [folder]` | Move disabled skill folders back to active storage. | Omit the folder for an interactive picker; supports `--dry-run`. |
 | `afk skills invocation disable [folder]`, `enable [folder]` | Change installed-skill invocation metadata. | Writes `disable-model-invocation` in `SKILL.md` and `allow_implicit_invocation` in `agents/openai.yaml` when needed; supports `--dry-run`. |
 | `afk skills delete [folder]` | Permanently remove selected skill folders. | `--catalog-only`, `--profile`, storage filters, `--yes`, and `--dry-run`; profile deletion mode deletes referenced folders, not the profile definition. |
-| `afk skills upgrade [skills...]` | Select tracked skills and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
+| `afk skills update [skills...]` | Select tracked skills and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
 | `afk skills categorize` | Ask `codex exec` to create or update catalog categorization metadata. | `--mode` with `append-missing` or `recategorize-all`, `--instruction`, `--runner codex-exec`, `--dry-run`. |
 | `afk skills profiles <command>` | Read or apply profile runtime state. | Detailed below. |
 
@@ -1092,9 +1092,9 @@ afk skills invocation disable afk-doc-craft --dry-run
 afk skills delete old-skill --dry-run
 afk skills delete --catalog-only --dry-run
 afk skills delete --profile
-afk skills upgrade --all
-afk skills upgrade --profile
-afk skills upgrade video --profile
+afk skills update --all
+afk skills update --profile
+afk skills update video --profile
 afk skills categorize --dry-run
 afk catalog profiles create video --name Video --skill hyperframes --skill tailwind --mode context
 afk skills profiles use video
@@ -1113,8 +1113,8 @@ an upstream-supported agent projection. Literal `--agent custom` paths apply
 only to AFK-owned inspection and mutation commands because the upstream
 installer does not accept arbitrary destination directories.
 
-`afk skills upgrade --profile` selects a global profile interactively, or use
-`afk skills upgrade <profile> --profile` to select it directly. AFK upgrades
+`afk skills update --profile` selects a global profile interactively, or use
+`afk skills update <profile> --profile` to select it directly. AFK updates
 the profile members that are tracked by the skills lock and reports untracked
 members it skips. Upgrade preserves active and disabled storage state even
 though the upstream update flow reinstalls changed skill content.

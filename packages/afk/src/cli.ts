@@ -30,7 +30,7 @@ import type {
   SkillsListAutoInvocation,
   SkillsListScope,
   SkillsListStorage,
-  SkillsUpgradeScope,
+  SkillsUpdateScope,
 } from "./types.js";
 
 export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
@@ -510,7 +510,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "enable <folder>                   Move a disabled global skill back to active",
       "invocation [disable|enable] [folder] Toggle auto invocation metadata",
       "delete [folder]                   Permanently delete one or more skills",
-      "upgrade [skills...]               Upgrade selected or all tracked skills",
+      "update [skills...]                Update selected or all tracked skills",
       "profiles <command>                Manage skill focus profiles",
       "categorize                        Create or update skills.json categories with Codex",
     ],
@@ -521,7 +521,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills list --disabled",
       "afk skills disable old-skill --dry-run",
       "afk skills invocation disable afk-doc-craft",
-      "afk skills upgrade --all",
+      "afk skills update --all",
       "afk skills categorize --mode append-missing --dry-run",
     ],
   },
@@ -753,23 +753,23 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills delete old-skill --yes",
     ],
   },
-  "skills upgrade": {
-    title: "AFK skills upgrade",
+  "skills update": {
+    title: "AFK skills update",
     summary: "Choose tracked skills with AFK, then delegate updates to the official skills CLI.",
-    usage: "afk skills upgrade [skills...] [options]",
+    usage: "afk skills update [skills...] [options]",
     options: [
-      "--scope global|project|all        Choose tracked skills to upgrade (default: global)",
-      "--all                             Upgrade every tracked skill in the selected scope",
-      "--profile                         Choose a global profile and upgrade its tracked skills",
+      "--scope global|project|all        Choose tracked skills to update (default: global)",
+      "--all                             Update every tracked skill in the selected scope",
+      "--profile                         Choose a global profile and update its tracked skills",
       "--yes, -y                         Forward non-interactive confirmation to skills update",
     ],
     examples: [
-      "afk skills upgrade",
-      "afk skills upgrade --all",
-      "afk skills upgrade --profile",
-      "afk skills upgrade video --profile",
-      "afk skills upgrade --scope project",
-      "afk skills upgrade frontend-design web-design-guidelines",
+      "afk skills update",
+      "afk skills update --all",
+      "afk skills update --profile",
+      "afk skills update video --profile",
+      "afk skills update --scope project",
+      "afk skills update frontend-design web-design-guidelines",
     ],
   },
   "skills categorize": {
@@ -1107,9 +1107,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsListScope: SkillsListScope = "global";
   let skillsListStorage: SkillsListStorage | undefined;
   let skillsListAutoInvocation: SkillsListAutoInvocation | undefined;
-  let skillsUpgradeScope: SkillsUpgradeScope = "global";
-  let skillsUpgradeAll = false;
-  let skillsUpgradeByProfile = false;
+  let skillsUpdateScope: SkillsUpdateScope = "global";
+  let skillsUpdateAll = false;
+  let skillsUpdateByProfile = false;
   let skillsDeleteCatalogOnly = false;
   let skillsDeleteByProfile = false;
   let skillsAgent: SkillAgentFilter | undefined;
@@ -1264,11 +1264,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     if (arg === "--scope") {
       const value = args[index + 1];
       if (isAfkSkillsCommand) {
-        if (commandPath[1] === "upgrade") {
+        if (commandPath[1] === "update") {
           if (value !== "global" && value !== "project" && value !== "all") {
             return { help: false, kind: "error", error: `Invalid --scope value: ${value ?? "(missing)"}` };
           }
-          skillsUpgradeScope = value;
+          skillsUpdateScope = value;
           index += 1;
           continue;
         }
@@ -1296,8 +1296,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (isAfkSkillsCommand && arg === "--all") {
-      if (commandPath[1] === "upgrade") {
-        skillsUpgradeAll = true;
+      if (commandPath[1] === "update") {
+        skillsUpdateAll = true;
         continue;
       }
       if (commandPath[1] === "profiles" && commandPath[2] === "use") {
@@ -1321,8 +1321,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (isAfkSkillsCommand && arg === "--profile") {
-      if (commandPath[1] === "upgrade") {
-        skillsUpgradeByProfile = true;
+      if (commandPath[1] === "update") {
+        skillsUpdateByProfile = true;
         continue;
       }
       if (commandPath[1] !== "delete") {
@@ -1658,7 +1658,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     if (skillsAgent === "custom" && scopeExplicit) {
       return { help: false, kind: "error", error: "Do not combine --scope with --agent custom; --agent-path already selects the root" };
     }
-    if (!skillsAgent && scopeExplicit && skillsListScope !== "global" && commandPath[1] !== "upgrade") {
+    if (!skillsAgent && scopeExplicit && skillsListScope !== "global" && commandPath[1] !== "update") {
       return { help: false, kind: "error", error: `--scope ${skillsListScope} requires --agent <agent>` };
     }
   }
@@ -1698,9 +1698,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsListScope,
       skillsListStorage,
       skillsListAutoInvocation,
-      skillsUpgradeAll,
-      skillsUpgradeScope,
-      skillsUpgradeByProfile,
+      skillsUpdateAll,
+      skillsUpdateScope,
+      skillsUpdateByProfile,
       skillsDeleteCatalogOnly,
       skillsDeleteByProfile,
       skillsAgent,

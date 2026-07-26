@@ -31,7 +31,7 @@ export type SkillsLobbyChoiceValue =
   | "skills-enable"
   | "skills-invocation"
   | "skills-delete"
-  | "skills-upgrade"
+  | "skills-update"
   | "skills-categorize"
   | "skills-catalog-import"
   | "skills-profiles"
@@ -99,7 +99,7 @@ export const compassLobbyChoices: MenuChoice<LobbyChoiceValue>[] = [
   {
     name: "Manage installed skills",
     value: "skill-management",
-    description: "Open skill list, moves, upgrades, catalog import, and profiles",
+    description: "Open skill list, moves, updates, catalog import, and profiles",
   },
   {
     name: "Add MCP tools",
@@ -194,9 +194,9 @@ export const skillsLobbyChoices: Array<{
     description: "Route: afk skills delete",
   },
   {
-    name: "Upgrade tracked skills",
-    value: "skills-upgrade",
-    description: "Route: afk skills upgrade",
+    name: "Update tracked skills",
+    value: "skills-update",
+    description: "Route: afk skills update",
   },
   {
     name: "Categorize skills",
@@ -521,8 +521,8 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue, addOpti
       return ["skills", "invocation"];
     case "skills-delete":
       return ["skills", "delete"];
-    case "skills-upgrade":
-      return ["skills", "upgrade"];
+    case "skills-update":
+      return ["skills", "update"];
     case "skills-categorize":
       return ["skills", "categorize"];
     case "skills-catalog-import":
