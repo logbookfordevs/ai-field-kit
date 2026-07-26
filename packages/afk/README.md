@@ -89,6 +89,17 @@ curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
 afk setup --dry-run
 ```
 
+On Windows PowerShell 5.1 or newer:
+
+```powershell
+irm https://ai-field-kit.logbookfordevs.com/install.ps1 | iex
+afk setup --dry-run
+```
+
+The Windows installer requires Node.js 20 or newer and npm. Native Windows
+setup does not require Bash. Plugins without a supported Windows installer are
+reported as skipped and do not stop unrelated setup work.
+
 Use the package directly while developing:
 
 ```bash
@@ -902,6 +913,29 @@ based on the setup command.
 
 Plugins are delegated commands. If one plugin install fails, AFK reports the
 failure and continues with the remaining selected plugins.
+
+Use a platform override when Windows needs another installer or is not
+supported:
+
+```json
+{
+  "platforms": {
+    "win32": {
+      "supported": true,
+      "install": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-Command", "irm https://example.com/install.ps1 | iex"]
+      }
+    }
+  }
+}
+```
+
+Set `supported` to `false` with a concise `reason` when no native installer
+exists. AFK reports the plugin as skipped and continues without spawning its
+generic installer. On Windows, AFK also skips unannotated `sh`, `bash`, and
+`zsh` install or post-install commands instead of assuming a Unix shell is
+available. Platform overrides may also replace `postInstall`.
 
 AFK also supports object-style post-install commands:
 

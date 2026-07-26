@@ -778,7 +778,7 @@ async function runSkillsOpen(folder: string | undefined, runtime: Runtime, optio
   const command = buildSkillOpenCommand(record, {
     app: options.skillOpenApp ?? "finder",
     target: options.skillOpenTarget ?? "file",
-  });
+  }, process.platform);
   runtime.io.stdout(renderSkillOpen({
     folder: record.folder,
     app: options.skillOpenApp ?? "finder",
@@ -1087,10 +1087,16 @@ function buildSkillInvocationPolicyOperations(record: SkillRecord, allowInvocati
 export function buildSkillOpenCommand(record: SkillRecord, options: {
   app: SkillOpenApp;
   target: "file" | "folder";
-}): { command: string; args: string[]; targetPath: string } {
+}, platform: NodeJS.Platform = process.platform): { command: string; args: string[]; targetPath: string } {
   const targetPath = options.target === "folder" ? join(record.rootPath, record.folder) : record.skillFilePath;
   if (options.app === "finder") {
-    return { command: "open", args: [targetPath], targetPath };
+    if (platform === "win32") {
+      return { command: "explorer.exe", args: [targetPath], targetPath };
+    }
+    if (platform === "darwin") {
+      return { command: "open", args: [targetPath], targetPath };
+    }
+    return { command: "xdg-open", args: [targetPath], targetPath };
   }
 
   return { command: options.app, args: [targetPath], targetPath };

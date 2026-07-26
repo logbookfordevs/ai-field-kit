@@ -71,18 +71,28 @@ export type PluginManifestItem = {
   id: string;
   label: string;
   description: string;
-  install: {
-    command: string;
-    args: string[];
-  };
+  install: PluginCommand;
   postInstall?: PluginPostInstallCommand;
+  platforms?: Partial<Record<PluginPlatform, PluginPlatformOverride>>;
   default: boolean;
 };
 
-export type PluginPostInstallCommand = {
-  label?: string;
+export type PluginCommand = {
   command: string;
   args: string[];
+};
+
+export type PluginPostInstallCommand = PluginCommand & {
+  label?: string;
+};
+
+export type PluginPlatform = "darwin" | "linux" | "win32";
+
+export type PluginPlatformOverride = {
+  supported: boolean;
+  reason?: string;
+  install?: PluginCommand;
+  postInstall?: PluginPostInstallCommand;
 };
 
 export type HookManifest = {
@@ -872,9 +882,25 @@ function isPluginManifest(value: unknown): value is PluginManifest {
       typeof item.description === "string" &&
       isPluginCommand(item.install) &&
       (item.postInstall === undefined || isPluginPostInstallCommand(item.postInstall)) &&
+      (item.platforms === undefined || isPluginPlatforms(item.platforms)) &&
       typeof item.default === "boolean"
     );
   });
+}
+
+function isPluginPlatforms(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return Object.entries(value).every(([platform, override]) => (
+    (platform === "darwin" || platform === "linux" || platform === "win32") &&
+    isRecord(override) &&
+    typeof override.supported === "boolean" &&
+    (override.reason === undefined || typeof override.reason === "string") &&
+    (override.install === undefined || isPluginCommand(override.install)) &&
+    (override.postInstall === undefined || isPluginPostInstallCommand(override.postInstall))
+  ));
 }
 
 function isPluginPostInstallCommand(value: unknown): value is PluginPostInstallCommand {

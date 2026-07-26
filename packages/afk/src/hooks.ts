@@ -27,7 +27,11 @@ export async function syncHooks(runtime: Runtime, options: CliOptions): Promise<
   return 0;
 }
 
-export async function planHooksSync(options: Pick<CliOptions, "agents" | "homeDir" | "cwd" | "repoDir" | "selectedHookIds" | "setupScope" | "manifestContents">): Promise<PathOperation[]> {
+export async function planHooksSync(
+  options: Pick<CliOptions, "agents" | "homeDir" | "cwd" | "repoDir" | "selectedHookIds" | "setupScope" | "manifestContents"> & {
+    platform?: NodeJS.Platform;
+  },
+): Promise<PathOperation[]> {
   const manifest = loadHookManifest(options);
   const selected = selectHookItems(manifest.items, options.selectedHookIds);
   const operations: PathOperation[] = [];
@@ -56,14 +60,14 @@ function selectedHookAgents(selected: AgentId[], supported: HookAgentId[]): Hook
 
 function planAgentHook(
   agent: HookAgentId,
-  options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,
+  options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope"> & { platform?: NodeJS.Platform },
   item: HookManifestItem,
   sourceContent: string,
 ): PathOperation[] {
   const scriptPath = agentScriptPath(agent, options, item);
   const configPath = agentConfigPath(agent, options);
   const current = pathExists(configPath) ? readText(configPath) : "";
-  const command = buildHookCommand(item, scriptPath, agent);
+  const command = buildHookCommand(item, scriptPath, agent, options.platform ?? process.platform);
   const config = mergeAgentHookConfig(agent, current, command, item);
   return [
     {
@@ -159,9 +163,9 @@ function upsertMatcherHook(
   group.hooks = filtered;
 }
 
-function buildHookCommand(item: HookManifestItem, hookFile: string, agent: HookAgentId): string {
+function buildHookCommand(item: HookManifestItem, hookFile: string, agent: HookAgentId, platform: NodeJS.Platform): string {
   const args = item.args.map((arg) => replaceHookPlaceholders(arg, hookFile, agent));
-  return [item.command, ...args].map(quoteArg).join(" ");
+  return [item.command, ...args].map((arg) => quoteArg(arg, platform)).join(" ");
 }
 
 function replaceHookPlaceholders(value: string, hookFile: string, agent: HookAgentId): string {
@@ -230,9 +234,13 @@ function isManagedHookCommand(value: unknown, item: HookManifestItem): boolean {
   return typeof value === "string" && filename.length > 0 && value.includes(filename);
 }
 
-function quoteArg(value: string): string {
-  if (/^[A-Za-z0-9_./:=@-]+$/.test(value)) {
+function quoteArg(value: string, platform: NodeJS.Platform): string {
+  if (/^[A-Za-z0-9_./:\\=@-]+$/.test(value)) {
     return value;
+  }
+
+  if (platform === "win32") {
+    return `"${value.replaceAll('"', '\\"')}"`;
   }
 
   return JSON.stringify(value);

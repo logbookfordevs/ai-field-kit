@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import type { Runtime } from "./types.js";
-import { fetchLatestNpmVersion, installerCommand, isVersionGreater, packageName, resolveUpdateNotice, runUpdateCommand, updateCommand } from "./update-check.js";
+import {
+  fetchLatestNpmVersion,
+  installerCommand,
+  isVersionGreater,
+  packageName,
+  resolveUpdateNotice,
+  runUpdateCommand,
+  updateCommand,
+  windowsInstallerCommand,
+} from "./update-check.js";
 
 test("isVersionGreater compares semver triples", () => {
   assert.equal(isVersionGreater("0.5.3", "0.5.2"), true);
@@ -58,7 +67,41 @@ test("runUpdateCommand runs the hosted installer through bash", async () => {
       behavior: { verbose: true },
     },
   ]);
-  assert.ok(output.includes("Updating AFK from the latest GitHub release..."));
+  assert.ok(output.includes("Updating AFK from the latest release..."));
+});
+
+test("runUpdateCommand uses the PowerShell installer on Windows", async () => {
+  const output: string[] = [];
+  const spawns: Array<{ command: string; args: string[]; behavior: { verbose: boolean } | undefined }> = [];
+  const runtime = testRuntime(output, async (command, args, _cwd, behavior) => {
+    spawns.push({ command, args, behavior });
+    return { code: 0 };
+  });
+
+  const code = await runUpdateCommand(runtime, { dryRun: false }, "win32");
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawns, [{
+    command: "powershell.exe",
+    args: [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-Command",
+      windowsInstallerCommand,
+    ],
+    behavior: { verbose: true },
+  }]);
+});
+
+test("runUpdateCommand dry-run prints the PowerShell installer on Windows", async () => {
+  const output: string[] = [];
+  const runtime = testRuntime(output, async () => {
+    throw new Error("spawn should not run during dry-run");
+  });
+
+  assert.equal(await runUpdateCommand(runtime, { dryRun: true }, "win32"), 0);
+  assert.deepEqual(output, [windowsInstallerCommand]);
 });
 
 test("resolveUpdateNotice stays quiet when latest is current or lookup fails", async () => {

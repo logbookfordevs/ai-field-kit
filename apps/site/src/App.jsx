@@ -273,7 +273,12 @@ function App() {
                   </span>
                 ))}
               </div>
-              <pre className="overflow-x-auto rounded-[8px] bg-[#18221f] p-[18px] font-mono text-[0.82rem] leading-[1.75] whitespace-pre-wrap text-[#f9ecd4]"><code>{`$ curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
+              <pre className="overflow-x-auto rounded-[8px] bg-[#18221f] p-[18px] font-mono text-[0.82rem] leading-[1.75] whitespace-pre-wrap text-[#f9ecd4]"><code>{`macOS / Linux
+$ curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
+
+Windows PowerShell
+> irm https://ai-field-kit.logbookfordevs.com/install.ps1 | iex
+
 $ afk setup --dry-run
 
 rules      -> linked

@@ -12,6 +12,21 @@
                     "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"
                 ]
             },
+            "platforms": {
+                "win32": {
+                    "supported": true,
+                    "install": {
+                        "command": "powershell.exe",
+                        "args": [
+                            "-NoProfile",
+                            "-ExecutionPolicy",
+                            "Bypass",
+                            "-Command",
+                            "Invoke-RestMethod https://plannotator.ai/install.ps1 | Invoke-Expression"
+                        ]
+                    }
+                }
+            },
             "default": true
         },
         {
@@ -61,6 +76,12 @@
                     "curl -fsSL https://yggtree.logbookfordevs.com/install.sh | bash"
                 ]
             },
+            "platforms": {
+                "win32": {
+                    "supported": false,
+                    "reason": "Yggtree does not provide a native Windows installer yet."
+                }
+            },
             "default": true
         },
         {
@@ -73,6 +94,12 @@
                     "-c",
                     "npx --yes impeccable install --scope=global --providers=claude,codex --force -y"
                 ]
+            },
+            "platforms": {
+                "win32": {
+                    "supported": false,
+                    "reason": "Impeccable does not provide a verified native Windows installer."
+                }
             },
             "default": false
         },

@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `install:` added native Windows PowerShell installation and updates, with Windows-safe delegated commands and clear skips for plugins that only provide Unix shell installers.
+
 ### Fixed
 
 - `install:` resolved the latest AFK release through GitHub's release redirect instead of the rate-limited unauthenticated REST API.

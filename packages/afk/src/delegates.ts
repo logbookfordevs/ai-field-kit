@@ -8,6 +8,7 @@ export type DelegateCommand = {
   command: string;
   args: string[];
   cwd?: string;
+  skipReason?: string;
 };
 
 type DelegateRunOptions = Pick<CliOptions, "dryRun" | "repoDir" | "verbose"> & {
@@ -53,17 +54,17 @@ export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "h
     }));
 }
 
-export function buildPluginCommands(options: Pick<CliOptions, "agents" | "homeDir" | "selectedPluginIds" | "setupScope">): DelegateCommand[] {
+export function buildPluginCommands(
+  options: Pick<CliOptions, "agents" | "homeDir" | "selectedPluginIds" | "setupScope">,
+  platform: NodeJS.Platform = process.platform,
+): DelegateCommand[] {
   const manifest = loadPluginManifest(options);
   const selected =
     options.selectedPluginIds.length > 0
       ? manifest.items.filter((item) => options.selectedPluginIds.includes(item.id))
       : manifest.items.filter((item) => item.default);
 
-  return selected.flatMap((item) => [
-    buildPluginInstallCommand(item),
-    ...buildPluginPostInstallCommands(item),
-  ]);
+  return selected.flatMap((item) => buildPluginCommandsForPlatform(item, platform));
 }
 
 export async function runDelegateCommands(
@@ -74,6 +75,11 @@ export async function runDelegateCommands(
   const failures: Array<{ label: string; code: number }> = [];
 
   for (const item of commands) {
+    if (item.skipReason) {
+      runtime.io.stdout(`- ${item.label}: skipped (${item.skipReason})`);
+      continue;
+    }
+
     const showCommand = options.dryRun || options.verbose;
     if (showCommand) {
       runtime.io.stdout(`\n${item.label}`);
@@ -172,24 +178,75 @@ function buildAddMcpAgentArgs(agents: AgentId[], nonInteractive: boolean, scope:
   return args;
 }
 
-function buildPluginInstallCommand(item: PluginManifestItem): DelegateCommand {
+function buildPluginCommandsForPlatform(item: PluginManifestItem, platform: NodeJS.Platform): DelegateCommand[] {
+  const override = platform === "darwin" || platform === "linux" || platform === "win32"
+    ? item.platforms?.[platform]
+    : undefined;
+
+  if (override?.supported === false) {
+    return [buildSkippedPluginCommand(item, "install", override.reason ?? `${item.label} does not support ${platform}.`)];
+  }
+
+  const install = override?.install ?? item.install;
+  const postInstall = override?.postInstall ?? item.postInstall;
+  if (platform === "win32" && isUnixShellCommand(install.command)) {
+    return [buildSkippedPluginCommand(
+      item,
+      "install",
+      `${item.label} uses a Unix shell installer and does not provide a native Windows override.`,
+    )];
+  }
+
+  return [
+    buildPluginInstallCommand(item, install),
+    ...buildPluginPostInstallCommands(item, postInstall, platform),
+  ];
+}
+
+function buildSkippedPluginCommand(item: PluginManifestItem, phase: "install" | "post-install", reason: string): DelegateCommand {
   return {
-    label: `${item.label} / install`,
-    command: item.install.command,
-    args: item.install.args,
+    label: `${item.label} / ${phase}`,
+    command: "",
+    args: [],
+    skipReason: reason,
   };
 }
 
-function buildPluginPostInstallCommands(item: PluginManifestItem): DelegateCommand[] {
-  if (typeof item.postInstall === "object") {
+function buildPluginInstallCommand(item: PluginManifestItem, install: PluginManifestItem["install"]): DelegateCommand {
+  return {
+    label: `${item.label} / install`,
+    command: install.command,
+    args: install.args,
+  };
+}
+
+function buildPluginPostInstallCommands(
+  item: PluginManifestItem,
+  postInstall: PluginManifestItem["postInstall"],
+  platform: NodeJS.Platform,
+): DelegateCommand[] {
+  if (typeof postInstall === "object") {
+    if (platform === "win32" && isUnixShellCommand(postInstall.command)) {
+      return [buildSkippedPluginCommand(
+        item,
+        "post-install",
+        `${item.label} uses a Unix shell post-install command and does not provide a native Windows override.`,
+      )];
+    }
+
     return [{
-      label: item.postInstall.label ?? `${item.label} / post-install`,
-      command: item.postInstall.command,
-      args: item.postInstall.args,
+      label: postInstall.label ?? `${item.label} / post-install`,
+      command: postInstall.command,
+      args: postInstall.args,
     }];
   }
 
   return [];
+}
+
+function isUnixShellCommand(command: string): boolean {
+  const executable = command.replaceAll("\\", "/").split("/").pop()?.toLowerCase();
+  return executable === "sh" || executable === "bash" || executable === "zsh";
 }
 
 function buildSkillsAgentArgs(agents: Array<SkillAgentId | "universal">): string[] {
