@@ -50,6 +50,8 @@ test("compass lobby choices route intents to existing command paths", () => {
   assert.deepEqual(routeForLobbyChoice("catalog"), ["catalog"]);
   assert.deepEqual(routeForLobbyChoice("skills"), ["setup", "skills"]);
   assert.deepEqual(routeForLobbyChoice("skill-management"), ["skills"]);
+  assert.deepEqual(routeForLobbyChoice("agents"), ["setup", "agents"]);
+  assert.deepEqual(routeForLobbyChoice("catalog-agents"), ["catalog", "agents"]);
   assert.deepEqual(routeForLobbyChoice("mcps"), ["setup", "mcps"]);
   assert.deepEqual(routeForLobbyChoice("plugins"), ["setup", "plugins"]);
   assert.deepEqual(routeForLobbyChoice("hooks"), ["setup", "hooks"]);
@@ -87,7 +89,7 @@ test("skills lobby choices route skill-management intents", () => {
   assert.deepEqual(routeForSkillsLobbyChoice("skills-enable"), ["skills", "enable"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-invocation"), ["skills", "invocation"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-delete"), ["skills", "delete"]);
-  assert.deepEqual(routeForSkillsLobbyChoice("skills-upgrade"), ["skills", "upgrade"]);
+  assert.deepEqual(routeForSkillsLobbyChoice("skills-update"), ["skills", "update"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-categorize"), ["skills", "categorize"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-catalog-import"), ["catalog", "skills", "import"]);
   assert.deepEqual(routeForSkillsLobbyChoice("skills-profiles"), ["skills", "profiles"]);
@@ -136,6 +138,7 @@ test("catalog skills lobby choices route catalog intents", () => {
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-import-status"), ["catalog", "skills", "import-status"]);
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-add"), ["catalog", "skills", "add"]);
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-edit"), ["catalog", "skills", "edit"]);
+  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-bulk-edit"), ["catalog", "skills", "bulk-edit"]);
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-remove"), ["catalog", "skills", "remove"]);
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-toggle-default"), ["catalog", "skills", "toggle-default"]);
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-toggle-auto"), ["catalog", "skills", "toggle-auto"]);
@@ -162,10 +165,14 @@ test("compass lobby labels stay intent-oriented while descriptions teach command
   assert.ok(labels.includes("Edit local catalog"));
   assert.ok(labels.includes("Install skills"));
   assert.ok(labels.includes("Manage installed skills"));
+  assert.ok(labels.includes("Provision Custom Agents"));
+  assert.ok(labels.includes("Manage Custom Agent catalog"));
   assert.ok(labels.includes("View skills as React composition"));
   assert.ok(labels.includes("Open the skills visual map"));
   assert.ok(labels.includes("Import installed skills into a catalog"));
   assert.ok(descriptions.some((description) => description.includes("afk setup skills")));
+  assert.ok(descriptions.some((description) => description.includes("afk setup agents")));
+  assert.ok(descriptions.some((description) => description.includes("afk catalog agents")));
   assert.ok(descriptions.some((description) => description.includes("afk refresh --default-source")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog")));
   assert.ok(descriptions.some((description) => description.includes("afk show skills --react")));
@@ -226,8 +233,10 @@ test("catalog skills lobby labels include catalog actions", () => {
   assert.ok(labels.includes("Import installed skills"));
   assert.ok(labels.includes("Check import status"));
   assert.ok(labels.includes("Add a skill catalog item"));
+  assert.ok(labels.includes("Bulk edit skill policies"));
   assert.ok(labels.includes("Toggle skill autoInvocation"));
   assert.ok(descriptions.some((description) => description.includes("afk catalog skills import")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog skills import-status")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog skills toggle-auto")));
+  assert.ok(descriptions.some((description) => description.includes("afk catalog skills bulk-edit")));
 });

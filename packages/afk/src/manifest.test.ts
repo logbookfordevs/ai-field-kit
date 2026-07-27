@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
@@ -8,12 +8,92 @@ import {
   defaultsManifestBaseUrls,
   ensureLocalManifests,
   loadPluginManifest,
+  loadSourceManifestContents,
+  mergedCustomAgentManifestContent,
   localManifestDir,
   planRememberedDefaultsSourceUpdate,
   projectManifestDir,
   readRememberedDefaultsSource,
+  resolvedCustomAgentManifestContent,
   type SkillManifest,
 } from "./manifest.js";
+
+test("Custom Agent sources resolve relative to a local catalog repository", async () => {
+  const sourceRoot = mkdtempSync(join(tmpdir(), "afk-agent-source-"));
+  const cwd = mkdtempSync(join(tmpdir(), "afk-agent-cwd-"));
+  const catalogDir = join(sourceRoot, "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(join(catalogDir, "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [{ id: "notion_assistant", label: "Notion Assistant", source: "agents/notion_assistant.md" }],
+  })}\n`);
+
+  const contents = await loadSourceManifestContents({
+    homeDir: mkdtempSync(join(tmpdir(), "afk-agent-home-")),
+    repoDir: sourceRoot,
+    rulesRef: "main",
+    rulesSource: "github",
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: sourceRoot,
+    dryRun: true,
+    manifestLocal: false,
+    cwd,
+    selectedManifestCategories: ["agents"],
+  });
+  const agents = JSON.parse(contents["agents.json"] ?? "") as { items: Array<{ source: string }> };
+
+  assert.equal(agents.items[0]?.source, join(sourceRoot, "agents", "notion_assistant.md"));
+});
+
+test("Custom Agent sources resolve relative to a GitHub catalog repository", () => {
+  const content = `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "relative", label: "Relative", source: "agents/relative.md" },
+      { id: "remote", label: "Remote", source: "https://example.com/remote.md" },
+      { id: "absolute", label: "Absolute", source: "/tmp/absolute.md" },
+    ],
+  })}\n`;
+
+  const resolved = JSON.parse(resolvedCustomAgentManifestContent(
+    content,
+    "leoreisdias/productivity-skills",
+    "feature/agents",
+    "/tmp/unrelated",
+  )) as { items: Array<{ source: string }> };
+
+  assert.equal(
+    resolved.items[0]?.source,
+    "https://raw.githubusercontent.com/leoreisdias/productivity-skills/feature%2Fagents/agents/relative.md",
+  );
+  assert.equal(resolved.items[1]?.source, "https://example.com/remote.md");
+  assert.equal(resolved.items[2]?.source, "/tmp/absolute.md");
+});
+
+test("Custom Agent refresh replaces matches, appends incoming entries, and preserves local-only entries", () => {
+  const directory = mkdtempSync(join(tmpdir(), "afk-agent-merge-"));
+  const target = join(directory, "agents.json");
+  writeFileSync(target, `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "existing", label: "Old label", source: "old.md" },
+      { id: "local-only", label: "Local only", source: "local.md" },
+    ],
+  }, null, 2)}\n`);
+
+  const merged = JSON.parse(mergedCustomAgentManifestContent(`${JSON.stringify({
+    version: 2,
+    items: [
+      { id: "existing", label: "New label", source: "new.md" },
+      { id: "incoming", label: "Incoming", source: "incoming.md" },
+    ],
+  })}\n`, target)) as { version: number; items: Array<{ id: string; label: string }> };
+
+  assert.equal(merged.version, 2);
+  assert.deepEqual(merged.items.map((item) => item.id), ["existing", "local-only", "incoming"]);
+  assert.equal(merged.items[0]?.label, "New label");
+});
 
 type PluginManifestFile = {
   items: Array<{
@@ -190,6 +270,73 @@ test("defaultsManifestBaseUrl preserves GitHub tree paths as manifest directorie
     defaultsManifestBaseUrl("https://github.com/acme/dev-kit/tree/v1/custom/manifests", "main"),
     "https://raw.githubusercontent.com/acme/dev-kit/v1/custom/manifests",
   );
+});
+
+test("loadSourceManifestContents falls back to a credential-aware GitHub checkout", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("missing", { status: 404 });
+  const checkoutRoot = mkdtempSync(join(tmpdir(), "afk-private-source-"));
+  const catalogDir = join(checkoutRoot, "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(
+    join(catalogDir, "skills.json"),
+    `${JSON.stringify({
+      version: 1,
+      defaultSource: "acme/private-kit",
+      items: [
+        {
+          id: "private-skill",
+          label: "Private Skill",
+          source: "acme/private-kit",
+          args: ["--skill", "private-skill"],
+          default: true,
+        },
+      ],
+    })}\n`,
+  );
+  let checkoutCount = 0;
+  let cleanupCount = 0;
+  let checkoutSource: { cloneUrl: string; ref: string; catalogDirs: string[] } | null = null;
+
+  try {
+    const options: Parameters<typeof loadSourceManifestContents>[0] = {
+      homeDir: mkdtempSync(join(tmpdir(), "afk-private-home-")),
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github" as const,
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/private-kit",
+      defaultsSourceExplicit: true,
+      dryRun: true,
+      selectedManifestCategories: ["skills" as const],
+      cloneGithubSource: async (source) => {
+        checkoutCount += 1;
+        checkoutSource = source;
+        return {
+          rootDir: checkoutRoot,
+          cleanup: () => {
+            cleanupCount += 1;
+          },
+        };
+      },
+    };
+
+    const contents = await loadSourceManifestContents(options);
+    const skills = JSON.parse(contents["skills.json"] ?? "{}") as SkillManifest;
+
+    assert.equal(skills.items[0]?.id, "private-skill");
+    assert.equal(checkoutCount, 1);
+    assert.equal(cleanupCount, 1);
+    assert.deepEqual(checkoutSource, {
+      cloneUrl: "https://github.com/acme/private-kit.git",
+      ref: "main",
+      catalogDirs: ["afk/catalog", "packages/afk/catalog"],
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("readRememberedDefaultsSource reads global and project-local presets", () => {
@@ -592,7 +739,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
   globalThis.fetch = async (input) => {
     const url = String(input);
     requestedUrls.push(url);
-    if (url.includes("/afk/catalog/")) {
+    if (url.includes("/main/afk/catalog/")) {
       return new Response("missing", { status: 404 });
     }
 
@@ -670,6 +817,7 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
       manifestLocal: false,
       defaultsSource: "acme/dev-kit",
       dryRun: true,
+      cloneGithubSource: emptyGithubCheckout,
     });
 
     const pluginOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("plugins.json"));
@@ -694,4 +842,14 @@ function usesNonInteractiveNpx(command: string, args: string[]): boolean {
 
 function commandLineIncludesNpx(commandLine: string): boolean {
   return /(^|[\s;&|()])npx(\s|$)/.test(commandLine);
+}
+
+async function emptyGithubCheckout(): Promise<{ rootDir: string; cleanup: () => void }> {
+  const rootDir = mkdtempSync(join(tmpdir(), "afk-empty-source-"));
+  return {
+    rootDir,
+    cleanup: () => {
+      rmSync(rootDir, { recursive: true, force: true });
+    },
+  };
 }

@@ -94,7 +94,7 @@ For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.
 
 ## Operating Loop
 1. Locate ticket files.
-2. If ticket files do not exist, route to `afk-to-tickets`.
+2. If ticket files do not exist and the request is one quick action, use the available context to create a single ticket file and continue; otherwise recommend `afk-to-tickets` and stop.
 3. Select the active ticket.
 4. Read blockers and relevant previous handoff notes.
 5. Record the selected execution bundle.

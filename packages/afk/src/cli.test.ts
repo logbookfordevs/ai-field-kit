@@ -65,6 +65,30 @@ test("runCli prints contextual update help", async () => {
   assert.ok(text.includes("afk update --dry-run"));
 });
 
+test("runCli exposes Custom Agents as a first-class command family", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "agents", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK setup agents"));
+  assert.ok(text.includes("--custom-agent <id>"));
+  assert.ok(text.includes("--all"));
+  assert.ok(text.includes("--yes confirms the operation; it never selects Custom Agents"));
+
+  output.length = 0;
+  const catalogCode = await withConsole(output, () => runCli(["catalog", "agents", "add", "--help"]));
+  const catalogText = output.join("\n");
+  assert.equal(catalogCode, 0);
+  assert.ok(catalogText.includes("AFK catalog agents"));
+  assert.ok(!catalogText.includes("toggle-default"));
+
+  output.length = 0;
+  const showCode = await withConsole(output, () => runCli(["show", "agents", "--help"]));
+  assert.equal(showCode, 0);
+  assert.ok(output.join("\n").includes("AFK show agents"));
+});
+
 test("runCli dry-runs CLI update", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["update", "--dry-run"]));
@@ -222,7 +246,7 @@ test("runCli rejects old manifest category flags", async () => {
 
 test("runCli accepts default-source aliases on refresh", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => new Response("missing", { status: 404 });
+  globalThis.fetch = async (input) => emptyCatalogResponse(input);
   const homeDir = mkdtempSync(join(tmpdir(), "afk-default-source-alias-"));
   const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
 
@@ -254,7 +278,7 @@ test("runCli keeps --source github mapped to the built-in AFK defaults source", 
   const requestedUrls: string[] = [];
   globalThis.fetch = async (input) => {
     requestedUrls.push(String(input));
-    return new Response("missing", { status: 404 });
+    return emptyCatalogResponse(input);
   };
 
   try {
@@ -366,6 +390,7 @@ test("runCli prints contextual catalog area help", async () => {
   assert.equal(skillsCode, 0);
   assert.ok(skillsText.includes("AFK catalog skills"));
   assert.ok(skillsText.includes("toggle-auto"));
+  assert.ok(skillsText.includes("bulk-edit"));
   assert.ok(skillsText.includes("import-status"));
 
   const mcpsOutput: string[] = [];
@@ -414,12 +439,15 @@ test("runCli prints contextual skills help", async () => {
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
 });
 
-test("runCli lists get in the skills command help", async () => {
+test("runCli lists get and update in the skills command help", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["skills", "--help"]));
+  const text = output.join("\n");
 
   assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("get <folder>"));
+  assert.ok(text.includes("get <folder>"));
+  assert.ok(text.includes("update [skills...]"));
+  assert.ok(!text.includes("upgrade [skills...]"));
 });
 
 test("runCli validates skills list auto invocation filters", async () => {
@@ -502,16 +530,25 @@ test("runCli accepts --all for profile use and prints complete skill content", a
   assert.ok(text.includes('storage="disabled"'));
 });
 
-test("runCli prints contextual skills upgrade help", async () => {
+test("runCli prints contextual skills update help", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--help"]));
+  const code = await withConsole(output, () => runCli(["skills", "update", "--help"]));
   const text = output.join("\n");
 
   assert.equal(code, 0);
-  assert.ok(text.includes("AFK skills upgrade"));
+  assert.ok(text.includes("AFK skills update"));
   assert.ok(text.includes("--scope global|project|all"));
   assert.ok(text.includes("--all"));
+  assert.ok(!text.includes("skills upgrade"));
   assert.ok(!text.includes("AFK skills check"));
+});
+
+test("runCli rejects the retired skills upgrade command", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "upgrade"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown skills command: upgrade"));
 });
 
 test("runCli prints contextual skills delete help", async () => {
@@ -795,9 +832,9 @@ test("runCli validates the custom skill agent path contract", async () => {
   assert.ok(output.join("\n").includes("Do not combine --scope with --agent custom"));
 });
 
-test("runCli validates skills upgrade scope", async () => {
+test("runCli validates skills update scope", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--scope", "agent"]));
+  const code = await withConsole(output, () => runCli(["skills", "update", "--scope", "agent"]));
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Invalid --scope value: agent"));
@@ -805,28 +842,28 @@ test("runCli validates skills upgrade scope", async () => {
 
 test("runCli rejects root targeting flags on unrelated skills commands", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--agent", "codex"]));
+  const code = await withConsole(output, () => runCli(["skills", "update", "--agent", "codex"]));
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Unknown option: --agent"));
 });
 
-test("runCli documents profile-selected skill upgrades", async () => {
+test("runCli documents profile-selected skill updates", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "upgrade", "--help"]));
+  const code = await withConsole(output, () => runCli(["skills", "update", "--help"]));
   const text = output.join("\n");
 
   assert.equal(code, 0);
   assert.ok(text.includes("--profile"));
-  assert.ok(text.includes("afk skills upgrade video --profile"));
+  assert.ok(text.includes("afk skills update video --profile"));
 });
 
-test("runCli routes profile-selected upgrades through global scope validation", async () => {
+test("runCli routes profile-selected updates through global scope validation", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "upgrade", "video", "--profile", "--scope", "project"]));
+  const code = await withConsole(output, () => runCli(["skills", "update", "video", "--profile", "--scope", "project"]));
 
   assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("Profile upgrades use the global skill library"));
+  assert.ok(output.join("\n").includes("Profile updates use the global skill library"));
 });
 
 test("runCli validates skills open app", async () => {
@@ -1314,4 +1351,18 @@ function localHomeWithManifests(manifests: Record<string, unknown>): string {
 function writeSkill(root: string, folder: string, name: string): void {
   mkdirSync(join(root, folder), { recursive: true });
   writeFileSync(join(root, folder, "SKILL.md"), `---\nname: ${name}\ndescription: ${name} description\n---\n\n# ${name}\n`);
+}
+
+function emptyCatalogResponse(input: string | URL | Request): Response {
+  const name = String(input).split("/").pop();
+  const manifests: Record<string, unknown> = {
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+    "profiles.json": { version: 1, mode: "context", alwaysOn: [], items: [] },
+    "mcps.json": { version: 1, items: [] },
+    "presets.json": { version: 1, defaultsSource: "", presets: [] },
+    "rules.json": { version: 1, source: "github", url: "https://example.com/AGENTS.md" },
+    "plugins.json": { version: 1, items: [] },
+    "hooks.json": { version: 1, items: [] },
+  };
+  return Response.json(manifests[name ?? ""] ?? {});
 }

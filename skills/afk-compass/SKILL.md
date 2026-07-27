@@ -1,6 +1,6 @@
 ---
 name: afk-compass
-description: Route broad, ambiguous, phase-change, artifact-boundary, storage-convention, explicit AFK workflow, AFK Sprint, AFK Turbo, or non-obvious skill-selection requests to the smallest useful AFK or companion skill. Use when the next skill is unclear.
+description: Route broad, ambiguous, phase-change, artifact-boundary, storage-convention, explicit workflow, Flow, run, AFK Sprint, AFK Turbo, or non-obvious skill-selection requests to the smallest useful AFK or companion skill. Use when the next skill or phase is unclear.
 ---
 
 # AFK Compass
@@ -84,7 +84,7 @@ Task arrives
 +-- Need divergent ideas or directions? ----------> afk-brainstorming-facilitator
 +-- Explicit AFK Turbo or visual-board execution package? -> afk-turbo
 +-- Explicit AFK Sprint or goal run with Markdown tracking? -> afk-sprint
-+-- Explicit AFK workflow / Flow / run? --------> route only the current phase
++-- Explicit workflow / Flow / run with unclear phases? -> route only the current phase
 +-- Resuming Turbo goal/board work? -----------> afk-turbo resume mode
 +-- Resuming checkpointed work? ---------------> afk-implement-tasks resume mode
 +-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
@@ -105,7 +105,7 @@ Task arrives
 
 Only invoke skills that are installed or clearly available. If a routed skill is missing, state the gap and continue with the best available installed skill or normal workflow.
 
-For explicit AFK workflow requests, explain that AFK is composable and route the current phase. Add Grill, spec, slicing, tracking, or execution discipline only when that is the current need.
+For explicit workflow, Flow, or run requests where the next phase is unclear, explain that AFK is composable and route the current phase. Add Grill, spec, slicing, tracking, or execution discipline only when that is the current need.
 
 ## Manual Wrappers
 

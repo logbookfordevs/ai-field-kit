@@ -28,7 +28,7 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 - TypeScript changes must pass the repo typecheck before final handoff.
 
 ## React
-- Do not use ternaries inside JSX content. For one optional branch, use a positive `&&` check. For mutually exclusive branches or conditions with more than two checks, compute named variables before the return or extract a helper/component.
+- Keep conditional rendering explicit: use a positive `&&` check for one optional JSX element; for mutually exclusive JSX branches, compute a named element before the return or extract a component. Keep value-selection ternaries short and flat; hoist nested or hard-to-scan expressions into named values.
 - Conditional JSX should use named booleans, not chained `||` expressions inside `{condition && (...)}` blocks. Hoist OR logic above the return, such as `const showActions = isReady && canEdit`, then use `&&` with those names in JSX. For repeated status unions like `active | pending` or `loading | refreshing`, use shared helpers in `utils/`, such as `isActiveStatus`, instead of duplicating OR expressions.
 
 ## Browser Testing
@@ -44,7 +44,7 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 - Check and follow the current project's package manager. Always chose pnpm in new projects.
 
 ## Tech Stack
-For web applications or React work, use Tailwind V4 and TypeScript.
+For web applications, prefer React, Tailwind V4 and TypeScript. For prototyping, you may use HTML/CSS/JS or whatever attends the needs.
 
 ## Frontend UX Defaults
 - Do not choose a simpler implementation just to avoid setup when a richer interaction, mature primitive, or small amount of extra state materially improves UX. For standard app primitives in React/Tailwind, use the `afk-ui-registry-preferences` skill before choosing custom UI or a registry.

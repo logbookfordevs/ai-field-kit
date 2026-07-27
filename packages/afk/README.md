@@ -1,8 +1,8 @@
 # AFK CLI
 
 AFK is the setup router for AI Field Kit. It gives developers one place to
-preview and apply the parts of the kit they want: shared rules, skills, MCPs,
-plugins, hooks, and custom setup catalogs.
+preview and apply the parts of the kit they want: shared rules, skills, Custom
+Agents, MCPs, plugins, hooks, and custom setup catalogs.
 
 The CLI is intentionally a router, not a replacement for every ecosystem tool.
 AFK owns the AFK-specific rule and hook behavior. It delegates skills to the
@@ -16,7 +16,9 @@ published [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg)
 for the full mental model, then open the
 [AFK skills and profiles switchyard](https://tot.page/13T7lSXk6SIhvGNt0aa_tw)
 to see how skill commands, profiles, catalog policy, storage, recovery paths,
-and workflow moments interact.
+and workflow moments interact. See
+[Portable Custom Agents](docs/custom-agents.md) for the agent source contract,
+adapter behavior, and native target paths.
 
 ## How to Use This Reference
 
@@ -72,6 +74,7 @@ Scripted setup can use `--yes` to accept defaults after the cache exists, or
 | Rules | `afk setup rules` | Syncs AFK rules into managed regions of supported agent rule files. |
 | Skills | `afk setup skills` | Delegates selected skill installs to `npx skills add`. |
 | Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
+| Custom Agents | `afk setup agents` | Translates portable agent files into native Codex, Claude Code, or Pi definitions. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `npx add-mcp`. |
 | Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |
 | Hooks | `afk setup hooks` | Copies hook scripts and merges hook commands into supported agent configs. |
@@ -157,6 +160,7 @@ afk setup --local
 # Run only one area
 afk setup rules --dry-run
 afk setup skills --dry-run
+afk setup agents --dry-run
 afk setup mcps --dry-run
 afk setup plugins --dry-run
 afk setup hooks --dry-run
@@ -206,7 +210,7 @@ or delegated command. Read-only commands do not need it.
 | `afk` | Open the interactive AFK lobby. | Routes to another command; the selected command owns any effects. |
 | `afk --version`, `afk -v` | Print the installed AFK version. | Read-only. |
 | `afk <command> --help`, `-h` | Print command-specific usage, options, and examples. | Read-only. |
-| `afk setup` | Preview or apply rules, skills, profiles, MCPs, plugins, and hooks. | AFK writes owned files and delegates ecosystem installs. |
+| `afk setup` | Preview or apply rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks. | AFK writes owned files and delegates ecosystem installs. |
 | `afk refresh [category...]` | Refresh cached catalog files from the remembered or selected source. | Writes the global or project-local catalog cache. |
 | `afk show [category...]` | Inspect cached catalog data or a one-off source. | Read-only, except `--visualize` writes an HTML file. |
 | `afk catalog` | Interactively edit writable catalog files. | Writes catalog JSON. |
@@ -227,6 +231,7 @@ non-zero when any selected area fails.
 | `afk setup rules` | Merge the configured rules source into AFK-managed regions without replacing user-owned content outside those regions. | AFK. |
 | `afk setup skills` | Select catalog skills, delegate installation, restore previously disabled storage, apply invocation policy, and reconcile enabled profiles. | Official `skills` CLI for installation; AFK for policy and reconciliation. |
 | `afk setup profiles` | Prepare `profiles.json` definitions from the selected source. It does not install skills or enable a profile. | AFK. |
+| `afk setup agents` | Select portable Custom Agents and translate them into native Codex, Claude Code, or Pi definitions. | AFK adapters; the harness owns orchestration. |
 | `afk setup mcps` | Select catalog MCPs and delegate their installation for supported agents/scopes. | `add-mcp`. |
 | `afk setup plugins` | Run selected catalog installer commands and supported post-install commands. | Each plugin installer. |
 | `afk setup hooks` | Copy selected hook scripts and merge commands into supported native hook configs. | AFK. |
@@ -244,7 +249,7 @@ Setup aliases retained for compatibility:
 
 ### Refresh and Show Commands
 
-Catalog categories are `rules`, `skills`, `profiles`, `mcps`, `plugins`,
+Catalog categories are `rules`, `skills`, `profiles`, `agents`, `mcps`, `plugins`,
 `hooks`, and `presets`. Pass one or more categories to limit output or refresh
 writes:
 
@@ -266,6 +271,7 @@ afk show skills profiles
 | `afk show rules` | Inspect the rules source AFK would merge into managed regions. |
 | `afk show skills` | Inspect skill install metadata, invocation policy, roles, and composition. |
 | `afk show profiles` | Inspect profile definitions and catalog-wide reconciliation policy. |
+| `afk show agents` | Inspect portable Custom Agent catalog entries before provisioning. |
 | `afk show mcps` | Inspect MCP recommendations before delegated installation. |
 | `afk show plugins` | Inspect plugin installers and post-install commands. |
 | `afk show hooks` | Inspect lifecycle hook definitions and supported targets. |
@@ -289,6 +295,7 @@ its interactive editor. Use `--dry-run` to preview supported writes.
 |---|---|---|
 | Rules | `afk catalog rules [edit]` | The rules source URL or local path in `rules.json`. |
 | Skills | `afk catalog skills add`, `edit`, `remove` | Skill definitions and installation metadata in `skills.json`. |
+| Skills policy | `afk catalog skills bulk-edit` | Select multiple skills, then set invocation and always-on policy together. |
 | Skills policy | `afk catalog skills toggle-default` | Which catalog skills non-interactive default setup selects. |
 | Skills policy | `afk catalog skills toggle-auto` | Catalog-owned `autoInvocation` policy. |
 | Skills import | `afk catalog skills import-status` | Read-only comparison of installed shared skills and catalog entries. |
@@ -297,9 +304,16 @@ its interactive editor. Use `--dry-run` to preview supported writes.
 | Profiles | `afk catalog profiles create`, `edit`, `delete` | Profile definitions in `profiles.json`. |
 | Profile policy | `afk catalog profiles set-mode` | Top-level `strict` or `context` reconciliation mode. |
 | Profile policy | `afk catalog profiles toggle-always-on` | Top-level skills kept by every active profile. |
+| Custom Agents | `afk catalog agents add`, `edit`, `remove` | Portable agent source references in `agents.json`. |
 | MCPs | `afk catalog mcps add`, `edit`, `remove`, `toggle-default` | MCP recommendations in `mcps.json`. |
 | Plugins | `afk catalog plugins add`, `edit`, `remove`, `toggle-default` | Installer definitions in `plugins.json`. |
 | Hooks | `afk catalog hooks add`, `edit`, `remove`, `toggle-default` | Lifecycle hook definitions in `hooks.json`. |
+
+After a confirmed global `afk catalog skills edit` or `bulk-edit`, AFK offers
+to run skill setup for only the entries whose install source, invocation,
+startup storage, or always-on policy changed. Declining keeps the catalog
+changes without running setup. Dry runs, no-op edits, and `--local` catalog
+edits do not offer this setup shortcut.
 
 The profile definition commands support these non-interactive flags:
 
@@ -335,9 +349,9 @@ can be selected with `--agent`; exact custom roots require both
 | `afk skills add <source> [flags...]` | Delegate installation to `skills add`, then synchronize AFK catalog and profile state. | Supports upstream `--skill`, `--agent`, `--global`, `--yes`; AFK adds `--profile`, `--profile-only`, and `--start-disabled`. |
 | `afk skills disable [folder]` | Move active skill folders into `.disabled`. | Omit the folder for an interactive multi-select; supports `--dry-run`. |
 | `afk skills enable [folder]` | Move disabled skill folders back to active storage. | Omit the folder for an interactive picker; supports `--dry-run`. |
-| `afk skills invocation disable [folder]`, `enable [folder]` | Change installed-skill invocation metadata. | Writes `disable-model-invocation` in `SKILL.md` and `allow_implicit_invocation` in `agents/openai.yaml` when needed; supports `--dry-run`. |
+| `afk skills invocation disable [folder]`, `enable [folder]` | Change invocation policy for one skill. | Updates a matching shared `skills.json` entry and writes `disable-model-invocation` in `SKILL.md` plus `allow_implicit_invocation` in `agents/openai.yaml`; supports `--dry-run`. |
 | `afk skills delete [folder]` | Permanently remove selected skill folders. | `--catalog-only`, `--profile`, storage filters, `--yes`, and `--dry-run`; profile deletion mode deletes referenced folders, not the profile definition. |
-| `afk skills upgrade [skills...]` | Select tracked skills and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
+| `afk skills update [skills...]` | Select tracked skills and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
 | `afk skills categorize` | Ask `codex exec` to create or update catalog categorization metadata. | `--mode` with `append-missing` or `recategorize-all`, `--instruction`, `--runner codex-exec`, `--dry-run`. |
 | `afk skills profiles <command>` | Read or apply profile runtime state. | Detailed below. |
 
@@ -349,7 +363,9 @@ refreshes its content while preserving its prior storage and profile membership.
 
 `afk skills invocation` defaults to the `disable` action when `enable` or
 `disable` is omitted. If the skill folder is also omitted, AFK opens an
-interactive picker.
+interactive picker. Shared skills already represented in `skills.json` update
+catalog policy and installed metadata together. Untracked and agent-specific
+skills update only their installed metadata.
 
 `afk skills delete --profile` accepts zero or one profile ID. Without an ID it
 prompts for a profile. AFK warns again because a referenced skill may belong to
@@ -415,6 +431,8 @@ These flags apply to `afk setup` and most area commands.
 | `--scope global/project` | Choose machine-wide setup or current-project setup. |
 | `--local` | Alias for `--scope project`. |
 | `--agent <agent>`, `-a <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
+| `--custom-agent <id>` | Select one cataloged Custom Agent. Repeat the flag for multiple agents. |
+| `--all` | With `afk setup agents`, select every cataloged Custom Agent. |
 | `--source <source>` | Use a catalog source for this run only, without changing the cache or default source. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
 | `--init-only` | Legacy cache-prep flag; prefer `afk refresh`. |
@@ -436,7 +454,7 @@ These flags apply to `afk refresh`.
 General setup agent values are:
 
 ```text
-antigravity, claude, codex, cursor-local, opencode
+antigravity, claude, codex, cursor-local, opencode, pi
 ```
 
 Aliases:
@@ -451,6 +469,7 @@ Area support is narrower than the full alias list:
 | Area | Supported AFK targets |
 |---|---|
 | Rules | `antigravity`, `claude`, `codex`, `opencode`; project scope also supports `cursor-local`. |
+| Custom Agents | `codex`, `claude`, `pi`; Pi additionally requires the `pi-subagents` extension. |
 | MCPs | `antigravity`, `claude`, `codex`, `opencode`; project scope skips Antigravity because `add-mcp` does not support that target locally. |
 | Hooks | `codex`, `claude`, `cursor-local`. |
 | Plugins | Plugin installers run independently and may define generic post-install commands. |
@@ -627,6 +646,7 @@ The expected files are:
 ```text
 skills.json
 profiles.json
+agents.json
 mcps.json
 presets.json
 rules.json
@@ -647,7 +667,9 @@ Refresh replaces source-owned catalog content while preserving local catalog
 extensions. In `skills.json`, imported skills absent from the refreshed source
 survive. In `profiles.json`, locally created profiles whose IDs are absent from
 the refreshed source survive. The refreshed source wins on matching IDs and
-owns top-level profile policy such as `mode` and `alwaysOn`.
+owns top-level profile policy such as `mode` and `alwaysOn`. In `agents.json`,
+refresh updates matching IDs, appends new source entries, and preserves local
+entries absent from the source.
 
 Use these commands to prepare catalog files without running setup:
 
@@ -682,6 +704,11 @@ For a normal GitHub repo, AFK looks in both of these locations:
 afk/catalog/
 packages/afk/catalog/
 ```
+
+AFK reads public catalogs directly. When raw GitHub access is unavailable, it
+falls back to Git using your existing credentials so private repositories work
+without a separate AFK token. Interactive terminals show progress while Git
+fetches the catalog.
 
 `--source` and `--default-source` accept:
 
@@ -789,6 +816,7 @@ The registry item writes:
 ```text
 ./afk/catalog/skills.json
 ./afk/catalog/profiles.json
+./afk/catalog/agents.json
 ./afk/catalog/mcps.json
 ./afk/catalog/rules.json
 ./afk/catalog/plugins.json
@@ -870,6 +898,39 @@ active.
 readable as a skill system instead of a flat install list. For example, a
 wrapper can stay manually invoked while composing smaller primitives that remain
 available to automatic model discovery.
+
+### Custom Agents
+
+```json
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "notion_assistant",
+      "label": "Notion Assistant",
+      "source": "agents/notion_assistant.md"
+    }
+  ]
+}
+```
+
+The catalog stores discovery metadata and a direct Portable Agent File source;
+the linked Markdown file owns the runtime description and behavior. The
+catalog `id` must match the portable file's `name`. Custom Agents have no
+default-selection field: interactive setup starts with every item unchecked,
+and scripted setup requires `--custom-agent <id>` or `--all`. Portable files
+may declare shared AFK skill names for native per-agent configuration; Custom
+Agent setup never installs or validates those skills.
+
+Relative agent sources resolve from the selected catalog source root. Local
+repository sources materialize them as absolute paths; GitHub sources
+materialize them as raw-file URLs. Absolute paths and HTTP(S) sources pass
+through unchanged. A relative source read directly from a writable cache,
+without repository source context, falls back to the setup working directory.
+
+See [Portable Custom Agents](docs/custom-agents.md) for the source schema,
+per-harness model and effort fields, capabilities, target paths, and adapter
+behavior.
 
 ### MCPs
 
@@ -1029,6 +1090,29 @@ remembered or selected setup source. Profiles are definitions, not installs:
 use `afk skills profiles enable <profile>` after the referenced skills exist
 to apply one.
 
+### Custom Agents
+
+AFK translates one portable Markdown definition into native Codex, Claude
+Code, or Pi agent files. Setup is provisioning only; the selected harness owns
+execution and orchestration. Generated native files are replaced on the next
+setup, so lasting edits belong in the portable source. Declared portable
+`skills` become Codex `skills.config` blocks, Claude Code's native `skills`
+list, and Pi `skills` plus `skillPath`; AFK leaves availability to the harness.
+
+Use `afk setup agents` for the unchecked interactive picker, or make scripted
+selection explicit:
+
+```bash
+afk setup agents --custom-agent notion_assistant --agent codex --dry-run
+afk setup agents --custom-agent notion_assistant --agent codex --yes
+afk setup agents --all --agent claude --agent pi --yes
+```
+
+`--yes` confirms but does not select. Pi requires `pi-subagents`; AFK suggests
+the extension command and skips Pi when it is unavailable rather than
+installing it automatically. For the full contract, see
+[Portable Custom Agents](docs/custom-agents.md).
+
 ## Troubleshooting
 
 ### `afk` runs a local checkout
@@ -1120,9 +1204,9 @@ afk skills invocation disable afk-doc-craft --dry-run
 afk skills delete old-skill --dry-run
 afk skills delete --catalog-only --dry-run
 afk skills delete --profile
-afk skills upgrade --all
-afk skills upgrade --profile
-afk skills upgrade video --profile
+afk skills update --all
+afk skills update --profile
+afk skills update video --profile
 afk skills categorize --dry-run
 afk catalog profiles create video --name Video --skill hyperframes --skill tailwind --mode context
 afk skills profiles use video
@@ -1141,8 +1225,8 @@ an upstream-supported agent projection. Literal `--agent custom` paths apply
 only to AFK-owned inspection and mutation commands because the upstream
 installer does not accept arbitrary destination directories.
 
-`afk skills upgrade --profile` selects a global profile interactively, or use
-`afk skills upgrade <profile> --profile` to select it directly. AFK upgrades
+`afk skills update --profile` selects a global profile interactively, or use
+`afk skills update <profile> --profile` to select it directly. AFK updates
 the profile members that are tracked by the skills lock and reports untracked
 members it skips. Upgrade preserves active and disabled storage state even
 though the upstream update flow reinstalls changed skill content.

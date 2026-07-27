@@ -507,7 +507,7 @@
     <button class="flow-chip" data-flow="focus">Focus profile</button>
     <button class="flow-chip" data-flow="additive">Additive profile</button>
     <button class="flow-chip" data-flow="restore">Disable &amp; restore</button>
-    <button class="flow-chip" data-flow="upgrade">Upgrade safely</button>
+    <button class="flow-chip" data-flow="update">Update safely</button>
     <button class="flow-chip" data-flow="refresh">Refresh &amp; merge</button>
   </nav>
 
@@ -656,11 +656,11 @@ const DETAILS = {
     bullets: ["Preflight offers to import lock-tracked installed skills missing from the catalog.", "<code>--profile</code> adds new skills to a profile.", "<code>--profile-only</code> also marks them <code>startDisabled</code> and moves them into <code>.disabled</code>.", "Reinstalling an existing skill preserves storage and membership; add-time flags do not reapply."],
     tags: ["direct", "imported", "profile bridge"]
   },
-  "cmd-upgrade": {
-    title: "afk skills upgrade",
+  "cmd-update": {
+    title: "afk skills update",
     meta: "tracked update route",
     body: "Selects official skills-lock entries, delegates to <code>npx skills update</code>, and restores any previously disabled storage after the reinstall-like update.",
-    bullets: ["<code>--all</code> upgrades every tracked skill in scope.", "<code>--profile</code> upgrades only tracked members and reports untracked members it skips.", "Explicit names require global or project scope, not <code>all</code>."],
+    bullets: ["<code>--all</code> updates every tracked skill in scope.", "<code>--profile</code> updates only tracked members and reports untracked members it skips.", "Explicit names require global or project scope, not <code>all</code>."],
     tags: ["lockfile", "preserves disabled state"]
   },
   "cmd-refresh": {
@@ -711,7 +711,7 @@ const DETAILS = {
   "preflight": { title:"Catalog preflight", meta:"healing gate before add", body:"If lock-tracked installed skills are missing from AFK's catalog, direct add pauses to import them first. If import cannot catalog all recoverable entries, add stops instead of compounding drift.", tags:["healing","guard"] },
   "skills-catalog": { title:"skills.json", meta:"catalog + setup metadata", body:"The single AFK catalog for install source, args, default selection, role, invocation policy, start-disabled policy, composition, import ownership, categories, and tags.", bullets:["Current source: 43 skills.", "15 allow auto invocation; 28 are manual.", "28 are selected by default."], tags:["catalog","43 items"] },
   "policy-compiler": { title:"Invocation policy compiler", meta:"catalog → installed metadata", body:"Compiles catalog <code>autoInvocation</code> into host-facing files after setup: inverse <code>disable-model-invocation</code> in <code>SKILL.md</code> and matching <code>allow_implicit_invocation</code> in OpenAI metadata.", tags:["synchronization"] },
-  "startup-storage": { title:"Startup storage policy", meta:"startDisabled + preservation", body:"Moves installed skills marked <code>startDisabled</code> into <code>.disabled</code>. It snapshots disabled skills before setup/add/upgrade so upstream reinstalls cannot accidentally reactivate them.", tags:["healing","storage"] },
+  "startup-storage": { title:"Startup storage policy", meta:"startDisabled + preservation", body:"Moves installed skills marked <code>startDisabled</code> into <code>.disabled</code>. It snapshots disabled skills before setup/add/update so upstream reinstalls cannot accidentally reactivate them.", tags:["healing","storage"] },
   "refresh-merge": { title:"Refresh merge boundary", meta:"source wins; local additions survive", body:"For skills, refreshed source entries become source-owned and matching IDs win; imported entries absent from the source survive. For profiles, source IDs win while local-only profile IDs survive.", tags:["merge","non-destructive"] },
   "profile-catalog": { title:"profiles.json", meta:"profile desired state", body:"Stores top-level <code>mode</code>, <code>alwaysOn</code>, and named profile membership. Global definitions live under <code>~/.agents/afk/catalog</code>; <code>--local</code> uses <code>./afk/catalog</code>.", tags:["desired state"] },
   "profile-state": { title:"skill-profiles.json", meta:"runtime restoration ledger", body:"Stores focus/additive activations, skills moved by profiles, and skills that were disabled before profiles touched them. This separation makes disable and multi-profile restoration predictable.", tags:["runtime state","version 2"] },
@@ -721,7 +721,7 @@ const DETAILS = {
   "disabled-store": { title:"Disabled shared library", meta:"~/.agents/skills/.disabled/&lt;id&gt;", body:"A reversible holding area. Direct commands, start-disabled policy, and focus profiles all use folder movement rather than deleting content.", tags:["filesystem","reversible"] },
   "agent-roots": { title:"Project &amp; agent roots", meta:"Codex · Claude · Gemini · editors", body:"List/show/open can inspect shared, project, and installed-agent roots. Direct mutation defaults to the global shared library unless <code>--agent</code> and scope explicitly target another root.", tags:["fanout","multiple hosts"] },
   "heal-reconcile": { title:"Post-install profile healing", meta:"setup + add", body:"Whenever setup or direct add succeeds and profiles are already enabled, AFK immediately reconciles the new folder against the active desired state. A strict focus profile can therefore send a newly installed outsider straight to <code>.disabled</code>.", tags:["automatic","profile drift"] },
-  "heal-preserve": { title:"Disabled-state preservation", meta:"add + setup + upgrade", body:"AFK snapshots disabled folders before upstream content changes, then moves any reinstalled folders back to disabled storage. Existing profile membership is preserved on reinstall.", tags:["automatic","storage drift"] },
+  "heal-preserve": { title:"Disabled-state preservation", meta:"add + setup + update", body:"AFK snapshots disabled folders before upstream content changes, then moves any reinstalled folders back to disabled storage. Existing profile membership is preserved on reinstall.", tags:["automatic","storage drift"] },
   "heal-restore": { title:"Profile restoration memory", meta:"moved vs pre-existing", body:"The runtime ledger distinguishes skills profiles moved from skills already disabled beforehand. That lets AFK restore only what it borrowed or filtered, even across multiple active profiles.", tags:["automatic","reversible"] }
 };
 
@@ -734,7 +734,7 @@ const MACHINE_NODES = [
 
   {id:"cmd-setup", x:80,y:545,w:215,h:62,label:"setup skills",sub:"catalog-driven install",kind:"command"},
   {id:"cmd-add", x:310,y:545,w:215,h:62,label:"skills add",sub:"one-off wrapper",kind:"command"},
-  {id:"cmd-upgrade", x:80,y:622,w:215,h:62,label:"skills upgrade",sub:"tracked updates",kind:"command"},
+  {id:"cmd-update", x:80,y:622,w:215,h:62,label:"skills update",sub:"tracked updates",kind:"command"},
   {id:"cmd-refresh", x:310,y:622,w:215,h:62,label:"refresh skills",sub:"catalog cache",kind:"command"},
   {id:"cmd-categorize", x:80,y:699,w:445,h:55,label:"skills categorize",sub:"Codex → catalog enrichment",kind:"command"},
 
@@ -795,7 +795,7 @@ const MACHINE_EDGES = [
   ["e-start-disabled","startup-storage","disabled-store"],["e-up-preserve","upstream","heal-preserve",true],["e-preserve-disabled","heal-preserve","disabled-store",true],
   ["e-setup-heal","cmd-setup","heal-reconcile",true],["e-add-heal","cmd-add","heal-reconcile",true],["e-heal-rec","heal-reconcile","reconcile",true],
   ["e-refresh-merge","cmd-refresh","refresh-merge"],["e-merge-cat","refresh-merge","skills-catalog",true],["e-merge-profile","refresh-merge","profile-catalog",true],
-  ["e-upgrade-up","cmd-upgrade","upstream"],["e-invoke-policy","cmd-invocation","policy-compiler"],
+  ["e-update-up","cmd-update","upstream"],["e-invoke-policy","cmd-invocation","policy-compiler"],
   ["e-disable-disabled","cmd-disable","disabled-store"],["e-enable-active","cmd-enable","active-store"],["e-delete-active","cmd-delete","active-store"],
   ["e-list-roots","cmd-list","agent-roots"],["e-show-roots","cmd-show","agent-roots"],["e-get-roots","cmd-get","agent-roots"],["e-open-roots","cmd-open","agent-roots"],
   ["e-cat-cat","cat-skills","skills-catalog"],["e-categorize-cat","cmd-categorize","skills-catalog"],
@@ -814,7 +814,7 @@ const FLOWS = {
   focus: { name:"Profile route", title:"Focus activation filters the library", nodes:["profile-enable","profile-catalog","profile-state","kept-set","reconcile","active-store","disabled-store","heal-restore"], edges:["e-enable-cat","e-enable-state","e-cat-kept","e-state-kept","e-kept-rec","e-state-rec","e-rec-active","e-rec-disabled","e-rec-ledger"], steps:["Record a focus activation.","Compute alwaysOn + skills from every active focus or additive profile.","Strict disables every outsider; context spares cataloged manual outsiders.","Record which folders profiles moved so later restoration is reversible."] },
   additive: { name:"Profile route", title:"Additive activation grows the kept set", nodes:["profile-enable","profile-catalog","profile-state","kept-set","reconcile","active-store"], edges:["e-enable-cat","e-enable-state","e-cat-kept","e-state-kept","e-kept-rec","e-state-rec","e-rec-active"], steps:["Record the activation as additive.","Add its members to the same union kept set.","If every active profile is additive, unrelated active skills stay untouched.","If any focus profile remains active, its filtering still applies; additive members are simply protected by the kept set."] },
   restore: { name:"Restoration route", title:"Disable recomputes, then restores only eligible state", nodes:["profile-disable","profile-state","kept-set","reconcile","heal-restore","active-store","disabled-store"], edges:["e-disable-state","e-state-kept","e-kept-rec","e-state-rec","e-rec-ledger","e-restore-active","e-restore-disabled"], steps:["Remove one activation; do not toggle its behavior in place.","Recompute the kept set from every profile that is still active.","Restore profile-moved outsiders when filtering no longer applies.","Return borrowed pre-disabled members when no active profile keeps them."] },
-  upgrade: { name:"Maintenance route", title:"Upgrade content without reactivating skills", nodes:["cmd-upgrade","upstream","heal-preserve","disabled-store","active-store"], edges:["e-upgrade-up","e-up-preserve","e-preserve-disabled"], steps:["Select explicit, all, or profile-tracked lock entries.","Snapshot which selected skills are disabled.","Run upstream update for global or project scope.","Move reinstalled disabled skills back into .disabled."] },
+  update: { name:"Maintenance route", title:"Update content without reactivating skills", nodes:["cmd-update","upstream","heal-preserve","disabled-store","active-store"], edges:["e-update-up","e-up-preserve","e-preserve-disabled"], steps:["Select explicit, all, or profile-tracked lock entries.","Snapshot which selected skills are disabled.","Run upstream update for global or project scope.","Move reinstalled disabled skills back into .disabled."] },
   refresh: { name:"Catalog route", title:"Refresh source truth without erasing local extensions", nodes:["cmd-refresh","refresh-merge","skills-catalog","profile-catalog"], edges:["e-refresh-merge","e-merge-cat","e-merge-profile"], steps:["Fetch the selected or remembered source catalog.","Source entries win on matching IDs.","Preserve imported skill entries absent from the source.","Preserve locally created profile IDs absent from the source; installed folders remain untouched."] }
 };
 

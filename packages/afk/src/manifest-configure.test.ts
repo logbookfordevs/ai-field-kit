@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { inferId, inferLabel, runManifestConfigureWithPrompts, type ManifestAction, type ManifestConfigurePrompts } from "./manifest-configure.js";
+import { filterCatalogSelectChoices, inferId, inferLabel, runManifestConfigureWithPrompts, type ManifestAction, type ManifestConfigurePrompts } from "./manifest-configure.js";
 import {
   addManifestItem,
   emptyEditableManifest,
@@ -35,12 +35,48 @@ test("inferLabel creates editable title defaults", () => {
   assert.equal(inferLabel("stitch-mcp"), "Stitch MCP");
 });
 
+test("filterCatalogSelectChoices searches skill identity and metadata", () => {
+  const choices = [
+    { name: "alpha", value: "alpha", description: "label: Human Alpha · source: owner/skills", searchAliases: ["manual"] },
+    { name: "beta", value: "beta", description: "label: Human Beta · source: other/skills", searchAliases: ["auto"] },
+  ];
+
+  assert.deepEqual(filterCatalogSelectChoices(choices, "human alpha manual").map((choice) => choice.value), ["alpha"]);
+  assert.deepEqual(filterCatalogSelectChoices(choices, "other/skills").map((choice) => choice.value), ["beta"]);
+});
+
 test("emptyEditableManifest creates typed empty manifests", () => {
   assert.deepEqual(emptyEditableManifest("rules"), { version: 1, source: "github", url: "" });
   assert.deepEqual(emptyEditableManifest("skills"), { version: 1, defaultSource: "", items: [] });
+  assert.deepEqual(emptyEditableManifest("agents"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("mcps"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("plugins"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("hooks"), { version: 1, items: [] });
+});
+
+test("runManifestConfigureWithPrompts adds a Custom Agent without default metadata", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-agents-"));
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: ["agents", "finish"],
+      actions: ["add", "back"],
+      inputs: ["https://example.com/agents/notion-assistant.md", "notion_assistant", "Notion Assistant"],
+      confirms: [true],
+    }),
+  );
+
+  const written = JSON.parse(readFileSync(join(homeDir, ".agents", "afk", "catalog", "agents.json"), "utf8")) as {
+    items: Array<Record<string, unknown>>;
+  };
+  assert.equal(code, 0);
+  assert.deepEqual(written.items, [{
+    id: "notion_assistant",
+    label: "Notion Assistant",
+    source: "https://example.com/agents/notion-assistant.md",
+  }]);
 });
 
 test("addManifestItem rejects duplicate ids", () => {
@@ -253,6 +289,50 @@ test("runManifestConfigureWithPrompts preserves existing skill args during no-op
   assert.deepEqual(written.items[0]?.args, ["--skill", "afk-note", "--global"]);
 });
 
+test("runManifestConfigureWithPrompts offers setup for an edited skill", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-edit-setup-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "owner/skills",
+    items: [{
+      id: "alpha",
+      label: "Alpha",
+      source: "owner/skills",
+      args: ["--skill", "alpha"],
+      default: true,
+      autoInvocation: true,
+    }],
+  }, null, 2)}\n`);
+  const spawned: Array<{ command: string; args: string[] }> = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    {
+      io: captureIo([]),
+      spawn: async (command, args) => {
+        spawned.push({ command, args });
+        return { code: 0 };
+      },
+    },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: [],
+      actions: [],
+      items: ["alpha"],
+      inputs: ["owner/skills", "alpha", "alpha", "Alpha"],
+      confirms: [true, false, false, true, true],
+    }),
+    { area: "skills", action: "edit" },
+  );
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["skills", "add", "owner/skills", "--global", "--yes", "--skill", "alpha", "--agent", "universal"],
+  }]);
+});
+
 test("runManifestConfigureWithPrompts writes startDisabled for skill items", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
   const manifestDir = join(homeDir, ".agents", "afk", "catalog");
@@ -277,6 +357,81 @@ test("runManifestConfigureWithPrompts writes startDisabled for skill items", asy
   const written = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as { items: Array<{ startDisabled?: boolean }> };
   assert.equal(code, 0);
   assert.equal(written.items[0]?.startDisabled, true);
+});
+
+test("runManifestConfigureWithPrompts defaults automatic model invocation off for new skills", async () => {
+  const confirmPrompts: Array<{ message: string; defaultValue: boolean }> = [];
+
+  await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ dryRun: true }),
+    scriptedPrompts({
+      areas: ["skills", "finish"],
+      actions: ["add", "back"],
+      inputs: ["https://github.com/example/skills", "manual-skill", "manual-skill", "Manual Skill"],
+      confirms: [true, false, false],
+      onConfirm: (message, defaultValue) => confirmPrompts.push({ message, defaultValue }),
+    }),
+  );
+
+  assert.ok(confirmPrompts.some(({ message, defaultValue }) => (
+    message === "Allow automatic model invocation? (default: off)" && defaultValue === false
+  )));
+});
+
+test("runManifestConfigureWithPrompts can finish and review from a catalog submenu", async () => {
+  const actionLabels: string[] = [];
+  const output: string[] = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo(output), spawn: async () => ({ code: 0 }) },
+    cliOptions({ dryRun: true }),
+    scriptedPrompts({
+      areas: ["skills"],
+      actions: ["add", "finish"],
+      inputs: ["https://github.com/example/skills", "manual-skill", "manual-skill", "Manual Skill"],
+      confirms: [true, false, false],
+      onSelectActionChoices: (choices) => actionLabels.push(...choices.map((choice) => choice.name)),
+    }),
+  );
+
+  assert.equal(code, 0);
+  assert.ok(actionLabels.includes("Finish and review"));
+  assert.ok(actionLabels.includes("Back to manage other catalogs"));
+  assert.ok(output.join("\n").includes("Catalog preview"));
+});
+
+test("runManifestConfigureWithPrompts offers review before Ctrl-C discards unsaved changes", async () => {
+  const confirmMessages: string[] = [];
+  const output: string[] = [];
+  const prompts = scriptedPrompts({
+    areas: ["skills"],
+    actions: ["add"],
+    inputs: ["https://github.com/example/skills", "manual-skill", "manual-skill", "Manual Skill"],
+    confirms: [true, false, false, true],
+    onConfirm: (message) => confirmMessages.push(message),
+  });
+  const selectAction = prompts.selectAction;
+  let actionCount = 0;
+  prompts.selectAction = async (...args) => {
+    actionCount += 1;
+    if (actionCount === 2) {
+      const error = new Error("User force closed the prompt with SIGINT");
+      error.name = "ExitPromptError";
+      throw error;
+    }
+    return selectAction(...args);
+  };
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo(output), spawn: async () => ({ code: 0 }) },
+    cliOptions({ dryRun: true }),
+    prompts,
+  );
+
+  assert.equal(code, 0);
+  assert.ok(confirmMessages.includes("Finish and review changes before exiting?"));
+  assert.ok(output.join("\n").includes("Catalog preview"));
 });
 
 test("runManifestConfigureWithPrompts toggles profile alwaysOn skills", async () => {
@@ -316,6 +471,79 @@ test("runManifestConfigureWithPrompts toggles profile alwaysOn skills", async ()
   assert.deepEqual(seenToggleValues, ["alpha", "beta"]);
   const written = JSON.parse(readFileSync(join(manifestDir, "profiles.json"), "utf8")) as { alwaysOn: string[] };
   assert.deepEqual(written.alwaysOn, ["alpha"]);
+});
+
+test("runManifestConfigureWithPrompts bulk edits invocation and always-on policy", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-bulk-edit-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      { id: "alpha", label: "Alpha", source: "owner/skills", args: ["--skill", "alpha"], default: true, autoInvocation: true },
+      { id: "beta", label: "Beta", source: "owner/skills", args: ["--skill", "beta"], default: false, autoInvocation: true },
+      { id: "gamma", label: "Gamma", source: "owner/skills", args: ["--skill", "gamma"], default: false, autoInvocation: true },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: ["gamma"],
+    items: [],
+  }, null, 2)}\n`);
+  const settingMessages: string[] = [];
+  const bulkChoices: Array<{ name: string; value: string; description?: string }> = [];
+  const confirmMessages: string[] = [];
+  const spawned: Array<{ command: string; args: string[] }> = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    {
+      io: captureIo([]),
+      spawn: async (command, args) => {
+        spawned.push({ command, args });
+        return { code: 0 };
+      },
+    },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: [],
+      actions: [],
+      selectedItems: [["alpha", "beta"]],
+      bulkSkillSettings: ["off", "on"],
+      confirms: [true, true],
+      onSelectItemsChoices: (choices) => bulkChoices.push(...choices),
+      onSelectBulkSkillSetting: (message) => settingMessages.push(message),
+      onConfirm: (message) => confirmMessages.push(message),
+    }),
+    { area: "skills", action: "bulk-edit" },
+  );
+
+  const skills = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as {
+    items: Array<{ id: string; autoInvocation: boolean }>;
+  };
+  const profiles = JSON.parse(readFileSync(join(manifestDir, "profiles.json"), "utf8")) as { alwaysOn: string[] };
+  assert.equal(code, 0);
+  assert.deepEqual(skills.items.map((item) => [item.id, item.autoInvocation]), [
+    ["alpha", false],
+    ["beta", false],
+    ["gamma", true],
+  ]);
+  assert.deepEqual(profiles.alwaysOn, ["alpha", "beta", "gamma"]);
+  assert.deepEqual(settingMessages, [
+    "Set invocation mode for selected skills",
+    "Set always-on for selected skills",
+  ]);
+  assert.deepEqual(bulkChoices.map((choice) => choice.name), ["alpha", "beta", "gamma"]);
+  assert.ok(bulkChoices[0]?.description?.includes("label: Alpha"));
+  assert.ok(bulkChoices[0]?.description?.includes("invocation: auto"));
+  assert.ok(bulkChoices[0]?.description?.includes("always-on: off"));
+  assert.ok(confirmMessages.includes("Run setup for 2 affected skills now?"));
+  assert.equal(spawned.length, 1);
+  assert.deepEqual(spawned[0], {
+    command: "npx",
+    args: ["skills", "add", "owner/skills", "--global", "--yes", "--skill", "alpha", "beta", "--agent", "universal"],
+  });
 });
 
 test("runManifestConfigureWithPrompts sets profile mode", async () => {
@@ -384,6 +612,37 @@ test("runManifestConfigureWithPrompts can enter one catalog area directly", asyn
   assert.equal(code, 0);
   assert.deepEqual(selectedAreas, []);
   assert.equal(written.items[0]?.default, false);
+});
+
+test("runManifestConfigureWithPrompts does not dump catalog entries before the action prompt", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-menu-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      { id: "alpha", label: "Alpha", source: "owner/skills", args: ["--skill", "alpha"], default: true },
+      { id: "beta", label: "Beta", source: "owner/skills", args: ["--skill", "beta"], default: false },
+    ],
+  }, null, 2)}\n`);
+  const output: string[] = [];
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo(output), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: [],
+      actions: ["back"],
+    }),
+    { area: "skills" },
+  );
+
+  const text = output.join("\n");
+  assert.equal(code, 0);
+  assert.ok(!text.includes("Skills entries"));
+  assert.ok(!text.includes("- Alpha [default]"));
+  assert.ok(!text.includes("- Beta"));
 });
 
 test("runManifestConfigureWithPrompts can run one catalog action directly", async () => {
@@ -574,6 +833,48 @@ test("runManifestConfigureWithPrompts shows current boolean state in edit prompt
   assert.ok(confirmMessages.includes("Selected by default? (current: off)"));
 });
 
+test("runManifestConfigureWithPrompts presents skill edit choices with branded identity and metadata", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-skill-edit-picker-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "owner/skills",
+    items: [
+      {
+        id: "alpha",
+        label: "Alpha",
+        source: "owner/skills",
+        args: ["--skill", "alpha"],
+        default: false,
+        autoInvocation: false,
+        startDisabled: true,
+      },
+    ],
+  }, null, 2)}\n`);
+  const choices: Array<{ name: string; value: string; description?: string }> = [];
+
+  await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir, dryRun: true }),
+    scriptedPrompts({
+      areas: [],
+      actions: [],
+      items: ["alpha"],
+      inputs: ["owner/skills", "alpha", "alpha", "Alpha"],
+      confirms: [false, false, true],
+      onSelectItemChoices: (nextChoices) => choices.push(...nextChoices),
+    }),
+    { area: "skills", action: "edit" },
+  );
+
+  assert.equal(choices[0]?.name, "alpha");
+  assert.ok(choices[0]?.description?.includes("label: Alpha"));
+  assert.ok(choices[0]?.description?.includes("autoInvocation: off"));
+  assert.ok(choices[0]?.description?.includes("startDisabled: on"));
+  assert.ok(choices[0]?.description?.includes("owner/skills"));
+});
+
 function captureIo(output: string[]) {
   return {
     stdout: (message: string) => output.push(message),
@@ -621,16 +922,21 @@ function cliOptions(overrides: Partial<Parameters<typeof runManifestConfigureWit
 }
 
 function scriptedPrompts(script: {
-  areas: Array<"rules" | "skills" | "profiles" | "mcps" | "plugins" | "hooks" | "finish">;
+  areas: Array<"rules" | "skills" | "profiles" | "agents" | "mcps" | "plugins" | "hooks" | "finish">;
   actions: ManifestAction[];
   items?: string[];
   inputs?: string[];
   confirms?: boolean[];
   profileModes?: SkillProfileMode[];
+  selectedItems?: string[][];
+  bulkSkillSettings?: Array<"on" | "off" | "unchanged">;
   toggleValues?: Array<Record<string, boolean>>;
   onSelectItemChoices?: (choices: Array<{ name: string; value: string; description?: string }>) => void;
+  onSelectItemsChoices?: (choices: Array<{ name: string; value: string; description?: string }>) => void;
+  onSelectActionChoices?: (choices: Array<{ name: string; value: ManifestAction; description?: string }>) => void;
   onToggleChoices?: (choices: Array<{ name: string; value: string; enabled: boolean; description?: string }>) => void;
-  onConfirm?: (message: string) => void;
+  onSelectBulkSkillSetting?: (message: string, onLabel: string, offLabel: string) => void;
+  onConfirm?: (message: string, defaultValue: boolean) => void;
 }): ManifestConfigurePrompts {
   const areas = [...script.areas];
   const actions = [...script.actions];
@@ -638,14 +944,27 @@ function scriptedPrompts(script: {
   const inputs = [...(script.inputs ?? [])];
   const confirms = [...(script.confirms ?? [])];
   const profileModes = [...(script.profileModes ?? [])];
+  const selectedItems = [...(script.selectedItems ?? [])];
+  const bulkSkillSettings = [...(script.bulkSkillSettings ?? [])];
   const toggleValues = [...(script.toggleValues ?? [])];
 
   return {
     selectArea: async () => nextValue(areas, "area"),
-    selectAction: async () => nextValue(actions, "action"),
+    selectAction: async (_area, choices) => {
+      script.onSelectActionChoices?.(choices);
+      return nextValue(actions, "action");
+    },
     selectItem: async (_area, choices) => {
       script.onSelectItemChoices?.(choices);
       return nextValue(items, "item");
+    },
+    selectItems: async (_area, choices) => {
+      script.onSelectItemsChoices?.(choices);
+      return nextValue(selectedItems, "selected items");
+    },
+    selectBulkSkillSetting: async (message, onLabel, offLabel) => {
+      script.onSelectBulkSkillSetting?.(message, onLabel, offLabel);
+      return nextValue(bulkSkillSettings, "bulk skill setting");
     },
     selectProfileMode: async () => nextValue(profileModes, "profile mode"),
     toggleBooleans: async (_area, choices) => {
@@ -653,8 +972,8 @@ function scriptedPrompts(script: {
       return nextValue(toggleValues, "toggle values");
     },
     input: async () => nextValue(inputs, "input"),
-    confirm: async (message) => {
-      script.onConfirm?.(message);
+    confirm: async (message, defaultValue) => {
+      script.onConfirm?.(message, defaultValue);
       return nextValue(confirms, "confirm");
     },
   };

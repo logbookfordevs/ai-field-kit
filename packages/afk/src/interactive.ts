@@ -1,7 +1,7 @@
 import { checkbox, input, select } from "@inquirer/prompts";
 import { detectSetupTargets, type TargetSelectionSource } from "./agent-detection.js";
 import { agentIds, hookAgentIds, skillAgentIds } from "./agents.js";
-import { loadHookManifest, loadMcpManifest, loadSkillManifest, loadPluginManifest, type SkillManifestItem } from "./manifest.js";
+import { loadCustomAgentManifest, loadHookManifest, loadMcpManifest, loadSkillManifest, loadPluginManifest, type SkillManifestItem } from "./manifest.js";
 import { DEFAULT_CHECKED, afkCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import type { AgentId, Area, CliOptions, SetupScope, SkillAgentId } from "./types.js";
 
@@ -18,6 +18,7 @@ export type SetupSelection = {
   hookAgents: AgentId[];
   setupScope: SetupScope;
   skillIds: string[];
+  customAgentIds?: string[];
   skillAgents: SkillAgentId[];
   mcpIds: string[];
   pluginIds: string[];
@@ -45,6 +46,12 @@ const setupAreaChoices: Choice<Area>[] = [
     value: "profiles",
     checked: DEFAULT_CHECKED,
     description: "Prepare AFK focus profile definitions from profiles.json.",
+  },
+  {
+    name: "Custom Agents",
+    value: "agents",
+    checked: DEFAULT_CHECKED,
+    description: "Provision portable Custom Agents into supported harnesses.",
   },
   {
     name: "MCPs",
@@ -81,6 +88,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
       hookAgents: hookAgentSelection.agents,
       setupScope: options.setupScope,
       skillIds: nonInteractiveSkillIds(options),
+      customAgentIds: nonInteractiveCustomAgentIds(options),
       skillAgents: skillAgentSelection.agents,
       mcpIds: loadMcpManifest(options).items.map((item) => item.id),
       pluginIds: loadPluginManifest(options).items.map((item) => item.id),
@@ -96,11 +104,12 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
   const detected = detectSetupTargets({ ...options, setupScope });
   const areas = await selectCheckbox("Choose what AFK should prepare", setupAreaChoices);
   const pluginIds = areas.includes("plugins") ? await selectPlugins(options) : [];
-  const needsAgents = areas.some((area) => area === "rules" || area === "mcps");
+  const needsAgents = areas.some((area) => area === "rules" || area === "mcps" || area === "agents");
   const agentSelection = needsAgents
-    ? await selectAgents(options.agents, detected.agents, agentPromptMessage(areas))
+    ? await selectSetupAgents(options.agents, detected.agents, areas)
     : { agents: options.agents, source: options.agents.length > 0 ? "explicit" : "none" as TargetSelectionSource };
   const skillIds = areas.includes("skills") ? await selectSkills(options) : [];
+  const customAgentIds = areas.includes("agents") ? await selectCustomAgents(options) : [];
   const skillAgentSelection = skillIds.length > 0
     ? selectSkillAgents(options, detected.skillAgents)
     : { agents: [], source: "none" as TargetSelectionSource };
@@ -116,6 +125,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     hookAgents: hookAgentSelection.agents,
     setupScope,
     skillIds,
+    customAgentIds,
     skillAgents: skillAgentSelection.agents,
     mcpIds,
     pluginIds,
@@ -165,6 +175,25 @@ export async function selectSkillsInstall(options: CliOptions): Promise<Pick<Set
     skillIds,
     skillAgents: skillIds.length > 0 ? selectSkillAgents(options, detected.skillAgents).agents : [],
   };
+}
+
+export async function selectCustomAgentsInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "customAgentIds">> {
+  if (options.yes) {
+    const detected = detectSetupTargets(options).agents.filter(isCustomAgentHarness);
+    return {
+      agents: options.agents.length > 0 ? options.agents.filter(isCustomAgentHarness) : detected,
+      customAgentIds: nonInteractiveCustomAgentIds(options),
+    };
+  }
+
+  resetPromptSteps();
+  const customAgentIds = await selectCustomAgents(options);
+  if (customAgentIds.length === 0) {
+    return { agents: [], customAgentIds: [] };
+  }
+  const detected = detectSetupTargets(options).agents.filter(isCustomAgentHarness);
+  const selection = await selectAgentChoices("Choose harnesses for Custom Agents", ["codex", "claude", "pi"], options.agents, detected);
+  return { agents: selection.agents, customAgentIds };
 }
 
 export async function selectMcpsInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "mcpIds" | "agentSource">> {
@@ -230,6 +259,10 @@ export function normalizeSetupSelection(selection: SetupSelection): SetupSelecti
         return selection.skillIds.length > 0;
       }
 
+      if (area === "agents") {
+        return (selection.customAgentIds?.length ?? 0) > 0 && selection.agents.some(isCustomAgentHarness);
+      }
+
       if (area === "mcps") {
         return selection.mcpIds.length > 0;
       }
@@ -293,6 +326,13 @@ function agentPromptMessage(areas: Area[]): string {
 
 async function selectAgents(preselected: AgentId[], detected: AgentId[], message: string): Promise<{ agents: AgentId[]; source: TargetSelectionSource }> {
   return selectAgentChoices(message, agentIds, preselected, detected);
+}
+
+async function selectSetupAgents(preselected: AgentId[], detected: AgentId[], areas: Area[]): Promise<{ agents: AgentId[]; source: TargetSelectionSource }> {
+  if (areas.length === 1 && areas[0] === "agents") {
+    return selectAgentChoices("Choose harnesses for Custom Agents", ["codex", "claude", "pi"], preselected, detected);
+  }
+  return selectAgents(preselected, detected, agentPromptMessage(areas));
 }
 
 async function selectHookAgents(preselected: AgentId[], detected: AgentId[]): Promise<{ agents: AgentId[]; source: TargetSelectionSource }> {
@@ -365,6 +405,30 @@ function nonInteractiveSkillIds(options: Pick<CliOptions, "homeDir" | "allSkills
     .filter((item) => item.default || options.allSkills)
     .map((item) => item.id);
   return options.allSkills ? selected : expandComposedSkillIds(items, selected);
+}
+
+function nonInteractiveCustomAgentIds(options: Pick<CliOptions, "homeDir" | "allCustomAgents" | "selectedCustomAgentIds" | "manifestContents">): string[] {
+  if ((options.selectedCustomAgentIds?.length ?? 0) > 0) {
+    return [...new Set(options.selectedCustomAgentIds ?? [])];
+  }
+  return options.allCustomAgents ? loadCustomAgentManifest(options).items.map((item) => item.id) : [];
+}
+
+async function selectCustomAgents(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string[]> {
+  const manifest = loadCustomAgentManifest(options);
+  return selectCheckbox(
+    "Choose Custom Agents to provision",
+    manifest.items.map((item) => ({
+      name: item.label,
+      value: item.id,
+      checked: false,
+      description: item.source,
+    })),
+  );
+}
+
+function isCustomAgentHarness(agent: AgentId): boolean {
+  return agent === "codex" || agent === "claude" || agent === "pi";
 }
 
 function setupSkillItems(items: SkillManifestItem[], includeImported: boolean): SkillManifestItem[] {

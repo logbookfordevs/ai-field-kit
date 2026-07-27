@@ -2,9 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { quoteArg } from "../delegates.js";
 import type { Runtime } from "../types.js";
-import { renderSkillUpgradeComplete, renderSkillUpgradeRoute } from "./render.js";
+import { renderSkillUpdateComplete, renderSkillUpdateRoute } from "./render.js";
 
-export type SkillUpgradeScope = "global" | "project" | "all";
+export type SkillUpdateScope = "global" | "project" | "all";
 
 export type LockedSkillScope = "global" | "project";
 
@@ -17,7 +17,7 @@ export type LockedSkillRecord = {
   updatedAt: string | undefined;
 };
 
-export type SkillUpgradeCommand = {
+export type SkillUpdateCommand = {
   label: string;
   command: string;
   args: string[];
@@ -42,7 +42,7 @@ type SkillLock = {
 export function loadLockedSkills(options: {
   homeDir: string;
   cwd: string;
-  scope: SkillUpgradeScope;
+  scope: SkillUpdateScope;
 }): LockedSkillRecord[] {
   const records: LockedSkillRecord[] = [];
 
@@ -65,12 +65,12 @@ export function loadLockedSkills(options: {
   });
 }
 
-export function buildSkillUpgradeCommands(options: {
+export function buildSkillUpdateCommands(options: {
   cwd: string;
-  scope: SkillUpgradeScope;
+  scope: SkillUpdateScope;
   skills: string[];
   yes: boolean;
-}): SkillUpgradeCommand[] {
+}): SkillUpdateCommand[] {
   const scopes: LockedSkillScope[] = options.scope === "all" ? ["global", "project"] : [options.scope];
   return scopes.map((scope) => {
     const args = [
@@ -93,13 +93,13 @@ export function buildSkillUpgradeCommands(options: {
   });
 }
 
-export async function runSkillUpgradeCommands(
+export async function runSkillUpdateCommands(
   runtime: Runtime,
-  commands: SkillUpgradeCommand[],
-  afterSuccess?: (command: SkillUpgradeCommand) => void,
+  commands: SkillUpdateCommand[],
+  afterSuccess?: (command: SkillUpdateCommand) => void,
 ): Promise<number> {
   for (const command of commands) {
-    runtime.io.stdout(renderSkillUpgradeRoute({
+    runtime.io.stdout(renderSkillUpdateRoute({
       label: command.label,
       commandLine: `${command.command} ${command.args.map(quoteArg).join(" ")}`,
     }));
@@ -111,7 +111,7 @@ export async function runSkillUpgradeCommands(
     afterSuccess?.(command);
   }
 
-  runtime.io.stdout(renderSkillUpgradeComplete({
+  runtime.io.stdout(renderSkillUpdateComplete({
     scopes: commands.map((command) => command.scope),
     skillNames: commands.flatMap((command) => command.skillNames),
   }));

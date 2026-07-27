@@ -1,9 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, ManifestCategory, ManifestFilename, PathOperation } from "./types.js";
 
-export const manifestNames = ["skills.json", "profiles.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
+export const manifestNames = ["skills.json", "profiles.json", "agents.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 export const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -54,6 +56,18 @@ export type McpManifestItem = {
   source: string;
   args: string[];
   default: boolean;
+};
+
+export type CustomAgentManifest = {
+  version: number;
+  items: CustomAgentManifestItem[];
+};
+
+export type CustomAgentManifestItem = {
+  id: string;
+  label: string;
+  source: string;
+  default?: never;
 };
 
 export type RulesManifest = {
@@ -130,10 +144,30 @@ type ManifestOptions = Pick<
   defaultsSourceExplicit?: boolean;
   rememberDefaultsSource?: boolean;
   selectedManifestCategories?: ManifestCategory[];
+  cloneGithubSource?: CloneGithubSource;
 };
 
 type ManifestDirOptions = Pick<CliOptions, "homeDir" | "manifestLocal"> & {
   cwd?: string;
+};
+
+type GithubSourceCheckout = {
+  rootDir: string;
+  cleanup: () => void;
+};
+
+type GithubSourceSpec = {
+  cloneUrl: string;
+  ref: string;
+  catalogDirs: string[];
+};
+
+type CloneGithubSource = (source: GithubSourceSpec) => Promise<GithubSourceCheckout>;
+
+type ManifestSourceSession = {
+  markPublic: () => void;
+  read: (name: ManifestName) => Promise<string | null>;
+  cleanup: () => void;
 };
 
 export function localAfkDir(homeDir: string): string {
@@ -186,27 +220,32 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
     operations.push({ type: "mkdir", path: manifestDir });
   }
 
-  for (const name of selectedNames) {
-    const target = join(manifestDir, name);
-    if (!shouldRefreshDefaults && existsSync(target)) {
-      const migrated = migrateLocalManifest(name, readFileSync(target, "utf8"));
-      if (migrated) {
-        operations.push({ type: "write", path: target, content: migrated });
+  const sourceSession = createManifestSourceSession(options, effectiveDefaultsSource);
+  try {
+    for (const name of selectedNames) {
+      const target = join(manifestDir, name);
+      if (!shouldRefreshDefaults && existsSync(target)) {
+        const migrated = migrateLocalManifest(name, readFileSync(target, "utf8"));
+        if (migrated) {
+          operations.push({ type: "write", path: target, content: migrated });
+        }
+        continue;
       }
-      continue;
-    }
 
-    const rawContent = options.empty
-      ? emptyManifestContent(name, options, effectiveDefaultsSource)
-      : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
-    const content = rawContent ? mergedManifestContent(name, rawContent, target) : rawContent;
-    if (content) {
-      operations.push({ type: "write", path: target, content });
-    } else if (existsSync(target)) {
-      operations.push({ type: "skip", path: target, reason: "not provided by defaults source" });
-    } else {
-      operations.push({ type: "write", path: target, content: emptyManifestContent(name, options, effectiveDefaultsSource) });
+      const rawContent = options.empty
+        ? emptyManifestContent(name, options, effectiveDefaultsSource)
+        : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, sourceSession);
+      const content = rawContent ? mergedManifestContent(name, rawContent, target) : rawContent;
+      if (content) {
+        operations.push({ type: "write", path: target, content });
+      } else if (existsSync(target)) {
+        operations.push({ type: "skip", path: target, reason: "not provided by defaults source" });
+      } else {
+        operations.push({ type: "write", path: target, content: emptyManifestContent(name, options, effectiveDefaultsSource) });
+      }
     }
+  } finally {
+    sourceSession.cleanup();
   }
 
   return operations;
@@ -221,6 +260,10 @@ function mergedManifestContent(name: ManifestName, content: string, targetPath: 
     return mergedProfilesManifestContent(content, targetPath);
   }
 
+  if (name === "agents.json") {
+    return mergedCustomAgentManifestContent(content, targetPath);
+  }
+
   return content;
 }
 
@@ -229,7 +272,12 @@ export async function loadDefaultManifestContent(name: ManifestName, options: Ma
   const rememberedSource = rememberedDefaultsSource(manifestDir);
   const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
-  return defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite);
+  const sourceSession = createManifestSourceSession(options, effectiveDefaultsSource);
+  try {
+    return await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, sourceSession);
+  } finally {
+    sourceSession.cleanup();
+  }
 }
 
 export async function loadSourceManifestContents(options: ManifestOptions): Promise<Partial<Record<ManifestFilename, string>>> {
@@ -237,9 +285,16 @@ export async function loadSourceManifestContents(options: ManifestOptions): Prom
   const manifestDir = manifestDirForOptions(options);
   const rememberedSource = rememberedDefaultsSource(manifestDir);
   const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+  const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
+  const sourceSession = createManifestSourceSession(options, effectiveDefaultsSource);
 
-  for (const name of manifestNamesForCategories(options.selectedManifestCategories ?? [])) {
-    contents[name] = await loadDefaultManifestContent(name, options) ?? emptyManifestContent(name, options, effectiveDefaultsSource);
+  try {
+    for (const name of manifestNamesForCategories(options.selectedManifestCategories ?? [])) {
+      contents[name] = await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, sourceSession)
+        ?? emptyManifestContent(name, options, effectiveDefaultsSource);
+    }
+  } finally {
+    sourceSession.cleanup();
   }
 
   return contents;
@@ -261,6 +316,8 @@ export function manifestNameForCategory(category: ManifestCategory): ManifestNam
       return "skills.json";
     case "profiles":
       return "profiles.json";
+    case "agents":
+      return "agents.json";
     case "mcps":
       return "mcps.json";
     case "plugins":
@@ -278,6 +335,10 @@ export function loadSkillManifest(options: Pick<CliOptions, "homeDir" | "manifes
 
 export function loadMcpManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): McpManifest {
   return parseManifest<McpManifest>(options, "mcps.json", isMcpManifest);
+}
+
+export function loadCustomAgentManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): CustomAgentManifest {
+  return parseManifest<CustomAgentManifest>(options, "agents.json", isCustomAgentManifest);
 }
 
 export function loadRulesManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): RulesManifest {
@@ -326,16 +387,47 @@ async function defaultManifestContent(
   options: ManifestOptions,
   defaultsSource: string,
   rememberedSourceForWrite: string,
+  sourceSession: ManifestSourceSession,
 ): Promise<string | null> {
   if (name === "presets.json") {
-    const content = await fetchDefaultManifest(name, options, defaultsSource);
+    const content = await fetchDefaultManifest(name, options, defaultsSource, sourceSession);
     return content ? withRememberedDefaultsSource(content, rememberedSourceForWrite) : null;
   }
 
-  return fetchDefaultManifest(name, options, defaultsSource);
+  const content = await fetchDefaultManifest(name, options, defaultsSource, sourceSession);
+  if (name !== "agents.json" || !content) {
+    return content;
+  }
+
+  const sourceRoot = options.rulesSource === "local" ? options.repoDir : defaultsSource;
+  return resolvedCustomAgentManifestContent(content, sourceRoot, options.rulesRef, options.cwd ?? process.cwd());
 }
 
-async function fetchDefaultManifest(name: ManifestName, options: ManifestOptions, defaultsSource: string): Promise<string | null> {
+export function resolvedCustomAgentManifestContent(content: string, sourceRoot: string, ref: string, cwd: string): string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+  if (!isCustomAgentManifest(parsed)) {
+    return content;
+  }
+
+  const base = customAgentSourceBase(sourceRoot, ref, cwd);
+  const items = parsed.items.map((item) => ({
+    ...item,
+    source: resolvedCustomAgentSource(item.source, base),
+  }));
+  return `${JSON.stringify({ ...parsed, items }, null, 2)}\n`;
+}
+
+async function fetchDefaultManifest(
+  name: ManifestName,
+  options: ManifestOptions,
+  defaultsSource: string,
+  sourceSession: ManifestSourceSession,
+): Promise<string | null> {
   if (options.rulesSource === "local") {
     return readLocalPackageManifest(name, options);
   }
@@ -350,14 +442,13 @@ async function fetchDefaultManifest(name: ManifestName, options: ManifestOptions
       const url = `${baseUrl}/${name}`;
       const response = await fetch(url);
       if (response.ok) {
+        sourceSession.markPublic();
         return ensureTrailingNewline(await response.text());
       }
     }
-  } catch {
-    return null;
-  }
+  } catch {}
 
-  return null;
+  return sourceSession.read(name);
 }
 
 function readLocalPackageManifest(name: ManifestName, options: ManifestOptions): string | null {
@@ -401,6 +492,165 @@ function readLocalDefaultManifest(name: ManifestName, options: ManifestOptions, 
   }
 
   return null;
+}
+
+function createManifestSourceSession(options: ManifestOptions, source: string): ManifestSourceSession {
+  const sourceSpec = githubSourceSpec(source, options.rulesRef);
+  const cloneGithubSource = options.cloneGithubSource ?? cloneGithubCatalogSource;
+  let checkoutPromise: Promise<GithubSourceCheckout> | null = null;
+  let checkout: GithubSourceCheckout | null = null;
+  let publicSourceReached = false;
+
+  return {
+    markPublic: () => {
+      publicSourceReached = true;
+    },
+    read: async (name) => {
+      if (!sourceSpec || publicSourceReached) {
+        return null;
+      }
+
+      checkoutPromise ??= cloneGithubSource(sourceSpec);
+      checkout = await checkoutPromise;
+      for (const catalogDir of sourceSpec.catalogDirs) {
+        const candidate = join(checkout.rootDir, catalogDir, name);
+        if (existsSync(candidate)) {
+          return ensureTrailingNewline(readFileSync(candidate, "utf8"));
+        }
+      }
+
+      return null;
+    },
+    cleanup: () => {
+      checkout?.cleanup();
+      checkout = null;
+    },
+  };
+}
+
+function githubSourceSpec(source: string, fallbackRef: string): GithubSourceSpec | null {
+  const normalized = source.trim().replace(/\/$/, "");
+  const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
+  if (rawMatch) {
+    const [, owner, repo, ref, path] = rawMatch;
+    return githubSourceSpecForRepo(owner ?? "", repo ?? "", ref ?? fallbackRef, [path?.replace(/\/$/, "") ?? ""]);
+  }
+
+  const treeMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)$/);
+  if (treeMatch) {
+    const [, owner, repo, ref, path] = treeMatch;
+    return githubSourceSpecForRepo(owner ?? "", repo ?? "", ref ?? fallbackRef, [path?.replace(/\/$/, "") ?? ""]);
+  }
+
+  const repoMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)$/);
+  if (repoMatch) {
+    const [, owner, repo] = repoMatch;
+    return githubSourceSpecForRepo(owner ?? "", repo ?? "", fallbackRef);
+  }
+
+  const shorthandMatch = normalized.match(/^([^/\s]+)\/([^/\s]+)$/);
+  if (shorthandMatch) {
+    const [, owner, repo] = shorthandMatch;
+    return githubSourceSpecForRepo(owner ?? "", repo ?? "", fallbackRef);
+  }
+
+  return null;
+}
+
+function githubSourceSpecForRepo(
+  owner: string,
+  repo: string,
+  ref: string,
+  catalogDirs = ["afk/catalog", "packages/afk/catalog"],
+): GithubSourceSpec {
+  return {
+    cloneUrl: `https://github.com/${owner}/${repo}.git`,
+    ref,
+    catalogDirs,
+  };
+}
+
+async function cloneGithubCatalogSource(source: GithubSourceSpec): Promise<GithubSourceCheckout> {
+  const tempRoot = mkdtempSync(join(tmpdir(), "afk-catalog-source-"));
+  const rootDir = join(tempRoot, "repo");
+  const status = startCatalogCloneStatus();
+
+  try {
+    await runGit(["init", rootDir], source);
+    await runGit(["-C", rootDir, "remote", "add", "origin", source.cloneUrl], source);
+    await runGit(["-C", rootDir, "fetch", "--depth", "1", "origin", source.ref], source);
+    await runGit(["-C", rootDir, "checkout", "--detach", "FETCH_HEAD"], source);
+    status.stop(true);
+  } catch (error) {
+    status.stop(false);
+    rmSync(tempRoot, { recursive: true, force: true });
+    throw error;
+  }
+
+  return {
+    rootDir,
+    cleanup: () => {
+      rmSync(tempRoot, { recursive: true, force: true });
+    },
+  };
+}
+
+function runGit(args: string[], source: GithubSourceSpec): Promise<void> {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn("git", args, {
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: "0",
+      },
+      stdio: ["ignore", "ignore", "pipe"],
+    });
+    let stderr = "";
+
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+    child.on("error", (error) => {
+      rejectPromise(catalogCloneError(source, error.message));
+    });
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolvePromise();
+        return;
+      }
+
+      rejectPromise(catalogCloneError(source, stderr.trim() || `git exited with code ${code ?? "unknown"}`));
+    });
+  });
+}
+
+function catalogCloneError(source: GithubSourceSpec, detail: string): Error {
+  return new Error(`Unable to read AFK catalog from ${source.cloneUrl} at ${source.ref}: ${detail}`);
+}
+
+function startCatalogCloneStatus(): { stop: (success: boolean) => void } {
+  if (!process.stdout.isTTY || process.env.CI === "true") {
+    return { stop: () => {} };
+  }
+
+  const start = "- Catalog source: fetching with Git...";
+  const done = "- Catalog source: ready";
+  const failed = "- Catalog source: needs attention";
+  const frames = ["-", "\\", "|", "/"];
+  let index = 0;
+
+  process.stdout.write(`${start} `);
+  const timer = setInterval(() => {
+    process.stdout.write(`\r${start} ${frames[index % frames.length]}`);
+    index += 1;
+  }, 80);
+
+  return {
+    stop: (success) => {
+      clearInterval(timer);
+      process.stdout.write(`\r${success ? done : failed}${" ".repeat(24)}\n`);
+    },
+  };
 }
 
 function unique(values: string[]): string[] {
@@ -505,6 +755,54 @@ function defaultRepoManifestUrls(owner: string, repo: string, ref: string): stri
   ];
 }
 
+function customAgentSourceBase(source: string, ref: string, cwd: string): string {
+  const normalized = source.trim().replace(/\/$/, "");
+
+  const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)(?:\/(.*))?$/);
+  if (rawMatch) {
+    const [, owner, repo, sourceRef, path] = rawMatch;
+    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+  }
+
+  const githubTreeMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)(?:\/(.*))?$/);
+  if (githubTreeMatch) {
+    const [, owner, repo, sourceRef, path] = githubTreeMatch;
+    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+  }
+
+  const githubRepoMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)$/);
+  if (githubRepoMatch) {
+    const [, owner, repo] = githubRepoMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(ref)}`;
+  }
+
+  const shorthandMatch = normalized.match(/^([^/\s]+)\/([^/\s]+)$/);
+  if (shorthandMatch) {
+    const [, owner, repo] = shorthandMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(ref)}`;
+  }
+
+  if (/^https?:\/\//.test(normalized)) {
+    return normalized;
+  }
+
+  return isAbsolute(normalized) ? normalized : resolve(cwd, normalized);
+}
+
+function resolvedCustomAgentSource(source: string, base: string): string {
+  if (/^https?:\/\//.test(source) || isAbsolute(source)) {
+    return source;
+  }
+
+  if (/^https?:\/\//.test(base)) {
+    return new URL(source, `${base.replace(/\/$/, "")}/`).toString();
+  }
+
+  return resolve(base, source);
+}
+
 function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rulesRef" | "rulesSource">, defaultsSource: string): string {
   if (name === "skills.json") {
     return `${JSON.stringify({ version: 1, defaultSource: "", scopes: [], items: [] }, null, 2)}\n`;
@@ -512,6 +810,10 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
 
   if (name === "profiles.json") {
     return `${JSON.stringify({ version: 1, mode: "strict", alwaysOn: [], items: [] }, null, 2)}\n`;
+  }
+
+  if (name === "agents.json") {
+    return `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`;
   }
 
   if (name === "mcps.json") {
@@ -658,6 +960,45 @@ function mergedSkillsManifestContent(content: string, targetPath: string): strin
   return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
 }
 
+export function mergedCustomAgentManifestContent(content: string, targetPath: string): string {
+  let refreshed: unknown;
+  try {
+    refreshed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+
+  if (!isCustomAgentManifest(refreshed)) {
+    return content;
+  }
+
+  const existing = readExistingCustomAgentManifest(targetPath);
+  if (!existing) {
+    return `${JSON.stringify(refreshed, null, 2)}\n`;
+  }
+
+  const incomingById = new Map(refreshed.items.map((item) => [item.id, item]));
+  const existingIds = new Set(existing.items.map((item) => item.id));
+  const items = [
+    ...existing.items.map((item) => incomingById.get(item.id) ?? item),
+    ...refreshed.items.filter((item) => !existingIds.has(item.id)),
+  ];
+  return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
+}
+
+function readExistingCustomAgentManifest(path: string): CustomAgentManifest | null {
+  if (!existsSync(path)) {
+    return null;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    return isCustomAgentManifest(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function mergedProfilesManifestContent(content: string, targetPath: string): string {
   const refreshed = parseProfilesManifest(content);
   const existing = readProfilesManifest(targetPath);
@@ -717,7 +1058,6 @@ function isProfileManifestItem(value: unknown): value is ProfilesManifest["items
     Array.isArray(value.skills) &&
     value.skills.every((skill) => typeof skill === "string");
 }
-
 function stripRetiredSkillManifestFields(item: SkillManifestItem): SkillManifestItem {
   const next = { ...item } as SkillManifestItem & { profiles?: unknown };
   delete next.profiles;
@@ -856,6 +1196,20 @@ function isMcpManifest(value: unknown): value is McpManifest {
       typeof item.default === "boolean"
     );
   });
+}
+
+export function isCustomAgentManifest(value: unknown): value is CustomAgentManifest {
+  if (!isRecord(value) || typeof value.version !== "number" || !Array.isArray(value.items)) {
+    return false;
+  }
+
+  return value.items.every((item) => (
+    isRecord(item) &&
+    typeof item.id === "string" &&
+    typeof item.label === "string" &&
+    typeof item.source === "string" &&
+    item.default === undefined
+  ));
 }
 
 function isRulesManifest(value: unknown): value is RulesManifest {
