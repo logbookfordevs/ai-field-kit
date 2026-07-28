@@ -9,8 +9,6 @@ metadata:
 
 Use this skill to route a focused prompt to another locally installed AI CLI and preserve the result as an artifact for later review or reuse.
 
-This is inspired by `omc ask`, but it is standalone AFK behavior. Do not require OMC, Claude-specific paths, or framework-specific wrappers.
-
 ## Invocation
 
 ```text
