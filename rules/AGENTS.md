@@ -28,8 +28,8 @@ Whenever the agent decides to use a skill, it must explicitly state it in its re
 - TypeScript changes must pass the repo typecheck before final handoff.
 
 ## React
-- Keep conditional rendering explicit: use a positive `&&` check for one optional JSX element; for mutually exclusive JSX branches, compute a named element before the return or extract a component. Keep value-selection ternaries short and flat; hoist nested or hard-to-scan expressions into named values.
-- Conditional JSX should use named booleans, not chained `||` expressions inside `{condition && (...)}` blocks. Hoist OR logic above the return, such as `const showActions = isReady && canEdit`, then use `&&` with those names in JSX. For repeated status unions like `active | pending` or `loading | refreshing`, use shared helpers in `utils/`, such as `isActiveStatus`, instead of duplicating OR expressions.
+- Keep conditional rendering explicit: use `&&` for one optional JSX element and keep simple local conditions inline; for mutually exclusive JSX branches, compute a named element before the return or extract a component. Keep value-selection ternaries short and flat; hoist nested or hard-to-scan expressions into named values.
+- Name complex or repeated JSX conditions and hoist chained `||` logic above the return. For repeated status unions like `active | pending` or `loading | refreshing`, use shared helpers in `utils/`, such as `isActiveStatus`, instead of duplicating OR expressions.
 
 ## Browser Testing
 - Prefer `agent-browser` CLI when available over playwright CLI.
