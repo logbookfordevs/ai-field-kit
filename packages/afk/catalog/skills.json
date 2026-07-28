@@ -309,6 +309,34 @@
             "composes": []
         },
         {
+            "id": "bro",
+            "label": "Bro",
+            "source": "backnotprop/bro",
+            "args": [
+                "--skill",
+                "bro",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "facts",
+            "label": "Facts",
+            "source": "backnotprop/bro",
+            "args": [
+                "--skill",
+                "facts",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "design-artifact",
             "label": "Design Artifact",
             "source": "https://github.com/plannotator/design-artifact",
