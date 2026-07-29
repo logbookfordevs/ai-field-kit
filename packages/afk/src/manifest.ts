@@ -74,6 +74,12 @@ export type RulesManifest = {
   version: number;
   source: "github" | "local";
   url: string;
+  files?: RulesManifestFile[];
+};
+
+export type RulesManifestFile = {
+  source: string;
+  destination: string;
 };
 
 export type PluginManifest = {
@@ -385,12 +391,18 @@ async function defaultManifestContent(
   }
 
   const content = await fetchDefaultManifest(name, options, defaultsSource, sourceSession);
-  if (name !== "agents.json" || !content) {
+  if (!content) {
     return content;
   }
 
   const sourceRoot = options.rulesSource === "local" ? options.repoDir : defaultsSource;
-  return resolvedCustomAgentManifestContent(content, sourceRoot, options.rulesRef, options.cwd ?? process.cwd());
+  if (name === "agents.json") {
+    return resolvedCustomAgentManifestContent(content, sourceRoot, options.rulesRef, options.cwd ?? process.cwd());
+  }
+  if (name === "rules.json") {
+    return resolvedRulesManifestContent(content, sourceRoot, options.rulesRef, options.cwd ?? process.cwd());
+  }
+  return content;
 }
 
 export function resolvedCustomAgentManifestContent(content: string, sourceRoot: string, ref: string, cwd: string): string {
@@ -404,12 +416,38 @@ export function resolvedCustomAgentManifestContent(content: string, sourceRoot: 
     return content;
   }
 
-  const base = customAgentSourceBase(sourceRoot, ref, cwd);
+  const base = catalogSourceBase(sourceRoot, ref, cwd);
   const items = parsed.items.map((item) => ({
     ...item,
-    source: resolvedCustomAgentSource(item.source, base),
+    source: resolvedCatalogSource(item.source, base),
   }));
   return `${JSON.stringify({ ...parsed, items }, null, 2)}\n`;
+}
+
+export function resolvedRulesManifestContent(content: string, sourceRoot: string, ref: string, cwd: string): string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+  if (!isRulesManifest(parsed)) {
+    return content;
+  }
+
+  const base = catalogSourceBase(sourceRoot, ref, cwd);
+  return `${JSON.stringify({
+    ...parsed,
+    url: parsed.url ? resolvedCatalogSource(parsed.url, base) : "",
+    ...(parsed.files === undefined
+      ? {}
+      : {
+          files: parsed.files.map((file) => ({
+            ...file,
+            source: resolvedCatalogSource(file.source, base),
+          })),
+        }),
+  }, null, 2)}\n`;
 }
 
 async function fetchDefaultManifest(
@@ -745,21 +783,19 @@ function defaultRepoManifestUrls(owner: string, repo: string, ref: string): stri
   ];
 }
 
-function customAgentSourceBase(source: string, ref: string, cwd: string): string {
+function catalogSourceBase(source: string, ref: string, cwd: string): string {
   const normalized = source.trim().replace(/\/$/, "");
 
   const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)(?:\/(.*))?$/);
   if (rawMatch) {
-    const [, owner, repo, sourceRef, path] = rawMatch;
-    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
-    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+    const [, owner, repo, sourceRef] = rawMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}`;
   }
 
   const githubTreeMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)(?:\/(.*))?$/);
   if (githubTreeMatch) {
-    const [, owner, repo, sourceRef, path] = githubTreeMatch;
-    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
-    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+    const [, owner, repo, sourceRef] = githubTreeMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}`;
   }
 
   const githubRepoMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)$/);
@@ -778,10 +814,33 @@ function customAgentSourceBase(source: string, ref: string, cwd: string): string
     return normalized;
   }
 
-  return isAbsolute(normalized) ? normalized : resolve(cwd, normalized);
+  const localSource = isAbsolute(normalized) ? normalized : resolve(cwd, normalized);
+  return localCatalogRepositoryRoot(localSource);
 }
 
-function resolvedCustomAgentSource(source: string, base: string): string {
+function localCatalogRepositoryRoot(source: string): string {
+  let current = source;
+  while (true) {
+    if (existsSync(join(current, ".git"))) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+
+  for (const suffix of [join("packages", "afk", "catalog"), join("afk", "catalog")]) {
+    if (source.endsWith(suffix)) {
+      return source.slice(0, -suffix.length).replace(/[\\/]$/, "");
+    }
+  }
+
+  return source;
+}
+
+function resolvedCatalogSource(source: string, base: string): string {
   if (/^https?:\/\//.test(source) || isAbsolute(source)) {
     return source;
   }
@@ -1202,12 +1261,22 @@ export function isCustomAgentManifest(value: unknown): value is CustomAgentManif
   ));
 }
 
-function isRulesManifest(value: unknown): value is RulesManifest {
+export function isRulesManifest(value: unknown): value is RulesManifest {
   if (!isRecord(value) || typeof value.version !== "number" || (value.source !== "github" && value.source !== "local")) {
     return false;
   }
 
-  return typeof value.url === "string";
+  return (
+    typeof value.url === "string" &&
+    (value.files === undefined || (
+      Array.isArray(value.files) &&
+      value.files.every((file) => (
+        isRecord(file) &&
+        typeof file.source === "string" &&
+        typeof file.destination === "string"
+      ))
+    ))
+  );
 }
 
 function isPluginManifest(value: unknown): value is PluginManifest {

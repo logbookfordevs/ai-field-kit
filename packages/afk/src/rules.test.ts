@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
 import { planRulesSync } from "./rules.js";
+import type { CliOptions } from "./types.js";
 
 test("planRulesSync injects AFK rules into the selected global agent file", () => {
   const operations = planRulesSync(
@@ -23,6 +24,257 @@ test("planRulesSync injects AFK rules into the selected global agent file", () =
   assert.ok(!operations.some((operation) => operation.type === "symlink"));
   assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.codex/AGENTS.md" && operation.content.includes("<!-- AFK:RULES:START -->")));
   assert.ok(!operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.claude/CLAUDE.md"));
+});
+
+test("planRulesSync installs shared global rule files and expands their directory placeholder", () => {
+  const operations = planRulesSync(
+    {
+      agents: ["codex", "claude"],
+      homeDir: "/tmp/home",
+      cwd: "/tmp/project",
+      setupScope: "global",
+    },
+    {
+      afk: "Read `{{AFK_RULES_DIR}}/artifacts.md` when choosing an artifact destination.\n",
+      files: [
+        {
+          destination: "artifacts.md",
+          content: "# Artifact conventions\n",
+        },
+      ],
+    },
+  );
+
+  const dependencyWrites = operations.filter((operation) => (
+    operation.type === "write" &&
+    operation.path === "/tmp/home/.agents/afk/rules/artifacts.md"
+  ));
+  assert.equal(dependencyWrites.length, 1);
+  assert.equal(dependencyWrites[0]?.type === "write" ? dependencyWrites[0].content : "", "# Artifact conventions\n");
+
+  const hostWrites = operations.filter((operation) => (
+    operation.type === "write" &&
+    (operation.path === "/tmp/home/.codex/AGENTS.md" || operation.path === "/tmp/home/.claude/CLAUDE.md")
+  ));
+  assert.equal(hostWrites.length, 2);
+  for (const operation of hostWrites) {
+    assert.ok(operation.type === "write");
+    assert.ok(operation.content.includes("/tmp/home/.agents/afk/rules/artifacts.md"));
+    assert.ok(!operation.content.includes("{{AFK_RULES_DIR}}"));
+  }
+});
+
+test("planRulesSync installs project rule files inside the project-owned AFK directory", () => {
+  const operations = planRulesSync(
+    {
+      agents: ["codex"],
+      homeDir: "/tmp/home",
+      cwd: "/tmp/project",
+      setupScope: "project",
+    },
+    {
+      afk: "Read `{{AFK_RULES_DIR}}/artifacts.md`.\n",
+      files: [
+        {
+          destination: "artifacts.md",
+          content: "# Artifact conventions\n",
+        },
+      ],
+    },
+  );
+
+  assert.ok(operations.some((operation) => (
+    operation.type === "write" &&
+    operation.path === "/tmp/project/.agents/afk/rules/artifacts.md"
+  )));
+  const hostWrite = operations.find((operation) => (
+    operation.type === "write" &&
+    operation.path === "/tmp/project/AGENTS.md"
+  ));
+  assert.ok(hostWrite && hostWrite.type === "write");
+  assert.ok(hostWrite.content.includes("/tmp/project/.agents/afk/rules/artifacts.md"));
+});
+
+test("planRulesSync rejects unsafe and duplicate dependency destinations", () => {
+  const options: Pick<CliOptions, "agents" | "homeDir" | "cwd" | "setupScope"> = {
+    agents: ["codex"],
+    homeDir: "/tmp/home",
+    cwd: "/tmp/project",
+    setupScope: "global",
+  };
+
+  assert.throws(
+    () => planRulesSync(options, {
+      afk: "# AFK\n",
+      files: [{ destination: "../outside.md", content: "unsafe\n" }],
+    }),
+    /Invalid rules file destination: \.\.\/outside\.md/,
+  );
+  assert.throws(
+    () => planRulesSync(options, {
+      afk: "# AFK\n",
+      files: [
+        { destination: "same.md", content: "one\n" },
+        { destination: "same.md", content: "two\n" },
+      ],
+    }),
+    /Duplicate rules file destination: same\.md/,
+  );
+});
+
+test("planRulesSync rejects dependency destinations beneath symlinked managed paths", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-rules-symlink-"));
+  try {
+    const homeDir = join(root, "home");
+    const dependencyRoot = join(homeDir, ".agents", "afk", "rules");
+    const externalDir = join(root, "external");
+    mkdirSync(dependencyRoot, { recursive: true });
+    mkdirSync(externalDir, { recursive: true });
+    symlinkSync(externalDir, join(dependencyRoot, "linked"));
+
+    assert.throws(
+      () => planRulesSync(
+        {
+          agents: ["codex"],
+          homeDir,
+          cwd: "/tmp/project",
+          setupScope: "global",
+        },
+        {
+          afk: "# AFK\n",
+          files: [
+            { destination: "linked/artifacts.md", content: "unsafe\n" },
+          ],
+        },
+      ),
+      /Rules file destination crosses a symlink: linked\/artifacts\.md/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("planRulesSync rejects stale dependency cleanup beneath symlinked managed paths", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-rules-stale-symlink-"));
+  try {
+    const homeDir = join(root, "home");
+    const dependencyRoot = join(homeDir, ".agents", "afk", "rules");
+    const externalDir = join(root, "external");
+    mkdirSync(dependencyRoot, { recursive: true });
+    mkdirSync(externalDir, { recursive: true });
+    writeFileSync(join(externalDir, "stale.md"), "old\n");
+    symlinkSync(externalDir, join(dependencyRoot, "linked"));
+    writeFileSync(
+      join(dependencyRoot, ".ai-field-kit-managed"),
+      `${JSON.stringify({
+        version: 1,
+        files: [
+          {
+            path: "linked/stale.md",
+            sha256: "01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+          },
+        ],
+      }, null, 2)}\n`,
+    );
+
+    assert.throws(
+      () => planRulesSync(
+        {
+          agents: ["codex"],
+          homeDir,
+          cwd: "/tmp/project",
+          setupScope: "global",
+        },
+        { afk: "# AFK\n", files: [] },
+      ),
+      /Rules file destination crosses a symlink: linked\/stale\.md/,
+    );
+    assert.equal(readFileSync(join(externalDir, "stale.md"), "utf8"), "old\n");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("planRulesSync removes only stale files recorded in the managed dependency inventory", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-rules-files-"));
+  try {
+    const homeDir = join(root, "home");
+    const dependencyRoot = join(homeDir, ".agents", "afk", "rules");
+    mkdirSync(dependencyRoot, { recursive: true });
+    writeFileSync(join(dependencyRoot, "old.md"), "old\n");
+    writeFileSync(join(dependencyRoot, "modified.md"), "modified\n");
+    mkdirSync(join(dependencyRoot, "folder.md"));
+    writeFileSync(join(dependencyRoot, "folder.md", "keep.md"), "keep\n");
+    writeFileSync(join(dependencyRoot, "unmanaged.md"), "keep\n");
+    writeFileSync(
+      join(dependencyRoot, ".ai-field-kit-managed"),
+      `${JSON.stringify({
+        version: 1,
+        files: [
+          {
+            path: "old.md",
+            sha256: "01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+          },
+          {
+            path: "modified.md",
+            sha256: "01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+          },
+          {
+            path: "folder.md",
+            sha256: "01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+          },
+        ],
+      }, null, 2)}\n`,
+    );
+
+    const operations = planRulesSync(
+      {
+        agents: ["codex"],
+        homeDir,
+        cwd: "/tmp/project",
+        setupScope: "global",
+      },
+      {
+        afk: "# AFK\n",
+        files: [
+          { destination: "current.md", content: "current\n" },
+        ],
+      },
+    );
+
+    assert.ok(operations.some((operation) => (
+      operation.type === "remove" &&
+      operation.path === join(dependencyRoot, "old.md")
+    )));
+    assert.ok(!operations.some((operation) => (
+      operation.type === "remove" &&
+      operation.path === join(dependencyRoot, "unmanaged.md")
+    )));
+    assert.ok(!operations.some((operation) => (
+      operation.type === "remove" &&
+      operation.path === join(dependencyRoot, "modified.md")
+    )));
+    assert.ok(!operations.some((operation) => (
+      operation.type === "remove" &&
+      operation.path === join(dependencyRoot, "folder.md")
+    )));
+    const inventoryWrite = operations.find((operation) => (
+      operation.type === "write" &&
+      operation.path === join(dependencyRoot, ".ai-field-kit-managed")
+    ));
+    assert.ok(inventoryWrite && inventoryWrite.type === "write");
+    assert.deepEqual(JSON.parse(inventoryWrite.content), {
+      version: 1,
+      files: [
+        {
+          path: "current.md",
+          sha256: "48aa6cae8c70abdb28631d22b316e6d9f9d0768ec2911de7090e248b2afe6ca1",
+        },
+      ],
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("planRulesSync strips markdown imports from the managed rules region", () => {

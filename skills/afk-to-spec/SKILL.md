@@ -9,7 +9,7 @@ metadata:
 
 This skill takes the current conversation context and codebase understanding and produces a spec. Do NOT interview the user — just synthesize what you already know.
 
-Save the spec as a local AFK artifact by default. The artifact location should follow the repo convention or AFK artifact conventions. If no convention exists, write to `docs/<task-slug>/<task-slug>.spec.md`.
+Save the spec as a local artifact following the active repo or user convention.
 
 ## Process
 

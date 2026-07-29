@@ -93,4 +93,4 @@ Accepted trade-off: [cost we knowingly accept]
 Implementation note: [what the builder should do next]
 ```
 
-Write an ADR only when the decision is hard to reverse, surprising, or likely to be reopened later. If writing one, follow the repo's convention; otherwise use `docs/<task-slug>/decisions/`.
+Write an ADR only when the decision is hard to reverse, surprising, or likely to be reopened later. Follow the active repo or user artifact convention.

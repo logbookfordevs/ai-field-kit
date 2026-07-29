@@ -377,7 +377,7 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "setup rules": {
     title: "AFK setup rules",
-    summary: "Sync AFK rules into managed rule regions.",
+    summary: "Sync AFK rules and dependency files into managed locations.",
     usage: "afk setup rules [options]",
     options: setupAreaOptions,
     examples: [
@@ -388,7 +388,7 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "setup rules sync": {
     title: "AFK setup rules",
-    summary: "Sync AFK rules into managed rule regions.",
+    summary: "Sync AFK rules and dependency files into managed locations.",
     usage: "afk setup rules [options]",
     options: setupAreaOptions,
     examples: [

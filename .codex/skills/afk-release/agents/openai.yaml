@@ -1,0 +1,6 @@
+interface:
+  display_name: "AFK Release"
+  short_description: "Prepare and publish an AFK CLI release"
+  default_prompt: "Use $afk-release to prepare and publish an AFK CLI release."
+policy:
+  allow_implicit_invocation: false

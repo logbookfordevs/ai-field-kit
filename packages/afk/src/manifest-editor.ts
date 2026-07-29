@@ -1,16 +1,18 @@
-import type {
-  HookManifest,
-  HookManifestItem,
-  CustomAgentManifest,
-  CustomAgentManifestItem,
-  McpManifest,
-  McpManifestItem,
-  RulesManifest,
-  SkillManifest,
-  SkillManifestItem,
-  PluginManifest,
-  PluginManifestItem,
+import {
+  isRulesManifest,
+  type HookManifest,
+  type HookManifestItem,
+  type CustomAgentManifest,
+  type CustomAgentManifestItem,
+  type McpManifest,
+  type McpManifestItem,
+  type RulesManifest,
+  type SkillManifest,
+  type SkillManifestItem,
+  type PluginManifest,
+  type PluginManifestItem,
 } from "./manifest.js";
+import { validateRulesFileDestinations } from "./rules-file-destinations.js";
 import type { Area } from "./types.js";
 
 export type EditableManifestArea = Exclude<Area, "profiles">;
@@ -156,6 +158,8 @@ export function validateEditableManifest(area: EditableManifestArea, manifest: E
   }
 
   if (area === "rules") {
+    const rules = manifest as RulesManifest;
+    errors.push(...validateRulesFileDestinations((rules.files ?? []).map((file) => file.destination)).errors);
     return errors;
   }
 
@@ -234,11 +238,6 @@ function isItemManifest(value: EditableManifest): value is ItemManifest {
 
 function isItemRecord(value: unknown): value is EditableManifestItem {
   return isRecord(value) && typeof value.id === "string";
-}
-
-function isRulesManifest(value: EditableManifest): value is RulesManifest {
-  const record = toRecord(value);
-  return Boolean(record && typeof record.version === "number" && (record.source === "github" || record.source === "local") && typeof record.url === "string");
 }
 
 function isSkillManifest(value: EditableManifest): value is SkillManifest {

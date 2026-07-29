@@ -26,8 +26,9 @@ Look for the originating spec, in this order:
 
 1. Issue references in commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), PR metadata, branch names, or user-provided context.
 2. A path the user passed as an argument.
-3. A PRD/spec file under docs/, specs/, or .scratch/ matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there is not one, the **Spec** axis will skip and report "no spec available".
+3. A PRD under the active artifact convention or `.scratch/` matching the branch name or feature.
+4. A spec under the active artifact convention or `.scratch/` matching the branch name or feature.
+5. If nothing is found, ask the user where the spec is. If they say there is not one, the **Spec** axis will skip and report "no spec available".
 
 ### 3. Identify the standards sources
 

@@ -46,6 +46,126 @@ test("Custom Agent sources resolve relative to a local catalog repository", asyn
   assert.equal(agents.items[0]?.source, join(sourceRoot, "agents", "notion_assistant.md"));
 });
 
+test("Rules sources resolve relative to a local catalog repository while preserving URLs", async () => {
+  const sourceRoot = mkdtempSync(join(tmpdir(), "afk-rules-source-"));
+  const cwd = mkdtempSync(join(tmpdir(), "afk-rules-cwd-"));
+  const catalogDir = join(sourceRoot, "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(join(catalogDir, "rules.json"), `${JSON.stringify({
+    version: 1,
+    source: "github",
+    url: "rules/AGENTS.md",
+    files: [
+      { source: "rules/artifacts.md", destination: "artifacts.md" },
+      { source: "https://example.com/security.md", destination: "security.md" },
+    ],
+  })}\n`);
+
+  const contents = await loadSourceManifestContents({
+    homeDir: mkdtempSync(join(tmpdir(), "afk-rules-home-")),
+    repoDir: sourceRoot,
+    rulesRef: "main",
+    rulesSource: "github",
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: sourceRoot,
+    dryRun: true,
+    manifestLocal: false,
+    cwd,
+    selectedManifestCategories: ["rules"],
+  });
+  const rules = JSON.parse(contents["rules.json"] ?? "") as {
+    url: string;
+    files: Array<{ source: string; destination: string }>;
+  };
+
+  assert.equal(rules.url, join(sourceRoot, "rules", "AGENTS.md"));
+  assert.equal(rules.files[0]?.source, join(sourceRoot, "rules", "artifacts.md"));
+  assert.equal(rules.files[0]?.destination, "artifacts.md");
+  assert.equal(rules.files[1]?.source, "https://example.com/security.md");
+});
+
+test("Rules sources resolve from the repository root when the source points at its catalog directory", async () => {
+  const repositoryRoot = mkdtempSync(join(tmpdir(), "afk-rules-repository-"));
+  const catalogDir = join(repositoryRoot, "packages", "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  mkdirSync(join(repositoryRoot, ".git"));
+  writeFileSync(join(catalogDir, "rules.json"), `${JSON.stringify({
+    version: 1,
+    source: "github",
+    url: "rules/AGENTS.md",
+    files: [
+      { source: "rules/artifacts.md", destination: "artifacts.md" },
+    ],
+  })}\n`);
+
+  const contents = await loadSourceManifestContents({
+    homeDir: mkdtempSync(join(tmpdir(), "afk-rules-home-")),
+    repoDir: repositoryRoot,
+    rulesRef: "main",
+    rulesSource: "github",
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: catalogDir,
+    dryRun: true,
+    manifestLocal: false,
+    cwd: "/tmp/project",
+    selectedManifestCategories: ["rules"],
+  });
+  const rules = JSON.parse(contents["rules.json"] ?? "") as {
+    url: string;
+    files: Array<{ source: string }>;
+  };
+
+  assert.equal(rules.url, join(repositoryRoot, "rules", "AGENTS.md"));
+  assert.equal(rules.files[0]?.source, join(repositoryRoot, "rules", "artifacts.md"));
+});
+
+test("Rules sources resolve relative to a GitHub catalog repository", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    version: 1,
+    source: "github",
+    url: "rules/AGENTS.md",
+    files: [
+      { source: "rules/artifacts.md", destination: "artifacts.md" },
+      { source: "https://example.com/security.md", destination: "security.md" },
+    ],
+  }), { status: 200 });
+
+  try {
+    const contents = await loadSourceManifestContents({
+      homeDir: mkdtempSync(join(tmpdir(), "afk-rules-github-home-")),
+      repoDir: "/tmp/repo",
+      rulesRef: "feature/rules-files",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+      manifestLocal: false,
+      cwd: "/tmp/project",
+      selectedManifestCategories: ["rules"],
+    });
+    const rules = JSON.parse(contents["rules.json"] ?? "") as {
+      url: string;
+      files: Array<{ source: string; destination: string }>;
+    };
+
+    assert.equal(
+      rules.url,
+      "https://raw.githubusercontent.com/acme/dev-kit/feature%2Frules-files/rules/AGENTS.md",
+    );
+    assert.equal(
+      rules.files[0]?.source,
+      "https://raw.githubusercontent.com/acme/dev-kit/feature%2Frules-files/rules/artifacts.md",
+    );
+    assert.equal(rules.files[1]?.source, "https://example.com/security.md");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("Custom Agent sources resolve relative to a GitHub catalog repository", () => {
   const content = `${JSON.stringify({
     version: 1,

@@ -1,5 +1,5 @@
 import { constants, existsSync, lstatSync, mkdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync, copyFileSync, accessSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, isAbsolute, win32 } from "node:path";
 import type { PathOperation } from "./types.js";
 
 export const managedMarker = ".ai-field-kit-managed";
@@ -43,6 +43,20 @@ export function canExecute(path: string): boolean {
 
 export function readText(path: string): string {
   return readFileSync(path, "utf8");
+}
+
+export function normalizeManagedRelativePath(path: string): string | null {
+  const trimmed = path.trim();
+  if (!trimmed || isAbsolute(trimmed) || win32.isAbsolute(trimmed) || trimmed.includes("\0")) {
+    return null;
+  }
+
+  const segments = trimmed.split(/[\\/]+/);
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+    return null;
+  }
+
+  return segments.join("/");
 }
 
 export function ensureParent(path: string): void {

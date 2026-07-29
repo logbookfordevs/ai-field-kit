@@ -165,9 +165,23 @@ test("validateEditableManifest catches duplicate ids and invalid shapes", () => 
     ],
   };
   const invalidRules: EditableManifest = { version: 1, source: "ftp", url: "" };
+  const unsafeRules: EditableManifest = {
+    version: 1,
+    source: "github",
+    url: "rules/AGENTS.md",
+    files: [
+      { source: "rules/one.md", destination: "../one.md" },
+      { source: "rules/two.md", destination: "same.md" },
+      { source: "rules/three.md", destination: "same.md" },
+    ],
+  };
 
   assert.deepEqual(validateEditableManifest("skills", duplicateSkills), ["Duplicate skills id: same"]);
   assert.deepEqual(validateEditableManifest("rules", invalidRules), ["Invalid rules manifest shape"]);
+  assert.deepEqual(validateEditableManifest("rules", unsafeRules), [
+    "Invalid rules file destination: ../one.md",
+    "Duplicate rules file destination: same.md",
+  ]);
 });
 
 test("serializeEditableManifest formats JSON with trailing newline", () => {
@@ -689,6 +703,9 @@ test("runManifestConfigureWithPrompts edits project manifests for local configur
     version: 1,
     source: "github",
     url: "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/rules/AGENTS.md",
+    files: [
+      { source: "rules/artifacts.md", destination: "artifacts.md" },
+    ],
   }, null, 2)}\n`);
 
   const output: string[] = [];
@@ -703,10 +720,17 @@ test("runManifestConfigureWithPrompts edits project manifests for local configur
     }),
   );
 
-  const written = JSON.parse(readFileSync(join(manifestDir, "rules.json"), "utf8")) as { source: string; url: string };
+  const written = JSON.parse(readFileSync(join(manifestDir, "rules.json"), "utf8")) as {
+    source: string;
+    url: string;
+    files: Array<{ source: string; destination: string }>;
+  };
   assert.equal(code, 0);
   assert.equal(written.source, "local");
   assert.equal(written.url, "./AGENTS.md");
+  assert.deepEqual(written.files, [
+    { source: "rules/artifacts.md", destination: "artifacts.md" },
+  ]);
   assert.ok(output.join("\n").includes("Catalog preview"));
 });
 

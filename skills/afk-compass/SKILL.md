@@ -87,7 +87,7 @@ Task arrives
 +-- Explicit workflow / Flow / run with unclear phases? -> route only the current phase
 +-- Resuming Turbo goal/board work? -----------> afk-turbo resume mode
 +-- Resuming checkpointed work? ---------------> afk-implement-tasks resume mode
-+-- Need artifact boundaries or storage conventions? -> read references/artifacts.md
++-- Need artifact boundaries or storage conventions? -> consult the active artifact convention
 +-- Need an agent-ready spec before code? ------> afk-to-spec
 +-- Need executable slices/checkpoints? ---------> afk-to-tickets
 +-- Need code choices or implementation trade-offs grilled? -> afk-code-grill
