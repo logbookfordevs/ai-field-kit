@@ -1,6 +1,8 @@
-import { dirname, isAbsolute, join } from "node:path";
-import { applyOperation, backupTarget, formatOperation, isSymlink, managedMarker, normalizeManagedRelativePath, pathExists, readText, summarizeOperations } from "./fs-utils.js";
+import { createHash } from "node:crypto";
+import { dirname, isAbsolute, join, relative } from "node:path";
+import { applyOperation, backupTarget, formatOperation, isDirectory, isFile, isSymlink, managedMarker, normalizeManagedRelativePath, pathExists, readText, summarizeOperations } from "./fs-utils.js";
 import { loadRulesManifest } from "./manifest.js";
+import { validateRulesFileDestinations } from "./rules-file-destinations.js";
 import type { AgentId, CliOptions, PathOperation, Runtime } from "./types.js";
 
 const afkRegionStart = "<!-- AFK:RULES:START -->";
@@ -40,6 +42,7 @@ export function planRulesSync(
   content: RulesContent,
 ): PathOperation[] {
   const timestamp = compactTimestamp();
+  const dependencyBase = rulesFilesBase(options);
   const dependencyRoot = rulesFilesDestination(options);
   const normalizedRules = normalizeAfkRules(content.afk).replaceAll(rulesDirectoryPlaceholder, dependencyRoot);
   const hostOperations: PathOperation[] = [];
@@ -62,26 +65,30 @@ export function planRulesSync(
   }
 
   return [
-    ...planRulesFiles(dependencyRoot, content.files ?? []),
+    ...planRulesFiles(dependencyBase, dependencyRoot, content.files ?? []),
     ...hostOperations,
   ];
 }
 
-function planRulesFiles(root: string, files: NonNullable<RulesContent["files"]>): PathOperation[] {
+function planRulesFiles(base: string, root: string, files: NonNullable<RulesContent["files"]>): PathOperation[] {
   const operations: PathOperation[] = [];
-  const destinations = new Set<string>();
+  const destinations = new Map<string, string>();
   const inventoryPath = join(root, managedMarker);
+  assertSafeRulesDirectory(base, root);
+  assertSafeRulesFileDestination(root, managedMarker);
   const previousDestinations = readRulesFileInventory(inventoryPath);
+  const validation = validateRulesFileDestinations(files.map((file) => file.destination));
+  if (!validation.valid) {
+    throw new Error(validation.errors[0]);
+  }
 
-  for (const file of files) {
-    const destination = normalizeManagedRelativePath(file.destination);
-    if (!destination || destination === managedMarker) {
-      throw new Error(`Invalid rules file destination: ${file.destination}`);
+  for (const [index, file] of files.entries()) {
+    const destination = validation.normalized[index];
+    if (!destination) {
+      throw new Error(`Missing normalized rules file destination: ${file.destination}`);
     }
-    if (destinations.has(destination)) {
-      throw new Error(`Duplicate rules file destination: ${destination}`);
-    }
-    destinations.add(destination);
+    destinations.set(destination, sha256(file.content));
+    assertSafeRulesFileDestination(root, destination);
 
     const path = join(root, destination);
     if (pathExists(path) && readText(path) === file.content) {
@@ -91,14 +98,24 @@ function planRulesFiles(root: string, files: NonNullable<RulesContent["files"]>)
     operations.push({ type: "write", path, content: file.content });
   }
 
-  for (const destination of previousDestinations) {
+  for (const [destination, installedHash] of previousDestinations) {
     if (destinations.has(destination)) {
       continue;
     }
+    assertSafeRulesFileDestination(root, destination, false);
     const path = join(root, destination);
-    if (pathExists(path)) {
-      operations.push({ type: "remove", path });
+    if (!pathExists(path) && !isSymlink(path)) {
+      continue;
     }
+    if (!installedHash || !isFile(path) || isSymlink(path)) {
+      operations.push({ type: "skip", path, reason: "stale AFK rules file is no longer an unchanged regular file" });
+      continue;
+    }
+    if (sha256(readText(path)) !== installedHash) {
+      operations.push({ type: "skip", path, reason: "stale AFK rules file was modified" });
+      continue;
+    }
+    operations.push({ type: "remove", path });
   }
 
   if (destinations.size === 0) {
@@ -110,7 +127,9 @@ function planRulesFiles(root: string, files: NonNullable<RulesContent["files"]>)
 
   const inventoryContent = `${JSON.stringify({
     version: 1,
-    files: [...destinations].sort((left, right) => left.localeCompare(right)),
+    files: [...destinations]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([path, fileHash]) => ({ path, sha256: fileHash })),
   }, null, 2)}\n`;
   if (pathExists(inventoryPath) && readText(inventoryPath) === inventoryContent) {
     operations.push({ type: "skip", path: inventoryPath, reason: "AFK rules file inventory already current" });
@@ -121,26 +140,74 @@ function planRulesFiles(root: string, files: NonNullable<RulesContent["files"]>)
   return operations;
 }
 
-function readRulesFileInventory(path: string): Set<string> {
+function assertSafeRulesDirectory(base: string, root: string): void {
+  let current = base;
+  for (const segment of relative(base, root).split(/[\\/]+/).filter(Boolean)) {
+    current = join(current, segment);
+    if (isSymlink(current)) {
+      throw new Error(`Rules files directory crosses a symlink: ${relative(base, current)}`);
+    }
+    if (pathExists(current) && !isDirectory(current)) {
+      throw new Error(`Rules files directory is not a directory: ${relative(base, current)}`);
+    }
+  }
+}
+
+function assertSafeRulesFileDestination(
+  root: string,
+  destination: string,
+  requireRegularDestination = true,
+): void {
+  let current = root;
+  const segments = destination.split("/");
+  for (const [index, segment] of segments.entries()) {
+    current = join(current, segment);
+    if (isSymlink(current)) {
+      throw new Error(`Rules file destination crosses a symlink: ${destination}`);
+    }
+    if (!pathExists(current)) {
+      continue;
+    }
+    const isDestination = index === segments.length - 1;
+    if (
+      (!isDestination && !isDirectory(current)) ||
+      (isDestination && requireRegularDestination && !isFile(current))
+    ) {
+      throw new Error(`Rules file destination is not a regular file path: ${destination}`);
+    }
+  }
+}
+
+function readRulesFileInventory(path: string): Map<string, string | null> {
   if (!pathExists(path)) {
-    return new Set();
+    return new Map();
   }
 
   try {
     const parsed: unknown = JSON.parse(readText(path));
     if (!isRecord(parsed) || !Array.isArray(parsed.files)) {
-      return new Set();
+      return new Map();
     }
-    return new Set(parsed.files.flatMap((value) => {
-      if (typeof value !== "string") {
+    return new Map(parsed.files.flatMap((value): Array<[string, string | null]> => {
+      if (typeof value === "string") {
+        const normalized = normalizeManagedRelativePath(value);
+        return normalized && normalized !== managedMarker ? [[normalized, null]] : [];
+      }
+      if (!isRecord(value) || typeof value.path !== "string" || typeof value.sha256 !== "string") {
         return [];
       }
-      const normalized = normalizeManagedRelativePath(value);
-      return normalized && normalized !== managedMarker ? [normalized] : [];
+      const normalized = normalizeManagedRelativePath(value.path);
+      return normalized && normalized !== managedMarker && /^[a-f0-9]{64}$/i.test(value.sha256)
+        ? [[normalized, value.sha256.toLowerCase()]]
+        : [];
     }));
   } catch {
-    return new Set();
+    return new Map();
   }
+}
+
+function sha256(content: string): string {
+  return createHash("sha256").update(content).digest("hex");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -148,9 +215,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function rulesFilesDestination(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">): string {
-  return options.setupScope === "project"
-    ? join(options.cwd, ".agents", "afk", "rules")
-    : join(options.homeDir, ".agents", "afk", "rules");
+  return join(rulesFilesBase(options), ".agents", "afk", "rules");
+}
+
+function rulesFilesBase(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">): string {
+  return options.setupScope === "project" ? options.cwd : options.homeDir;
 }
 
 function planProjectRules(

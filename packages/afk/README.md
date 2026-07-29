@@ -662,8 +662,9 @@ hooks.json
 ```
 
 `url` and each file `source` accept either an HTTP(S) URL or a path relative
-to the catalog-owning source. AFK materializes relative sources during catalog
-loading. File destinations are relative to the AFK-managed rules directory:
+to the root of the repository that owns the catalog. AFK materializes relative
+sources during catalog loading. File destinations are relative to the
+AFK-managed rules directory:
 
 ```text
 Global:  ~/.agents/afk/rules/
@@ -672,7 +673,10 @@ Project: <project>/.agents/afk/rules/
 
 The main rules document can refer to that directory with
 `{{AFK_RULES_DIR}}`; setup replaces the placeholder with the concrete global
-or project path. Destinations must remain inside the managed directory.
+or project path. Destinations must remain inside the managed directory and
+cannot cross symlinks. AFK records dependency hashes internally and only
+removes stale files that still match their installed content; catalog authors
+do not provide these hashes.
 
 AFK has a small cache/source split:
 

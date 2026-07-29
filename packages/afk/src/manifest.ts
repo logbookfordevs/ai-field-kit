@@ -788,16 +788,14 @@ function catalogSourceBase(source: string, ref: string, cwd: string): string {
 
   const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)(?:\/(.*))?$/);
   if (rawMatch) {
-    const [, owner, repo, sourceRef, path] = rawMatch;
-    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
-    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+    const [, owner, repo, sourceRef] = rawMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}`;
   }
 
   const githubTreeMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)(?:\/(.*))?$/);
   if (githubTreeMatch) {
-    const [, owner, repo, sourceRef, path] = githubTreeMatch;
-    const suffix = path ? `/${path.replace(/\/$/, "")}` : "";
-    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}${suffix}`;
+    const [, owner, repo, sourceRef] = githubTreeMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${sourceRef}`;
   }
 
   const githubRepoMatch = normalized.match(/^(?:https:\/\/)?github\.com\/([^/]+)\/([^/]+)$/);
@@ -816,7 +814,30 @@ function catalogSourceBase(source: string, ref: string, cwd: string): string {
     return normalized;
   }
 
-  return isAbsolute(normalized) ? normalized : resolve(cwd, normalized);
+  const localSource = isAbsolute(normalized) ? normalized : resolve(cwd, normalized);
+  return localCatalogRepositoryRoot(localSource);
+}
+
+function localCatalogRepositoryRoot(source: string): string {
+  let current = source;
+  while (true) {
+    if (existsSync(join(current, ".git"))) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+
+  for (const suffix of [join("packages", "afk", "catalog"), join("afk", "catalog")]) {
+    if (source.endsWith(suffix)) {
+      return source.slice(0, -suffix.length).replace(/[\\/]$/, "");
+    }
+  }
+
+  return source;
 }
 
 function resolvedCatalogSource(source: string, base: string): string {

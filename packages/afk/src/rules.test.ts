@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
@@ -122,6 +122,79 @@ test("planRulesSync rejects unsafe and duplicate dependency destinations", () =>
   );
 });
 
+test("planRulesSync rejects dependency destinations beneath symlinked managed paths", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-rules-symlink-"));
+  try {
+    const homeDir = join(root, "home");
+    const dependencyRoot = join(homeDir, ".agents", "afk", "rules");
+    const externalDir = join(root, "external");
+    mkdirSync(dependencyRoot, { recursive: true });
+    mkdirSync(externalDir, { recursive: true });
+    symlinkSync(externalDir, join(dependencyRoot, "linked"));
+
+    assert.throws(
+      () => planRulesSync(
+        {
+          agents: ["codex"],
+          homeDir,
+          cwd: "/tmp/project",
+          setupScope: "global",
+        },
+        {
+          afk: "# AFK\n",
+          files: [
+            { destination: "linked/artifacts.md", content: "unsafe\n" },
+          ],
+        },
+      ),
+      /Rules file destination crosses a symlink: linked\/artifacts\.md/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("planRulesSync rejects stale dependency cleanup beneath symlinked managed paths", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-rules-stale-symlink-"));
+  try {
+    const homeDir = join(root, "home");
+    const dependencyRoot = join(homeDir, ".agents", "afk", "rules");
+    const externalDir = join(root, "external");
+    mkdirSync(dependencyRoot, { recursive: true });
+    mkdirSync(externalDir, { recursive: true });
+    writeFileSync(join(externalDir, "stale.md"), "old\n");
+    symlinkSync(externalDir, join(dependencyRoot, "linked"));
+    writeFileSync(
+      join(dependencyRoot, ".ai-field-kit-managed"),
+      `${JSON.stringify({
+        version: 1,
+        files: [
+          {
+            path: "linked/stale.md",
+            sha256: "01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+          },
+        ],
+      }, null, 2)}\n`,
+    );
+
+    assert.throws(
+      () => planRulesSync(
+        {
+          agents: ["codex"],
+          homeDir,
+          cwd: "/tmp/project",
+          setupScope: "global",
+        },
+        { afk: "# AFK\n", files: [] },
+      ),
+      /Rules file destination crosses a symlink: linked\/stale\.md/,
+    );
+    assert.equal(readFileSync(join(externalDir, "stale.md"), "utf8"), "old\n");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("planRulesSync removes only stale files recorded in the managed dependency inventory", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-rules-files-"));
   try {
@@ -129,10 +202,29 @@ test("planRulesSync removes only stale files recorded in the managed dependency 
     const dependencyRoot = join(homeDir, ".agents", "afk", "rules");
     mkdirSync(dependencyRoot, { recursive: true });
     writeFileSync(join(dependencyRoot, "old.md"), "old\n");
+    writeFileSync(join(dependencyRoot, "modified.md"), "modified\n");
+    mkdirSync(join(dependencyRoot, "folder.md"));
+    writeFileSync(join(dependencyRoot, "folder.md", "keep.md"), "keep\n");
     writeFileSync(join(dependencyRoot, "unmanaged.md"), "keep\n");
     writeFileSync(
       join(dependencyRoot, ".ai-field-kit-managed"),
-      `${JSON.stringify({ version: 1, files: ["old.md"] }, null, 2)}\n`,
+      `${JSON.stringify({
+        version: 1,
+        files: [
+          {
+            path: "old.md",
+            sha256: "01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+          },
+          {
+            path: "modified.md",
+            sha256: "01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+          },
+          {
+            path: "folder.md",
+            sha256: "01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+          },
+        ],
+      }, null, 2)}\n`,
     );
 
     const operations = planRulesSync(
@@ -158,6 +250,14 @@ test("planRulesSync removes only stale files recorded in the managed dependency 
       operation.type === "remove" &&
       operation.path === join(dependencyRoot, "unmanaged.md")
     )));
+    assert.ok(!operations.some((operation) => (
+      operation.type === "remove" &&
+      operation.path === join(dependencyRoot, "modified.md")
+    )));
+    assert.ok(!operations.some((operation) => (
+      operation.type === "remove" &&
+      operation.path === join(dependencyRoot, "folder.md")
+    )));
     const inventoryWrite = operations.find((operation) => (
       operation.type === "write" &&
       operation.path === join(dependencyRoot, ".ai-field-kit-managed")
@@ -165,7 +265,12 @@ test("planRulesSync removes only stale files recorded in the managed dependency 
     assert.ok(inventoryWrite && inventoryWrite.type === "write");
     assert.deepEqual(JSON.parse(inventoryWrite.content), {
       version: 1,
-      files: ["current.md"],
+      files: [
+        {
+          path: "current.md",
+          sha256: "48aa6cae8c70abdb28631d22b316e6d9f9d0768ec2911de7090e248b2afe6ca1",
+        },
+      ],
     });
   } finally {
     rmSync(root, { recursive: true, force: true });

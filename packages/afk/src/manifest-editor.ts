@@ -12,7 +12,7 @@ import {
   type PluginManifest,
   type PluginManifestItem,
 } from "./manifest.js";
-import { managedMarker, normalizeManagedRelativePath } from "./fs-utils.js";
+import { validateRulesFileDestinations } from "./rules-file-destinations.js";
 import type { Area } from "./types.js";
 
 export type EditableManifestArea = Exclude<Area, "profiles">;
@@ -159,19 +159,7 @@ export function validateEditableManifest(area: EditableManifestArea, manifest: E
 
   if (area === "rules") {
     const rules = manifest as RulesManifest;
-    const destinations = new Set<string>();
-    for (const file of rules.files ?? []) {
-      const destination = normalizeManagedRelativePath(file.destination);
-      if (!destination || destination === managedMarker) {
-        errors.push(`Invalid rules file destination: ${file.destination}`);
-        continue;
-      }
-      if (destinations.has(destination)) {
-        errors.push(`Duplicate rules file destination: ${destination}`);
-        continue;
-      }
-      destinations.add(destination);
-    }
+    errors.push(...validateRulesFileDestinations((rules.files ?? []).map((file) => file.destination)).errors);
     return errors;
   }
 
