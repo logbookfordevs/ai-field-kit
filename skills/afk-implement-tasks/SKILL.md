@@ -16,11 +16,7 @@ If the user asks to resume task implementation, use [resume.md](references/resum
 Skip tiny one-shot edits unless the user asks.
 
 ## Storage
-Use existing ticket files. Follow the repo or user artifact convention. If none exists, use:
-
-```text
-docs/<feature-slug>/tracking/<NN>-<slug>.md
-```
+Use existing ticket files and the active repo or user artifact convention.
 
 Ticket files are the only required tracking artifacts.
 
@@ -46,7 +42,7 @@ id: <NN>
 title: <Ticket title>
 status: in_progress
 blocked_by: []
-source: docs/<task-slug>/<source-artifact>.md
+source: <artifact-or-issue-reference>
 updated_at: 2026-06-15T16:40:00-03:00
 review_gates:
   code: pending

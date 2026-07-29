@@ -1018,6 +1018,30 @@ test("runCli shows cached manifests by default", async () => {
   }
 });
 
+test("runCli shows rules dependency sources and destinations", async () => {
+  const homeDir = localHomeWithManifests({
+    "rules.json": {
+      version: 1,
+      source: "github",
+      url: "https://example.com/AGENTS.md",
+      files: [
+        {
+          source: "https://example.com/artifacts.md",
+          destination: "artifacts.md",
+        },
+      ],
+    },
+  });
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(["show", "rules"], { HOME: homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("https://example.com/artifacts.md"));
+  assert.ok(text.includes("artifacts.md"));
+});
+
 test("runCli shows skills as a React-style composition tree", async () => {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];

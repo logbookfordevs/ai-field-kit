@@ -1,5 +1,5 @@
-import { dirname, join } from "node:path";
-import { applyOperation, backupTarget, formatOperation, isSymlink, pathExists, readText, summarizeOperations } from "./fs-utils.js";
+import { dirname, isAbsolute, join } from "node:path";
+import { applyOperation, backupTarget, formatOperation, isSymlink, managedMarker, normalizeManagedRelativePath, pathExists, readText, summarizeOperations } from "./fs-utils.js";
 import { loadRulesManifest } from "./manifest.js";
 import type { AgentId, CliOptions, PathOperation, Runtime } from "./types.js";
 
@@ -7,10 +7,15 @@ const afkRegionStart = "<!-- AFK:RULES:START -->";
 const afkRegionEnd = "<!-- AFK:RULES:END -->";
 const legacyImportStart = "<!-- AFK:IMPORT:START -->";
 const legacyImportEnd = "<!-- AFK:IMPORT:END -->";
+const rulesDirectoryPlaceholder = "{{AFK_RULES_DIR}}";
 const globalRulesAgents: AgentId[] = ["antigravity", "codex", "opencode", "pi"];
 
 type RulesContent = {
   afk: string;
+  files?: Array<{
+    destination: string;
+    content: string;
+  }>;
 };
 
 export async function syncRules(runtime: Runtime, options: CliOptions): Promise<number> {
@@ -35,23 +40,117 @@ export function planRulesSync(
   content: RulesContent,
 ): PathOperation[] {
   const timestamp = compactTimestamp();
-  const operations: PathOperation[] = [];
-  const normalizedRules = normalizeAfkRules(content.afk);
+  const dependencyRoot = rulesFilesDestination(options);
+  const normalizedRules = normalizeAfkRules(content.afk).replaceAll(rulesDirectoryPlaceholder, dependencyRoot);
+  const hostOperations: PathOperation[] = [];
 
   if (options.setupScope === "project") {
-    return planProjectRules(options, normalizedRules, timestamp);
+    hostOperations.push(...planProjectRules(options, normalizedRules, timestamp));
+  } else {
+    for (const agent of options.agents.filter((agent) => globalRulesAgents.includes(agent))) {
+      hostOperations.push(...removeLegacySidecars(dirname(agentRulesDestination(options.homeDir, agent)), timestamp));
+      hostOperations.push(...upsertManagedRulesRegion(agentRulesDestination(options.homeDir, agent), normalizedRules, timestamp));
+    }
+
+    if (shouldConfigureClaude(options.agents)) {
+      hostOperations.push(...planClaudeRules(options.homeDir, { afk: normalizedRules }, timestamp));
+    }
   }
 
-  for (const agent of options.agents.filter((agent) => globalRulesAgents.includes(agent))) {
-    operations.push(...removeLegacySidecars(dirname(agentRulesDestination(options.homeDir, agent)), timestamp));
-    operations.push(...upsertManagedRulesRegion(agentRulesDestination(options.homeDir, agent), normalizedRules, timestamp));
+  if (hostOperations.length === 0) {
+    return [];
   }
 
-  if (shouldConfigureClaude(options.agents)) {
-    operations.push(...planClaudeRules(options.homeDir, { afk: normalizedRules }, timestamp));
+  return [
+    ...planRulesFiles(dependencyRoot, content.files ?? []),
+    ...hostOperations,
+  ];
+}
+
+function planRulesFiles(root: string, files: NonNullable<RulesContent["files"]>): PathOperation[] {
+  const operations: PathOperation[] = [];
+  const destinations = new Set<string>();
+  const inventoryPath = join(root, managedMarker);
+  const previousDestinations = readRulesFileInventory(inventoryPath);
+
+  for (const file of files) {
+    const destination = normalizeManagedRelativePath(file.destination);
+    if (!destination || destination === managedMarker) {
+      throw new Error(`Invalid rules file destination: ${file.destination}`);
+    }
+    if (destinations.has(destination)) {
+      throw new Error(`Duplicate rules file destination: ${destination}`);
+    }
+    destinations.add(destination);
+
+    const path = join(root, destination);
+    if (pathExists(path) && readText(path) === file.content) {
+      operations.push({ type: "skip", path, reason: "AFK rules file already current" });
+      continue;
+    }
+    operations.push({ type: "write", path, content: file.content });
+  }
+
+  for (const destination of previousDestinations) {
+    if (destinations.has(destination)) {
+      continue;
+    }
+    const path = join(root, destination);
+    if (pathExists(path)) {
+      operations.push({ type: "remove", path });
+    }
+  }
+
+  if (destinations.size === 0) {
+    if (pathExists(inventoryPath)) {
+      operations.push({ type: "remove", path: inventoryPath });
+    }
+    return operations;
+  }
+
+  const inventoryContent = `${JSON.stringify({
+    version: 1,
+    files: [...destinations].sort((left, right) => left.localeCompare(right)),
+  }, null, 2)}\n`;
+  if (pathExists(inventoryPath) && readText(inventoryPath) === inventoryContent) {
+    operations.push({ type: "skip", path: inventoryPath, reason: "AFK rules file inventory already current" });
+  } else {
+    operations.push({ type: "write", path: inventoryPath, content: inventoryContent });
   }
 
   return operations;
+}
+
+function readRulesFileInventory(path: string): Set<string> {
+  if (!pathExists(path)) {
+    return new Set();
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(readText(path));
+    if (!isRecord(parsed) || !Array.isArray(parsed.files)) {
+      return new Set();
+    }
+    return new Set(parsed.files.flatMap((value) => {
+      if (typeof value !== "string") {
+        return [];
+      }
+      const normalized = normalizeManagedRelativePath(value);
+      return normalized && normalized !== managedMarker ? [normalized] : [];
+    }));
+  } catch {
+    return new Set();
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function rulesFilesDestination(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">): string {
+  return options.setupScope === "project"
+    ? join(options.cwd, ".agents", "afk", "rules")
+    : join(options.homeDir, ".agents", "afk", "rules");
 }
 
 function planProjectRules(
@@ -81,18 +180,32 @@ async function loadRulesContent(options: Pick<CliOptions, "homeDir" | "repoDir" 
   }
 
   const source = options.rulesSource === "manifest" ? manifest.source : options.rulesSource;
-  const agents =
-    source === "local"
-      ? await readLocalRule(options.repoDir, localRulesPath(manifest.url))
-      : await fetchGithubRule(manifest.url);
+  const [agents, ...files] = await Promise.all([
+    loadRuleSource(manifest.url, options.repoDir, source === "local"),
+    ...(manifest.files ?? []).map(async (file) => ({
+      destination: file.destination,
+      content: await loadRuleSource(file.source, options.repoDir, options.rulesSource === "local"),
+    })),
+  ]);
 
   return {
     afk: normalizeAfkRules(agents),
+    files,
   };
 }
 
+async function loadRuleSource(source: string, repoDir: string, forceLocal: boolean): Promise<string> {
+  if (forceLocal) {
+    return readLocalRule(repoDir, localRulesPath(source));
+  }
+  if (/^https?:\/\//.test(source)) {
+    return fetchGithubRule(source);
+  }
+  return readLocalRule(repoDir, source);
+}
+
 async function readLocalRule(repoDir: string, file: string): Promise<string> {
-  return readText(join(repoDir, file));
+  return readText(isAbsolute(file) ? file : join(repoDir, file));
 }
 
 async function fetchGithubRule(url: string): Promise<string> {

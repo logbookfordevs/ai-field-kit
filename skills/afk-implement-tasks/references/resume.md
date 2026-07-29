@@ -2,7 +2,7 @@
 
 Resume from ticket files, not chat memory.
 
-Find the active workflow from the user's hint, current repo, branch, and `docs/<feature-slug>/tracking/` tickets.
+Find the active workflow from the user's hint, current repo, branch, existing tracking tickets, and active artifact convention.
 
 Read the smallest useful set: active tickets, blockers, handoff notes, ticket sources, and directly referenced specs or ADRs.
 

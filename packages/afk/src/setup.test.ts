@@ -127,6 +127,44 @@ test("runArea yes mode detects rule targets before syncing", async () => {
   assert.ok(!text.includes("/.gemini/GEMINI.md"));
 });
 
+test("runArea rules installs local dependency files and expands their rules pointer", async () => {
+  const homeDir = localHomeWithManifests({
+    "rules.json": {
+      version: 1,
+      source: "local",
+      url: "rules/AGENTS.md",
+      files: [
+        { source: "rules/artifacts.md", destination: "artifacts.md" },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  writeFileSync(
+    join(repoDir, "rules", "AGENTS.md"),
+    "Read `{{AFK_RULES_DIR}}/artifacts.md` when choosing an artifact destination.\n",
+  );
+  writeFileSync(join(repoDir, "rules", "artifacts.md"), "# Artifact conventions\n");
+  mkdirSync(join(homeDir, ".codex"), { recursive: true });
+  writeFileSync(join(homeDir, ".codex", "config.toml"), "");
+
+  const code = await runArea("rules", fakeRuntime([]), {
+    ...defaultOptions(homeDir, repoDir),
+    agents: ["codex"],
+    yes: true,
+    dryRun: false,
+    setupManifestsPrepared: true,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(
+    readFileSync(join(homeDir, ".agents", "afk", "rules", "artifacts.md"), "utf8"),
+    "# Artifact conventions\n",
+  );
+  const installedRules = readFileSync(join(homeDir, ".codex", "AGENTS.md"), "utf8");
+  assert.ok(installedRules.includes(join(homeDir, ".agents", "afk", "rules", "artifacts.md")));
+  assert.ok(!installedRules.includes("{{AFK_RULES_DIR}}"));
+});
+
 test("runArea yes mode detects MCP targets before delegating", async () => {
   const homeDir = localHomeWithManifests({
     "mcps.json": {
@@ -759,5 +797,6 @@ function localRepoWithRules(): string {
   const repoDir = mkdtempSync(join(tmpdir(), "afk-setup-repo-"));
   mkdirSync(join(repoDir, "rules"), { recursive: true });
   writeFileSync(join(repoDir, "rules", "AGENTS.md"), "# AFK rules\n");
+  writeFileSync(join(repoDir, "rules", "artifacts.md"), "# Artifact conventions\n");
   return repoDir;
 }

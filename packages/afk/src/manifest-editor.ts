@@ -1,16 +1,18 @@
-import type {
-  HookManifest,
-  HookManifestItem,
-  CustomAgentManifest,
-  CustomAgentManifestItem,
-  McpManifest,
-  McpManifestItem,
-  RulesManifest,
-  SkillManifest,
-  SkillManifestItem,
-  PluginManifest,
-  PluginManifestItem,
+import {
+  isRulesManifest,
+  type HookManifest,
+  type HookManifestItem,
+  type CustomAgentManifest,
+  type CustomAgentManifestItem,
+  type McpManifest,
+  type McpManifestItem,
+  type RulesManifest,
+  type SkillManifest,
+  type SkillManifestItem,
+  type PluginManifest,
+  type PluginManifestItem,
 } from "./manifest.js";
+import { managedMarker, normalizeManagedRelativePath } from "./fs-utils.js";
 import type { Area } from "./types.js";
 
 export type EditableManifestArea = Exclude<Area, "profiles">;
@@ -156,6 +158,20 @@ export function validateEditableManifest(area: EditableManifestArea, manifest: E
   }
 
   if (area === "rules") {
+    const rules = manifest as RulesManifest;
+    const destinations = new Set<string>();
+    for (const file of rules.files ?? []) {
+      const destination = normalizeManagedRelativePath(file.destination);
+      if (!destination || destination === managedMarker) {
+        errors.push(`Invalid rules file destination: ${file.destination}`);
+        continue;
+      }
+      if (destinations.has(destination)) {
+        errors.push(`Duplicate rules file destination: ${destination}`);
+        continue;
+      }
+      destinations.add(destination);
+    }
     return errors;
   }
 
@@ -234,11 +250,6 @@ function isItemManifest(value: EditableManifest): value is ItemManifest {
 
 function isItemRecord(value: unknown): value is EditableManifestItem {
   return isRecord(value) && typeof value.id === "string";
-}
-
-function isRulesManifest(value: EditableManifest): value is RulesManifest {
-  const record = toRecord(value);
-  return Boolean(record && typeof record.version === "number" && (record.source === "github" || record.source === "local") && typeof record.url === "string");
 }
 
 function isSkillManifest(value: EditableManifest): value is SkillManifest {

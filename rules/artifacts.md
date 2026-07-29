@@ -1,4 +1,4 @@
-# AFK Artifact Conventions
+# Artifact Conventions
 
 Use these conventions when AFK work creates or resumes durable workflow artifacts.
 
@@ -16,12 +16,19 @@ Create or update the smallest artifact that removes the current ambiguity. If a 
 ## Storage
 
 - Follow the repo or user artifact convention first.
-- If no convention exists, use `docs/<task-slug>/`.
-- Use concise kebab-case task slugs, such as `smart-filters` or `checkout-retry-flow`.
-- Prefer `docs/<task-slug>/<task-slug>.<type>.md` for PRDs, specs, RFCs, and related source artifacts.
-- Store executable checkpoint packets under `docs/<task-slug>/tracking/`.
-- Store ADR-style decisions under `docs/<task-slug>/decisions/`.
-- Store passive fetched material, screenshots, exports, and source references under `docs/<task-slug>/references/`.
+- Otherwise use:
+
+```text
+docs/
+├── adr/          # <NNNN>-<slug>.md; centralized, numbered, durable
+├── specs/        # <scope>.md, or <scope>/ for multiple files
+├── research/     # usually <scope>/
+├── references/   # <scope>/; replaceable external inputs
+└── tracking/     # <scope>/<NN>-<slug>.md
+```
+
+- Use a concise kebab-case scope slug and reuse it across artifact types for one effort.
+- Keep locally maintained sources in their artifact-type folder and replaceable external material under `references/`.
 
 Treat generated workflow artifacts as local working artifacts unless the repo convention or user says otherwise.
 

@@ -217,7 +217,7 @@ non-zero when any selected area fails.
 
 | Command | What it does | Owner of the effect |
 |---|---|---|
-| `afk setup rules` | Merge the configured rules source into AFK-managed regions without replacing user-owned content outside those regions. | AFK. |
+| `afk setup rules` | Merge the configured rules source into AFK-managed regions and install its declared dependency files without replacing user-owned content outside those regions. | AFK. |
 | `afk setup skills` | Select catalog skills, delegate installation, restore previously disabled storage, apply invocation policy, and reconcile enabled profiles. | Official `skills` CLI for installation; AFK for policy and reconciliation. |
 | `afk setup profiles` | Prepare `profiles.json` definitions from the selected source. It does not install skills or enable a profile. | AFK. |
 | `afk setup agents` | Select portable Custom Agents and translate them into native Codex, Claude Code, or Pi definitions. | AFK adapters; the harness owns orchestration. |
@@ -642,6 +642,37 @@ rules.json
 plugins.json
 hooks.json
 ```
+
+### Rules Dependency Files
+
+`rules.json` may declare files used by the main rules document:
+
+```json
+{
+  "version": 1,
+  "source": "github",
+  "url": "rules/AGENTS.md",
+  "files": [
+    {
+      "source": "rules/artifacts.md",
+      "destination": "artifacts.md"
+    }
+  ]
+}
+```
+
+`url` and each file `source` accept either an HTTP(S) URL or a path relative
+to the catalog-owning source. AFK materializes relative sources during catalog
+loading. File destinations are relative to the AFK-managed rules directory:
+
+```text
+Global:  ~/.agents/afk/rules/
+Project: <project>/.agents/afk/rules/
+```
+
+The main rules document can refer to that directory with
+`{{AFK_RULES_DIR}}`; setup replaces the placeholder with the concrete global
+or project path. Destinations must remain inside the managed directory.
 
 AFK has a small cache/source split:
 

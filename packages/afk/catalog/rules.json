@@ -1,5 +1,11 @@
 {
   "version": 1,
   "source": "github",
-  "url": "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/rules/AGENTS.md"
+  "url": "rules/AGENTS.md",
+  "files": [
+    {
+      "source": "rules/artifacts.md",
+      "destination": "artifacts.md"
+    }
+  ]
 }

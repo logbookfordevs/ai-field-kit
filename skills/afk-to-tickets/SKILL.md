@@ -61,9 +61,9 @@ Iterate until the user approves the breakdown.
 
 ### 5. Write the tickets
 
-Write the approved tickets. **How** depends on the user requested or default — the tickets are the same either way, only the shape of the blocking edges changes:
+Write the approved tickets. **How** depends on the user requested or default — the tickets are the same either way, only the shape of the blocking edges changes. Follow the active repo or user artifact convention for local paths.
 
-- **Local files** → write one file per ticket under `docs/<feature-slug>/tracking/<NN>-<slug>.md`, numbered from `01` in dependency order (blockers first). Each file's "Blocked by" lists the numbers/titles it depends on. Use the per-ticket file template below — one ticket per file, never a single combined file.
+- **Local files** → write one file per ticket in the scope's tracking folder, numbered from `01` in dependency order (blockers first). Each file's "Blocked by" lists the numbers/titles it depends on. Use the per-ticket file template below — one ticket per file, never a single combined file.
 - **A real issue tracker (GitHub, Linear, …)** → publish one issue per ticket in dependency order (blockers first) so each ticket's blocking edges can reference real identifiers. Use the platform's native blocking / sub-issue relationship where it has one; otherwise set each ticket's "Blocked by" to the blocking issues.
 
 Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
@@ -78,7 +78,7 @@ id: <NN>
 title: <Ticket title>
 status: pending
 blocked_by: []
-source: docs/<task-slug>/<source-artifact>.md
+source: <artifact-or-issue-reference>
 review_gates:
   code: pending
 ---

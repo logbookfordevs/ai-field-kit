@@ -271,7 +271,7 @@ function renderRules(manifest: Record<string, unknown>): string {
       if (!isRecord(item)) {
         continue;
       }
-      lines.push(itemLine(`${String(item.id ?? "unnamed")} ${muted(String(item.path ?? item.url ?? "(no path)"))}${defaultSuffix(item.default)}`));
+      lines.push(itemLine(`${String(item.source ?? "(no source)")} ${muted(`→ ${String(item.destination ?? "(no destination)")}`)}`));
     }
   }
 

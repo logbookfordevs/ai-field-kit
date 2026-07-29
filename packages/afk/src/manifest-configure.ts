@@ -19,6 +19,7 @@ import {
 } from "./manifest-editor.js";
 import {
   isHookManifest,
+  isRulesManifest,
   loadDefaultManifestContent,
   localManifestDir,
   type HookManifest,
@@ -426,7 +427,7 @@ async function applyProfileAction(
 }
 
 async function configureRules(prompts: ManifestConfigurePrompts, manifest: EditableManifest): Promise<RulesManifest> {
-  const existing = isRulesDraft(manifest) ? manifest : { version: 1, source: "github", url: "" };
+  const existing: RulesManifest = isRulesDraft(manifest) ? manifest : { version: 1, source: "github", url: "" };
   const url = await prompts.input({
     message: "Rules raw URL or local path",
     default: existing.url,
@@ -437,6 +438,7 @@ async function configureRules(prompts: ManifestConfigurePrompts, manifest: Edita
     version: 1,
     source: inferSource(url),
     url,
+    ...(existing.files === undefined ? {} : { files: existing.files.map((file) => ({ ...file })) }),
   };
 }
 
@@ -1273,8 +1275,7 @@ function splitArgs(value: string): string[] {
 }
 
 function isRulesDraft(value: EditableManifest): value is RulesManifest {
-  const record = toRecord(value);
-  return Boolean(record && typeof record.version === "number" && (record.source === "github" || record.source === "local") && typeof record.url === "string");
+  return isRulesManifest(value);
 }
 
 function isEditableItem(value: unknown): value is EditableManifestItem {

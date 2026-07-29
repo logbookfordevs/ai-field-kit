@@ -16,6 +16,9 @@
 Use `afk-compass` for broad, ambiguous, multi-phase, phase changes, execution-discipline routing, or any non-obvious skill selection.
 Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
 
+## Artifacts
+When choosing where to store or find an artifact and the repo or user convention does not decide it, read `{{AFK_RULES_DIR}}/artifacts.md`.
+
 ## Imports
 - Always prioritize absolute imports (e.g. `@/components/...`) over relative paths when available.
 
