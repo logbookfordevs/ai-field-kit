@@ -25,7 +25,7 @@ Pick the best-fit mature source for the UX problem, not a default registry by ha
 - `COSS`: scroll areas and mixed app primitives.
 - `BK Lit UI`: data visualization components, charts, and utilities.
 - `Terminal-Kit`: terminal UI components.
-- `MagicUI`, `Acerternity`, `React Bits`, `Animate UI`, `EldoraUI`, `PaceUI`, `Watermelon`, `Hover`, `Neobrutalism`: expressive sections, motion-heavy UI, animated interactions, and visual delight.
+- `MagicUI`, `Acerternity`, `React Bits`, `Animate UI`, `EldoraUI`, `PaceUI`, `Watermelon`, `Hover`, `Neobrutalism`, `CanvasUI`: expressive sections, motion-heavy UI, animated interactions, and visual delight.
 - `Motion Examples`: React animation reference when the interaction depends on Motion patterns.
 - `Remocn`: Remotion-related UI and video composition references.
 - `Soundcn`: sound-effect references when audio feedback is part of the UX.
