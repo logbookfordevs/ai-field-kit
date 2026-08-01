@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v1.2.1 - 2026-08-01
+
 ### Added
 
 - `cli:` added an optional post-write setup handoff for global skill catalog `edit` and `bulk-edit`, limited to entries whose install or runtime policy changed.
