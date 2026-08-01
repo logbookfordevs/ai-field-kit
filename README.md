@@ -53,11 +53,21 @@ Install the latest release when AFK becomes a regular machine command:
 curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
 ```
 
+On Windows PowerShell:
+
+```powershell
+irm https://ai-field-kit.logbookfordevs.com/install.ps1 | iex
+```
+
 Working from this checkout? Build and link the local CLI:
 
 ```bash
 ./scripts/install.sh --local
 ```
+
+On Windows, Node.js 20 or newer and npm are required. AFK skips selected
+plugins that do not provide a native Windows installer and explains why,
+without stopping supported setup work.
 
 ### Preview setup
 

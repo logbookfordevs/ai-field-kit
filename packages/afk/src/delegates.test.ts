@@ -42,6 +42,15 @@ const defaultHomeDir = localHomeWithManifests({
         label: "Plannotator",
         description: "Review and annotate plans before implementation.",
         install: { command: "bash", args: ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"] },
+        platforms: {
+          win32: {
+            supported: true,
+            install: {
+              command: "powershell.exe",
+              args: ["-NoProfile", "-Command", "irm https://plannotator.ai/install.ps1 | iex"],
+            },
+          },
+        },
         default: true,
       },
       {
@@ -260,6 +269,81 @@ test("buildPluginCommands installs selected plugins", () => {
   assert.deepEqual(commands[0]?.args, ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"]);
 });
 
+test("buildPluginCommands uses a Windows-specific installer when available", () => {
+  const commands = buildPluginCommands({ ...options, selectedPluginIds: ["plannotator"] }, "win32");
+
+  assert.deepEqual(commands, [{
+    label: "Plannotator / install",
+    command: "powershell.exe",
+    args: ["-NoProfile", "-Command", "irm https://plannotator.ai/install.ps1 | iex"],
+  }]);
+});
+
+test("buildPluginCommands marks unsupported Windows plugins as skipped", () => {
+  const homeDir = localHomeWithManifest("plugins.json", {
+    version: 1,
+    items: [{
+      id: "unix-only",
+      label: "Unix Only",
+      description: "Unix-only plugin.",
+      install: { command: "sh", args: ["-c", "install-unix-only"] },
+      platforms: {
+        win32: {
+          supported: false,
+          reason: "No native Windows installer is available.",
+        },
+      },
+      default: true,
+    }],
+  });
+
+  assert.deepEqual(buildPluginCommands({ ...options, homeDir }, "win32"), [{
+    label: "Unix Only / install",
+    command: "",
+    args: [],
+    skipReason: "No native Windows installer is available.",
+  }]);
+});
+
+test("buildPluginCommands skips unannotated Unix shell installers on Windows", () => {
+  const commands = buildPluginCommands({ ...options, selectedPluginIds: ["sample-plugin"] }, "win32");
+
+  assert.deepEqual(commands, [{
+    label: "Sample Plugin / install",
+    command: "",
+    args: [],
+    skipReason: "Sample Plugin uses a Unix shell installer and does not provide a native Windows override.",
+  }]);
+});
+
+test("buildPluginCommands skips an unsupported Windows post-install without skipping a portable install", () => {
+  const homeDir = localHomeWithManifest("plugins.json", {
+    version: 1,
+    items: [{
+      id: "mixed-plugin",
+      label: "Mixed Plugin",
+      description: "Portable install with Unix-only initialization.",
+      install: { command: "npm", args: ["install", "--global", "mixed-plugin"] },
+      postInstall: { command: "bash", args: ["-c", "mixed-plugin init"] },
+      default: true,
+    }],
+  });
+
+  assert.deepEqual(buildPluginCommands({ ...options, homeDir }, "win32"), [
+    {
+      label: "Mixed Plugin / install",
+      command: "npm",
+      args: ["install", "--global", "mixed-plugin"],
+    },
+    {
+      label: "Mixed Plugin / post-install",
+      command: "",
+      args: [],
+      skipReason: "Mixed Plugin uses a Unix shell post-install command and does not provide a native Windows override.",
+    },
+  ]);
+});
+
 test("buildMcpCommands maps Antigravity to the add-mcp antigravity target", () => {
   const commands = buildMcpCommands({ ...options, agents: ["antigravity"] });
   assert.ok(commands[0]?.args.includes("-a"));
@@ -329,6 +413,34 @@ test("runDelegateCommands hides delegated command details by default", async () 
   assert.equal(code, 0);
   assert.deepEqual(spawnBehaviors, [false]);
   assert.deepEqual(output, ["- First: preparing...", "- First: ready"]);
+});
+
+test("runDelegateCommands reports skipped commands without spawning", async () => {
+  const output: string[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      throw new Error("Skipped commands must not spawn.");
+    },
+  };
+
+  const code = await runDelegateCommands(runtime, [{
+    label: "Unix Only / install",
+    command: "",
+    args: [],
+    skipReason: "No native Windows installer is available.",
+  }], {
+    ...options,
+    dryRun: false,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(output, [
+    "- Unix Only / install: skipped (No native Windows installer is available.)",
+  ]);
 });
 
 test("runDelegateCommands shows delegated command details in verbose mode", async () => {

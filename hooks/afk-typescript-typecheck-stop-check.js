@@ -98,7 +98,10 @@ function scriptCommand(repoRoot, dir, scriptName) {
 
 function runCommand(command) {
   try {
-    const stdout = execFileSync(command.command, command.args, {
+    const isWindows = process.platform === "win32";
+    const executable = isWindows ? process.env.ComSpec || "cmd.exe" : command.command;
+    const args = isWindows ? ["/d", "/s", "/c", command.command, ...command.args] : command.args;
+    const stdout = execFileSync(executable, args, {
       cwd: command.cwd,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
@@ -190,7 +193,10 @@ function hasScript(packageJson, scriptName) {
 
 function detectPackageManager(repoRoot, dir, packageJson) {
   if (typeof packageJson.packageManager === "string") {
-    return packageJson.packageManager.split("@")[0] || "npm";
+    const declared = packageJson.packageManager.split("@")[0];
+    if (declared === "npm" || declared === "pnpm" || declared === "yarn" || declared === "bun") {
+      return declared;
+    }
   }
 
   const lockDir = findUp(dir, repoRoot, ["pnpm-lock.yaml", "yarn.lock", "bun.lockb", "bun.lock", "package-lock.json", "npm-shrinkwrap.json"]);

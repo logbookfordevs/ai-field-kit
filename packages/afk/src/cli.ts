@@ -1,4 +1,3 @@
-import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
 import { runCatalogImport, runCatalogImportStatus } from "./catalog-import.js";
@@ -13,11 +12,11 @@ import { selectCatalogSkillsLobbyRoute, selectCompassLobbyRoute, shouldOpenCompa
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import { packageVersion, runUpdateCommand } from "./update-check.js";
 import { isPromptExit } from "./menu.js";
+import { spawnCommand } from "./process.js";
 import type {
   AgentId,
   Area,
   CliOptions,
-  CommandResult,
   ManifestCategory,
   SkillAgentFilter,
   Runtime,
@@ -2103,21 +2102,6 @@ function readOptionValues(args: string[], startIndex: number): string[] {
   }
 
   return values;
-}
-
-function spawnCommand(command: string, args: string[], cwd?: string, behavior: { verbose: boolean } = { verbose: false }): Promise<CommandResult> {
-  return new Promise((resolve) => {
-    const child = spawn(command, args, {
-      cwd,
-      stdio: behavior.verbose ? "inherit" : ["ignore", "pipe", "pipe"],
-      shell: false,
-    });
-
-    child.stdout?.resume();
-    child.stderr?.resume();
-    child.on("close", (code) => resolve({ code: code ?? 1 }));
-    child.on("error", () => resolve({ code: 1 }));
-  });
 }
 
 function helpText(commandPath?: string[]): string {

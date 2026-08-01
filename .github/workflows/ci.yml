@@ -35,3 +35,63 @@ jobs:
 
       - name: Build site
         run: pnpm site:build
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck AFK CLI
+        run: pnpm afk:typecheck
+
+      - name: Test AFK CLI
+        run: pnpm --dir packages/afk test
+
+      - name: Build AFK CLI
+        run: pnpm afk:build
+
+      - name: Install and smoke test through PowerShell
+        shell: pwsh
+        run: |
+          $archiveName = (npm pack ./packages/afk --pack-destination $env:RUNNER_TEMP --silent).Trim()
+          $env:AFK_INSTALL_PACKAGE_SPEC = Join-Path $env:RUNNER_TEMP $archiveName
+          .\scripts\install.ps1
+
+          $version = afk --version
+          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^afk \d+\.\d+\.\d+') {
+            throw "AFK version smoke failed: $version"
+          }
+
+          $env:AI_RULES_REPO = $PWD.Path
+          $plugins = afk setup plugins --dry-run --source local --yes --verbose | Out-String
+          if ($LASTEXITCODE -ne 0) {
+            throw "AFK plugin dry-run failed: $plugins"
+          }
+          if ($plugins -notmatch 'powershell\.exe') {
+            throw "Windows Plannotator installer was not selected: $plugins"
+          }
+          if ($plugins -notmatch 'Yggtree.*skipped') {
+            throw "Unsupported Yggtree installer was not skipped: $plugins"
+          }
+
+          $update = afk update --dry-run | Out-String
+          if ($LASTEXITCODE -ne 0 -or $update -notmatch 'Invoke-RestMethod') {
+            throw "Windows update dry-run did not select PowerShell: $update"
+          }
+
+          .\scripts\install.ps1 -Uninstall

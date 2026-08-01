@@ -5,7 +5,9 @@ import type { CliOptions, Runtime } from "./types.js";
 
 export const packageName = "@logbookfordevs/afk";
 export const installerUrl = "https://ai-field-kit.logbookfordevs.com/install.sh";
+export const windowsInstallerUrl = "https://ai-field-kit.logbookfordevs.com/install.ps1";
 export const installerCommand = `curl -fsSL ${installerUrl} | bash`;
+export const windowsInstallerCommand = `Invoke-RestMethod ${windowsInstallerUrl} | Invoke-Expression`;
 export const updateCommand = "afk update";
 
 export type UpdateNotice = {
@@ -69,17 +71,32 @@ export async function fetchLatestNpmVersion(name: string, signal: AbortSignal): 
   return metadata["dist-tags"].latest;
 }
 
-export async function runUpdateCommand(runtime: Runtime, options: Pick<CliOptions, "dryRun">): Promise<number> {
+export async function runUpdateCommand(
+  runtime: Runtime,
+  options: Pick<CliOptions, "dryRun">,
+  platform: NodeJS.Platform = process.platform,
+): Promise<number> {
+  const isWindows = platform === "win32";
+  const command = isWindows ? windowsInstallerCommand : installerCommand;
+
   if (options.dryRun) {
-    runtime.io.stdout(installerCommand);
+    runtime.io.stdout(command);
     return 0;
   }
 
-  runtime.io.stdout("Updating AFK from the latest GitHub release...");
-  const result = await runtime.spawn("bash", ["-c", installerCommand], undefined, { verbose: true });
+  runtime.io.stdout("Updating AFK from the latest release...");
+  const result = isWindows
+    ? await runtime.spawn("powershell.exe", [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-Command",
+      windowsInstallerCommand,
+    ], undefined, { verbose: true })
+    : await runtime.spawn("bash", ["-c", installerCommand], undefined, { verbose: true });
   if (result.code !== 0) {
     runtime.io.stderr("AFK update failed. You can rerun the installer directly:");
-    runtime.io.stderr(installerCommand);
+    runtime.io.stderr(command);
   }
 
   return result.code;

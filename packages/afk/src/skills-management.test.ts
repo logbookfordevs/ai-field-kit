@@ -1819,7 +1819,7 @@ test("buildSkillOpenCommand targets files, folders, and supported apps", () => {
     autoInvocationDetails: [],
   };
 
-  assert.deepEqual(buildSkillOpenCommand(record, { app: "finder", target: "file" }), {
+  assert.deepEqual(buildSkillOpenCommand(record, { app: "finder", target: "file" }, "darwin"), {
     command: "open",
     args: ["/tmp/skills/demo/SKILL.md"],
     targetPath: "/tmp/skills/demo/SKILL.md",
@@ -1828,6 +1828,16 @@ test("buildSkillOpenCommand targets files, folders, and supported apps", () => {
     command: "cursor",
     args: ["/tmp/skills/demo"],
     targetPath: "/tmp/skills/demo",
+  });
+  assert.deepEqual(buildSkillOpenCommand(record, { app: "finder", target: "folder" }, "win32"), {
+    command: "explorer.exe",
+    args: ["/tmp/skills/demo"],
+    targetPath: "/tmp/skills/demo",
+  });
+  assert.deepEqual(buildSkillOpenCommand(record, { app: "finder", target: "file" }, "linux"), {
+    command: "xdg-open",
+    args: ["/tmp/skills/demo/SKILL.md"],
+    targetPath: "/tmp/skills/demo/SKILL.md",
   });
 });
 

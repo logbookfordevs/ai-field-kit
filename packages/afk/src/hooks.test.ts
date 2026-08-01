@@ -85,6 +85,32 @@ test("planHooksSync installs the TypeScript typecheck hook with a matching statu
   assert.match(readFileSync(join(homeDir, ".codex", "hooks", "afk-typescript-typecheck-stop-check.js"), "utf8"), /TypeScript files changed/);
 });
 
+test("planHooksSync preserves Windows backslashes when quoting a hook path with spaces", async () => {
+  const homeDir = prepareHome();
+  const operations = await planHooksSync({
+    agents: ["codex"],
+    homeDir: "C:\\Users\\Jane Doe",
+    cwd: "C:\\repo",
+    repoDir: repoRoot,
+    selectedHookIds: ["afk-typescript-typecheck-stop-check"],
+    setupScope: "global",
+    manifestContents: {
+      "hooks.json": readFileSync(join(localManifestDir(homeDir), "hooks.json"), "utf8"),
+    },
+    platform: "win32",
+  });
+
+  const configOperation = operations.find((operation) => operation.type === "write" && operation.path.endsWith("hooks.json"));
+  assert.ok(configOperation?.type === "write");
+  const config = JSON.parse(configOperation.content) as {
+    hooks: { Stop: Array<{ hooks: Array<{ command: string }> }> };
+  };
+  assert.equal(
+    config.hooks.Stop[0]?.hooks[0]?.command,
+    'node "C:\\Users\\Jane Doe/.codex/hooks/afk-typescript-typecheck-stop-check.js"',
+  );
+});
+
 test("planHooksSync updates the AFK hook without duplicating Cursor hooks", async () => {
   const homeDir = prepareHome();
   const cursorConfig = join(homeDir, ".cursor", "hooks.json");

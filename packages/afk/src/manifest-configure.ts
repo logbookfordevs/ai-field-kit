@@ -526,6 +526,7 @@ async function promptPlugin(prompts: ManifestConfigurePrompts, existing?: Plugin
     ...(nextPostInstallLine.trim()
       ? { postInstall: postInstallFromLine(nextPostInstallLine, existing?.postInstall) }
       : {}),
+    ...(existing?.platforms ? { platforms: existing.platforms } : {}),
     default: isDefault,
   };
 }
