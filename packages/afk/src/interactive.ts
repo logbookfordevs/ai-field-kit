@@ -2,7 +2,8 @@ import { checkbox, input, select } from "@inquirer/prompts";
 import { detectSetupTargets, type TargetSelectionSource } from "./agent-detection.js";
 import { agentIds, hookAgentIds, skillAgentIds } from "./agents.js";
 import { loadCustomAgentManifest, loadHookManifest, loadMcpManifest, loadSkillManifest, loadPluginManifest, type SkillManifestItem } from "./manifest.js";
-import { DEFAULT_CHECKED, afkCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
+import { DEFAULT_CHECKED, afkCheckboxTheme, afkSearchableCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
+import { searchableCheckbox } from "./searchable-checkbox.js";
 import type { AgentId, Area, CliOptions, SetupScope, SkillAgentId } from "./types.js";
 
 type Choice<Value extends string> = {
@@ -10,6 +11,7 @@ type Choice<Value extends string> = {
   value: Value;
   checked?: boolean;
   description?: string;
+  searchAliases?: string[];
 };
 
 export type SetupSelection = {
@@ -372,7 +374,7 @@ async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills" | 
   const manifest = loadSkillManifest(options);
   const items = setupSkillItems(manifest.items, options.allSkills);
 
-  const selected = uniqueStrings(await selectCheckbox(
+  const selected = uniqueStrings(await selectSearchableCheckbox(
     "Choose skills to install",
     skillChoices(items),
   ));
@@ -382,7 +384,7 @@ async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills" | 
   }
 
   const composed = expanded.filter((id) => !selected.includes(id));
-  const composedSelection = await selectCheckbox(
+  const composedSelection = await selectSearchableCheckbox(
     "Choose composed skills to include",
     composed.map((id) => {
       const item = items.find((candidate) => candidate.id === id);
@@ -445,6 +447,7 @@ function skillChoices(items: SkillManifestItem[]): Choice<string>[] {
     value: item.id,
     checked: DEFAULT_CHECKED,
     description: skillChoiceDetail(item),
+    searchAliases: [item.id, item.source, item.role ?? "primitive", ...item.args],
   }));
 }
 
@@ -575,5 +578,22 @@ async function selectCheckbox<Value extends string>(message: string, choices: Ch
     pageSize: 12,
     instructions: "Use space to toggle, enter to continue.",
     theme: afkCheckboxTheme,
+  });
+}
+
+async function selectSearchableCheckbox<Value extends string>(message: string, choices: Choice<Value>[]): Promise<Value[]> {
+  console.log(renderPromptStep(message, "Type to filter, use space to select one or more skills, then enter to continue."));
+  if (choices.length === 0) {
+    console.log("No choices available in the current catalog.");
+    return [];
+  }
+
+  return searchableCheckbox<Value>({
+    message,
+    choices,
+    required: false,
+    pageSize: 12,
+    instructions: "Type to filter, use space to toggle, enter to continue.",
+    theme: afkSearchableCheckboxTheme,
   });
 }

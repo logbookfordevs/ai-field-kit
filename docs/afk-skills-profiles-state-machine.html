@@ -606,7 +606,7 @@ const SKILLS = [
   ["afk-implement-tasks","workflow",true,false,"ai-field-kit",[]],
   ["afk-ui-registry-preferences","reference",true,true,"ai-field-kit",[]],
   ["afk-pickup","utility",true,false,"ai-field-kit",[]],
-  ["afk-compass","router",true,true,"ai-field-kit",[]],
+  ["afk-compass","router",true,false,"ai-field-kit",[]],
   ["afk-profile-use","router",true,false,"ai-field-kit",[]],
   ["afk-sprint","workflow",true,false,"ai-field-kit",["plannotator-setup-goal","afk-to-tickets","afk-implement-tasks"]],
   ["afk-turbo","workflow",true,false,"ai-field-kit",["grilling","plannotator-setup-goal"]],
@@ -891,7 +891,7 @@ const WORKFLOW_MOMENTS = [
 ];
 
 const WORKFLOW_ROUTERS = [
-  {id:"afk-compass",use:"chooses the smallest useful skill as the moment changes"},
+  {id:"afk-compass",use:"recommends the smallest useful manual skill on request"},
   {id:"afk-profile-use",use:"loads the right skill profile for the current request"}
 ];
 

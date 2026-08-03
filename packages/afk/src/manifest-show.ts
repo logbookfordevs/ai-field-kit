@@ -259,6 +259,17 @@ function renderProfiles(manifest: Record<string, unknown>): string {
 
 function renderRules(manifest: Record<string, unknown>): string {
   const lines = [summaryLine("version", valueOrUnknown(manifest.version))];
+  if (Array.isArray(manifest.layers)) {
+    lines.push(summaryLine("layers", String(manifest.layers.length)));
+    for (const layer of manifest.layers) {
+      if (!isRecord(layer)) {
+        continue;
+      }
+      const files = Array.isArray(layer.files) ? ` · ${layer.files.length} file${layer.files.length === 1 ? "" : "s"}` : "";
+      lines.push(itemLine(`${String(layer.label ?? layer.id ?? "unnamed")} (${String(layer.id ?? "no id")}) ${muted(`${String(layer.source ?? "(no source)")}${files}`)}`));
+    }
+    return lines.join("\n");
+  }
   if (typeof manifest.source === "string") {
     lines.push(summaryLine("source", manifest.source));
   }

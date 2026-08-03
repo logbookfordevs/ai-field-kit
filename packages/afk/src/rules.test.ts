@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { planRulesSync } from "./rules.js";
+import { createRuleSourceLoader, planRulesSync } from "./rules.js";
 import type { CliOptions } from "./types.js";
 
 test("planRulesSync injects AFK rules into the selected global agent file", () => {
@@ -24,6 +24,69 @@ test("planRulesSync injects AFK rules into the selected global agent file", () =
   assert.ok(!operations.some((operation) => operation.type === "symlink"));
   assert.ok(operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.codex/AGENTS.md" && operation.content.includes("<!-- AFK:RULES:START -->")));
   assert.ok(!operations.some((operation) => operation.type === "write" && operation.path === "/tmp/home/.claude/CLAUDE.md"));
+});
+
+test("rule source loader falls back to one credential-aware checkout for private GitHub files", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("Not Found", { status: 404, statusText: "Not Found" });
+  const checkoutRoot = mkdtempSync(join(tmpdir(), "afk-private-rules-"));
+  mkdirSync(join(checkoutRoot, "rules"), { recursive: true });
+  writeFileSync(join(checkoutRoot, "rules", "AGENTS.md"), "Private rules.\n");
+  writeFileSync(join(checkoutRoot, "rules", "references.md"), "Private references.\n");
+  let cloneCount = 0;
+  let cleanupCount = 0;
+  const loader = createRuleSourceLoader(async (source) => {
+    cloneCount += 1;
+    assert.equal(source.cloneUrl, "https://github.com/acme/private-kit.git");
+    assert.equal(source.ref, "feature/private");
+    return {
+      rootDir: checkoutRoot,
+      cleanup: () => {
+        cleanupCount += 1;
+      },
+    };
+  });
+
+  try {
+    const [rules, references] = await Promise.all([
+      loader.load("https://raw.githubusercontent.com/acme/private-kit/feature%2Fprivate/rules/AGENTS.md", "/tmp/repo", false),
+      loader.load("https://raw.githubusercontent.com/acme/private-kit/feature%2Fprivate/rules/references.md", "/tmp/repo", false),
+    ]);
+    assert.equal(rules, "Private rules.\n");
+    assert.equal(references, "Private references.\n");
+    assert.equal(cloneCount, 1);
+  } finally {
+    loader.cleanup();
+    globalThis.fetch = originalFetch;
+    rmSync(checkoutRoot, { recursive: true, force: true });
+  }
+  assert.equal(cleanupCount, 1);
+});
+
+test("rule source loader does not expose private GitHub URLs in errors", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("Not Found", { status: 404, statusText: "Not Found" });
+  const checkoutRoot = mkdtempSync(join(tmpdir(), "afk-private-rules-error-"));
+  const privateUrl = "https://raw.githubusercontent.com/acme/private-kit/main/rules/AGENTS.md";
+  const loader = createRuleSourceLoader(async () => ({
+    rootDir: checkoutRoot,
+    cleanup: () => {},
+  }));
+
+  try {
+    await assert.rejects(
+      loader.load(privateUrl, "/tmp/repo", false),
+      (error: Error) => {
+        assert.equal(error.message, "Could not read the private GitHub rule source from the credential-aware Git checkout.");
+        assert.ok(!error.message.includes(privateUrl));
+        return true;
+      },
+    );
+  } finally {
+    loader.cleanup();
+    globalThis.fetch = originalFetch;
+    rmSync(checkoutRoot, { recursive: true, force: true });
+  }
 });
 
 test("planRulesSync installs shared global rule files and expands their directory placeholder", () => {
@@ -62,6 +125,54 @@ test("planRulesSync installs shared global rule files and expands their director
     assert.ok(operation.content.includes("/tmp/home/.agents/afk/rules/artifacts.md"));
     assert.ok(!operation.content.includes("{{AFK_RULES_DIR}}"));
   }
+});
+
+test("planRulesSync renders ordered layers with isolated dependency directories", () => {
+  const operations = planRulesSync(
+    {
+      agents: ["codex"],
+      homeDir: "/tmp/home",
+      cwd: "/tmp/project",
+      setupScope: "global",
+    },
+    {
+      layers: [
+        {
+          id: "afk",
+          label: "AFK rules",
+          content: "Base rules read `{{AFK_RULES_DIR}}/references.md`.\n",
+          files: [{ destination: "references.md", content: "base\n" }],
+        },
+        {
+          id: "personal",
+          label: "Personal rules",
+          content: "Personal rules read `{{AFK_RULES_DIR}}/references.md`.\n",
+          files: [{ destination: "references.md", content: "personal\n" }],
+        },
+      ],
+    },
+  );
+
+  assert.ok(operations.some((operation) => (
+    operation.type === "write" &&
+    operation.path === "/tmp/home/.agents/afk/rules/afk/references.md" &&
+    operation.content === "base\n"
+  )));
+  assert.ok(operations.some((operation) => (
+    operation.type === "write" &&
+    operation.path === "/tmp/home/.agents/afk/rules/personal/references.md" &&
+    operation.content === "personal\n"
+  )));
+
+  const hostWrite = operations.find((operation) => (
+    operation.type === "write" && operation.path === "/tmp/home/.codex/AGENTS.md"
+  ));
+  assert.ok(hostWrite && hostWrite.type === "write");
+  assert.ok(hostWrite.content.includes("<!-- AFK:RULE-LAYER:afk:START -->"));
+  assert.ok(hostWrite.content.includes("<!-- AFK:RULE-LAYER:personal:START -->"));
+  assert.ok(hostWrite.content.indexOf("Base rules") < hostWrite.content.indexOf("Personal rules"));
+  assert.ok(hostWrite.content.includes("/tmp/home/.agents/afk/rules/afk/references.md"));
+  assert.ok(hostWrite.content.includes("/tmp/home/.agents/afk/rules/personal/references.md"));
 });
 
 test("planRulesSync installs project rule files inside the project-owned AFK directory", () => {

@@ -105,7 +105,7 @@ install flow, and custom defaults workflow, read the
 
 | Area | Command | What happens |
 |---|---|---|
-| Rules | `afk setup rules` | Syncs AFK rules into managed regions of supported agent instruction files. |
+| Rules | `afk setup rules` | Composes ordered public, organization, personal, or project rules layers into managed instruction regions. |
 | Skills | `afk setup skills` | Delegates selected skill installs to the official `skills` CLI. |
 | Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
 | Custom Agents | `afk setup agents` | Provisions selected portable agent files into Codex, Claude Code, or Pi. |
@@ -165,12 +165,15 @@ Project-local catalogs live here:
 ./afk/catalog/
 ```
 
-Use a source for one command:
+Merge and apply entries from another source without changing the remembered
+default source:
 
 ```bash
 afk setup --source your-org/dev-kit
 afk show skills --source your-org/dev-kit
 ```
+
+Setup caches only the entries it applies. Show remains read-only.
 
 Save a source as the default and refresh from it:
 
@@ -281,7 +284,7 @@ composition model, available skills, or workflow guidance.
 
 Start here:
 
-- [Skill Composition](./packages/afk/docs/skill-composition.md) explains the
+- [Skill Composition](./packages/afk/docs/skill-composition.html) explains the
   primitive, wrapper, workflow, utility, reference, and router model.
 - [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg) is the
   visual companion.
@@ -325,9 +328,10 @@ plugins, catalog composition, or setup policy.
 
 ### Global rules targets
 
-The shared [`rules/AGENTS.md`](./rules/AGENTS.md) file is the source for AFK's
-managed rules region. The CLI merges that region into each supported global
-instruction host without replacing user-owned content in the rest of the file:
+The bundled catalog exposes [`rules/AGENTS.md`](./rules/AGENTS.md) as an
+opinionated starter layer. AFK can compose it with independently owned rules
+layers, then writes the ordered result into each supported global instruction
+host without replacing user-owned content in the rest of the file:
 
 | Agent | Global rules path |
 |---|---|

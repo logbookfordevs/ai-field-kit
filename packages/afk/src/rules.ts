@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
-import { dirname, isAbsolute, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { applyOperation, backupTarget, formatOperation, isDirectory, isFile, isSymlink, managedMarker, normalizeManagedRelativePath, pathExists, readText, summarizeOperations } from "./fs-utils.js";
-import { loadRulesManifest } from "./manifest.js";
+import { cloneGithubCatalogSource, githubSourceSpecForRepo, loadRulesManifest, rulesManifestLayers } from "./manifest.js";
+import type { CloneGithubSource, GithubSourceCheckout } from "./manifest.js";
 import { validateRulesFileDestinations } from "./rules-file-destinations.js";
 import type { AgentId, CliOptions, PathOperation, Runtime } from "./types.js";
 
@@ -10,9 +11,10 @@ const afkRegionEnd = "<!-- AFK:RULES:END -->";
 const legacyImportStart = "<!-- AFK:IMPORT:START -->";
 const legacyImportEnd = "<!-- AFK:IMPORT:END -->";
 const rulesDirectoryPlaceholder = "{{AFK_RULES_DIR}}";
+const privateGithubCheckoutReadError = "Could not read the private GitHub rule source from the credential-aware Git checkout.";
 const globalRulesAgents: AgentId[] = ["antigravity", "codex", "opencode", "pi"];
 
-type RulesContent = {
+type LegacyRulesContent = {
   afk: string;
   files?: Array<{
     destination: string;
@@ -20,11 +22,108 @@ type RulesContent = {
   }>;
 };
 
+type LoadedRulesLayer = {
+  id: string;
+  label: string;
+  content: string;
+  files?: Array<{
+    destination: string;
+    content: string;
+  }>;
+  legacy?: true;
+};
+
+type RulesContent = LegacyRulesContent | {
+  layers: LoadedRulesLayer[];
+};
+
+export type RuleSourceLoader = {
+  load: (source: string, repoDir: string, forceLocal: boolean) => Promise<string>;
+  cleanup: () => void;
+};
+
+export function createRuleSourceLoader(cloneGithubSource: CloneGithubSource = cloneGithubCatalogSource): RuleSourceLoader {
+  const checkoutPromises = new Map<string, Promise<GithubSourceCheckout>>();
+  const checkouts = new Map<string, GithubSourceCheckout>();
+
+  return {
+    load: async (source, repoDir, forceLocal) => {
+      if (forceLocal || !/^https?:\/\//.test(source)) {
+        return readLocalRule(repoDir, localRulesPath(source));
+      }
+
+      let response: Response | null = null;
+      try {
+        response = await fetch(source);
+        if (response.ok) {
+          return response.text();
+        }
+      } catch {}
+
+      const privateSource = privateGithubRuleSource(source);
+      if (!privateSource) {
+        throw new Error(`Could not fetch ${source}: ${response?.status ?? "network error"} ${response?.statusText ?? ""}`.trim());
+      }
+
+      const key = `${privateSource.owner}/${privateSource.repo}@${privateSource.ref}`;
+      let checkoutPromise = checkoutPromises.get(key);
+      if (!checkoutPromise) {
+        checkoutPromise = cloneGithubSource(githubSourceSpecForRepo(privateSource.owner, privateSource.repo, privateSource.ref));
+        checkoutPromises.set(key, checkoutPromise);
+      }
+      const checkout = await checkoutPromise;
+      checkouts.set(key, checkout);
+      const path = resolve(checkout.rootDir, privateSource.path);
+      const relativePath = relative(checkout.rootDir, path);
+      if (!relativePath || relativePath === ".." || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath)) {
+        throw new Error(privateGithubCheckoutReadError);
+      }
+      if (!pathExists(path) || !isFile(path)) {
+        throw new Error(privateGithubCheckoutReadError);
+      }
+      return readText(path);
+    },
+    cleanup: () => {
+      for (const checkout of checkouts.values()) {
+        checkout.cleanup();
+      }
+      checkouts.clear();
+      checkoutPromises.clear();
+    },
+  };
+}
+
+function privateGithubRuleSource(source: string): { owner: string; repo: string; ref: string; path: string } | null {
+  try {
+    const parsed = new URL(source);
+    if (parsed.hostname !== "raw.githubusercontent.com") {
+      return null;
+    }
+    const match = parsed.pathname.match(/^\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
+    if (!match) {
+      return null;
+    }
+    const [, owner, repo, encodedRef, encodedPath] = match;
+    if (!owner || !repo || !encodedRef || !encodedPath) {
+      return null;
+    }
+    return {
+      owner,
+      repo,
+      ref: decodeURIComponent(encodedRef),
+      path: decodeURIComponent(encodedPath),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function syncRules(runtime: Runtime, options: CliOptions): Promise<number> {
   const content = await loadRulesContent(options);
   const operations = planRulesSync(options, content);
 
   if (options.dryRun) {
+    printRulesLayerOrder(runtime, options, content);
     printOperations(runtime, "Rules sync plan", operations);
     return 0;
   }
@@ -37,6 +136,26 @@ export async function syncRules(runtime: Runtime, options: CliOptions): Promise<
   return 0;
 }
 
+function printRulesLayerOrder(
+  runtime: Runtime,
+  options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,
+  content: RulesContent,
+): void {
+  const root = rulesFilesDestination(options);
+  const layers = "layers" in content
+    ? content.layers
+    : [{ id: "legacy", label: "Rules", content: content.afk, files: content.files, legacy: true as const }];
+  runtime.io.stdout("\nRules layers");
+  if (layers.length === 0) {
+    runtime.io.stdout("- (none)");
+    return;
+  }
+  for (const [index, layer] of layers.entries()) {
+    const destination = layer.legacy ? root : join(root, layer.id);
+    runtime.io.stdout(`- ${index + 1}. ${layer.label} (${layer.id}) -> ${destination}`);
+  }
+}
+
 export function planRulesSync(
   options: Pick<CliOptions, "agents" | "homeDir" | "cwd" | "setupScope">,
   content: RulesContent,
@@ -44,7 +163,12 @@ export function planRulesSync(
   const timestamp = compactTimestamp();
   const dependencyBase = rulesFilesBase(options);
   const dependencyRoot = rulesFilesDestination(options);
-  const normalizedRules = normalizeAfkRules(content.afk).replaceAll(rulesDirectoryPlaceholder, dependencyRoot);
+  const layers = normalizeLoadedRulesLayers(content, dependencyRoot);
+  const normalizedRules = renderRulesLayers(layers);
+  const files = layers.flatMap((layer) => (layer.files ?? []).map((file) => ({
+    ...file,
+    destination: layer.legacy ? file.destination : `${layer.id}/${file.destination}`,
+  })));
   const hostOperations: PathOperation[] = [];
 
   if (options.setupScope === "project") {
@@ -56,7 +180,7 @@ export function planRulesSync(
     }
 
     if (shouldConfigureClaude(options.agents)) {
-      hostOperations.push(...planClaudeRules(options.homeDir, { afk: normalizedRules }, timestamp));
+      hostOperations.push(...planClaudeRules(options.homeDir, normalizedRules, timestamp));
     }
   }
 
@@ -65,12 +189,49 @@ export function planRulesSync(
   }
 
   return [
-    ...planRulesFiles(dependencyBase, dependencyRoot, content.files ?? []),
+    ...planRulesFiles(dependencyBase, dependencyRoot, files),
     ...hostOperations,
   ];
 }
 
-function planRulesFiles(base: string, root: string, files: NonNullable<RulesContent["files"]>): PathOperation[] {
+function normalizeLoadedRulesLayers(content: RulesContent, dependencyRoot: string): LoadedRulesLayer[] {
+  const layers: LoadedRulesLayer[] = "layers" in content
+    ? content.layers
+    : [{
+        id: "legacy",
+        label: "Rules",
+        content: content.afk,
+        ...(content.files === undefined ? {} : { files: content.files }),
+        legacy: true,
+      }];
+
+  return layers.map((layer) => {
+    if (!layer.legacy && !/^[a-z0-9][a-z0-9._-]*$/.test(layer.id)) {
+      throw new Error(`Invalid rules layer id: ${layer.id}`);
+    }
+    const layerDirectory = layer.legacy ? dependencyRoot : join(dependencyRoot, layer.id);
+    return {
+      ...layer,
+      content: normalizeAfkRules(layer.content).replaceAll(rulesDirectoryPlaceholder, layerDirectory),
+      ...(layer.files === undefined ? {} : { files: layer.files.map((file) => ({ ...file })) }),
+    };
+  });
+}
+
+function renderRulesLayers(layers: LoadedRulesLayer[]): string {
+  return layers.map((layer) => {
+    if (layer.legacy) {
+      return layer.content.trimEnd();
+    }
+    return [
+      `<!-- AFK:RULE-LAYER:${layer.id}:START -->`,
+      layer.content.trimEnd(),
+      `<!-- AFK:RULE-LAYER:${layer.id}:END -->`,
+    ].join("\n");
+  }).filter(Boolean).join("\n\n");
+}
+
+function planRulesFiles(base: string, root: string, files: NonNullable<LoadedRulesLayer["files"]>): PathOperation[] {
   const operations: PathOperation[] = [];
   const destinations = new Map<string, string>();
   const inventoryPath = join(root, managedMarker);
@@ -244,46 +405,36 @@ function planProjectRules(
 
 async function loadRulesContent(options: Pick<CliOptions, "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "manifestContents">): Promise<RulesContent> {
   const manifest = loadRulesManifest(options);
-  if (!manifest.url) {
-    return { afk: "" };
-  }
+  const layers = rulesManifestLayers(manifest);
+  const legacyLocal = "source" in manifest && (options.rulesSource === "manifest" ? manifest.source === "local" : options.rulesSource === "local");
+  const sourceLoader = createRuleSourceLoader();
 
-  const source = options.rulesSource === "manifest" ? manifest.source : options.rulesSource;
-  const [agents, ...files] = await Promise.all([
-    loadRuleSource(manifest.url, options.repoDir, source === "local"),
-    ...(manifest.files ?? []).map(async (file) => ({
-      destination: file.destination,
-      content: await loadRuleSource(file.source, options.repoDir, options.rulesSource === "local"),
-    })),
-  ]);
-
-  return {
-    afk: normalizeAfkRules(agents),
-    files,
-  };
-}
-
-async function loadRuleSource(source: string, repoDir: string, forceLocal: boolean): Promise<string> {
-  if (forceLocal) {
-    return readLocalRule(repoDir, localRulesPath(source));
+  try {
+    return {
+      layers: await Promise.all(layers.map(async (layer) => {
+        const [content, ...files] = await Promise.all([
+          sourceLoader.load(layer.source, options.repoDir, legacyLocal),
+          ...(layer.files ?? []).map(async (file) => ({
+            destination: file.destination,
+            content: await sourceLoader.load(file.source, options.repoDir, options.rulesSource === "local"),
+          })),
+        ]);
+        return {
+          id: layer.id,
+          label: layer.label,
+          content,
+          files,
+          ...(layer.legacy ? { legacy: true as const } : {}),
+        };
+      })),
+    };
+  } finally {
+    sourceLoader.cleanup();
   }
-  if (/^https?:\/\//.test(source)) {
-    return fetchGithubRule(source);
-  }
-  return readLocalRule(repoDir, source);
 }
 
 async function readLocalRule(repoDir: string, file: string): Promise<string> {
   return readText(isAbsolute(file) ? file : join(repoDir, file));
-}
-
-async function fetchGithubRule(url: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Could not fetch ${url}: ${response.status} ${response.statusText}`);
-  }
-
-  return response.text();
 }
 
 function localRulesPath(url: string): string {
@@ -350,12 +501,12 @@ function upsertManagedRulesRegion(path: string, afkRules: string, timestamp: str
   return operations;
 }
 
-function planClaudeRules(homeDir: string, content: RulesContent, timestamp: string): PathOperation[] {
+function planClaudeRules(homeDir: string, rules: string, timestamp: string): PathOperation[] {
   const claudeDir = join(homeDir, ".claude");
   const operations: PathOperation[] = [{ type: "mkdir", path: claudeDir }];
 
   operations.push(...removeLegacySidecars(claudeDir, timestamp));
-  operations.push(...upsertManagedRulesRegion(join(claudeDir, "CLAUDE.md"), content.afk, timestamp));
+  operations.push(...upsertManagedRulesRegion(join(claudeDir, "CLAUDE.md"), rules, timestamp));
 
   return operations;
 }

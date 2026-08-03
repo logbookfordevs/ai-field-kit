@@ -65,7 +65,8 @@ Interactive setup starts with nothing selected. Use space to choose the areas
 and items you want. On first run, AFK asks which source should seed the local
 cache, saves that source as the default, refreshes the cache, then continues.
 Scripted setup can use `--yes` to accept defaults after the cache exists, or
-`--source` to run from another source once without changing the cache.
+`--source` to merge and apply entries from another source without changing the
+remembered default source.
 
 ## What AFK Sets Up
 
@@ -217,7 +218,7 @@ non-zero when any selected area fails.
 
 | Command | What it does | Owner of the effect |
 |---|---|---|
-| `afk setup rules` | Merge the configured rules source into AFK-managed regions and install its declared dependency files without replacing user-owned content outside those regions. | AFK. |
+| `afk setup rules` | Compose configured rules layers into AFK-managed regions and install their isolated dependency files without replacing user-owned content outside those regions. | AFK. |
 | `afk setup skills` | Select catalog skills, delegate installation, restore previously disabled storage, apply invocation policy, and reconcile enabled profiles. | Official `skills` CLI for installation; AFK for policy and reconciliation. |
 | `afk setup profiles` | Prepare `profiles.json` definitions from the selected source. It does not install skills or enable a profile. | AFK. |
 | `afk setup agents` | Select portable Custom Agents and translate them into native Codex, Claude Code, or Pi definitions. | AFK adapters; the harness owns orchestration. |
@@ -257,7 +258,7 @@ afk show skills profiles
 | `afk refresh --empty` | Prepare empty catalog files instead of seeding source defaults. |
 | `afk show` | Print every cached catalog category. |
 | `afk show <category...>` | Print only the named categories. |
-| `afk show rules` | Inspect the rules source AFK would merge into managed regions. |
+| `afk show rules` | Inspect the ordered rules layers AFK would compose into managed regions. |
 | `afk show skills` | Inspect skill install metadata, invocation policy, roles, and composition. |
 | `afk show profiles` | Inspect profile definitions and catalog-wide reconciliation policy. |
 | `afk show agents` | Inspect portable Custom Agent catalog entries before provisioning. |
@@ -282,7 +283,7 @@ its interactive editor. Use `--dry-run` to preview supported writes.
 
 | Family | Commands | What changes |
 |---|---|---|
-| Rules | `afk catalog rules [edit]` | The rules source URL or local path in `rules.json`. |
+| Rules | `afk catalog rules add`, `edit`, `remove` | Ordered rules layers and their source paths in `rules.json`. |
 | Skills | `afk catalog skills add`, `edit`, `remove` | Skill definitions and installation metadata in `skills.json`. |
 | Skills policy | `afk catalog skills bulk-edit` | Select multiple skills, then set invocation and always-on policy together. |
 | Skills policy | `afk catalog skills toggle-default` | Which catalog skills non-interactive default setup selects. |
@@ -422,7 +423,7 @@ These flags apply to `afk setup` and most area commands.
 | `--agent <agent>`, `-a <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
 | `--custom-agent <id>` | Select one cataloged Custom Agent. Repeat the flag for multiple agents. |
 | `--all` | With `afk setup agents`, select every cataloged Custom Agent. |
-| `--source <source>` | Use a catalog source for this run only, without changing the cache or default source. |
+| `--source <source>` | Merge the source entries setup applies into the cache without changing the remembered default source. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
 | `--init-only` | Legacy cache-prep flag; prefer `afk refresh`. |
 | `--empty` | With cache preparation, create empty catalog files instead of seeding source defaults. |
@@ -643,40 +644,51 @@ plugins.json
 hooks.json
 ```
 
-### Rules Dependency Files
+### Layered Rules and Dependency Files
 
-`rules.json` may declare files used by the main rules document:
+Version 2 `rules.json` composes named layers in array order. Each layer owns one
+rules document and may declare its own dependency files:
 
 ```json
 {
-  "version": 1,
-  "source": "github",
-  "url": "rules/AGENTS.md",
-  "files": [
+  "version": 2,
+  "layers": [
     {
-      "source": "rules/artifacts.md",
-      "destination": "artifacts.md"
+      "id": "company-base",
+      "label": "Company base rules",
+      "source": "rules/AGENTS.md",
+      "files": [
+        {
+          "source": "rules/artifacts.md",
+          "destination": "artifacts.md"
+        }
+      ]
     }
   ]
 }
 ```
 
-`url` and each file `source` accept either an HTTP(S) URL or a path relative
+Each layer and file `source` accepts either an HTTP(S) URL or a path relative
 to the root of the repository that owns the catalog. AFK materializes relative
-sources during catalog loading. File destinations are relative to the
-AFK-managed rules directory:
+sources during catalog loading. Layer IDs use lowercase slug characters and
+must be unique inside the assembled catalog.
+
+Dependency destinations are isolated beneath the owning layer:
 
 ```text
-Global:  ~/.agents/afk/rules/
-Project: <project>/.agents/afk/rules/
+Global:  ~/.agents/afk/rules/<layer-id>/
+Project: <project>/.agents/afk/rules/<layer-id>/
 ```
 
-The main rules document can refer to that directory with
-`{{AFK_RULES_DIR}}`; setup replaces the placeholder with the concrete global
-or project path. Destinations must remain inside the managed directory and
+Each rules document can refer to its own directory with `{{AFK_RULES_DIR}}`;
+setup replaces the placeholder with that layer's concrete global or project
+path. Destinations must remain inside the managed directory and
 cannot cross symlinks. AFK records dependency hashes internally and only
 removes stale files that still match their installed content; catalog authors
 do not provide these hashes.
+
+Version 1 singular rules catalogs remain accepted. Editing one through
+`afk catalog rules` migrates it to one named version 2 layer.
 
 AFK has a small cache/source split:
 
@@ -684,7 +696,8 @@ AFK has a small cache/source split:
 - `afk catalog skills import` backfills `skills.json` from installed skills with lock metadata.
 - `afk show` inspects the cache by default.
 - `afk setup` applies the cache by default.
-- `--source` reads a source for one command without changing the cache or saved default.
+- `setup --source` merges the source entries it applies into the cache without changing the saved default.
+- `show --source` inspects a source without changing the cache or saved default.
 - `--default-source` belongs to `afk refresh`; it saves the default source and refreshes the cache from it.
 
 Refresh replaces source-owned catalog content while preserving local catalog
@@ -693,7 +706,10 @@ survive. In `profiles.json`, locally created profiles whose IDs are absent from
 the refreshed source survive. The refreshed source wins on matching IDs and
 owns top-level profile policy such as `mode` and `alwaysOn`. In `agents.json`,
 refresh updates matching IDs, appends new source entries, and preserves local
-entries absent from the source.
+entries absent from the source. In version 2 `rules.json`, refresh updates
+matching layer IDs in place, preserves absent cached layers, and appends new
+layers in source order. Refreshing a legacy version 1 rules cache from version 2
+performs the one-time transition to the layered shape.
 
 Use these commands to prepare catalog files without running setup:
 
@@ -813,16 +829,17 @@ The source model has two deliberate constraints:
   `afk refresh <category> --source <source>` when you want to preserve or
   update the mix.
 
-For a one-off operation, you can skip materializing the source:
+Setup can merge and install directly from another source:
 
 ```bash
 afk setup skills --source your-org/skills-kit
 ```
 
-That command uses the custom source for the current skills setup only. It does
-not replace the cached `skills.json` or change the remembered default source.
-Use targeted `refresh` when you want later general setup commands to reuse the
-same assembled catalog.
+That command merges only the skills selected for installation into cached
+`skills.json`, marks them as imported local extensions, and leaves the
+remembered default source unchanged. Unselected source skills are not cached.
+Use targeted `refresh skills --source` to merge the entire source catalog
+without installing it.
 
 ## Install Catalog From the shadcn Registry
 
@@ -873,20 +890,33 @@ refreshing from that source.
 
 ### Rules
 
-Rules sync uses a single source file. For remote defaults, keep the source repo
-explicit:
+Rules sync composes named layers in their declared order. A catalog can provide
+one layer or assemble public, organization, personal, and project policy:
 
 ```json
 {
-  "version": 1,
-  "source": "github",
-  "url": "https://raw.githubusercontent.com/your-org/dev-kit/main/rules/AGENTS.md"
+  "version": 2,
+  "layers": [
+    {
+      "id": "organization-base",
+      "label": "Organization base",
+      "source": "rules/AGENTS.md"
+    },
+    {
+      "id": "personal",
+      "label": "Personal rules",
+      "source": "https://raw.githubusercontent.com/you/private-kit/main/rules/AGENTS.md"
+    }
+  ]
 }
 ```
 
-AFK injects that content into a managed region and preserves content outside
-the managed region. In global scope it writes user-level agent rule files. In
-project scope it writes project host files.
+AFK injects the ordered content into one managed region with visible per-layer
+markers and preserves content outside the managed region. `setup rules
+--source` merges every supplied layer into cached `rules.json` by ID and
+immediately renders the combined layers without changing the remembered
+default source. Use targeted `refresh rules --source` to perform the same
+catalog merge without applying the rules.
 
 ### Skills
 
@@ -1061,8 +1091,9 @@ Project rule sync supports:
 | Pi | `.pi/agent/AGENTS.md` |
 | Cursor local | `.cursor/rules/afk.mdc` |
 
-AFK updates only the `AFK:RULES` managed region. User-owned content outside
-that region is preserved.
+AFK updates only the `AFK:RULES` managed region. Version 2 layers receive
+`AFK:RULE-LAYER:<id>` markers inside it; user-owned content outside the outer
+region is preserved.
 
 ### Hooks
 

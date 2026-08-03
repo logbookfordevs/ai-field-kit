@@ -70,6 +70,7 @@ export type CliOptions = {
   defaultSourceUpdate: string;
   rememberDefaultsSource?: boolean;
   setupManifestsPrepared?: boolean;
+  setupSourceExplicit?: boolean;
   manifestContents?: Partial<Record<ManifestFilename, string>>;
   manifestLocal: boolean;
   manifestConfigureLocal: boolean;

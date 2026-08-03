@@ -6,12 +6,15 @@ import { test } from "vitest";
 import { filterCatalogSelectChoices, inferId, inferLabel, runManifestConfigureWithPrompts, type ManifestAction, type ManifestConfigurePrompts } from "./manifest-configure.js";
 import {
   addManifestItem,
+  addRulesLayer,
   emptyEditableManifest,
   removeManifestItem,
+  removeRulesLayer,
   serializeEditableManifest,
   toggleManifestItemDefault,
   toggleSkillAutoInvocation,
   updateManifestItem,
+  updateRulesLayer,
   validateEditableManifest,
   type EditableManifest,
 } from "./manifest-editor.js";
@@ -46,12 +49,42 @@ test("filterCatalogSelectChoices searches skill identity and metadata", () => {
 });
 
 test("emptyEditableManifest creates typed empty manifests", () => {
-  assert.deepEqual(emptyEditableManifest("rules"), { version: 1, source: "github", url: "" });
+  assert.deepEqual(emptyEditableManifest("rules"), { version: 2, layers: [] });
   assert.deepEqual(emptyEditableManifest("skills"), { version: 1, defaultSource: "", items: [] });
   assert.deepEqual(emptyEditableManifest("agents"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("mcps"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("plugins"), { version: 1, items: [] });
   assert.deepEqual(emptyEditableManifest("hooks"), { version: 1, items: [] });
+});
+
+test("rules layer operations migrate legacy rules and add, edit, and remove by id", () => {
+  const legacy: EditableManifest = {
+    version: 1,
+    source: "github",
+    url: "rules/AGENTS.md",
+    files: [{ source: "rules/artifacts.md", destination: "artifacts.md" }],
+  };
+  const added = addRulesLayer(legacy, {
+    id: "personal",
+    label: "Personal rules",
+    source: "rules/PERSONAL.md",
+  });
+  const edited = updateRulesLayer(added, "personal", {
+    id: "personal",
+    label: "Leonardo's rules",
+    source: "rules/LEONARDO.md",
+  });
+  const removed = removeRulesLayer(edited, "legacy");
+
+  assert.equal(added.version, 2);
+  assert.deepEqual(added.layers.map((layer) => layer.id), ["legacy", "personal"]);
+  assert.deepEqual(added.layers[0]?.files, [{ source: "rules/artifacts.md", destination: "artifacts.md" }]);
+  assert.equal(edited.layers[1]?.label, "Leonardo's rules");
+  assert.deepEqual(removed.layers.map((layer) => layer.id), ["personal"]);
+  assert.throws(
+    () => addRulesLayer(added, { id: "personal", label: "Duplicate", source: "duplicate.md" }),
+    /Duplicate rules layer id: personal/,
+  );
 });
 
 test("runManifestConfigureWithPrompts adds a Custom Agent without default metadata", async () => {
@@ -76,6 +109,34 @@ test("runManifestConfigureWithPrompts adds a Custom Agent without default metada
     id: "notion_assistant",
     label: "Notion Assistant",
     source: "https://example.com/agents/notion-assistant.md",
+  }]);
+});
+
+test("runManifestConfigureWithPrompts adds a named rules layer", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-rules-"));
+
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo([]), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir }),
+    scriptedPrompts({
+      areas: [],
+      actions: [],
+      inputs: ["rules/PERSONAL.md", "leonardo-personal", "Leonardo's personal rules"],
+      confirms: [true],
+    }),
+    { area: "rules", action: "add" },
+  );
+
+  const written = JSON.parse(readFileSync(join(homeDir, ".agents", "afk", "catalog", "rules.json"), "utf8")) as {
+    version: number;
+    layers: Array<{ id: string; label: string; source: string }>;
+  };
+  assert.equal(code, 0);
+  assert.equal(written.version, 2);
+  assert.deepEqual(written.layers, [{
+    id: "leonardo-personal",
+    label: "Leonardo's personal rules",
+    source: "rules/PERSONAL.md",
   }]);
 });
 
@@ -714,21 +775,28 @@ test("runManifestConfigureWithPrompts edits project manifests for local configur
     cliOptions({ cwd, manifestConfigureLocal: true, manifestConfigureFromCurrent: true }),
     scriptedPrompts({
       areas: ["rules", "finish"],
-      actions: ["edit-rules", "back"],
-      inputs: ["./AGENTS.md"],
+      actions: ["edit", "back"],
+      items: ["legacy"],
+      inputs: ["./AGENTS.md", "project-rules", "Project rules"],
       confirms: [true],
     }),
   );
 
   const written = JSON.parse(readFileSync(join(manifestDir, "rules.json"), "utf8")) as {
-    source: string;
-    url: string;
-    files: Array<{ source: string; destination: string }>;
+    version: number;
+    layers: Array<{
+      id: string;
+      label: string;
+      source: string;
+      files: Array<{ source: string; destination: string }>;
+    }>;
   };
   assert.equal(code, 0);
-  assert.equal(written.source, "local");
-  assert.equal(written.url, "./AGENTS.md");
-  assert.deepEqual(written.files, [
+  assert.equal(written.version, 2);
+  assert.equal(written.layers[0]?.id, "project-rules");
+  assert.equal(written.layers[0]?.label, "Project rules");
+  assert.equal(written.layers[0]?.source, "./AGENTS.md");
+  assert.deepEqual(written.layers[0]?.files, [
     { source: "rules/artifacts.md", destination: "artifacts.md" },
   ]);
   assert.ok(output.join("\n").includes("Catalog preview"));

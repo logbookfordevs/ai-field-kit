@@ -165,6 +165,170 @@ test("runArea rules installs local dependency files and expands their rules poin
   assert.ok(!installedRules.includes("{{AFK_RULES_DIR}}"));
 });
 
+test("runArea rules composes cached version 2 layers", async () => {
+  const homeDir = localHomeWithManifests({
+    "rules.json": {
+      version: 2,
+      layers: [
+        {
+          id: "afk",
+          label: "AFK rules",
+          source: "rules/AGENTS.md",
+          files: [{ source: "rules/artifacts.md", destination: "references.md" }],
+        },
+        {
+          id: "personal",
+          label: "Personal rules",
+          source: "rules/PERSONAL.md",
+          files: [{ source: "rules/personal.md", destination: "references.md" }],
+        },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  writeFileSync(join(repoDir, "rules", "AGENTS.md"), "Base `{{AFK_RULES_DIR}}/references.md`.\n");
+  writeFileSync(join(repoDir, "rules", "PERSONAL.md"), "Personal `{{AFK_RULES_DIR}}/references.md`.\n");
+  writeFileSync(join(repoDir, "rules", "artifacts.md"), "base\n");
+  writeFileSync(join(repoDir, "rules", "personal.md"), "personal\n");
+  mkdirSync(join(homeDir, ".codex"), { recursive: true });
+  writeFileSync(join(homeDir, ".codex", "config.toml"), "");
+
+  const code = await runArea("rules", fakeRuntime([]), {
+    ...defaultOptions(homeDir, repoDir),
+    agents: ["codex"],
+    yes: true,
+    dryRun: false,
+    setupManifestsPrepared: true,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(readFileSync(join(homeDir, ".agents", "afk", "rules", "afk", "references.md"), "utf8"), "base\n");
+  assert.equal(readFileSync(join(homeDir, ".agents", "afk", "rules", "personal", "references.md"), "utf8"), "personal\n");
+  const installedRules = readFileSync(join(homeDir, ".codex", "AGENTS.md"), "utf8");
+  assert.ok(installedRules.includes("<!-- AFK:RULE-LAYER:afk:START -->"));
+  assert.ok(installedRules.includes("<!-- AFK:RULE-LAYER:personal:START -->"));
+});
+
+test("runArea merges explicit-source rule layers into the cache before rendering them", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "acme/default-kit", presets: [] },
+    "rules.json": {
+      version: 2,
+      layers: [
+        { id: "afk", label: "Stale AFK rules", source: "rules/BASE.md" },
+        { id: "personal", label: "Personal rules", source: "rules/PERSONAL.md" },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  writeFileSync(join(repoDir, "rules", "BASE.md"), "Stale base rules.\n");
+  writeFileSync(join(repoDir, "rules", "PERSONAL.md"), "Personal rules.\n");
+  const sourceRulesDir = mkdtempSync(join(tmpdir(), "afk-source-rules-"));
+  const updatedBase = join(sourceRulesDir, "BASE.md");
+  const organization = join(sourceRulesDir, "ORGANIZATION.md");
+  writeFileSync(updatedBase, "Updated base rules.\n");
+  writeFileSync(organization, "Organization rules.\n");
+  const sourceDir = localDefaultsSource({
+    "rules.json": {
+      version: 2,
+      layers: [
+        { id: "afk", label: "Updated AFK rules", source: updatedBase },
+        { id: "organization", label: "Organization rules", source: organization },
+      ],
+    },
+  });
+  mkdirSync(join(homeDir, ".codex"), { recursive: true });
+  writeFileSync(join(homeDir, ".codex", "config.toml"), "");
+
+  const code = await runArea("rules", fakeRuntime([]), {
+    ...defaultOptions(homeDir, repoDir),
+    agents: ["codex"],
+    yes: true,
+    dryRun: false,
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+  });
+
+  assert.equal(code, 0);
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "rules.json"), "utf8")) as {
+    layers: Array<{ id: string; label: string; source: string }>;
+  };
+  assert.deepEqual(cached.layers.map((layer) => ({ id: layer.id, label: layer.label })), [
+    { id: "afk", label: "Updated AFK rules" },
+    { id: "personal", label: "Personal rules" },
+    { id: "organization", label: "Organization rules" },
+  ]);
+  const installedRules = readFileSync(join(homeDir, ".codex", "AGENTS.md"), "utf8");
+  assert.ok(installedRules.indexOf("Updated base rules.") < installedRules.indexOf("Personal rules."));
+  assert.ok(installedRules.indexOf("Personal rules.") < installedRules.indexOf("Organization rules."));
+  const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as { defaultsSource: string };
+  assert.equal(presets.defaultsSource, "acme/default-kit");
+});
+
+test("runArea leaves cached rules unchanged when explicit-source setup fails", async () => {
+  const homeDir = localHomeWithManifests({
+    "rules.json": {
+      version: 2,
+      layers: [{ id: "personal", label: "Personal rules", source: "rules/PERSONAL.md" }],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  writeFileSync(join(repoDir, "rules", "PERSONAL.md"), "Personal rules.\n");
+  const sourceDir = localDefaultsSource({
+    "rules.json": {
+      version: 2,
+      layers: [{ id: "organization", label: "Organization rules", source: join(repoDir, "rules", "MISSING.md") }],
+    },
+  });
+
+  await assert.rejects(runArea("rules", fakeRuntime([]), {
+    ...defaultOptions(homeDir, repoDir),
+    agents: ["codex"],
+    yes: true,
+    dryRun: false,
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+  }));
+
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "rules.json"), "utf8")) as {
+    layers: Array<{ id: string }>;
+  };
+  assert.deepEqual(cached.layers.map((layer) => layer.id), ["personal"]);
+});
+
+test("runArea rules dry-run prints resolved layer order", async () => {
+  const homeDir = localHomeWithManifests({
+    "rules.json": {
+      version: 2,
+      layers: [
+        { id: "organization", label: "Organization rules", source: "rules/AGENTS.md" },
+        { id: "personal", label: "Personal rules", source: "rules/PERSONAL.md" },
+      ],
+    },
+  });
+  const repoDir = localRepoWithRules();
+  writeFileSync(join(repoDir, "rules", "AGENTS.md"), "Organization.\n");
+  writeFileSync(join(repoDir, "rules", "PERSONAL.md"), "Personal.\n");
+  const output: string[] = [];
+
+  const code = await runArea("rules", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    agents: ["codex"],
+    yes: true,
+    dryRun: true,
+    setupManifestsPrepared: true,
+  });
+
+  const text = output.join("\n");
+  assert.equal(code, 0);
+  assert.ok(text.includes("Rules layers"));
+  assert.ok(text.indexOf("1. Organization rules (organization)") < text.indexOf("2. Personal rules (personal)"));
+  assert.ok(text.includes(join(homeDir, ".agents", "afk", "rules", "organization")));
+  assert.ok(text.includes(join(homeDir, ".agents", "afk", "rules", "personal")));
+});
+
 test("runArea yes mode detects MCP targets before delegating", async () => {
   const homeDir = localHomeWithManifests({
     "mcps.json": {
@@ -557,8 +721,9 @@ test("runArea profiles prepares the profile catalog from the saved setup source"
   assert.ok(text.includes(profilesPath));
 });
 
-test("runArea uses explicit source manifests without writing cache before installing selected skills", async () => {
+test("runArea merges selected explicit-source skills into the cache after installing them", async () => {
   const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "acme/default-kit", presets: [] },
     "skills.json": {
       version: 1,
       defaultSource: "",
@@ -569,6 +734,14 @@ test("runArea uses explicit source manifests without writing cache before instal
           source: "stale/source",
           args: ["--skill", "stale-skill"],
           default: false,
+        },
+        {
+          id: "personal-skill",
+          label: "Personal Skill",
+          source: "personal/source",
+          args: ["--skill", "personal-skill"],
+          default: false,
+          imported: true,
         },
       ],
     },
@@ -584,6 +757,13 @@ test("runArea uses explicit source manifests without writing cache before instal
           label: "Remote Skill",
           source: "remote/source",
           args: ["--skill", "remote-skill"],
+          default: false,
+        },
+        {
+          id: "unselected-skill",
+          label: "Unselected Skill",
+          source: "remote/source",
+          args: ["--skill", "unselected-skill"],
           default: false,
         },
       ],
@@ -613,13 +793,18 @@ test("runArea uses explicit source manifests without writing cache before instal
   assert.equal(code, 0);
   assert.equal(commands[0]?.command, "npx");
   assert.deepEqual(commands[0]?.args, ["skills", "add", "remote/source", "--global", "--yes", "--skill", "remote-skill", "--agent", "universal"]);
-  assert.ok(!output.join("\n").includes("Local catalog prepared"));
-  const cached = readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8");
-  assert.ok(cached.includes("stale/source"));
-  assert.ok(!cached.includes("remote/source"));
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string; source: string; imported?: boolean }>;
+  };
+  assert.deepEqual(cached.items.map((item) => ({ id: item.id, source: item.source, imported: item.imported })), [
+    { id: "remote-skill", source: "remote/source", imported: true },
+    { id: "personal-skill", source: "personal/source", imported: true },
+  ]);
+  const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as { defaultsSource: string };
+  assert.equal(presets.defaultsSource, "acme/default-kit");
 });
 
-test("runArea dry-run uses explicit source manifests without cache writes", async () => {
+test("runArea dry-run reports explicit-source skill merges without writing the cache", async () => {
   const homeDir = localHomeWithManifests({
     "skills.json": {
       version: 1,
@@ -664,7 +849,12 @@ test("runArea dry-run uses explicit source manifests without cache writes", asyn
 
   assert.equal(code, 0);
   assert.ok(text.includes("$ npx skills add remote/source --global --yes --skill remote-skill"));
+  assert.ok(text.includes("Skill catalog merge plan"));
+  assert.ok(text.includes(`remote-skill -> ${join(localManifestDir(homeDir), "skills.json")}`));
   assert.ok(!text.includes("stale/source"));
+  const cached = readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8");
+  assert.ok(cached.includes("stale/source"));
+  assert.ok(!cached.includes("remote/source"));
 });
 
 test("runSetup with --yes uses a saved default source without prompting", async () => {

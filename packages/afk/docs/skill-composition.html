@@ -756,7 +756,6 @@
             <a class="action primary" href="#react-analogy">see the React analogy</a>
             <a class="action" href="#composition">see composition</a>
             <a class="action" href="#current-tree">current AFK tree</a>
-            <a class="action" href="skill-composition.md">read the markdown</a>
           </div>
         </div>
 
@@ -915,7 +914,7 @@
           <article class="role-row router-color">
             <span class="role-token">router</span>
             <h3>Skill selection</h3>
-            <p>A compass that chooses the smallest useful next skill without becoming the workflow.</p>
+            <p>A manual compass that recommends the smallest useful next skill without becoming the workflow.</p>
           </article>
         </div>
       </section>
@@ -1031,7 +1030,6 @@
           <pre class="code-window current-tree-window" aria-label="Current AFK skills rendered as React-style composition" data-jsx-tree>&lt;AFKSkillTree&gt;
   &lt;ModelDiscovery&gt;
     &lt;ReferenceSkill id="afk-ui-registry-preferences" autoDiscovery defaultInstalled /&gt;
-    &lt;RouterSkill id="afk-compass" autoDiscovery defaultInstalled /&gt;
     &lt;PrimitiveSkill id="truss-evaluation" autoDiscovery defaultInstalled /&gt;
     &lt;PrimitiveSkill id="diagnosing-bugs" autoDiscovery defaultInstalled /&gt;
     &lt;PrimitiveSkill id="plannotator-setup-goal" autoDiscovery defaultInstalled /&gt;
@@ -1070,6 +1068,7 @@
       &lt;PrimitiveSkill ref="grilling" autoDiscovery defaultInstalled /&gt;
       &lt;PrimitiveSkill ref="plannotator-setup-goal" autoDiscovery defaultInstalled /&gt;
     &lt;/WorkflowSkill&gt;
+    &lt;RouterSkill id="afk-compass" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="plannotator-compound" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="plannotator-visual-explainer" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="html" autoDiscovery={false} /&gt;
@@ -1096,7 +1095,7 @@
     </main>
 
     <footer>
-      <span>Companion artifact for <code>skill-composition.md</code>.</span>
+      <span>AFK skill composition reference.</span>
       <span>Small pieces. Named compositions. Explicit discovery.</span>
     </footer>
   </div>

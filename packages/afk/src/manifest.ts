@@ -70,11 +70,29 @@ export type CustomAgentManifestItem = {
   default?: never;
 };
 
-export type RulesManifest = {
+export type LegacyRulesManifest = {
   version: number;
   source: "github" | "local";
   url: string;
   files?: RulesManifestFile[];
+};
+
+export type LayeredRulesManifest = {
+  version: number;
+  layers: RulesManifestLayer[];
+};
+
+export type RulesManifest = LegacyRulesManifest | LayeredRulesManifest;
+
+export type RulesManifestLayer = {
+  id: string;
+  label: string;
+  source: string;
+  files?: RulesManifestFile[];
+};
+
+export type ResolvedRulesManifestLayer = RulesManifestLayer & {
+  legacy?: true;
 };
 
 export type RulesManifestFile = {
@@ -147,18 +165,18 @@ type ManifestDirOptions = Pick<CliOptions, "homeDir" | "manifestLocal"> & {
   cwd?: string;
 };
 
-type GithubSourceCheckout = {
+export type GithubSourceCheckout = {
   rootDir: string;
   cleanup: () => void;
 };
 
-type GithubSourceSpec = {
+export type GithubSourceSpec = {
   cloneUrl: string;
   ref: string;
   catalogDirs: string[];
 };
 
-type CloneGithubSource = (source: GithubSourceSpec) => Promise<GithubSourceCheckout>;
+export type CloneGithubSource = (source: GithubSourceSpec) => Promise<GithubSourceCheckout>;
 
 type ManifestSourceSession = {
   markPublic: () => void;
@@ -258,6 +276,10 @@ function mergedManifestContent(name: ManifestName, content: string, targetPath: 
 
   if (name === "agents.json") {
     return mergedCustomAgentManifestContent(content, targetPath);
+  }
+
+  if (name === "rules.json") {
+    return mergedRulesManifestContent(content, targetPath);
   }
 
   return content;
@@ -436,6 +458,24 @@ export function resolvedRulesManifestContent(content: string, sourceRoot: string
   }
 
   const base = catalogSourceBase(sourceRoot, ref, cwd);
+  if ("layers" in parsed) {
+    return `${JSON.stringify({
+      ...parsed,
+      layers: parsed.layers.map((layer) => ({
+        ...layer,
+        source: resolvedCatalogSource(layer.source, base),
+        ...(layer.files === undefined
+          ? {}
+          : {
+              files: layer.files.map((file) => ({
+                ...file,
+                source: resolvedCatalogSource(file.source, base),
+              })),
+            }),
+      })),
+    }, null, 2)}\n`;
+  }
+
   return `${JSON.stringify({
     ...parsed,
     url: parsed.url ? resolvedCatalogSource(parsed.url, base) : "",
@@ -448,6 +488,27 @@ export function resolvedRulesManifestContent(content: string, sourceRoot: string
           })),
         }),
   }, null, 2)}\n`;
+}
+
+export function rulesManifestLayers(manifest: RulesManifest): ResolvedRulesManifestLayer[] {
+  if ("layers" in manifest) {
+    return manifest.layers.map((layer) => ({
+      ...layer,
+      ...(layer.files === undefined ? {} : { files: layer.files.map((file) => ({ ...file })) }),
+    }));
+  }
+
+  if (!manifest.url) {
+    return [];
+  }
+
+  return [{
+    id: "legacy",
+    label: "Rules",
+    source: manifest.url,
+    ...(manifest.files === undefined ? {} : { files: manifest.files.map((file) => ({ ...file })) }),
+    legacy: true,
+  }];
 }
 
 async function fetchDefaultManifest(
@@ -585,7 +646,7 @@ function githubSourceSpec(source: string, fallbackRef: string): GithubSourceSpec
   return null;
 }
 
-function githubSourceSpecForRepo(
+export function githubSourceSpecForRepo(
   owner: string,
   repo: string,
   ref: string,
@@ -598,7 +659,7 @@ function githubSourceSpecForRepo(
   };
 }
 
-async function cloneGithubCatalogSource(source: GithubSourceSpec): Promise<GithubSourceCheckout> {
+export async function cloneGithubCatalogSource(source: GithubSourceSpec): Promise<GithubSourceCheckout> {
   const tempRoot = mkdtempSync(join(tmpdir(), "afk-catalog-source-"));
   const rootDir = join(tempRoot, "repo");
   const status = startCatalogCloneStatus();
@@ -870,7 +931,7 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
   }
 
   if (name === "rules.json") {
-    return `${JSON.stringify({ version: 1, source: "github", url: "" }, null, 2)}\n`;
+    return `${JSON.stringify({ version: 2, layers: [] }, null, 2)}\n`;
   }
 
   if (name === "plugins.json") {
@@ -1033,6 +1094,49 @@ export function mergedCustomAgentManifestContent(content: string, targetPath: st
     ...refreshed.items.filter((item) => !existingIds.has(item.id)),
   ];
   return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
+}
+
+export function mergedRulesManifestContent(content: string, targetPath: string): string {
+  let refreshed: unknown;
+  try {
+    refreshed = JSON.parse(content);
+  } catch {
+    return content;
+  }
+
+  if (!isRulesManifest(refreshed) || !("layers" in refreshed) || !existsSync(targetPath)) {
+    return content;
+  }
+
+  let existing: unknown;
+  try {
+    existing = JSON.parse(readFileSync(targetPath, "utf8"));
+  } catch {
+    return content;
+  }
+
+  if (!isRulesManifest(existing)) {
+    return content;
+  }
+
+  if (!("layers" in existing)) {
+    return `${JSON.stringify(refreshed, null, 2)}\n`;
+  }
+
+  const existingLayers = rulesManifestLayers(existing);
+  const incomingById = new Map(refreshed.layers.map((layer) => [layer.id, layer]));
+  const existingIds = new Set(existingLayers.map((layer) => layer.id));
+  const layers = [
+    ...existingLayers.map((layer) => incomingById.get(layer.id) ?? stripResolvedRulesLayer(layer)),
+    ...refreshed.layers.filter((layer) => !existingIds.has(layer.id)),
+  ];
+
+  return `${JSON.stringify({ version: refreshed.version, layers }, null, 2)}\n`;
+}
+
+function stripResolvedRulesLayer(layer: ResolvedRulesManifestLayer): RulesManifestLayer {
+  const { legacy: _legacy, ...manifestLayer } = layer;
+  return manifestLayer;
 }
 
 function readExistingCustomAgentManifest(path: string): CustomAgentManifest | null {
@@ -1262,7 +1366,36 @@ export function isCustomAgentManifest(value: unknown): value is CustomAgentManif
 }
 
 export function isRulesManifest(value: unknown): value is RulesManifest {
-  if (!isRecord(value) || typeof value.version !== "number" || (value.source !== "github" && value.source !== "local")) {
+  if (!isRecord(value) || typeof value.version !== "number") {
+    return false;
+  }
+
+  if (Array.isArray(value.layers)) {
+    const ids = new Set<string>();
+    return value.version >= 2 && value.layers.every((layer) => {
+      if (
+        !isRecord(layer) ||
+        typeof layer.id !== "string" ||
+        !/^[a-z0-9][a-z0-9._-]*$/.test(layer.id) ||
+        ids.has(layer.id) ||
+        typeof layer.label !== "string" ||
+        typeof layer.source !== "string"
+      ) {
+        return false;
+      }
+      ids.add(layer.id);
+      return layer.files === undefined || (
+        Array.isArray(layer.files) &&
+        layer.files.every((file) => (
+          isRecord(file) &&
+          typeof file.source === "string" &&
+          typeof file.destination === "string"
+        ))
+      );
+    });
+  }
+
+  if (value.source !== "github" && value.source !== "local") {
     return false;
   }
 

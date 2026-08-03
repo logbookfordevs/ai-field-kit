@@ -380,7 +380,9 @@ test("runCli prints contextual catalog area help", async () => {
 
   assert.equal(rulesCode, 0);
   assert.ok(rulesText.includes("AFK catalog rules"));
-  assert.ok(rulesText.includes("Edit rules.json."));
+  assert.ok(rulesText.includes("Manage ordered rules layers in rules.json."));
+  assert.ok(rulesText.includes("add"));
+  assert.ok(rulesText.includes("remove"));
   assert.ok(rulesText.includes("afk catalog rules edit --local"));
 
   const skillsOutput: string[] = [];

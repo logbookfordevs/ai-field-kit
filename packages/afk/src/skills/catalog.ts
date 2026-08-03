@@ -82,6 +82,11 @@ export type SkillCatalogManifestSyncResult = {
   added: string[];
 };
 
+export type SetupSourceSkillCatalogMergeResult = {
+  path: string;
+  merged: string[];
+};
+
 export type SkillCatalogStartDisabledResult = {
   path: string;
   updated: string[];
@@ -457,6 +462,51 @@ export function syncSkillCatalogFromManifest(options: {
   }
 
   return { path, added };
+}
+
+export function mergeSetupSourceSkillsIntoCatalog(options: {
+  homeDir: string;
+  manifestContents: NonNullable<Parameters<typeof loadSkillManifest>[0]["manifestContents"]>;
+  selectedSkillIds: string[];
+  allSkills: boolean;
+  dryRun: boolean;
+}): SetupSourceSkillCatalogMergeResult {
+  const sourceManifest = loadSkillManifest(options);
+  const selectedIds = new Set(options.selectedSkillIds.map((id) => id.toLowerCase()));
+  const selected = sourceManifest.items.filter((item) => (
+    selectedIds.size > 0 ? selectedIds.has(item.id.toLowerCase()) : item.default || options.allSkills
+  ));
+  const path = skillCatalogPath(options.homeDir);
+  if (selected.length === 0) {
+    return { path, merged: [] };
+  }
+
+  const cachedManifest = existsSync(path)
+    ? loadSkillManifest({ homeDir: options.homeDir })
+    : { version: sourceManifest.version, defaultSource: "", scopes: [], items: [] };
+  const selectedById = new Map(selected.map((item) => [item.id.toLowerCase(), { ...item, imported: true }]));
+  const cachedIds = new Set(cachedManifest.items.map((item) => item.id.toLowerCase()));
+  const referencedScopeIds = new Set(selected.map((item) => item.catalog?.scope).filter((id): id is string => Boolean(id)));
+  const cachedScopeIds = new Set((cachedManifest.scopes ?? []).map((scope) => scope.id));
+  const scopes = [
+    ...(cachedManifest.scopes ?? []),
+    ...(sourceManifest.scopes ?? []).filter((scope) => referencedScopeIds.has(scope.id) && !cachedScopeIds.has(scope.id)),
+  ];
+  const nextManifest: SkillManifest = {
+    ...cachedManifest,
+    scopes,
+    items: [
+      ...cachedManifest.items.map((item) => selectedById.get(item.id.toLowerCase()) ?? item),
+      ...selected.filter((item) => !cachedIds.has(item.id.toLowerCase())).map((item) => ({ ...item, imported: true })),
+    ],
+  };
+
+  if (!options.dryRun) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(nextManifest, null, 2)}\n`);
+  }
+
+  return { path, merged: selected.map((item) => item.id) };
 }
 
 export function markSkillCatalogItemsStartDisabled(options: {
