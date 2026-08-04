@@ -24,13 +24,11 @@ The route is complete when the response contains one exact invocation, or explic
 | Relentlessly question a plan or design | `grill-me` |
 | Question a plan while maintaining its ADRs and domain language | `grill-with-docs` |
 | Settle bounded implementation, architecture, or UX trade-offs | `afk-code-grill` |
-| Generate divergent ideas before choosing a direction | `afk-brainstorming-facilitator` |
 | Map a foggy effort too large for one session | `wayfinder` |
 | Build a throwaway experiment to answer one design question | `prototype` |
 | Synthesize the conversation into an agent-ready spec | `afk-to-spec` |
 | Slice a plan or spec into dependency-aware tickets | `afk-to-tickets` |
 | Implement existing checkpointed tickets | `afk-implement-tasks` |
-| Run fast goal execution with Markdown checkpoint tracking | `afk-sprint` |
 | Save or resume disposable session context | `handoff` or `afk-pickup` |
 | Coordinate work across multiple agents or runtimes | `orchestrator` |
 | Load a named AFK skill profile | `afk-profile-use` |
@@ -47,7 +45,6 @@ The route is complete when the response contains one exact invocation, or explic
 | Create a general, plan, or architecture HTML artifact | `html`, `html-plan`, or `html-diagram` |
 | Create a Plannotator-themed visual explanation | `plannotator-visual-explainer` |
 | Analyze accumulated Plannotator plan feedback | `plannotator-compound` |
-| Explain a branch or pull request as a Mermaid story | `afk-pr-story-flow-mermaid` |
 | Design or revise a predictable skill | `writing-great-skills` |
 
 Recommend only skills available in the current host. If the best route is unavailable, name the missing skill and give the closest available invocation.

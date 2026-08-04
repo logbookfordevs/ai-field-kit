@@ -598,7 +598,6 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const SKILLS = [
   ["afk-animated-driven-frontend","wrapper",true,false,"ai-field-kit",[]],
   ["afk-ask","utility",true,false,"ai-field-kit",[]],
-  ["afk-brainstorming-facilitator","wrapper",true,false,"ai-field-kit",[]],
   ["afk-code-grill","wrapper",true,false,"ai-field-kit",["grilling","truss-evaluation","codebase-design"]],
   ["afk-to-spec","wrapper",true,false,"ai-field-kit",[]],
   ["afk-to-tickets","wrapper",true,false,"ai-field-kit",[]],
@@ -608,7 +607,6 @@ const SKILLS = [
   ["afk-pickup","utility",true,false,"ai-field-kit",[]],
   ["afk-compass","router",true,false,"ai-field-kit",[]],
   ["afk-profile-use","router",true,false,"ai-field-kit",[]],
-  ["afk-sprint","workflow",true,false,"ai-field-kit",["plannotator-setup-goal","afk-to-tickets","afk-implement-tasks"]],
   ["truss-evaluation","primitive",true,true,"truss-framework",[]],
   ["diagnosing-bugs","primitive",true,true,"mattpocock/skills",[]],
   ["plannotator-compound","utility",true,false,"plannotator",[]],
@@ -634,7 +632,6 @@ const SKILLS = [
   ["handoff","utility",true,false,"mattpocock/skills",[]],
   ["wayfinder","workflow",false,false,"mattpocock/skills",["grilling","domain-modeling","prototype"]],
   ["afk-code-review","wrapper",true,true,"ai-field-kit",[]],
-  ["afk-pr-story-flow-mermaid","wrapper",true,false,"ai-field-kit",[]],
   ["grilling","primitive",true,true,"mattpocock/skills",[]],
   ["domain-modeling","primitive",true,true,"mattpocock/skills",[]],
   ["codebase-design","primitive",true,true,"mattpocock/skills",[]]
@@ -828,7 +825,6 @@ const ROLE_LAYOUT = {
 
 const WORKFLOW_MOMENTS = [
   {id:"define",title:"DEFINE",action:"find the right problem",skills:[
-    {id:"afk-brainstorming-facilitator",use:"diverge, then converge"},
     {id:"grill-me",use:"sharpen the plan"},
     {id:"grill-with-docs",use:"interview + decision docs"},
     {id:"grilling",use:"stress-test assumptions"},
@@ -842,7 +838,6 @@ const WORKFLOW_MOMENTS = [
     {id:"plannotator-setup-goal",use:"package a reviewed goal"},
     {id:"wayfinder",use:"map long-horizon work"},
     {id:"html-plan",use:"make the plan visible"},
-    {id:"afk-sprint",use:"checkpoint a fast goal"},
     {id:"prototype",use:"probe a design question"},
     {id:"codebase-design",use:"choose deep module seams"},
     {id:"afk-code-grill",use:"challenge pre-build trade-offs"}
@@ -860,7 +855,6 @@ const WORKFLOW_MOMENTS = [
     {id:"html-diagram",use:"make architecture click"},
     {id:"orchestrator",use:"coordinate specialist agents"},
     {id:"animation-vocabulary",use:"name the intended motion"},
-    {id:"afk-sprint",use:"drive the checkpoint loop"},
   ]},
   {id:"verify",title:"VERIFY",action:"earn confidence in the result",skills:[
     {id:"diagnosing-bugs",use:"isolate failures and regressions"},
@@ -875,7 +869,6 @@ const WORKFLOW_MOMENTS = [
     {id:"code-simplification",use:"remove accidental complexity"},
     {id:"truss-evaluation",use:"expose the trade-offs"},
     {id:"plannotator-visual-explainer",use:"explain visually"},
-    {id:"afk-pr-story-flow-mermaid",use:"tell the branch story"},
     {id:"teach",use:"transfer the understanding"}
   ]},
   {id:"ship",title:"SHIP",action:"leave a trustworthy trail",skills:[

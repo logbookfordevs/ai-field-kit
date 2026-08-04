@@ -289,7 +289,6 @@
   .n-truss { left: 7%; bottom: 12%; }
   .n-design { right: 6%; top: 13%; }
   .n-code-grill { left: 50%; top: 45%; transform: translate(-50%, -50%); min-width: 190px; }
-  .n-sprint { right: 8%; bottom: 12%; }
 
   .connector-map {
     position: absolute;
@@ -331,7 +330,6 @@
   .studio.pulsing .n-truss { animation-delay: 0.18s; }
   .studio.pulsing .n-design { animation-delay: 0.36s; }
   .studio.pulsing .n-code-grill { animation-delay: 0.54s; }
-  .studio.pulsing .n-sprint { animation-delay: 0.72s; }
 
   @keyframes current {
     from { stroke-dashoffset: 0; }
@@ -802,11 +800,6 @@
               <div class="desc">one named experience</div>
             </article>
 
-            <article class="node workflow n-sprint">
-              <div class="kind">workflow</div>
-              <div class="name">afk-sprint</div>
-              <div class="desc">larger execution package</div>
-            </article>
           </div>
 
           <div class="studio-foot">
@@ -1049,7 +1042,6 @@
     &lt;WrapperSkill id="afk-animated-driven-frontend" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="afk-ask" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="orchestrator" autoDiscovery={false} /&gt;
-    &lt;WrapperSkill id="afk-brainstorming-facilitator" autoDiscovery={false} defaultInstalled /&gt;
     &lt;WrapperSkill id="afk-code-grill" autoDiscovery={false} defaultInstalled&gt;
       &lt;PrimitiveSkill ref="grilling" autoDiscovery defaultInstalled /&gt;
       &lt;PrimitiveSkill ref="truss-evaluation" autoDiscovery defaultInstalled /&gt;
@@ -1059,11 +1051,6 @@
     &lt;WrapperSkill id="afk-to-tickets" autoDiscovery={false} defaultInstalled /&gt;
     &lt;WorkflowSkill id="afk-implement-tasks" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="afk-pickup" autoDiscovery={false} defaultInstalled /&gt;
-    &lt;WorkflowSkill id="afk-sprint" autoDiscovery={false} defaultInstalled&gt;
-      &lt;PrimitiveSkill ref="plannotator-setup-goal" autoDiscovery defaultInstalled /&gt;
-      &lt;WrapperSkill ref="afk-to-tickets" autoDiscovery={false} defaultInstalled /&gt;
-      &lt;WorkflowSkill ref="afk-implement-tasks" autoDiscovery={false} defaultInstalled /&gt;
-    &lt;/WorkflowSkill&gt;
     &lt;RouterSkill id="afk-compass" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="plannotator-compound" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="plannotator-visual-explainer" autoDiscovery={false} defaultInstalled /&gt;
@@ -1083,7 +1070,6 @@
     &lt;UtilitySkill id="handoff" autoDiscovery={false} defaultInstalled /&gt;
     &lt;WorkflowSkill id="wayfinder" autoDiscovery={false} /&gt;
     &lt;WrapperSkill id="afk-code-review" autoDiscovery defaultInstalled /&gt;
-    &lt;WrapperSkill id="afk-pr-story-flow-mermaid" autoDiscovery={false} defaultInstalled /&gt;
   &lt;/ExplicitInvocation&gt;
 &lt;/AFKSkillTree&gt;</pre>
         </div>

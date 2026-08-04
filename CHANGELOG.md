@@ -27,6 +27,8 @@ This changelog tracks meaningful updates by version and date.
 
 - `plugins:` removed GoalBuddy from the bundled installer catalog.
 - `skills:` retired AFK Turbo and its GoalBuddy-backed live-board workflow.
+- `skills:` retired AFK Sprint and its Plannotator-backed checkpoint workflow.
+- `skills:` retired AFK Brainstorming Facilitator and PR Story Flow Mermaid from the active catalog while preserving their implementations under `legacy/`.
 
 ## v1.2.1 - 2026-08-01
 

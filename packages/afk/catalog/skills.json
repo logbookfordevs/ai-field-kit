@@ -32,20 +32,6 @@
             "composes": []
         },
         {
-            "id": "afk-brainstorming-facilitator",
-            "label": "AFK - Brainstorming Facilitator",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-brainstorming-facilitator",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
-            "role": "wrapper",
-            "composes": []
-        },
-        {
             "id": "afk-code-grill",
             "label": "AFK - Code Grill",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -188,24 +174,6 @@
             "autoInvocation": false,
             "role": "router",
             "composes": []
-        },
-        {
-            "id": "afk-sprint",
-            "label": "AFK - Sprint",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-sprint",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
-            "role": "workflow",
-            "composes": [
-                "plannotator-setup-goal",
-                "afk-to-tickets",
-                "afk-implement-tasks"
-            ]
         },
         {
             "id": "truss-evaluation",
@@ -593,20 +561,6 @@
             ],
             "default": true,
             "autoInvocation": true,
-            "role": "wrapper",
-            "composes": []
-        },
-        {
-            "id": "afk-pr-story-flow-mermaid",
-            "label": "AFK - PR Story Flow Mermaid",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-pr-story-flow-mermaid",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
             "role": "wrapper",
             "composes": []
         },
