@@ -1,6 +1,23 @@
-# AI Field Kit - by Logbook for Devs
+<p align="center">
+  <img src="./docs/assets/afk-readme-hero.webp" alt="A cartographic field instrument routing scattered AI development tools into one organized system" width="100%">
+</p>
 
-> A CLI-first setup router for practical AI development environments.
+<h1 align="center">AI Field Kit</h1>
+
+<p align="center"><strong>One field kit for every coding agent.</strong></p>
+
+<p align="center">
+  Portable rules, skills, Custom Agents, MCPs, plugins, and hooks—composed once and carried across your AI tools.
+</p>
+
+<p align="center">
+  <a href="https://ai-field-kit.logbookfordevs.com/">Website</a> ·
+  <a href="./packages/afk/README.md">CLI reference</a> ·
+  <a href="./CHANGELOG.md">Changelog</a> ·
+  <a href="https://logbookfordevs.com/">by Logbook for Devs</a>
+</p>
+
+---
 
 AI Field Kit starts with the `afk` command. The CLI previews and applies the
 parts of an AI development setup that should move together: shared rules,

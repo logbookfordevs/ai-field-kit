@@ -17,6 +17,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `docs:` gave the main README a branded AFK hero, clearer product headline, and direct links to the website, CLI reference, and changelog.
 - `cli:` renamed the read-only `afk catalog skills import-status` command to `afk catalog skills status`, without retaining a compatibility alias.
 - `cli:` made `setup skills --source` cache only successfully installed selections as imported entries and `setup rules --source` merge every applied layer by ID, while both commands preserve the remembered default source.
 - `cli:` made interactive `afk setup skills` selection searchable while preserving multi-select and non-interactive setup behavior.
