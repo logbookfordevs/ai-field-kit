@@ -104,6 +104,22 @@ export const afkSearchableCheckboxTheme = {
   helpMode: "always",
 } as const;
 
+export const afkInvocationPolicyStyle = {
+  cursor: signal("◆"),
+  skill: (text: string, active: boolean) => active ? `${bold}${ink(text)}${reset}` : ink(text),
+  folder: (text: string) => muted(text),
+  policy: {
+    auto: (text: string) => sea(text),
+    manual: (text: string) => brass(text),
+    mixed: (text: string) => ember(text),
+    default: (text: string) => muted(text),
+  },
+  draft: (text: string) => signal(text),
+  scope: (text: string) => muted(text),
+  helpKey: (text: string) => sea(text),
+  helpText: (text: string) => muted(text),
+} as const;
+
 export const afkPromptTheme = {
   prefix: {
     idle: sea("◇"),
@@ -142,6 +158,10 @@ function signal(value: string): string {
 
 function muted(value: string): string {
   return paint(terminalPalette.driftwood, value);
+}
+
+function ink(value: string): string {
+  return paint(terminalPalette.lantern, value);
 }
 
 function ember(value: string): string {

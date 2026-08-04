@@ -737,7 +737,7 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills invocation": {
     title: "AFK skills invocation",
-    summary: "Enable or disable auto invocation policy for one skill.",
+    summary: "Bare command opens the batch editor; enable or disable one skill explicitly.",
     usage: "afk skills invocation [disable|enable] [folder] [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
