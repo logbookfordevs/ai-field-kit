@@ -135,7 +135,7 @@ test("skill profiles lobby choices route runtime intents", () => {
 
 test("catalog skills lobby choices route catalog intents", () => {
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-import"), ["catalog", "skills", "import"]);
-  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-import-status"), ["catalog", "skills", "import-status"]);
+  assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-status"), ["catalog", "skills", "status"]);
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-add"), ["catalog", "skills", "add"]);
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-edit"), ["catalog", "skills", "edit"]);
   assert.deepEqual(routeForCatalogSkillsLobbyChoice("catalog-skills-bulk-edit"), ["catalog", "skills", "bulk-edit"]);
@@ -231,12 +231,12 @@ test("catalog skills lobby labels include catalog actions", () => {
   const descriptions = catalogSkillsLobbyChoices.map((choice) => choice.description ?? "");
 
   assert.ok(labels.includes("Import installed skills"));
-  assert.ok(labels.includes("Check import status"));
+  assert.ok(labels.includes("Check catalog status"));
   assert.ok(labels.includes("Add a skill catalog item"));
   assert.ok(labels.includes("Bulk edit skill policies"));
   assert.ok(labels.includes("Toggle skill autoInvocation"));
   assert.ok(descriptions.some((description) => description.includes("afk catalog skills import")));
-  assert.ok(descriptions.some((description) => description.includes("afk catalog skills import-status")));
+  assert.ok(descriptions.some((description) => description.includes("afk catalog skills status")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog skills toggle-auto")));
   assert.ok(descriptions.some((description) => description.includes("afk catalog skills bulk-edit")));
 });

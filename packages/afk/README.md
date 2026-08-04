@@ -288,7 +288,7 @@ its interactive editor. Use `--dry-run` to preview supported writes.
 | Skills policy | `afk catalog skills bulk-edit` | Select multiple skills, then set invocation and always-on policy together. |
 | Skills policy | `afk catalog skills toggle-default` | Which catalog skills non-interactive default setup selects. |
 | Skills policy | `afk catalog skills toggle-auto` | Catalog-owned `autoInvocation` policy. |
-| Skills import | `afk catalog skills import-status` | Read-only comparison of installed shared skills and catalog entries. |
+| Skills status | `afk catalog skills status` | Read-only comparison of installed shared skills and catalog entries. |
 | Skills import | `afk catalog skills import` | Missing catalog entries recovered from official `skills` CLI lock metadata. Existing entries are preserved. |
 | Profiles | `afk catalog profiles list`, `show` | Read-only profile definition inspection. Add `--json` for machine-readable output. |
 | Profiles | `afk catalog profiles create`, `edit`, `delete` | Profile definitions in `profiles.json`. |
@@ -580,13 +580,13 @@ Use `afk catalog skills import` when skills are already installed through the of
 `skills` CLI and you want AFK's local catalog to catch up.
 
 ```bash
-afk catalog skills import-status
+afk catalog skills status
 afk catalog skills import --dry-run
 afk catalog skills import
 afk catalog skills import --local
 ```
 
-`import-status` compares installed shared skills with `skills.json`, showing
+`status` compares installed shared skills with `skills.json`, showing
 how many skills are not imported yet and how many catalog entries are not
 currently installed.
 

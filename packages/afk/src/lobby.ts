@@ -63,7 +63,7 @@ export type CatalogSkillsLobbyChoiceValue =
   | "catalog-skills-toggle-default"
   | "catalog-skills-toggle-auto"
   | "catalog-skills-import"
-  | "catalog-skills-import-status";
+  | "catalog-skills-status";
 
 type SkillAddMode = "normal" | "start-disabled" | "profile" | "profile-only";
 
@@ -269,9 +269,9 @@ export const catalogSkillsLobbyChoices: MenuChoice<CatalogSkillsLobbyChoiceValue
     description: "Route: afk catalog skills import",
   },
   {
-    name: "Check import status",
-    value: "catalog-skills-import-status",
-    description: "Route: afk catalog skills import-status",
+    name: "Check catalog status",
+    value: "catalog-skills-status",
+    description: "Route: afk catalog skills status",
   },
 ];
 
@@ -581,8 +581,8 @@ export function routeForCatalogSkillsLobbyChoice(value: CatalogSkillsLobbyChoice
       return ["catalog", "skills", "toggle-auto"];
     case "catalog-skills-import":
       return ["catalog", "skills", "import"];
-    case "catalog-skills-import-status":
-      return ["catalog", "skills", "import-status"];
+    case "catalog-skills-status":
+      return ["catalog", "skills", "status"];
   }
 }
 

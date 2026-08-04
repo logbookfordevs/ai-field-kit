@@ -1080,14 +1080,14 @@ const commandHelps: Record<string, CommandHelp> = {
       "toggle-default                    Toggle default skills",
       "toggle-auto                       Toggle skill autoInvocation",
       "import                            Backfill missing skills catalog entries",
-      "import-status                     Compare installed skills with catalog entries",
+      "status                            Compare installed skills with catalog entries",
     ],
     examples: [
       "afk catalog skills",
       "afk catalog skills add",
       "afk catalog skills bulk-edit",
       "afk catalog skills toggle-auto",
-      "afk catalog skills import-status",
+      "afk catalog skills status",
       "afk catalog skills import --dry-run",
     ],
   },
@@ -1109,16 +1109,16 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk catalog skills import --local",
     ],
   },
-  "catalog skills import-status": {
-    title: "AFK catalog skills import-status",
+  "catalog skills status": {
+    title: "AFK catalog skills status",
     summary: "Compare installed shared skills with skills catalog entries.",
-    usage: "afk catalog skills import-status [options]",
+    usage: "afk catalog skills status [options]",
     options: [
       setupOptions.localCatalog,
     ],
     examples: [
-      "afk catalog skills import-status",
-      "afk catalog skills import-status --local",
+      "afk catalog skills status",
+      "afk catalog skills status --local",
     ],
   },
 };
@@ -1895,10 +1895,6 @@ function isCatalogSkillsImportCommand(key: string): boolean {
   return key === "catalog skills import";
 }
 
-function isCatalogSkillsImportStatusCommand(key: string): boolean {
-  return key === "catalog skills import-status";
-}
-
 function isCatalogProfilesCommand(key: string): boolean {
   return key === "catalog profiles" || key.startsWith("catalog profiles ");
 }
@@ -1928,7 +1924,7 @@ async function runCatalogAreaCommand(commandPath: string[], runtime: Runtime, op
     if (commandPath[2] === "import") {
       return runCatalogImport(runtime, options);
     }
-    if (commandPath[2] === "import-status") {
+    if (commandPath[2] === "status") {
       return runCatalogImportStatus(runtime, options);
     }
   }
@@ -2010,7 +2006,7 @@ function catalogActionFromCommand(area: ManifestArea, value: string | undefined)
         ? { kind: "ok", action: "toggle-auto" }
         : { kind: "error", error: `Unknown catalog ${area} command: ${value}` };
     case "import":
-    case "import-status":
+    case "status":
       return area === "skills"
         ? { kind: "ok" }
         : { kind: "error", error: `Unknown catalog ${area} command: ${value}` };
