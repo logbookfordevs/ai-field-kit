@@ -1,14 +1,15 @@
 ---
 name: afk-code-review
-description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards and Spec. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to review since a commit/branch/tag."
+description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along three independent axes: Standards, Spec, and Regression. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to review since a commit/branch/tag."
 ---
 
-Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
+Independent review axes for the diff between `HEAD` and a fixed point the user supplies:
 
 - **Standards** - does the code conform to this repo's documented coding standards?
 - **Spec** - does the code faithfully implement the originating issue, PRD, spec, or AFK task?
+- **Regression** - does the diff introduce observable behavioral regressions outside the requested change?
 
-Both axes should run in parallel sub-agents or fresh contexts so they do not pollute each other's context, then this skill aggregates their findings.
+The review axes should run in parallel sub-agents or fresh contexts so they do not pollute each other's context, then this skill aggregates their findings.
 
 ## Process
 
@@ -18,7 +19,7 @@ Whatever the user said is the fixed point: a commit SHA, branch name, tag, `main
 
 Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
 
-Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside the two review axes.
+Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside the review axes.
 
 ### 2. Identify the spec source
 
@@ -54,9 +55,9 @@ Each smell reads *what it is* -> *how to fix*; match it against the diff:
 - **Middle Man** - a class or function that mostly just delegates onward. -> cut it, call the real target direct.
 - **Refused Bequest** - a subclass or implementer that ignores or overrides most of what it inherits. -> drop the inheritance, use composition.
 
-### 4. Spawn both sub-agents in parallel
+### 4. Spawn the review sub-agents in parallel
 
-Send a single message with two sub-agent calls.
+Send a single message with all applicable sub-agent calls.
 
 **Standards sub-agent prompt** - include:
 
@@ -70,19 +71,29 @@ Send a single message with two sub-agent calls.
 - The path or fetched contents of the spec.
 - The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behavior in the diff that was not asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
 
+### AFK Regression extension
+
+Alongside the upstream Standards and Spec reviews, run an independent Regression sub-agent.
+
+**Regression sub-agent prompt** - include:
+
+- The full diff command and commit list.
+- The brief: "Inspect the diff plus surrounding code, call sites and consumers, edge and error paths, and relevant tests. Report only evidence-backed observable behavior that this diff regresses relative to the fixed point. For each finding, cite the changed hunk and affected path or test, give the triggering conditions, trace the causal chain, and state the user or runtime impact. Do not report missing or partial requirements, scope creep, or incorrect implementation of the spec; those belong to the Spec axis. Do not report standards violations or design smells; those belong to the Standards axis. Reject hypothetical risks without concrete evidence. Under 400 words."
+
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
 ### 5. Aggregate
 
-Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings - the two axes are deliberately separate (see _Why two axes_).
+Present the reports under `## Standards`, `## Spec`, and `## Regression` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings - the axes are deliberately separate (see _Why separate axes_).
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Do not pick a single winner across axes - that is the reranking the separation exists to prevent.
 
-## Why two axes
+## Why separate axes
 
-A change can pass one axis and fail the other:
+A change can pass one axis and fail another:
 
 - Code that follows every standard but implements the wrong thing -> **Standards pass, Spec fail.**
 - Code that does exactly what the issue asked but breaks the project's conventions -> **Spec pass, Standards fail.**
+- Code that follows standards and matches the spec but breaks existing behavior elsewhere -> **Standards pass, Spec pass, Regression fail.**
 
-Reporting them separately stops one axis from masking the other.
+Reporting them separately stops any axis from masking another.
