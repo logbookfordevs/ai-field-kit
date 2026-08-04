@@ -4,6 +4,7 @@ import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
 import { skillCatalogFileName, type SkillCategorizationState, type SkillRecord } from "./catalog.js";
 import type { SkillProfileApplyResult, SkillProfileCatalog, SkillProfileItem, SkillProfileState } from "./profiles.js";
 import type { PathOperation } from "../types.js";
+import type { InvocationPolicyChange } from "./invocation-policy-editor.js";
 
 export function renderSkillList(records: SkillRecord[], categorization: SkillCategorizationState): string {
   if (records.length === 0) {
@@ -90,6 +91,28 @@ export function renderSkillInvocationPolicy(input: {
     input.operations.length === 0 ? muted("No file changes needed.") : undefined,
     ...input.operations.map((operation) => `${paint(terminalPalette.sienna, "•")} ${muted(formatOperation(operation))}`),
   ].filter((line): line is string => Boolean(line)).join("\n");
+}
+
+export function renderSkillInvocationPolicyBatch(input: {
+  changes: InvocationPolicyChange[];
+  dryRun: boolean;
+  operations: PathOperation[];
+}): string {
+  const title = input.dryRun ? "Auto Invocation Preview" : "Auto Invocation Complete";
+  if (input.changes.length === 0) {
+    return [sectionTitle(title), muted("No invocation policy changes selected.")].join("\n");
+  }
+
+  return [
+    sectionTitle(title),
+    input.dryRun
+      ? `${muted("Would update")} ${accent(String(input.changes.length))} ${muted(input.changes.length === 1 ? "skill" : "skills")}`
+      : `${accent("Updated")} ${accent(String(input.changes.length))} ${muted(input.changes.length === 1 ? "skill" : "skills")}`,
+    ...input.changes.map(({ record, allowInvocation }) =>
+      `${paint(terminalPalette.sienna, "•")} ${strong(record.folder)} ${muted("→")} ${accent(allowInvocation ? "auto" : "manual")}`
+    ),
+    input.operations.length === 0 ? muted("No file changes needed.") : muted(`${input.operations.length} file writes`),
+  ].join("\n");
 }
 
 export function renderSkillOpen(input: {

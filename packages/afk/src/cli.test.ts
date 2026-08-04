@@ -588,6 +588,7 @@ test("runCli prints contextual skills invocation help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills invocation"));
   assert.ok(text.includes("invocation [disable|enable] [folder]"));
+  assert.ok(text.includes("Bare command opens the batch editor"));
   assert.ok(text.includes("--agent <agent>|custom"));
   assert.ok(text.includes("--agent-path <folder>"));
   assert.ok(text.includes("--enabled"));
