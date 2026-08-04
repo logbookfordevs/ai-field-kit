@@ -6,6 +6,7 @@ import {
   normalizeSearchableCheckboxChoices,
   renderSearchableCheckboxBody,
   selectedSearchableCheckboxValues,
+  toggleAllVisibleSearchableCheckboxChoices,
   toggleSearchableCheckboxChoice,
 } from "./searchable-checkbox.js";
 
@@ -47,6 +48,22 @@ test("toggleSearchableCheckboxChoice ignores disabled choices", () => {
   ]);
 
   assert.deepEqual(selectedSearchableCheckboxValues(toggleSearchableCheckboxChoice(choices, 0)), []);
+});
+
+test("toggleAllVisibleSearchableCheckboxChoices selects and clears shown enabled choices", () => {
+  const choices = normalizeSearchableCheckboxChoices([
+    { name: "Selected Docs Skill", value: "selected", checked: true },
+    { name: "Visible Review Skill", value: "visible" },
+    { name: "Hidden Browser Skill", value: "hidden", checked: true },
+    { name: "Disabled Review Skill", value: "disabled", disabled: true },
+  ]);
+  const visibleChoices = filterSearchableCheckboxChoices(choices, "review");
+
+  const selected = toggleAllVisibleSearchableCheckboxChoices(choices, visibleChoices);
+  assert.deepEqual(selectedSearchableCheckboxValues(selected), ["selected", "visible", "hidden"]);
+
+  const cleared = toggleAllVisibleSearchableCheckboxChoices(selected, filterSearchableCheckboxChoices(selected, "review"));
+  assert.deepEqual(selectedSearchableCheckboxValues(cleared), ["selected", "hidden"]);
 });
 
 test("renderSearchableCheckboxBody lets description metadata touch help text", () => {

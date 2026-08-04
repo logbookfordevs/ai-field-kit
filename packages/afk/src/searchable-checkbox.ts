@@ -157,6 +157,16 @@ export function toggleSearchableCheckboxChoice<Value>(
   });
 }
 
+export function toggleAllVisibleSearchableCheckboxChoices<Value>(
+  choices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>,
+  visibleChoices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>,
+): Array<NormalizedSearchableCheckboxChoice<Value>> {
+  const visibleIds = new Set(visibleChoices.filter((choice) => !choice.disabled).map((choice) => choice.id));
+  const shouldCheck = visibleChoices.some((choice) => !choice.disabled && !choice.checked);
+
+  return choices.map((choice) => visibleIds.has(choice.id) ? { ...choice, checked: shouldCheck } : choice);
+}
+
 export function selectedSearchableCheckboxValues<Value>(
   choices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>,
 ): Value[] {
@@ -238,6 +248,14 @@ export const searchableCheckbox = createPrompt(<Value>(config: {
       return;
     }
 
+    if (key.ctrl && key.name === "a") {
+      rl.clearLine(0);
+      rl.write(searchTerm);
+      setError(undefined);
+      setItems(toggleAllVisibleSearchableCheckboxChoices(items, visibleItems));
+      return;
+    }
+
     if (isEnterKey(key)) {
       const selected = items.filter((choice) => choice.checked && !choice.disabled);
       if (required && selected.length === 0) {
@@ -311,14 +329,16 @@ export const searchableCheckbox = createPrompt(<Value>(config: {
   const shortcutHelp = config.filterShortcuts && config.filterShortcuts.length > 0
     ? `filters: ${config.filterShortcuts.map((shortcut) => `${shortcut.key} ${shortcut.label}`).join(" · ")}`
     : "";
+  const bulkShortcutHelp = "ctrl+a select/unselect shown";
   const helpLine = config.instructions === false || theme.helpMode === "never"
     ? ""
     : typeof config.instructions === "string"
-      ? theme.style.help([config.instructions, shortcutHelp].filter(Boolean).join(" · "))
+      ? theme.style.help([config.instructions, bulkShortcutHelp, shortcutHelp].filter(Boolean).join(" · "))
       : theme.style.keysHelpTip([
         ["type", "filter"],
         ["↑↓", "navigate"],
         ["space", "toggle"],
+        ["ctrl+a", "select/unselect shown"],
         ["⏎", "submit"],
       ]);
   const body = renderSearchableCheckboxBody({
