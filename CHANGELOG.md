@@ -17,6 +17,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `cli:` made bare `afk skills invocation` a searchable batch editor where left/right drafts manual or automatic policy and Enter applies all changes together, while explicit `enable|disable` commands remain available for one skill.
 - `docs:` gave the main README a branded AFK hero, clearer product headline, and direct links to the website, CLI reference, and changelog.
 - `cli:` renamed the read-only `afk catalog skills import-status` command to `afk catalog skills status`, without retaining a compatibility alias.
 - `cli:` made `setup skills --source` cache only successfully installed selections as imported entries and `setup rules --source` merge every applied layer by ID, while both commands preserve the remembered default source.

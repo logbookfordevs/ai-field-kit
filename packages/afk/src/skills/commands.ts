@@ -20,6 +20,10 @@ import {
   type SkillRecord,
 } from "./catalog.js";
 import { runCodexCategorization } from "./categorization.js";
+import {
+  promptInvocationPolicyChanges,
+  type InvocationPolicyChange,
+} from "./invocation-policy-editor.js";
 import { renderSkillContext, renderSkillProfileContext } from "./context.js";
 import {
   appendSkillsToSkillProfile,
@@ -51,6 +55,7 @@ import {
   renderSkillOpen,
   renderSkillDeleteBatch,
   renderSkillInvocationPolicy,
+  renderSkillInvocationPolicyBatch,
 } from "./render.js";
 import {
   buildSkillUpdateCommands,
@@ -885,10 +890,46 @@ async function runSkillsMove(folder: string | undefined, enabled: boolean, runti
 }
 
 async function runSkillsInvocation(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const candidates = loadMutationSkillRecords(options);
+  if (operands.length === 0) {
+    if (candidates.length === 0) {
+      runtime.io.stderr(`No ${mutationTargetLabel(options)} skills found.`);
+      return 1;
+    }
+
+    console.log(renderPromptStep("Skill Invocation", "Type to filter, use left or right to draft policies, then enter to apply every change."));
+    const changes = await promptInvocationPolicyChanges({
+      message: `Edit ${mutationTargetLabel(options)} skill invocation policies:`,
+      records: candidates,
+      pageSize: 12,
+    });
+    if (changes.length === 0) {
+      runtime.io.stdout(renderSkillInvocationPolicyBatch({
+        changes,
+        dryRun: options.dryRun,
+        operations: [],
+      }));
+      return 0;
+    }
+
+    const operations = buildSkillInvocationPolicyBatchOperations(options.homeDir, changes);
+    if (!options.dryRun) {
+      for (const operation of operations) {
+        applyOperation(operation);
+      }
+    }
+
+    runtime.io.stdout(renderSkillInvocationPolicyBatch({
+      changes,
+      dryRun: options.dryRun,
+      operations,
+    }));
+    return 0;
+  }
+
   const action = operands[0] === "enable" || operands[0] === "disable" ? operands[0] : "disable";
   const folder = operands[0] === "enable" || operands[0] === "disable" ? operands[1] : operands[0];
   const allowInvocation = action === "enable";
-  const candidates = loadMutationSkillRecords(options);
   const record = folder
     ? findSkillRecord(candidates, folder)
     : await promptSkillRecord(candidates, allowInvocation
@@ -1053,10 +1094,10 @@ function setSkillInvocationPolicy(options: {
   dryRun: boolean;
   operations: ReturnType<typeof buildSkillInvocationPolicyOperations>;
 } {
-  const operations = [
-    ...buildSkillInvocationPolicyOperations(options.record, options.allowInvocation),
-    ...buildSkillCatalogInvocationPolicyOperations(options.homeDir, options.record, options.allowInvocation),
-  ];
+  const operations = buildSkillInvocationPolicyBatchOperations(options.homeDir, [{
+    record: options.record,
+    allowInvocation: options.allowInvocation,
+  }]);
 
   if (!options.dryRun) {
     for (const operation of operations) {
@@ -1072,33 +1113,55 @@ function setSkillInvocationPolicy(options: {
   };
 }
 
-function buildSkillCatalogInvocationPolicyOperations(
+function buildSkillInvocationPolicyBatchOperations(
   homeDir: string,
-  record: SkillRecord,
-  allowInvocation: boolean,
+  changes: InvocationPolicyChange[],
 ) {
-  const path = skillCatalogPath(homeDir);
-  if (record.rootKind !== "global-library" || !pathExists(path)) {
-    return [];
+  const metadataOperations = changes.flatMap(({ record, allowInvocation }) =>
+    buildSkillInvocationPolicyOperations(record, allowInvocation)
+  );
+  const catalogPath = skillCatalogPath(homeDir);
+  if (!pathExists(catalogPath)) {
+    return metadataOperations;
   }
 
   const manifest = loadSkillManifest({ homeDir });
-  const recordIds = new Set([record.folder, record.name, record.originalName].map((value) => value.toLowerCase()));
-  const catalogItem = manifest.items.find((item) => recordIds.has(item.id.toLowerCase()));
-  if (!catalogItem || catalogItem.autoInvocation === allowInvocation) {
-    return [];
+  const catalogPolicies = new Map<string, boolean>();
+  for (const { record, allowInvocation } of changes) {
+    if (record.rootKind !== "global-library") {
+      continue;
+    }
+
+    const recordIds = new Set([record.folder, record.name, record.originalName].map((value) => value.toLowerCase()));
+    const catalogItem = manifest.items.find((item) => recordIds.has(item.id.toLowerCase()));
+    if (catalogItem) {
+      catalogPolicies.set(catalogItem.id, allowInvocation);
+    }
   }
 
-  return [{
-    type: "write" as const,
-    path,
-    content: `${JSON.stringify({
-      ...manifest,
-      items: manifest.items.map((item) =>
-        item.id === catalogItem.id ? { ...item, autoInvocation: allowInvocation } : item
-      ),
-    }, null, 2)}\n`,
-  }];
+  if (catalogPolicies.size === 0) {
+    return metadataOperations;
+  }
+
+  const nextItems = manifest.items.map((item) => {
+    const allowInvocation = catalogPolicies.get(item.id);
+    return allowInvocation === undefined || item.autoInvocation === allowInvocation
+      ? item
+      : { ...item, autoInvocation: allowInvocation };
+  });
+  const catalogChanged = nextItems.some((item, index) => item !== manifest.items[index]);
+  if (!catalogChanged) {
+    return metadataOperations;
+  }
+
+  return [
+    ...metadataOperations,
+    {
+      type: "write" as const,
+      path: catalogPath,
+      content: `${JSON.stringify({ ...manifest, items: nextItems }, null, 2)}\n`,
+    },
+  ];
 }
 
 function buildSkillInvocationPolicyOperations(record: SkillRecord, allowInvocation: boolean) {
