@@ -1,13 +1,8 @@
 # Library Preferences
 
-## Motion (old Framer Motion)
 - Always import from `motion` or `motion/react` instead of `framer-motion`.
-
-## Tailwind CSS v4
 - Tailwind CSS v4 is preferred library for CSS.
 - Default to Tailwind v4 zero-config setup; do NOT create `tailwind.config.js`/`tailwind.config.ts` unless explicitly required.
-
-## Headless Components
 - Use the project’s existing headless foundation if one exists. Otherwise prefer Base UI.
 
 # Personal Preferences
@@ -48,13 +43,12 @@ When choosing where to store or find an artifact and the repo or user convention
 For web applications, prefer React, Tailwind V4 and TypeScript. For prototyping, you may use HTML/CSS/JS or whatever attends the needs.
 
 ## Frontend UX Defaults
-- Do not choose a simpler implementation just to avoid setup when a richer interaction, mature primitive, or small amount of extra state materially improves UX. For standard app primitives in React/Tailwind, use the `afk-ui-registry-preferences` skill before choosing custom UI or a registry.
 - Prefer mature primitives or registry components when they materially improve UX, accessibility, responsiveness, or interaction quality.
 - Mobile is not degraded desktop; replace cramped, wrapped, clipped, or awkward controls with proper responsive patterns.
 
 ## Coding Style Instructions
 When evaluating code and thinking between solutions, apply `Truss Evaluation` skill as criteria.
-Challenge product or implementation directions that trade away user value mainly to reduce implementation effort.
+Push back when implementation convenience is prioritized over a materially better user experience.
 
 ## Comments
 - Default to no code comments; prefer clearer names, structure, types, ADRs.
@@ -67,4 +61,3 @@ Before spawning any sub-agent, deliberately choose the model and reasoning effor
 ## Dictionary
 - Team of agents/multi agents = spawn sub-agents/child agents
 - Users/developers = people using the product or tooling being built;
-- Just/focus = this is a hard scope limiter. Do the narrowed request only
