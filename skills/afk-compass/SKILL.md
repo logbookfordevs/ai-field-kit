@@ -41,6 +41,7 @@ The route is complete when the response contains one exact invocation, or explic
 | Restate the last answer plainly | `bro` |
 | Learn a topic across multiple sessions | `teach` |
 | Design a motion-led immersive frontend | `afk-animated-driven-frontend` |
+| Choose a UI registry, component primitive, or headless foundation | `afk-ui-registry-preferences` |
 | Review motion implementation | `review-animations` |
 | Name a motion effect from a vague description | `animation-vocabulary` |
 | Create a general, plan, or architecture HTML artifact | `html`, `html-plan`, or `html-diagram` |
