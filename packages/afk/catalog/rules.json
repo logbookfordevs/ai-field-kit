@@ -1,11 +1,16 @@
 {
-  "version": 1,
-  "source": "github",
-  "url": "rules/AGENTS.md",
-  "files": [
+  "version": 2,
+  "layers": [
     {
-      "source": "rules/artifacts.md",
-      "destination": "artifacts.md"
+      "id": "logbookfordevs-afk",
+      "label": "AFK opinionated starter",
+      "source": "rules/AGENTS.md",
+      "files": [
+        {
+          "source": "rules/artifacts.md",
+          "destination": "artifacts.md"
+        }
+      ]
     }
   ]
 }

@@ -11,8 +11,18 @@ const promptState = vi.hoisted(() => ({
   checkboxMessages: [] as string[],
   checkboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string }>>,
   checkboxResponses: {} as Record<string, string[]>,
+  searchableCheckboxMessages: [] as string[],
+  searchableCheckboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string; searchAliases?: string[] }>>,
   setupAreas: ["plugins"] as string[],
   inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
+}));
+
+vi.mock("./searchable-checkbox.js", () => ({
+  searchableCheckbox: vi.fn(async ({ message, choices }: { message: string; choices?: Array<{ name?: string; value?: string; checked?: boolean; description?: string; searchAliases?: string[] }> }) => {
+    promptState.searchableCheckboxMessages.push(message);
+    promptState.searchableCheckboxChoices[message] = choices ?? [];
+    return promptState.checkboxResponses[message] ?? [];
+  }),
 }));
 
 vi.mock("@inquirer/prompts", () => ({
@@ -311,17 +321,35 @@ test("selectSetup excludes imported skills by default", async () => {
 test("selectSetup guided mode lists all skills without selecting them when requested", async () => {
   promptState.checkboxMessages = [];
   promptState.checkboxChoices = {};
+  promptState.searchableCheckboxMessages = [];
+  promptState.searchableCheckboxChoices = {};
   promptState.checkboxResponses = { "Choose skills to install": [] };
   promptState.setupAreas = ["skills"];
   const homeDir = localHomeWithAllManifests();
   const selection = await selectSetup({ ...defaultOptions(homeDir), allSkills: true });
 
   assert.deepEqual(selection.skillIds, []);
-  assert.ok(promptState.checkboxMessages.includes("Choose skills to install"));
+  assert.ok(promptState.searchableCheckboxMessages.includes("Choose skills to install"));
   assert.deepEqual(
-    promptState.checkboxChoices["Choose skills to install"]?.map((choice) => [choice.value, choice.checked]),
+    promptState.searchableCheckboxChoices["Choose skills to install"]?.map((choice) => [choice.value, choice.checked]),
     [["afk-default", false], ["afk-spline", false], ["external-helper", false]],
   );
+});
+
+test("selectSkillsInstall uses a searchable multi-select skill picker", async () => {
+  promptState.searchableCheckboxMessages = [];
+  promptState.searchableCheckboxChoices = {};
+  promptState.checkboxResponses = { "Choose skills to install": ["afk-spline"] };
+  const homeDir = localHomeWithAllManifests();
+
+  const selection = await selectSkillsInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.skillIds, ["afk-spline"]);
+  assert.ok(promptState.searchableCheckboxMessages.includes("Choose skills to install"));
+  const aliases = promptState.searchableCheckboxChoices["Choose skills to install"]?.map((choice) => choice.searchAliases) ?? [];
+  assert.ok(aliases[0]?.includes("afk-default"));
+  assert.ok(aliases[0]?.includes("https://github.com/example/afk"));
+  assert.ok(aliases[1]?.includes("afk-spline"));
 });
 
 test("selectSkillsInstall presents composed skills for selected wrappers", async () => {
@@ -335,21 +363,21 @@ test("selectSkillsInstall presents composed skills for selected wrappers", async
   const selection = await selectSkillsInstall(defaultOptions(homeDir));
 
   assert.deepEqual(selection.skillIds, ["afk-code-grill", "grilling", "truss-evaluation"]);
-  assert.ok(promptState.checkboxMessages.includes("Choose composed skills to include"));
+  assert.ok(promptState.searchableCheckboxMessages.includes("Choose composed skills to include"));
   assert.deepEqual(
-    promptState.checkboxChoices["Choose composed skills to include"]?.map((choice) => [choice.value, choice.checked]),
+    promptState.searchableCheckboxChoices["Choose composed skills to include"]?.map((choice) => [choice.value, choice.checked]),
     [["grilling", true], ["truss-evaluation", true]],
   );
   assert.match(
-    promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
+    promptState.searchableCheckboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
     /Composed by AFK - Code Grill \(wrapper\)/,
   );
   assert.match(
-    promptState.checkboxChoices["Choose skills to install"]?.find((choice) => choice.value === "afk-code-grill")?.description ?? "",
+    promptState.searchableCheckboxChoices["Choose skills to install"]?.find((choice) => choice.value === "afk-code-grill")?.description ?? "",
     /role: wrapper · auto-invocation: off/,
   );
   assert.match(
-    promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
+    promptState.searchableCheckboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
     /role: primitive · auto-invocation: on/,
   );
 });
@@ -363,7 +391,7 @@ test("selectSkillsInstall excludes imported skills unless all is requested", asy
   await selectSkillsInstall(defaultOptions(homeDir));
 
   assert.deepEqual(
-    promptState.checkboxChoices["Choose skills to install"]?.map((choice) => choice.value),
+    promptState.searchableCheckboxChoices["Choose skills to install"]?.map((choice) => choice.value),
     ["afk-default", "afk-spline"],
   );
 
@@ -389,7 +417,7 @@ test("selectSkillsInstall keeps the skill list flat", async () => {
   const homeDir = localHomeWithRepeatedComposedChildrenManifest();
   await selectSkillsInstall(defaultOptions(homeDir));
 
-  const names = promptState.checkboxChoices["Choose skills to install"]?.map((choice) => choice.name) ?? [];
+  const names = promptState.searchableCheckboxChoices["Choose skills to install"]?.map((choice) => choice.name) ?? [];
   assert.ok(!names.some((name) => name?.includes("->")));
   assert.equal(names.filter((name) => name === "Grilling").length, 1);
 });

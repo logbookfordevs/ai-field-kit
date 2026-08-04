@@ -140,15 +140,26 @@ test("runCli rejects old catalog import command", async () => {
   assert.ok(text.includes("Unknown command: catalog import"));
 });
 
-test("runCli prints contextual catalog skills import-status help", async () => {
+test("runCli exposes catalog skills status and rejects the removed import-status command", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["catalog", "skills", "import-status", "--help"]));
+  const code = await withConsole(output, () => runCli(["catalog", "skills", "status", "--help"]));
   const text = output.join("\n");
 
   assert.equal(code, 0);
-  assert.ok(text.includes("AFK catalog skills import-status"));
+  assert.ok(text.includes("AFK catalog skills status"));
   assert.ok(text.includes("Compare installed shared skills with skills catalog entries."));
-  assert.ok(text.includes("afk catalog skills import-status --local"));
+  assert.ok(text.includes("afk catalog skills status --local"));
+
+  output.length = 0;
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-skills-status-"));
+  const statusCode = await withConsole(output, () => runCli(["catalog", "skills", "status"], { HOME: homeDir }));
+  assert.equal(statusCode, 0);
+  assert.ok(output.join("\n").includes("Catalog Skills Status"));
+
+  output.length = 0;
+  const removedCode = await withConsole(output, () => runCli(["catalog", "skills", "import-status"]));
+  assert.equal(removedCode, 1);
+  assert.ok(output.join("\n").includes("Unknown catalog skills command: import-status"));
 });
 
 test("runCli rejects the removed refresh-defaults flag", async () => {
@@ -380,7 +391,9 @@ test("runCli prints contextual catalog area help", async () => {
 
   assert.equal(rulesCode, 0);
   assert.ok(rulesText.includes("AFK catalog rules"));
-  assert.ok(rulesText.includes("Edit rules.json."));
+  assert.ok(rulesText.includes("Manage ordered rules layers in rules.json."));
+  assert.ok(rulesText.includes("add"));
+  assert.ok(rulesText.includes("remove"));
   assert.ok(rulesText.includes("afk catalog rules edit --local"));
 
   const skillsOutput: string[] = [];
@@ -391,7 +404,8 @@ test("runCli prints contextual catalog area help", async () => {
   assert.ok(skillsText.includes("AFK catalog skills"));
   assert.ok(skillsText.includes("toggle-auto"));
   assert.ok(skillsText.includes("bulk-edit"));
-  assert.ok(skillsText.includes("import-status"));
+  assert.ok(skillsText.includes("status"));
+  assert.ok(!skillsText.includes("import-status"));
 
   const mcpsOutput: string[] = [];
   const mcpsCode = await withConsole(mcpsOutput, () => runCli(["catalog", "mcps", "--help"]));

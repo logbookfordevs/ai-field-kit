@@ -11,6 +11,16 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `cli:` added ordered, named rules layers with durable catalog merging, credential-aware private GitHub loading, per-layer dependency directories, visible provenance, version 1 compatibility, and `afk catalog rules add|edit|remove` authoring.
+
+### Changed
+
+- `cli:` renamed the read-only `afk catalog skills import-status` command to `afk catalog skills status`, without retaining a compatibility alias.
+- `cli:` made `setup skills --source` cache only successfully installed selections as imported entries and `setup rules --source` merge every applied layer by ID, while both commands preserve the remembered default source.
+- `cli:` made interactive `afk setup skills` selection searchable while preserving multi-select and non-interactive setup behavior.
+
 ## v1.2.1 - 2026-08-01
 
 ### Added

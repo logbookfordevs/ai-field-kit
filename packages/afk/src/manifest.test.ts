@@ -10,11 +10,14 @@ import {
   loadPluginManifest,
   loadSourceManifestContents,
   mergedCustomAgentManifestContent,
+  mergedRulesManifestContent,
   localManifestDir,
   planRememberedDefaultsSourceUpdate,
   projectManifestDir,
   readRememberedDefaultsSource,
+  resolvedRulesManifestContent,
   resolvedCustomAgentManifestContent,
+  rulesManifestLayers,
   type SkillManifest,
 } from "./manifest.js";
 
@@ -83,6 +86,64 @@ test("Rules sources resolve relative to a local catalog repository while preserv
   assert.equal(rules.files[0]?.source, join(sourceRoot, "rules", "artifacts.md"));
   assert.equal(rules.files[0]?.destination, "artifacts.md");
   assert.equal(rules.files[1]?.source, "https://example.com/security.md");
+});
+
+test("Layered rules resolve every layer relative to the owning catalog", () => {
+  const content = `${JSON.stringify({
+    version: 2,
+    layers: [
+      {
+        id: "afk",
+        label: "AFK rules",
+        source: "rules/AGENTS.md",
+        files: [{ source: "rules/artifacts.md", destination: "artifacts.md" }],
+      },
+      {
+        id: "personal",
+        label: "Personal rules",
+        source: "https://example.com/personal.md",
+      },
+    ],
+  })}\n`;
+
+  const resolved = JSON.parse(resolvedRulesManifestContent(
+    content,
+    "acme/dev-kit",
+    "feature/layers",
+    "/tmp/project",
+  )) as {
+    layers: Array<{ source: string; files?: Array<{ source: string; destination: string }> }>;
+  };
+
+  assert.equal(
+    resolved.layers[0]?.source,
+    "https://raw.githubusercontent.com/acme/dev-kit/feature%2Flayers/rules/AGENTS.md",
+  );
+  assert.equal(
+    resolved.layers[0]?.files?.[0]?.source,
+    "https://raw.githubusercontent.com/acme/dev-kit/feature%2Flayers/rules/artifacts.md",
+  );
+  assert.equal(resolved.layers[0]?.files?.[0]?.destination, "artifacts.md");
+  assert.equal(resolved.layers[1]?.source, "https://example.com/personal.md");
+});
+
+test("Legacy rules normalize to one stable layer", () => {
+  const layers = rulesManifestLayers({
+    version: 1,
+    source: "github",
+    url: "https://example.com/AGENTS.md",
+    files: [{ source: "https://example.com/artifacts.md", destination: "artifacts.md" }],
+  });
+
+  assert.deepEqual(layers, [
+    {
+      id: "legacy",
+      label: "Rules",
+      source: "https://example.com/AGENTS.md",
+      files: [{ source: "https://example.com/artifacts.md", destination: "artifacts.md" }],
+      legacy: true,
+    },
+  ]);
 });
 
 test("Rules sources resolve from the repository root when the source points at its catalog directory", async () => {
@@ -213,6 +274,75 @@ test("Custom Agent refresh replaces matches, appends incoming entries, and prese
   assert.equal(merged.version, 2);
   assert.deepEqual(merged.items.map((item) => item.id), ["existing", "local-only", "incoming"]);
   assert.equal(merged.items[0]?.label, "New label");
+});
+
+test("Rules refresh updates layers in place, preserves absent layers, and appends new layers", () => {
+  const directory = mkdtempSync(join(tmpdir(), "afk-rules-merge-"));
+  const target = join(directory, "rules.json");
+  writeFileSync(target, `${JSON.stringify({
+    version: 2,
+    layers: [
+      { id: "afk", label: "Old AFK", source: "old-afk.md" },
+      { id: "personal", label: "Personal", source: "personal.md" },
+    ],
+  }, null, 2)}\n`);
+
+  const merged = JSON.parse(mergedRulesManifestContent(`${JSON.stringify({
+    version: 2,
+    layers: [
+      { id: "afk", label: "New AFK", source: "new-afk.md" },
+      { id: "organization", label: "Organization", source: "organization.md" },
+    ],
+  })}\n`, target)) as { layers: Array<{ id: string; label: string; source: string }> };
+
+  assert.deepEqual(merged.layers.map((layer) => layer.id), ["afk", "personal", "organization"]);
+  assert.equal(merged.layers[0]?.label, "New AFK");
+  assert.equal(merged.layers[0]?.source, "new-afk.md");
+});
+
+test("ensureLocalManifests durably merges targeted rules layers", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    version: 2,
+    layers: [
+      { id: "base", label: "Updated base", source: "rules/BASE.md" },
+      { id: "organization", label: "Organization", source: "rules/ORG.md" },
+    ],
+  }), { status: 200 });
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-rules-refresh-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({
+      version: 2,
+      layers: [
+        { id: "base", label: "Old base", source: "old.md" },
+        { id: "personal", label: "Personal", source: "personal.md" },
+      ],
+    }, null, 2)}\n`);
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/rules-kit",
+      defaultsSourceExplicit: true,
+      dryRun: true,
+      selectedManifestCategories: ["rules"],
+    });
+    const write = operations.find((operation) => operation.type === "write" && operation.path === join(manifestDir, "rules.json"));
+    assert.ok(write && write.type === "write");
+    const merged = JSON.parse(write.content) as { layers: Array<{ id: string; label: string }> };
+    assert.deepEqual(merged.layers.map((layer) => layer.id), ["base", "personal", "organization"]);
+    assert.equal(merged.layers[0]?.label, "Updated base");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 type PluginManifestFile = {

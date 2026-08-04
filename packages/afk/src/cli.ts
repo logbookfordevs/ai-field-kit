@@ -201,7 +201,7 @@ const setupOptions = {
   localManifest: "--local                           Refresh ./afk/catalog instead of the global catalog",
   localCatalog: "--local                           Write ./afk/catalog and prefer ./.agents/skills when available",
   agent: "--agent <agent>                   Override detected targets; repeatable",
-  source: "--source <source>                 Use a catalog source for this run only",
+  source: "--source <source>                 Merge applied source entries, without remembering the source",
   ref: "--ref <git-ref>                   Git ref for default AFK catalog URLs",
   initOnly: "--init-only                       Create/update the local catalog only, then exit",
   empty: "--empty                           Create empty catalog files with --init-only or refresh",
@@ -231,7 +231,7 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk setup [options]",
     notes: [
       "Use this when you want AFK to prepare agent-facing surfaces on this machine or in the current project.",
-      "Pass --source for a one-run catalog source; use afk refresh --default-source to change the remembered source.",
+      "Pass --source to merge and apply selected source entries without changing the remembered source.",
     ],
     options: [
       setupOptions.dryRun,
@@ -310,7 +310,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk catalog agents",
     ],
     subcommands: [
-      "afk catalog rules                 Edit rules.json",
+      "afk catalog rules                 Manage ordered rules layers",
       "afk catalog skills                Edit skills.json and import installed skills",
       "afk catalog profiles              Edit profiles.json and profile definitions",
       "afk catalog agents                Edit agents.json portable agent sources",
@@ -879,16 +879,20 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "catalog rules": {
     title: "AFK catalog rules",
-    summary: "Edit rules.json.",
-    usage: "afk catalog rules [edit] [options]",
+    summary: "Manage ordered rules layers in rules.json.",
+    usage: "afk catalog rules [add|edit|remove] [options]",
     options: [
-      "edit                              Edit the rules source URL/path",
+      "add                               Append a named rules layer",
+      "edit                              Edit an existing rules layer",
+      "remove                            Remove a rules layer",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
     ],
     examples: [
       "afk catalog rules",
+      "afk catalog rules add",
       "afk catalog rules edit --local",
+      "afk catalog rules remove",
     ],
   },
   "catalog mcps": catalogItemAreaHelp("AFK catalog MCPs", "mcps", "MCP recommendations"),
@@ -1076,14 +1080,14 @@ const commandHelps: Record<string, CommandHelp> = {
       "toggle-default                    Toggle default skills",
       "toggle-auto                       Toggle skill autoInvocation",
       "import                            Backfill missing skills catalog entries",
-      "import-status                     Compare installed skills with catalog entries",
+      "status                            Compare installed skills with catalog entries",
     ],
     examples: [
       "afk catalog skills",
       "afk catalog skills add",
       "afk catalog skills bulk-edit",
       "afk catalog skills toggle-auto",
-      "afk catalog skills import-status",
+      "afk catalog skills status",
       "afk catalog skills import --dry-run",
     ],
   },
@@ -1105,16 +1109,16 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk catalog skills import --local",
     ],
   },
-  "catalog skills import-status": {
-    title: "AFK catalog skills import-status",
+  "catalog skills status": {
+    title: "AFK catalog skills status",
     summary: "Compare installed shared skills with skills catalog entries.",
-    usage: "afk catalog skills import-status [options]",
+    usage: "afk catalog skills status [options]",
     options: [
       setupOptions.localCatalog,
     ],
     examples: [
-      "afk catalog skills import-status",
-      "afk catalog skills import-status --local",
+      "afk catalog skills status",
+      "afk catalog skills status --local",
     ],
   },
 };
@@ -1891,10 +1895,6 @@ function isCatalogSkillsImportCommand(key: string): boolean {
   return key === "catalog skills import";
 }
 
-function isCatalogSkillsImportStatusCommand(key: string): boolean {
-  return key === "catalog skills import-status";
-}
-
 function isCatalogProfilesCommand(key: string): boolean {
   return key === "catalog profiles" || key.startsWith("catalog profiles ");
 }
@@ -1924,7 +1924,7 @@ async function runCatalogAreaCommand(commandPath: string[], runtime: Runtime, op
     if (commandPath[2] === "import") {
       return runCatalogImport(runtime, options);
     }
-    if (commandPath[2] === "import-status") {
+    if (commandPath[2] === "status") {
       return runCatalogImportStatus(runtime, options);
     }
   }
@@ -1957,9 +1957,14 @@ function catalogActionFromCommand(area: ManifestArea, value: string | undefined)
   }
 
   if (area === "rules") {
-    return value === "edit"
-      ? { kind: "ok", action: "edit-rules" }
-      : { kind: "error", error: `Unknown catalog rules command: ${value}` };
+    switch (value) {
+      case "add":
+      case "edit":
+      case "remove":
+        return { kind: "ok", action: value };
+      default:
+        return { kind: "error", error: `Unknown catalog rules command: ${value}` };
+    }
   }
 
   if (area === "profiles") {
@@ -2001,7 +2006,7 @@ function catalogActionFromCommand(area: ManifestArea, value: string | undefined)
         ? { kind: "ok", action: "toggle-auto" }
         : { kind: "error", error: `Unknown catalog ${area} command: ${value}` };
     case "import":
-    case "import-status":
+    case "status":
       return area === "skills"
         ? { kind: "ok" }
         : { kind: "error", error: `Unknown catalog ${area} command: ${value}` };

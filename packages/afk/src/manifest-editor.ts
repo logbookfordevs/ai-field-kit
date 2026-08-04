@@ -1,12 +1,15 @@
 import {
   isRulesManifest,
+  rulesManifestLayers,
   type HookManifest,
   type HookManifestItem,
+  type LayeredRulesManifest,
   type CustomAgentManifest,
   type CustomAgentManifestItem,
   type McpManifest,
   type McpManifestItem,
   type RulesManifest,
+  type RulesManifestLayer,
   type SkillManifest,
   type SkillManifestItem,
   type PluginManifest,
@@ -32,7 +35,7 @@ type DefaultedItemManifest = Omit<ItemManifest, "items"> & { items: DefaultedMan
 export function emptyEditableManifest(area: EditableManifestArea): RulesManifest | SkillManifest | CustomAgentManifest | McpManifest | PluginManifest | HookManifest {
   switch (area) {
     case "rules":
-      return { version: 1, source: "github", url: "" };
+      return { version: 2, layers: [] };
     case "skills":
       return { version: 1, defaultSource: "", items: [] };
     case "agents":
@@ -44,6 +47,36 @@ export function emptyEditableManifest(area: EditableManifestArea): RulesManifest
     case "hooks":
       return { version: 1, items: [] };
   }
+}
+
+export function addRulesLayer(manifest: EditableManifest, layer: RulesManifestLayer): LayeredRulesManifest {
+  const layers = editableRulesLayers(manifest);
+  if (layers.some((existing) => existing.id === layer.id)) {
+    throw new Error(`Duplicate rules layer id: ${layer.id}`);
+  }
+  return { version: 2, layers: [...layers, cloneRulesLayer(layer)] };
+}
+
+export function updateRulesLayer(manifest: EditableManifest, id: string, layer: RulesManifestLayer): LayeredRulesManifest {
+  const layers = editableRulesLayers(manifest);
+  if (!layers.some((existing) => existing.id === id)) {
+    throw new Error(`Missing rules layer id: ${id}`);
+  }
+  if (layers.some((existing) => existing.id !== id && existing.id === layer.id)) {
+    throw new Error(`Duplicate rules layer id: ${layer.id}`);
+  }
+  return {
+    version: 2,
+    layers: layers.map((existing) => existing.id === id ? cloneRulesLayer(layer) : cloneRulesLayer(existing)),
+  };
+}
+
+export function removeRulesLayer(manifest: EditableManifest, id: string): LayeredRulesManifest {
+  const layers = editableRulesLayers(manifest);
+  if (!layers.some((layer) => layer.id === id)) {
+    throw new Error(`Missing rules layer id: ${id}`);
+  }
+  return { version: 2, layers: layers.filter((layer) => layer.id !== id).map(cloneRulesLayer) };
 }
 
 export function manifestFilename(area: EditableManifestArea): `${EditableManifestArea}.json` {
@@ -159,7 +192,9 @@ export function validateEditableManifest(area: EditableManifestArea, manifest: E
 
   if (area === "rules") {
     const rules = manifest as RulesManifest;
-    errors.push(...validateRulesFileDestinations((rules.files ?? []).map((file) => file.destination)).errors);
+    for (const layer of rulesManifestLayers(rules)) {
+      errors.push(...validateRulesFileDestinations((layer.files ?? []).map((file) => file.destination)).errors);
+    }
     return errors;
   }
 
@@ -174,6 +209,17 @@ export function validateEditableManifest(area: EditableManifestArea, manifest: E
   }
 
   return errors;
+}
+
+function editableRulesLayers(manifest: EditableManifest): RulesManifestLayer[] {
+  if (!isRulesManifest(manifest)) {
+    throw new Error("Invalid rules catalog shape");
+  }
+  return rulesManifestLayers(manifest).map(({ legacy: _legacy, ...layer }) => cloneRulesLayer(layer));
+}
+
+function cloneRulesLayer(layer: RulesManifestLayer): RulesManifestLayer {
+  return JSON.parse(JSON.stringify(layer)) as RulesManifestLayer;
 }
 
 export function serializeEditableManifest(area: EditableManifestArea, manifest: EditableManifest): string {

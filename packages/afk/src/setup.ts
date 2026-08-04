@@ -3,13 +3,13 @@ import { syncHooks } from "./hooks.js";
 import { syncCustomAgents } from "./custom-agents.js";
 import { snapshotDisabledStartupSkills, syncSkillInvocationPolicy, syncSkillStartupStorage } from "./skills.js";
 import { loadSkillProfileState, reconcileSkillProfiles } from "./skills/profiles.js";
-import { syncSkillCatalogFromManifest } from "./skills/catalog.js";
+import { mergeSetupSourceSkillsIntoCatalog, syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
 import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
 import { selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
-import { builtInDefaultsSource, ensureLocalManifests, loadSourceManifestContents, localManifestDir, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
+import { builtInDefaultsSource, ensureLocalManifests, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
@@ -114,15 +114,16 @@ function areaOptionsForSetupArea(
   selectedOptions: CliOptions,
   selection: SetupSelection,
 ): CliOptions {
+  const options = { ...selectedOptions, setupSourceExplicit: originalOptions.defaultsSourceExplicit };
   if (area === "hooks") {
-    return { ...selectedOptions, agents: selection.hookAgents };
+    return { ...options, agents: selection.hookAgents };
   }
 
   if (area === "plugins") {
-    return { ...selectedOptions, agents: originalOptions.agents };
+    return { ...options, agents: originalOptions.agents };
   }
 
-  return selectedOptions;
+  return options;
 }
 
 function agentSummaryLabel(areas: Area[]): string {
@@ -163,6 +164,7 @@ function sameTargets(left: string[], right: string[]): boolean {
 }
 
 export async function runArea(area: Area, runtime: Runtime, options: CliOptions): Promise<number> {
+  const explicitSetupSource = options.setupSourceExplicit ?? options.defaultsSourceExplicit;
   const profileManifestCategory: ManifestCategory[] = ["profiles"];
   const areaOptions = area === "profiles" && options.selectedManifestCategories.length === 0
     ? { ...options, selectedManifestCategories: profileManifestCategory }
@@ -174,8 +176,13 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 
   switch (area) {
     case "rules": {
-      const selectedOptions = await resolveRulesOptions(prepared.options);
-      return syncRules(runtime, selectedOptions);
+      const merge = planExplicitSetupRulesMerge(runtime, prepared.options, explicitSetupSource);
+      const selectedOptions = await resolveRulesOptions(merge.options);
+      const code = await syncRules(runtime, selectedOptions);
+      if (code === 0 && merge.operation && !selectedOptions.dryRun) {
+        applyOperation(merge.operation);
+      }
+      return code;
     }
     case "skills": {
       const selectedOptions = await resolveSkillOptions(prepared.options);
@@ -189,7 +196,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       if (code === 0) {
         syncSkillInvocationPolicy(runtime, selectedOptions);
         syncSkillStartupStorage(runtime, selectedOptions, disabledBeforeInstall);
-        syncSetupSkillCatalog(runtime, selectedOptions);
+        syncSetupSkillCatalog(runtime, selectedOptions, explicitSetupSource);
         reconcileEnabledSetupSkillProfiles(runtime, selectedOptions);
       }
 
@@ -250,6 +257,38 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
   }
 }
 
+function planExplicitSetupRulesMerge(
+  runtime: Runtime,
+  options: CliOptions,
+  explicitSetupSource: boolean,
+): { options: CliOptions; operation?: PathOperation } {
+  const sourceContent = options.manifestContents?.["rules.json"];
+  if (!explicitSetupSource || !sourceContent) {
+    return { options };
+  }
+
+  const manifestDir = options.manifestLocal ? projectManifestDir(options.repoDir) : localManifestDir(options.homeDir);
+  const path = join(manifestDir, "rules.json");
+  const content = mergedRulesManifestContent(sourceContent, path);
+  const operation: PathOperation = { type: "write", path, content };
+
+  if (options.dryRun) {
+    runtime.io.stdout(`\n${sectionTitle("Local Catalog")}`);
+    runtime.io.stdout(`- ${formatOperation(operation)}`);
+  }
+
+  return {
+    operation,
+    options: {
+      ...options,
+      manifestContents: {
+        ...options.manifestContents,
+        "rules.json": content,
+      },
+    },
+  };
+}
+
 function reconcileEnabledSetupSkillProfiles(runtime: Runtime, options: CliOptions): void {
   if (options.setupScope !== "global") {
     return;
@@ -266,12 +305,27 @@ function reconcileEnabledSetupSkillProfiles(runtime: Runtime, options: CliOption
   }
 }
 
-function syncSetupSkillCatalog(runtime: Runtime, options: CliOptions): void {
-  if (options.dryRun) {
-    return;
-  }
-
+function syncSetupSkillCatalog(runtime: Runtime, options: CliOptions, explicitSetupSource: boolean): void {
   try {
+    let sourceMerge: ReturnType<typeof mergeSetupSourceSkillsIntoCatalog> | undefined;
+    if (explicitSetupSource && options.manifestContents) {
+      sourceMerge = mergeSetupSourceSkillsIntoCatalog({
+        homeDir: options.homeDir,
+        manifestContents: options.manifestContents,
+        selectedSkillIds: options.selectedSkillIds,
+        allSkills: options.allSkills,
+        dryRun: options.dryRun,
+      });
+    }
+    if (options.dryRun) {
+      if (sourceMerge && sourceMerge.merged.length > 0) {
+        runtime.io.stdout("\nSkill catalog merge plan");
+        for (const id of sourceMerge.merged) {
+          runtime.io.stdout(`- ${id} -> ${sourceMerge.path}`);
+        }
+      }
+      return;
+    }
     syncSkillCatalogFromManifest({
       homeDir: options.homeDir,
       selectedSkillIds: options.selectedSkillIds,

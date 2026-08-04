@@ -3,15 +3,18 @@ import { basename, join } from "node:path";
 import { confirm, input, search, select } from "@inquirer/prompts";
 import {
   addManifestItem,
+  addRulesLayer,
   emptyEditableManifest,
   isItemManifestArea,
   itemLabel,
   manifestFilename,
   removeManifestItem,
+  removeRulesLayer,
   serializeEditableManifest,
   setManifestItemDefaultValues,
   setSkillAutoInvocationValues,
   updateManifestItem,
+  updateRulesLayer,
   validateEditableManifest,
   type EditableManifest,
   type EditableManifestArea,
@@ -22,11 +25,13 @@ import {
   isRulesManifest,
   loadDefaultManifestContent,
   localManifestDir,
+  rulesManifestLayers,
   type HookManifest,
   type HookManifestItem,
   type CustomAgentManifestItem,
   type McpManifestItem,
   type RulesManifest,
+  type RulesManifestLayer,
   type SkillManifest,
   type SkillManifestItem,
   type PluginManifestItem,
@@ -43,7 +48,7 @@ import { runArea } from "./setup.js";
 
 export type ManifestArea = EditableManifestArea | "profiles";
 type ManifestAreaChoice = ManifestArea | "finish";
-export type ManifestAction = "add" | "edit" | "bulk-edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "edit-rules" | "finish" | "back";
+export type ManifestAction = "add" | "edit" | "bulk-edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "finish" | "back";
 type BulkSkillSetting = "on" | "off" | "unchanged";
 type EditableDraft = EditableManifest | SkillProfileCatalog;
 type Drafts = Record<ManifestArea, EditableDraft>;
@@ -82,7 +87,7 @@ export type ManifestConfigurePrompts = {
 const manifestAreas: ManifestArea[] = ["rules", "skills", "profiles", "agents", "mcps", "plugins", "hooks"];
 
 const areaDescriptions: Record<ManifestArea, string> = {
-  rules: "Point rules sync at one AGENTS.md source.",
+  rules: "Compose ordered, independently owned rules layers.",
   skills: "Add, edit, remove, and toggle skills.",
   profiles: "Edit profile-level always-on skills.",
   agents: "Add, edit, and remove portable Custom Agent sources.",
@@ -239,10 +244,20 @@ async function editManifestArea(
     }
 
     if (area === "rules") {
-      drafts.rules = await configureRules(prompts, drafts.rules);
-      touched.add("rules");
-      if (initialAction) {
-        return "back";
+      try {
+        drafts.rules = await applyRulesAction(prompts, drafts.rules, action);
+        touched.add("rules");
+        if (initialAction) {
+          return "back";
+        }
+      } catch (error) {
+        if (isPromptExit(error)) {
+          throw error;
+        }
+        runtime.io.stderr(`\n${error instanceof Error ? error.message : String(error)}`);
+        if (initialAction) {
+          return "back";
+        }
       }
       action = undefined;
       continue;
@@ -296,6 +311,35 @@ async function editManifestArea(
     }
     action = undefined;
   }
+}
+
+async function applyRulesAction(
+  prompts: ManifestConfigurePrompts,
+  manifest: EditableDraft,
+  action: ManifestAction,
+): Promise<RulesManifest> {
+  const rules = manifest as EditableManifest;
+  if (action === "add") {
+    return addRulesLayer(rules, await promptRulesLayer(prompts));
+  }
+
+  if (action === "edit") {
+    const selectedId = await prompts.selectItem("rules", rulesLayerChoices(rules), "Edit which rules layer?");
+    const existing = editableRulesLayers(rules).find((layer) => layer.id === selectedId);
+    if (!existing) {
+      throw new Error(`Missing rules layer id: ${selectedId}`);
+    }
+    return updateRulesLayer(rules, selectedId, await promptRulesLayer(prompts, existing));
+  }
+
+  if (action === "remove") {
+    const selectedId = await prompts.selectItem("rules", rulesLayerChoices(rules), "Remove which rules layer?");
+    const existing = editableRulesLayers(rules).find((layer) => layer.id === selectedId);
+    const shouldRemove = await prompts.confirm(`Remove ${existing?.label ?? selectedId} (${selectedId})?`, false);
+    return shouldRemove ? removeRulesLayer(rules, selectedId) : rules as RulesManifest;
+  }
+
+  return rules as RulesManifest;
 }
 
 async function applyItemAction(
@@ -426,19 +470,19 @@ async function applyProfileAction(
   return { ...profileCatalog, alwaysOn };
 }
 
-async function configureRules(prompts: ManifestConfigurePrompts, manifest: EditableManifest): Promise<RulesManifest> {
-  const existing: RulesManifest = isRulesDraft(manifest) ? manifest : { version: 1, source: "github", url: "" };
-  const url = await prompts.input({
-    message: "Rules raw URL or local path",
-    default: existing.url,
+async function promptRulesLayer(prompts: ManifestConfigurePrompts, existing?: RulesManifestLayer): Promise<RulesManifestLayer> {
+  const source = await prompts.input({
+    message: "Rules source URL or local path",
+    default: existing?.source ?? "",
     required: true,
   });
-
+  const id = await prompts.input({ message: "Rules layer id", default: existing?.id ?? inferId(source), required: true });
+  const label = await prompts.input({ message: "Rules layer label", default: existing?.label ?? inferLabel(id), required: true });
   return {
-    version: 1,
-    source: inferSource(url),
-    url,
-    ...(existing.files === undefined ? {} : { files: existing.files.map((file) => ({ ...file })) }),
+    id,
+    label,
+    source,
+    ...(existing?.files === undefined ? {} : { files: existing.files.map((file) => ({ ...file })) }),
   };
 }
 
@@ -693,8 +737,11 @@ function areaChoices(drafts: Drafts): Array<SelectChoice<ManifestAreaChoice>> {
 
 function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<SelectChoice<ManifestAction>> {
   if (area === "rules") {
+    const hasLayers = entryCount(manifest) > 0;
     return [
-      { name: "Edit rules source", value: "edit-rules", description: "Change the rules URL/path and inferred source type." },
+      { name: "Add rules layer", value: "add", description: "Append an independently owned rules source." },
+      ...(hasLayers ? [{ name: "Edit rules layer", value: "edit" as const }] : []),
+      ...(hasLayers ? [{ name: "Remove rules layer", value: "remove" as const }] : []),
       finishActionChoice(),
       manageOtherCatalogsChoice(),
     ];
@@ -802,10 +849,25 @@ function entryCount(manifest: EditableDraft): number {
   }
 
   if (isRulesDraft(manifest)) {
-    return manifest.url ? 1 : 0;
+    return rulesManifestLayers(manifest).length;
   }
 
   return itemsFromManifest(manifest).length;
+}
+
+function editableRulesLayers(manifest: EditableManifest): RulesManifestLayer[] {
+  if (!isRulesManifest(manifest)) {
+    return [];
+  }
+  return rulesManifestLayers(manifest).map(({ legacy: _legacy, ...layer }) => layer);
+}
+
+function rulesLayerChoices(manifest: EditableManifest): Array<SelectChoice<string>> {
+  return editableRulesLayers(manifest).map((layer) => ({
+    name: `${layer.label} (${layer.id})`,
+    value: layer.id,
+    description: layer.source,
+  }));
 }
 
 function ensureSkillDefaultSource(manifest: SkillManifest, item: SkillManifestItem): SkillManifest {
@@ -1250,10 +1312,6 @@ function filenameStem(value: string): string {
     const last = basename(value.trim());
     return last.replace(/\.[^.]+$/, "");
   }
-}
-
-function inferSource(value: string): "github" | "local" {
-  return /^https:\/\/(raw\.githubusercontent\.com|github\.com)\//.test(value) ? "github" : "local";
 }
 
 function skillIdFromArgs(args: string[]): string | null {
