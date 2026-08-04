@@ -15,28 +15,6 @@
             "default": true
         },
         {
-            "id": "goalbuddy",
-            "label": "GoalBuddy",
-            "description": "Install GoalBuddy's goal board, PM loop, receipts, and live local board surface for AFK Turbo.",
-            "install": {
-                "command": "npx",
-                "args": [
-                    "--yes",
-                    "goalbuddy"
-                ]
-            },
-            "postInstall": {
-                "label": "GoalBuddy / update",
-                "command": "npx",
-                "args": [
-                    "--yes",
-                    "goalbuddy",
-                    "update"
-                ]
-            },
-            "default": true
-        },
-        {
             "id": "plannotator-tot",
             "label": "Plannotator Tot",
             "description": "Install Tot's git-backed Markdown and HTML publishing CLI for living tot.page URLs with immutable snapshots.",

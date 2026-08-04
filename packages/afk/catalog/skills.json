@@ -208,23 +208,6 @@
             ]
         },
         {
-            "id": "afk-turbo",
-            "label": "AFK - Turbo",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-turbo",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
-            "role": "workflow",
-            "composes": [
-                "grilling",
-                "plannotator-setup-goal"
-            ]
-        },
-        {
             "id": "truss-evaluation",
             "label": "Truss Evaluation",
             "source": "https://github.com/leoreisdias/truss-framework",

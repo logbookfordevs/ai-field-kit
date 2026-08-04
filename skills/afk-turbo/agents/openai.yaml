@@ -1,4 +1,0 @@
-interface:
-  display_name: "AFK Turbo"
-  short_description: "High-throughput goal execution with GoalBuddy board"
-  default_prompt: "Run AFK Turbo for this goal."

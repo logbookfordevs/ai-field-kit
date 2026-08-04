@@ -31,7 +31,6 @@ The route is complete when the response contains one exact invocation, or explic
 | Slice a plan or spec into dependency-aware tickets | `afk-to-tickets` |
 | Implement existing checkpointed tickets | `afk-implement-tasks` |
 | Run fast goal execution with Markdown checkpoint tracking | `afk-sprint` |
-| Run high-throughput goal execution with a live GoalBuddy board | `afk-turbo` |
 | Save or resume disposable session context | `handoff` or `afk-pickup` |
 | Coordinate work across multiple agents or runtimes | `orchestrator` |
 | Load a named AFK skill profile | `afk-profile-use` |

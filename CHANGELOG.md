@@ -21,6 +21,11 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` made `setup skills --source` cache only successfully installed selections as imported entries and `setup rules --source` merge every applied layer by ID, while both commands preserve the remembered default source.
 - `cli:` made interactive `afk setup skills` selection searchable while preserving multi-select and non-interactive setup behavior.
 
+### Removed
+
+- `plugins:` removed GoalBuddy from the bundled installer catalog.
+- `skills:` retired AFK Turbo and its GoalBuddy-backed live-board workflow.
+
 ## v1.2.1 - 2026-08-01
 
 ### Added
