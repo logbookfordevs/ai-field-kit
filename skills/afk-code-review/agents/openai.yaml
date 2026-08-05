@@ -1,3 +1,4 @@
-display_name: AFK Code Review
-short_description: Review a diff along separate Standards and Spec axes.
-default_prompt: Review this change with the AFK Code Review workflow.
+interface:
+  display_name: AFK Code Review
+  short_description: Review a diff along separate Standards and Spec axes.
+  default_prompt: Review this change with the AFK Code Review workflow.

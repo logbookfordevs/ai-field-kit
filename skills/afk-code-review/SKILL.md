@@ -6,7 +6,7 @@ description: "Review the changes since a fixed point (commit, branch, tag, or me
 Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 - **Standards** - does the code conform to this repo's documented coding standards?
-- **Spec** - does the code faithfully implement the originating issue, PRD, spec, or AFK task?
+- **Spec** - does the code faithfully implement the originating issue, spec, or AFK task?
 
 Both axes should run in parallel sub-agents or fresh contexts so they do not pollute each other's context, then this skill aggregates their findings.
 
@@ -26,9 +26,8 @@ Look for the originating spec, in this order:
 
 1. Issue references in commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), PR metadata, branch names, or user-provided context.
 2. A path the user passed as an argument.
-3. A PRD under the active artifact convention or `.scratch/` matching the branch name or feature.
-4. A spec under the active artifact convention or `.scratch/` matching the branch name or feature.
-5. If nothing is found, ask the user where the spec is. If they say there is not one, the **Spec** axis will skip and report "no spec available".
+3. A spec under the active artifact convention or `.scratch/` matching the branch name or feature.
+4. If nothing is found, ask the user where the spec is. If they say there is not one, the **Spec** axis will skip and report "no spec available".
 
 ### 3. Identify the standards sources
 

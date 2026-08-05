@@ -444,17 +444,45 @@
             "composes": []
         },
         {
-            "id": "writing-great-skills",
-            "label": "Writing Great Skills",
+            "id": "writing-for-agents",
+            "label": "Writing For Agents",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
-                "writing-great-skills",
+                "writing-for-agents",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "autoInvocation": true,
             "role": "reference",
+            "composes": []
+        },
+        {
+            "id": "wizard",
+            "label": "Wizard",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "wizard",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": true,
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "to-questionnaire",
+            "label": "To Questionnaire",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "to-questionnaire",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "wrapper",
             "composes": []
         },
         {
@@ -547,7 +575,8 @@
             "composes": [
                 "grilling",
                 "domain-modeling",
-                "prototype"
+                "prototype",
+                "research"
             ]
         },
         {
