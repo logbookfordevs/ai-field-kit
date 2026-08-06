@@ -460,7 +460,7 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk setup agents",
-      "afk setup agents --custom-agent goal-scout --agent codex --yes",
+      "afk setup agents --custom-agent notion-assistant --agent codex --yes",
       "afk setup agents --all --agent claude --agent pi --yes",
       "afk setup agents --local --all",
     ],

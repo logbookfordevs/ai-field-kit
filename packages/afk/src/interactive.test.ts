@@ -645,7 +645,7 @@ function localHomeWithAgentManifest(): string {
     version: 1,
     items: [
       { id: "notion_assistant", label: "Notion Assistant", source: "agents/notion-assistant.md" },
-      { id: "goal_scout", label: "Goal Scout", source: "agents/goal-scout.md" },
+      { id: "code_reviewer", label: "Code Reviewer", source: "agents/code-reviewer.md" },
     ],
   }, null, 2)}\n`);
   return homeDir;
