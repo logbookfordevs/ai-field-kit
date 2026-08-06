@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { renderBanner, renderSetupOutro } from "./brand.js";
+import { renderArchitectOutro, renderBanner, renderSetupOutro } from "./brand.js";
 import { updateCommand } from "./update-check.js";
 
 test("renderBanner shows the larger AFK identity", () => {
@@ -45,4 +45,31 @@ test("renderSetupOutro closes setup with AFK-owned context", () => {
   assert.ok(outro.includes("No files changed."));
   assert.ok(outro.includes("Scope: This project only (/tmp/project)"));
   assert.ok(outro.includes("Areas: Rules, Skills"));
+});
+
+test("renderArchitectOutro celebrates a provisioned skill and crew", () => {
+  const outro = renderArchitectOutro({
+    dryRun: false,
+    failed: false,
+    scopeLabel: "Global field kit",
+    harnesses: ["Codex"],
+    skill: { label: "AFK Architect", path: "/home/leo/.agents/skills/afk-architect" },
+    crew: [
+      { label: "Cartographer", path: "/home/leo/.codex/agents/afk-cartographer.toml" },
+      { label: "Builder", path: "/home/leo/.codex/agents/afk-builder.toml" },
+      { label: "Pathfinder", path: "/home/leo/.codex/agents/afk-pathfinder.toml" },
+    ],
+  });
+
+  assert.ok(outro.includes("Preset"));
+  assert.ok(outro.includes("- Harnesses: Codex"));
+  assert.ok(outro.includes("◆ Skill"));
+  assert.ok(outro.includes("✓ AFK Architect"));
+  assert.ok(outro.includes("Shared skill → /home/leo/.agents/skills/afk-architect"));
+  assert.ok(outro.includes("◆ Crew"));
+  assert.ok(outro.includes("✓ Cartographer → /home/leo/.codex/agents/afk-cartographer.toml"));
+  assert.ok(outro.includes("✓ Builder → /home/leo/.codex/agents/afk-builder.toml"));
+  assert.ok(outro.includes("✓ Pathfinder → /home/leo/.codex/agents/afk-pathfinder.toml"));
+  assert.ok(outro.includes("1 skill and 3 Custom Agents provisioned for Codex."));
+  assert.ok(outro.includes("☠"));
 });

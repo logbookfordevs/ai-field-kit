@@ -123,12 +123,24 @@ test("runCli dry-runs the AFK Architect required bundle in dependency order", as
   const text = output.join("\n");
 
   assert.equal(code, 0);
+  assert.ok(text.includes("◆ AFK Architect"));
+  assert.ok(text.includes("- Preset: afk-architect"));
+  assert.ok(text.includes("- Bundle: Architect + Cartographer + Builder + Pathfinder"));
   assert.ok(text.includes("- Areas: skills, agents"));
   assert.ok(text.includes("--skill afk-architect"));
   assert.ok(text.includes("afk-cartographer.toml"));
   assert.ok(text.includes("afk-builder.toml"));
   assert.ok(text.includes("afk-pathfinder.toml"));
   assert.ok(text.indexOf("Shared skills") < text.indexOf("afk-cartographer.toml"));
+  assert.equal(text.match(/◆ Custom Agents/g)?.length, 1);
+  assert.ok(text.includes("AFK Architect voyage charted"));
+  assert.ok(text.includes("→ AFK Architect"));
+  assert.ok(text.includes("Shared skill →"));
+  assert.ok(text.includes("→ Cartographer →"));
+  assert.ok(text.includes("→ Builder →"));
+  assert.ok(text.includes("→ Pathfinder →"));
+  assert.ok(text.includes("1 skill and 3 Custom Agents would be provisioned for Codex."));
+  assert.ok(text.includes("☠"));
   assert.ok(!text.includes("Plugins /"));
   assert.ok(!text.includes("MCPs /"));
 });

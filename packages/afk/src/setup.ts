@@ -1,12 +1,12 @@
 import { syncRules } from "./rules.js";
 import { syncHooks } from "./hooks.js";
-import { syncCustomAgents } from "./custom-agents.js";
+import { customAgentTargetPath, syncCustomAgents, type CustomAgentHarness } from "./custom-agents.js";
 import { snapshotDisabledStartupSkills, syncSkillInvocationPolicy, syncSkillStartupStorage } from "./skills.js";
 import { loadSkillProfileState, reconcileSkillProfiles } from "./skills/profiles.js";
 import { mergeSetupSourceSkillsIntoCatalog, syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
-import { renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
+import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
 import { selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { builtInDefaultsSource, ensureLocalManifests, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
@@ -14,7 +14,7 @@ import { defaultCheckedDetail } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
 import { basename, join } from "node:path";
-import type { Area, CliOptions, ManifestCategory, ManifestFilename, PathOperation, Runtime } from "./types.js";
+import type { AgentId, Area, CliOptions, ManifestCategory, ManifestFilename, PathOperation, Runtime } from "./types.js";
 
 export async function runSetup(runtime: Runtime, options: CliOptions): Promise<number> {
   const updateNotice = options.yes
@@ -69,7 +69,12 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     return 0;
   }
 
-  runtime.io.stdout("\nSetup path");
+  const architectPreset = options.presetId === "afk-architect";
+  runtime.io.stdout(architectPreset ? `\n${sectionTitle("AFK Architect")}` : "\nSetup path");
+  if (architectPreset) {
+    runtime.io.stdout("- Preset: afk-architect");
+    runtime.io.stdout("- Bundle: Architect + Cartographer + Builder + Pathfinder");
+  }
   runtime.io.stdout(`- Scope: ${scopeLabel(selection.setupScope, options.cwd)}`);
   runtime.io.stdout(`- Areas: ${selection.areas.join(", ")}`);
   if (selection.agents.length > 0) {
@@ -99,22 +104,75 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     for (const failure of failures) {
       runtime.io.stdout(`- ${areaLabel(failure.area)} exited with code ${failure.code}`);
     }
-    runtime.io.stdout(renderSetupOutro({
-      dryRun: options.dryRun,
-      failed: true,
-      scopeLabel: scopeLabel(selection.setupScope, options.cwd),
-      areas: selection.areas.map(areaLabel),
-    }));
+    runtime.io.stdout(architectPreset
+      ? architectOutro(options, selection, true)
+      : renderSetupOutro({
+          dryRun: options.dryRun,
+          failed: true,
+          scopeLabel: scopeLabel(selection.setupScope, options.cwd),
+          areas: selection.areas.map(areaLabel),
+        }));
     return failures[0]?.code ?? 1;
   }
 
-  runtime.io.stdout(renderSetupOutro({
-    dryRun: options.dryRun,
-    failed: false,
-    scopeLabel: scopeLabel(selection.setupScope, options.cwd),
-    areas: selection.areas.map(areaLabel),
-  }));
+  runtime.io.stdout(architectPreset
+    ? architectOutro(options, selection, false)
+    : renderSetupOutro({
+        dryRun: options.dryRun,
+        failed: false,
+        scopeLabel: scopeLabel(selection.setupScope, options.cwd),
+        areas: selection.areas.map(areaLabel),
+      }));
   return 0;
+}
+
+function architectOutro(options: CliOptions, selection: SetupSelection, failed: boolean): string {
+  const harnesses = selection.agents.filter(isCustomAgentHarness);
+  const multipleHarnesses = harnesses.length > 1;
+  const crew = (selection.customAgentIds ?? []).flatMap((id) => harnesses.map((harness) => ({
+    label: `${crewLabel(id)}${multipleHarnesses ? ` (${harnessLabel(harness)})` : ""}`,
+    path: displaySetupPath(customAgentTargetPath(id, harness, {
+      homeDir: options.homeDir,
+      cwd: options.cwd,
+      setupScope: selection.setupScope,
+    }), options.homeDir),
+  })));
+  const skillId = selection.skillIds[0] ?? "afk-architect";
+  const skillRoot = selection.setupScope === "global" ? options.homeDir : options.cwd;
+
+  return renderArchitectOutro({
+    dryRun: options.dryRun,
+    failed,
+    scopeLabel: scopeLabel(selection.setupScope, options.cwd),
+    harnesses: harnesses.map(harnessLabel),
+    skill: {
+      label: "AFK Architect",
+      path: displaySetupPath(join(skillRoot, ".agents", "skills", skillId), options.homeDir),
+    },
+    crew,
+  });
+}
+
+function isCustomAgentHarness(agent: AgentId): agent is CustomAgentHarness {
+  return agent === "codex" || agent === "claude" || agent === "pi";
+}
+
+function crewLabel(id: string): string {
+  if (id === "afk-cartographer") return "Cartographer";
+  if (id === "afk-builder") return "Builder";
+  if (id === "afk-pathfinder") return "Pathfinder";
+  return id;
+}
+
+function displaySetupPath(path: string, homeDir: string): string {
+  return path === homeDir ? "~" : path.startsWith(`${homeDir}/`) ? `~/${path.slice(homeDir.length + 1)}` : path;
+}
+
+function harnessLabel(agent: AgentId): string {
+  if (agent === "codex") return "Codex";
+  if (agent === "claude") return "Claude Code";
+  if (agent === "pi") return "Pi";
+  return agent;
 }
 
 function areaOptionsForSetupArea(

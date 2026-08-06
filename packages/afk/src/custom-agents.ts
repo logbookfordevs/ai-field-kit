@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import { sectionTitle } from "./brand.js";
 import { loadCustomAgentManifest, type CustomAgentManifestItem } from "./manifest.js";
 import type { AgentId, CliOptions, Runtime } from "./types.js";
 
@@ -102,9 +101,6 @@ export async function syncCustomAgents(runtime: Runtime, options: CliOptions): P
     }
   }
 
-  if (targets.length > 0) {
-    runtime.io.stdout(`\n${sectionTitle("Custom Agents")}`);
-  }
   for (const target of targets) {
     const action = options.dryRun ? "Would write" : "Wrote";
     if (!options.dryRun) {
@@ -284,7 +280,7 @@ function provisioningTarget(
   return { kind: "ready", target: { harness, path, content, omittedCapabilities, omittedMetadata } };
 }
 
-function customAgentTargetPath(
+export function customAgentTargetPath(
   name: string,
   harness: CustomAgentHarness,
   options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,
