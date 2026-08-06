@@ -624,6 +624,7 @@ const SKILLS = [
   ["code-simplification","primitive",false,true,"agent-skills",[]],
   ["review-animations","utility",false,false,"emilkowalski/skills",[]],
   ["animation-vocabulary","utility",false,false,"emilkowalski/skills",[]],
+  ["animate-text","utility",false,false,"pixel-point/animate-text",[]],
   ["writing-for-agents","reference",true,true,"mattpocock/skills",[]],
   ["wizard","utility",false,true,"mattpocock/skills",[]],
   ["to-questionnaire","wrapper",false,false,"mattpocock/skills",[]],
@@ -707,7 +708,7 @@ const DETAILS = {
   "profile-status": { title:"afk skills profiles status", meta:"inspect runtime state", body:"Shows activations, kept skills, profile-moved skills, pre-existing disabled skills, and the catalog/state paths without mutating folders.", tags:["read only","runtime"] },
   "upstream": { title:"Official skills CLI", meta:"npx skills add / update", body:"Owns the actual install and update operation plus lock metadata. AFK wraps it, then adds catalog, invocation, storage, and profile semantics.", tags:["upstream","lockfiles"] },
   "preflight": { title:"Catalog preflight", meta:"healing gate before add", body:"If lock-tracked installed skills are missing from AFK's catalog, direct add pauses to import them first. If import cannot catalog all recoverable entries, add stops instead of compounding drift.", tags:["healing","guard"] },
-  "skills-catalog": { title:"skills.json", meta:"catalog + setup metadata", body:"The single AFK catalog for install source, args, default selection, role, invocation policy, start-disabled policy, composition, import ownership, categories, and tags.", bullets:["Current source: 44 skills.", "15 allow auto invocation; 29 are manual.", "25 are selected by default."], tags:["catalog","44 items"] },
+  "skills-catalog": { title:"skills.json", meta:"catalog + setup metadata", body:"The single AFK catalog for install source, args, default selection, role, invocation policy, start-disabled policy, composition, import ownership, categories, and tags.", bullets:["Current source: 45 skills.", "15 allow auto invocation; 30 are manual.", "25 are selected by default."], tags:["catalog","45 items"] },
   "policy-compiler": { title:"Invocation policy compiler", meta:"catalog → installed metadata", body:"Compiles catalog <code>autoInvocation</code> into host-facing files after setup: inverse <code>disable-model-invocation</code> in <code>SKILL.md</code> and matching <code>allow_implicit_invocation</code> in OpenAI metadata.", tags:["synchronization"] },
   "startup-storage": { title:"Startup storage policy", meta:"startDisabled + preservation", body:"Moves installed skills marked <code>startDisabled</code> into <code>.disabled</code>. It snapshots disabled skills before setup/add/update so upstream reinstalls cannot accidentally reactivate them.", tags:["healing","storage"] },
   "refresh-merge": { title:"Refresh merge boundary", meta:"source wins; local additions survive", body:"For skills, refreshed source entries become source-owned and matching IDs win; imported entries absent from the source survive. For profiles, source IDs win while local-only profile IDs survive.", tags:["merge","non-destructive"] },
@@ -752,7 +753,7 @@ const MACHINE_NODES = [
 
   {id:"preflight",x:1080,y:230,w:285,h:70,label:"catalog preflight",sub:"missing lock-tracked installs?",kind:"heal"},
   {id:"upstream",x:1080,y:340,w:285,h:78,label:"official skills CLI",sub:"add · update · lockfiles",kind:"engine"},
-  {id:"skills-catalog",x:1080,y:465,w:285,h:90,label:"skills.json",sub:"44 items · policy + catalog",kind:"catalog"},
+  {id:"skills-catalog",x:1080,y:465,w:285,h:90,label:"skills.json",sub:"45 items · policy + catalog",kind:"catalog"},
   {id:"policy-compiler",x:1080,y:600,w:285,h:78,label:"invocation compiler",sub:"SKILL.md + openai.yaml",kind:"engine"},
   {id:"startup-storage",x:1080,y:720,w:285,h:78,label:"startup storage",sub:"startDisabled + snapshot",kind:"engine"},
   {id:"refresh-merge",x:1080,y:840,w:285,h:78,label:"refresh merge",sub:"source wins · locals survive",kind:"heal"},
@@ -857,6 +858,7 @@ const WORKFLOW_MOMENTS = [
     {id:"html-diagram",use:"make architecture click"},
     {id:"orchestrator",use:"coordinate specialist agents"},
     {id:"animation-vocabulary",use:"name the intended motion"},
+    {id:"animate-text",use:"animate interface copy"},
   ]},
   {id:"verify",title:"VERIFY",action:"earn confidence in the result",skills:[
     {id:"diagnosing-bugs",use:"isolate failures and regressions"},

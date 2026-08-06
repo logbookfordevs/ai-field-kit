@@ -444,6 +444,20 @@
             "composes": []
         },
         {
+            "id": "animate-text",
+            "label": "Animate Text",
+            "source": "pixel-point/animate-text",
+            "args": [
+                "--skill",
+                "animate-text",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "writing-for-agents",
             "label": "Writing For Agents",
             "source": "https://github.com/mattpocock/skills",
