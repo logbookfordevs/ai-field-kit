@@ -43,7 +43,7 @@ that skill and three reusable role contracts:
 |---|---|
 | `afk-cartographer` | Read-only discovery, evidence gathering, and change maps. |
 | `afk-builder` | Bounded implementation with explicit file ownership. |
-| `afk-pathfinder` | Read-only planning, judgment, audit, and verification. |
+| `afk-pathfinder` | Difficult judgment, verification, and direct implementation when a handoff would add more cost than value. |
 
 These agents are the bones of a workflow, not one agent per stage. A
 coordinator can instantiate the same contract several times with distinct

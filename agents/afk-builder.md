@@ -4,8 +4,9 @@ description: Implements bounded, well-owned changes and verifies the behavior wi
 models:
   codex: gpt-5.6-terra
   claude: sonnet
+  pi: openrouter/xai/grok-4.5
 effort:
-  codex: medium
+  codex: high
   claude: medium
   pi: medium
 nicknames:

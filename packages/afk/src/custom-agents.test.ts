@@ -11,13 +11,34 @@ test("packaged AFK Architect agents are valid Portable Agent Contracts", () => {
   const catalog = JSON.parse(readFileSync(new URL("../catalog/agents.json", import.meta.url), "utf8")) as {
     items: Array<{ id: string; source: string }>;
   };
-  const expected = ["afk-cartographer", "afk-builder", "afk-pathfinder"];
-  const items = catalog.items.filter((item) => expected.includes(item.id));
+  const expected = {
+    "afk-cartographer": {
+      models: { codex: "gpt-5.6-luna", claude: "sonnet", pi: "openai-codex/gpt-5.6-luna" },
+      effort: { codex: "max", claude: "low", pi: "xhigh" },
+      access: "read-only",
+    },
+    "afk-builder": {
+      models: { codex: "gpt-5.6-terra", claude: "sonnet", pi: "openrouter/xai/grok-4.5" },
+      effort: { codex: "high", claude: "medium", pi: "medium" },
+      access: "workspace-write",
+    },
+    "afk-pathfinder": {
+      models: { codex: "gpt-5.6-sol", claude: "opus", pi: "openrouter/moonshotai/kimi-k3" },
+      effort: { codex: "high", claude: "high", pi: "high" },
+      access: "workspace-write",
+    },
+  } as const;
+  const expectedIds = Object.keys(expected);
+  const items = catalog.items.filter((item) => expectedIds.includes(item.id));
 
-  assert.deepEqual(items.map((item) => item.id), expected);
+  assert.deepEqual(items.map((item) => item.id), expectedIds);
   for (const item of items) {
     const portable = parsePortableAgentFile(readFileSync(new URL(`../../../${item.source}`, import.meta.url), "utf8"));
     assert.equal(portable.name, item.id);
+    const contract = expected[item.id as keyof typeof expected];
+    assert.deepEqual(portable.models, contract.models);
+    assert.deepEqual(portable.effort, contract.effort);
+    assert.equal(portable.access, contract.access);
   }
 });
 

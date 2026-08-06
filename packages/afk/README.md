@@ -1190,7 +1190,7 @@ afk setup --preset afk-architect --agent codex --yes
 its declared bundle. AFK Architect remains usable as a skill-only baseline if
 the portable agents are not installed. Its optimized bundle adds
 `afk-cartographer` for discovery, `afk-builder` for bounded writes, and
-`afk-pathfinder` for planning, judgment, and verification. Pi requires
+`afk-pathfinder` for difficult judgment, verification, or direct implementation. Pi requires
 `pi-subagents`; AFK suggests
 the extension command and skips Pi when it is unavailable rather than
 installing it automatically. For the full contract, see

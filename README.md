@@ -235,7 +235,7 @@ afk setup --preset afk-architect
 ```
 
 The bundle provisions Cartographer for discovery, Builder for bounded writes,
-and Pathfinder for planning, judgment, and verification. The harness still
+and Pathfinder for difficult judgment, verification, or direct implementation. The harness still
 owns execution and model availability. If any required agent cannot be
 provisioned, AFK attempts the remaining bundle areas but exits non-zero; the
 installed skill remains usable through its native-role fallback.

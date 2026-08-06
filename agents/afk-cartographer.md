@@ -3,11 +3,12 @@ name: afk-cartographer
 description: Maps relevant code, dependencies, constraints, and evidence through focused read-only investigation.
 models:
   codex: gpt-5.6-luna
-  claude: haiku
+  claude: sonnet
+  pi: openai-codex/gpt-5.6-luna
 effort:
-  codex: low
+  codex: max
   claude: low
-  pi: low
+  pi: xhigh
 nicknames:
   - Cartographer
   - Surveyor
