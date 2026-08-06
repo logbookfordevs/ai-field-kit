@@ -7,6 +7,20 @@ import { parsePortableAgentFile, renderClaudeAgent, renderCodexAgent, renderPiAg
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions, Runtime } from "./types.js";
 
+test("packaged AFK Architect agents are valid Portable Agent Contracts", () => {
+  const catalog = JSON.parse(readFileSync(new URL("../catalog/agents.json", import.meta.url), "utf8")) as {
+    items: Array<{ id: string; source: string }>;
+  };
+  const expected = ["afk-cartographer", "afk-builder", "afk-pathfinder"];
+  const items = catalog.items.filter((item) => expected.includes(item.id));
+
+  assert.deepEqual(items.map((item) => item.id), expected);
+  for (const item of items) {
+    const portable = parsePortableAgentFile(readFileSync(new URL(`../../../${item.source}`, import.meta.url), "utf8"));
+    assert.equal(portable.name, item.id);
+  }
+});
+
 test("parsePortableAgentFile reads portable metadata and exact harness model pins", () => {
   const agent = parsePortableAgentFile(portableAgent({
     models: { codex: "gpt-5.6-luna", claude: "claude-sonnet-5", pi: "openai/gpt-5.6" },

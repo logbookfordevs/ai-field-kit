@@ -216,6 +216,11 @@ areas in one guided flow. A failure in one delegated area does not prevent AFK
 from attempting the remaining selected areas; the overall command exits
 non-zero when any selected area fails.
 
+Use `afk setup --preset <id>` to apply one cataloged bundle. Presets with
+explicit selections install exactly those members in their declared area
+order. For example, `afk setup --preset afk-architect` installs the Architect
+skill before provisioning its three required portable Custom Agents.
+
 | Command | What it does | Owner of the effect |
 |---|---|---|
 | `afk setup rules` | Compose configured rules layers into AFK-managed regions and install their isolated dependency files without replacing user-owned content outside those regions. | AFK. |
@@ -265,7 +270,7 @@ afk show skills profiles
 | `afk show mcps` | Inspect MCP recommendations before delegated installation. |
 | `afk show plugins` | Inspect plugin installers and post-install commands. |
 | `afk show hooks` | Inspect lifecycle hook definitions and supported targets. |
-| `afk show presets` | Inspect remembered source metadata such as `defaultSource`. |
+| `afk show presets` | Inspect remembered source metadata and preset bundle membership. |
 | `afk show --source <source>` | Read a source for this invocation without changing the cache. |
 | `afk show <category> --source <source> --ref <git-ref>` | Inspect a specific Git ref from a GitHub-backed source. |
 | `afk show --local` | Read project-local `./afk/catalog`. |
@@ -421,6 +426,7 @@ These flags apply to `afk setup` and most area commands.
 | `--dry-run` | Preview planned actions without applying them. Use this before real setup. |
 | `--verbose` | Show delegated installer output instead of keeping it quiet. |
 | `--yes`, `-y` | Accept defaults and skip prompts. Useful for scripts. |
+| `--preset <id>` | With top-level `afk setup`, apply one cataloged bundle in its declared area order. |
 | `--scope global/project` | Choose machine-wide setup or current-project setup. |
 | `--local` | Alias for `--scope project`. |
 | `--agent <agent>`, `-a <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
@@ -646,6 +652,38 @@ rules.json
 plugins.json
 hooks.json
 ```
+
+### Presets
+
+`presets.json` can describe an area shortcut or an exact required bundle:
+
+```json
+{
+  "version": 1,
+  "defaultsSource": "logbookfordevs/ai-field-kit",
+  "presets": [
+    {
+      "id": "afk-architect",
+      "label": "AFK Architect",
+      "areas": ["skills", "agents"],
+      "selections": {
+        "skills": ["afk-architect"],
+        "customAgents": [
+          "afk-cartographer",
+          "afk-builder",
+          "afk-pathfinder"
+        ]
+      }
+    }
+  ]
+}
+```
+
+When `selections` is omitted, each area keeps its normal interactive or default
+selection behavior. When present, its arrays are exact required members, and
+`areas` defines execution order. AFK continues into later areas after a
+failure, then exits non-zero if any required member could not be provisioned.
+Use `afk show presets` to inspect the members before setup.
 
 ### Layered Rules and Dependency Files
 
@@ -979,6 +1017,10 @@ and scripted setup requires `--custom-agent <id>` or `--all`. Portable files
 may declare shared AFK skill names for native per-agent configuration; Custom
 Agent setup never installs or validates those skills.
 
+An explicitly selected preset may supply its own exact `customAgents` list.
+That is bundle selection, not a change to the unchecked default for ordinary
+`afk setup agents` runs.
+
 Relative agent sources resolve from the selected catalog source root. Local
 repository sources materialize them as absolute paths; GitHub sources
 materialize them as raw-file URLs. Absolute paths and HTTP(S) sources pass
@@ -1141,9 +1183,15 @@ selection explicit:
 afk setup agents --custom-agent notion_assistant --agent codex --dry-run
 afk setup agents --custom-agent notion_assistant --agent codex --yes
 afk setup agents --all --agent claude --agent pi --yes
+afk setup --preset afk-architect --agent codex --yes
 ```
 
-`--yes` confirms but does not select. Pi requires `pi-subagents`; AFK suggests
+`--yes` confirms but does not select; the preset command explicitly selects
+its declared bundle. AFK Architect remains usable as a skill-only baseline if
+the portable agents are not installed. Its optimized bundle adds
+`afk-cartographer` for discovery, `afk-builder` for bounded writes, and
+`afk-pathfinder` for planning, judgment, and verification. Pi requires
+`pi-subagents`; AFK suggests
 the extension command and skips Pi when it is unavailable rather than
 installing it automatically. For the full contract, see
 [Portable Custom Agents](docs/custom-agents.md).

@@ -89,6 +89,91 @@ test("runCli exposes Custom Agents as a first-class command family", async () =>
   assert.ok(output.join("\n").includes("AFK show agents"));
 });
 
+test("runCli exposes preset setup and rejects a missing preset id", async () => {
+  const output: string[] = [];
+  const helpCode = await withConsole(output, () => runCli(["setup", "--help"]));
+  const helpText = output.join("\n");
+
+  assert.equal(helpCode, 0);
+  assert.ok(helpText.includes("--preset <id>"));
+  assert.ok(helpText.includes("afk setup --preset afk-architect"));
+
+  output.length = 0;
+  const missingCode = await withConsole(output, () => runCli(["setup", "--preset"]));
+
+  assert.equal(missingCode, 1);
+  assert.ok(output.join("\n").includes("Missing --preset value"));
+});
+
+test("runCli dry-runs the AFK Architect required bundle in dependency order", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-architect-cli-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli([
+    "setup",
+    "--preset",
+    "afk-architect",
+    "--source",
+    repoDir,
+    "--agent",
+    "codex",
+    "--yes",
+    "--dry-run",
+  ], { HOME: homeDir, AI_RULES_REPO: repoDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("- Areas: skills, agents"));
+  assert.ok(text.includes("--skill afk-architect"));
+  assert.ok(text.includes("afk-cartographer.toml"));
+  assert.ok(text.includes("afk-builder.toml"));
+  assert.ok(text.includes("afk-pathfinder.toml"));
+  assert.ok(text.indexOf("Shared skills") < text.indexOf("afk-cartographer.toml"));
+  assert.ok(!text.includes("Plugins /"));
+  assert.ok(!text.includes("MCPs /"));
+});
+
+test("runCli reports an unknown setup preset without throwing", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-unknown-preset-cli-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli([
+    "setup",
+    "--preset",
+    "missing-preset",
+    "--source",
+    repoDir,
+    "--yes",
+    "--dry-run",
+  ], { HOME: homeDir, AI_RULES_REPO: repoDir }));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown AFK preset: missing-preset"));
+});
+
+test("runCli marks an optimized preset incomplete when a selected harness cannot provision its agents", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-incomplete-preset-cli-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli([
+    "setup",
+    "--preset",
+    "afk-architect",
+    "--source",
+    repoDir,
+    "--agent",
+    "pi",
+    "--yes",
+    "--dry-run",
+  ], { HOME: homeDir, AI_RULES_REPO: repoDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 1);
+  assert.ok(text.includes("--skill afk-architect"));
+  assert.ok(text.includes("AFK skipped Pi"));
+  assert.ok(text.includes("Setup completed with failures"));
+});
+
 test("runCli dry-runs CLI update", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["update", "--dry-run"]));
@@ -1349,6 +1434,33 @@ test("runCli shows profile catalog summaries", async () => {
   assert.ok(text.includes("mode"));
   assert.ok(text.includes("context"));
   assert.ok(text.includes("always-on"));
+});
+
+test("runCli shows explicit preset members", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": {
+      version: 1,
+      defaultsSource: "acme/dev-kit",
+      presets: [
+        {
+          id: "afk-architect",
+          label: "AFK Architect",
+          areas: ["skills", "agents"],
+          selections: {
+            skills: ["afk-architect"],
+            customAgents: ["afk-cartographer", "afk-builder", "afk-pathfinder"],
+          },
+        },
+      ],
+    },
+  });
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["show", "presets"], { HOME: homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("skills: afk-architect"));
+  assert.ok(text.includes("custom agents: afk-cartographer, afk-builder, afk-pathfinder"));
 });
 
 test("isPromptExit detects Inquirer Ctrl-C exits", () => {

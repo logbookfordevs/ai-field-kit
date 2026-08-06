@@ -1016,9 +1016,24 @@ function renderPresets(manifest: Record<string, unknown>): string {
     summaryLine("defaults source", typeof manifest.defaultsSource === "string" && manifest.defaultsSource ? manifest.defaultsSource : "(none)"),
     ...renderItemList(manifest.presets, "preset", (item) => {
       const areas = Array.isArray(item.areas) ? ` [${item.areas.filter((value) => typeof value === "string").join(", ")}]` : "";
-      return `${labelFor(item)}${areas}`;
+      const selections = isRecord(item.selections)
+        ? [
+            presetSelectionSummary("skills", item.selections.skills),
+            presetSelectionSummary("custom agents", item.selections.customAgents),
+            presetSelectionSummary("MCPs", item.selections.mcps),
+            presetSelectionSummary("plugins", item.selections.plugins),
+            presetSelectionSummary("hooks", item.selections.hooks),
+          ].filter((selection): selection is string => Boolean(selection))
+        : [];
+      const selectionSummary = selections.length > 0 ? ` · ${selections.join(" · ")}` : "";
+      return `${labelFor(item)}${areas}${selectionSummary}`;
     }),
   ].join("\n");
+}
+
+function presetSelectionSummary(label: string, value: unknown): string | null {
+  const ids = stringList(value);
+  return ids.length > 0 ? `${label}: ${ids.join(", ")}` : null;
 }
 
 function renderItems(manifest: Record<string, unknown>, singular: string): string {

@@ -34,7 +34,16 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     return prepared.code;
   }
 
-  const selection = await selectSetup(prepared.options);
+  let selection: SetupSelection;
+  try {
+    selection = await selectSetup(prepared.options);
+  } catch (error) {
+    if (!prepared.options.presetId) {
+      throw error;
+    }
+    runtime.io.stderr(error instanceof Error ? error.message : String(error));
+    return 1;
+  }
   const selectedOptions: CliOptions = {
     ...prepared.options,
     agents: selection.agents,

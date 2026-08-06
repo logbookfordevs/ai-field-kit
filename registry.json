@@ -48,6 +48,21 @@
           "path": "packages/afk/catalog/presets.json",
           "type": "registry:file",
           "target": "~/afk/catalog/presets.json"
+        },
+        {
+          "path": "agents/afk-cartographer.md",
+          "type": "registry:file",
+          "target": "~/agents/afk-cartographer.md"
+        },
+        {
+          "path": "agents/afk-builder.md",
+          "type": "registry:file",
+          "target": "~/agents/afk-builder.md"
+        },
+        {
+          "path": "agents/afk-pathfinder.md",
+          "type": "registry:file",
+          "target": "~/agents/afk-pathfinder.md"
         }
       ]
     }

@@ -1,0 +1,3 @@
+display_name: AFK Architect
+short_description: Route substantive work through focused teammates.
+default_prompt: Coordinate this task with AFK Architect, using the smallest capable team and keeping synthesis and approvals in this thread.

@@ -13,6 +13,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added exact catalog preset bundles through `afk setup --preset <id>`, with declared area order, visible membership, continued setup after area failures, and a non-zero result when required provisioning is incomplete.
+- `skills:` added AFK Architect as a native-teammate coordination skill and an optimized preset with portable Cartographer, Builder, and Pathfinder role contracts for Codex, Claude Code, and Pi.
 - `cli:` added ordered, named rules layers with durable catalog merging, credential-aware private GitHub loading, per-layer dependency directories, visible provenance, version 1 compatibility, and `afk catalog rules add|edit|remove` authoring.
 
 ### Changed
@@ -29,6 +31,10 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` retired AFK Turbo and its GoalBuddy-backed live-board workflow.
 - `skills:` retired AFK Sprint and its Plannotator-backed checkpoint workflow.
 - `skills:` retired AFK Brainstorming Facilitator and PR Story Flow Mermaid from the active catalog while preserving their implementations under `legacy/`.
+
+### Fixed
+
+- `cli:` made local repository setup sources search `packages/afk/catalog` as well as `afk/catalog`, matching GitHub-backed source discovery.
 
 ## v1.2.1 - 2026-08-01
 

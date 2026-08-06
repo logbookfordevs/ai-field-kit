@@ -146,6 +146,7 @@ from those projects without AFK reimplementing their installers.
 |---|---|
 | Preview the whole setup | `afk setup --dry-run` |
 | Apply the whole setup | `afk setup` |
+| Install the optimized AFK Architect bundle | `afk setup --preset afk-architect` |
 | Run project-local setup | `afk setup --local` |
 | Refresh the global catalog cache | `afk refresh` |
 | Inspect the cached catalog | `afk show` |
@@ -224,6 +225,21 @@ once; AFK translates that source into the native format expected by Codex,
 Claude Code, or Pi. AFK provisions those files—it does not launch, coordinate,
 or replace the harness's own subagent runtime.
 
+AFK Architect builds on that boundary. Install `afk-architect` as a skill for
+an adaptive, skill-only baseline that uses the current harness's native
+teammates. For the optimized bundle, install the skill together with its three
+portable role contracts:
+
+```bash
+afk setup --preset afk-architect
+```
+
+The bundle provisions Cartographer for discovery, Builder for bounded writes,
+and Pathfinder for planning, judgment, and verification. The harness still
+owns execution and model availability. If any required agent cannot be
+provisioned, AFK attempts the remaining bundle areas but exits non-zero; the
+installed skill remains usable through its native-role fallback.
+
 The usual path is inspect, preview, then provision:
 
 ```bash
@@ -240,6 +256,8 @@ afk setup agents --custom-agent notion_assistant --agent codex --yes
 Interactive setup opens a checkbox picker with every Custom Agent unchecked.
 For scripts, selection stays explicit: repeat `--custom-agent <id>` or use
 `--all`. `--yes` confirms the operation, but never selects agents on its own.
+Selecting a preset is also explicit and may select the exact agents declared
+by that preset.
 
 Catalog entries stay deliberately small. Each one gives AFK a stable ID, a
 human label, and a repository-relative path or direct location for a Portable
