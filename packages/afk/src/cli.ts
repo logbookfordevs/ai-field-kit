@@ -537,7 +537,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "enable <folder>                   Move a disabled global skill back to active",
       "invocation [disable|enable] [folder] Toggle auto invocation metadata",
       "delete [folder]                   Permanently delete one or more skills",
-      "update [skills...]                Update selected or all tracked skills",
+      "update [skills...]                Update selected or all cataloged tracked skills",
       "profiles <command>                Manage skill focus profiles",
       "categorize                        Create or update skills.json categories with Codex",
     ],
@@ -782,12 +782,12 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills update": {
     title: "AFK skills update",
-    summary: "Choose tracked skills with AFK, then delegate updates to the official skills CLI.",
+    summary: "Choose cataloged skills with AFK, then use their lock metadata to delegate updates.",
     usage: "afk skills update [skills...] [options]",
     options: [
-      "--scope global|project|all        Choose tracked skills to update (default: global)",
-      "--all                             Update every tracked skill in the selected scope",
-      "--profile                         Choose a global profile and update its tracked skills",
+      "--scope global|project|all        Choose cataloged tracked skills (default: global)",
+      "--all                             Update every cataloged tracked skill in scope",
+      "--profile                         Update cataloged tracked skills in a global profile",
       "--yes, -y                         Forward non-interactive confirmation to skills update",
     ],
     examples: [

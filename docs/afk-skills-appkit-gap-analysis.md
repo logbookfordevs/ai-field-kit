@@ -13,7 +13,7 @@ AFK now covers the core Global Library management loop from the AppKit app:
 - categorize local skills through Codex CLI
 - browse current-project Codex and Claude roots as read-only roots
 - prompt with searchable choices when `show`, `disable`, `enable`, or `trash` is missing a skill operand
-- update selected or all tracked skills by delegating to the official `skills` CLI
+- update selected or all AFK-cataloged skills with lock metadata by delegating to the official `skills` CLI
 
 The main AppKit behavior still not represented in AFK is not the local mutate loop. It is the surrounding discovery surface: official catalog search, source install command preparation, and catalog export.
 
@@ -113,7 +113,7 @@ Important upstream behavior:
 
 - The official `skills check` command currently routes to the same update implementation as `skills update`, so AFK should not expose `afk skills check` as a read-only wrapper.
 - The official `skills update` command prompts for scope when no scope flags or skill names are provided. It does not show a searchable skill picker.
-- AFK can add real value by making selection searchable and scope-aware, then delegating the actual update to the official `skills` CLI.
+- AFK adds value by making its catalog authoritative for selection, using upstream lock metadata for eligible entries, and delegating the actual update to the official `skills` CLI.
 
 Recommended CLI shape:
 
@@ -126,7 +126,7 @@ Default behavior:
 - `--scope` defaults to `global`.
 - No skill args and no `--all` opens AFK's branded searchable selection flow for the selected scope.
 - Explicit skill args skip the picker.
-- `--all` skips the picker and delegates every tracked skill in the selected scope.
+- `--all` skips the picker and delegates every skill present in both AFK's catalog and the selected scope's lock.
 - `--yes` forwards non-interactive confirmation behavior to the official CLI.
 - `--scope all` should show grouped records for interactive selection and delegate both global and project updates when `--all` is passed.
 

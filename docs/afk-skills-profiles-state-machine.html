@@ -657,10 +657,10 @@ const DETAILS = {
   },
   "cmd-update": {
     title: "afk skills update",
-    meta: "tracked update route",
-    body: "Selects official skills-lock entries, delegates to <code>npx skills update</code>, and restores any previously disabled storage after the reinstall-like update.",
-    bullets: ["<code>--all</code> updates every tracked skill in scope.", "<code>--profile</code> updates only tracked members and reports untracked members it skips.", "Explicit names require global or project scope, not <code>all</code>."],
-    tags: ["lockfile", "preserves disabled state"]
+    meta: "catalog-owned update route",
+    body: "Intersects AFK catalog entries with official skills-lock metadata, delegates explicit eligible names to <code>npx skills update</code>, and restores any previously disabled storage after the reinstall-like update.",
+    bullets: ["<code>--all</code> updates every cataloged tracked skill in scope.", "<code>--profile</code> updates only cataloged tracked members and reports other members it skips.", "Explicit names require global or project scope, not <code>all</code>."],
+    tags: ["catalog", "lockfile", "preserves disabled state"]
   },
   "cmd-refresh": {
     title: "afk refresh skills",
