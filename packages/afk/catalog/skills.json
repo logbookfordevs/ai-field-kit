@@ -162,6 +162,20 @@
             "composes": []
         },
         {
+            "id": "afk-architect",
+            "label": "AFK - Architect",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-architect",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": true,
+            "role": "workflow",
+            "composes": []
+        },
+        {
             "id": "afk-profile-use",
             "label": "AFK - Profile Use",
             "source": "https://github.com/logbookfordevs/ai-field-kit",

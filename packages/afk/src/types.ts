@@ -48,6 +48,7 @@ export type CliOptions = {
   dryRun: boolean;
   verbose: boolean;
   yes: boolean;
+  presetId?: string;
   allSkills: boolean;
   allCustomAgents?: boolean;
   selectedSkillIds: string[];

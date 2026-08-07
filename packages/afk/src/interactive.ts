@@ -1,7 +1,7 @@
 import { checkbox, input, select } from "@inquirer/prompts";
 import { detectSetupTargets, type TargetSelectionSource } from "./agent-detection.js";
 import { agentIds, hookAgentIds, skillAgentIds } from "./agents.js";
-import { loadCustomAgentManifest, loadHookManifest, loadMcpManifest, loadSkillManifest, loadPluginManifest, type SkillManifestItem } from "./manifest.js";
+import { loadCustomAgentManifest, loadHookManifest, loadMcpManifest, loadPresetsManifest, loadSkillManifest, loadPluginManifest, type PresetManifestItem, type SkillManifestItem } from "./manifest.js";
 import { DEFAULT_CHECKED, afkCheckboxTheme, afkSearchableCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import { searchableCheckbox } from "./searchable-checkbox.js";
 import type { AgentId, Area, CliOptions, SetupScope, SkillAgentId } from "./types.js";
@@ -76,6 +76,10 @@ const setupAreaChoices: Choice<Area>[] = [
 ];
 
 export async function selectSetup(options: CliOptions): Promise<SetupSelection> {
+  if (options.presetId) {
+    return selectPresetSetup(options, options.presetId);
+  }
+
   if (options.yes) {
     const detected = detectSetupTargets(options);
     const agentSelection = resolveNonInteractiveAgentSelection(options.agents, detected.agents);
@@ -136,6 +140,98 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     hookAgentSource: hookAgentSelection.source,
     skillAgentSource: skillAgentSelection.source,
   });
+}
+
+async function selectPresetSetup(options: CliOptions, presetId: string): Promise<SetupSelection> {
+  const preset = loadPresetsManifest(options).presets.find((candidate) => candidate.id === presetId);
+  if (!preset) {
+    throw new Error(`Unknown AFK preset: ${presetId}`);
+  }
+
+  const areas = presetAreas(preset);
+  const setupScope = options.scopeExplicit || options.yes ? options.setupScope : await selectSetupScope(options.cwd);
+  const detected = detectSetupTargets({ ...options, setupScope });
+  const skillIds = areas.includes("skills")
+    ? presetIds("skill", preset.selections?.skills, loadSkillManifest(options).items.map((item) => item.id), nonInteractiveSkillIds(options))
+    : [];
+  const customAgentIds = areas.includes("agents")
+    ? presetIds("Custom Agent", preset.selections?.customAgents, loadCustomAgentManifest(options).items.map((item) => item.id), [])
+    : [];
+  const mcpIds = areas.includes("mcps")
+    ? presetIds("MCP", preset.selections?.mcps, loadMcpManifest(options).items.map((item) => item.id), loadMcpManifest(options).items.map((item) => item.id))
+    : [];
+  const pluginIds = areas.includes("plugins")
+    ? presetIds("plugin", preset.selections?.plugins, loadPluginManifest(options).items.map((item) => item.id), loadPluginManifest(options).items.map((item) => item.id))
+    : [];
+  const hookIds = areas.includes("hooks")
+    ? presetIds("hook", preset.selections?.hooks, loadHookManifest(options).items.map((item) => item.id), loadHookManifest(options).items.map((item) => item.id))
+    : [];
+
+  const needsGeneralAgents = areas.some((area) => area === "rules" || area === "mcps");
+  const needsCustomAgentHarness = customAgentIds.length > 0 && !needsGeneralAgents;
+  let agentSelection: { agents: AgentId[]; source: TargetSelectionSource };
+  if (needsGeneralAgents) {
+    agentSelection = options.yes
+      ? presetAgentSelection(options.agents, detected.agents)
+      : await selectSetupAgents(options.agents, detected.agents, areas);
+  } else if (needsCustomAgentHarness) {
+    agentSelection = options.yes
+      ? presetAgentSelection(options.agents.filter(isCustomAgentHarness), detected.agents.filter(isCustomAgentHarness))
+      : await selectAgentChoices("Choose harnesses for Custom Agents", ["codex", "claude", "pi"], options.agents, detected.agents);
+  } else {
+    agentSelection = { agents: [], source: "none" };
+  }
+
+  const skillAgentSelection = skillIds.length > 0
+    ? selectSkillAgents(options, detected.skillAgents)
+    : { agents: [], source: "none" as TargetSelectionSource };
+  const hookAgentSelection = hookIds.length > 0
+    ? options.yes
+      ? presetAgentSelection(options.agents, detected.hookAgents)
+      : await selectHookAgents(options.agents, detected.hookAgents)
+    : { agents: [], source: "none" as TargetSelectionSource };
+
+  return normalizeSetupSelection({
+    areas,
+    agents: agentSelection.agents,
+    hookAgents: hookAgentSelection.agents,
+    setupScope,
+    skillIds,
+    customAgentIds,
+    skillAgents: skillAgentSelection.agents,
+    mcpIds,
+    pluginIds,
+    hookIds,
+    agentSource: agentSelection.source,
+    hookAgentSource: hookAgentSelection.source,
+    skillAgentSource: skillAgentSelection.source,
+  });
+}
+
+function presetAgentSelection(preselected: AgentId[], detected: AgentId[]): { agents: AgentId[]; source: TargetSelectionSource } {
+  const selection = resolveNonInteractiveAgentSelection(preselected, detected);
+  return { agents: selection.agents, source: selection.agentSource };
+}
+
+function presetAreas(preset: PresetManifestItem): Area[] {
+  const supportedAreas = new Set<Area>(setupAreaChoices.map((choice) => choice.value));
+  const invalidArea = preset.areas.find((area) => !supportedAreas.has(area as Area));
+  if (invalidArea) {
+    throw new Error(`Preset ${preset.id} contains an unsupported setup area: ${invalidArea}`);
+  }
+  return uniqueStrings(preset.areas) as Area[];
+}
+
+function presetIds(label: string, selected: string[] | undefined, available: string[], fallback: string[]): string[] {
+  if (selected === undefined) {
+    return uniqueStrings(fallback);
+  }
+  const ids = uniqueStrings(selected);
+  const unknown = ids.find((id) => !available.includes(id));
+  if (unknown) {
+    throw new Error(`Unknown ${label} id in preset: ${unknown}`);
+  }
+  return ids;
 }
 
 export async function selectDefaultsSource(rememberedSource: string): Promise<string> {

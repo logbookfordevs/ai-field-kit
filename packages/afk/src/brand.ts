@@ -57,6 +57,62 @@ export function renderSetupOutro(input: {
   ].join("\n");
 }
 
+export function renderArchitectOutro(input: {
+  dryRun: boolean;
+  failed: boolean;
+  scopeLabel: string;
+  harnesses: string[];
+  skill: { label: string; path: string };
+  crew: Array<{ label: string; path: string }>;
+}): string {
+  const title = input.failed
+    ? "AFK Architect needs attention"
+    : input.dryRun
+      ? "AFK Architect voyage charted"
+      : "AFK Architect ready";
+  const harnesses = input.harnesses.length > 0 ? input.harnesses.join(", ") : "No harnesses";
+  const marker = input.failed ? "!" : input.dryRun ? "→" : "✓";
+  const verb = input.failed ? "selected for" : input.dryRun ? "would be provisioned for" : "provisioned for";
+  const skillCount = 1;
+  const crewCount = input.crew.length;
+  const skillLabel = `${skillCount} skill`;
+  const crewLabel = `${crewCount} Custom Agent${crewCount === 1 ? "" : "s"}`;
+  const rule = "─".repeat(54);
+  const ship = [
+    "        |\\  ☠",
+    "    ____|_\\____",
+    "   \\  AFK CREW /",
+    "~~~~\\_________/~~~~",
+  ];
+
+  return [
+    "",
+    sectionTitle("AFK Architect"),
+    "",
+    `${bold}Preset${reset}`,
+    muted(`- Scope: ${input.scopeLabel}`),
+    muted(`- Harnesses: ${harnesses}`),
+    muted("- Bundle: Architect + Cartographer + Builder + Pathfinder"),
+    "",
+    sectionTitle("Skill"),
+    "",
+    `${marker} ${input.skill.label}`,
+    muted(`  Shared skill → ${input.skill.path}`),
+    "",
+    sectionTitle("Crew"),
+    "",
+    ...input.crew.map((member) => `${marker} ${member.label} → ${member.path}`),
+    "",
+    gradient(rule),
+    `${bold}${brandText(title)}${reset}`,
+    muted(`${skillLabel} and ${crewLabel} ${verb} ${harnesses}.`),
+    "",
+    ...ship.map(muted),
+    gradient(rule),
+    "",
+  ].join("\n");
+}
+
 export function sectionTitle(value: string): string {
   return `${paint(terminalPalette.rust, "◆")} ${bold}${value}${reset}`;
 }

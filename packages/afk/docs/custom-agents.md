@@ -22,10 +22,34 @@ afk setup agents
 # Scripted setup: selection is always explicit
 afk setup agents --custom-agent notion_assistant --agent codex --yes
 afk setup agents --all --agent claude --agent pi --yes
+
+# Preset setup: the preset explicitly selects its required bundle
+afk setup --preset afk-architect --agent codex --yes
 ```
 
 `--yes` only skips confirmation. It never selects Custom Agents. A scripted
 `afk setup agents` run must pass one or more `--custom-agent` values or `--all`.
+Selecting a preset is a separate explicit selection: AFK installs exactly the
+members it declares and exits non-zero if a required agent cannot be
+provisioned, after attempting the remaining areas.
+
+## AFK Architect Bundle
+
+`afk-architect` is usable by itself. It delegates through native teammate
+roles when the portable agents are unavailable. The optimized preset installs
+that skill and three reusable role contracts:
+
+| Agent | Stable responsibility |
+|---|---|
+| `afk-cartographer` | Read-only discovery, evidence gathering, and change maps. |
+| `afk-builder` | Bounded implementation with explicit file ownership. |
+| `afk-pathfinder` | Difficult judgment, verification, and direct implementation when a handoff would add more cost than value. |
+
+These agents are the bones of a workflow, not one agent per stage. A
+coordinator can instantiate the same contract several times with distinct
+assignments. Create another permanent Custom Agent only when a role needs a
+different durable permission boundary, tool or skill attachment, or standing
+instruction set.
 
 ## Catalog
 

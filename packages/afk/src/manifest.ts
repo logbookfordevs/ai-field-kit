@@ -140,14 +140,25 @@ export type HookManifestItem = {
   default: boolean;
 };
 
+export type PresetSelections = {
+  skills?: string[];
+  customAgents?: string[];
+  mcps?: string[];
+  plugins?: string[];
+  hooks?: string[];
+};
+
+export type PresetManifestItem = {
+  id: string;
+  label: string;
+  areas: string[];
+  selections?: PresetSelections;
+};
+
 export type PresetsManifest = {
   version: number;
   defaultsSource: string;
-  presets: Array<{
-    id: string;
-    label: string;
-    areas: string[];
-  }>;
+  presets: PresetManifestItem[];
 };
 
 type ManifestOptions = Pick<
@@ -371,6 +382,10 @@ export function loadHookManifest(options: Pick<CliOptions, "homeDir" | "manifest
   return parseManifest<HookManifest>(options, "hooks.json", isHookManifest);
 }
 
+export function loadPresetsManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): PresetsManifest {
+  return parseManifest<PresetsManifest>(options, "presets.json", isPresetsManifest);
+}
+
 function parseManifest<T>(
   options: Pick<CliOptions, "homeDir" | "manifestContents">,
   name: ManifestName,
@@ -572,6 +587,7 @@ function readLocalDefaultManifest(name: ManifestName, options: ManifestOptions, 
   const candidates = [
     join(basePath, name),
     join(basePath, "afk", "catalog", name),
+    join(basePath, "packages", "afk", "catalog", name),
   ];
 
   for (const candidate of unique(candidates)) {
@@ -777,7 +793,15 @@ function isPresetManifestItem(value: unknown): value is PresetsManifest["presets
     typeof value.id === "string" &&
     typeof value.label === "string" &&
     Array.isArray(value.areas) &&
-    value.areas.every((area) => typeof area === "string")
+    value.areas.every((area) => typeof area === "string") &&
+    (value.selections === undefined || (
+      isRecord(value.selections) &&
+      (value.selections.skills === undefined || isStringArray(value.selections.skills)) &&
+      (value.selections.customAgents === undefined || isStringArray(value.selections.customAgents)) &&
+      (value.selections.mcps === undefined || isStringArray(value.selections.mcps)) &&
+      (value.selections.plugins === undefined || isStringArray(value.selections.plugins)) &&
+      (value.selections.hooks === undefined || isStringArray(value.selections.hooks))
+    ))
   );
 }
 
@@ -1431,6 +1455,16 @@ function isPluginManifest(value: unknown): value is PluginManifest {
       typeof item.default === "boolean"
     );
   });
+}
+
+function isPresetsManifest(value: unknown): value is PresetsManifest {
+  return (
+    isRecord(value) &&
+    typeof value.version === "number" &&
+    typeof value.defaultsSource === "string" &&
+    Array.isArray(value.presets) &&
+    value.presets.every(isPresetManifestItem)
+  );
 }
 
 function isPluginPostInstallCommand(value: unknown): value is PluginPostInstallCommand {

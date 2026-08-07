@@ -7,6 +7,7 @@ import {
   defaultsManifestBaseUrl,
   defaultsManifestBaseUrls,
   ensureLocalManifests,
+  loadPresetsManifest,
   loadPluginManifest,
   loadSourceManifestContents,
   mergedCustomAgentManifestContent,
@@ -20,6 +21,36 @@ import {
   rulesManifestLayers,
   type SkillManifest,
 } from "./manifest.js";
+
+test("loadPresetsManifest accepts area presets and explicit required selections", () => {
+  const manifest = loadPresetsManifest({
+    homeDir: "/unused",
+    manifestContents: {
+      "presets.json": JSON.stringify({
+        version: 1,
+        defaultsSource: "logbookfordevs/ai-field-kit",
+        presets: [
+          { id: "baseline", label: "Baseline", areas: ["rules", "skills"] },
+          {
+            id: "afk-architect",
+            label: "AFK Architect",
+            areas: ["skills", "agents"],
+            selections: {
+              skills: ["afk-architect"],
+              customAgents: ["afk-cartographer", "afk-builder", "afk-pathfinder"],
+            },
+          },
+        ],
+      }),
+    },
+  });
+
+  assert.deepEqual(manifest.presets[0], { id: "baseline", label: "Baseline", areas: ["rules", "skills"] });
+  assert.deepEqual(manifest.presets[1]?.selections, {
+    skills: ["afk-architect"],
+    customAgents: ["afk-cartographer", "afk-builder", "afk-pathfinder"],
+  });
+});
 
 test("Custom Agent sources resolve relative to a local catalog repository", async () => {
   const sourceRoot = mkdtempSync(join(tmpdir(), "afk-agent-source-"));
@@ -455,6 +486,21 @@ test("packaged plugin manifests keep npx installs non-interactive", () => {
     .map((item) => item.id);
 
   assert.deepEqual(interactiveNpxItems, []);
+});
+
+test("packaged catalogs expose the AFK Architect required bundle", () => {
+  const presets = JSON.parse(readFileSync(new URL("../catalog/presets.json", import.meta.url), "utf8")) as {
+    presets: Array<{ id: string; selections?: { skills?: string[]; customAgents?: string[] } }>;
+  };
+  const skills = JSON.parse(readFileSync(new URL("../catalog/skills.json", import.meta.url), "utf8")) as {
+    items: Array<{ id: string }>;
+  };
+  const preset = presets.presets.find((item) => item.id === "afk-architect");
+
+  assert.ok(preset);
+  assert.deepEqual(preset.selections?.skills, ["afk-architect"]);
+  assert.deepEqual(preset.selections?.customAgents, ["afk-cartographer", "afk-builder", "afk-pathfinder"]);
+  assert.ok(skills.items.some((item) => item.id === "afk-architect"));
 });
 
 test("plugin manifests reject shell control tokens outside shell commands", () => {

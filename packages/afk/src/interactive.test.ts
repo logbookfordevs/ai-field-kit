@@ -304,6 +304,24 @@ test("selectSetup yes mode uses detected targets", async () => {
   assert.ok(!promptState.checkboxMessages.includes("Choose agents for rules and MCPs"));
 });
 
+test("selectSetup resolves a preset to its exact required selections", async () => {
+  const homeDir = localHomeWithArchitectPreset();
+  const selection = await selectSetup({
+    ...defaultOptions(homeDir),
+    yes: true,
+    presetId: "afk-architect",
+    agents: ["codex"],
+  });
+
+  assert.deepEqual(selection.areas, ["skills", "agents"]);
+  assert.deepEqual(selection.skillIds, ["afk-architect"]);
+  assert.deepEqual(selection.customAgentIds, ["afk-cartographer", "afk-builder", "afk-pathfinder"]);
+  assert.deepEqual(selection.agents, ["codex"]);
+  assert.deepEqual(selection.mcpIds, []);
+  assert.deepEqual(selection.pluginIds, []);
+  assert.deepEqual(selection.hookIds, []);
+});
+
 test("selectSetup yes mode includes all skills when requested", async () => {
   const homeDir = localHomeWithAllManifests();
   const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true, allSkills: true });
@@ -585,6 +603,55 @@ function localHomeWithAllManifests(): string {
     writeFileSync(join(manifestDir, name), `${JSON.stringify(content, null, 2)}\n`);
   }
 
+  return homeDir;
+}
+
+function localHomeWithArchitectPreset(): string {
+  const homeDir = localHomeWithAllManifests();
+  const manifestDir = localManifestDir(homeDir);
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "afk-architect",
+        label: "AFK Architect",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "afk-architect", "--global"],
+        default: false,
+      },
+      {
+        id: "unrelated",
+        label: "Unrelated",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "unrelated", "--global"],
+        default: true,
+      },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({
+    version: 1,
+    defaultsSource: "",
+    presets: [
+      {
+        id: "afk-architect",
+        label: "AFK Architect",
+        areas: ["skills", "agents"],
+        selections: {
+          skills: ["afk-architect"],
+          customAgents: ["afk-cartographer", "afk-builder", "afk-pathfinder"],
+        },
+      },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "afk-cartographer", label: "AFK Cartographer", source: "agents/afk-cartographer.md" },
+      { id: "afk-builder", label: "AFK Builder", source: "agents/afk-builder.md" },
+      { id: "afk-pathfinder", label: "AFK Pathfinder", source: "agents/afk-pathfinder.md" },
+    ],
+  }, null, 2)}\n`);
   return homeDir;
 }
 

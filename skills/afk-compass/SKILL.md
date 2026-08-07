@@ -30,7 +30,8 @@ The route is complete when the response contains one exact invocation, or explic
 | Slice a plan or spec into dependency-aware tickets | `afk-to-tickets` |
 | Implement existing checkpointed tickets | `afk-implement-tasks` |
 | Save or resume disposable session context | `handoff` or `afk-pickup` |
-| Coordinate work across multiple agents or runtimes | `orchestrator` |
+| Coordinate substantive work with native teammates in the current session | `afk-architect` |
+| Coordinate work across multiple runtimes or external agent processes | `orchestrator` |
 | Load a named AFK skill profile | `afk-profile-use` |
 | Create a portable AFK Custom Agent | `afk-create-agent` |
 | Write or improve human-facing documentation | `afk-doc-craft` |

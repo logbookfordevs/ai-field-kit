@@ -1,4 +1,20 @@
 {
   "version": 1,
-  "items": []
+  "items": [
+    {
+      "id": "afk-cartographer",
+      "label": "AFK Cartographer",
+      "source": "agents/afk-cartographer.md"
+    },
+    {
+      "id": "afk-builder",
+      "label": "AFK Builder",
+      "source": "agents/afk-builder.md"
+    },
+    {
+      "id": "afk-pathfinder",
+      "label": "AFK Pathfinder",
+      "source": "agents/afk-pathfinder.md"
+    }
+  ]
 }

@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import { sectionTitle } from "./brand.js";
 import { loadCustomAgentManifest, type CustomAgentManifestItem } from "./manifest.js";
 import type { AgentId, CliOptions, Runtime } from "./types.js";
 
@@ -59,6 +58,7 @@ export async function syncCustomAgents(runtime: Runtime, options: CliOptions): P
     return 1;
   }
 
+  let failed = false;
   const availableHarnesses = harnesses.filter((harness) => {
     if (harness !== "pi" || piSubagentsInstalled(options.homeDir)) {
       return true;
@@ -67,10 +67,12 @@ export async function syncCustomAgents(runtime: Runtime, options: CliOptions): P
     runtime.io.stdout("\nPi Custom Agents require the pi-subagents extension.");
     runtime.io.stdout("- Suggested command: pi install npm:pi-subagents");
     runtime.io.stdout("- AFK skipped Pi. Run afk setup agents again after installing the extension.");
+    if (options.presetId) {
+      failed = true;
+    }
     return false;
   });
 
-  let failed = false;
   const targets: ProvisioningTarget[] = [];
   for (const item of selectedItems) {
     let portable: PortableAgent;
@@ -99,9 +101,6 @@ export async function syncCustomAgents(runtime: Runtime, options: CliOptions): P
     }
   }
 
-  if (targets.length > 0) {
-    runtime.io.stdout(`\n${sectionTitle("Custom Agents")}`);
-  }
   for (const target of targets) {
     const action = options.dryRun ? "Would write" : "Wrote";
     if (!options.dryRun) {
@@ -281,7 +280,7 @@ function provisioningTarget(
   return { kind: "ready", target: { harness, path, content, omittedCapabilities, omittedMetadata } };
 }
 
-function customAgentTargetPath(
+export function customAgentTargetPath(
   name: string,
   harness: CustomAgentHarness,
   options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,

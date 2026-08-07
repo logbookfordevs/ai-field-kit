@@ -207,6 +207,7 @@ const setupOptions = {
   localCatalog: "--local                           Write ./afk/catalog and prefer ./.agents/skills when available",
   agent: "--agent <agent>                   Override detected targets; repeatable",
   source: "--source <source>                 Merge applied source entries, without remembering the source",
+  preset: "--preset <id>                     Install one catalog preset as a required bundle",
   ref: "--ref <git-ref>                   Git ref for default AFK catalog URLs",
   initOnly: "--init-only                       Create/update the local catalog only, then exit",
   empty: "--empty                           Create empty catalog files with --init-only or refresh",
@@ -253,6 +254,7 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.localScope,
       setupOptions.agent,
       setupOptions.source,
+      setupOptions.preset,
       setupOptions.ref,
       setupOptions.initOnly,
       setupOptions.empty,
@@ -273,6 +275,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup --dry-run",
       "afk setup --local",
       "afk setup --source your-org/dev-kit",
+      "afk setup --preset afk-architect",
     ],
   },
   refresh: {
@@ -1165,6 +1168,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let dryRun = false;
   let verbose = false;
   let yes = false;
+  let presetId = "";
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
   let allSkills = false;
@@ -1394,6 +1398,19 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         allSkills = true;
         allCustomAgents = true;
       }
+      continue;
+    }
+
+    if (arg === "--preset") {
+      if (key !== "setup") {
+        return { help: false, kind: "error", error: "--preset is only supported with afk setup" };
+      }
+      const value = args[index + 1]?.trim();
+      if (!value) {
+        return { help: false, kind: "error", error: "Missing --preset value" };
+      }
+      presetId = value;
+      index += 1;
       continue;
     }
 
@@ -1781,6 +1798,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       dryRun,
       verbose,
       yes,
+      ...(presetId ? { presetId } : {}),
       allSkills,
       allCustomAgents,
       selectedSkillIds: [],
