@@ -53,6 +53,8 @@ Statuses: `pending`, `in_progress`, `validating`, `review`, `blocked`, `done`.
 
 Allowed review gates are `code`, `design`, and `product`. Every implementation ticket has a `code` gate. Add `design` for visual parity against an explicit reference, and `product` for user-facing behavior, copy, workflow, or product-fit validation.
 
+Review gates use `pending` and `accepted`. The `code` gate also allows `changes_requested`. Keep the ticket status `review` while any review gate remains open. When code review requests changes, set `review_gates.code: changes_requested` and append the review output under `## Code Review Findings — Round N`, where `N` is the next round number already present in the ticket. Preserve the review's native structure. Mark the round heading with `✅` once none of its findings remain actionable, and retain every round as review history.
+
 When a ticket reaches review, recommend `/plannotator-review` for a better guided review experience when available.
 
 If `/plannotator-review` runs during a ticket and the user approves it, treat the `code` review gate as accepted and update the ticket's `review_gates.code` value accordingly.
@@ -74,7 +76,7 @@ Before moving a ticket to `review`, record evidence for each selected discipline
 Do not mark the ticket `review` while selected discipline evidence is missing without an explicit skip reason.
 
 ## Ticket Body
-Keep task-local state in the ticket file. Preserve `Parent` and `User Stories Covered` when present. Use this body shape when creating or normalizing a ticket: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, and `Handoff Notes`.
+Keep task-local state in the ticket file. Preserve `Parent` and `User Stories Covered` when present. Use this body shape when creating or normalizing a ticket: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, `Code Review Findings` when requested changes exist, and `Handoff Notes`.
 
 If an existing ticket uses a different shape, preserve useful content and add missing standard sections as they become relevant.
 
