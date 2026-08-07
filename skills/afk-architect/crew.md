@@ -2,6 +2,8 @@
 
 Prefer an available crew member when its role and configuration fit the assignment; otherwise tailor a native teammate to the assignment:
 
+Crew roles are foundations: specialize a fitting crew member with the assignment's skill or instructions rather than requiring an exact named role.
+
 | Crew member | Native fallback |
 |---|---|
 | `afk-cartographer` | Read-only scout with low reasoning effort and fresh context. |
