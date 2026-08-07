@@ -12,6 +12,7 @@ import { runUiCommand } from "./ui.js";
 import { selectCatalogSkillsLobbyRoute, selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import { packageVersion, runUpdateCommand } from "./update-check.js";
+import { runAfkOpen } from "./open.js";
 import { isPromptExit } from "./menu.js";
 import type {
   AgentId,
@@ -89,6 +90,10 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (isRefreshCommand(key)) {
     return runRefresh(runtime, options);
+  }
+
+  if (key === "open") {
+    return runAfkOpen(runtime, options);
   }
 
   if (key === "catalog") {
@@ -225,6 +230,13 @@ const setupAreaOptions = [
 ];
 
 const commandHelps: Record<string, CommandHelp> = {
+  open: {
+    title: "AFK open",
+    summary: "Open the user AFK folder.",
+    usage: "afk open",
+    options: [],
+    examples: ["afk open"],
+  },
   setup: {
     title: "AFK setup",
     summary: "Guided setup for rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks.",
@@ -2138,6 +2150,7 @@ Guided setup router for AI Field Kit.
 Usage:
   afk --version
   afk
+  afk open
   afk refresh [category...] [options]
   afk catalog [options]
   afk setup [options]
@@ -2161,6 +2174,7 @@ Usage:
 
 Common paths:
   afk                         Open the interactive lobby when your terminal supports prompts
+  afk open                    Open the user AFK folder
   afk setup                   Prepare rules, skills, Custom Agents, MCPs, plugins, and hooks
   afk refresh                 Update the local catalog cache
   afk catalog                 Edit writable local catalog files

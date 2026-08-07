@@ -27,6 +27,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.equal(code, 0);
   assert.ok(output.join("\n").includes("Guided setup router for AI Field Kit."));
   assert.ok(output.join("\n").includes("afk refresh [category...] [options]"));
+  assert.ok(output.join("\n").includes("afk open"));
   assert.ok(output.join("\n").includes("afk catalog [options]"));
   assert.ok(output.join("\n").includes("afk setup [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
@@ -51,6 +52,17 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(!output.join("\n").includes("afk setup mcps install [options]"));
   assert.ok(output.join("\n").includes("afk --version"));
   assert.ok(output.join("\n").includes('Run "afk <command> --help"'));
+});
+
+test("runCli prints contextual open help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["open", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK open"));
+  assert.ok(text.includes("afk open"));
+  assert.ok(text.includes("Open the user AFK folder"));
 });
 
 test("runCli prints contextual update help", async () => {

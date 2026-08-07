@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added `afk open` to open the user AFK folder at `~/.agents/afk`.
 - `cli:` added ordered, named rules layers with durable catalog merging, credential-aware private GitHub loading, per-layer dependency directories, visible provenance, version 1 compatibility, and `afk catalog rules add|edit|remove` authoring.
 - `skills:` added Pixel Point's optional manual `animate-text` utility to the bundled catalog.
 - `skills:` added Matt Pocock's optional `wizard` for model-invoked human setup guides and manual `to-questionnaire` workflow for collecting decisions from another person.
