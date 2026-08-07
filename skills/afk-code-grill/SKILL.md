@@ -16,13 +16,15 @@ Do not use it for broad discovery, full planning, generic architecture theater, 
 ## Operating Shape
 
 1. Name the bounded slice in one sentence.
-2. Inspect only the context needed to avoid asking answered questions.
-3. Identify the 1-3 trade-offs that would actually change the implementation.
-4. Ask one sharp question at a time using the `grilling` loop.
-5. Recommend a direction when the evidence is enough.
-6. End with a tiny decision note only when it will help execution or handoff.
+2. Inspect the context needed to avoid asking answered questions. Resolve facts available from the repository or environment yourself; investigate independent facts in parallel when useful.
+3. Seed the design tree with the implementation and UX trade-offs already visible. Treat this as a starting point, not a complete list: answers may expose further decisions inside the bounded slice.
+4. Work the current frontier in numbered rounds using the `grilling` loop. Ask every ready decision that belongs to the bounded slice; hold questions whose prerequisites are still open for a later round.
+5. If the frontier expands beyond the named slice or reveals that the work is not actually scoped, stop expanding the grill. Surface the planning need and recommend the appropriate planning workflow.
+6. Recommend a direction when the evidence is enough.
+7. Complete the grill when the in-scope frontier is empty and the user confirms the decisions and accepted trade-offs.
+8. End with a tiny decision note only when it will help execution or handoff.
 
-Default pace: one decision, one question, one recommendation.
+Default pace: one bounded slice, as many focused rounds as needed to remove its material implementation uncertainty.
 
 ## Good Questions
 
@@ -47,18 +49,19 @@ Do not ask about:
 
 ## Question Format
 
-Keep questions contrastive and easy to answer:
+Keep each question in the round contrastive and easy to answer:
 
-```text
-Trade-off: [decision name]
-Context: [one sentence from code/docs/user input]
+```md
+❓ **Q1 - [decision name]**
+
+Context: [one sentence from code, docs, or user input]
 
 I see three sane options:
 1. [option] - wins if [condition]
 2. [option] - wins if [condition]
 3. [option] - wins if [condition]
 
-My default: [option], because [reason].
+➡️ My default: [option], because [reason].
 ```
 
 If the user answers freeform, synthesize it into a decision and continue.

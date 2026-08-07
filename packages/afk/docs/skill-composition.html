@@ -1033,6 +1033,8 @@
     &lt;PrimitiveSkill id="source-driven-development" autoDiscovery /&gt;
     &lt;PrimitiveSkill id="doubt-driven-development" autoDiscovery /&gt;
     &lt;PrimitiveSkill id="code-simplification" autoDiscovery /&gt;
+    &lt;ReferenceSkill id="writing-for-agents" autoDiscovery defaultInstalled /&gt;
+    &lt;UtilitySkill id="wizard" autoDiscovery /&gt;
     &lt;PrimitiveSkill id="grilling" autoDiscovery defaultInstalled /&gt;
     &lt;PrimitiveSkill id="domain-modeling" autoDiscovery defaultInstalled /&gt;
     &lt;PrimitiveSkill id="codebase-design" autoDiscovery defaultInstalled /&gt;
@@ -1057,7 +1059,8 @@
     &lt;UtilitySkill id="html" autoDiscovery={false} /&gt;
     &lt;UtilitySkill id="html-plan" autoDiscovery={false} /&gt;
     &lt;UtilitySkill id="html-diagram" autoDiscovery={false} /&gt;
-    &lt;ReferenceSkill id="writing-great-skills" autoDiscovery={false} defaultInstalled /&gt;
+    &lt;UtilitySkill id="animate-text" autoDiscovery={false} /&gt;
+    &lt;WrapperSkill id="to-questionnaire" autoDiscovery={false} /&gt;
     &lt;WrapperSkill id="teach" autoDiscovery={false} /&gt;
     &lt;WrapperSkill id="grill-with-docs" autoDiscovery={false}&gt;
       &lt;PrimitiveSkill ref="grilling" autoDiscovery defaultInstalled /&gt;
@@ -1068,7 +1071,12 @@
     &lt;/WrapperSkill&gt;
     &lt;WrapperSkill id="prototype" autoDiscovery={false} defaultInstalled /&gt;
     &lt;UtilitySkill id="handoff" autoDiscovery={false} defaultInstalled /&gt;
-    &lt;WorkflowSkill id="wayfinder" autoDiscovery={false} /&gt;
+    &lt;WorkflowSkill id="wayfinder" autoDiscovery={false}&gt;
+      &lt;PrimitiveSkill ref="grilling" autoDiscovery defaultInstalled /&gt;
+      &lt;PrimitiveSkill ref="domain-modeling" autoDiscovery defaultInstalled /&gt;
+      &lt;WrapperSkill ref="prototype" autoDiscovery={false} defaultInstalled /&gt;
+      &lt;UtilitySkill ref="research" autoDiscovery /&gt;
+    &lt;/WorkflowSkill&gt;
     &lt;WrapperSkill id="afk-code-review" autoDiscovery defaultInstalled /&gt;
   &lt;/ExplicitInvocation&gt;
 &lt;/AFKSkillTree&gt;</pre>

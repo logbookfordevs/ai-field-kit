@@ -15,10 +15,16 @@ This changelog tracks meaningful updates by version and date.
 
 - `cli:` added exact catalog preset bundles through `afk setup --preset <id>`, with declared area order, visible membership, branded bundle summaries, continued setup after area failures, and a non-zero result when required provisioning is incomplete.
 - `skills:` added AFK Architect as a native-teammate coordination skill and an optimized preset with portable Cartographer, Builder, and Pathfinder role contracts for Codex, Claude Code, and Pi.
+- `cli:` added `afk open` to open the user AFK folder at `~/.agents/afk`, with `--code` for VS Code.
 - `cli:` added ordered, named rules layers with durable catalog merging, credential-aware private GitHub loading, per-layer dependency directories, visible provenance, version 1 compatibility, and `afk catalog rules add|edit|remove` authoring.
+- `skills:` added Pixel Point's optional manual `animate-text` utility to the bundled catalog.
+- `skills:` added Matt Pocock's optional `wizard` for model-invoked human setup guides and manual `to-questionnaire` workflow for collecting decisions from another person.
 
 ### Changed
 
+- `cli:` made `afk skills update` list and bulk-update only skills present in both AFK's catalog and the upstream skills lock, leaving non-cataloged lock entries to the official skills CLI.
+- `skills:` aligned Code Grill with `grilling`'s frontier-based rounds, bounded by the named coding slice rather than a numeric question or trade-off limit.
+- `skills:` updated the AFK Code Review fork to use the upstream spec terminology, replaced `writing-great-skills` with the model-invoked `writing-for-agents`, and taught Wayfinder to compose its new parallel research workflow.
 - `cli:` made bare `afk skills invocation` a searchable batch editor where left/right drafts manual or automatic policy and Enter applies all changes together, while explicit `enable|disable` commands remain available for one skill.
 - `docs:` gave the main README a branded AFK hero, clearer product headline, and direct links to the website, CLI reference, and changelog.
 - `cli:` renamed the read-only `afk catalog skills import-status` command to `afk catalog skills status`, without retaining a compatibility alias.

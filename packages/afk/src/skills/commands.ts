@@ -635,34 +635,47 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
     cwd: options.cwd,
     scope,
   });
+  const catalogedLockedSkills = skillNames.length > 0 || lockedSkills.length === 0
+    ? lockedSkills
+    : filterLockedSkillsToCatalog(lockedSkills, loadSkillManifest(options).items.map((item) => item.id));
   const selectedNames = options.skillsUpdateByProfile
-    ? await updateSkillNamesForProfile(skillNames[0], lockedSkills, runtime, options)
+    ? await updateSkillNamesForProfile(skillNames[0], catalogedLockedSkills, runtime, options)
     : skillNames.length > 0
       ? skillNames
       : options.skillsUpdateAll
         ? []
-        : await promptLockedSkills(lockedSkills, scope);
+        : await promptLockedSkills(catalogedLockedSkills, scope);
 
   if (!options.skillsUpdateAll && selectedNames.length === 0) {
     runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}tracked skills selected.`);
     return 1;
   }
 
-  if (options.skillsUpdateAll && lockedSkills.length === 0) {
-    runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}tracked skills found.`);
+  if (options.skillsUpdateAll && catalogedLockedSkills.length === 0) {
+    runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}cataloged tracked skills found.`);
     return 1;
   }
 
-  const commands = buildSkillUpdateCommands({
-    cwd: options.cwd,
-    scope,
-    skills: selectedNames,
-    yes: options.yes,
-  });
+  const commands = options.skillsUpdateAll
+    ? (scope === "all" ? ["global", "project"] as const : [scope])
+        .flatMap((candidateScope) => {
+          const names = catalogedLockedSkills
+            .filter((record) => record.scope === candidateScope)
+            .map((record) => record.name);
+          return names.length > 0
+            ? buildSkillUpdateCommands({ cwd: options.cwd, scope: candidateScope, skills: names, yes: options.yes })
+            : [];
+        })
+    : buildSkillUpdateCommands({
+        cwd: options.cwd,
+        scope,
+        skills: selectedNames,
+        yes: options.yes,
+      });
   const disabledByScope = new Map(commands.map((command) => {
     const names = selectedNames.length > 0
       ? selectedNames
-      : lockedSkills.filter((record) => record.scope === command.scope).map((record) => record.name);
+      : catalogedLockedSkills.filter((record) => record.scope === command.scope).map((record) => record.name);
     const storageOptions = {
       homeDir: options.homeDir,
       cwd: options.cwd,
@@ -679,6 +692,11 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
       dryRun: false,
     }, disabledByScope.get(command.scope) ?? []);
   });
+}
+
+function filterLockedSkillsToCatalog(records: LockedSkillRecord[], catalogSkillIds: string[]): LockedSkillRecord[] {
+  const normalizedCatalogSkillIds = new Set(catalogSkillIds.map((id) => id.toLowerCase()));
+  return records.filter((record) => normalizedCatalogSkillIds.has(record.name.toLowerCase()));
 }
 
 async function updateSkillNamesForProfile(

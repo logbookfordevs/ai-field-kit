@@ -97,9 +97,10 @@ When `--yes` is passed to AFK, forward `-y` to upstream. Without `--yes`, preser
 
 2. Add tracked-skill discovery for update.
    - Read the same upstream lock data that `skills update` uses where possible.
+   - Intersect lock entries with the current AFK skills catalog before selection or bulk update.
    - Global scope should discover skills tracked by the global skills lock.
    - Project scope should discover skills tracked by the current project lock.
-   - If a scope has no tracked skills, print a clear AFK-styled message and do not call upstream.
+   - If a scope has no cataloged tracked skills, print a clear AFK-styled message and do not call upstream.
 
 3. Add the searchable multi-select.
    - Reuse the existing AFK prompt styling and selection helpers where possible.
@@ -114,16 +115,16 @@ When `--yes` is passed to AFK, forward `-y` to upstream. Without `--yes`, preser
 5. Implement command execution.
    - Explicit skill args: build and run one scoped update command.
    - Picker selection: build and run one scoped update command with selected names.
-   - `--all`: build and run scoped update command without names.
-   - `--scope all --all`: run global and project updates separately.
+   - `--all`: build and run a scoped update command with every cataloged tracked name.
+   - `--scope all --all`: run global and project updates separately with their cataloged tracked names.
 
 6. Add tests.
    - Parser help includes `update` and omits `check`.
    - Default scope is `global`.
    - Explicit skill args skip selection and build `skills update <names> -g`.
    - `--scope project` builds `skills update <names> -p`.
-   - `--all` builds update commands without skill names.
-   - `--scope all --all` builds separate global and project commands.
+   - `--all` builds update commands with only cataloged locked skill names.
+   - `--scope all --all` builds separate global and project commands with scope-specific names.
    - Empty tracked-skill scope does not invoke upstream.
    - Picker receives only records for the requested scope.
 
@@ -135,15 +136,16 @@ When `--yes` is passed to AFK, forward `-y` to upstream. Without `--yes`, preser
 
 - Global tracked skills are read from `~/.agents/.skill-lock.json`.
 - Project tracked skills are read from `skills-lock.json` in the current working directory.
+- Picker, profile, and `--all` eligibility is the intersection of those locks with AFK's current `skills.json` catalog.
 - AFK builds explicit `npx --yes skills update ... -g/-p` commands and does not modify skill files, taxonomy metadata, or lockfiles.
-- The interactive path uses AFK's searchable checkbox prompt so users can filter and select multiple skills in one pass. `--all` remains the scriptable path for updating everything.
+- The interactive path uses AFK's searchable checkbox prompt so users can filter and select multiple skills in one pass. `--all` remains the scriptable path for updating every eligible cataloged skill.
 
 ## Acceptance Criteria
 
 - `afk skills update` defaults to a global searchable multi-select.
-- `afk skills update --all` updates all global tracked skills without opening the picker.
-- `afk skills update --scope project` shows only current-project tracked skills.
-- `afk skills update --scope all --all` updates global and project scopes through explicit upstream calls.
+- `afk skills update --all` updates all global skills present in both AFK's catalog and the global lock without opening the picker.
+- `afk skills update --scope project` shows only current-project locked skills that are also in AFK's catalog.
+- `afk skills update --scope all --all` updates the catalog-and-lock intersection for global and project scopes through explicit upstream calls.
 - Explicit skill names skip the picker.
 - AFK does not expose `afk skills check` in this slice.
 - AFK does not modify skill files, taxonomy metadata, or lockfiles directly during update.

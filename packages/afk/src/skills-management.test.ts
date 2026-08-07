@@ -2060,7 +2060,58 @@ test("runSkillsCommand update --all skips upstream when no tracked skills exist"
   });
 
   assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("No global tracked skills found."));
+  assert.ok(output.join("\n").includes("No global cataloged tracked skills found."));
+});
+
+test("runSkillsCommand update --scope all delegates cataloged locked skills by scope", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-update-catalog-all-"));
+  const homeDir = join(root, "home");
+  writeGlobalSkillLock(homeDir, {
+    "global-cataloged": {
+      source: "owner/global-cataloged",
+      sourceType: "github",
+      skillPath: "skills/global-cataloged/SKILL.md",
+    },
+    foreign: {
+      source: "owner/foreign",
+      sourceType: "github",
+      skillPath: "skills/foreign/SKILL.md",
+    },
+  });
+  writeProjectSkillLock(join(root, "project"), {
+    "project-cataloged": {
+      source: "owner/project-cataloged",
+      sourceType: "github",
+      skillPath: "skills/project-cataloged/SKILL.md",
+    },
+  });
+  writeSkillManifest(homeDir, ["global-cataloged", "project-cataloged"]);
+  const spawned: Array<{ command: string; args: string[] }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: () => undefined,
+      stderr: () => undefined,
+    },
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "update"], runtime, {
+    ...baseOptions(root),
+    skillsUpdateAll: true,
+    skillsUpdateScope: "all",
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["--yes", "skills", "update", "global-cataloged", "-g"],
+  }, {
+    command: "npx",
+    args: ["--yes", "skills", "update", "project-cataloged", "-p"],
+  }]);
 });
 
 test("runSkillsCommand update explicit names invokes global update by default", async () => {
@@ -2109,6 +2160,7 @@ test("runSkillsCommand update selects tracked profile skills and preserves disab
       skillFolderHash: "abc",
     },
   });
+  writeSkillManifest(homeDir, ["demo"]);
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
   writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({

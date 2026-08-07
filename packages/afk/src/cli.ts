@@ -12,6 +12,7 @@ import { runUiCommand } from "./ui.js";
 import { selectCatalogSkillsLobbyRoute, selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import { packageVersion, runUpdateCommand } from "./update-check.js";
+import { runAfkOpen } from "./open.js";
 import { isPromptExit } from "./menu.js";
 import type {
   AgentId,
@@ -54,7 +55,7 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
   }
 }
 
-async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
+export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
   if (shouldOpenCompassLobby(argv, env)) {
     const route = await selectCompassLobbyRoute(runtime);
     return runCliWithRuntime(route, env, runtime);
@@ -89,6 +90,10 @@ async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime
 
   if (isRefreshCommand(key)) {
     return runRefresh(runtime, options);
+  }
+
+  if (key === "open") {
+    return runAfkOpen(runtime, options);
   }
 
   if (key === "catalog") {
@@ -226,6 +231,13 @@ const setupAreaOptions = [
 ];
 
 const commandHelps: Record<string, CommandHelp> = {
+  open: {
+    title: "AFK open",
+    summary: "Open the user AFK folder.",
+    usage: "afk open",
+    options: ["--code                            Open in VS Code instead of Finder"],
+    examples: ["afk open", "afk open --code"],
+  },
   setup: {
     title: "AFK setup",
     summary: "Guided setup for rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks.",
@@ -463,7 +475,7 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk setup agents",
-      "afk setup agents --custom-agent goal-scout --agent codex --yes",
+      "afk setup agents --custom-agent notion-assistant --agent codex --yes",
       "afk setup agents --all --agent claude --agent pi --yes",
       "afk setup agents --local --all",
     ],
@@ -540,7 +552,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "enable <folder>                   Move a disabled global skill back to active",
       "invocation [disable|enable] [folder] Toggle auto invocation metadata",
       "delete [folder]                   Permanently delete one or more skills",
-      "update [skills...]                Update selected or all tracked skills",
+      "update [skills...]                Update selected or all cataloged tracked skills",
       "profiles <command>                Manage skill focus profiles",
       "categorize                        Create or update skills.json categories with Codex",
     ],
@@ -785,12 +797,12 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills update": {
     title: "AFK skills update",
-    summary: "Choose tracked skills with AFK, then delegate updates to the official skills CLI.",
+    summary: "Choose cataloged skills with AFK, then use their lock metadata to delegate updates.",
     usage: "afk skills update [skills...] [options]",
     options: [
-      "--scope global|project|all        Choose tracked skills to update (default: global)",
-      "--all                             Update every tracked skill in the selected scope",
-      "--profile                         Choose a global profile and update its tracked skills",
+      "--scope global|project|all        Choose cataloged tracked skills (default: global)",
+      "--all                             Update every cataloged tracked skill in scope",
+      "--profile                         Update cataloged tracked skills in a global profile",
       "--yes, -y                         Forward non-interactive confirmation to skills update",
     ],
     examples: [
@@ -1189,6 +1201,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsUncategorized = false;
   let skillOpenApp: SkillOpenApp = "finder";
   let skillOpenTarget: "file" | "folder" = "file";
+  let afkOpenApp: "finder" | "code" = "finder";
   let skillCategorizationMode: SkillCategorizationMode | undefined;
   let skillCategorizationRunner: SkillCategorizationRunner = "codex-exec";
   let skillCategorizationInstruction = "";
@@ -1460,6 +1473,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--empty") {
       empty = true;
+      continue;
+    }
+
+    if (arg === "--code") {
+      if (key !== "open") {
+        return { help: false, kind: "error", error: "Unknown option: --code" };
+      }
+
+      afkOpenApp = "code";
       continue;
     }
 
@@ -1816,6 +1838,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsUncategorized,
       skillOpenApp,
       skillOpenTarget,
+      afkOpenApp,
       skillCategorizationMode,
       skillCategorizationRunner,
       skillCategorizationInstruction,
@@ -2156,6 +2179,7 @@ Guided setup router for AI Field Kit.
 Usage:
   afk --version
   afk
+  afk open
   afk refresh [category...] [options]
   afk catalog [options]
   afk setup [options]
@@ -2179,6 +2203,7 @@ Usage:
 
 Common paths:
   afk                         Open the interactive lobby when your terminal supports prompts
+  afk open                    Open the user AFK folder
   afk setup                   Prepare rules, skills, Custom Agents, MCPs, plugins, and hooks
   afk refresh                 Update the local catalog cache
   afk catalog                 Edit writable local catalog files

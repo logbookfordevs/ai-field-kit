@@ -198,6 +198,7 @@ or delegated command. Read-only commands do not need it.
 | Command | Purpose | State or delegation |
 |---|---|---|
 | `afk` | Open the interactive AFK lobby. | Routes to another command; the selected command owns any effects. |
+| `afk open` | Open the user AFK folder at `~/.agents/afk`; pass `--code` to use VS Code. | Read-only GUI handoff. |
 | `afk --version`, `afk -v` | Print the installed AFK version. | Read-only. |
 | `afk <command> --help`, `-h` | Print command-specific usage, options, and examples. | Read-only. |
 | `afk setup` | Preview or apply rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks. | AFK writes owned files and delegates ecosystem installs. |
@@ -346,7 +347,7 @@ can be selected with `--agent`; exact custom roots require both
 | `afk skills enable [folder]` | Move disabled skill folders back to active storage. | Omit the folder for an interactive picker; supports `--dry-run`. |
 | `afk skills invocation [disable|enable] [folder]` | Review or change skill invocation policy. | The bare command opens a searchable batch editor; explicit actions change one skill. Both update matching shared `skills.json` policy and installed host metadata; supports `--dry-run`. |
 | `afk skills delete [folder]` | Permanently remove selected skill folders. | `--catalog-only`, `--profile`, storage filters, `--yes`, and `--dry-run`; profile deletion mode deletes referenced folders, not the profile definition. |
-| `afk skills update [skills...]` | Select tracked skills and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
+| `afk skills update [skills...]` | Select AFK-cataloged skills with lock metadata and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
 | `afk skills categorize` | Ask `codex exec` to create or update catalog categorization metadata. | `--mode` with `append-missing` or `recategorize-all`, `--instruction`, `--runner codex-exec`, `--dry-run`. |
 | `afk skills profiles <command>` | Read or apply profile runtime state. | Detailed below. |
 
@@ -1311,9 +1312,11 @@ installer does not accept arbitrary destination directories.
 
 `afk skills update --profile` selects a global profile interactively, or use
 `afk skills update <profile> --profile` to select it directly. AFK updates
-the profile members that are tracked by the skills lock and reports untracked
-members it skips. Upgrade preserves active and disabled storage state even
-though the upstream update flow reinstalls changed skill content.
+the profile members that are present in the AFK catalog and tracked by the
+skills lock, and reports other members it skips. The picker and `--all` use the
+same catalog-and-lock intersection; use the official skills CLI directly for
+locked skills outside AFK's catalog. Update preserves active and disabled
+storage state even though the upstream flow reinstalls changed skill content.
 
 AFK uses one skills catalog file for both setup metadata and skill-management
 enrichment:

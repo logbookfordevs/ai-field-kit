@@ -38,14 +38,16 @@ The route is complete when the response contains one exact invocation, or explic
 | Ask another local model for a preserved second opinion | `afk-ask` |
 | Produce a critical before-or-after engineering briefing | `facts` |
 | Restate the last answer plainly | `bro` |
+| Collect missing decisions from another person | `to-questionnaire` |
 | Learn a topic across multiple sessions | `teach` |
 | Design a motion-led immersive frontend | `afk-animated-driven-frontend` |
 | Choose a UI registry, component primitive, or headless foundation | `afk-ui-registry-preferences` |
 | Review motion implementation | `review-animations` |
 | Name a motion effect from a vague description | `animation-vocabulary` |
+| Animate text in a frontend | `animate-text` |
 | Create a general, plan, or architecture HTML artifact | `html`, `html-plan`, or `html-diagram` |
 | Create a Plannotator-themed visual explanation | `plannotator-visual-explainer` |
 | Analyze accumulated Plannotator plan feedback | `plannotator-compound` |
-| Design or revise a predictable skill | `writing-great-skills` |
+| Design or revise predictable agent instructions | `writing-for-agents` |
 
 Recommend only skills available in the current host. If the best route is unavailable, name the missing skill and give the closest available invocation.

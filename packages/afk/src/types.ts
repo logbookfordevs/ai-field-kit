@@ -92,6 +92,7 @@ export type CliOptions = {
   skillsUncategorized?: boolean;
   skillOpenApp?: SkillOpenApp;
   skillOpenTarget?: "file" | "folder";
+  afkOpenApp?: "finder" | "code";
   skillCategorizationMode?: SkillCategorizationMode | undefined;
   skillCategorizationRunner?: SkillCategorizationRunner;
   skillCategorizationInstruction?: string;
