@@ -622,6 +622,20 @@
             "composes": []
         },
         {
+            "id": "afk-static-check",
+            "label": "AFK - Static Check",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-static-check",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "grilling",
             "label": "Grilling",
             "source": "https://github.com/mattpocock/skills",
