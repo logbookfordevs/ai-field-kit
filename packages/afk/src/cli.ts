@@ -55,7 +55,7 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
   }
 }
 
-async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
+export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
   if (shouldOpenCompassLobby(argv, env)) {
     const route = await selectCompassLobbyRoute(runtime);
     return runCliWithRuntime(route, env, runtime);
@@ -234,8 +234,8 @@ const commandHelps: Record<string, CommandHelp> = {
     title: "AFK open",
     summary: "Open the user AFK folder.",
     usage: "afk open",
-    options: [],
-    examples: ["afk open"],
+    options: ["--code                            Open in VS Code instead of Finder"],
+    examples: ["afk open", "afk open --code"],
   },
   setup: {
     title: "AFK setup",
@@ -1197,6 +1197,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let skillsUncategorized = false;
   let skillOpenApp: SkillOpenApp = "finder";
   let skillOpenTarget: "file" | "folder" = "file";
+  let afkOpenApp: "finder" | "code" = "finder";
   let skillCategorizationMode: SkillCategorizationMode | undefined;
   let skillCategorizationRunner: SkillCategorizationRunner = "codex-exec";
   let skillCategorizationInstruction = "";
@@ -1455,6 +1456,15 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--empty") {
       empty = true;
+      continue;
+    }
+
+    if (arg === "--code") {
+      if (key !== "open") {
+        return { help: false, kind: "error", error: "Unknown option: --code" };
+      }
+
+      afkOpenApp = "code";
       continue;
     }
 
@@ -1810,6 +1820,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillsUncategorized,
       skillOpenApp,
       skillOpenTarget,
+      afkOpenApp,
       skillCategorizationMode,
       skillCategorizationRunner,
       skillCategorizationInstruction,

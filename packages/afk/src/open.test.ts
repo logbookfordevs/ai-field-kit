@@ -49,3 +49,26 @@ test("afk open reports opener failure", async () => {
   assert.equal(code, 1);
   assert.equal(errors.join("\n"), "Could not open /tmp/leo/.agents/afk.");
 });
+
+test("afk open uses the VS Code CLI with --code", async () => {
+  const calls: Array<{ command: string; args: string[] }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: () => undefined,
+      stderr: () => undefined,
+    },
+    spawn: async (command, args) => {
+      calls.push({ command, args });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runAfkOpen(runtime, {
+    homeDir: "/tmp/leo",
+    cwd: "/tmp/project",
+    afkOpenApp: "code",
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(calls, [{ command: "code", args: ["/tmp/leo/.agents/afk"] }]);
+});

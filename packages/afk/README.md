@@ -198,7 +198,7 @@ or delegated command. Read-only commands do not need it.
 | Command | Purpose | State or delegation |
 |---|---|---|
 | `afk` | Open the interactive AFK lobby. | Routes to another command; the selected command owns any effects. |
-| `afk open` | Open the user AFK folder at `~/.agents/afk`. | Read-only GUI handoff. |
+| `afk open` | Open the user AFK folder at `~/.agents/afk`; pass `--code` to use VS Code. | Read-only GUI handoff. |
 | `afk --version`, `afk -v` | Print the installed AFK version. | Read-only. |
 | `afk <command> --help`, `-h` | Print command-specific usage, options, and examples. | Read-only. |
 | `afk setup` | Preview or apply rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks. | AFK writes owned files and delegates ecosystem installs. |

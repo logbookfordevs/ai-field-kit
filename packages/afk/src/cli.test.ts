@@ -3,7 +3,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "vitest";
-import { isPromptExit, runCli } from "./cli.js";
+import { isPromptExit, runCli, runCliWithRuntime } from "./cli.js";
+import type { Runtime } from "./types.js";
 import { localManifestDir } from "./manifest.js";
 
 test("runCli prints package version for version flags", async () => {
@@ -63,6 +64,26 @@ test("runCli prints contextual open help", async () => {
   assert.ok(text.includes("AFK open"));
   assert.ok(text.includes("afk open"));
   assert.ok(text.includes("Open the user AFK folder"));
+  assert.ok(text.includes("--code"));
+});
+
+test("runCli accepts --code for afk open", async () => {
+  const calls: Array<{ command: string; args: string[] }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: () => undefined,
+      stderr: () => undefined,
+    },
+    spawn: async (command, args) => {
+      calls.push({ command, args });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runCliWithRuntime(["open", "--code"], { HOME: "/tmp/leo" }, runtime);
+
+  assert.equal(code, 0);
+  assert.deepEqual(calls, [{ command: "code", args: ["/tmp/leo/.agents/afk"] }]);
 });
 
 test("runCli prints contextual update help", async () => {
