@@ -4,6 +4,7 @@ AI Field Kit provides portable building blocks that can be installed across supp
 
 ## Custom Agents
 
+teste
 **Custom Agent**:
 A reusable AFK-defined agent role whose identity and instructions are independent of any single harness.
 _Avoid_: Sub-agent, harness-specific agent
