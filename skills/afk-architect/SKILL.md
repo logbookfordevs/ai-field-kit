@@ -1,6 +1,6 @@
 ---
 name: afk-architect
-description: Coordinate substantive work through focused teammates. Use when delegation, parallelism, fresh context, or context isolation would materially improve a task.
+description: Coordinate substantive work through focused teammates. Use when delegation, parallelism, fresh context, or context isolation would materially improve a task, or when another skill or the user requests subagents.
 disable-model-invocation: false
 ---
 
