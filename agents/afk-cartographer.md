@@ -1,5 +1,5 @@
 ---
-name: afk-cartographer
+name: cartographer
 description: Maps relevant code, dependencies, constraints, and evidence through focused read-only investigation.
 models:
   codex: gpt-5.6-luna

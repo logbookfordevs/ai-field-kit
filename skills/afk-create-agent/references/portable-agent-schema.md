@@ -19,7 +19,8 @@ Use this reference while authoring a Portable Agent File or its catalog entry.
 }
 ```
 
-- `id` must equal the portable file's `name`.
+- `id` owns catalog selection and the installed filename; it may differ from
+  the portable file's harness-facing `name`.
 - `label` is presentation text; the portable file owns runtime description and
   behavior.
 - `source` is an HTTP(S) URL, absolute path, or path relative to the selected

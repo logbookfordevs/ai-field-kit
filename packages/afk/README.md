@@ -1012,7 +1012,8 @@ available to automatic model discovery.
 
 The catalog stores discovery metadata and a direct Portable Agent File source;
 the linked Markdown file owns the runtime description and behavior. The
-catalog `id` must match the portable file's `name`. Custom Agents have no
+catalog `id` owns selection and the installed filename, while the portable
+file's `name` owns the harness-facing identity. Custom Agents have no
 default-selection field: interactive setup starts with every item unchecked,
 and scripted setup requires `--custom-agent <id>` or `--all`. Portable files
 may declare shared AFK skill names for native per-agent configuration; Custom
@@ -1190,8 +1191,9 @@ afk setup --preset afk-architect --agent codex --yes
 `--yes` confirms but does not select; the preset command explicitly selects
 its declared bundle. AFK Architect remains usable as a skill-only baseline if
 the portable agents are not installed. Its optimized bundle adds
-`afk-cartographer` for discovery, `afk-builder` for bounded writes, and
-`afk-pathfinder` for difficult judgment, verification, or direct implementation. Pi requires
+Cartographer for discovery, Builder for bounded writes, and Pathfinder for
+difficult judgment, verification, or direct implementation. Their catalog IDs
+and installed filenames retain the `afk-` namespace. Pi requires
 `pi-subagents`; AFK suggests
 the extension command and skips Pi when it is unavailable rather than
 installing it automatically. For the full contract, see

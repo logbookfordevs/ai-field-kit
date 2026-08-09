@@ -23,6 +23,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `agents:` separated stable catalog and installation IDs from harness-facing names, so the Architect crew is invoked as Cartographer, Builder, and Pathfinder while existing `afk-*` files continue to update in place.
 - `cli:` made `afk skills update` list and bulk-update only skills present in both AFK's catalog and the upstream skills lock, leaving non-cataloged lock entries to the official skills CLI.
 - `skills:` aligned Code Grill with `grilling`'s frontier-based rounds, bounded by the named coding slice rather than a numeric question or trade-off limit.
 - `skills:` updated the AFK Code Review fork to use the upstream spec terminology, replaced `writing-great-skills` with the model-invoked `writing-for-agents`, and taught Wayfinder to compose its new parallel research workflow.

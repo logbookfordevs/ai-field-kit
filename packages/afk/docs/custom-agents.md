@@ -41,9 +41,9 @@ that skill and three reusable role contracts:
 
 | Agent | Stable responsibility |
 |---|---|
-| `afk-cartographer` | Read-only discovery, evidence gathering, and change maps. |
-| `afk-builder` | Bounded implementation with explicit file ownership. |
-| `afk-pathfinder` | Difficult judgment, verification, and direct implementation when a handoff would add more cost than value. |
+| `cartographer` | Read-only discovery, evidence gathering, and change maps. |
+| `builder` | Bounded implementation with explicit file ownership. |
+| `pathfinder` | Difficult judgment, verification, and direct implementation when a handoff would add more cost than value. |
 
 These agents are the bones of a workflow, not one agent per stage. A
 coordinator can instantiate the same contract several times with distinct
@@ -69,8 +69,9 @@ Portable Agent File:
 }
 ```
 
-The catalog `id` must match the Portable Agent File's `name`. `label` is only
-for catalog presentation; the portable file owns runtime description and
+The catalog `id` owns selection and the installed filename. The Portable Agent
+File's `name` owns the harness-facing identity. They may differ. `label` is
+only for catalog presentation; the portable file owns runtime description and
 behavior.
 
 Relative `source` values resolve from the selected custom source root. For a
@@ -122,7 +123,7 @@ Use the Notion CLI and preserve existing content.
 
 | Field | Required | Meaning |
 |---|---:|---|
-| `name` | Yes | Stable agent identity using lowercase letters, numbers, hyphens, or underscores. |
+| `name` | Yes | Harness-facing agent identity using lowercase letters, numbers, hyphens, or underscores. |
 | `description` | Yes | Harness-facing guidance for when the agent should be used. |
 | `models` | No | Exact model identifier or native alias per harness. Omission inherits the harness model. |
 | `effort` | No | Exact per-harness effort or thinking value. Omission inherits the harness setting. |
@@ -160,9 +161,9 @@ behavior. Omitting `skills` leaves agent-specific skill configuration unset.
 
 | Harness | Personal scope | Project scope |
 |---|---|---|
-| Codex | `~/.codex/agents/<name>.toml` | `.codex/agents/<name>.toml` |
-| Claude Code | `~/.claude/agents/<name>.md` | `.claude/agents/<name>.md` |
-| Pi | `~/.pi/agent/agents/<name>.md` | `.pi/agents/<name>.md` |
+| Codex | `~/.codex/agents/<catalog-id>.toml` | `.codex/agents/<catalog-id>.toml` |
+| Claude Code | `~/.claude/agents/<catalog-id>.md` | `.claude/agents/<catalog-id>.md` |
+| Pi | `~/.pi/agent/agents/<catalog-id>.md` | `.pi/agents/<catalog-id>.md` |
 
 AFK owns these translations and writes selected source state over the native
 target files. It does not merge or preserve manual edits in generated targets.

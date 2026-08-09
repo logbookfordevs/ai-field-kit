@@ -13,16 +13,19 @@ test("packaged AFK Architect agents are valid Portable Agent Contracts", () => {
   };
   const expected = {
     "afk-cartographer": {
+      name: "cartographer",
       models: { codex: "gpt-5.6-luna", claude: "sonnet", pi: "openai-codex/gpt-5.6-luna" },
       effort: { codex: "max", claude: "low", pi: "xhigh" },
       access: "read-only",
     },
     "afk-builder": {
+      name: "builder",
       models: { codex: "gpt-5.6-terra", claude: "sonnet", pi: "openrouter/xai/grok-4.5" },
       effort: { codex: "high", claude: "medium", pi: "medium" },
       access: "workspace-write",
     },
     "afk-pathfinder": {
+      name: "pathfinder",
       models: { codex: "gpt-5.6-sol", claude: "opus", pi: "openrouter/moonshotai/kimi-k3" },
       effort: { codex: "high", claude: "high", pi: "high" },
       access: "workspace-write",
@@ -34,8 +37,8 @@ test("packaged AFK Architect agents are valid Portable Agent Contracts", () => {
   assert.deepEqual(items.map((item) => item.id), expectedIds);
   for (const item of items) {
     const portable = parsePortableAgentFile(readFileSync(new URL(`../../../${item.source}`, import.meta.url), "utf8"));
-    assert.equal(portable.name, item.id);
     const contract = expected[item.id as keyof typeof expected];
+    assert.equal(portable.name, contract.name);
     assert.deepEqual(portable.models, contract.models);
     assert.deepEqual(portable.effort, contract.effort);
     assert.equal(portable.access, contract.access);
@@ -159,6 +162,31 @@ test("syncCustomAgents overwrites native targets and renders per-harness formats
   assert.ok(output.some((line) => line.includes("Wrote codex")));
 });
 
+test("syncCustomAgents keeps catalog ids as filenames while rendering portable agent names", async () => {
+  const homeDir = localHome();
+  const cwd = mkdtempSync(join(tmpdir(), "afk-agent-project-"));
+  const source = join(cwd, "afk-builder.md");
+  writeFileSync(source, portableAgent({ name: "builder" }));
+  writeAgentCatalog(homeDir, source, "afk-builder");
+  installPiSubagents(homeDir);
+
+  const code = await syncCustomAgents(runtime([]), {
+    ...options(homeDir, cwd, ["codex", "claude", "pi"]),
+    selectedCustomAgentIds: ["afk-builder"],
+  });
+
+  assert.equal(code, 0);
+  const codexPath = join(homeDir, ".codex", "agents", "afk-builder.toml");
+  const claudePath = join(homeDir, ".claude", "agents", "afk-builder.md");
+  const piPath = join(homeDir, ".pi", "agent", "agents", "afk-builder.md");
+  assert.match(readFileSync(codexPath, "utf8"), /^name = "builder"/);
+  assert.match(readFileSync(claudePath, "utf8"), /name: builder/);
+  assert.match(readFileSync(piPath, "utf8"), /name: builder/);
+  assert.equal(existsSync(join(homeDir, ".codex", "agents", "builder.toml")), false);
+  assert.equal(existsSync(join(homeDir, ".claude", "agents", "builder.md")), false);
+  assert.equal(existsSync(join(homeDir, ".pi", "agent", "agents", "builder.md")), false);
+});
+
 test("syncCustomAgents blocks missing required capabilities but reports optional omissions", async () => {
   const homeDir = localHome();
   const cwd = mkdtempSync(join(tmpdir(), "afk-agent-project-"));
@@ -225,6 +253,7 @@ test("syncCustomAgents reports an unknown explicit catalog id", async () => {
 });
 
 function portableAgent(overrides: {
+  name?: string;
   description?: string;
   instructions?: string;
   models?: Record<string, string>;
@@ -236,7 +265,7 @@ function portableAgent(overrides: {
 } = {}): string {
   const lines = [
     "---",
-    "name: notion_assistant",
+    `name: ${overrides.name ?? "notion_assistant"}`,
     `description: ${JSON.stringify(overrides.description ?? "Works with Notion content.")}`,
   ];
   if (overrides.models) {
@@ -271,12 +300,12 @@ function localHome(): string {
   return mkdtempSync(join(tmpdir(), "afk-agent-home-"));
 }
 
-function writeAgentCatalog(homeDir: string, source: string): void {
+function writeAgentCatalog(homeDir: string, source: string, id = "notion_assistant"): void {
   const directory = localManifestDir(homeDir);
   mkdirSync(directory, { recursive: true });
   writeFileSync(join(directory, "agents.json"), `${JSON.stringify({
     version: 1,
-    items: [{ id: "notion_assistant", label: "Notion Assistant", source }],
+    items: [{ id, label: "Notion Assistant", source }],
   }, null, 2)}\n`);
 }
 

@@ -12,7 +12,7 @@ Create a source-owned Portable Agent File and connect it to an AFK
 ## 1. Shape the agent
 
 Inspect the target catalog and any existing agent with the requested identity.
-Establish its stable name, delegation description, runtime instructions, target
+Establish its catalog ID, harness-facing name, delegation description, runtime instructions, target
 harnesses, and only the optional controls the user actually wants: model,
 effort, nicknames, skills, access, or capabilities.
 
@@ -35,8 +35,9 @@ body is sufficient for a fresh-context agent to perform the intended role.
 
 ## 3. Register the source
 
-Add an `agents.json` item with the same `id` as the portable file's `name`, a
-human label, and a repository-relative path to the file. Preserve unrelated
+Add an `agents.json` item with a stable installation `id`, a human label, and a
+repository-relative path to the file. The portable file's `name` may differ
+when the harness-facing identity should be cleaner. Preserve unrelated
 catalog entries. Edit the source catalog when the definition is shared; use
 `afk catalog agents add` when the user explicitly wants a writable local cache
 entry.

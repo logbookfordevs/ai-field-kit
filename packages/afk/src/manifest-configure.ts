@@ -503,7 +503,7 @@ async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<Edita
 
 async function promptCustomAgent(prompts: ManifestConfigurePrompts, existing?: CustomAgentManifestItem): Promise<CustomAgentManifestItem> {
   const source = await prompts.input({ message: "Portable Agent File URL or path", default: existing?.source ?? "", required: true });
-  const id = await prompts.input({ message: "Agent id (must match the file name field)", default: existing?.id ?? inferId(source), required: true });
+  const id = await prompts.input({ message: "Agent id (used for selection and installed filename)", default: existing?.id ?? inferId(source), required: true });
   const label = await prompts.input({ message: "Agent label", default: existing?.label ?? inferLabel(id), required: true });
   return { id, label, source };
 }

@@ -1,5 +1,5 @@
 ---
-name: afk-builder
+name: builder
 description: Implements bounded, well-owned changes and verifies the behavior within its assigned scope.
 models:
   codex: gpt-5.6-terra

@@ -78,9 +78,6 @@ export async function syncCustomAgents(runtime: Runtime, options: CliOptions): P
     let portable: PortableAgent;
     try {
       portable = parsePortableAgentFile(await loadPortableAgentSource(item.source, options.cwd));
-      if (portable.name !== item.id) {
-        throw new Error(`catalog id ${item.id} does not match Portable Agent name ${portable.name}`);
-      }
     } catch (error) {
       failed = true;
       runtime.io.stderr(`Could not load Custom Agent ${item.id}: ${errorMessage(error)}`);
@@ -88,7 +85,7 @@ export async function syncCustomAgents(runtime: Runtime, options: CliOptions): P
     }
 
     for (const harness of availableHarnesses) {
-      const result = provisioningTarget(portable, harness, options);
+      const result = provisioningTarget(portable, item.id, harness, options);
       if (result.kind === "blocked") {
         failed = true;
         const reasons = [
@@ -255,6 +252,7 @@ function uniqueHarnesses(agents: AgentId[]): CustomAgentHarness[] {
 
 function provisioningTarget(
   agent: PortableAgent,
+  catalogId: string,
   harness: CustomAgentHarness,
   options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,
 ): { kind: "ready"; target: ProvisioningTarget } | { kind: "blocked"; missingCapabilities: string[] } {
@@ -270,7 +268,7 @@ function provisioningTarget(
   const effectiveCapabilities = declared.filter(isAvailable);
   const omittedCapabilities = agent.capabilities.optional.filter((capability) => !isAvailable(capability));
   const omittedMetadata = harness === "codex" || agent.nicknames.length === 0 ? [] : ["nicknames"];
-  const path = customAgentTargetPath(agent.name, harness, options);
+  const path = customAgentTargetPath(catalogId, harness, options);
   const skillsRoot = join(options.homeDir, ".agents", "skills");
   const content = harness === "codex"
     ? renderCodexAgent(agent, skillsRoot)
@@ -281,28 +279,28 @@ function provisioningTarget(
 }
 
 export function customAgentTargetPath(
-  name: string,
+  catalogId: string,
   harness: CustomAgentHarness,
   options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">,
 ): string {
   if (options.setupScope === "project") {
     if (harness === "codex") {
-      return join(options.cwd, ".codex", "agents", `${name}.toml`);
+      return join(options.cwd, ".codex", "agents", `${catalogId}.toml`);
     }
     if (harness === "claude") {
-      return join(options.cwd, ".claude", "agents", `${name.replaceAll("_", "-")}.md`);
+      return join(options.cwd, ".claude", "agents", `${catalogId.replaceAll("_", "-")}.md`);
     }
-    return join(options.cwd, ".pi", "agents", `${name}.md`);
+    return join(options.cwd, ".pi", "agents", `${catalogId}.md`);
   }
 
   if (harness === "codex") {
     const codexHome = process.env.CODEX_HOME || join(options.homeDir, ".codex");
-    return join(codexHome, "agents", `${name}.toml`);
+    return join(codexHome, "agents", `${catalogId}.toml`);
   }
   if (harness === "claude") {
-    return join(options.homeDir, ".claude", "agents", `${name.replaceAll("_", "-")}.md`);
+    return join(options.homeDir, ".claude", "agents", `${catalogId.replaceAll("_", "-")}.md`);
   }
-  return join(piAgentDir(options.homeDir), "agents", `${name}.md`);
+  return join(piAgentDir(options.homeDir), "agents", `${catalogId}.md`);
 }
 
 async function loadPortableAgentSource(source: string, cwd: string): Promise<string> {
