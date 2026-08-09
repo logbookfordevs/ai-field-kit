@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v1.2.2 - 2026-08-09
+
 ### Added
 
 - `cli:` added exact catalog preset bundles through `afk setup --preset <id>`, with declared area order, visible membership, branded bundle summaries, continued setup after area failures, and a non-zero result when required provisioning is incomplete.
