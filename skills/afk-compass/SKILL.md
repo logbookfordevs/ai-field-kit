@@ -28,7 +28,7 @@ The route is complete when the response contains one exact invocation, or explic
 | Build a throwaway experiment to answer one design question | `prototype` |
 | Synthesize the conversation into an agent-ready spec | `afk-to-spec` |
 | Slice a plan or spec into dependency-aware tickets | `afk-to-tickets` |
-| Implement existing checkpointed tickets | `afk-implement-tasks` |
+| Implement existing checkpointed tickets | `afk-implement-tickets` |
 | Report lint and typecheck findings without fixes | `afk-static-check` |
 | Save or resume disposable session context | `handoff` or `afk-pickup` |
 | Coordinate substantive work with native teammates in the current session | `afk-architect` |

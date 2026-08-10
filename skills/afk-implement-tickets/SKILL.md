@@ -1,11 +1,11 @@
 ---
-name: afk-implement-tasks
+name: afk-implement-tickets
 description: Implement checkpointed ticket files with statuses, review gates, handoff notes, parallel-agent coordination, interruption recovery, and durable progress state.
 metadata:
   short-description: Implement ticket files with status, validation, and handoff tracking.
 ---
 
-# Implement Tasks
+# Implement Tickets
 Keep implementation state visible in the ticket file itself. The ticket file is the source of truth for its slice.
 
 ## Activation

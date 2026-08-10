@@ -16,6 +16,10 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
 - `skills:` added Emil Kowalski's optional model-invoked `animate` utility for implementing purposeful interface motion.
 
+### Changed
+
+- `skills:` renamed `afk-implement-tasks` to `afk-implement-tickets`, aligning the implementation workflow with the ticket files produced by `afk-to-tickets`.
+
 ### Fixed
 
 - `rules:` made the bundled AFK rules layer fetch its files from the source repository and replaced missing-local-file stack traces with guidance to use a full URL or `--source <owner/repo>`.

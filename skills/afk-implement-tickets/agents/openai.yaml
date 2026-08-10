@@ -1,4 +1,4 @@
 interface:
-  display_name: "Implement Tasks"
+  display_name: "Implement Tickets"
   short_description: "Implement ticket files with statuses, reviews, validation, and handoffs."
   default_prompt: "Implement the existing ticket files."

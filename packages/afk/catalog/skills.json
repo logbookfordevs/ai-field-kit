@@ -106,12 +106,12 @@
             "composes": []
         },
         {
-            "id": "afk-implement-tasks",
-            "label": "AFK - Implement Tasks",
+            "id": "afk-implement-tickets",
+            "label": "AFK - Implement Tickets",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-implement-tasks",
+                "afk-implement-tickets",
                 "--global"
             ],
             "default": true,
