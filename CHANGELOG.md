@@ -16,6 +16,10 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
 - `skills:` added Emil Kowalski's optional model-invoked `animate` utility for implementing purposeful interface motion.
 
+### Fixed
+
+- `rules:` made the bundled AFK rules layer fetch its rule and artifact files from the source repository, so release installations no longer look for unpackaged local files.
+
 ## v1.2.2 - 2026-08-09
 
 ### Added
