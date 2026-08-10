@@ -19,6 +19,7 @@ This changelog tracks meaningful updates by version and date.
 ### Changed
 
 - `skills:` renamed `afk-implement-tasks` to `afk-implement-tickets`, aligning the implementation workflow with the ticket files produced by `afk-to-tickets`.
+- `skills:` made AFK Architect announce the selected crew member before delegation.
 
 ### Fixed
 

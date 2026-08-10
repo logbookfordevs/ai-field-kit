@@ -4,6 +4,8 @@ Prefer an available crew member when its role and configuration fit the assignme
 
 Crew roles are foundations: specialize a fitting crew member with the assignment's skill or instructions rather than requiring an exact named role.
 
+Before spawning a crew member, tell the user which crew member you selected.
+
 | Crew member | Native fallback |
 |---|---|
 | `cartographer` | Read-only scout with low reasoning effort and fresh context. |
