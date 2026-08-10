@@ -51,7 +51,8 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
       return 130;
     }
 
-    throw error;
+    runtime.io.stderr(`AFK could not complete the command:\n${error instanceof Error ? error.message : String(error)}`);
+    return 1;
   }
 }
 

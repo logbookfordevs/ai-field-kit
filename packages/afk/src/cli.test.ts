@@ -98,6 +98,23 @@ test("runCli prints contextual update help", async () => {
   assert.ok(text.includes("afk update --dry-run"));
 });
 
+test("runCli reports operational errors without exposing a stack trace", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-cli-error-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "rules.json"), "{ invalid json\n");
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(["show", "rules"], { HOME: homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 1);
+  assert.ok(text.includes("AFK could not complete the command:"));
+  assert.ok(text.includes("JSON"));
+  assert.ok(!text.includes("node:fs"));
+  assert.ok(!text.includes("\n    at "));
+});
+
 test("runCli exposes Custom Agents as a first-class command family", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["setup", "agents", "--help"]));

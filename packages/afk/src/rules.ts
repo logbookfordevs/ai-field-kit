@@ -434,7 +434,15 @@ async function loadRulesContent(options: Pick<CliOptions, "homeDir" | "repoDir" 
 }
 
 async function readLocalRule(repoDir: string, file: string): Promise<string> {
-  return readText(isAbsolute(file) ? file : join(repoDir, file));
+  const path = isAbsolute(file) ? file : join(repoDir, file);
+  if (!pathExists(path) || !isFile(path)) {
+    throw new Error([
+      `Local rules source not found: ${path}`,
+      "Relative rule sources are treated as local files.",
+      "If the file is remote, use a full URL in rules.json or run setup with --source <owner/repo>.",
+    ].join("\n"));
+  }
+  return readText(path);
 }
 
 function localRulesPath(url: string): string {

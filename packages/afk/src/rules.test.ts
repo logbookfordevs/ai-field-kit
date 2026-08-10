@@ -89,6 +89,31 @@ test("rule source loader does not expose private GitHub URLs in errors", async (
   }
 });
 
+test("rule source loader explains how to repair a missing local catalog source", async () => {
+  const repoDir = mkdtempSync(join(tmpdir(), "afk-missing-local-rule-"));
+  const loader = createRuleSourceLoader();
+
+  try {
+    await assert.rejects(
+      loader.load("rules/MISSING.md", repoDir, false),
+      (error: Error) => {
+        assert.equal(
+          error.message,
+          [
+            `Local rules source not found: ${join(repoDir, "rules", "MISSING.md")}`,
+            "Relative rule sources are treated as local files.",
+            "If the file is remote, use a full URL in rules.json or run setup with --source <owner/repo>.",
+          ].join("\n"),
+        );
+        return true;
+      },
+    );
+  } finally {
+    loader.cleanup();
+    rmSync(repoDir, { recursive: true, force: true });
+  }
+});
+
 test("planRulesSync installs shared global rule files and expands their directory placeholder", () => {
   const operations = planRulesSync(
     {
