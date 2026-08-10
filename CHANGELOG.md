@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
+
 ## v1.2.2 - 2026-08-09
 
 ### Added

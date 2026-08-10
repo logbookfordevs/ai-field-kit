@@ -3,8 +3,8 @@
   "mode": "context",
   "alwaysOn": [
     "grilling",
-    "afk-doc-craft",
     "code-simplification",
+    "design-artifact",
     "diagnosing-bugs",
     "truss-evaluation"
   ],
@@ -18,6 +18,17 @@
         "react-components",
         "stitch-loop",
         "stitch-remotion"
+      ]
+    },
+    {
+      "id": "html",
+      "name": "HTML",
+      "skills": [
+        "html",
+        "html-wireframe",
+        "html-prototype",
+        "html-plan",
+        "html-diagram"
       ]
     },
     {

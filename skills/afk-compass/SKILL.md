@@ -46,6 +46,7 @@ The route is complete when the response contains one exact invocation, or explic
 | Review motion implementation | `review-animations` |
 | Name a motion effect from a vague description | `animation-vocabulary` |
 | Animate text in a frontend | `animate-text` |
+| Audit and polish the interaction details of an interface | `make-interfaces-feel-better` |
 | Create a general, plan, or architecture HTML artifact | `html`, `html-plan`, or `html-diagram` |
 | Create a Plannotator-themed visual explanation | `plannotator-visual-explainer` |
 | Analyze accumulated Plannotator plan feedback | `plannotator-compound` |
