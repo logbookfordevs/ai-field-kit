@@ -14,6 +14,7 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
+- `skills:` added Emil Kowalski's optional model-invoked `animate` utility for implementing purposeful interface motion.
 
 ## v1.2.2 - 2026-08-09
 

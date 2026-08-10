@@ -491,6 +491,20 @@
             "composes": []
         },
         {
+            "id": "animate",
+            "label": "Animate",
+            "source": "https://github.com/emilkowalski/skills",
+            "args": [
+                "--skill",
+                "animate",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": true,
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "animation-vocabulary",
             "label": "Animation Vocabulary",
             "source": "https://github.com/emilkowalski/skills",
