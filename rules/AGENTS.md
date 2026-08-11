@@ -56,7 +56,7 @@ Push back when implementation convenience is prioritized over a materially bette
 - Use a short comment only to preserve a non-obvious constraint, dangerous edge case, external contract, or trade-off.
 
 ## Sub-agents
-Before spawning any sub-agent, deliberately choose the model and reasoning effort best suited to that specific task. Do not inherit either by default; use inheritance only when you have affirmatively determined that it is the best fit.
+When spawning sub-agents, use the `afk-architect` skill as the coordination policy.
 
 ## Dictionary
 - Team of agents/multi agents = spawn sub-agents/child agents
