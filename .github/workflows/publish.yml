@@ -5,37 +5,42 @@ on:
     tags:
       - "v*"
 
-permissions:
-  contents: write
-  id-token: write
-
 concurrency:
   group: publish-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  publish-afk:
+  prepare:
     if: github.repository == 'logbookfordevs/ai-field-kit'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
-          cache: pnpm
+          package-manager-cache: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install pinned scanners
+        shell: bash
+        run: |
+          tool_dir="${RUNNER_TEMP}/afk-security-tools"
+          ./scripts/install-security-tools.sh "$tool_dir"
+          echo "$tool_dir" >> "$GITHUB_PATH"
 
       - name: Verify release tag
         shell: bash
@@ -48,14 +53,17 @@ jobs:
             exit 1
           fi
 
-          git fetch origin main --depth=1
+          git fetch https://github.com/logbookfordevs/ai-field-kit.git main --depth=1
           release_sha="$(git rev-list -n 1 "$tag")"
-          main_sha="$(git rev-parse origin/main)"
+          main_sha="$(git rev-parse FETCH_HEAD)"
 
           if [[ "$release_sha" != "$main_sha" ]]; then
-            echo "Release tag $tag points at $release_sha, but origin/main is $main_sha."
+            echo "Release tag $tag points at $release_sha, but main is $main_sha."
             exit 1
           fi
+
+      - name: Lint
+        run: pnpm lint
 
       - name: Typecheck AFK CLI
         run: pnpm afk:typecheck
@@ -63,19 +71,99 @@ jobs:
       - name: Test AFK CLI
         run: pnpm afk:test
 
+      - name: Build AFK CLI
+        run: pnpm afk:build
+
+      - name: Validate registry
+        run: pnpm registry:validate
+
+      - name: Build site
+        run: pnpm site:build
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level high
+
+      - name: Prove scanners reject unsafe fixtures
+        run: ./scripts/verify-security-tools.sh
+
+      - name: Scan Git history for secrets
+        run: gitleaks git . --no-banner --redact
+
+      - name: Validate GitHub Actions syntax
+        run: actionlint
+
+      - name: Audit GitHub Actions security
+        run: zizmor --offline .
+
       - name: Check AFK package contents
         run: pnpm --dir packages/afk pack --dry-run
 
       - name: Package AFK GitHub release asset
         run: pnpm --dir packages/afk release:pack
 
-      - name: Publish AFK CLI to npm
+      - name: Upload release assets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: afk-release-assets
+          path: |
+            .release/afk-cli.tar.gz
+            .release/afk-cli.tar.gz.sha256
+          if-no-files-found: error
+
+  publish-npm:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build AFK CLI
+        run: pnpm afk:build
+
+      - name: Publish AFK CLI to npm with trusted publishing
         working-directory: packages/afk
         run: npm publish --access public --ignore-scripts
 
-      - name: Publish AFK GitHub release asset
-        uses: softprops/action-gh-release@v2
+  publish-github:
+    needs:
+      - prepare
+      - publish-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          files: |
-            .release/afk-cli.tar.gz
-            .release/afk-cli.tar.gz.sha256
+          name: afk-release-assets
+          path: .release
+
+      - name: Publish AFK GitHub release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+          fi
+          gh release upload "$GITHUB_REF_NAME" .release/afk-cli.tar.gz .release/afk-cli.tar.gz.sha256 --clobber
