@@ -19,6 +19,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.
+- `skills:` distilled Code Grill into a manual wrapper that composes Grilling, Truss Evaluation, and Codebase Design around the material technical frontier without duplicating their workflows.
 - `skills:` taught AFK Code Review to review an implementation ticket alongside its originating material, detect lost or distorted requirements, and substantiate the ticket's recorded implementation and verification claims.
 - `skills:` let `afk-implement-tickets` use either a local Markdown counterpart or an available remote mechanism as the ticket's durable tracking home, with an explicit user choice before remote-ticket implementation begins.
 - `skills:` renamed `afk-implement-tasks` to `afk-implement-tickets`, aligning the implementation workflow with the ticket files produced by `afk-to-tickets`.

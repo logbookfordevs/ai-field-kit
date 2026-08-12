@@ -51,7 +51,7 @@ This list of user stories should be extremely extensive and cover all aspects of
 
 ## Implementation Decisions
 
-A list of implementation decisions that were made. This can include:
+A list of implementation decisions that were made, including the reasoning needed to implement and later review them faithfully. This can include:
 
 - The modules that will be built/modified
 - The interfaces of those modules that will be modified
@@ -60,6 +60,13 @@ A list of implementation decisions that were made. This can include:
 - Schema changes
 - API contracts
 - Specific interactions
+
+For consequential decisions, preserve:
+
+- The constraint or priority that shaped the decision
+- The accepted trade-off
+- Rejected alternatives when their rejection matters to implementation
+- The condition that would cause the decision to be revisited
 
 Do NOT include specific file paths or code snippets. They may end up being outdated very quickly.
 
