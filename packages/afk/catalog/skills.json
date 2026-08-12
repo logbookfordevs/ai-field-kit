@@ -683,6 +683,22 @@
             "composes": []
         },
         {
+            "id": "afk-code-review-check",
+            "label": "AFK - Code Review Check",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-code-review-check",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "wrapper",
+            "composes": [
+                "afk-code-review"
+            ]
+        },
+        {
             "id": "afk-static-check",
             "label": "AFK - Static Check",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
