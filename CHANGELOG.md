@@ -25,6 +25,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
+- `skills:` made `afk-code-review-check` run AFK Code Review and capture its findings before validation instead of asking the user to provide findings.
 - `rules:` made the bundled AFK rules layer fetch its files from the source repository and replaced missing-local-file stack traces with guidance to use a full URL or `--source <owner/repo>`.
 
 ## v1.2.2 - 2026-08-09

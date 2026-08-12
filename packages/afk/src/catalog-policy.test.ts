@@ -45,4 +45,18 @@ describe("source skill invocation policy", () => {
 
     expect(missingRoutes).toEqual([]);
   });
+
+  test("makes Code Review Check produce findings before validating them", () => {
+    const repositoryRoot = resolve(import.meta.dirname, "../../..");
+    const skill = readFileSync(
+      resolve(repositoryRoot, "skills/afk-code-review-check/SKILL.md"),
+      "utf8",
+    );
+    const runReview = "Run the `afk-code-review` skill to completion and capture its findings.";
+    const validateFindings = "Treat those returned findings as unverified review input.";
+
+    expect(skill).toContain(runReview);
+    expect(skill).toContain(validateFindings);
+    expect(skill.indexOf(runReview)).toBeLessThan(skill.indexOf(validateFindings));
+  });
 });
