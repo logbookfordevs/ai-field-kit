@@ -19,6 +19,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `skills:` let `afk-implement-tickets` use either a local Markdown counterpart or an available remote mechanism as the ticket's durable tracking home, with an explicit user choice before remote-ticket implementation begins.
 - `skills:` renamed `afk-implement-tasks` to `afk-implement-tickets`, aligning the implementation workflow with the ticket files produced by `afk-to-tickets`.
 - `skills:` made AFK Architect announce the selected crew member before delegation.
 

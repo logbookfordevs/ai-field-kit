@@ -1,26 +1,35 @@
 ---
 name: afk-implement-tickets
-description: Implement checkpointed ticket files with statuses, review gates, handoff notes, parallel-agent coordination, interruption recovery, and durable progress state.
+description: Implement checkpointed local or remote tickets with statuses, review gates, handoff notes, parallel-agent coordination, interruption recovery, and durable progress state.
 metadata:
-  short-description: Implement ticket files with status, validation, and handoff tracking.
+  short-description: Implement tickets with status, validation, and handoff tracking.
 ---
 
 # Implement Tickets
-Keep implementation state visible in the ticket file itself. The ticket file is the source of truth for its slice.
+Keep implementation state visible in the selected tracking home. The tracking home is the source of truth for its slice.
 
 ## Activation
-Use after executable ticket files exist. If there is only a spec, plan, goal package, tracker issue, or rough implementation context, create tickets first, typically with `afk-to-tickets` or another approved slicing source.
+Use after executable local or remote tickets exist. If there is only a spec, plan, goal package, unsliced parent issue, or rough implementation context, create tickets first, typically with `afk-to-tickets` or another approved slicing source.
 
 If the user asks to resume task implementation, use [resume.md](references/resume.md).
 
 Skip tiny one-shot edits unless the user asks.
 
-## Storage
-Use existing ticket files and the active repo or user artifact convention.
+## Tracking Home
+Resolve the ticket identifier before implementation.
 
-Ticket files are the only required tracking artifacts.
+- For a local ticket file, use that file as the tracking home and continue with the existing workflow.
+- For a remote ticket, ask whether to create a local Markdown counterpart and track implementation locally, or keep implementation tracking in the remote source through an available remote mechanism.
 
-For parallel work, assign exact ticket files. Each agent updates only its assigned ticket and directly relevant handoff notes.
+When remote tracking is chosen, inspect the available mechanism and agree with the user where the ticket status, execution evidence, review gates, findings, and handoff notes will live. Use that location as the tracking home.
+
+Begin implementation only after one tracking home is selected and can preserve the required ticket state. Treat any secondary representation as a reference unless the user explicitly agrees to a synchronization contract.
+
+For a local counterpart, follow the active repo or user artifact convention.
+
+The selected tracking home is the only required tracking artifact.
+
+For parallel work, assign exact tickets. Each agent updates only its assigned tracking home and directly relevant handoff notes.
 
 When parallel work needs separate worktrees, prefer `yggtree` when available before falling back to native git worktree commands.
 
@@ -34,7 +43,7 @@ Choose the active ticket in this order:
 Before starting, read blockers and previous ticket `Handoff Notes` when they affect the current slice.
 
 ## Ticket State
-Use ticket frontmatter as the current-state dashboard:
+Keep this state in the selected tracking home. For a local Markdown ticket, use frontmatter as the current-state dashboard:
 
 ```yaml
 ---
@@ -75,12 +84,12 @@ Before moving a ticket to `review`, record evidence for each selected discipline
 
 Do not mark the ticket `review` while selected discipline evidence is missing without an explicit skip reason.
 
-## Ticket Body
-Keep task-local state in the ticket file. Preserve `Parent` and `User Stories Covered` when present. Use this body shape when creating or normalizing a ticket: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, `Code Review Findings` when requested changes exist, and `Handoff Notes`.
+## Ticket Record
+Keep task-local state in the tracking home. Preserve `Parent` and `User Stories Covered` when present. Keep these sections or equivalent fields when creating or normalizing the record: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, `Code Review Findings` when requested changes exist, and `Handoff Notes`.
 
-If an existing ticket uses a different shape, preserve useful content and add missing standard sections as they become relevant.
+If an existing ticket uses a different shape, preserve useful content and add missing sections or equivalent fields as they become relevant.
 
-Record material deviations, assumptions, trade-offs, scope changes, surprising constraints, reviewer context, and next-agent context in the relevant ticket file. If a note belongs to a later slice, put it in that later ticket's `Handoff Notes`.
+Record material deviations, assumptions, trade-offs, scope changes, surprising constraints, reviewer context, and next-agent context in the relevant tracking home. If a note belongs to a later slice, put it in that later ticket's `Handoff Notes`.
 
 Before final handoff after implementation or review fixes:
 
@@ -91,8 +100,8 @@ Before final handoff after implementation or review fixes:
 For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.md). For design/product reviewer guides, see [review-guides.md](references/review-guides.md).
 
 ## Operating Loop
-1. Locate ticket files.
-2. If ticket files do not exist and the request is one quick action, use the available context to create a single ticket file and continue; otherwise recommend `afk-to-tickets` and stop.
+1. Resolve the ticket identifier and select its tracking home.
+2. If no executable ticket exists and the request is one quick action, use the available context to create a single local ticket and continue; otherwise recommend `afk-to-tickets` and stop.
 3. Select the active ticket.
 4. Read blockers and relevant previous handoff notes.
 5. Record the selected execution bundle.
@@ -103,6 +112,6 @@ For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.
 10. Move to `review` only when discipline evidence is present or explicitly skipped with a reason.
 11. Run the checkpoint-notes/ADR check before final handoff.
 12. Move to `done` only after the ticket is accepted.
-13. Update `updated_at` whenever the ticket changes.
+13. For a local ticket, update `updated_at` whenever it changes; for a remote ticket, rely on or update the tracking home's equivalent modification signal.
 
-Task implementation may mention commits as receipts, but never as permission to create them. Do not commit tracking artifacts unless the user explicitly asks.
+Task implementation may mention commits as receipts, but never as permission to create them. Do not commit local tracking artifacts unless the user explicitly asks.

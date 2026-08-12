@@ -1,4 +1,4 @@
 interface:
   display_name: "Implement Tickets"
-  short_description: "Implement ticket files with statuses, reviews, validation, and handoffs."
-  default_prompt: "Implement the existing ticket files."
+  short_description: "Implement local or remote tickets with durable progress tracking."
+  default_prompt: "Implement the existing tickets."
