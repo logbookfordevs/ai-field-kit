@@ -2149,6 +2149,44 @@ test("runSkillsCommand update explicit names invokes global update by default", 
   assert.ok(output.join("\n").includes("demo is up to date"));
 });
 
+test("runSkillsCommand update restores catalog invocation policy after the upstream update", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-update-invocation-"));
+  const homeDir = join(root, "home");
+  writeGlobalSkillLock(homeDir, {
+    demo: {
+      source: "owner/demo",
+      sourceType: "github",
+      skillPath: "skills/demo/SKILL.md",
+      skillFolderHash: "abc",
+    },
+  });
+  writeSkillManifest(homeDir, ["demo"], { autoInvocation: false });
+  const skillRoot = join(homeDir, ".agents", "skills");
+  writeSkill(skillRoot, "demo", "Old Demo", {
+    disableModelInvocation: true,
+    openAiImplicitInvocation: false,
+  });
+  const runtime: Runtime = {
+    io: {
+      stdout: () => undefined,
+      stderr: () => undefined,
+    },
+    spawn: async () => {
+      writeSkill(skillRoot, "demo", "Fresh Demo", {
+        disableModelInvocation: false,
+        openAiImplicitInvocation: true,
+      });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "update", "demo"], runtime, baseOptions(root));
+
+  assert.equal(code, 0);
+  assert.match(readFileSync(join(skillRoot, "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
+  assert.match(readFileSync(join(skillRoot, "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
+});
+
 test("runSkillsCommand update selects tracked profile skills and preserves disabled storage", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-update-profile-"));
   const homeDir = join(root, "home");
@@ -2434,7 +2472,7 @@ function writeProjectSkillLock(cwd: string, skills: Record<string, object>): voi
   writeFileSync(join(cwd, "skills-lock.json"), JSON.stringify({ version: 1, skills }));
 }
 
-function writeSkillManifest(homeDir: string, ids: string[]): void {
+function writeSkillManifest(homeDir: string, ids: string[], options: { autoInvocation?: boolean } = {}): void {
   mkdirSync(localManifestDir(homeDir), { recursive: true });
   writeFileSync(join(localManifestDir(homeDir), "skills.json"), JSON.stringify({
     version: 1,
@@ -2445,6 +2483,7 @@ function writeSkillManifest(homeDir: string, ids: string[]): void {
       source: "https://github.com/example/skills",
       args: ["--skill", id],
       default: true,
+      ...(options.autoInvocation === undefined ? {} : { autoInvocation: options.autoInvocation }),
     })),
   }));
 }
