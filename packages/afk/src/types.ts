@@ -66,6 +66,7 @@ export type CliOptions = {
   initOnly: boolean;
   empty: boolean;
   refreshDefaults: boolean;
+  overrideRefresh?: boolean;
   defaultsSource: string;
   defaultsSourceExplicit: boolean;
   defaultSourceUpdate: string;

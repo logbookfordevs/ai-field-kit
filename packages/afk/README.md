@@ -261,6 +261,7 @@ afk show skills profiles
 | `afk refresh --local` | Refresh `./afk/catalog` instead of the global cache. |
 | `afk refresh --source <source>` | Refresh once from a source without remembering it as the default. |
 | `afk refresh --default-source <source>` | Save the source in `presets.json` and refresh from it. |
+| `afk refresh --override` | Replace targeted catalog files from the source after two confirmations instead of preserving local-only entries. |
 | `afk refresh --empty` | Prepare empty catalog files instead of seeding source defaults. |
 | `afk show` | Print every cached catalog category. |
 | `afk show <category...>` | Print only the named categories. |
@@ -448,6 +449,7 @@ These flags apply to `afk refresh`.
 | `--local` | Refresh `./afk/catalog` instead of the global catalog cache. |
 | `--source <source>` | Refresh the cache from this source once, without changing the remembered default source. |
 | `--default-source <source>` | Save the default source and refresh the cache from it. |
+| `--override` | Replace targeted catalog files from the source instead of merging; requires two confirmations. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
 | `--empty` | Create empty catalog files. |
 
@@ -753,6 +755,11 @@ matching layer IDs in place, preserves absent cached layers, and appends new
 layers in source order. Refreshing a legacy version 1 rules cache from version 2
 performs the one-time transition to the layered shape.
 
+Use `afk refresh --override` when the selected source should become the entire
+targeted catalog state. Override removes local-only entries in those files and
+therefore asks for confirmation twice before writing. `--dry-run` previews the
+replacement without prompting or changing files.
+
 Use these commands to prepare catalog files without running setup:
 
 ```bash
@@ -760,6 +767,7 @@ afk refresh
 afk refresh skills
 afk refresh --empty
 afk refresh --local
+afk refresh --override --dry-run
 ```
 
 If you want to inspect another source without changing the cache, use `show`
