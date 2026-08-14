@@ -201,6 +201,7 @@ type CommandHelp = {
 const setupOptions = {
   dryRun: "--dry-run                         Preview changes without applying them",
   verbose: "--verbose                         Show delegated installer output",
+  catalogVerbose: "--verbose                         Show complete JSON for catalog editor previews",
   yes: "--yes, -y                         Accept defaults and skip prompts",
   scope: "--scope global|project            Choose machine-wide or current-project setup",
   localScope: "--local                           Alias for --scope project",
@@ -315,6 +316,7 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       "afk catalog",
@@ -903,6 +905,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "remove                            Remove a rules layer",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       "afk catalog rules",
@@ -922,6 +925,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "remove                            Remove a Custom Agent source",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       "afk catalog agents",
@@ -1151,6 +1155,7 @@ function catalogItemAreaHelp(title: string, area: "mcps" | "plugins" | "hooks", 
       "toggle-default                    Toggle defaults",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       `afk catalog ${area}`,
