@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { localAfkDir, localManifestDir, projectManifestDir, type SkillManifestItem } from "../manifest.js";
-import type { SkillProfileMode } from "../types.js";
+import type { CliOptions, SkillProfileMode } from "../types.js";
 
 export const skillProfilesFileName = "profiles.json";
 export const skillProfilesStateFileName = "skill-profiles.json";
@@ -98,6 +98,26 @@ export function loadSkillProfileCatalog(context: SkillProfileContext): SkillProf
   }
 
   return normalizeSkillProfileCatalog(parsed);
+}
+
+export function loadSetupSkillProfileCatalog(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "manifestLocal" | "manifestContents">): SkillProfileCatalog {
+  const content = options.manifestContents?.[skillProfilesFileName];
+  if (content) {
+    const parsed = JSON.parse(content) as unknown;
+    if (!isSkillProfileCatalog(parsed)) {
+      throw new Error("Invalid skill profiles catalog from setup source");
+    }
+    return normalizeSkillProfileCatalog(parsed);
+  }
+  return loadSkillProfileCatalog(skillProfileContext(options));
+}
+
+export function skillProfileContext(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "manifestLocal">): SkillProfileContext {
+  return {
+    homeDir: options.homeDir,
+    cwd: options.cwd,
+    local: options.setupScope === "project" || options.manifestLocal,
+  };
 }
 
 export function loadSkillProfileState(context: SkillProfileContext): SkillProfileState {

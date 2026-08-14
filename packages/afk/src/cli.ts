@@ -265,7 +265,7 @@ const commandHelps: Record<string, CommandHelp> = {
     subcommands: [
       "afk setup rules                   Sync AFK rules into managed agent rule regions",
       "afk setup skills                  Delegate skill installation to the official skills CLI",
-      "afk setup profiles                Prepare AFK focus profile definitions",
+      "afk setup profiles                Install skills from Skills Profiles",
       "afk setup agents                  Provision portable Custom Agents",
       "afk setup mcps                    Delegate MCP installation to add-mcp",
       "afk setup plugins                   Install optional developer plugins",
@@ -447,11 +447,12 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "setup profiles": {
     title: "AFK setup profiles",
-    summary: "Prepare focus profile definitions from profiles.json.",
+    summary: "Install skills from selected profiles in profiles.json.",
     usage: "afk setup profiles [options]",
     notes: [
-      "Profiles are catalog definitions, so setup refreshes or creates profiles.json without installing skills.",
-      "Use afk skills profiles enable to apply a profile after the skills exist.",
+      "Setup refreshes profiles.json, offers its profiles for selection, and installs the selected profile skills.",
+      "When a selected skill composes other skills, setup warns and automatically includes their composed dependencies.",
+      "Use afk skills profiles enable to apply an installed profile at runtime.",
     ],
     options: setupAreaOptions,
     examples: [

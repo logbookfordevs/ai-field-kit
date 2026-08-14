@@ -45,6 +45,24 @@ export type SkillManifestItem = {
 
 export type SkillManifestItemRole = "primitive" | "wrapper" | "workflow" | "utility" | "reference" | "router";
 
+export function expandComposedSkillIds(items: SkillManifestItem[], selectedIds: string[]): string[] {
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const expanded = new Set(selectedIds);
+  const queue = [...selectedIds];
+
+  while (queue.length > 0) {
+    const id = queue.shift();
+    if (!id) continue;
+    for (const dependencyId of byId.get(id)?.composes ?? []) {
+      if (expanded.has(dependencyId)) continue;
+      expanded.add(dependencyId);
+      queue.push(dependencyId);
+    }
+  }
+
+  return [...expanded];
+}
+
 export type McpManifest = {
   version: number;
   items: McpManifestItem[];

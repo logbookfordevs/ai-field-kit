@@ -1,7 +1,8 @@
 import { checkbox, input, select } from "@inquirer/prompts";
 import { detectSetupTargets, type TargetSelectionSource } from "./agent-detection.js";
 import { agentIds, hookAgentIds, skillAgentIds } from "./agents.js";
-import { loadCustomAgentManifest, loadHookManifest, loadMcpManifest, loadPresetsManifest, loadSkillManifest, loadPluginManifest, type PresetManifestItem, type SkillManifestItem } from "./manifest.js";
+import { expandComposedSkillIds, loadCustomAgentManifest, loadHookManifest, loadMcpManifest, loadPresetsManifest, loadSkillManifest, loadPluginManifest, type PresetManifestItem, type SkillManifestItem } from "./manifest.js";
+import { loadSetupSkillProfileCatalog } from "./skills/profiles.js";
 import { DEFAULT_CHECKED, afkCheckboxTheme, afkSearchableCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import { searchableCheckbox } from "./searchable-checkbox.js";
 import type { AgentId, Area, CliOptions, SetupScope, SkillAgentId } from "./types.js";
@@ -20,6 +21,7 @@ export type SetupSelection = {
   hookAgents: AgentId[];
   setupScope: SetupScope;
   skillIds: string[];
+  profileIds?: string[];
   customAgentIds?: string[];
   skillAgents: SkillAgentId[];
   mcpIds: string[];
@@ -44,10 +46,10 @@ const setupAreaChoices: Choice<Area>[] = [
     description: "Delegate AFK and recommended skill installs to the skills CLI.",
   },
   {
-    name: "Profiles",
+    name: "Skills Profiles",
     value: "profiles",
     checked: DEFAULT_CHECKED,
-    description: "Prepare AFK focus profile definitions from profiles.json.",
+    description: "Install the skills selected by AFK focus profiles from profiles.json.",
   },
   {
     name: "Custom Agents",
@@ -94,6 +96,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
       hookAgents: hookAgentSelection.agents,
       setupScope: options.setupScope,
       skillIds: nonInteractiveSkillIds(options),
+      profileIds: loadSetupSkillProfileCatalog(options).items.map((profile) => profile.id),
       customAgentIds: nonInteractiveCustomAgentIds(options),
       skillAgents: skillAgentSelection.agents,
       mcpIds: loadMcpManifest(options).items.map((item) => item.id),
@@ -115,6 +118,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     ? await selectSetupAgents(options.agents, detected.agents, areas)
     : { agents: options.agents, source: options.agents.length > 0 ? "explicit" : "none" as TargetSelectionSource };
   const skillIds = areas.includes("skills") ? await selectSkills(options) : [];
+  const profileIds = areas.includes("profiles") ? await selectSkillProfiles(options) : [];
   const customAgentIds = areas.includes("agents") ? await selectCustomAgents(options) : [];
   const skillAgentSelection = skillIds.length > 0
     ? selectSkillAgents(options, detected.skillAgents)
@@ -131,6 +135,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     hookAgents: hookAgentSelection.agents,
     setupScope,
     skillIds,
+    profileIds,
     customAgentIds,
     skillAgents: skillAgentSelection.agents,
     mcpIds,
@@ -272,6 +277,19 @@ export async function selectSkillsInstall(options: CliOptions): Promise<Pick<Set
   return {
     skillIds,
     skillAgents: skillIds.length > 0 ? selectSkillAgents(options, detected.skillAgents).agents : [],
+  };
+}
+
+export async function selectSkillProfilesInstall(options: CliOptions): Promise<Pick<SetupSelection, "profileIds" | "skillAgents">> {
+  const profileIds = options.selectedSkillProfileIds?.length
+    ? uniqueStrings(options.selectedSkillProfileIds)
+    : options.yes
+      ? loadSetupSkillProfileCatalog(options).items.map((profile) => profile.id)
+      : await selectSkillProfiles(options);
+  const detected = detectSetupTargets(options);
+  return {
+    profileIds,
+    skillAgents: profileIds.length > 0 ? selectSkillAgents(options, detected.skillAgents).agents : [],
   };
 }
 
@@ -496,6 +514,19 @@ async function selectSkills(options: Pick<CliOptions, "homeDir" | "allSkills" | 
   return uniqueStrings([...selected, ...composedSelection]);
 }
 
+async function selectSkillProfiles(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "manifestLocal" | "manifestContents">): Promise<string[]> {
+  const catalog = loadSetupSkillProfileCatalog(options);
+  return selectCheckbox(
+    "Choose skill profiles to install",
+    catalog.items.map((profile) => ({
+      name: profile.name,
+      value: profile.id,
+      checked: false,
+      description: profile.skills.length > 0 ? profile.skills.join(", ") : "No skills assigned.",
+    })),
+  );
+}
+
 function nonInteractiveSkillIds(options: Pick<CliOptions, "homeDir" | "allSkills" | "manifestContents">): string[] {
   const manifest = loadSkillManifest(options);
   const items = setupSkillItems(manifest.items, options.allSkills);
@@ -553,31 +584,6 @@ function skillChoiceDetail(item: SkillManifestItem): string {
   const storage = item.startDisabled === true ? "starts disabled" : "starts active";
   const composes = item.composes && item.composes.length > 0 ? ` · composes ${item.composes.join(", ")}` : "";
   return `role: ${role} · auto-invocation: ${autoInvocation} · ${storage}${composes} · ${item.args.join(" ")}`;
-}
-
-function expandComposedSkillIds(items: SkillManifestItem[], selectedIds: string[]): string[] {
-  const byId = new Map(items.map((item) => [item.id, item]));
-  const expanded = new Set(selectedIds);
-  const queue = [...selectedIds];
-
-  while (queue.length > 0) {
-    const id = queue.shift();
-    if (!id) {
-      continue;
-    }
-
-    const item = byId.get(id);
-    for (const composedId of item?.composes ?? []) {
-      if (expanded.has(composedId)) {
-        continue;
-      }
-
-      expanded.add(composedId);
-      queue.push(composedId);
-    }
-  }
-
-  return [...expanded];
 }
 
 function composedSkillDescription(items: SkillManifestItem[], id: string): string {

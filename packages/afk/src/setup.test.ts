@@ -676,6 +676,7 @@ test("runArea prompts for a source only on first-run interactive setup areas", a
     const code = await runArea(area, fakeRuntime(output), {
       ...defaultOptions(homeDir, repoDir),
       agents: ["codex"],
+      selectedSkillProfileIds: area === "profiles" ? ["test-profile"] : [],
       selectedSkillIds: area === "skills" ? ["afk-note"] : [],
       selectedMcpIds: area === "mcps" ? ["stitch"] : [],
       selectedPluginIds: area === "plugins" ? ["sample-plugin"] : [],
@@ -689,6 +690,11 @@ test("runArea prompts for a source only on first-run interactive setup areas", a
 
 test("runArea profiles prepares the profile catalog from the saved setup source", async () => {
   const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "afk-doc-craft", label: "AFK Doc Craft", source: "example/kit", args: ["--skill", "afk-doc-craft"], default: false }],
+    },
     "profiles.json": {
       version: 1,
       mode: "context",
@@ -705,9 +711,20 @@ test("runArea profiles prepares the profile catalog from the saved setup source"
   const output: string[] = [];
 
   promptState.rememberedSources = [];
-  const code = await runArea("profiles", fakeRuntime(output), {
+  const spawned: Array<{ command: string; args: string[] }> = [];
+  const code = await runArea("profiles", {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      return { code: 0 };
+    },
+  }, {
     ...defaultOptions(homeDir, repoDir),
     dryRun: false,
+    yes: true,
     rulesSource: "github",
   });
   const text = output.join("\n");
@@ -719,6 +736,48 @@ test("runArea profiles prepares the profile catalog from the saved setup source"
   assert.deepEqual(promptState.rememberedSources, []);
   assert.ok(text.includes("Profile catalog prepared."));
   assert.ok(text.includes(profilesPath));
+  assert.ok(text.includes("Selected skill profiles: Context"));
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["skills", "add", "example/kit", "--global", "--yes", "--skill", "afk-doc-craft", "--agent", "universal"],
+  }]);
+});
+
+test("runArea profiles installs transitive composed skills after warning", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 1,
+      mode: "context",
+      alwaysOn: [],
+      items: [{ id: "review", name: "Review", skills: ["wrapper"] }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        { id: "wrapper", label: "Wrapper", source: "example/kit", args: ["--skill", "wrapper"], default: false, role: "wrapper", composes: ["dependency"] },
+        { id: "dependency", label: "Dependency", source: "example/kit", args: ["--skill", "dependency"], default: false, role: "primitive", composes: [] },
+      ],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  const code = await runArea("profiles", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    yes: true,
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+    defaultsSource: "local",
+    defaultsSourceExplicit: true,
+  });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("Selected profiles include composable skills."), text);
+  assert.ok(text.includes("Dependencies added automatically: Dependency (dependency)."));
+  assert.ok(text.includes("--skill wrapper dependency"));
 });
 
 test("runArea merges selected explicit-source skills into the cache after installing them", async () => {

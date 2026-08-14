@@ -74,7 +74,7 @@ remembered default source.
 |---|---|---|
 | Rules | `afk setup rules` | Syncs AFK rules into managed regions of supported agent rule files. |
 | Skills | `afk setup skills` | Delegates selected skill installs to `npx skills add`. |
-| Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
+| Skills Profiles | `afk setup profiles` | Offers profiles from `profiles.json` and installs their skills, including composed dependencies after warning. |
 | Custom Agents | `afk setup agents` | Translates portable agent files into native Codex, Claude Code, or Pi definitions. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `npx add-mcp`. |
 | Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |
@@ -226,7 +226,7 @@ skill before provisioning its three required portable Custom Agents.
 |---|---|---|
 | `afk setup rules` | Compose configured rules layers into AFK-managed regions and install their isolated dependency files without replacing user-owned content outside those regions. | AFK. |
 | `afk setup skills` | Select catalog skills, delegate installation, restore previously disabled storage, apply invocation policy, and reconcile enabled profiles. | Official `skills` CLI for installation; AFK for policy and reconciliation. |
-| `afk setup profiles` | Prepare `profiles.json` definitions from the selected source. It does not install skills or enable a profile. | AFK. |
+| `afk setup profiles` | Prepare `profiles.json`, select profiles from that source, and install their skills plus composed dependencies. It does not enable a profile. | AFK for selection and policy; official `skills` CLI for installation. |
 | `afk setup agents` | Select portable Custom Agents and translate them into native Codex, Claude Code, or Pi definitions. | AFK adapters; the harness owns orchestration. |
 | `afk setup mcps` | Select catalog MCPs and delegate their installation for supported agents/scopes. | `add-mcp`. |
 | `afk setup plugins` | Run selected catalog installer commands and supported post-install commands. | Each plugin installer. |

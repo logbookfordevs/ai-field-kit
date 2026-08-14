@@ -2,14 +2,14 @@ import { syncRules } from "./rules.js";
 import { syncHooks } from "./hooks.js";
 import { customAgentTargetPath, syncCustomAgents, type CustomAgentHarness } from "./custom-agents.js";
 import { snapshotDisabledStartupSkills, syncSkillInvocationPolicy, syncSkillStartupStorage } from "./skills.js";
-import { loadSkillProfileState, reconcileSkillProfiles } from "./skills/profiles.js";
+import { loadSetupSkillProfileCatalog, loadSkillProfileState, reconcileSkillProfiles } from "./skills/profiles.js";
 import { mergeSetupSourceSkillsIntoCatalog, syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
 import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
+import { selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
-import { builtInDefaultsSource, ensureLocalManifests, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
+import { builtInDefaultsSource, ensureLocalManifests, expandComposedSkillIds, loadSkillManifest, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
@@ -51,6 +51,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     scopeExplicit: true,
     setupManifestsPrepared: true,
     selectedSkillIds: selection.skillIds,
+    selectedSkillProfileIds: selection.profileIds ?? [],
     selectedCustomAgentIds: selection.customAgentIds ?? [],
     selectedSkillAgentIds: selection.skillAgents,
     selectedMcpIds: selection.mcpIds,
@@ -232,7 +233,7 @@ function sameTargets(left: string[], right: string[]): boolean {
 
 export async function runArea(area: Area, runtime: Runtime, options: CliOptions): Promise<number> {
   const explicitSetupSource = options.setupSourceExplicit ?? options.defaultsSourceExplicit;
-  const profileManifestCategory: ManifestCategory[] = ["profiles"];
+  const profileManifestCategory: ManifestCategory[] = ["profiles", "skills"];
   const areaOptions = area === "profiles" && options.selectedManifestCategories.length === 0
     ? { ...options, selectedManifestCategories: profileManifestCategory }
     : options;
@@ -272,7 +273,48 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
     case "profiles": {
       runtime.io.stdout("\nProfile catalog prepared.");
       runtime.io.stdout(`- ${profileCatalogPath(prepared.options)}`);
-      return 0;
+      const selection = await selectSkillProfilesInstall(prepared.options);
+      if ((selection.profileIds?.length ?? 0) === 0) {
+        runtime.io.stdout("\nNo skill profiles selected. No changes planned.");
+        return 0;
+      }
+
+      const catalog = loadSetupSkillProfileCatalog(prepared.options);
+      const selectedProfiles = catalog.items.filter((profile) => selection.profileIds?.includes(profile.id));
+      const directSkillIds = [...new Set([...catalog.alwaysOn, ...selectedProfiles.flatMap((profile) => profile.skills)])];
+      const skillManifest = loadSkillManifest(prepared.options);
+      const selectedSkillIds = expandComposedSkillIds(skillManifest.items, directSkillIds);
+      const availableIds = new Set(skillManifest.items.map((item) => item.id));
+      const missingIds = selectedSkillIds.filter((id) => !availableIds.has(id));
+      if (missingIds.length > 0) {
+        runtime.io.stderr(`Selected skill profiles reference skills missing from skills.json: ${missingIds.join(", ")}`);
+        return 1;
+      }
+
+      const dependencyIds = selectedSkillIds.filter((id) => !directSkillIds.includes(id));
+      runtime.io.stdout(`\nSelected skill profiles: ${selectedProfiles.map((profile) => profile.name).join(", ")}`);
+      if (dependencyIds.length > 0) {
+        runtime.io.stdout("Selected profiles include composable skills.");
+        runtime.io.stdout(`Dependencies added automatically: ${dependencyIds.map((id) => {
+          const item = skillManifest.items.find((candidate) => candidate.id === id);
+          return `${item?.label ?? id} (${id})`;
+        }).join(", ")}.`);
+      }
+
+      const selectedOptions = {
+        ...prepared.options,
+        selectedSkillIds,
+        selectedSkillAgentIds: selection.skillAgents,
+      };
+      const disabledBeforeInstall = snapshotDisabledStartupSkills(selectedOptions);
+      const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
+      if (code === 0) {
+        syncSkillInvocationPolicy(runtime, selectedOptions);
+        syncSkillStartupStorage(runtime, selectedOptions, disabledBeforeInstall);
+        syncSetupSkillCatalog(runtime, selectedOptions, explicitSetupSource);
+        reconcileEnabledSetupSkillProfiles(runtime, selectedOptions);
+      }
+      return code;
     }
     case "agents": {
       const selectedOptions = await resolveCustomAgentOptions(prepared.options);
@@ -634,7 +676,7 @@ function areaLabel(area: Area): string {
     case "skills":
       return "Skills";
     case "profiles":
-      return "Profiles";
+      return "Skills Profiles";
     case "agents":
       return "Custom Agents";
     case "mcps":

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall, selectSkillsInstall } from "./interactive.js";
+import { normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall, selectSkillProfilesInstall, selectSkillsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
@@ -111,6 +111,57 @@ test("normalizeSetupSelection keeps profile setup because it is catalog-level", 
   assert.deepEqual(selection.areas, ["profiles"]);
 });
 
+test("selectSkillProfilesInstall offers source profiles and returns the selected ids", async () => {
+  const homeDir = localHomeWithComposedSkillManifest();
+  writeFileSync(join(localManifestDir(homeDir), "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [
+      { id: "review", name: "Review", skills: ["afk-code-grill"] },
+      { id: "quiet", name: "Quiet", skills: ["grilling"] },
+    ],
+  })}\n`);
+  promptState.checkboxResponses["Choose skill profiles to install"] = ["review"];
+
+  const selection = await selectSkillProfilesInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.profileIds, ["review"]);
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose skill profiles to install"]?.map((choice) => choice.value),
+    ["quiet", "review"],
+  );
+});
+
+test("selectSkillProfilesInstall prefers prepared source profiles over the saved catalog", async () => {
+  const homeDir = localHomeWithComposedSkillManifest();
+  writeFileSync(join(localManifestDir(homeDir), "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "saved", name: "Saved", skills: ["grilling"] }],
+  })}\n`);
+  promptState.checkboxResponses["Choose skill profiles to install"] = ["remote"];
+
+  const selection = await selectSkillProfilesInstall({
+    ...defaultOptions(homeDir),
+    manifestContents: {
+      "profiles.json": JSON.stringify({
+        version: 1,
+        mode: "context",
+        alwaysOn: [],
+        items: [{ id: "remote", name: "Remote", skills: ["afk-code-grill"] }],
+      }),
+    },
+  });
+
+  assert.deepEqual(selection.profileIds, ["remote"]);
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose skill profiles to install"]?.map((choice) => choice.value),
+    ["remote"],
+  );
+});
+
 test("normalizeSetupSelection keeps hooks when at least one hook is selected", () => {
   const selection = normalizeSetupSelection({
     areas: ["hooks"],
@@ -178,7 +229,7 @@ test("selectSetup offers profiles as a setup area", async () => {
   const selection = await selectSetup(defaultOptions(localHomeWithPluginManifest()));
 
   assert.deepEqual(selection.areas, ["profiles"]);
-  assert.ok(promptState.checkboxChoices["Choose what AFK should prepare"]?.some((choice) => choice.name === "Profiles" && choice.value === "profiles"));
+  assert.ok(promptState.checkboxChoices["Choose what AFK should prepare"]?.some((choice) => choice.name === "Skills Profiles" && choice.value === "profiles"));
 });
 
 test("selectPluginsInstall does not ask for agent targets when installing plugins", async () => {
