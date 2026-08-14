@@ -67,6 +67,7 @@ import {
   planSkillStartupStorageForItems,
   snapshotDisabledSkillIds,
   syncPreviouslyDisabledSkillStorage,
+  syncSkillInvocationPolicy,
   upsertFrontmatterBoolean,
   upsertOpenAiImplicitInvocation,
 } from "../skills.js";
@@ -685,6 +686,13 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
   }));
 
   return runSkillUpdateCommands(runtime, commands, (command) => {
+    if (options.manifestContents?.["skills.json"] || pathExists(skillCatalogPath(options.homeDir))) {
+      syncSkillInvocationPolicy(runtime, {
+        ...options,
+        setupScope: command.scope,
+        selectedSkillIds: command.skillNames,
+      });
+    }
     syncPreviouslyDisabledSkillStorage(runtime, {
       homeDir: options.homeDir,
       cwd: options.cwd,
