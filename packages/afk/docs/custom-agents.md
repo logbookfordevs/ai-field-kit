@@ -11,10 +11,10 @@ afk refresh
 
 # Inspect or edit the catalog
 afk show agents
-afk catalog agents
-afk catalog agents add
-afk catalog agents edit
-afk catalog agents remove
+afk agents catalog
+afk agents catalog add
+afk agents catalog edit
+afk agents catalog remove
 
 # Interactive setup: every agent starts unchecked
 afk setup agents
