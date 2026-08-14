@@ -528,6 +528,7 @@ test("runCli prints contextual catalog help", async () => {
   assert.ok(output.join("\n").includes("AFK catalog"));
   assert.ok(output.join("\n").includes("Interactively edit writable AFK catalog files."));
   assert.ok(output.join("\n").includes("afk catalog --local"));
+  assert.ok(output.join("\n").includes("--verbose                         Show complete JSON for catalog editor previews"));
   assert.ok(output.join("\n").includes("afk catalog rules"));
 });
 
