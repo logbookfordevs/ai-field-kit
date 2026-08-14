@@ -333,7 +333,7 @@ function options(homeDir: string, cwd: string, agents: CliOptions["agents"]): Cl
     skillAddProfileOnlyIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
-    selectedPluginIds: [],
+    selectedToolIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "local",

@@ -13,12 +13,14 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added `afk tools update`, which lets users select cataloged tools and run each tool's declared update command.
 - `skills:` added the optional manual `afk-code-review-check` wrapper for verifying AFK Code Review findings against the code and discussing verdicts before making changes.
 - `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
 - `skills:` added Emil Kowalski's optional model-invoked `animate` utility for implementing purposeful interface motion.
 
 ### Changed
 
+- `cli:` renamed the Plugins catalog and command surface to Tools, including `tools.json`, setup, show, catalog editing, presets, and documentation.
 - `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.
 - `skills:` distilled Code Grill into a manual wrapper that composes Grilling, Truss Evaluation, and Codebase Design around the material technical frontier without duplicating their workflows.
 - `skills:` taught AFK Code Review to review an implementation ticket alongside its originating material, detect lost or distorted requirements, and substantiate the ticket's recorded implementation and verification claims.

@@ -18,7 +18,7 @@ const categories: ManifestShowCategory[] = [
   { id: "profiles", label: "Profiles", filename: "profiles.json" },
   { id: "agents", label: "Custom Agents", filename: "agents.json" },
   { id: "mcps", label: "MCPs", filename: "mcps.json" },
-  { id: "plugins", label: "Plugins", filename: "plugins.json" },
+  { id: "tools", label: "Tools", filename: "tools.json" },
   { id: "hooks", label: "Hooks", filename: "hooks.json" },
   { id: "presets", label: "Presets", filename: "presets.json" },
 ];
@@ -222,8 +222,8 @@ function renderManifestSummary(category: ManifestCategory, manifest: unknown, op
       return renderCustomAgents(manifest);
     case "mcps":
       return renderItems(manifest, "MCP");
-    case "plugins":
-      return renderPlugins(manifest);
+    case "tools":
+      return renderTools(manifest);
     case "hooks":
       return renderHooks(manifest);
     case "presets":
@@ -989,10 +989,10 @@ function componentTag(role: unknown): string {
   }
 }
 
-function renderPlugins(manifest: Record<string, unknown>): string {
+function renderTools(manifest: Record<string, unknown>): string {
   return [
     summaryLine("version", valueOrUnknown(manifest.version)),
-    ...renderItemList(manifest.items, "plugin", (item) => {
+    ...renderItemList(manifest.items, "tool", (item) => {
       const description = typeof item.description === "string" ? item.description : "";
       return sourceItemLine(`${labelFor(item)}${defaultSuffix(item.default)}`, description);
     }),
@@ -1021,7 +1021,7 @@ function renderPresets(manifest: Record<string, unknown>): string {
             presetSelectionSummary("skills", item.selections.skills),
             presetSelectionSummary("custom agents", item.selections.customAgents),
             presetSelectionSummary("MCPs", item.selections.mcps),
-            presetSelectionSummary("plugins", item.selections.plugins),
+            presetSelectionSummary("tools", item.selections.tools),
             presetSelectionSummary("hooks", item.selections.hooks),
           ].filter((selection): selection is string => Boolean(selection))
         : [];
@@ -1136,8 +1136,8 @@ function escapeHtml(value: string): string {
 }
 
 function pluralize(value: string): string {
-  if (value === "plugin") {
-    return "Plugins";
+  if (value === "tool") {
+    return "Tools";
   }
 
   return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}s`;

@@ -132,7 +132,7 @@ function baseOptions(root: string): CliOptions {
     skillAddProfileOnlyIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
-    selectedPluginIds: [],
+    selectedToolIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "manifest",

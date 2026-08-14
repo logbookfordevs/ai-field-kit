@@ -5,7 +5,7 @@
     {
       "id": "baseline",
       "label": "AFK baseline",
-      "areas": ["rules", "skills", "mcps", "plugins"]
+      "areas": ["rules", "skills", "mcps", "tools"]
     },
     {
       "id": "afk-architect",

@@ -5,7 +5,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { manifestPath } from "./paths.js";
 import type { CliOptions, ManifestCategory, ManifestFilename, PathOperation } from "./types.js";
 
-export const manifestNames = ["skills.json", "profiles.json", "agents.json", "mcps.json", "presets.json", "rules.json", "plugins.json", "hooks.json"] as const;
+export const manifestNames = ["skills.json", "profiles.json", "agents.json", "mcps.json", "presets.json", "rules.json", "tools.json", "hooks.json"] as const;
 const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
 export const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
 
@@ -100,12 +100,12 @@ export type RulesManifestFile = {
   destination: string;
 };
 
-export type PluginManifest = {
+export type ToolManifest = {
   version: number;
-  items: PluginManifestItem[];
+  items: ToolManifestItem[];
 };
 
-export type PluginManifestItem = {
+export type ToolManifestItem = {
   id: string;
   label: string;
   description: string;
@@ -113,12 +113,18 @@ export type PluginManifestItem = {
     command: string;
     args: string[];
   };
-  postInstall?: PluginPostInstallCommand;
+  postInstall?: ToolPostInstallCommand;
+  update?: ToolUpdateCommand;
   default: boolean;
 };
 
-export type PluginPostInstallCommand = {
+export type ToolPostInstallCommand = {
   label?: string;
+  command: string;
+  args: string[];
+};
+
+export type ToolUpdateCommand = {
   command: string;
   args: string[];
 };
@@ -144,7 +150,7 @@ export type PresetSelections = {
   skills?: string[];
   customAgents?: string[];
   mcps?: string[];
-  plugins?: string[];
+  tools?: string[];
   hooks?: string[];
 };
 
@@ -349,8 +355,8 @@ export function manifestNameForCategory(category: ManifestCategory): ManifestNam
       return "agents.json";
     case "mcps":
       return "mcps.json";
-    case "plugins":
-      return "plugins.json";
+    case "tools":
+      return "tools.json";
     case "hooks":
       return "hooks.json";
     case "presets":
@@ -374,8 +380,8 @@ export function loadRulesManifest(options: Pick<CliOptions, "homeDir" | "manifes
   return parseManifest<RulesManifest>(options, "rules.json", isRulesManifest);
 }
 
-export function loadPluginManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): PluginManifest {
-  return parseManifest<PluginManifest>(options, "plugins.json", isPluginManifest);
+export function loadToolManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): ToolManifest {
+  return parseManifest<ToolManifest>(options, "tools.json", isToolManifest);
 }
 
 export function loadHookManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): HookManifest {
@@ -799,7 +805,7 @@ function isPresetManifestItem(value: unknown): value is PresetsManifest["presets
       (value.selections.skills === undefined || isStringArray(value.selections.skills)) &&
       (value.selections.customAgents === undefined || isStringArray(value.selections.customAgents)) &&
       (value.selections.mcps === undefined || isStringArray(value.selections.mcps)) &&
-      (value.selections.plugins === undefined || isStringArray(value.selections.plugins)) &&
+      (value.selections.tools === undefined || isStringArray(value.selections.tools)) &&
       (value.selections.hooks === undefined || isStringArray(value.selections.hooks))
     ))
   );
@@ -958,7 +964,7 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
     return `${JSON.stringify({ version: 2, layers: [] }, null, 2)}\n`;
   }
 
-  if (name === "plugins.json") {
+  if (name === "tools.json") {
     return `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`;
   }
 
@@ -1436,7 +1442,7 @@ export function isRulesManifest(value: unknown): value is RulesManifest {
   );
 }
 
-function isPluginManifest(value: unknown): value is PluginManifest {
+function isToolManifest(value: unknown): value is ToolManifest {
   if (!isRecord(value) || typeof value.version !== "number" || !Array.isArray(value.items)) {
     return false;
   }
@@ -1450,8 +1456,9 @@ function isPluginManifest(value: unknown): value is PluginManifest {
       typeof item.id === "string" &&
       typeof item.label === "string" &&
       typeof item.description === "string" &&
-      isPluginCommand(item.install) &&
-      (item.postInstall === undefined || isPluginPostInstallCommand(item.postInstall)) &&
+      isToolCommand(item.install) &&
+      (item.postInstall === undefined || isToolPostInstallCommand(item.postInstall)) &&
+      (item.update === undefined || isToolCommand(item.update)) &&
       typeof item.default === "boolean"
     );
   });
@@ -1467,11 +1474,11 @@ function isPresetsManifest(value: unknown): value is PresetsManifest {
   );
 }
 
-function isPluginPostInstallCommand(value: unknown): value is PluginPostInstallCommand {
-  return isRecord(value) && (value.label === undefined || typeof value.label === "string") && isPluginCommand(value);
+function isToolPostInstallCommand(value: unknown): value is ToolPostInstallCommand {
+  return isRecord(value) && (value.label === undefined || typeof value.label === "string") && isToolCommand(value);
 }
 
-function isPluginCommand(value: unknown): value is { command: string; args: string[] } {
+function isToolCommand(value: unknown): value is { command: string; args: string[] } {
   if (!isRecord(value) || typeof value.command !== "string" || !isStringArray(value.args)) {
     return false;
   }

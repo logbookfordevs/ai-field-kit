@@ -12,15 +12,15 @@ import {
   type RulesManifestLayer,
   type SkillManifest,
   type SkillManifestItem,
-  type PluginManifest,
-  type PluginManifestItem,
+  type ToolManifest,
+  type ToolManifestItem,
 } from "./manifest.js";
 import { validateRulesFileDestinations } from "./rules-file-destinations.js";
 import type { Area } from "./types.js";
 
 export type EditableManifestArea = Exclude<Area, "profiles">;
-export type EditableManifest = RulesManifest | SkillManifest | CustomAgentManifest | McpManifest | PluginManifest | HookManifest | Record<string, unknown>;
-export type EditableManifestItem = SkillManifestItem | CustomAgentManifestItem | McpManifestItem | PluginManifestItem | HookManifestItem;
+export type EditableManifest = RulesManifest | SkillManifest | CustomAgentManifest | McpManifest | ToolManifest | HookManifest | Record<string, unknown>;
+export type EditableManifestItem = SkillManifestItem | CustomAgentManifestItem | McpManifestItem | ToolManifestItem | HookManifestItem;
 
 type ItemManifest = {
   version: number;
@@ -32,7 +32,7 @@ type DefaultedManifestArea = Exclude<EditableManifestArea, "rules" | "agents">;
 type DefaultedManifestItem = Exclude<EditableManifestItem, CustomAgentManifestItem>;
 type DefaultedItemManifest = Omit<ItemManifest, "items"> & { items: DefaultedManifestItem[] };
 
-export function emptyEditableManifest(area: EditableManifestArea): RulesManifest | SkillManifest | CustomAgentManifest | McpManifest | PluginManifest | HookManifest {
+export function emptyEditableManifest(area: EditableManifestArea): RulesManifest | SkillManifest | CustomAgentManifest | McpManifest | ToolManifest | HookManifest {
   switch (area) {
     case "rules":
       return { version: 2, layers: [] };
@@ -42,7 +42,7 @@ export function emptyEditableManifest(area: EditableManifestArea): RulesManifest
       return { version: 1, items: [] };
     case "mcps":
       return { version: 1, items: [] };
-    case "plugins":
+    case "tools":
       return { version: 1, items: [] };
     case "hooks":
       return { version: 1, items: [] };
@@ -266,8 +266,8 @@ function isManifestForArea(area: EditableManifestArea, manifest: EditableManifes
       return isCustomAgentManifest(manifest);
     case "mcps":
       return isMcpManifest(manifest);
-    case "plugins":
-      return isPluginManifest(manifest);
+    case "tools":
+      return isToolManifest(manifest);
     case "hooks":
       return isHookManifest(manifest);
   }
@@ -339,7 +339,7 @@ function isCustomAgentManifest(value: EditableManifest): value is CustomAgentMan
   );
 }
 
-function isPluginManifest(value: EditableManifest): value is PluginManifest {
+function isToolManifest(value: EditableManifest): value is ToolManifest {
   const record = toRecord(value);
   return (
     Boolean(record) &&
@@ -353,16 +353,25 @@ function isPluginManifest(value: EditableManifest): value is PluginManifest {
       isRecord(item.install) &&
       typeof item.install.command === "string" &&
       isStringArray(item.install.args) &&
-      (item.postInstall === undefined || isPluginPostInstallCommand(item.postInstall)) &&
+      (item.postInstall === undefined || isToolPostInstallCommand(item.postInstall)) &&
+      (item.update === undefined || isToolCommand(item.update)) &&
       typeof item.default === "boolean"
     ))
   );
 }
 
-function isPluginPostInstallCommand(value: unknown): boolean {
+function isToolPostInstallCommand(value: unknown): boolean {
   return (
     isRecord(value) &&
     (value.label === undefined || typeof value.label === "string") &&
+    typeof value.command === "string" &&
+    isStringArray(value.args)
+  );
+}
+
+function isToolCommand(value: unknown): boolean {
+  return (
+    isRecord(value) &&
     typeof value.command === "string" &&
     isStringArray(value.args)
   );

@@ -7,7 +7,7 @@
 <p align="center"><strong>One field kit for every coding agent.</strong></p>
 
 <p align="center">
-  Portable rules, skills, Custom Agents, MCPs, plugins, and hooks—composed once and carried across your AI tools.
+  Portable rules, skills, Custom Agents, MCPs, tools, and hooks—composed once and carried across your AI tools.
 </p>
 
 <p align="center">
@@ -21,12 +21,12 @@
 
 AI Field Kit starts with the `afk` command. The CLI previews and applies the
 parts of an AI development setup that should move together: shared rules,
-skills, Custom Agents, MCPs, plugins, hooks, setup profiles, and project-local
+skills, Custom Agents, MCPs, tools, hooks, setup profiles, and project-local
 catalogs.
 
 The important bit: AFK is a router, not a replacement for every ecosystem tool.
 It owns AFK-specific rule and hook behavior, then delegates skills, MCPs, and
-plugins to the tools that already own those surfaces. AFK provisions Custom
+tools to the tools that already own those surfaces. AFK provisions Custom
 Agents through its own harness adapters without orchestrating them.
 
 Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated
@@ -80,7 +80,7 @@ Working from this checkout? Build and link the local CLI:
 
 Start with a dry run. AFK prints the exact actions it would take before writing
 rules, installing skills, provisioning Custom Agents, adding MCPs, installing
-plugins, or merging hooks.
+tools, or merging hooks.
 
 ```bash
 afk setup --dry-run
@@ -93,7 +93,7 @@ afk setup rules --dry-run
 afk setup skills --dry-run
 afk setup agents --dry-run
 afk setup mcps --dry-run
-afk setup plugins --dry-run
+afk setup tools --dry-run
 afk setup hooks --dry-run
 ```
 
@@ -127,7 +127,7 @@ install flow, and custom defaults workflow, read the
 | Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
 | Custom Agents | `afk setup agents` | Provisions selected portable agent files into Codex, Claude Code, or Pi. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `add-mcp`. |
-| Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |
+| Tools | `afk setup tools` | Runs curated tool installer commands and supported post-install setup. |
 | Hooks | `afk setup hooks` | Copies hook scripts and merges hook commands into supported agent configs. |
 
 `afk setup` can run all of those areas in one guided flow. Each area runs
@@ -168,7 +168,7 @@ preferred command shape.
 ## Catalogs and Sources
 
 AFK setup is catalog-driven. A catalog describes the recommended rules, skills,
-Custom Agents, MCPs, plugins, hooks, profiles, and presets for a machine or
+Custom Agents, MCPs, tools, hooks, profiles, and presets for a machine or
 project while keeping installation delegated to the right upstream tool.
 
 The global catalog cache lives here:
@@ -211,7 +211,7 @@ afk setup --local --dry-run
 
 The registry item writes the same fragmented catalog files AFK already reads
 under `./afk/catalog/`. shadcn handles distribution; AFK still owns setup
-semantics such as defaults, scopes, managed rules, hooks, plugins, and
+semantics such as defaults, scopes, managed rules, hooks, tools, and
 delegated skill/MCP installers. Custom Agent sources live in `agents.json` and
 are translated only when `afk setup agents` runs.
 
@@ -344,7 +344,7 @@ npx skills add https://github.com/logbookfordevs/ai-field-kit
 
 That is the lightest path, but it is not the full AFK experience. It installs
 skills from this repository only; it does not apply AFK rules, hooks, MCPs,
-plugins, catalog composition, or setup policy.
+tools, catalog composition, or setup policy.
 
 ---
 
@@ -380,7 +380,7 @@ host without replacing user-owned content in the rest of the file:
 ## Contributing
 
 This kit grows with real-world use. If you have improved a setup catalog, skill,
-MCP recommendation, plugin installer, or rule set that made an AI workflow more
+MCP recommendation, tool installer, or rule set that made an AI workflow more
 useful, open a PR.
 
 **Changing CLI behavior:**
@@ -445,7 +445,7 @@ Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use
 
 **I only want the skills** - Use
 `npx skills add https://github.com/logbookfordevs/ai-field-kit`. Use AFK when
-you also want rules, hooks, Custom Agents, MCPs, plugins, profiles, and catalog
+you also want rules, hooks, Custom Agents, MCPs, tools, profiles, and catalog
 policy.
 
 **I want to see what setup will do first** - Run `afk setup --dry-run` or a

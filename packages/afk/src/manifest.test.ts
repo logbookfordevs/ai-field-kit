@@ -8,7 +8,7 @@ import {
   defaultsManifestBaseUrls,
   ensureLocalManifests,
   loadPresetsManifest,
-  loadPluginManifest,
+  loadToolManifest,
   loadSourceManifestContents,
   mergedCustomAgentManifestContent,
   mergedRulesManifestContent,
@@ -376,7 +376,7 @@ test("ensureLocalManifests durably merges targeted rules layers", async () => {
   }
 });
 
-type PluginManifestFile = {
+type ToolManifestFile = {
   items: Array<{
     id: string;
     install: {
@@ -479,8 +479,8 @@ test("ensureLocalManifests migrates existing skills to invocation policy metadat
   assert.equal(next.items.some((item) => item.id === "afk-typecheck"), false);
 });
 
-test("packaged plugin manifests keep npx installs non-interactive", () => {
-  const manifest = JSON.parse(readFileSync(new URL("../catalog/plugins.json", import.meta.url), "utf8")) as PluginManifestFile;
+test("packaged tool manifests keep npx installs non-interactive", () => {
+  const manifest = JSON.parse(readFileSync(new URL("../catalog/tools.json", import.meta.url), "utf8")) as ToolManifestFile;
   const interactiveNpxItems = manifest.items
     .filter((item) => usesNpx(item.install.command, item.install.args) && !usesNonInteractiveNpx(item.install.command, item.install.args))
     .map((item) => item.id);
@@ -503,39 +503,39 @@ test("packaged catalogs expose the AFK Architect required bundle", () => {
   assert.ok(skills.items.some((item) => item.id === "afk-architect"));
 });
 
-test("plugin manifests reject shell control tokens outside shell commands", () => {
+test("tool manifests reject shell control tokens outside shell commands", () => {
   assert.throws(
-    () => loadPluginManifest({
+    () => loadToolManifest({
       homeDir: "/tmp/home",
       manifestContents: {
-        "plugins.json": JSON.stringify({
+        "tools.json": JSON.stringify({
           version: 1,
           items: [
             {
-              id: "bad-plugin",
-              label: "Bad Plugin",
+              id: "bad-tool",
+              label: "Bad Tool",
               description: "Invalid direct shell chaining.",
-              install: { command: "npx", args: ["--yes", "bad-plugin", "&&", "npx", "--yes", "bad-plugin", "update"] },
+              install: { command: "npx", args: ["--yes", "bad-tool", "&&", "npx", "--yes", "bad-tool", "update"] },
               default: true,
             },
           ],
         }),
       },
     }),
-    /Invalid AFK catalog file from setup source: plugins\.json/,
+    /Invalid AFK catalog file from setup source: tools\.json/,
   );
 
-  assert.doesNotThrow(() => loadPluginManifest({
+  assert.doesNotThrow(() => loadToolManifest({
     homeDir: "/tmp/home",
     manifestContents: {
-      "plugins.json": JSON.stringify({
+      "tools.json": JSON.stringify({
         version: 1,
         items: [
           {
-            id: "shell-plugin",
-            label: "Shell Plugin",
+            id: "shell-tool",
+            label: "Shell Tool",
             description: "Valid explicit shell command.",
-            install: { command: "sh", args: ["-c", "install-plugin && update-plugin"] },
+            install: { command: "sh", args: ["-c", "install-tool && update-tool"] },
             default: true,
           },
         ],
@@ -689,7 +689,7 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": hookManifest,
     };
 
@@ -738,7 +738,7 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": hookManifest,
     };
 
@@ -781,7 +781,7 @@ test("ensureLocalManifests can refresh project-local catalog", async () => {
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -835,7 +835,7 @@ test("ensureLocalManifests preserves imported skills that are absent from refres
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -901,7 +901,7 @@ test("ensureLocalManifests preserves local profiles absent from refreshed source
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://example.com/rules" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": JSON.stringify({ version: 1, items: [] }),
     };
     return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
@@ -975,7 +975,7 @@ test("ensureLocalManifests turns imported skills into source skills when refresh
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -1046,7 +1046,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": hookManifest,
     };
 
@@ -1067,7 +1067,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
       dryRun: true,
     });
 
-    assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("plugins.json")));
+    assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("tools.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/afk/catalog/skills.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/packages/afk/catalog/skills.json")));
   } finally {
@@ -1084,7 +1084,7 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
     const manifestDir = localManifestDir(homeDir);
     mkdirSync(manifestDir, { recursive: true });
     writeFileSync(
-      join(manifestDir, "plugins.json"),
+      join(manifestDir, "tools.json"),
       `${JSON.stringify(
         {
           version: 1,
@@ -1092,7 +1092,7 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
             {
               id: "keep-me",
               label: "Keep Me",
-              description: "Keep existing plugin manifest.",
+              description: "Keep existing tool manifest.",
               install: { command: "sh", args: ["-c", "keep-me"] },
               default: true,
             },
@@ -1116,9 +1116,9 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
       cloneGithubSource: emptyGithubCheckout,
     });
 
-    const pluginOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("plugins.json"));
-    assert.equal(pluginOperation?.type, "skip");
-    assert.equal(readFileSync(join(manifestDir, "plugins.json"), "utf8").includes("keep-me"), true);
+    const toolOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("tools.json"));
+    assert.equal(toolOperation?.type, "skip");
+    assert.equal(readFileSync(join(manifestDir, "tools.json"), "utf8").includes("keep-me"), true);
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
+import { buildMcpCommands, buildSkillCommands, buildToolCommands, buildToolUpdateCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions, Runtime } from "./types.js";
 
@@ -34,7 +34,7 @@ const defaultHomeDir = localHomeWithManifests({
       },
     ],
   },
-  "plugins.json": {
+  "tools.json": {
     version: 1,
     items: [
       {
@@ -45,10 +45,10 @@ const defaultHomeDir = localHomeWithManifests({
         default: true,
       },
       {
-        id: "sample-plugin",
-        label: "Sample Plugin",
-        description: "Sample plugin install.",
-        install: { command: "sh", args: ["-c", "install-sample-plugin"] },
+        id: "sample-tool",
+        label: "Sample Tool",
+        description: "Sample tool install.",
+        install: { command: "sh", args: ["-c", "install-sample-tool"] },
         default: true,
       },
     ],
@@ -70,7 +70,7 @@ const options: CliOptions = {
   skillAddProfileOnlyIds: [],
   skillAddStartDisabled: false,
   selectedMcpIds: [],
-  selectedPluginIds: [],
+  selectedToolIds: [],
   selectedHookIds: [],
   rulesRef: "main",
   rulesSource: "local",
@@ -253,8 +253,8 @@ test("buildMcpCommands does not expand yes mode to broad default agents", () => 
   assert.deepEqual(commands, []);
 });
 
-test("buildPluginCommands installs selected plugins", () => {
-  const commands = buildPluginCommands({ ...options, selectedPluginIds: ["plannotator"] });
+test("buildToolCommands installs selected tools", () => {
+  const commands = buildToolCommands({ ...options, selectedToolIds: ["plannotator"] });
   assert.equal(commands.length, 1);
   assert.equal(commands[0]?.command, "bash");
   assert.deepEqual(commands[0]?.args, ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"]);
@@ -272,29 +272,60 @@ test("buildMcpCommands skips project-scoped Antigravity installs", () => {
   assert.deepEqual(commands, []);
 });
 
-test("buildPluginCommands supports generic post-install commands", () => {
-  const homeDir = localHomeWithManifest("plugins.json", {
+test("buildToolCommands supports generic post-install commands", () => {
+  const homeDir = localHomeWithManifest("tools.json", {
     version: 1,
     items: [
       {
         id: "custom-postinstall",
-        label: "Custom Plugin",
-        description: "Custom plugin.",
+        label: "Custom Tool",
+        description: "Custom tool.",
         install: { command: "sh", args: ["-c", "install-custom"] },
         postInstall: { command: "sh", args: ["-c", "custom init"] },
         default: true,
       },
     ],
   });
-  const commands = buildPluginCommands({ ...options, homeDir, selectedPluginIds: ["custom-postinstall"] });
+  const commands = buildToolCommands({ ...options, homeDir, selectedToolIds: ["custom-postinstall"] });
 
   assert.deepEqual(
     commands.map((command) => [command.label, command.command, command.args]),
     [
-      ["Custom Plugin / install", "sh", ["-c", "install-custom"]],
-      ["Custom Plugin / post-install", "sh", ["-c", "custom init"]],
+      ["Custom Tool / install", "sh", ["-c", "install-custom"]],
+      ["Custom Tool / post-install", "sh", ["-c", "custom init"]],
     ],
   );
+});
+
+test("buildToolUpdateCommands runs only selected tools with update commands", () => {
+  const homeDir = localHomeWithManifest("tools.json", {
+    version: 1,
+    items: [
+      {
+        id: "updateable",
+        label: "Updateable Tool",
+        description: "Can update itself.",
+        install: { command: "sh", args: ["-c", "install-updateable"] },
+        update: { command: "updateable", args: ["update"] },
+        default: true,
+      },
+      {
+        id: "install-only",
+        label: "Install-only Tool",
+        description: "Has no update command.",
+        install: { command: "install-only", args: [] },
+        default: true,
+      },
+    ],
+  });
+
+  const commands = buildToolUpdateCommands({ ...options, homeDir }, ["updateable", "install-only"]);
+
+  assert.deepEqual(commands, [{
+    label: "Updateable Tool / update",
+    command: "updateable",
+    args: ["update"],
+  }]);
 });
 
 test("runDelegateCommands fails fast by default", async () => {

@@ -2,11 +2,11 @@
 
 AFK is the setup router for AI Field Kit. It gives developers one place to
 preview and apply the parts of the kit they want: shared rules, skills, Custom
-Agents, MCPs, plugins, hooks, and custom setup catalogs.
+Agents, MCPs, tools, hooks, and custom setup catalogs.
 
 The CLI is intentionally a router, not a replacement for every ecosystem tool.
 AFK owns the AFK-specific rule and hook behavior. It delegates skills to the
-official `skills` CLI, MCPs to `add-mcp`, and plugins to their own installer
+official `skills` CLI, MCPs to `add-mcp`, and tools to their own installer
 commands.
 
 AFK skills are modeled as composable parts: primitives, wrappers, workflows,
@@ -52,7 +52,7 @@ curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
 afk setup --dry-run
 ```
 
-Start with `--dry-run`. AFK prints the exact rules, skills, MCP, plugin, and
+Start with `--dry-run`. AFK prints the exact rules, skills, MCP, tool, and
 hook actions it would run before anything writes to your machine.
 
 When the preview looks right, run the same command without `--dry-run`:
@@ -77,7 +77,7 @@ remembered default source.
 | Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
 | Custom Agents | `afk setup agents` | Translates portable agent files into native Codex, Claude Code, or Pi definitions. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `npx add-mcp`. |
-| Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |
+| Tools | `afk setup tools` | Runs curated tool installer commands and supported post-install setup. |
 | Hooks | `afk setup hooks` | Copies hook scripts and merges hook commands into supported agent configs. |
 
 `afk setup` can run all of those areas in one guided flow. Each area runs
@@ -152,7 +152,7 @@ afk setup rules --dry-run
 afk setup skills --dry-run
 afk setup agents --dry-run
 afk setup mcps --dry-run
-afk setup plugins --dry-run
+afk setup tools --dry-run
 afk setup hooks --dry-run
 
 # Refresh local catalog files from defaults
@@ -201,7 +201,7 @@ or delegated command. Read-only commands do not need it.
 | `afk open` | Open the user AFK folder at `~/.agents/afk`; pass `--code` to use VS Code. | Read-only GUI handoff. |
 | `afk --version`, `afk -v` | Print the installed AFK version. | Read-only. |
 | `afk <command> --help`, `-h` | Print command-specific usage, options, and examples. | Read-only. |
-| `afk setup` | Preview or apply rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks. | AFK writes owned files and delegates ecosystem installs. |
+| `afk setup` | Preview or apply rules, skills, profiles, Custom Agents, MCPs, tools, and hooks. | AFK writes owned files and delegates ecosystem installs. |
 | `afk refresh [category...]` | Refresh cached catalog files from the remembered or selected source. | Writes the global or project-local catalog cache. |
 | `afk show [category...]` | Inspect cached catalog data or a one-off source. | Read-only, except `--visualize` writes an HTML file. |
 | `afk catalog` | Interactively edit writable catalog files. | Writes catalog JSON. |
@@ -229,7 +229,7 @@ skill before provisioning its three required portable Custom Agents.
 | `afk setup profiles` | Prepare `profiles.json` definitions from the selected source. It does not install skills or enable a profile. | AFK. |
 | `afk setup agents` | Select portable Custom Agents and translate them into native Codex, Claude Code, or Pi definitions. | AFK adapters; the harness owns orchestration. |
 | `afk setup mcps` | Select catalog MCPs and delegate their installation for supported agents/scopes. | `add-mcp`. |
-| `afk setup plugins` | Run selected catalog installer commands and supported post-install commands. | Each plugin installer. |
+| `afk setup tools` | Run selected catalog installer commands and supported post-install commands. | Each tool installer. |
 | `afk setup hooks` | Copy selected hook scripts and merge commands into supported native hook configs. | AFK. |
 
 Setup aliases retained for compatibility:
@@ -245,7 +245,7 @@ Setup aliases retained for compatibility:
 
 ### Refresh and Show Commands
 
-Catalog categories are `rules`, `skills`, `profiles`, `agents`, `mcps`, `plugins`,
+Catalog categories are `rules`, `skills`, `profiles`, `agents`, `mcps`, `tools`,
 `hooks`, and `presets`. Pass one or more categories to limit output or refresh
 writes:
 
@@ -269,7 +269,7 @@ afk show skills profiles
 | `afk show profiles` | Inspect profile definitions and catalog-wide reconciliation policy. |
 | `afk show agents` | Inspect portable Custom Agent catalog entries before provisioning. |
 | `afk show mcps` | Inspect MCP recommendations before delegated installation. |
-| `afk show plugins` | Inspect plugin installers and post-install commands. |
+| `afk show tools` | Inspect tool installers and post-install commands. |
 | `afk show hooks` | Inspect lifecycle hook definitions and supported targets. |
 | `afk show presets` | Inspect remembered source metadata and preset bundle membership. |
 | `afk show --source <source>` | Read a source for this invocation without changing the cache. |
@@ -302,7 +302,7 @@ its interactive editor. Use `--dry-run` to preview supported writes.
 | Profile policy | `afk catalog profiles toggle-always-on` | Top-level skills kept by every active profile. |
 | Custom Agents | `afk catalog agents add`, `edit`, `remove` | Portable agent source references in `agents.json`. |
 | MCPs | `afk catalog mcps add`, `edit`, `remove`, `toggle-default` | MCP recommendations in `mcps.json`. |
-| Plugins | `afk catalog plugins add`, `edit`, `remove`, `toggle-default` | Installer definitions in `plugins.json`. |
+| Tools | `afk catalog tools add`, `edit`, `remove`, `toggle-default` | Installer definitions in `tools.json`. |
 | Hooks | `afk catalog hooks add`, `edit`, `remove`, `toggle-default` | Lifecycle hook definitions in `hooks.json`. |
 
 After a confirmed global `afk catalog skills edit` or `bulk-edit`, AFK offers
@@ -472,7 +472,7 @@ Area support is narrower than the full alias list:
 | Custom Agents | `codex`, `claude`, `pi`; Pi additionally requires the `pi-subagents` extension. |
 | MCPs | `antigravity`, `claude`, `codex`, `opencode`; project scope skips Antigravity because `add-mcp` does not support that target locally. |
 | Hooks | `codex`, `claude`, `cursor-local`. |
-| Plugins | Plugin installers run independently and may define generic post-install commands. |
+| Tools | Tool installers run independently and may define generic post-install commands. |
 
 ### Detected Setup Targets
 
@@ -486,7 +486,7 @@ agent directories such as `.codex/config.toml`, `.claude/settings.json`,
 If a selected target-dependent area has no detected compatible target,
 interactive setup asks for manual targets once.
 
-Plugins are not driven by detected agent targets. They remain global or
+Tools are not driven by detected agent targets. They remain global or
 project scoped. Skills always use the shared `.agents/skills` install path;
 detected skill providers only add extra direct `skills` CLI targets.
 
@@ -650,7 +650,7 @@ agents.json
 mcps.json
 presets.json
 rules.json
-plugins.json
+tools.json
 hooks.json
 ```
 
@@ -842,7 +842,7 @@ the global cache is an assembled catalog:
 ├── skills.json     # skills-kit
 ├── profiles.json   # profile-kit
 ├── mcps.json       # platform-kit
-├── plugins.json    # base-kit
+├── tools.json    # base-kit
 ├── hooks.json      # automation-kit
 └── presets.json    # remembers base-kit as the default source
 ```
@@ -850,7 +850,7 @@ the global cache is an assembled catalog:
 Inspect the assembled result before applying it:
 
 ```bash
-afk show rules skills profiles mcps plugins hooks
+afk show rules skills profiles mcps tools hooks
 afk setup --dry-run
 ```
 
@@ -902,7 +902,7 @@ The registry item writes:
 ./afk/catalog/agents.json
 ./afk/catalog/mcps.json
 ./afk/catalog/rules.json
-./afk/catalog/plugins.json
+./afk/catalog/tools.json
 ./afk/catalog/hooks.json
 ./afk/catalog/presets.json
 ```
@@ -1053,7 +1053,7 @@ behavior.
 AFK passes the source and args to `add-mcp`, then adds scope and agent flags
 based on the setup command.
 
-### Plugins
+### Tools
 
 ```json
 {
@@ -1062,7 +1062,7 @@ based on the setup command.
     {
       "id": "example-tool",
       "label": "Example Tool",
-      "description": "Install the example developer plugin.",
+      "description": "Install the example developer tool.",
       "install": {
         "command": "sh",
         "args": ["-c", "curl -fsSL https://example.com/install.sh | sh"]
@@ -1073,8 +1073,8 @@ based on the setup command.
 }
 ```
 
-Plugins are delegated commands. If one plugin install fails, AFK reports the
-failure and continues with the remaining selected plugins.
+Tools are delegated commands. If one tool install fails, AFK reports the
+failure and continues with the remaining selected tools.
 
 AFK also supports object-style post-install commands:
 
@@ -1156,10 +1156,10 @@ Global setup writes under the user home directory. Project setup writes under
 the current project. Cursor Cloud lifecycle hooks are intentionally out of
 scope.
 
-### Plugins
+### Tools
 
-The bundled plugin catalog currently includes Plannotator, Plannotator Tot,
-Yggtree, Impeccable, and Orchestrator. Plugin setup is
+The bundled tool catalog currently includes Plannotator, Plannotator Tot,
+Yggtree, Impeccable, and Orchestrator. Tool setup is
 best-effort because these installers are owned by their upstream tools.
 
 ### Profiles
@@ -1251,13 +1251,13 @@ afk show
 Rerun with `--verbose` so the delegated command prints its own output:
 
 ```bash
-afk setup plugins --verbose
+afk setup tools --verbose
 ```
 
 AFK can show which delegated command it planned with:
 
 ```bash
-afk setup plugins --dry-run
+afk setup tools --dry-run
 ```
 
 ## Skills and Profiles
@@ -1333,7 +1333,7 @@ inserted as imported, uncategorized entries.
 
 Before `afk skills add` starts, AFK offers to import installed skills that are
 missing from `skills.json` when their source is recoverable from the official
-skills CLI lock. Installs owned by plugins or other CLIs without lock metadata
+skills CLI lock. Installs owned by tools or other CLIs without lock metadata
 are ignored by this preflight and remain under their owning catalog; users can
 still add them to the skills catalog manually when they want AFK to manage
 them. Add flags remain scoped to skills introduced by the current installation

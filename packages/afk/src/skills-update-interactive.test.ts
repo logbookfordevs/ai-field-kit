@@ -81,7 +81,7 @@ test("afk skills update picker lists only cataloged locked skills", async () => 
     skillAddProfileOnlyIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
-    selectedPluginIds: [],
+    selectedToolIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "manifest",

@@ -33,7 +33,7 @@ vi.mock("./interactive.js", async (importOriginal) => {
   };
 });
 
-test("runSetup keeps prompted rule targets out of plugin defaults", async () => {
+test("runSetup keeps prompted rule targets out of tool defaults", async () => {
   const homeDir = localHomeWithManifests({
     "presets.json": { version: 1, defaultsSource: "local", presets: [] },
   });
@@ -41,14 +41,14 @@ test("runSetup keeps prompted rule targets out of plugin defaults", async () => 
   const output: string[] = [];
 
   promptState.selection = {
-    areas: ["rules", "plugins"],
+    areas: ["rules", "tools"],
     agents: ["codex"],
     hookAgents: [],
     setupScope: "global",
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: ["sample-plugin"],
+    toolIds: ["sample-tool"],
     hookIds: [],
   };
 
@@ -59,7 +59,7 @@ test("runSetup keeps prompted rule targets out of plugin defaults", async () => 
   assert.ok(text.includes("- Rules targets: codex"));
   assert.ok(text.includes("/.codex/AGENTS.md"));
   assert.ok(!text.includes("/.gemini/GEMINI.md"));
-  assert.ok(text.includes("Sample Plugin / install"));
+  assert.ok(text.includes("Sample Tool / install"));
 });
 
 test("runSetup labels detected targets in the setup summary", async () => {
@@ -75,7 +75,7 @@ test("runSetup labels detected targets in the setup summary", async () => {
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: [],
+    toolIds: [],
     hookIds: [],
     agentSource: "detected",
   };
@@ -100,7 +100,7 @@ test("runSetup explains selected MCPs without targets", async () => {
     skillIds: [],
     skillAgents: [],
     mcpIds: ["stitch"],
-    pluginIds: [],
+    toolIds: [],
     hookIds: [],
   };
 
@@ -364,14 +364,14 @@ test("runSetup prepares manifests only once before running selected areas", asyn
 
   promptState.defaultsSource = "local";
   promptState.selection = {
-    areas: ["rules", "plugins"],
+    areas: ["rules", "tools"],
     agents: ["codex"],
     hookAgents: [],
     setupScope: "global",
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: ["sample-plugin"],
+    toolIds: ["sample-tool"],
     hookIds: [],
   };
 
@@ -645,7 +645,7 @@ test("runSetup skips the source prompt when a default source is saved", async ()
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: [],
+    toolIds: [],
     hookIds: [],
   };
 
@@ -663,7 +663,7 @@ test("runSetup skips the source prompt when a default source is saved", async ()
 });
 
 test("runArea prompts for a source only on first-run interactive setup areas", async () => {
-  const areas = ["rules", "skills", "profiles", "mcps", "plugins", "hooks"] as const;
+  const areas = ["rules", "skills", "profiles", "mcps", "tools", "hooks"] as const;
 
   for (const area of areas) {
     const homeDir = localHomeWithManifests();
@@ -678,7 +678,7 @@ test("runArea prompts for a source only on first-run interactive setup areas", a
       agents: ["codex"],
       selectedSkillIds: area === "skills" ? ["afk-note"] : [],
       selectedMcpIds: area === "mcps" ? ["stitch"] : [],
-      selectedPluginIds: area === "plugins" ? ["sample-plugin"] : [],
+      selectedToolIds: area === "tools" ? ["sample-tool"] : [],
       selectedHookIds: area === "hooks" ? ["afk-typescript-typecheck-stop-check"] : [],
     });
 
@@ -902,7 +902,7 @@ function defaultOptions(homeDir: string, repoDir: string): CliOptions {
     skillAddProfileOnlyIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
-    selectedPluginIds: [],
+    selectedToolIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "local",
@@ -936,14 +936,14 @@ function localHomeWithManifests(overrides: Record<string, unknown> = {}): string
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "local", url: "rules/AGENTS.md" },
-    "plugins.json": {
+    "tools.json": {
       version: 1,
       items: [
         {
-          id: "sample-plugin",
-          label: "Sample Plugin",
-          description: "Sample plugin install.",
-          install: { command: "sh", args: ["-c", "install-sample-plugin"] },
+          id: "sample-tool",
+          label: "Sample Tool",
+          description: "Sample tool install.",
+          install: { command: "sh", args: ["-c", "install-sample-tool"] },
           default: true,
         },
       ],
@@ -971,7 +971,7 @@ function localDefaultsSource(overrides: Record<string, unknown> = {}): string {
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "github", url: "" },
-    "plugins.json": { version: 1, items: [] },
+    "tools.json": { version: 1, items: [] },
     "hooks.json": { version: 1, items: [] },
     ...overrides,
   };

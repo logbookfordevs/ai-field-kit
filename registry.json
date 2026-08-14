@@ -7,7 +7,7 @@
       "name": "afk-catalog",
       "type": "registry:item",
       "title": "AFK Catalog",
-      "description": "Project-local AFK setup catalog for rules, skills, profiles, Custom Agents, MCPs, plugins, hooks, and presets.",
+      "description": "Project-local AFK setup catalog for rules, skills, profiles, Custom Agents, MCPs, tools, hooks, and presets.",
       "files": [
         {
           "path": "packages/afk/catalog/skills.json",
@@ -35,9 +35,9 @@
           "target": "~/afk/catalog/rules.json"
         },
         {
-          "path": "packages/afk/catalog/plugins.json",
+          "path": "packages/afk/catalog/tools.json",
           "type": "registry:file",
-          "target": "~/afk/catalog/plugins.json"
+          "target": "~/afk/catalog/tools.json"
         },
         {
           "path": "packages/afk/catalog/hooks.json",

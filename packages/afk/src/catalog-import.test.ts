@@ -251,7 +251,7 @@ function cliOptions(overrides: Partial<CliOptions>): CliOptions {
     skillAddProfileOnlyIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
-    selectedPluginIds: [],
+    selectedToolIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "local",

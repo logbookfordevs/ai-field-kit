@@ -5,9 +5,9 @@ import { snapshotDisabledStartupSkills, syncSkillInvocationPolicy, syncSkillStar
 import { loadSkillProfileState, reconcileSkillProfiles } from "./skills/profiles.js";
 import { mergeSetupSourceSkillsIntoCatalog, syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { detectSetupTargets } from "./agent-detection.js";
-import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
+import { buildMcpCommands, buildSkillCommands, buildToolCommands, runDelegateCommands } from "./delegates.js";
 import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
+import { selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillsInstall, selectToolsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { builtInDefaultsSource, ensureLocalManifests, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
@@ -54,7 +54,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     selectedCustomAgentIds: selection.customAgentIds ?? [],
     selectedSkillAgentIds: selection.skillAgents,
     selectedMcpIds: selection.mcpIds,
-    selectedPluginIds: selection.pluginIds,
+    selectedToolIds: selection.toolIds,
     selectedHookIds: selection.hookIds,
   };
 
@@ -186,7 +186,7 @@ function areaOptionsForSetupArea(
     return { ...options, agents: selection.hookAgents };
   }
 
-  if (area === "plugins") {
+  if (area === "tools") {
     return { ...options, agents: originalOptions.agents };
   }
 
@@ -300,14 +300,14 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 
       return runDelegateCommands(runtime, buildMcpCommands(selectedOptions), selectedOptions);
     }
-    case "plugins": {
-      const selectedOptions = await resolvePluginOptions(prepared.options);
-      if (!selectedOptions.yes && selectedOptions.selectedPluginIds.length === 0) {
-        runtime.io.stdout("\nNo plugins selected. No changes planned.");
+    case "tools": {
+      const selectedOptions = await resolveToolOptions(prepared.options);
+      if (!selectedOptions.yes && selectedOptions.selectedToolIds.length === 0) {
+        runtime.io.stdout("\nNo tools selected. No changes planned.");
         return 0;
       }
 
-      return runDelegateCommands(runtime, buildPluginCommands(selectedOptions), {
+      return runDelegateCommands(runtime, buildToolCommands(selectedOptions), {
         ...options,
         continueOnError: true,
       });
@@ -482,16 +482,16 @@ async function resolveCustomAgentOptions(options: CliOptions): Promise<CliOption
   };
 }
 
-async function resolvePluginOptions(options: CliOptions): Promise<CliOptions> {
-  if (options.yes || options.selectedPluginIds.length > 0) {
+async function resolveToolOptions(options: CliOptions): Promise<CliOptions> {
+  if (options.yes || options.selectedToolIds.length > 0) {
     return options;
   }
 
-  const selection = await selectPluginsInstall(options);
+  const selection = await selectToolsInstall(options);
   return {
     ...options,
     agents: selection.agents,
-    selectedPluginIds: selection.pluginIds,
+    selectedToolIds: selection.toolIds,
   };
 }
 
@@ -623,7 +623,7 @@ function isManifestFilename(value: string | undefined): value is ManifestFilenam
     value === "mcps.json" ||
     value === "presets.json" ||
     value === "rules.json" ||
-    value === "plugins.json" ||
+    value === "tools.json" ||
     value === "hooks.json";
 }
 
@@ -639,8 +639,8 @@ function areaLabel(area: Area): string {
       return "Custom Agents";
     case "mcps":
       return "MCPs";
-    case "plugins":
-      return "Plugins";
+    case "tools":
+      return "Tools";
     case "hooks":
       return "Hooks";
   }
