@@ -345,7 +345,7 @@ test("runManifestConfigureWithPrompts previews dry-run edits without writing", a
   assert.ok(output.join("\n").includes("Catalog changes"));
   assert.ok(output.join("\n").includes("mcps.json: 1 item removed (1 → 0)"));
   assert.ok(!output.join("\n").includes("--- mcps.json ---"));
-  assert.ok(!output.join("\n").includes("https://stitch.googleapis.com/mcp"));
+  assert.ok(!output.join("\n").includes('"items":'));
   assert.ok(output.join("\n").includes("Dry run complete. No catalog files written."));
 });
 
@@ -384,7 +384,7 @@ test("runManifestConfigureWithPrompts shows the complete catalog preview in verb
   assert.ok(text.includes("mcps.json: 1 item removed (1 → 0)"));
   assert.ok(text.includes("Catalog preview"));
   assert.ok(text.includes("--- mcps.json ---"));
-  assert.ok(!text.includes("https://stitch.googleapis.com/mcp"));
+  assert.ok(text.includes('"items": []'));
 });
 
 test("runManifestConfigureWithPrompts preserves existing skill args during no-op edit", async () => {
