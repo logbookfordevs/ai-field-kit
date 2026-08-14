@@ -19,6 +19,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `cli:` made `afk skills delete --profile` present the profile's installed skills as an all-selected checklist before deletion, while `--yes` keeps deleting the full installed set non-interactively.
 - `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.
 - `skills:` distilled Code Grill into a manual wrapper that composes Grilling, Truss Evaluation, and Codebase Design around the material technical frontier without duplicating their workflows.
 - `skills:` taught AFK Code Review to review an implementation ticket alongside its originating material, detect lost or distorted requirements, and substantiate the ticket's recorded implementation and verification claims.

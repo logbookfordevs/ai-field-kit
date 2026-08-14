@@ -1042,11 +1042,19 @@ async function runSkillsDeleteProfile(profileId: string | undefined, runtime: Ru
     return 1;
   }
 
-  const records = skillRecordsForProfile(options, profile);
-  if (records.length === 0) {
+  const profileRecords = skillRecordsForProfile(options, profile);
+  if (profileRecords.length === 0) {
     runtime.io.stderr(`No installed skills found for profile: ${profile.id}`);
     return 1;
   }
+
+  const records = options.yes
+    ? profileRecords
+    : await promptSkillRecords(
+      profileRecords,
+      `Select skills to delete from profile ${profile.id}:`,
+      { checked: true },
+    );
 
   const readOnlyRecord = records.find((record) => record.readOnly);
   if (readOnlyRecord) {
@@ -1422,7 +1430,7 @@ async function promptSkillRecord(records: SkillRecord[], message: string): Promi
 async function promptSkillRecords(
   records: SkillRecord[],
   message: string,
-  options: { includeCatalogOrigin?: boolean } = {},
+  options: { checked?: boolean; includeCatalogOrigin?: boolean } = {},
 ): Promise<SkillRecord[]> {
   if (records.length === 0) {
     return [];
@@ -1436,6 +1444,7 @@ async function promptSkillRecords(
       value: record,
       description: renderSkillChoiceDescription(record, options),
       short: record.folder,
+      ...(options.checked === undefined ? {} : { checked: options.checked }),
     })),
     pageSize: 12,
     required: true,
