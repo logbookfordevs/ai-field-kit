@@ -4,11 +4,11 @@ import { customAgentTargetPath, syncCustomAgents, type CustomAgentHarness } from
 import { snapshotDisabledStartupSkills, syncSkillInvocationPolicy, syncSkillStartupStorage } from "./skills.js";
 import { loadSetupSkillProfileCatalog, loadSkillProfileState, reconcileSkillProfiles } from "./skills/profiles.js";
 import { mergeSetupSourceSkillsIntoCatalog, syncSkillCatalogFromManifest } from "./skills/catalog.js";
-import { planSetupSourceCatalogImport, snapshotSetupSourceLockedSkillIds } from "./catalog-import.js";
+import { planSetupSourceCatalogImport, planSkillCatalogRecovery, snapshotSetupSourceLockedSkillIds } from "./catalog-import.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
 import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { confirmPartialSkillProfileInstall, selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
+import { confirmPartialSkillProfileInstall, selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRecoverableProfileSkills, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { builtInDefaultsSource, ensureLocalManifests, expandComposedSkillIds, loadSkillManifest, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
@@ -294,10 +294,35 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const catalog = loadSetupSkillProfileCatalog(prepared.options);
       const selectedProfiles = catalog.items.filter((profile) => selection.profileIds?.includes(profile.id));
       const directSkillIds = [...new Set([...catalog.alwaysOn, ...selectedProfiles.flatMap((profile) => profile.skills)])];
-      const skillManifest = loadSkillManifest(prepared.options);
+      let skillManifest = loadSkillManifest(prepared.options);
       const selectedSkillIds = expandComposedSkillIds(skillManifest.items, directSkillIds);
+      const initialAvailableIds = new Set(skillManifest.items.map((item) => item.id));
+      const missingIds = selectedSkillIds.filter((id) => !initialAvailableIds.has(id));
+      let recoveryOperation: PathOperation | undefined;
+      if (missingIds.length > 0) {
+        const recoveryCandidates = planSkillCatalogRecovery(prepared.options, missingIds).recovered;
+        if (recoveryCandidates.length > 0) {
+          runtime.io.stdout(`Recoverable profile skills found in the skills lock: ${recoveryCandidates.map((item) => item.id).join(", ")}.`);
+          const selectedRecoveryIds = prepared.options.yes
+            ? recoveryCandidates.map((item) => item.id)
+            : await selectRecoverableProfileSkills(recoveryCandidates.map(({ id, label, source }) => ({ id, label, source })));
+          const recoveryPlan = planSkillCatalogRecovery(prepared.options, selectedRecoveryIds);
+          recoveryOperation = recoveryPlan.operation;
+          if (recoveryPlan.recovered.length > 0) {
+            const scopes = skillManifest.scopes ?? [];
+            const recoveredUsesUncategorized = recoveryPlan.recovered.some((item) => item.catalog?.scope === "uncategorized");
+            skillManifest = {
+              ...skillManifest,
+              scopes: recoveredUsesUncategorized && !scopes.some((scope) => scope.id === "uncategorized")
+                ? [...scopes, { id: "uncategorized", label: "Uncategorized", description: "Imported skills waiting for categorization." }]
+                : scopes,
+              items: [...skillManifest.items, ...recoveryPlan.recovered],
+            };
+          }
+        }
+      }
       const availableIds = new Set(skillManifest.items.map((item) => item.id));
-      const missingIds = selectedSkillIds.filter((id) => !availableIds.has(id));
+      const unavailableIds = selectedSkillIds.filter((id) => !availableIds.has(id));
       const availableSkillIds = selectedSkillIds.filter((id) => availableIds.has(id));
       if (missingIds.length > 0) {
         runtime.io.stderr(`Missing profile skills: ${missingIds.join(", ")}.`);
@@ -305,7 +330,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
           runtime.io.stderr("No available profile skills remain. No changes planned.");
           return 1;
         }
-        const accepted = prepared.options.yes || await confirmPartialSkillProfileInstall(missingIds);
+        const accepted = prepared.options.yes || await confirmPartialSkillProfileInstall(unavailableIds);
         if (!accepted) {
           runtime.io.stdout("Profile skill installation cancelled. No changes planned.");
           return 0;
@@ -325,6 +350,10 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 
       const selectedOptions = {
         ...prepared.options,
+        manifestContents: {
+          ...prepared.options.manifestContents,
+          "skills.json": JSON.stringify(skillManifest),
+        },
         selectedSkillIds: availableSkillIds,
         selectedSkillAgentIds: selection.skillAgents,
       };
@@ -342,6 +371,9 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         : [];
       const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
       if (code === 0) {
+        if (recoveryOperation && !selectedOptions.dryRun) {
+          applyOperation(recoveryOperation);
+        }
         syncSkillInvocationPolicy(runtime, selectedOptions);
         syncSkillStartupStorage(runtime, selectedOptions, disabledBeforeInstall);
         syncSetupSkillCatalog(runtime, selectedOptions, explicitSetupSource, preexistingWholeSourceSkillIds);

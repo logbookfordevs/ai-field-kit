@@ -295,9 +295,26 @@ export async function selectSkillProfilesInstall(options: CliOptions): Promise<P
 
 export async function confirmPartialSkillProfileInstall(missingIds: string[]): Promise<boolean> {
   return confirm({
-    message: `Install the available profile skills without ${missingIds.join(", ")}?`,
+    message: missingIds.length > 0
+      ? `Install the available profile skills without ${missingIds.join(", ")}?`
+      : "Install the available profile skills?",
     default: false,
     theme: afkPromptTheme,
+  });
+}
+
+export async function selectRecoverableProfileSkills(
+  skills: Array<{ id: string; label: string; source: string }>,
+): Promise<string[]> {
+  return checkbox({
+    message: "Choose missing profile skills to recover",
+    choices: skills.map((skill) => ({
+      name: skill.label,
+      value: skill.id,
+      checked: true,
+      description: `Restore from ${skill.source}`,
+    })),
+    theme: afkCheckboxTheme,
   });
 }
 

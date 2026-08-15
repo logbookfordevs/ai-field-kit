@@ -45,6 +45,49 @@ export type SetupSourceCatalogImportPlan = {
   targetCatalogPath: string;
 };
 
+export type SkillCatalogRecoveryPlan = {
+  operation?: PathOperation;
+  recovered: SkillManifestItem[];
+  targetCatalogPath: string;
+};
+
+export function planSkillCatalogRecovery(
+  options: CatalogImportOptions,
+  requestedIds: string[],
+): SkillCatalogRecoveryPlan {
+  const targetCatalogPath = join(options.manifestLocal ? projectManifestDir(options.cwd) : localManifestDir(options.homeDir), "skills.json");
+  const existing = readSkillCatalog(targetCatalogPath);
+  const existingIds = new Set(existing.items.map((item) => item.id.toLowerCase()));
+  const requested = new Set(requestedIds.map((id) => id.toLowerCase()));
+  const lock = readSkillLock(sourceLockPathForOptions(options));
+  const recovered = installedSkillsForImport(sourceSkillsDirForOptions(options))
+    .filter((skill) => requested.has(skill.id.toLowerCase()) && !existingIds.has(skill.id.toLowerCase()))
+    .flatMap((skill) => {
+      const lockEntry = lock.skills?.[skill.id];
+      return lockEntry?.source
+        ? [skillManifestItemFromInstalledSkill(skill.id, skill.root, lockEntry.source, skill.startDisabled)]
+        : [];
+    });
+
+  if (recovered.length === 0) {
+    return { recovered, targetCatalogPath };
+  }
+
+  return {
+    recovered,
+    targetCatalogPath,
+    operation: {
+      type: "write",
+      path: targetCatalogPath,
+      content: `${JSON.stringify({
+        ...existing,
+        scopes: ensureUncategorizedScope(existing.scopes ?? []),
+        items: [...existing.items, ...recovered],
+      }, null, 2)}\n`,
+    },
+  };
+}
+
 export function snapshotSetupSourceLockedSkillIds(options: CatalogImportOptions & {
   manifestContents: NonNullable<CliOptions["manifestContents"]>;
   selectedSkillIds: string[];
