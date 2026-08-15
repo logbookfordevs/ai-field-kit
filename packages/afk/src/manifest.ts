@@ -163,7 +163,7 @@ export type PresetsManifest = {
 
 type ManifestOptions = Pick<
   CliOptions,
-  "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "defaultsSource" | "dryRun" | "manifestLocal"
+  "homeDir" | "repoDir" | "rulesRef" | "rulesSource" | "empty" | "refreshDefaults" | "overrideRefresh" | "defaultsSource" | "dryRun" | "manifestLocal"
 > & {
   cwd?: string;
   defaultsSourceExplicit?: boolean;
@@ -260,9 +260,11 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
       const rawContent = options.empty
         ? emptyManifestContent(name, options, effectiveDefaultsSource)
         : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, sourceSession);
-      const content = rawContent ? mergedManifestContent(name, rawContent, target) : rawContent;
+      const content = rawContent ? mergedManifestContent(name, rawContent, target, options.overrideRefresh) : rawContent;
       if (content) {
         operations.push({ type: "write", path: target, content });
+      } else if (options.overrideRefresh) {
+        operations.push({ type: "write", path: target, content: emptyManifestContent(name, options, effectiveDefaultsSource) });
       } else if (existsSync(target)) {
         operations.push({ type: "skip", path: target, reason: "not provided by defaults source" });
       } else {
@@ -276,21 +278,21 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
   return operations;
 }
 
-function mergedManifestContent(name: ManifestName, content: string, targetPath: string): string {
+function mergedManifestContent(name: ManifestName, content: string, targetPath: string, overrideRefresh = false): string {
   if (name === "skills.json") {
-    return mergedSkillsManifestContent(content, targetPath);
+    return mergedSkillsManifestContent(content, targetPath, !overrideRefresh);
   }
 
   if (name === "profiles.json") {
-    return mergedProfilesManifestContent(content, targetPath);
+    return mergedProfilesManifestContent(content, targetPath, !overrideRefresh);
   }
 
   if (name === "agents.json") {
-    return mergedCustomAgentManifestContent(content, targetPath);
+    return mergedCustomAgentManifestContent(content, targetPath, !overrideRefresh);
   }
 
   if (name === "rules.json") {
-    return mergedRulesManifestContent(content, targetPath);
+    return mergedRulesManifestContent(content, targetPath, !overrideRefresh);
   }
 
   return content;
@@ -1093,7 +1095,7 @@ function migrateSkillsManifest(content: string): string | null {
   return `${JSON.stringify({ ...parsed, items }, null, 2)}\n`;
 }
 
-function mergedSkillsManifestContent(content: string, targetPath: string): string {
+function mergedSkillsManifestContent(content: string, targetPath: string, preserveImported = true): string {
   let refreshed: unknown;
   try {
     refreshed = JSON.parse(content);
@@ -1106,7 +1108,9 @@ function mergedSkillsManifestContent(content: string, targetPath: string): strin
   }
 
   const refreshedIds = new Set(refreshed.items.map((item) => item.id));
-  const importedItems = readExistingImportedSkillItems(targetPath).filter((item) => !refreshedIds.has(item.id));
+  const importedItems = preserveImported
+    ? readExistingImportedSkillItems(targetPath).filter((item) => !refreshedIds.has(item.id))
+    : [];
   const items = [
     ...refreshed.items.map((item) => ({ ...stripRetiredSkillManifestFields(item), imported: false })),
     ...importedItems.map((item) => ({ ...stripRetiredSkillManifestFields(item), imported: true })),
@@ -1115,7 +1119,7 @@ function mergedSkillsManifestContent(content: string, targetPath: string): strin
   return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
 }
 
-export function mergedCustomAgentManifestContent(content: string, targetPath: string): string {
+export function mergedCustomAgentManifestContent(content: string, targetPath: string, mergeExisting = true): string {
   let refreshed: unknown;
   try {
     refreshed = JSON.parse(content);
@@ -1127,7 +1131,7 @@ export function mergedCustomAgentManifestContent(content: string, targetPath: st
     return content;
   }
 
-  const existing = readExistingCustomAgentManifest(targetPath);
+  const existing = mergeExisting ? readExistingCustomAgentManifest(targetPath) : null;
   if (!existing) {
     return `${JSON.stringify(refreshed, null, 2)}\n`;
   }
@@ -1141,7 +1145,7 @@ export function mergedCustomAgentManifestContent(content: string, targetPath: st
   return `${JSON.stringify({ ...refreshed, items }, null, 2)}\n`;
 }
 
-export function mergedRulesManifestContent(content: string, targetPath: string): string {
+export function mergedRulesManifestContent(content: string, targetPath: string, mergeExisting = true): string {
   let refreshed: unknown;
   try {
     refreshed = JSON.parse(content);
@@ -1149,7 +1153,7 @@ export function mergedRulesManifestContent(content: string, targetPath: string):
     return content;
   }
 
-  if (!isRulesManifest(refreshed) || !("layers" in refreshed) || !existsSync(targetPath)) {
+  if (!isRulesManifest(refreshed) || !("layers" in refreshed) || !mergeExisting || !existsSync(targetPath)) {
     return content;
   }
 
@@ -1197,9 +1201,9 @@ function readExistingCustomAgentManifest(path: string): CustomAgentManifest | nu
   }
 }
 
-function mergedProfilesManifestContent(content: string, targetPath: string): string {
+function mergedProfilesManifestContent(content: string, targetPath: string, preserveLocal = true): string {
   const refreshed = parseProfilesManifest(content);
-  const existing = readProfilesManifest(targetPath);
+  const existing = preserveLocal ? readProfilesManifest(targetPath) : undefined;
   if (!refreshed || !existing) {
     return content;
   }
