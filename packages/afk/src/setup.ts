@@ -4,6 +4,7 @@ import { customAgentTargetPath, syncCustomAgents, type CustomAgentHarness } from
 import { snapshotDisabledStartupSkills, syncSkillInvocationPolicy, syncSkillStartupStorage } from "./skills.js";
 import { loadSkillProfileState, reconcileSkillProfiles } from "./skills/profiles.js";
 import { mergeSetupSourceSkillsIntoCatalog, syncSkillCatalogFromManifest } from "./skills/catalog.js";
+import { planSetupSourceCatalogImport, snapshotSetupSourceLockedSkillIds } from "./catalog-import.js";
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
 import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
@@ -259,11 +260,22 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       }
 
       const disabledBeforeInstall = snapshotDisabledStartupSkills(selectedOptions);
+      const preexistingWholeSourceSkillIds = explicitSetupSource && selectedOptions.manifestContents
+        ? snapshotSetupSourceLockedSkillIds({
+            homeDir: selectedOptions.homeDir,
+            cwd: selectedOptions.cwd,
+            manifestLocal: selectedOptions.manifestLocal,
+            manifestContents: selectedOptions.manifestContents,
+            selectedSkillIds: selectedOptions.selectedSkillIds,
+            allSkills: selectedOptions.allSkills,
+            dryRun: selectedOptions.dryRun,
+          })
+        : [];
       const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
       if (code === 0) {
         syncSkillInvocationPolicy(runtime, selectedOptions);
         syncSkillStartupStorage(runtime, selectedOptions, disabledBeforeInstall);
-        syncSetupSkillCatalog(runtime, selectedOptions, explicitSetupSource);
+        syncSetupSkillCatalog(runtime, selectedOptions, explicitSetupSource, preexistingWholeSourceSkillIds);
         reconcileEnabledSetupSkillProfiles(runtime, selectedOptions);
       }
 
@@ -372,10 +384,15 @@ function reconcileEnabledSetupSkillProfiles(runtime: Runtime, options: CliOption
   }
 }
 
-function syncSetupSkillCatalog(runtime: Runtime, options: CliOptions, explicitSetupSource: boolean): void {
+function syncSetupSkillCatalog(
+  runtime: Runtime,
+  options: CliOptions,
+  explicitSetupSource: boolean,
+  preexistingWholeSourceSkillIds: string[],
+): void {
   try {
     let sourceMerge: ReturnType<typeof mergeSetupSourceSkillsIntoCatalog> | undefined;
-    if (explicitSetupSource && options.manifestContents) {
+    if (options.dryRun && explicitSetupSource && options.manifestContents) {
       sourceMerge = mergeSetupSourceSkillsIntoCatalog({
         homeDir: options.homeDir,
         manifestContents: options.manifestContents,
@@ -390,6 +407,25 @@ function syncSetupSkillCatalog(runtime: Runtime, options: CliOptions, explicitSe
         for (const id of sourceMerge.merged) {
           runtime.io.stdout(`- ${id} -> ${sourceMerge.path}`);
         }
+      }
+      return;
+    }
+    if (explicitSetupSource && options.manifestContents) {
+      const importPlan = planSetupSourceCatalogImport({
+        homeDir: options.homeDir,
+        cwd: options.cwd,
+        manifestLocal: options.manifestLocal,
+        manifestContents: options.manifestContents,
+        selectedSkillIds: options.selectedSkillIds,
+        allSkills: options.allSkills,
+        preexistingWholeSourceSkillIds,
+        dryRun: false,
+      });
+      if (importPlan.operation) {
+        applyOperation(importPlan.operation);
+      }
+      if (importPlan.missingLock.length > 0) {
+        runtime.io.stderr(`Missing lock metadata for installed one-shot source skills: ${importPlan.missingLock.join(", ")}. Re-run setup with --verbose, then retry after the installer writes its skill lock.`);
       }
       return;
     }

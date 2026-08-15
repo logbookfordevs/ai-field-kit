@@ -779,6 +779,10 @@ test("runArea merges selected explicit-source skills into the cache after instal
     },
     spawn: async (command, args) => {
       commands.push({ command, args });
+      writeInstalledSkill(homeDir, "remote-skill", "Remote Skill");
+      writeGlobalSkillLock(homeDir, {
+        "remote-skill": { source: "remote/source" },
+      });
       return { code: 0 };
     },
   }, {
@@ -802,6 +806,107 @@ test("runArea merges selected explicit-source skills into the cache after instal
   ]);
   const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as { defaultsSource: string };
   assert.equal(presets.defaultsSource, "acme/default-kit");
+});
+
+test("runArea does not claim explicit-source skills when installation leaves no lock metadata", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{
+        id: "remote-skill",
+        label: "Remote Skill",
+        source: "remote/source",
+        args: ["--skill", "remote-skill"],
+        default: false,
+      }],
+    },
+  });
+  const output: string[] = [];
+
+  const code = await runArea("skills", {
+    ...fakeRuntime(output),
+    spawn: async () => ({ code: 0 }),
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["remote-skill"],
+  });
+
+  assert.equal(code, 0);
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string }>;
+  };
+  assert.deepEqual(cached.items, []);
+  assert.ok(
+    output.join("\n").includes("Missing lock metadata for installed one-shot source skills: remote-skill"),
+    output.join("\n"),
+  );
+});
+
+test("runArea catalogs every installed skill from an explicit whole-source entry", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{
+        id: "whole-source",
+        label: "Whole Source",
+        source: "remote/source",
+        args: [],
+        default: false,
+      }],
+    },
+  });
+  const output: string[] = [];
+  writeInstalledSkill(homeDir, "existing", "Existing");
+  writeGlobalSkillLock(homeDir, {
+    existing: { source: "remote/source" },
+  });
+
+  const code = await runArea("skills", {
+    ...fakeRuntime(output),
+    spawn: async () => {
+      writeInstalledSkill(homeDir, "alpha", "Alpha");
+      writeInstalledSkill(homeDir, "beta", "Beta");
+      writeInstalledSkill(homeDir, "unrelated", "Unrelated");
+      writeInstalledSkill(homeDir, "orphan", "Orphan");
+      writeGlobalSkillLock(homeDir, {
+        existing: { source: "remote/source" },
+        alpha: { source: "remote/source" },
+        beta: { source: "remote/source" },
+        unrelated: { source: "other/source" },
+      });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["whole-source"],
+  });
+
+  assert.equal(code, 0);
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string; imported?: boolean }>;
+  };
+  assert.deepEqual(cached.items.map((item) => ({ id: item.id, imported: item.imported })), [
+    { id: "alpha", imported: true },
+    { id: "beta", imported: true },
+  ], output.join("\n"));
 });
 
 test("runArea dry-run reports explicit-source skill merges without writing the cache", async () => {
@@ -981,6 +1086,18 @@ function localDefaultsSource(overrides: Record<string, unknown> = {}): string {
   }
 
   return sourceDir;
+}
+
+function writeInstalledSkill(homeDir: string, id: string, label: string): void {
+  const skillDir = join(homeDir, ".agents", "skills", id);
+  mkdirSync(skillDir, { recursive: true });
+  writeFileSync(join(skillDir, "SKILL.md"), `---\nname: ${label}\n---\n`);
+}
+
+function writeGlobalSkillLock(homeDir: string, skills: Record<string, { source: string }>): void {
+  const agentsDir = join(homeDir, ".agents");
+  mkdirSync(agentsDir, { recursive: true });
+  writeFileSync(join(agentsDir, ".skill-lock.json"), `${JSON.stringify({ version: 3, skills }, null, 2)}\n`);
 }
 
 function localRepoWithRules(): string {
