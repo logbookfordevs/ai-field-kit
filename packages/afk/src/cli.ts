@@ -660,13 +660,13 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills list": {
     title: "AFK skills list",
-    summary: "List shared global skills by default or one explicit agent root.",
+    summary: "List enabled shared global skills by default or one explicit agent root.",
     usage: "afk skills list [options]",
     options: [
       "--scope global|project|all        Choose a preset agent scope; shared defaults to global",
       "--agent <agent>|custom            Select one explicit agent root",
       "--agent-path <folder>             Required with --agent custom",
-      "--enabled                         Show enabled skills only",
+      "--enabled                         Show enabled skills only (default)",
       "--disabled                        Show disabled skills only",
       "--auto-invocation <state>         Filter by enabled, disabled, mixed, or default",
       "--category <id-or-label>          Filter by AFK category",
@@ -687,13 +687,13 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills show": {
     title: "AFK skills show",
-    summary: "Show details for one discovered skill.",
+    summary: "Show details for one enabled skill by default.",
     usage: "afk skills show <folder> [options]",
     options: [
       "--scope global|project|all        Choose the preset agent scope",
       "--agent <agent>|custom            Select one explicit agent root",
       "--agent-path <folder>             Required with --agent custom",
-      "--enabled                         Show enabled skills only",
+      "--enabled                         Show enabled skills only (default)",
       "--disabled                        Show disabled skills only",
       "--json                            Print JSON record",
     ],

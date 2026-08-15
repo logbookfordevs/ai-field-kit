@@ -338,8 +338,8 @@ can be selected with `--agent`; exact custom roots require both
 
 | Command | Purpose | Important options and effects |
 |---|---|---|
-| `afk skills list` | List discovered skills. | Filters: `--enabled`, `--disabled`, `--auto-invocation` with `enabled`, `disabled`, `mixed`, or `default`, `--category`, `--tag`, `--uncategorized`; `--json` prints records. |
-| `afk skills show <folder>` | Show one discovered skill's metadata and paths. | Supports root selection, storage filters, and `--json`. |
+| `afk skills list` | List enabled skills by default. | Use `--disabled` for disabled skills; additional filters include `--auto-invocation` with `enabled`, `disabled`, `mixed`, or `default`, `--category`, `--tag`, and `--uncategorized`; `--json` prints records. |
+| `afk skills show <folder>` | Show one enabled skill's metadata and paths by default. | Use `--disabled` to inspect a disabled skill; supports root selection and `--json`. |
 | `afk skills get <folder>` | Print one skill as agent context, including disabled skills. | Read-only; includes the absolute skill root so referenced files remain resolvable. |
 | `afk skills open <folder>` | Open `SKILL.md` or its folder. | `--file` is the default; use `--folder` or select `finder`, `code`, `cursor`, `zed`, or `agy` with `--app`. |
 | `afk skills add <source> [flags...]` | Delegate installation to `skills add`, then synchronize AFK catalog and profile state. | Supports upstream `--skill`, `--agent`, `--global`, `--yes`; AFK adds `--profile`, `--profile-only`, and `--start-disabled`. |
@@ -1367,8 +1367,8 @@ remain easy to read.
 `--agent <agent>` to select a preset agent root and `--scope
 global|project|all` to choose that preset's root family. Use `--agent custom
 --agent-path <folder>` to select an exact custom skills root; custom paths do
-not combine with `--scope`. Use `--enabled` to show active folders,
-`--disabled` to show disabled folders, and `--category`, `--tag`, or
+not combine with `--scope`. List and show include only active folders by
+default. Use `--disabled` to show disabled folders, and `--category`, `--tag`, or
 `--uncategorized` to filter AFK catalog metadata. The same
 `--enabled` and `--disabled` folder filters are also available on `afk skills
 show`, `open`, `delete`, and `invocation`, plus `afk catalog profiles

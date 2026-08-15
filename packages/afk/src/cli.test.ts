@@ -736,6 +736,54 @@ test("runCli validates skills list auto invocation filters", async () => {
   assert.ok(output.join("\n").includes("Invalid --auto-invocation value: invalid"));
 });
 
+test("runCli lists only enabled skills unless disabled storage is requested", async () => {
+  const homeDir = localHomeWithManifests({});
+  writeSkill(join(homeDir, ".agents", "skills"), "active-demo", "Active Demo");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-demo", "Disabled Demo");
+  const output: string[] = [];
+
+  const defaultCode = await withConsole(output, () => runCli(["skills", "list"], { HOME: homeDir }));
+  const defaultText = output.join("\n");
+
+  assert.equal(defaultCode, 0);
+  assert.ok(defaultText.includes("active-demo"));
+  assert.ok(!defaultText.includes("disabled-demo"));
+
+  output.length = 0;
+  const disabledCode = await withConsole(output, () => runCli(["skills", "list", "--disabled"], { HOME: homeDir }));
+  const disabledText = output.join("\n");
+
+  assert.equal(disabledCode, 0);
+  assert.ok(!disabledText.includes("active-demo"));
+  assert.ok(disabledText.includes("disabled-demo"));
+});
+
+test("runCli shows disabled skills only when disabled storage is requested", async () => {
+  const homeDir = localHomeWithManifests({});
+  writeSkill(join(homeDir, ".agents", "skills"), "active-demo", "Active Demo");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-demo", "Disabled Demo");
+  const output: string[] = [];
+
+  const activeCode = await withConsole(output, () => runCli(["skills", "show", "active-demo"], { HOME: homeDir }));
+
+  assert.equal(activeCode, 0);
+  assert.ok(output.join("\n").includes("Active Demo"));
+
+  output.length = 0;
+  const defaultDisabledCode = await withConsole(output, () => runCli(["skills", "show", "disabled-demo"], { HOME: homeDir }));
+
+  assert.equal(defaultDisabledCode, 1);
+  assert.ok(output.join("\n").includes("Skill not found: disabled-demo"));
+
+  output.length = 0;
+  const explicitDisabledCode = await withConsole(output, () =>
+    runCli(["skills", "show", "disabled-demo", "--disabled"], { HOME: homeDir })
+  );
+
+  assert.equal(explicitDisabledCode, 0);
+  assert.ok(output.join("\n").includes("Disabled Demo"));
+});
+
 test("runCli prints contextual ui help", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["ui", "--help"]));
