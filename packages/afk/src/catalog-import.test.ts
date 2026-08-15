@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { planCatalogImport, planCatalogImportStatus, runCatalogImport, runCatalogImportStatus } from "./catalog-import.js";
+import { planCatalogImport, planCatalogImportStatus, planSkillCatalogRecovery, runCatalogImport, runCatalogImportStatus } from "./catalog-import.js";
 import type { CliOptions, Runtime } from "./types.js";
 
 test("planCatalogImport imports installed skills with lock metadata into global catalog", () => {
@@ -52,6 +52,108 @@ test("planCatalogImport imports disabled skills as start-disabled catalog entrie
   assert.deepEqual(plan.imported.map((item) => ({ id: item.id, startDisabled: item.startDisabled })), [
     { id: "disabled-skill", startDisabled: true },
   ]);
+});
+
+test("planSkillCatalogRecovery resolves a renamed installed folder by the official folder hash", () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-recovery-hash-"));
+  writeDisabledInstalledSkill(homeDir, "stitch-remotion", "---\nname: Stitch Remotion\n---\n");
+  writeSkillLock(homeDir, {
+    remotion: {
+      source: "google-labs-code/stitch-skills",
+      skillPath: "skills/remotion/SKILL.md",
+      skillFolderHash: "c8c04f1b9a096c88f9956954c2749645c88fe9acc917b355264526a15255bcb2",
+    },
+  });
+
+  const plan = planSkillCatalogRecovery({
+    homeDir,
+    cwd: mkdtempSync(join(tmpdir(), "afk-project-")),
+    dryRun: false,
+    manifestLocal: false,
+  }, ["stitch-remotion"]);
+
+  assert.deepEqual(plan.recovered.map((item) => ({ id: item.id, args: item.args, source: item.source })), [{
+    id: "stitch-remotion",
+    args: ["--skill", "remotion"],
+    source: "google-labs-code/stitch-skills",
+  }]);
+});
+
+test("planSkillCatalogRecovery resolves a declared upstream alias without name inference", () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-recovery-declared-alias-"));
+  writeDisabledInstalledSkill(homeDir, "stitch-video", "---\nname: Stitch Video\n---\n");
+  writeSkillLock(homeDir, {
+    remotion: { source: "google-labs-code/stitch-skills", skillPath: "skills/remotion/SKILL.md" },
+  });
+
+  const plan = planSkillCatalogRecovery({
+    homeDir,
+    cwd: mkdtempSync(join(tmpdir(), "afk-project-")),
+    dryRun: false,
+    manifestLocal: false,
+  }, ["stitch-video"], { "stitch-video": "remotion" });
+
+  assert.deepEqual(plan.recovered.map((item) => ({ id: item.id, args: item.args })), [{
+    id: "stitch-video",
+    args: ["--skill", "remotion"],
+  }]);
+});
+
+test("planSkillCatalogRecovery gives a declared alias precedence over a competing exact lock key", () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-recovery-alias-precedence-"));
+  writeDisabledInstalledSkill(homeDir, "stitch-remotion", "---\nname: Stitch Remotion\n---\n");
+  writeSkillLock(homeDir, {
+    "stitch-remotion": { source: "acme/wrong" },
+    remotion: { source: "google-labs-code/stitch-skills" },
+  });
+
+  const plan = planSkillCatalogRecovery({
+    homeDir,
+    cwd: mkdtempSync(join(tmpdir(), "afk-project-")),
+    dryRun: false,
+    manifestLocal: false,
+  }, ["stitch-remotion"], { "stitch-remotion": "remotion" });
+
+  assert.deepEqual(plan.recovered.map((item) => ({ source: item.source, args: item.args })), [{
+    source: "google-labs-code/stitch-skills",
+    args: ["--skill", "remotion"],
+  }]);
+});
+
+test("planSkillCatalogRecovery fails closed when a declared alias has no lock entry", () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-recovery-alias-missing-"));
+  writeDisabledInstalledSkill(homeDir, "react-components", "---\nname: react:components\n---\n");
+  writeSkillLock(homeDir, {
+    "react:components": { source: "acme/inferred" },
+  });
+
+  const plan = planSkillCatalogRecovery({
+    homeDir,
+    cwd: mkdtempSync(join(tmpdir(), "afk-project-")),
+    dryRun: false,
+    manifestLocal: false,
+  }, ["react-components"], { "react-components": "missing-upstream-id" });
+
+  assert.deepEqual(plan.recovered, []);
+});
+
+test("planSkillCatalogRecovery does not infer suffix aliases without declared metadata", () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-catalog-recovery-ambiguous-"));
+  writeDisabledInstalledSkill(homeDir, "stitch-remotion", "---\nname: Stitch Remotion\n---\n");
+  writeSkillLock(homeDir, {
+    remotion: { source: "acme/one", skillPath: "skills/remotion/SKILL.md" },
+    video: { source: "acme/two", skillPath: "skills/remotion/SKILL.md" },
+  });
+
+  const plan = planSkillCatalogRecovery({
+    homeDir,
+    cwd: mkdtempSync(join(tmpdir(), "afk-project-")),
+    dryRun: false,
+    manifestLocal: false,
+  }, ["stitch-remotion"]);
+
+  assert.deepEqual(plan.recovered, []);
+  assert.equal(plan.operation, undefined);
 });
 
 test("planCatalogImport skips installed skills without lock metadata", () => {
@@ -286,7 +388,7 @@ function writeDisabledInstalledSkill(root: string, id: string, skillMd: string):
   writeFileSync(join(skillDir, "SKILL.md"), skillMd);
 }
 
-function writeSkillLock(root: string, skills: Record<string, { source?: string; sourceType?: string }>): void {
+function writeSkillLock(root: string, skills: Record<string, { source?: string; sourceType?: string; skillPath?: string; skillFolderHash?: string }>): void {
   const agentsDir = join(root, ".agents");
   mkdirSync(agentsDir, { recursive: true });
   writeFileSync(join(agentsDir, ".skill-lock.json"), `${JSON.stringify({ version: 3, skills }, null, 2)}\n`);

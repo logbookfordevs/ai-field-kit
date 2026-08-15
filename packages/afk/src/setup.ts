@@ -303,12 +303,12 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       let recoveryOperation: PathOperation | undefined;
       let recoveryIdsToVerify: string[] = [];
       if (missingIds.length > 0) {
-        const recoveryCandidates = planSkillCatalogRecovery(prepared.options, missingIds).recovered;
+        const recoveryCandidates = planSkillCatalogRecovery(prepared.options, missingIds, catalog.skillAliases).recovered;
         if (recoveryCandidates.length > 0) {
           const selectedRecoveryIds = prepared.options.yes
             ? recoveryCandidates.map((item) => item.id)
             : await selectRecoverableProfileSkills(recoveryCandidates.map(({ id, label, source }) => ({ id, label, source })));
-          const recoveryPlan = planSkillCatalogRecovery(prepared.options, selectedRecoveryIds);
+          const recoveryPlan = planSkillCatalogRecovery(prepared.options, selectedRecoveryIds, catalog.skillAliases);
           recoveryOperation = recoveryPlan.operation;
           recoveryIdsToVerify = recoveryPlan.recovered.map((item) => item.id);
           if (recoveryPlan.recovered.length > 0) {
@@ -370,7 +370,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
       if (code === 0) {
         if (recoveryOperation && !selectedOptions.dryRun) {
-          const verifiedRecovery = planSkillCatalogRecovery(prepared.options, recoveryIdsToVerify);
+          const verifiedRecovery = planSkillCatalogRecovery(prepared.options, recoveryIdsToVerify, catalog.skillAliases);
           const verifiedIds = new Set(verifiedRecovery.recovered.map((item) => item.id));
           const recoveryVerified = recoveryIdsToVerify.every((id) => verifiedIds.has(id));
           if (!recoveryVerified || !verifiedRecovery.operation) {

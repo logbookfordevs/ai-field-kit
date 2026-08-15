@@ -1235,6 +1235,7 @@ type ProfilesManifest = {
   version: number;
   mode?: "strict" | "context";
   alwaysOn: string[];
+  skillAliases?: Record<string, string>;
   items: Array<{ id: string; name: string; skills: string[] }>;
 };
 
@@ -1269,6 +1270,10 @@ function isProfilesManifest(value: unknown): value is ProfilesManifest {
     (value.mode === undefined || value.mode === "strict" || value.mode === "context") &&
     Array.isArray(value.alwaysOn) &&
     value.alwaysOn.every((item) => typeof item === "string") &&
+    (value.skillAliases === undefined || (
+      isRecord(value.skillAliases) &&
+      Object.values(value.skillAliases).every((upstreamId) => typeof upstreamId === "string")
+    )) &&
     Array.isArray(value.items) &&
     value.items.every(isProfileManifestItem);
 }

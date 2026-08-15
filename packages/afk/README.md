@@ -752,7 +752,7 @@ Refresh replaces source-owned catalog content while preserving local catalog
 extensions. In `skills.json`, imported skills absent from the refreshed source
 survive. In `profiles.json`, locally created profiles whose IDs are absent from
 the refreshed source survive. The refreshed source wins on matching IDs and
-owns top-level profile policy such as `mode` and `alwaysOn`. In `agents.json`,
+owns top-level profile policy such as `mode`, `alwaysOn`, and `skillAliases`. In `agents.json`,
 refresh updates matching IDs, appends new source entries, and preserves local
 entries absent from the source. In version 2 `rules.json`, refresh updates
 matching layer IDs in place, preserves absent cached layers, and appends new
@@ -1446,6 +1446,11 @@ that set while at least one normally enabled focus profile is active:
 |---|---|
 | `strict` | Default. Profiles act like an availability sandbox: active skills outside the kept set move to `.disabled`. |
 | `context` | Profiles act like a context filter: cataloged manual skills with `autoInvocation: false` stay active, while discoverable or uncataloged skills outside the kept set move to `.disabled`. |
+
+The optional top-level `skillAliases` map declares renamed upstream skills-lock
+IDs used during setup recovery. The key remains the profile-facing skill ID and
+the value becomes the upstream `--skill` argument, such as
+`"stitch-remotion": "remotion"`. Omit aliases when both IDs already match.
 
 Use `afk catalog profiles create|edit --mode strict|context` to set the mode,
 or use `afk catalog profiles set-mode`.

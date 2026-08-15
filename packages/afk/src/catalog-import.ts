@@ -1,18 +1,22 @@
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { sectionTitle, muted } from "./brand.js";
 import { applyOperation, formatOperation, isDirectory, summarizeOperations } from "./fs-utils.js";
 import { loadSkillManifest, localManifestDir, projectManifestDir, type SkillManifest, type SkillManifestItem } from "./manifest.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, PathOperation, Runtime } from "./types.js";
 
+type SkillLockEntry = {
+  source?: string;
+  sourceType?: string;
+  sourceUrl?: string;
+  skillPath?: string;
+  skillFolderHash?: string;
+};
+
 type SkillLock = {
-  skills?: Record<string, {
-    source?: string;
-    sourceType?: string;
-    sourceUrl?: string;
-    skillPath?: string;
-  }>;
+  skills?: Record<string, SkillLockEntry>;
 };
 
 type ImportPlan = {
@@ -55,6 +59,7 @@ export type SkillCatalogRecoveryPlan = {
 export function planSkillCatalogRecovery(
   options: CatalogImportOptions,
   requestedIds: string[],
+  upstreamAliases: Record<string, string> = {},
 ): SkillCatalogRecoveryPlan {
   const targetCatalogPath = join(options.manifestLocal ? projectManifestDir(options.cwd) : localManifestDir(options.homeDir), "skills.json");
   const existing = readSkillCatalog(targetCatalogPath);
@@ -64,9 +69,9 @@ export function planSkillCatalogRecovery(
   const recovered = installedSkillsForImport(sourceSkillsDirForOptions(options))
     .filter((skill) => requested.has(skill.id.toLowerCase()) && !existingIds.has(skill.id.toLowerCase()))
     .flatMap((skill) => {
-      const lockEntry = lock.skills?.[skill.id];
-      return lockEntry?.source
-        ? [skillManifestItemFromInstalledSkill(skill.id, skill.root, lockEntry.source, skill.startDisabled)]
+      const resolvedLock = resolveInstalledSkillLock(skill, lock, upstreamAliases[skill.id]);
+      return resolvedLock?.entry.source
+        ? [skillManifestItemFromInstalledSkill(skill.id, skill.root, resolvedLock.entry.source, skill.startDisabled, resolvedLock.id)]
         : [];
     });
 
@@ -394,7 +399,13 @@ function skillIdFromArgs(args: string[]): string | undefined {
   return index >= 0 ? args[index + 1] : undefined;
 }
 
-function skillManifestItemFromInstalledSkill(id: string, skillRoot: string, source: string, startDisabled: boolean): SkillManifestItem {
+function skillManifestItemFromInstalledSkill(
+  id: string,
+  skillRoot: string,
+  source: string,
+  startDisabled: boolean,
+  upstreamId = id,
+): SkillManifestItem {
   const skillPath = join(skillRoot, id, "SKILL.md");
   const content = existsSync(skillPath) ? readFileSync(skillPath, "utf8") : "";
   const frontmatter = frontmatterFields(content);
@@ -402,7 +413,7 @@ function skillManifestItemFromInstalledSkill(id: string, skillRoot: string, sour
     id,
     label: frontmatter.name ?? humanizeSkillId(id),
     source,
-    args: ["--skill", id],
+    args: ["--skill", upstreamId],
     default: false,
     autoInvocation: frontmatter["disable-model-invocation"] !== "true",
     role: "utility",
@@ -414,6 +425,77 @@ function skillManifestItemFromInstalledSkill(id: string, skillRoot: string, sour
   }
 
   return item;
+}
+
+function resolveInstalledSkillLock(
+  skill: { id: string; root: string },
+  lock: SkillLock,
+  declaredUpstreamId?: string,
+): { id: string; entry: SkillLockEntry } | undefined {
+  const entries = Object.entries(lock.skills ?? {}).filter((candidate): candidate is [string, SkillLockEntry] => Boolean(candidate[1]?.source));
+  if (declaredUpstreamId) {
+    const declared = lock.skills?.[declaredUpstreamId];
+    return declared?.source ? { id: declaredUpstreamId, entry: declared } : undefined;
+  }
+
+  const exact = lock.skills?.[skill.id];
+  if (exact?.source) {
+    return { id: skill.id, entry: exact };
+  }
+
+  const skillDir = join(skill.root, skill.id);
+  const skillContent = readFileSync(join(skillDir, "SKILL.md"), "utf8");
+  const installedNames = uniqueSorted([
+    normalizeSkillLockId(skill.id),
+    normalizeSkillLockId(frontmatterFields(skillContent).name ?? ""),
+  ].filter(Boolean));
+  const normalizedMatch = uniqueLockMatch(entries.filter(([id]) => installedNames.includes(normalizeSkillLockId(id))));
+  if (normalizedMatch) {
+    return normalizedMatch;
+  }
+
+  const installedHash = computeSkillFolderHash(skillDir);
+  const hashMatch = uniqueLockMatch(entries.filter(([, entry]) => Boolean(entry.skillFolderHash && entry.skillFolderHash === installedHash)));
+  if (hashMatch) {
+    return hashMatch;
+  }
+
+  return undefined;
+}
+
+function uniqueLockMatch(matches: Array<[string, SkillLockEntry]>): { id: string; entry: SkillLockEntry } | undefined {
+  const match = matches[0];
+  return matches.length === 1 && match ? { id: match[0], entry: match[1] } : undefined;
+}
+
+function normalizeSkillLockId(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function computeSkillFolderHash(skillDir: string): string {
+  const files: Array<{ path: string; content: Buffer }> = [];
+  collectSkillFolderFiles(skillDir, skillDir, files);
+  files.sort((left, right) => left.path.localeCompare(right.path));
+  const hash = createHash("sha256");
+  for (const file of files) {
+    hash.update(file.path);
+    hash.update(file.content);
+  }
+  return hash.digest("hex");
+}
+
+function collectSkillFolderFiles(baseDir: string, currentDir: string, files: Array<{ path: string; content: Buffer }>): void {
+  for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
+    if (entry.isDirectory() && (entry.name === ".git" || entry.name === "node_modules")) {
+      continue;
+    }
+    const path = join(currentDir, entry.name);
+    if (entry.isDirectory()) {
+      collectSkillFolderFiles(baseDir, path, files);
+    } else if (entry.isFile()) {
+      files.push({ path: relative(baseDir, path).split("\\").join("/"), content: readFileSync(path) });
+    }
+  }
 }
 
 function frontmatterFields(markdown: string): Record<string, string> {

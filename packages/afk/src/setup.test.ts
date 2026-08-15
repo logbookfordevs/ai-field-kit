@@ -798,6 +798,7 @@ test("runArea profiles warns and installs available skills when missing referenc
       version: 1,
       mode: "context",
       alwaysOn: [],
+      skillAliases: { "react-components": "react:components", "stitch-remotion": "remotion" },
       items: [{ id: "stitch", name: "Stitch", skills: ["design-md", "react-components", "stitch-remotion"] }],
     },
     "skills.json": {
@@ -808,11 +809,11 @@ test("runArea profiles warns and installs available skills when missing referenc
   };
   const homeDir = localHomeWithManifests(manifests);
   const repoDir = localRepoWithRules();
-  writeInstalledSkill(homeDir, "react-components", "React Components");
+  writeInstalledSkill(homeDir, "react-components", "react:components");
   writeInstalledSkill(homeDir, "stitch-remotion", "Stitch Remotion");
   writeGlobalSkillLock(homeDir, {
-    "react-components": { source: "example/react" },
-    "stitch-remotion": { source: "example/remotion" },
+    "react:components": { source: "example/react", skillPath: "skills/react-components/SKILL.md" },
+    remotion: { source: "example/remotion", skillPath: "skills/remotion/SKILL.md" },
   });
   const output: string[] = [];
   promptState.recoverableSkillIds = [];
@@ -844,6 +845,7 @@ test("runArea profiles offers lock-backed missing skills for recovery and instal
       version: 1,
       mode: "context",
       alwaysOn: [],
+      skillAliases: { "react-components": "react:components", "stitch-remotion": "remotion" },
       items: [{ id: "stitch", name: "Stitch", skills: ["design-md", "react-components", "stitch-remotion"] }],
     },
     "skills.json": {
@@ -854,11 +856,11 @@ test("runArea profiles offers lock-backed missing skills for recovery and instal
   };
   const homeDir = localHomeWithManifests(manifests);
   const repoDir = localRepoWithRules();
-  writeInstalledSkill(homeDir, "react-components", "React Components");
+  writeInstalledSkill(homeDir, "react-components", "react:components");
   writeInstalledSkill(homeDir, "stitch-remotion", "Stitch Remotion");
   writeGlobalSkillLock(homeDir, {
-    "react-components": { source: "example/react" },
-    "stitch-remotion": { source: "example/remotion" },
+    "react:components": { source: "example/react", skillPath: "skills/react-components/SKILL.md" },
+    remotion: { source: "example/remotion", skillPath: "skills/remotion/SKILL.md" },
   });
   const output: string[] = [];
   promptState.recoverableSkillIds = ["react-components", "stitch-remotion"];
@@ -885,22 +887,22 @@ test("runArea profiles offers lock-backed missing skills for recovery and instal
 
   assert.equal(code, 0);
   assert.deepEqual(promptState.recoveryPrompts, [[
-    { id: "react-components", label: "React Components", source: "example/react" },
+    { id: "react-components", label: "react:components", source: "example/react" },
     { id: "stitch-remotion", label: "Stitch Remotion", source: "example/remotion" },
   ]]);
   assert.equal(promptState.partialSkillProfileInstallPrompts, 1);
   assert.ok(text.includes("Ready to install (3)\n  design-md, react-components, stitch-remotion"), text);
   assert.ok(!text.includes("Not included"), text);
   assert.ok(text.includes("--skill design-md"), text);
-  assert.ok(text.includes("--skill react-components"), text);
-  assert.ok(text.includes("--skill stitch-remotion"), text);
+  assert.ok(text.includes("--skill react:components"), text);
+  assert.ok(text.includes("--skill remotion"), text);
   const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
     items: Array<{ id: string; source: string; imported?: boolean }>;
   };
   assert.deepEqual(cached.items.map((item) => item.id), ["design-md", "react-components", "stitch-remotion"]);
   assert.deepEqual(cached.items.slice(1), [
-    { id: "react-components", label: "React Components", source: "example/react", args: ["--skill", "react-components"], default: false, autoInvocation: true, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
-    { id: "stitch-remotion", label: "Stitch Remotion", source: "example/remotion", args: ["--skill", "stitch-remotion"], default: false, autoInvocation: true, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
+    { id: "react-components", label: "react:components", source: "example/react", args: ["--skill", "react:components"], default: false, autoInvocation: true, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
+    { id: "stitch-remotion", label: "Stitch Remotion", source: "example/remotion", args: ["--skill", "remotion"], default: false, autoInvocation: true, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
   ]);
 });
 
@@ -1373,7 +1375,7 @@ function writeInstalledSkill(homeDir: string, id: string, label: string): void {
   writeFileSync(join(skillDir, "SKILL.md"), `---\nname: ${label}\n---\n`);
 }
 
-function writeGlobalSkillLock(homeDir: string, skills: Record<string, { source: string }>): void {
+function writeGlobalSkillLock(homeDir: string, skills: Record<string, { source: string; skillPath?: string; skillFolderHash?: string }>): void {
   const agentsDir = join(homeDir, ".agents");
   mkdirSync(agentsDir, { recursive: true });
   writeFileSync(join(agentsDir, ".skill-lock.json"), `${JSON.stringify({ version: 3, skills }, null, 2)}\n`);

@@ -22,7 +22,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
-- `cli:` made `afk setup profiles` offer profiles from the selected source, recover lock-backed missing skills after verified installation, and present a grouped, wrapping-safe readiness review before installing available skills with always-on and transitive composed dependencies.
+- `cli:` made `afk setup profiles` offer profiles from the selected source, recover lock-backed missing skills across renamed upstream IDs after verified installation, and present a grouped, wrapping-safe readiness review before installing available skills with always-on and transitive composed dependencies.
 - `cli:` made `afk skills list` and `afk skills show` include only enabled skills by default, with `--disabled` required to inspect disabled entries.
 - `cli:` made `afk skills delete --profile` present the profile's installed skills as an all-selected checklist before deletion, while `--yes` keeps deleting the full installed set non-interactively.
 - `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.
