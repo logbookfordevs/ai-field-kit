@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { sectionTitle, muted } from "./brand.js";
 import { applyOperation, formatOperation, isDirectory, summarizeOperations } from "./fs-utils.js";
-import { localManifestDir, projectManifestDir, type SkillManifest, type SkillManifestItem } from "./manifest.js";
+import { loadSkillManifest, localManifestDir, projectManifestDir, type SkillManifest, type SkillManifestItem } from "./manifest.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, PathOperation, Runtime } from "./types.js";
 
@@ -37,6 +37,31 @@ export type CatalogSkillsImportStatus = {
 type CatalogImportOptions = Pick<CliOptions, "homeDir" | "cwd" | "dryRun" | "manifestLocal"> & {
   startDisabled?: boolean;
 };
+
+export type SetupSourceCatalogImportPlan = {
+  operation?: PathOperation;
+  imported: SkillManifestItem[];
+  missingLock: string[];
+  targetCatalogPath: string;
+};
+
+export function snapshotSetupSourceLockedSkillIds(options: CatalogImportOptions & {
+  manifestContents: NonNullable<CliOptions["manifestContents"]>;
+  selectedSkillIds: string[];
+  allSkills: boolean;
+}): string[] {
+  const sourceManifest = loadSkillManifest(options);
+  const selectedIds = new Set(options.selectedSkillIds.map((id) => id.toLowerCase()));
+  const wholeSourceEntries = sourceManifest.items.filter((item) => (
+    (selectedIds.size > 0 ? selectedIds.has(item.id.toLowerCase()) : item.default || options.allSkills) &&
+    !skillIdFromArgs(item.args)
+  ));
+  const sources = new Set(wholeSourceEntries.map((item) => item.source));
+  const lock = readSkillLock(sourceLockPathForOptions(options));
+  return Object.entries(lock.skills ?? {})
+    .filter(([, entry]) => Boolean(entry.source && sources.has(entry.source)))
+    .map(([id]) => id.toLowerCase());
+}
 
 export async function runCatalogImport(runtime: Runtime, options: CliOptions): Promise<number> {
   const plan = planCatalogImport(options);
@@ -118,6 +143,89 @@ export function planCatalogImport(options: CatalogImportOptions): ImportPlan {
     sourceSkillsDir,
     sourceLockPath,
     targetCatalogPath,
+  };
+}
+
+export function planSetupSourceCatalogImport(options: CatalogImportOptions & {
+  manifestContents: NonNullable<CliOptions["manifestContents"]>;
+  selectedSkillIds: string[];
+  allSkills: boolean;
+  preexistingWholeSourceSkillIds?: string[];
+}): SetupSourceCatalogImportPlan {
+  const sourceManifest = loadSkillManifest(options);
+  const selectedIds = new Set(options.selectedSkillIds.map((id) => id.toLowerCase()));
+  const selected = sourceManifest.items.filter((item) => (
+    selectedIds.size > 0 ? selectedIds.has(item.id.toLowerCase()) : item.default || options.allSkills
+  ));
+  const sourceSkillsDir = sourceSkillsDirForOptions(options);
+  const installed = installedSkillsForImport(sourceSkillsDir);
+  const installedById = new Map(installed.map((skill) => [skill.id.toLowerCase(), skill]));
+  const lock = readSkillLock(sourceLockPathForOptions(options));
+  const importedById = new Map<string, SkillManifestItem>();
+  const missingLock: string[] = [];
+  const preexistingWholeSourceSkillIds = new Set(options.preexistingWholeSourceSkillIds ?? []);
+
+  for (const item of selected) {
+    const requestedId = skillIdFromArgs(item.args);
+    if (requestedId) {
+      const installedSkill = installedById.get(requestedId.toLowerCase());
+      const lockEntry = lock.skills?.[requestedId];
+      if (!installedSkill || lockEntry?.source !== item.source) {
+        missingLock.push(requestedId);
+        continue;
+      }
+      importedById.set(requestedId.toLowerCase(), { ...item, id: requestedId, imported: true });
+      continue;
+    }
+
+    for (const installedSkill of installed) {
+      if (preexistingWholeSourceSkillIds.has(installedSkill.id.toLowerCase())) {
+        continue;
+      }
+      const lockEntry = lock.skills?.[installedSkill.id];
+      if (lockEntry?.source !== item.source) {
+        continue;
+      }
+      importedById.set(installedSkill.id.toLowerCase(), skillManifestItemFromInstalledSkill(
+        installedSkill.id,
+        installedSkill.root,
+        lockEntry.source,
+        installedSkill.startDisabled,
+      ));
+    }
+
+    if (![...importedById.values()].some((candidate) => candidate.source === item.source)) {
+      missingLock.push(item.id);
+    }
+  }
+
+  const imported = [...importedById.values()];
+  const targetCatalogPath = join(options.manifestLocal ? projectManifestDir(options.cwd) : localManifestDir(options.homeDir), "skills.json");
+  if (imported.length === 0) {
+    return { imported, missingLock: uniqueSorted(missingLock), targetCatalogPath };
+  }
+
+  const existing = readSkillCatalog(targetCatalogPath);
+  const nextItems = [
+    ...existing.items.map((item) => importedById.get(item.id.toLowerCase()) ?? item),
+    ...imported.filter((item) => !existing.items.some((existingItem) => existingItem.id.toLowerCase() === item.id.toLowerCase())),
+  ];
+  const referencedScopeIds = new Set(imported.map((item) => item.catalog?.scope).filter((id): id is string => Boolean(id)));
+  const existingScopeIds = new Set((existing.scopes ?? []).map((scope) => scope.id));
+  const scopes = ensureUncategorizedScope([
+    ...(existing.scopes ?? []),
+    ...(sourceManifest.scopes ?? []).filter((scope) => referencedScopeIds.has(scope.id) && !existingScopeIds.has(scope.id)),
+  ]);
+
+  return {
+    imported,
+    missingLock: uniqueSorted(missingLock),
+    targetCatalogPath,
+    operation: {
+      type: "write",
+      path: targetCatalogPath,
+      content: `${JSON.stringify({ ...existing, scopes, items: nextItems }, null, 2)}\n`,
+    },
   };
 }
 
@@ -232,6 +340,11 @@ function installedSkillsForImport(skillsDir: string): Array<{ id: string; root: 
 
 function uniqueSorted(values: string[]): string[] {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right));
+}
+
+function skillIdFromArgs(args: string[]): string | undefined {
+  const index = args.indexOf("--skill");
+  return index >= 0 ? args[index + 1] : undefined;
 }
 
 function skillManifestItemFromInstalledSkill(id: string, skillRoot: string, source: string, startDisabled: boolean): SkillManifestItem {

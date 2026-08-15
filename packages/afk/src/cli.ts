@@ -7,6 +7,7 @@ import { runRefresh } from "./refresh.js";
 import { runManifestShow } from "./manifest-show.js";
 import { runManifestConfigure, runManifestConfigureArea, runManifestConfigureAreaAction, type ManifestAction, type ManifestArea } from "./manifest-configure.js";
 import { runCatalogProfilesCommand, runSkillsCommand } from "./skills/commands.js";
+import { runCatalogDoctor } from "./catalog-doctor.js";
 import { managedSkillAgents } from "./skills/catalog.js";
 import { runUiCommand } from "./ui.js";
 import { selectCatalogSkillsLobbyRoute, selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
@@ -97,6 +98,10 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
     return runAfkOpen(runtime, options);
   }
 
+  if (key === "doctor") {
+    return runCatalogDoctor(runtime, options);
+  }
+
   if (key === "catalog") {
     return runManifestConfigure(runtime, options);
   }
@@ -137,7 +142,7 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
   }
 
   if (key === "setup") {
-    return runSetup(runtime, options);
+    return runSetupCommand(commandPath, runtime, options);
   }
 
   if (commandPath[0] === "skills") {
@@ -154,7 +159,7 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
 
   const area = commandToArea(commandPath);
   if (area) {
-    return runArea(area, runtime, options);
+    return runSetupCommand(commandPath, runtime, options);
   }
 
   runtime.io.stderr(`Unknown command: ${key || "(none)"}`);
@@ -199,8 +204,10 @@ type CommandHelp = {
 };
 
 const setupOptions = {
+  refresh: "--refresh                         Refresh the matching catalog scope before setup",
   dryRun: "--dry-run                         Preview changes without applying them",
   verbose: "--verbose                         Show delegated installer output",
+  catalogVerbose: "--verbose                         Show complete JSON for catalog editor previews",
   yes: "--yes, -y                         Accept defaults and skip prompts",
   scope: "--scope global|project            Choose machine-wide or current-project setup",
   localScope: "--local                           Alias for --scope project",
@@ -219,6 +226,7 @@ const setupOptions = {
 };
 
 const setupAreaOptions = [
+  setupOptions.refresh,
   setupOptions.dryRun,
   setupOptions.verbose,
   setupOptions.yes,
@@ -239,6 +247,14 @@ const commandHelps: Record<string, CommandHelp> = {
     options: ["--code                            Open in VS Code instead of Finder"],
     examples: ["afk open", "afk open --code"],
   },
+  doctor: {
+    title: "AFK doctor",
+    summary: "Validate the attributes and structure of every local AFK catalog file.",
+    usage: "afk doctor [options]",
+    notes: ["Checks the global catalog by default. Pass --local to check ./afk/catalog."],
+    options: ["--local                           Validate ./afk/catalog instead of the global catalog"],
+    examples: ["afk doctor", "afk doctor --local"],
+  },
   setup: {
     title: "AFK setup",
     summary: "Guided setup for rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks.",
@@ -248,6 +264,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "Pass --source to merge and apply selected source entries without changing the remembered source.",
     ],
     options: [
+      setupOptions.refresh,
       setupOptions.dryRun,
       setupOptions.verbose,
       setupOptions.yes,
@@ -315,6 +332,7 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       "afk catalog",
@@ -784,7 +802,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--dry-run                         Preview the delete without applying it",
       "--yes, -y                         Skip confirmation",
       "--catalog-only                    Limit deletion to skills present in AFK's skills catalog",
-      "--profile                         Choose a profile and delete its installed skills",
+      "--profile                         Choose a profile and select installed skills to delete",
     ],
     examples: [
       "afk skills delete",
@@ -904,6 +922,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "remove                            Remove a rules layer",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       "afk catalog rules",
@@ -923,6 +942,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "remove                            Remove a Custom Agent source",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       "afk catalog agents",
@@ -1152,6 +1172,7 @@ function catalogItemAreaHelp(title: string, area: "mcps" | "plugins" | "hooks", 
       "toggle-default                    Toggle defaults",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       `afk catalog ${area}`,
@@ -1181,6 +1202,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let initOnly = false;
   let empty = false;
   const refreshDefaults = isRefreshCommand(key);
+  let refreshBeforeSetup = false;
   let defaultsSource = "";
   let defaultsSourceExplicit = false;
   let defaultSourceUpdate = "";
@@ -1300,6 +1322,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (arg === "--refresh") {
+      if (key !== "setup" && !commandToArea(commandPath)) {
+        return { help: false, kind: "error", error: "--refresh is only supported with afk setup commands" };
+      }
+      refreshBeforeSetup = true;
+      continue;
+    }
+
     if ((isAfkSkillsCommand || isAfkCatalogProfilesCommand) && arg === "--json") {
       skillsJson = true;
       continue;
@@ -1316,6 +1346,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
+      if (key === "doctor") {
+        manifestLocal = true;
+        continue;
+      }
+
       if (isAfkProfileCommand) {
         manifestLocal = true;
         manifestConfigureLocal = true;
@@ -1818,6 +1853,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       initOnly,
       empty,
       refreshDefaults,
+      refreshBeforeSetup,
       defaultsSource,
       defaultsSourceExplicit,
       defaultSourceUpdate,
@@ -1910,6 +1946,23 @@ function commandToArea(commandPath: string[]): Area | null {
   }
 
   return null;
+}
+
+async function runSetupCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const area = commandToArea(commandPath);
+  if (options.refreshBeforeSetup) {
+    const refreshCode = await runRefresh(runtime, {
+      ...options,
+      refreshBeforeSetup: false,
+      manifestLocal: options.setupScope === "project",
+      selectedManifestCategories: area ? [area] : [],
+    });
+    if (refreshCode !== 0) {
+      return refreshCode;
+    }
+  }
+
+  return area ? runArea(area, runtime, options) : runSetup(runtime, options);
 }
 
 function isSetupSkillsCommand(key: string): boolean {
@@ -2182,6 +2235,7 @@ Usage:
   afk --version
   afk
   afk open
+  afk doctor [options]
   afk refresh [category...] [options]
   afk catalog [options]
   afk setup [options]
@@ -2206,6 +2260,7 @@ Usage:
 Common paths:
   afk                         Open the interactive lobby when your terminal supports prompts
   afk open                    Open the user AFK folder
+  afk doctor                  Validate every local AFK catalog file
   afk setup                   Prepare rules, skills, Custom Agents, MCPs, plugins, and hooks
   afk refresh                 Update the local catalog cache
   afk catalog                 Edit writable local catalog files

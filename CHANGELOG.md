@@ -13,13 +13,16 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added `--refresh` to setup commands so the matching global or project catalog scope refreshes before setup begins.
 - `skills:` added the optional manual `afk-code-review-check` wrapper for verifying AFK Code Review findings against the code and discussing verdicts before making changes.
 - `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
 - `skills:` added Emil Kowalski's optional model-invoked `animate` utility for implementing purposeful interface motion.
+- `skills:` added Emil Kowalski's optional manual `apple-design` utility for shaping fluid, gesture-driven interfaces with Apple's interaction principles.
 
 ### Changed
 
 - `cli:` made `afk setup profiles` offer profiles from the selected source and install their skills, including always-on and warned transitive composed dependencies.
+- `cli:` made `afk skills delete --profile` present the profile's installed skills as an all-selected checklist before deletion, while `--yes` keeps deleting the full installed set non-interactively.
 - `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.
 - `skills:` distilled Code Grill into a manual wrapper that composes Grilling, Truss Evaluation, and Codebase Design around the material technical frontier without duplicating their workflows.
 - `skills:` taught AFK Code Review to review an implementation ticket alongside its originating material, detect lost or distorted requirements, and substantiate the ticket's recorded implementation and verification claims.
@@ -29,7 +32,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
-- `skills:` made `afk-code-review-check` run AFK Code Review and capture its findings before validation instead of asking the user to provide findings.
+- `skills:` made `afk-code-review-check` run AFK Code Review, preserve its complete findings verbatim, and append validation verdicts instead of asking for or summarizing the review input.
 - `rules:` made the bundled AFK rules layer fetch its files from the source repository and replaced missing-local-file stack traces with guidance to use a full URL or `--source <owner/repo>`.
 
 ## v1.2.2 - 2026-08-09

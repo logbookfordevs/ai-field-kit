@@ -376,6 +376,27 @@ export function manifestNameForCategory(category: ManifestCategory): ManifestNam
   }
 }
 
+export function isManifestValue(name: ManifestName, value: unknown): boolean {
+  switch (name) {
+    case "skills.json":
+      return isSkillManifest(value);
+    case "profiles.json":
+      return isProfilesManifest(value);
+    case "agents.json":
+      return isCustomAgentManifest(value);
+    case "mcps.json":
+      return isMcpManifest(value);
+    case "presets.json":
+      return isPresetsManifest(value);
+    case "rules.json":
+      return isRulesManifest(value);
+    case "plugins.json":
+      return isPluginManifest(value);
+    case "hooks.json":
+      return isHookManifest(value);
+  }
+}
+
 export function loadSkillManifest(options: Pick<CliOptions, "homeDir" | "manifestContents">): SkillManifest {
   return parseManifest<SkillManifest>(options, "skills.json", isSkillManifest);
 }
@@ -1228,22 +1249,24 @@ function readProfilesManifest(path: string): ProfilesManifest | undefined {
 function parseProfilesManifest(content: string): ProfilesManifest | undefined {
   try {
     const parsed: unknown = JSON.parse(content);
-    if (!isRecord(parsed) || typeof parsed.version !== "number" || !Array.isArray(parsed.alwaysOn) || !Array.isArray(parsed.items)) {
+    if (!isProfilesManifest(parsed)) {
       return undefined;
     }
 
-    if (!parsed.alwaysOn.every((item) => typeof item === "string") || !parsed.items.every(isProfileManifestItem)) {
-      return undefined;
-    }
-
-    if (parsed.mode !== undefined && parsed.mode !== "strict" && parsed.mode !== "context") {
-      return undefined;
-    }
-
-    return parsed as ProfilesManifest;
+    return parsed;
   } catch {
     return undefined;
   }
+}
+
+function isProfilesManifest(value: unknown): value is ProfilesManifest {
+  return isRecord(value) &&
+    typeof value.version === "number" &&
+    (value.mode === undefined || value.mode === "strict" || value.mode === "context") &&
+    Array.isArray(value.alwaysOn) &&
+    value.alwaysOn.every((item) => typeof item === "string") &&
+    Array.isArray(value.items) &&
+    value.items.every(isProfileManifestItem);
 }
 
 function isProfileManifestItem(value: unknown): value is ProfilesManifest["items"][number] {
