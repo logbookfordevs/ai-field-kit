@@ -801,7 +801,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--dry-run                         Preview the delete without applying it",
       "--yes, -y                         Skip confirmation",
       "--catalog-only                    Limit deletion to skills present in AFK's skills catalog",
-      "--profile                         Choose a profile and delete its installed skills",
+      "--profile                         Choose a profile and select installed skills to delete",
     ],
     examples: [
       "afk skills delete",

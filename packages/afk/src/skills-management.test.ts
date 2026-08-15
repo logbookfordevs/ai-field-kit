@@ -1510,6 +1510,7 @@ test("runSkillsCommand delete --profile deletes installed skills from a profile"
   const code = await runSkillsCommand(["skills", "delete", "video"], outputRuntime(output), {
     ...baseOptions(root),
     dryRun: true,
+    yes: true,
     skillsDeleteByProfile: true,
   });
 

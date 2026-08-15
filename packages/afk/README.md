@@ -367,8 +367,11 @@ metadata together. Untracked and agent-specific skills update only their
 installed metadata.
 
 `afk skills delete --profile` accepts zero or one profile ID. Without an ID it
-prompts for a profile. AFK warns again because a referenced skill may belong to
-other profiles. Deleting by profile does not delete the profile definition from
+prompts for a profile. AFK then presents the profile's installed skills with all
+selected by default, so you can narrow the deletion before confirming it. With
+`--yes`, AFK keeps the non-interactive default and deletes every installed skill
+in the profile. AFK warns again because a referenced skill may belong to other
+profiles. Deleting by profile does not delete the profile definition from
 `profiles.json`; use `afk catalog profiles delete` for that.
 
 ### Profile Runtime Commands
@@ -1378,8 +1381,9 @@ the shared global library by default. They can manage preset agent roots with
 `afk skills delete --disabled` is useful when pruning disabled skills. Use
 `--catalog-only` to limit deletion candidates to installed skills represented
 in AFK's `skills.json` catalog. Use `--profile` to choose a profile and delete
-the installed skills referenced by it; AFK asks for an extra confirmation
-because those skills may also be used by other profiles.
+selected installed skills referenced by it. Every installed profile skill starts
+selected, and AFK asks for an extra confirmation because the chosen skills may
+also be used by other profiles.
 Delete is permanent; use `--dry-run` to preview the selected folders before
 removing them.
 
