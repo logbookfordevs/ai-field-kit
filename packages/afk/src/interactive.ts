@@ -293,11 +293,11 @@ export async function selectSkillProfilesInstall(options: CliOptions): Promise<P
   };
 }
 
-export async function confirmPartialSkillProfileInstall(missingIds: string[]): Promise<boolean> {
+export async function confirmSkillProfileInstall(availableIds: string[], missingIds: string[]): Promise<boolean> {
   return confirm({
     message: missingIds.length > 0
-      ? `Install the available profile skills without ${missingIds.join(", ")}?`
-      : "Install the available profile skills?",
+      ? `Install ${availableIds.join(", ")} without ${missingIds.join(", ")}?`
+      : `Install ${availableIds.join(", ")}?`,
     default: false,
     theme: afkPromptTheme,
   });

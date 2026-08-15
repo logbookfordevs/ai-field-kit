@@ -46,6 +46,7 @@ export type SetupSourceCatalogImportPlan = {
 };
 
 export type SkillCatalogRecoveryPlan = {
+  manifest: SkillManifest;
   operation?: PathOperation;
   recovered: SkillManifestItem[];
   targetCatalogPath: string;
@@ -70,20 +71,23 @@ export function planSkillCatalogRecovery(
     });
 
   if (recovered.length === 0) {
-    return { recovered, targetCatalogPath };
+    return { manifest: existing, recovered, targetCatalogPath };
   }
 
+  const manifest = {
+    ...existing,
+    scopes: ensureUncategorizedScope(existing.scopes ?? []),
+    items: [...existing.items, ...recovered],
+  };
+
   return {
+    manifest,
     recovered,
     targetCatalogPath,
     operation: {
       type: "write",
       path: targetCatalogPath,
-      content: `${JSON.stringify({
-        ...existing,
-        scopes: ensureUncategorizedScope(existing.scopes ?? []),
-        items: [...existing.items, ...recovered],
-      }, null, 2)}\n`,
+      content: `${JSON.stringify(manifest, null, 2)}\n`,
     },
   };
 }

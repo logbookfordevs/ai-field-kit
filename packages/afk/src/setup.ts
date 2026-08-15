@@ -8,7 +8,7 @@ import { planSetupSourceCatalogImport, planSkillCatalogRecovery, snapshotSetupSo
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
 import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { confirmPartialSkillProfileInstall, selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRecoverableProfileSkills, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
+import { confirmSkillProfileInstall, selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRecoverableProfileSkills, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { builtInDefaultsSource, ensureLocalManifests, expandComposedSkillIds, loadSkillManifest, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
@@ -299,7 +299,9 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const initialAvailableIds = new Set(skillManifest.items.map((item) => item.id));
       const missingIds = selectedSkillIds.filter((id) => !initialAvailableIds.has(id));
       let recoveryOperation: PathOperation | undefined;
+      let recoveryIdsToVerify: string[] = [];
       if (missingIds.length > 0) {
+        runtime.io.stderr(`Profile skills missing from the cached catalog: ${missingIds.join(", ")}.`);
         const recoveryCandidates = planSkillCatalogRecovery(prepared.options, missingIds).recovered;
         if (recoveryCandidates.length > 0) {
           runtime.io.stdout(`Recoverable profile skills found in the skills lock: ${recoveryCandidates.map((item) => item.id).join(", ")}.`);
@@ -308,16 +310,9 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
             : await selectRecoverableProfileSkills(recoveryCandidates.map(({ id, label, source }) => ({ id, label, source })));
           const recoveryPlan = planSkillCatalogRecovery(prepared.options, selectedRecoveryIds);
           recoveryOperation = recoveryPlan.operation;
+          recoveryIdsToVerify = recoveryPlan.recovered.map((item) => item.id);
           if (recoveryPlan.recovered.length > 0) {
-            const scopes = skillManifest.scopes ?? [];
-            const recoveredUsesUncategorized = recoveryPlan.recovered.some((item) => item.catalog?.scope === "uncategorized");
-            skillManifest = {
-              ...skillManifest,
-              scopes: recoveredUsesUncategorized && !scopes.some((scope) => scope.id === "uncategorized")
-                ? [...scopes, { id: "uncategorized", label: "Uncategorized", description: "Imported skills waiting for categorization." }]
-                : scopes,
-              items: [...skillManifest.items, ...recoveryPlan.recovered],
-            };
+            skillManifest = recoveryPlan.manifest;
           }
         }
       }
@@ -325,12 +320,15 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const unavailableIds = selectedSkillIds.filter((id) => !availableIds.has(id));
       const availableSkillIds = selectedSkillIds.filter((id) => availableIds.has(id));
       if (missingIds.length > 0) {
-        runtime.io.stderr(`Missing profile skills: ${missingIds.join(", ")}.`);
         if (availableSkillIds.length === 0) {
           runtime.io.stderr("No available profile skills remain. No changes planned.");
           return 1;
         }
-        const accepted = prepared.options.yes || await confirmPartialSkillProfileInstall(unavailableIds);
+        runtime.io.stdout(`Available profile skills: ${availableSkillIds.join(", ")}.`);
+        if (unavailableIds.length > 0) {
+          runtime.io.stderr(`Still unavailable: ${unavailableIds.join(", ")}.`);
+        }
+        const accepted = prepared.options.yes || await confirmSkillProfileInstall(availableSkillIds, unavailableIds);
         if (!accepted) {
           runtime.io.stdout("Profile skill installation cancelled. No changes planned.");
           return 0;
@@ -372,7 +370,14 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
       if (code === 0) {
         if (recoveryOperation && !selectedOptions.dryRun) {
-          applyOperation(recoveryOperation);
+          const verifiedRecovery = planSkillCatalogRecovery(prepared.options, recoveryIdsToVerify);
+          const verifiedIds = new Set(verifiedRecovery.recovered.map((item) => item.id));
+          const recoveryVerified = recoveryIdsToVerify.every((id) => verifiedIds.has(id));
+          if (!recoveryVerified || !verifiedRecovery.operation) {
+            runtime.io.stderr("Recovered profile skills were not added to the cached catalog because their installed folders and lock metadata could not be verified.");
+            return 1;
+          }
+          applyOperation(verifiedRecovery.operation);
         }
         syncSkillInvocationPolicy(runtime, selectedOptions);
         syncSkillStartupStorage(runtime, selectedOptions, disabledBeforeInstall);

@@ -14,7 +14,7 @@ const promptState = vi.hoisted(() => ({
   defaultsSource: "local",
   rememberedSources: [] as string[],
   partialSkillProfileInstallAccepted: true,
-  partialSkillProfileInstallPrompts: [] as string[][],
+  partialSkillProfileInstallPrompts: [] as Array<{ availableIds: string[]; missingIds: string[] }>,
   recoverableSkillIds: [] as string[],
   recoveryPrompts: [] as Array<Array<{ id: string; label: string; source: string }>>,
 }));
@@ -34,8 +34,8 @@ vi.mock("./interactive.js", async (importOriginal) => {
       promptState.rememberedSources.push(rememberedSource);
       return promptState.defaultsSource;
     }),
-    confirmPartialSkillProfileInstall: vi.fn(async (missingIds: string[]) => {
-      promptState.partialSkillProfileInstallPrompts.push(missingIds);
+    confirmSkillProfileInstall: vi.fn(async (availableIds: string[], missingIds: string[]) => {
+      promptState.partialSkillProfileInstallPrompts.push({ availableIds, missingIds });
       return promptState.partialSkillProfileInstallAccepted;
     }),
     selectRecoverableProfileSkills: vi.fn(async (skills: Array<{ id: string; label: string; source: string }>) => {
@@ -830,8 +830,11 @@ test("runArea profiles warns and installs available skills when missing referenc
 
   assert.equal(code, 0);
   assert.equal(promptState.recoveryPrompts.length, 1);
-  assert.deepEqual(promptState.partialSkillProfileInstallPrompts, [["react-components", "stitch-remotion"]]);
-  assert.ok(text.includes("Missing profile skills: react-components, stitch-remotion."), text);
+  assert.deepEqual(promptState.partialSkillProfileInstallPrompts, [{
+    availableIds: ["design-md"],
+    missingIds: ["react-components", "stitch-remotion"],
+  }]);
+  assert.ok(text.includes("Profile skills missing from the cached catalog: react-components, stitch-remotion."), text);
   assert.ok(text.includes("Continuing with available skills: design-md."), text);
   assert.ok(text.includes("--skill design-md"), text);
   assert.ok(!text.includes("--skill design-md react-components"), text);
@@ -887,7 +890,11 @@ test("runArea profiles offers lock-backed missing skills for recovery and instal
     { id: "react-components", label: "React Components", source: "example/react" },
     { id: "stitch-remotion", label: "Stitch Remotion", source: "example/remotion" },
   ]]);
-  assert.deepEqual(promptState.partialSkillProfileInstallPrompts, [[]]);
+  assert.deepEqual(promptState.partialSkillProfileInstallPrompts, [{
+    availableIds: ["design-md", "react-components", "stitch-remotion"],
+    missingIds: [],
+  }]);
+  assert.ok(text.includes("Available profile skills: design-md, react-components, stitch-remotion."), text);
   assert.ok(text.includes("Recoverable profile skills found in the skills lock: react-components, stitch-remotion."), text);
   assert.ok(text.includes("Continuing with available skills: design-md, react-components, stitch-remotion."), text);
   assert.ok(text.includes("--skill design-md"), text);
@@ -947,6 +954,56 @@ test("runArea profiles does not restore recovered catalog entries when installat
 
   assert.equal(code, 7);
   assert.deepEqual(cached.items.map((item) => item.id), ["design-md"]);
+});
+
+test("runArea profiles rejects catalog recovery when post-install metadata cannot be verified", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 1,
+      mode: "context",
+      alwaysOn: [],
+      items: [{ id: "stitch", name: "Stitch", skills: ["design-md", "react-components"] }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "design-md", label: "Design MD", source: "example/stitch", args: ["--skill", "design-md"], default: false }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  writeInstalledSkill(homeDir, "react-components", "React Components");
+  writeGlobalSkillLock(homeDir, { "react-components": { source: "example/react" } });
+  const output: string[] = [];
+  promptState.recoverableSkillIds = ["react-components"];
+  promptState.recoveryPrompts = [];
+  promptState.partialSkillProfileInstallAccepted = true;
+  promptState.partialSkillProfileInstallPrompts = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      rmSync(join(homeDir, ".agents", "skills", "react-components"), { recursive: true, force: true });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runArea("profiles", runtime, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    selectedSkillProfileIds: ["stitch"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string }>;
+  };
+
+  assert.equal(code, 1);
+  assert.deepEqual(cached.items.map((item) => item.id), ["design-md"]);
+  assert.ok(output.join("\n").includes("installed folders and lock metadata could not be verified"));
 });
 
 test("runArea merges selected explicit-source skills into the cache after installing them", async () => {
