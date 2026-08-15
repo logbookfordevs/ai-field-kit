@@ -220,6 +220,7 @@ const setupOptions = {
   initOnly: "--init-only                       Create/update the local catalog only, then exit",
   empty: "--empty                           Create empty catalog files with --init-only or refresh",
   defaultSource: "--default-source <source>         Save the default source and refresh the cache",
+  overrideRefresh: "--override                        Replace targeted catalog files instead of merging",
   allSkills: "--all                            Include imported skills when installing skills",
   customAgent: "--custom-agent <id>             Select a Custom Agent; repeatable",
   allCustomAgents: "--all                            Select every cataloged Custom Agent",
@@ -303,6 +304,7 @@ const commandHelps: Record<string, CommandHelp> = {
     notes: [
       "Use refresh when you want the local catalog cache to change.",
       "Use --source for a one-off refresh source; use --default-source to save the source for future setup/show runs.",
+      "Override removes local-only entries from targeted files and requires two confirmations unless --dry-run is active.",
     ],
     options: [
       setupOptions.dryRun,
@@ -311,6 +313,7 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.ref,
       setupOptions.empty,
       setupOptions.defaultSource,
+      setupOptions.overrideRefresh,
     ],
     examples: [
       "afk refresh",
@@ -318,6 +321,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk refresh --local",
       "afk refresh --source your-org/dev-kit",
       "afk refresh --default-source your-org/dev-kit",
+      "afk refresh --override",
     ],
   },
   catalog: {
@@ -1200,6 +1204,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
   let empty = false;
+  let overrideRefresh = false;
   const refreshDefaults = isRefreshCommand(key);
   let refreshBeforeSetup = false;
   let defaultsSource = "";
@@ -1509,6 +1514,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--empty") {
       empty = true;
+      continue;
+    }
+
+    if (arg === "--override") {
+      if (commandPath[0] !== "refresh") {
+        return { help: false, kind: "error", error: "--override is only supported with afk refresh" };
+      }
+      overrideRefresh = true;
       continue;
     }
 
@@ -1852,6 +1865,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       initOnly,
       empty,
       refreshDefaults,
+      overrideRefresh,
       refreshBeforeSetup,
       defaultsSource,
       defaultsSourceExplicit,

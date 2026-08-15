@@ -377,7 +377,28 @@ test("runCli prints contextual refresh help", async () => {
   assert.ok(output.join("\n").includes("afk refresh skills"));
   assert.ok(output.join("\n").includes("Refresh cached AFK catalog"));
   assert.ok(output.join("\n").includes("Use refresh when you want the local catalog cache to change."));
+  assert.ok(output.join("\n").includes("--override"));
   assert.ok(!output.join("\n").includes("--refresh-defaults"));
+});
+
+test("runCli limits override to the top-level refresh command", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "refresh", "--override"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("--override is only supported with afk refresh"));
+});
+
+test("runCli accepts override for a targeted refresh", async () => {
+  const output: string[] = [];
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-targeted-override-"));
+  const code = await withConsole(output, () => runCli(
+    ["refresh", "skills", "--override", "--empty", "--dry-run"],
+    { HOME: homeDir },
+  ));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("skills.json"));
 });
 
 test("runCli prints contextual catalog skills import help", async () => {

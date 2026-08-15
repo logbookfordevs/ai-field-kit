@@ -307,6 +307,22 @@ test("Custom Agent refresh replaces matches, appends incoming entries, and prese
   assert.equal(merged.items[0]?.label, "New label");
 });
 
+test("Custom Agent override discards local-only entries", () => {
+  const directory = mkdtempSync(join(tmpdir(), "afk-agent-override-"));
+  const target = join(directory, "agents.json");
+  writeFileSync(target, `${JSON.stringify({
+    version: 1,
+    items: [{ id: "local-only", label: "Local only", source: "local.md" }],
+  })}\n`);
+
+  const overridden = JSON.parse(mergedCustomAgentManifestContent(`${JSON.stringify({
+    version: 2,
+    items: [{ id: "incoming", label: "Incoming", source: "incoming.md" }],
+  })}\n`, target, false)) as { items: Array<{ id: string }> };
+
+  assert.deepEqual(overridden.items.map((item) => item.id), ["incoming"]);
+});
+
 test("Rules refresh updates layers in place, preserves absent layers, and appends new layers", () => {
   const directory = mkdtempSync(join(tmpdir(), "afk-rules-merge-"));
   const target = join(directory, "rules.json");
@@ -371,6 +387,112 @@ test("ensureLocalManifests durably merges targeted rules layers", async () => {
     const merged = JSON.parse(write.content) as { layers: Array<{ id: string; label: string }> };
     assert.deepEqual(merged.layers.map((layer) => layer.id), ["base", "personal", "organization"]);
     assert.equal(merged.layers[0]?.label, "Updated base");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests override discards local-only rules layers", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    version: 2,
+    layers: [
+      { id: "base", label: "Updated base", source: "rules/BASE.md" },
+    ],
+  }), { status: 200 });
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-rules-override-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({
+      version: 2,
+      layers: [
+        { id: "base", label: "Old base", source: "old.md" },
+        { id: "personal", label: "Personal", source: "personal.md" },
+      ],
+    }, null, 2)}\n`);
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      overrideRefresh: true,
+      manifestLocal: false,
+      defaultsSource: "acme/rules-kit",
+      defaultsSourceExplicit: true,
+      dryRun: true,
+      selectedManifestCategories: ["rules"],
+    });
+    const write = operations.find((operation) => operation.type === "write" && operation.path === join(manifestDir, "rules.json"));
+    assert.ok(write && write.type === "write");
+    const replaced = JSON.parse(write.content) as { layers: Array<{ id: string; label: string }> };
+    assert.deepEqual(replaced.layers.map((layer) => layer.id), ["base"]);
+    assert.equal(replaced.layers[0]?.label, "Updated base");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests override discards imported skills and local profiles", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [{ id: "source-skill", label: "Source Skill", source: "acme/dev-kit", args: ["--skill", "source-skill"] }],
+      }),
+      "profiles.json": JSON.stringify({
+        version: 2,
+        mode: "context",
+        alwaysOn: [],
+        items: [{ id: "source", name: "Source", skills: ["source-skill"] }],
+      }),
+    };
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-skills-profiles-override-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "local-skill", label: "Local Skill", source: "local", args: ["--skill", "local-skill"], imported: true }],
+    })}\n`);
+    writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
+      version: 1,
+      mode: "strict",
+      alwaysOn: [],
+      items: [{ id: "local", name: "Local", skills: ["local-skill"] }],
+    })}\n`);
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      overrideRefresh: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      defaultsSourceExplicit: true,
+      dryRun: true,
+      selectedManifestCategories: ["skills", "profiles"],
+    });
+    const skillsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("skills.json"));
+    const profilesWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("profiles.json"));
+    assert.ok(skillsWrite && skillsWrite.type === "write");
+    assert.ok(profilesWrite && profilesWrite.type === "write");
+    assert.deepEqual((JSON.parse(skillsWrite.content) as SkillManifest).items.map((item) => item.id), ["source-skill"]);
+    assert.deepEqual((JSON.parse(profilesWrite.content) as { items: Array<{ id: string }> }).items.map((item) => item.id), ["source"]);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -1119,6 +1241,42 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
     const pluginOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("plugins.json"));
     assert.equal(pluginOperation?.type, "skip");
     assert.equal(readFileSync(join(manifestDir, "plugins.json"), "utf8").includes("keep-me"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests override clears a targeted manifest omitted by the source", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("missing", { status: 404 });
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-omitted-override-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "plugins.json"), `${JSON.stringify({
+      version: 1,
+      items: [{ id: "local-only", label: "Local only", install: { command: "true", args: [] } }],
+    })}\n`);
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      overrideRefresh: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+      selectedManifestCategories: ["plugins"],
+      cloneGithubSource: emptyGithubCheckout,
+    });
+
+    const pluginOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("plugins.json"));
+    assert.ok(pluginOperation && pluginOperation.type === "write");
+    assert.deepEqual((JSON.parse(pluginOperation.content) as { items: unknown[] }).items, []);
   } finally {
     globalThis.fetch = originalFetch;
   }

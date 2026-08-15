@@ -36,6 +36,10 @@ _Avoid_: Agent installer, agent registry
 The refresh rule where incoming entries replace matching Agent Names, new entries are appended, and existing entries absent upstream remain until explicitly removed.
 _Avoid_: Catalog replacement, catalog synchronization
 
+**Catalog Override**:
+An explicit destructive refresh mode where the selected source becomes the entire targeted catalog state and local-only entries are discarded after two user confirmations.
+_Avoid_: Catalog synchronization, Agent Catalog Merge
+
 **Model Pin**:
 An optional exact model identifier or native alias selected for one harness. When absent, the Custom Agent inherits that harness's model selection.
 _Avoid_: Model tier, semantic model preference
