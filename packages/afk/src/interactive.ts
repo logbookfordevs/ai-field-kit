@@ -293,11 +293,9 @@ export async function selectSkillProfilesInstall(options: CliOptions): Promise<P
   };
 }
 
-export async function confirmSkillProfileInstall(availableIds: string[], missingIds: string[]): Promise<boolean> {
+export async function confirmSkillProfileInstall(): Promise<boolean> {
   return confirm({
-    message: missingIds.length > 0
-      ? `Install ${availableIds.join(", ")} without ${missingIds.join(", ")}?`
-      : `Install ${availableIds.join(", ")}?`,
+    message: "Install available profile skills?",
     default: false,
     theme: afkPromptTheme,
   });
@@ -306,8 +304,12 @@ export async function confirmSkillProfileInstall(availableIds: string[], missing
 export async function selectRecoverableProfileSkills(
   skills: Array<{ id: string; label: string; source: string }>,
 ): Promise<string[]> {
+  console.log(renderPromptStep(
+    "Recover missing profile skills",
+    "Lock-backed matches start selected. Unselect anything you do not want to restore.",
+  ));
   return checkbox({
-    message: "Choose missing profile skills to recover",
+    message: "Choose skills to recover",
     choices: skills.map((skill) => ({
       name: skill.label,
       value: skill.id,
@@ -549,6 +551,7 @@ async function selectSkillProfiles(options: Pick<CliOptions, "homeDir" | "cwd" |
       checked: false,
       description: profile.skills.length > 0 ? profile.skills.join(", ") : "No skills assigned.",
     })),
+    "Skill profiles",
   );
 }
 
@@ -691,8 +694,8 @@ async function selectHooks(options: Pick<CliOptions, "homeDir" | "manifestConten
   );
 }
 
-async function selectCheckbox<Value extends string>(message: string, choices: Choice<Value>[]): Promise<Value[]> {
-  console.log(renderPromptStep(message, defaultCheckedDetail));
+async function selectCheckbox<Value extends string>(message: string, choices: Choice<Value>[], stepTitle = message): Promise<Value[]> {
+  console.log(renderPromptStep(stepTitle, defaultCheckedDetail));
   if (choices.length === 0) {
     console.log("No choices available in the current catalog.");
     return [];

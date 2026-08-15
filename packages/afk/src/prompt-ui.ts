@@ -27,6 +27,32 @@ export function renderPromptStep(title: string, detail?: string): string {
   return lines.join("\n");
 }
 
+export function renderSkillProfileReview(input: {
+  profileNames: string[];
+  availableIds: string[];
+  unavailableIds: string[];
+}, terminalWidth = process.stdout.columns ?? 80): string {
+  const lines = [
+    `${signal("◆")} ${bold}Profile readiness${reset}`,
+    "",
+    `${bold}Profiles${reset}`,
+    ...wrapPromptValues(input.profileNames, terminalWidth),
+    "",
+    `${bold}Ready to install (${input.availableIds.length})${reset}`,
+    ...wrapPromptValues(input.availableIds, terminalWidth),
+  ];
+
+  if (input.unavailableIds.length > 0) {
+    lines.push(
+      "",
+      `${bold}Not included (${input.unavailableIds.length})${reset}`,
+      ...wrapPromptValues(input.unavailableIds, terminalWidth),
+    );
+  }
+
+  return lines.join("\n");
+}
+
 export const afkSelectTheme = {
   prefix: {
     idle: sea("◇"),
@@ -170,4 +196,25 @@ function ember(value: string): string {
 
 function chartLine(value: string): string {
   return paint(terminalPalette.sienna, value);
+}
+
+function wrapPromptValues(values: string[], terminalWidth: number): string[] {
+  const indent = "  ";
+  const width = Math.min(78, Math.max(40, terminalWidth - 2));
+  const lines: string[] = [];
+  let line = indent;
+
+  values.forEach((value, index) => {
+    const token = `${value}${index === values.length - 1 ? "" : ","}`;
+    const separator = line === indent ? "" : " ";
+    if (line !== indent && line.length + separator.length + token.length > width) {
+      lines.push(muted(line));
+      line = `${indent}${token}`;
+      return;
+    }
+
+    line += `${separator}${token}`;
+  });
+
+  return [...lines, muted(line)];
 }

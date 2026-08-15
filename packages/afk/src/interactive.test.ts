@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall, selectSkillProfilesInstall, selectSkillsInstall } from "./interactive.js";
+import { confirmSkillProfileInstall, normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall, selectSkillProfilesInstall, selectSkillsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
@@ -15,6 +15,7 @@ const promptState = vi.hoisted(() => ({
   searchableCheckboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string; searchAliases?: string[] }>>,
   setupAreas: ["plugins"] as string[],
   inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
+  confirmMessages: [] as string[],
 }));
 
 vi.mock("./searchable-checkbox.js", () => ({
@@ -52,6 +53,10 @@ vi.mock("@inquirer/prompts", () => ({
     return [];
   }),
   select: vi.fn(async () => "global"),
+  confirm: vi.fn(async ({ message }: { message: string }) => {
+    promptState.confirmMessages.push(message);
+    return true;
+  }),
   input: vi.fn(async ({ default: defaultValue, required, validate }: { default?: string; required?: boolean; validate: (value: string) => true | string }) => {
     promptState.inputCalls.push({
       default: defaultValue,
@@ -61,6 +66,15 @@ vi.mock("@inquirer/prompts", () => ({
     return defaultValue ?? "acme/dev-kit";
   }),
 }));
+
+test("profile install confirmation keeps dynamic skill lists out of the live prompt", async () => {
+  promptState.confirmMessages = [];
+
+  const accepted = await confirmSkillProfileInstall();
+
+  assert.equal(accepted, true);
+  assert.deepEqual(promptState.confirmMessages, ["Install available profile skills?"]);
+});
 
 test("normalizeSetupSelection removes item areas when every item is unselected", () => {
   const selection = normalizeSetupSelection({

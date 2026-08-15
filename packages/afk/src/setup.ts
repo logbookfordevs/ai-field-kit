@@ -11,7 +11,7 @@ import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, mut
 import { confirmSkillProfileInstall, selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRecoverableProfileSkills, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { builtInDefaultsSource, ensureLocalManifests, expandComposedSkillIds, loadSkillManifest, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
-import { defaultCheckedDetail } from "./prompt-ui.js";
+import { defaultCheckedDetail, renderSkillProfileReview } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
 import { basename, join } from "node:path";
@@ -283,8 +283,10 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       return code;
     }
     case "profiles": {
-      runtime.io.stdout("\nProfile catalog prepared.");
-      runtime.io.stdout(`- ${profileCatalogPath(prepared.options)}`);
+      if (prepared.options.yes || prepared.options.verbose) {
+        runtime.io.stdout("\nProfile catalog prepared.");
+        runtime.io.stdout(`- ${profileCatalogPath(prepared.options)}`);
+      }
       const selection = await selectSkillProfilesInstall(prepared.options);
       if ((selection.profileIds?.length ?? 0) === 0) {
         runtime.io.stdout("\nNo skill profiles selected. No changes planned.");
@@ -301,10 +303,8 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       let recoveryOperation: PathOperation | undefined;
       let recoveryIdsToVerify: string[] = [];
       if (missingIds.length > 0) {
-        runtime.io.stderr(`Profile skills missing from the cached catalog: ${missingIds.join(", ")}.`);
         const recoveryCandidates = planSkillCatalogRecovery(prepared.options, missingIds).recovered;
         if (recoveryCandidates.length > 0) {
-          runtime.io.stdout(`Recoverable profile skills found in the skills lock: ${recoveryCandidates.map((item) => item.id).join(", ")}.`);
           const selectedRecoveryIds = prepared.options.yes
             ? recoveryCandidates.map((item) => item.id)
             : await selectRecoverableProfileSkills(recoveryCandidates.map(({ id, label, source }) => ({ id, label, source })));
@@ -324,16 +324,16 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
           runtime.io.stderr("No available profile skills remain. No changes planned.");
           return 1;
         }
-        runtime.io.stdout(`Available profile skills: ${availableSkillIds.join(", ")}.`);
-        if (unavailableIds.length > 0) {
-          runtime.io.stderr(`Still unavailable: ${unavailableIds.join(", ")}.`);
-        }
-        const accepted = prepared.options.yes || await confirmSkillProfileInstall(availableSkillIds, unavailableIds);
+        runtime.io.stdout(`\n${renderSkillProfileReview({
+          profileNames: selectedProfiles.map((profile) => profile.name),
+          availableIds: availableSkillIds,
+          unavailableIds,
+        })}`);
+        const accepted = prepared.options.yes || await confirmSkillProfileInstall();
         if (!accepted) {
           runtime.io.stdout("Profile skill installation cancelled. No changes planned.");
           return 0;
         }
-        runtime.io.stdout(`Continuing with available skills: ${availableSkillIds.join(", ")}.`);
       }
 
       const dependencyIds = availableSkillIds.filter((id) => !directSkillIds.includes(id));
