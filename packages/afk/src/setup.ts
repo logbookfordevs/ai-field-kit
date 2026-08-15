@@ -8,7 +8,7 @@ import { planSetupSourceCatalogImport, snapshotSetupSourceLockedSkillIds } from 
 import { detectSetupTargets } from "./agent-detection.js";
 import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands } from "./delegates.js";
 import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
-import { selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
+import { confirmPartialSkillProfileInstall, selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { builtInDefaultsSource, ensureLocalManifests, expandComposedSkillIds, loadSkillManifest, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
 import { defaultCheckedDetail } from "./prompt-ui.js";
@@ -298,12 +298,22 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
       const selectedSkillIds = expandComposedSkillIds(skillManifest.items, directSkillIds);
       const availableIds = new Set(skillManifest.items.map((item) => item.id));
       const missingIds = selectedSkillIds.filter((id) => !availableIds.has(id));
+      const availableSkillIds = selectedSkillIds.filter((id) => availableIds.has(id));
       if (missingIds.length > 0) {
-        runtime.io.stderr(`Selected skill profiles reference skills missing from skills.json: ${missingIds.join(", ")}`);
-        return 1;
+        runtime.io.stderr(`Missing profile skills: ${missingIds.join(", ")}.`);
+        if (availableSkillIds.length === 0) {
+          runtime.io.stderr("No available profile skills remain. No changes planned.");
+          return 1;
+        }
+        const accepted = prepared.options.yes || await confirmPartialSkillProfileInstall(missingIds);
+        if (!accepted) {
+          runtime.io.stdout("Profile skill installation cancelled. No changes planned.");
+          return 0;
+        }
+        runtime.io.stdout(`Continuing with available skills: ${availableSkillIds.join(", ")}.`);
       }
 
-      const dependencyIds = selectedSkillIds.filter((id) => !directSkillIds.includes(id));
+      const dependencyIds = availableSkillIds.filter((id) => !directSkillIds.includes(id));
       runtime.io.stdout(`\nSelected skill profiles: ${selectedProfiles.map((profile) => profile.name).join(", ")}`);
       if (dependencyIds.length > 0) {
         runtime.io.stdout("Selected profiles include composable skills.");
@@ -315,7 +325,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 
       const selectedOptions = {
         ...prepared.options,
-        selectedSkillIds,
+        selectedSkillIds: availableSkillIds,
         selectedSkillAgentIds: selection.skillAgents,
       };
       const disabledBeforeInstall = snapshotDisabledStartupSkills(selectedOptions);

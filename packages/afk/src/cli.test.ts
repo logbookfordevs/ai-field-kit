@@ -491,6 +491,7 @@ test("runCli prints contextual setup profiles help", async () => {
   assert.ok(text.includes("AFK setup profiles"));
   assert.ok(text.includes("Install skills from selected profiles in profiles.json."));
   assert.ok(text.includes("automatically includes their composed dependencies"));
+  assert.ok(text.includes("asks before installing only the available skills"));
   assert.ok(text.includes("afk setup profiles --local"));
   assert.ok(!text.includes("AFK setup skills"));
 });

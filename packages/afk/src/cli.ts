@@ -470,6 +470,7 @@ const commandHelps: Record<string, CommandHelp> = {
     notes: [
       "Setup refreshes profiles.json, offers its profiles for selection, and installs the selected profile skills.",
       "When a selected skill composes other skills, setup warns and automatically includes their composed dependencies.",
+      "If referenced skills are unavailable, setup warns and asks before installing only the available skills; --yes accepts.",
       "Use afk skills profiles enable to apply an installed profile at runtime.",
     ],
     options: setupAreaOptions,

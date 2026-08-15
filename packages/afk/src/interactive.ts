@@ -1,9 +1,9 @@
-import { checkbox, input, select } from "@inquirer/prompts";
+import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import { detectSetupTargets, type TargetSelectionSource } from "./agent-detection.js";
 import { agentIds, hookAgentIds, skillAgentIds } from "./agents.js";
 import { expandComposedSkillIds, loadCustomAgentManifest, loadHookManifest, loadMcpManifest, loadPresetsManifest, loadSkillManifest, loadPluginManifest, type PresetManifestItem, type SkillManifestItem } from "./manifest.js";
 import { loadSetupSkillProfileCatalog } from "./skills/profiles.js";
-import { DEFAULT_CHECKED, afkCheckboxTheme, afkSearchableCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
+import { DEFAULT_CHECKED, afkCheckboxTheme, afkPromptTheme, afkSearchableCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import { searchableCheckbox } from "./searchable-checkbox.js";
 import type { AgentId, Area, CliOptions, SetupScope, SkillAgentId } from "./types.js";
 
@@ -291,6 +291,14 @@ export async function selectSkillProfilesInstall(options: CliOptions): Promise<P
     profileIds,
     skillAgents: profileIds.length > 0 ? selectSkillAgents(options, detected.skillAgents).agents : [],
   };
+}
+
+export async function confirmPartialSkillProfileInstall(missingIds: string[]): Promise<boolean> {
+  return confirm({
+    message: `Install the available profile skills without ${missingIds.join(", ")}?`,
+    default: false,
+    theme: afkPromptTheme,
+  });
 }
 
 export async function selectCustomAgentsInstall(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "customAgentIds">> {

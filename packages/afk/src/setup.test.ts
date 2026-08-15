@@ -13,6 +13,8 @@ const promptState = vi.hoisted(() => ({
   selection: undefined as SetupSelection | undefined,
   defaultsSource: "local",
   rememberedSources: [] as string[],
+  partialSkillProfileInstallAccepted: true,
+  partialSkillProfileInstallPrompts: [] as string[][],
 }));
 
 vi.mock("./interactive.js", async (importOriginal) => {
@@ -29,6 +31,10 @@ vi.mock("./interactive.js", async (importOriginal) => {
     selectDefaultsSource: vi.fn(async (rememberedSource: string) => {
       promptState.rememberedSources.push(rememberedSource);
       return promptState.defaultsSource;
+    }),
+    confirmPartialSkillProfileInstall: vi.fn(async (missingIds: string[]) => {
+      promptState.partialSkillProfileInstallPrompts.push(missingIds);
+      return promptState.partialSkillProfileInstallAccepted;
     }),
   };
 });
@@ -778,6 +784,42 @@ test("runArea profiles installs transitive composed skills after warning", async
   assert.ok(text.includes("Selected profiles include composable skills."), text);
   assert.ok(text.includes("Dependencies added automatically: Dependency (dependency)."));
   assert.ok(text.includes("--skill wrapper dependency"));
+});
+
+test("runArea profiles warns and installs available skills when missing references are accepted", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 1,
+      mode: "context",
+      alwaysOn: [],
+      items: [{ id: "stitch", name: "Stitch", skills: ["design-md", "react-components", "stitch-remotion"] }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "design-md", label: "Design MD", source: "example/stitch", args: ["--skill", "design-md"], default: false }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+  promptState.partialSkillProfileInstallAccepted = true;
+  promptState.partialSkillProfileInstallPrompts = [];
+
+  const code = await runArea("profiles", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    selectedSkillProfileIds: ["stitch"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.deepEqual(promptState.partialSkillProfileInstallPrompts, [["react-components", "stitch-remotion"]]);
+  assert.ok(text.includes("Missing profile skills: react-components, stitch-remotion."), text);
+  assert.ok(text.includes("Continuing with available skills: design-md."), text);
+  assert.ok(text.includes("--skill design-md"), text);
+  assert.ok(!text.includes("--skill design-md react-components"), text);
 });
 
 test("runArea merges selected explicit-source skills into the cache after installing them", async () => {
