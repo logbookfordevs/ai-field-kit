@@ -31,4 +31,13 @@ test("profile review groups dynamic skill IDs into width-safe static lines", () 
     unavailableIds: ["react-components", "stitch-remotion"],
   }, 220);
   assert.ok(wideTerminalText.split("\n").every((line) => line.length <= 78));
+
+  const narrowTerminalText = renderSkillProfileReview({
+    profileNames: ["Stitch"],
+    availableIds: ["extraordinarily-long-profile-skill-identifier", "design-md"],
+    unavailableIds: ["stitch-remotion"],
+  }, 30);
+  assert.ok(narrowTerminalText.split("\n").every((line) => line.length <= 30));
+  assert.ok(narrowTerminalText.includes("  extraordinarily-long-profi"));
+  assert.ok(narrowTerminalText.includes("  le-skill-identifier,"));
 });

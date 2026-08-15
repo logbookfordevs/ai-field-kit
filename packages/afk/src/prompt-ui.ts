@@ -200,12 +200,23 @@ function chartLine(value: string): string {
 
 function wrapPromptValues(values: string[], terminalWidth: number): string[] {
   const indent = "  ";
-  const width = Math.min(78, Math.max(40, terminalWidth - 2));
+  const width = Math.min(78, Math.max(16, terminalWidth - 2));
+  const tokenWidth = width - indent.length;
   const lines: string[] = [];
   let line = indent;
 
   values.forEach((value, index) => {
     const token = `${value}${index === values.length - 1 ? "" : ","}`;
+    if (token.length > tokenWidth) {
+      if (line !== indent) {
+        lines.push(muted(line));
+        line = indent;
+      }
+      for (let offset = 0; offset < token.length; offset += tokenWidth) {
+        lines.push(muted(`${indent}${token.slice(offset, offset + tokenWidth)}`));
+      }
+      return;
+    }
     const separator = line === indent ? "" : " ";
     if (line !== indent && line.length + separator.length + token.length > width) {
       lines.push(muted(line));
@@ -216,5 +227,5 @@ function wrapPromptValues(values: string[], terminalWidth: number): string[] {
     line += `${separator}${token}`;
   });
 
-  return [...lines, muted(line)];
+  return line === indent ? lines : [...lines, muted(line)];
 }
