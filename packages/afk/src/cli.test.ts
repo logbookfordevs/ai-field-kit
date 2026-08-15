@@ -155,6 +155,56 @@ test("runCli exposes preset setup and rejects a missing preset id", async () => 
   assert.ok(output.join("\n").includes("Missing --preset value"));
 });
 
+test("runCli refreshes the full catalog before setup when --refresh is passed", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-refresh-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli([
+    "setup",
+    "--refresh",
+    "--source",
+    repoDir,
+    "--yes",
+    "--dry-run",
+    "--init-only",
+  ], { HOME: homeDir, AI_RULES_REPO: repoDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("Refreshing global AFK catalog."));
+  assert.ok(text.indexOf("Refreshing global AFK catalog.") < text.indexOf("Choose the parts of your AI field setup"));
+});
+
+test("runCli limits project setup area refreshes to the matching local catalog category", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-skills-refresh-"));
+  const projectDir = mkdtempSync(join(tmpdir(), "afk-setup-skills-project-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const originalCwd = process.cwd();
+
+  process.chdir(projectDir);
+  try {
+    const code = await runCli([
+      "setup",
+      "skills",
+      "--local",
+      "--refresh",
+      "--source",
+      repoDir,
+      "--yes",
+      "--init-only",
+    ], { HOME: homeDir, AI_RULES_REPO: repoDir });
+
+    assert.equal(code, 0);
+    assert.equal(existsSync(join(projectDir, "afk", "catalog", "skills.json")), true);
+    assert.equal(existsSync(join(projectDir, "afk", "catalog", "rules.json")), false);
+    assert.equal(existsSync(join(projectDir, "afk", "catalog", "mcps.json")), false);
+    assert.equal(existsSync(join(localManifestDir(homeDir), "skills.json")), false);
+  } finally {
+    process.chdir(originalCwd);
+  }
+});
+
 test("runCli dry-runs the AFK Architect required bundle in dependency order", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-architect-cli-"));
   const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
@@ -353,6 +403,7 @@ test("runCli prints contextual setup help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK setup"));
+  assert.ok(text.includes("--refresh"));
   assert.ok(text.includes("Use this when you want AFK to prepare agent-facing surfaces"));
   assert.ok(text.includes("Subcommands:"));
   assert.ok(!text.includes("afk setup refresh"));
@@ -378,6 +429,7 @@ test("runCli prints contextual area help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK setup MCPs"));
+  assert.ok(text.includes("--refresh"));
   assert.ok(text.includes("Delegate selected MCP recommendations to add-mcp."));
   assert.ok(text.includes("--verbose                         Show delegated installer output"));
   assert.ok(text.includes("--yes, -y                         Accept defaults and skip prompts"));
@@ -549,6 +601,7 @@ test("runCli prints contextual catalog help", async () => {
   assert.ok(output.join("\n").includes("AFK catalog"));
   assert.ok(output.join("\n").includes("Interactively edit writable AFK catalog files."));
   assert.ok(output.join("\n").includes("afk catalog --local"));
+  assert.ok(output.join("\n").includes("--verbose                         Show complete JSON for catalog editor previews"));
   assert.ok(output.join("\n").includes("afk catalog rules"));
 });
 

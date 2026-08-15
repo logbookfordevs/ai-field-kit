@@ -14,9 +14,11 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `cli:` added `afk refresh --override` to make the selected source authoritative for targeted catalog files after two confirmations, with dry-run preview support.
+- `cli:` added `--refresh` to setup commands so the matching global or project catalog scope refreshes before setup begins.
 - `skills:` added the optional manual `afk-code-review-check` wrapper for verifying AFK Code Review findings against the code and discussing verdicts before making changes.
 - `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
 - `skills:` added Emil Kowalski's optional model-invoked `animate` utility for implementing purposeful interface motion.
+- `skills:` added Emil Kowalski's optional manual `apple-design` utility for shaping fluid, gesture-driven interfaces with Apple's interaction principles.
 
 ### Changed
 
@@ -29,7 +31,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
-- `skills:` made `afk-code-review-check` run AFK Code Review and capture its findings before validation instead of asking the user to provide findings.
+- `skills:` made `afk-code-review-check` run AFK Code Review, preserve its complete findings verbatim, and append validation verdicts instead of asking for or summarizing the review input.
 - `rules:` made the bundled AFK rules layer fetch its files from the source repository and replaced missing-local-file stack traces with guidance to use a full URL or `--source <owner/repo>`.
 
 ## v1.2.2 - 2026-08-09

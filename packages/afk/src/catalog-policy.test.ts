@@ -46,17 +46,23 @@ describe("source skill invocation policy", () => {
     expect(missingRoutes).toEqual([]);
   });
 
-  test("makes Code Review Check produce findings before validating them", () => {
+  test("makes Code Review Check preserve review findings before appending verdicts", () => {
     const repositoryRoot = resolve(import.meta.dirname, "../../..");
     const skill = readFileSync(
       resolve(repositoryRoot, "skills/afk-code-review-check/SKILL.md"),
       "utf8",
     );
-    const runReview = "Run the `afk-code-review` skill to completion and capture its findings.";
+    const runReview = "Run the `afk-code-review` skill to completion and capture its complete output.";
+    const preserveFindings = "Present that complete output verbatim, preserving its axes and finding order.";
+    const appendVerdicts = "Then append `## Verified verdicts`.";
     const validateFindings = "Treat those returned findings as unverified review input.";
 
     expect(skill).toContain(runReview);
+    expect(skill).toContain(preserveFindings);
+    expect(skill).toContain(appendVerdicts);
     expect(skill).toContain(validateFindings);
-    expect(skill.indexOf(runReview)).toBeLessThan(skill.indexOf(validateFindings));
+    expect(skill.indexOf(runReview)).toBeLessThan(skill.indexOf(preserveFindings));
+    expect(skill.indexOf(preserveFindings)).toBeLessThan(skill.indexOf(appendVerdicts));
+    expect(skill.indexOf(appendVerdicts)).toBeLessThan(skill.indexOf(validateFindings));
   });
 });

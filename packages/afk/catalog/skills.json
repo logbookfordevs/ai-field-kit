@@ -505,6 +505,20 @@
             "composes": []
         },
         {
+            "id": "apple-design",
+            "label": "Apple Design",
+            "source": "https://github.com/emilkowalski/skills",
+            "args": [
+                "--skill",
+                "apple-design",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "animation-vocabulary",
             "label": "Animation Vocabulary",
             "source": "https://github.com/emilkowalski/skills",
