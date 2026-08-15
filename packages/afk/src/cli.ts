@@ -7,6 +7,7 @@ import { runRefresh } from "./refresh.js";
 import { runManifestShow } from "./manifest-show.js";
 import { runManifestConfigure, runManifestConfigureArea, runManifestConfigureAreaAction, type ManifestAction, type ManifestArea } from "./manifest-configure.js";
 import { runCatalogProfilesCommand, runSkillsCommand } from "./skills/commands.js";
+import { runCatalogDoctor } from "./catalog-doctor.js";
 import { managedSkillAgents } from "./skills/catalog.js";
 import { runUiCommand } from "./ui.js";
 import { selectCatalogSkillsLobbyRoute, selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
@@ -95,6 +96,10 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
 
   if (key === "open") {
     return runAfkOpen(runtime, options);
+  }
+
+  if (key === "doctor") {
+    return runCatalogDoctor(runtime, options);
   }
 
   if (key === "catalog") {
@@ -238,6 +243,14 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk open",
     options: ["--code                            Open in VS Code instead of Finder"],
     examples: ["afk open", "afk open --code"],
+  },
+  doctor: {
+    title: "AFK doctor",
+    summary: "Validate the attributes and structure of every local AFK catalog file.",
+    usage: "afk doctor [options]",
+    notes: ["Checks the global catalog by default. Pass --local to check ./afk/catalog."],
+    options: ["--local                           Validate ./afk/catalog instead of the global catalog"],
+    examples: ["afk doctor", "afk doctor --local"],
   },
   setup: {
     title: "AFK setup",
@@ -1315,6 +1328,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
+      if (key === "doctor") {
+        manifestLocal = true;
+        continue;
+      }
+
       if (isAfkProfileCommand) {
         manifestLocal = true;
         manifestConfigureLocal = true;
@@ -2181,6 +2199,7 @@ Usage:
   afk --version
   afk
   afk open
+  afk doctor [options]
   afk refresh [category...] [options]
   afk catalog [options]
   afk setup [options]
@@ -2205,6 +2224,7 @@ Usage:
 Common paths:
   afk                         Open the interactive lobby when your terminal supports prompts
   afk open                    Open the user AFK folder
+  afk doctor                  Validate every local AFK catalog file
   afk setup                   Prepare rules, skills, Custom Agents, MCPs, plugins, and hooks
   afk refresh                 Update the local catalog cache
   afk catalog                 Edit writable local catalog files
