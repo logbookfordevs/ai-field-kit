@@ -377,7 +377,28 @@ test("runCli prints contextual refresh help", async () => {
   assert.ok(output.join("\n").includes("afk refresh skills"));
   assert.ok(output.join("\n").includes("Refresh cached AFK catalog"));
   assert.ok(output.join("\n").includes("Use refresh when you want the local catalog cache to change."));
+  assert.ok(output.join("\n").includes("--override"));
   assert.ok(!output.join("\n").includes("--refresh-defaults"));
+});
+
+test("runCli limits override to the top-level refresh command", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "refresh", "--override"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("--override is only supported with afk refresh"));
+});
+
+test("runCli accepts override for a targeted refresh", async () => {
+  const output: string[] = [];
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-targeted-override-"));
+  const code = await withConsole(output, () => runCli(
+    ["refresh", "skills", "--override", "--empty", "--dry-run"],
+    { HOME: homeDir },
+  ));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("skills.json"));
 });
 
 test("runCli prints contextual catalog skills import help", async () => {
@@ -736,6 +757,54 @@ test("runCli validates skills list auto invocation filters", async () => {
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Invalid --auto-invocation value: invalid"));
+});
+
+test("runCli lists only enabled skills unless disabled storage is requested", async () => {
+  const homeDir = localHomeWithManifests({});
+  writeSkill(join(homeDir, ".agents", "skills"), "active-demo", "Active Demo");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-demo", "Disabled Demo");
+  const output: string[] = [];
+
+  const defaultCode = await withConsole(output, () => runCli(["skills", "list"], { HOME: homeDir }));
+  const defaultText = output.join("\n");
+
+  assert.equal(defaultCode, 0);
+  assert.ok(defaultText.includes("active-demo"));
+  assert.ok(!defaultText.includes("disabled-demo"));
+
+  output.length = 0;
+  const disabledCode = await withConsole(output, () => runCli(["skills", "list", "--disabled"], { HOME: homeDir }));
+  const disabledText = output.join("\n");
+
+  assert.equal(disabledCode, 0);
+  assert.ok(!disabledText.includes("active-demo"));
+  assert.ok(disabledText.includes("disabled-demo"));
+});
+
+test("runCli shows disabled skills only when disabled storage is requested", async () => {
+  const homeDir = localHomeWithManifests({});
+  writeSkill(join(homeDir, ".agents", "skills"), "active-demo", "Active Demo");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-demo", "Disabled Demo");
+  const output: string[] = [];
+
+  const activeCode = await withConsole(output, () => runCli(["skills", "show", "active-demo"], { HOME: homeDir }));
+
+  assert.equal(activeCode, 0);
+  assert.ok(output.join("\n").includes("Active Demo"));
+
+  output.length = 0;
+  const defaultDisabledCode = await withConsole(output, () => runCli(["skills", "show", "disabled-demo"], { HOME: homeDir }));
+
+  assert.equal(defaultDisabledCode, 1);
+  assert.ok(output.join("\n").includes("Skill not found: disabled-demo"));
+
+  output.length = 0;
+  const explicitDisabledCode = await withConsole(output, () =>
+    runCli(["skills", "show", "disabled-demo", "--disabled"], { HOME: homeDir })
+  );
+
+  assert.equal(explicitDisabledCode, 0);
+  assert.ok(output.join("\n").includes("Disabled Demo"));
 });
 
 test("runCli prints contextual ui help", async () => {

@@ -747,7 +747,7 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
     category: options.skillsCategory,
     tag: options.skillsTag,
     uncategorized: options.skillsUncategorized,
-    storage: options.skillsListStorage,
+    storage: options.skillsListStorage ?? "active",
   });
 
   if (options.skillsJson) {
@@ -855,7 +855,7 @@ async function runSkillsShow(folder: string | undefined, runtime: Runtime, optio
     agent: options.skillsAgent,
     agentPath: options.skillsAgentPath,
   });
-  const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage });
+  const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage ?? "active" });
   const record = folder
     ? findSkillRecord(records, folder)
     : await promptSkillRecord(records, "Select a skill to show:");

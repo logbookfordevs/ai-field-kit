@@ -1,9 +1,16 @@
 import { sectionTitle } from "./brand.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
 import { ensureLocalManifests, planRememberedDefaultsSourceUpdate } from "./manifest.js";
+import { confirm } from "./prompt.js";
 import type { CliOptions, PathOperation, Runtime } from "./types.js";
 
-export async function runRefresh(runtime: Runtime, options: CliOptions): Promise<number> {
+type ConfirmRefreshOverride = (message: string) => Promise<boolean>;
+
+export async function runRefresh(
+  runtime: Runtime,
+  options: CliOptions,
+  confirmRefreshOverride: ConfirmRefreshOverride = confirm,
+): Promise<number> {
   const sourceOptions: CliOptions = {
     ...options,
     defaultsSource: options.defaultSourceUpdate || options.defaultsSource,
@@ -17,6 +24,19 @@ export async function runRefresh(runtime: Runtime, options: CliOptions): Promise
       ? "Refreshing project AFK catalog."
       : "Refreshing global AFK catalog.",
   );
+
+  if (sourceOptions.overrideRefresh && !sourceOptions.dryRun) {
+    const firstConfirmation = await confirmRefreshOverride(
+      "Override the targeted local AFK catalog files? Local-only entries will be removed.",
+    );
+    const secondConfirmation = firstConfirmation && await confirmRefreshOverride(
+      "Confirm again: replace the targeted catalog files with the selected source?",
+    );
+    if (!firstConfirmation || !secondConfirmation) {
+      runtime.io.stdout("AFK catalog override cancelled. Nothing was changed.");
+      return 0;
+    }
+  }
 
   const operations = await refreshOperations(sourceOptions);
   if (operations.length === 0) {

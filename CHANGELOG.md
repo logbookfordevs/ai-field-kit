@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added `afk refresh --override` to make the selected source authoritative for targeted catalog files after two confirmations, with dry-run preview support.
 - `cli:` added `--refresh` to setup commands so the matching global or project catalog scope refreshes before setup begins.
 - `skills:` added the optional manual `afk-code-review-check` wrapper for verifying AFK Code Review findings against the code and discussing verdicts before making changes.
 - `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
@@ -22,6 +23,7 @@ This changelog tracks meaningful updates by version and date.
 ### Changed
 
 - `cli:` made `afk setup profiles` offer profiles from the selected source, recover lock-backed missing skills into the cached catalog after verified installation, and confirm the available set before installing it with always-on and transitive composed dependencies.
+- `cli:` made `afk skills list` and `afk skills show` include only enabled skills by default, with `--disabled` required to inspect disabled entries.
 - `cli:` made `afk skills delete --profile` present the profile's installed skills as an all-selected checklist before deletion, while `--yes` keeps deleting the full installed set non-interactively.
 - `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.
 - `skills:` distilled Code Grill into a manual wrapper that composes Grilling, Truss Evaluation, and Codebase Design around the material technical frontier without duplicating their workflows.

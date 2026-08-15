@@ -261,6 +261,7 @@ afk show skills profiles
 | `afk refresh --local` | Refresh `./afk/catalog` instead of the global cache. |
 | `afk refresh --source <source>` | Refresh once from a source without remembering it as the default. |
 | `afk refresh --default-source <source>` | Save the source in `presets.json` and refresh from it. |
+| `afk refresh --override` | Replace targeted catalog files from the source after two confirmations instead of preserving local-only entries. |
 | `afk refresh --empty` | Prepare empty catalog files instead of seeding source defaults. |
 | `afk show` | Print every cached catalog category. |
 | `afk show <category...>` | Print only the named categories. |
@@ -338,8 +339,8 @@ can be selected with `--agent`; exact custom roots require both
 
 | Command | Purpose | Important options and effects |
 |---|---|---|
-| `afk skills list` | List discovered skills. | Filters: `--enabled`, `--disabled`, `--auto-invocation` with `enabled`, `disabled`, `mixed`, or `default`, `--category`, `--tag`, `--uncategorized`; `--json` prints records. |
-| `afk skills show <folder>` | Show one discovered skill's metadata and paths. | Supports root selection, storage filters, and `--json`. |
+| `afk skills list` | List enabled skills by default. | Use `--disabled` for disabled skills; additional filters include `--auto-invocation` with `enabled`, `disabled`, `mixed`, or `default`, `--category`, `--tag`, and `--uncategorized`; `--json` prints records. |
+| `afk skills show <folder>` | Show one enabled skill's metadata and paths by default. | Use `--disabled` to inspect a disabled skill; supports root selection and `--json`. |
 | `afk skills get <folder>` | Print one skill as agent context, including disabled skills. | Read-only; includes the absolute skill root so referenced files remain resolvable. |
 | `afk skills open <folder>` | Open `SKILL.md` or its folder. | `--file` is the default; use `--folder` or select `finder`, `code`, `cursor`, `zed`, or `agy` with `--app`. |
 | `afk skills add <source> [flags...]` | Delegate installation to `skills add`, then synchronize AFK catalog and profile state. | Supports upstream `--skill`, `--agent`, `--global`, `--yes`; AFK adds `--profile`, `--profile-only`, and `--start-disabled`. |
@@ -452,6 +453,7 @@ These flags apply to `afk refresh`.
 | `--local` | Refresh `./afk/catalog` instead of the global catalog cache. |
 | `--source <source>` | Refresh the cache from this source once, without changing the remembered default source. |
 | `--default-source <source>` | Save the default source and refresh the cache from it. |
+| `--override` | Replace targeted catalog files from the source instead of merging; requires two confirmations. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
 | `--empty` | Create empty catalog files. |
 
@@ -757,6 +759,11 @@ matching layer IDs in place, preserves absent cached layers, and appends new
 layers in source order. Refreshing a legacy version 1 rules cache from version 2
 performs the one-time transition to the layered shape.
 
+Use `afk refresh --override` when the selected source should become the entire
+targeted catalog state. Override removes local-only entries in those files and
+therefore asks for confirmation twice before writing. `--dry-run` previews the
+replacement without prompting or changing files.
+
 Use these commands to prepare catalog files without running setup:
 
 ```bash
@@ -764,6 +771,7 @@ afk refresh
 afk refresh skills
 afk refresh --empty
 afk refresh --local
+afk refresh --override --dry-run
 ```
 
 If you want to inspect another source without changing the cache, use `show`
@@ -1367,8 +1375,8 @@ remain easy to read.
 `--agent <agent>` to select a preset agent root and `--scope
 global|project|all` to choose that preset's root family. Use `--agent custom
 --agent-path <folder>` to select an exact custom skills root; custom paths do
-not combine with `--scope`. Use `--enabled` to show active folders,
-`--disabled` to show disabled folders, and `--category`, `--tag`, or
+not combine with `--scope`. List and show include only active folders by
+default. Use `--disabled` to show disabled folders, and `--category`, `--tag`, or
 `--uncategorized` to filter AFK catalog metadata. The same
 `--enabled` and `--disabled` folder filters are also available on `afk skills
 show`, `open`, `delete`, and `invocation`, plus `afk catalog profiles
