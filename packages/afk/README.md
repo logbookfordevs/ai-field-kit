@@ -424,6 +424,7 @@ These flags apply to `afk setup` and most area commands.
 
 | Flag | Meaning |
 |---|---|
+| `--refresh` | Refresh the relevant catalog before setup. Top-level setup refreshes the full catalog; area commands refresh only their matching category and respect `--local`/project scope. |
 | `--dry-run` | Preview planned actions without applying them. Use this before real setup. |
 | `--verbose` | Show delegated installer output instead of keeping it quiet. |
 | `--yes`, `-y` | Accept defaults and skip prompts. Useful for scripts. |

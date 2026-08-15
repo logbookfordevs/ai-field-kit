@@ -137,7 +137,7 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
   }
 
   if (key === "setup") {
-    return runSetup(runtime, options);
+    return runSetupCommand(commandPath, runtime, options);
   }
 
   if (commandPath[0] === "skills") {
@@ -154,7 +154,7 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
 
   const area = commandToArea(commandPath);
   if (area) {
-    return runArea(area, runtime, options);
+    return runSetupCommand(commandPath, runtime, options);
   }
 
   runtime.io.stderr(`Unknown command: ${key || "(none)"}`);
@@ -199,6 +199,7 @@ type CommandHelp = {
 };
 
 const setupOptions = {
+  refresh: "--refresh                         Refresh the matching catalog scope before setup",
   dryRun: "--dry-run                         Preview changes without applying them",
   verbose: "--verbose                         Show delegated installer output",
   catalogVerbose: "--verbose                         Show complete JSON for catalog editor previews",
@@ -220,6 +221,7 @@ const setupOptions = {
 };
 
 const setupAreaOptions = [
+  setupOptions.refresh,
   setupOptions.dryRun,
   setupOptions.verbose,
   setupOptions.yes,
@@ -249,6 +251,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "Pass --source to merge and apply selected source entries without changing the remembered source.",
     ],
     options: [
+      setupOptions.refresh,
       setupOptions.dryRun,
       setupOptions.verbose,
       setupOptions.yes,
@@ -1185,6 +1188,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let initOnly = false;
   let empty = false;
   const refreshDefaults = isRefreshCommand(key);
+  let refreshBeforeSetup = false;
   let defaultsSource = "";
   let defaultsSourceExplicit = false;
   let defaultSourceUpdate = "";
@@ -1301,6 +1305,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--dry-run") {
       dryRun = true;
+      continue;
+    }
+
+    if (arg === "--refresh") {
+      if (key !== "setup" && !commandToArea(commandPath)) {
+        return { help: false, kind: "error", error: "--refresh is only supported with afk setup commands" };
+      }
+      refreshBeforeSetup = true;
       continue;
     }
 
@@ -1822,6 +1834,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       initOnly,
       empty,
       refreshDefaults,
+      refreshBeforeSetup,
       defaultsSource,
       defaultsSourceExplicit,
       defaultSourceUpdate,
@@ -1914,6 +1927,23 @@ function commandToArea(commandPath: string[]): Area | null {
   }
 
   return null;
+}
+
+async function runSetupCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const area = commandToArea(commandPath);
+  if (options.refreshBeforeSetup) {
+    const refreshCode = await runRefresh(runtime, {
+      ...options,
+      refreshBeforeSetup: false,
+      manifestLocal: options.setupScope === "project",
+      selectedManifestCategories: area ? [area] : [],
+    });
+    if (refreshCode !== 0) {
+      return refreshCode;
+    }
+  }
+
+  return area ? runArea(area, runtime, options) : runSetup(runtime, options);
 }
 
 function isSetupSkillsCommand(key: string): boolean {
