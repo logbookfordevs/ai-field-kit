@@ -23,6 +23,8 @@ Resolve the ticket identifier before implementation.
 
 When remote tracking is chosen, inspect the available mechanism and agree with the user where the ticket status, execution evidence, review gates, findings, and handoff notes will live. Use that location as the tracking home.
 
+Keep local tracking artifacts outside agent-created commits unless the user or repository convention explicitly opts them in. Remote tracking remains external to Git unless a local counterpart is selected.
+
 Begin implementation only after one tracking home is selected and can preserve the required ticket state. Treat any secondary representation as a reference unless the user explicitly agrees to a synchronization contract.
 
 For a local counterpart, follow the active repo or user artifact convention.
@@ -52,6 +54,7 @@ title: <Ticket title>
 status: in_progress
 blocked_by: []
 source: <artifact-or-issue-reference>
+review_base: <commit recorded before implementation>
 updated_at: 2026-06-15T16:40:00-03:00
 review_gates:
   code: pending
@@ -62,11 +65,19 @@ Statuses: `pending`, `in_progress`, `validating`, `review`, `blocked`, `done`.
 
 Allowed review gates are `code`, `design`, and `product`. Every implementation ticket has a `code` gate. Add `design` for visual parity against an explicit reference, and `product` for user-facing behavior, copy, workflow, or product-fit validation.
 
-Review gates use `pending` and `accepted`. The `code` gate also allows `changes_requested`. Keep the ticket status `review` while any review gate remains open. When code review requests changes, set `review_gates.code: changes_requested` and append the review output under `## Code Review Findings — Round N`, where `N` is the next round number already present in the ticket. Preserve the review's native structure. Mark the round heading with `✅` once none of its findings remain actionable, and retain every round as review history.
+Review gates use `pending` and `accepted`. The `code` gate also allows `changes_requested` and `awaiting_acceptance`:
 
-When a ticket reaches review, recommend `/plannotator-review` for a better guided review experience when available.
+- `pending`: automated code review has not completed.
+- `changes_requested`: the latest review has actionable findings.
+- `awaiting_acceptance`: automated review has no actionable findings and awaits the user's final judgment.
+- `accepted`: the user accepted the code gate.
 
-If `/plannotator-review` runs during a ticket and the user approves it, treat the `code` review gate as accepted and update the ticket's `review_gates.code` value accordingly.
+Keep the ticket status `review` while any review gate remains open. Retain every review round under `## Code Review Findings — Round N`:
+
+- For actionable findings, preserve the complete review output plus the judgment and resolution for each finding.
+- For a clean review, keep a compact receipt with the reviewed range, finding count per axis, verification gaps, and `awaiting_acceptance` gate state.
+
+A user-approved external code review, including Plannotator Review when used, may move the code gate from `awaiting_acceptance` to `accepted`.
 
 Do not name gates after evidence sources such as tests, lint, Figma, or backend contracts. Record those under validation or discipline evidence.
 
@@ -74,6 +85,8 @@ Use `blocked_by` for ticket dependencies, human decisions, missing context, or e
 
 ## Execution Evidence
 Record the selected execution bundle before implementation begins: `tdd`, `source-driven-development`, `doubt-driven-development`, normal project validation, or a combination.
+
+Use `tdd` when the ticket has a meaningful public Test Seam. Treat the seam approved with the ticket as pre-agreed. If the seam is missing, ambiguous, or invalidated by codebase evidence, agree on it with the user before writing tests. Use normal validation with an explicit skip reason when no meaningful executable seam exists.
 
 Before moving a ticket to `review`, record evidence for each selected discipline:
 
@@ -84,8 +97,28 @@ Before moving a ticket to `review`, record evidence for each selected discipline
 
 Do not mark the ticket `review` while selected discipline evidence is missing without an explicit skip reason.
 
+During implementation, run the narrowest relevant test files and relevant typechecking regularly. Before the code gate begins, run the complete relevant test suite and required project checks. If a full project suite is disproportionate, unavailable, or outside the ticket's validation boundary, record the reason and strongest substitute.
+
+## Green Atomic Commits
+Record the current `HEAD` as `review_base` before editing and keep it unchanged across every review round.
+
+After each meaningful behavior slice is green, create a green atomic local commit from explicit ticket-owned paths. Preserve unrelated working-tree changes.
+
+This workflow authorizes forward local commits for the active ticket. Rewriting history and any push, PR, publish, tag, or release action still require explicit user approval.
+
+Commit every ticket-owned implementation change before opening the code gate. If local commits are unavailable, record the limitation and ask before continuing.
+
+## Code Gate
+After final validation, run `afk-code-review` from the unchanged `review_base`.
+
+- If it reports actionable findings, set the code gate to `changes_requested`, preserve the findings, reconcile and fix them, commit the fixes, then review the complete original range again.
+- If it reports no actionable findings, set the gate to `awaiting_acceptance`.
+- Only user approval or a user-approved external review moves the gate to `accepted`.
+
+Persist review evidence after each round. A tracking-only review receipt does not trigger another review; implementation fixes do.
+
 ## Ticket Record
-Keep task-local state in the tracking home. Preserve `Parent` and `User Stories Covered` when present. Keep these sections or equivalent fields when creating or normalizing the record: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, `Code Review Findings` when requested changes exist, and `Handoff Notes`.
+Keep task-local state in the tracking home. Preserve `Parent` and `User Stories Covered` when present. Keep these sections or equivalent fields when creating or normalizing the record: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, `Code Review Findings`, and `Handoff Notes`.
 
 If an existing ticket uses a different shape, preserve useful content and add missing sections or equivalent fields as they become relevant.
 
@@ -104,14 +137,13 @@ For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.
 2. If no executable ticket exists and the request is one quick action, use the available context to create a single local ticket and continue; otherwise recommend `afk-to-tickets` and stop.
 3. Select the active ticket.
 4. Read blockers and relevant previous handoff notes.
-5. Record the selected execution bundle.
+5. Record the selected execution bundle and confirm its Test Seam or skip reason.
 6. Mark the active ticket `in_progress` before editing.
-7. Record important scope changes, working set changes, and blockers as they happen.
-8. Move to `validating` before running verification.
-9. Record discipline evidence.
-10. Move to `review` only when discipline evidence is present or explicitly skipped with a reason.
-11. Run the checkpoint-notes/ADR check before final handoff.
-12. Move to `done` only after the ticket is accepted.
-13. For a local ticket, update `updated_at` whenever it changes; for a remote ticket, rely on or update the tracking home's equivalent modification signal.
-
-Task implementation may mention commits as receipts, but never as permission to create them. Do not commit local tracking artifacts unless the user explicitly asks.
+7. Implement one green behavior slice at a time and create its atomic local commit.
+8. Record important scope changes, working set changes, and blockers as they happen.
+9. Move to `validating`, run the complete relevant validation bundle, and record discipline evidence.
+10. Commit remaining ticket-owned implementation changes.
+11. Move to `review` and run the Code Gate workflow.
+12. Run the checkpoint-notes/ADR check before final handoff.
+13. Move to `done` only after every review gate is accepted.
+14. For a local ticket, update `updated_at` whenever it changes; for a remote ticket, rely on or update the tracking home's equivalent modification signal.

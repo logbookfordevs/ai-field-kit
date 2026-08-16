@@ -49,6 +49,7 @@ Present the proposed breakdown as a numbered list. For each ticket, show:
 - **Blocked by**: which other tickets (if any) must complete first
 - **User stories covered**: which user stories this addresses (if the source material has them)
 - **What it delivers**: the end-to-end behavior this checkpoint makes work
+- **Test seam**: the public interface and behavior the ticket will prove, or why TDD has no meaningful seam
 
 Ask the user:
 
@@ -106,6 +107,7 @@ Use one of:
 
 ## Execution Bundle
 - tdd | source-driven-development | doubt-driven-development | normal validation
+- Test Seam: <public interface and behavior, or `TDD skipped: <reason>`>
 
 ## Verification
 - [ ] Expected proof before review
@@ -137,12 +139,11 @@ The end-to-end behaviour this ticket makes work, from the user's perspective —
 
 - A reference to each blocking ticket, or "None — can start immediately".
 
+## Execution bundle
+
+- tdd | source-driven-development | doubt-driven-development | normal validation
+- Test seam: <public interface and behavior, or `TDD skipped: <reason>`>
+
 </issue-template>
 
 In either form, avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
-
-After writing local tickets, run `plannotator annotate --gate <tracking-folder>` when Plannotator is available. Treat returned annotations or user feedback as requested changes across the packet set.
-
-If the user does not approve the gate, apply their feedback, then run `plannotator annotate --gate <tracking-folder>` again for the revised packet set. Keep reopening the annotation gate until the user approves or explicitly asks to stop the review loop.
-
-If only external tracker issues were created, skip this gate unless a local draft folder exists.

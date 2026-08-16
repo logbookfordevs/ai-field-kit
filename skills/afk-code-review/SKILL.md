@@ -3,7 +3,7 @@ name: afk-code-review
 description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards and Spec. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to review since a commit/branch/tag."
 ---
 
-Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
+Two-axis review of the diff between `HEAD` and a fixed point the user or invoking workflow supplies:
 
 - **Standards** - does the code conform to this repo's documented coding standards?
 - **Spec** - does the code faithfully implement the originating issue, spec, or implementation ticket?
@@ -14,7 +14,7 @@ Both axes should run in parallel sub-agents or fresh contexts so they do not pol
 
 ### 1. Pin the fixed point
 
-Whatever the user said is the fixed point: a commit SHA, branch name, tag, `main`, `HEAD~5`, etc. If they did not specify one, ask for it.
+Use the fixed point supplied by the user or invoking workflow: a commit SHA, branch name, tag, `main`, `HEAD~5`, etc. Ask only if no fixed point was supplied.
 
 Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
 
@@ -58,8 +58,6 @@ Each smell reads *what it is* -> *how to fix*; match it against the diff:
 - **Refused Bequest** - a subclass or implementer that ignores or overrides most of what it inherits. -> drop the inheritance, use composition.
 
 ### 4. Spawn both sub-agents in parallel
-
-Send a single message with two sub-agent calls.
 
 **Standards sub-agent prompt** - include:
 
