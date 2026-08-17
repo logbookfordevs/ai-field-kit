@@ -1025,7 +1025,9 @@ function renderPresets(manifest: Record<string, unknown>): string {
             presetSelectionSummary("hooks", item.selections.hooks),
           ].filter((selection): selection is string => Boolean(selection))
         : [];
-      const selectionSummary = selections.length > 0 ? ` · ${selections.join(" · ")}` : "";
+      const selectionSummary = item.all === true
+        ? " · all items in declared areas"
+        : selections.length > 0 ? ` · ${selections.join(" · ")}` : "";
       return `${labelFor(item)}${areas}${selectionSummary}`;
     }),
   ].join("\n");

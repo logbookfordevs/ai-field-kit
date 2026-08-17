@@ -13,6 +13,10 @@ const promptState = vi.hoisted(() => ({
   selection: undefined as SetupSelection | undefined,
   defaultsSource: "local",
   rememberedSources: [] as string[],
+  partialSkillProfileInstallAccepted: true,
+  partialSkillProfileInstallPrompts: 0,
+  recoverableSkillIds: [] as string[],
+  recoveryPrompts: [] as Array<Array<{ id: string; label: string; source: string }>>,
 }));
 
 vi.mock("./interactive.js", async (importOriginal) => {
@@ -29,6 +33,14 @@ vi.mock("./interactive.js", async (importOriginal) => {
     selectDefaultsSource: vi.fn(async (rememberedSource: string) => {
       promptState.rememberedSources.push(rememberedSource);
       return promptState.defaultsSource;
+    }),
+    confirmSkillProfileInstall: vi.fn(async () => {
+      promptState.partialSkillProfileInstallPrompts += 1;
+      return promptState.partialSkillProfileInstallAccepted;
+    }),
+    selectRecoverableProfileSkills: vi.fn(async (skills: Array<{ id: string; label: string; source: string }>) => {
+      promptState.recoveryPrompts.push(skills);
+      return promptState.recoverableSkillIds;
     }),
   };
 });
@@ -676,6 +688,7 @@ test("runArea prompts for a source only on first-run interactive setup areas", a
     const code = await runArea(area, fakeRuntime(output), {
       ...defaultOptions(homeDir, repoDir),
       agents: ["codex"],
+      selectedSkillProfileIds: area === "profiles" ? ["test-profile"] : [],
       selectedSkillIds: area === "skills" ? ["afk-note"] : [],
       selectedMcpIds: area === "mcps" ? ["stitch"] : [],
       selectedToolIds: area === "tools" ? ["sample-tool"] : [],
@@ -689,6 +702,11 @@ test("runArea prompts for a source only on first-run interactive setup areas", a
 
 test("runArea profiles prepares the profile catalog from the saved setup source", async () => {
   const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "afk-doc-craft", label: "AFK Doc Craft", source: "example/kit", args: ["--skill", "afk-doc-craft"], default: false }],
+    },
     "profiles.json": {
       version: 1,
       mode: "context",
@@ -705,9 +723,20 @@ test("runArea profiles prepares the profile catalog from the saved setup source"
   const output: string[] = [];
 
   promptState.rememberedSources = [];
-  const code = await runArea("profiles", fakeRuntime(output), {
+  const spawned: Array<{ command: string; args: string[] }> = [];
+  const code = await runArea("profiles", {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      return { code: 0 };
+    },
+  }, {
     ...defaultOptions(homeDir, repoDir),
     dryRun: false,
+    yes: true,
     rulesSource: "github",
   });
   const text = output.join("\n");
@@ -719,6 +748,258 @@ test("runArea profiles prepares the profile catalog from the saved setup source"
   assert.deepEqual(promptState.rememberedSources, []);
   assert.ok(text.includes("Profile catalog prepared."));
   assert.ok(text.includes(profilesPath));
+  assert.ok(text.includes("Selected skill profiles: Context"));
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["skills", "add", "example/kit", "--global", "--yes", "--skill", "afk-doc-craft", "--agent", "universal"],
+  }]);
+});
+
+test("runArea profiles installs transitive composed skills after warning", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 1,
+      mode: "context",
+      alwaysOn: [],
+      items: [{ id: "review", name: "Review", skills: ["wrapper"] }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        { id: "wrapper", label: "Wrapper", source: "example/kit", args: ["--skill", "wrapper"], default: false, role: "wrapper", composes: ["dependency"] },
+        { id: "dependency", label: "Dependency", source: "example/kit", args: ["--skill", "dependency"], default: false, role: "primitive", composes: [] },
+      ],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  const code = await runArea("profiles", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    yes: true,
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+    defaultsSource: "local",
+    defaultsSourceExplicit: true,
+  });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("Selected profiles include composable skills."), text);
+  assert.ok(text.includes("Dependencies added automatically: Dependency (dependency)."));
+  assert.ok(text.includes("--skill wrapper dependency"));
+});
+
+test("runArea profiles warns and installs available skills when missing references are accepted", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 1,
+      mode: "context",
+      alwaysOn: [],
+      skillAliases: { "react-components": "react:components", "stitch-remotion": "remotion" },
+      items: [{ id: "stitch", name: "Stitch", skills: ["design-md", "react-components", "stitch-remotion"] }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "design-md", label: "Design MD", source: "example/stitch", args: ["--skill", "design-md"], default: false }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  writeInstalledSkill(homeDir, "react-components", "react:components");
+  writeInstalledSkill(homeDir, "stitch-remotion", "Stitch Remotion");
+  writeGlobalSkillLock(homeDir, {
+    "react:components": { source: "example/react", skillPath: "skills/react-components/SKILL.md" },
+    remotion: { source: "example/remotion", skillPath: "skills/remotion/SKILL.md" },
+  });
+  const output: string[] = [];
+  promptState.recoverableSkillIds = [];
+  promptState.recoveryPrompts = [];
+  promptState.partialSkillProfileInstallAccepted = true;
+  promptState.partialSkillProfileInstallPrompts = 0;
+
+  const code = await runArea("profiles", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    selectedSkillProfileIds: ["stitch"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.equal(promptState.recoveryPrompts.length, 1);
+  assert.equal(promptState.partialSkillProfileInstallPrompts, 1);
+  assert.ok(text.includes("◆ Profile readiness"), text);
+  assert.ok(text.includes("Ready to install (1)\n  design-md"), text);
+  assert.ok(text.includes("Not included (2)\n  react-components, stitch-remotion"), text);
+  assert.ok(text.includes("--skill design-md"), text);
+  assert.ok(!text.includes("--skill design-md react-components"), text);
+});
+
+test("runArea profiles offers lock-backed missing skills for recovery and installs the confirmed set", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 1,
+      mode: "context",
+      alwaysOn: [],
+      skillAliases: { "react-components": "react:components", "stitch-remotion": "remotion" },
+      items: [{ id: "stitch", name: "Stitch", skills: ["design-md", "react-components", "stitch-remotion"] }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "design-md", label: "Design MD", source: "example/stitch", args: ["--skill", "design-md"], default: false }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  writeInstalledSkill(homeDir, "react-components", "react:components");
+  writeInstalledSkill(homeDir, "stitch-remotion", "Stitch Remotion");
+  writeGlobalSkillLock(homeDir, {
+    "react:components": { source: "example/react", skillPath: "skills/react-components/SKILL.md" },
+    remotion: { source: "example/remotion", skillPath: "skills/remotion/SKILL.md" },
+  });
+  const output: string[] = [];
+  promptState.recoverableSkillIds = ["react-components", "stitch-remotion"];
+  promptState.recoveryPrompts = [];
+  promptState.partialSkillProfileInstallAccepted = true;
+  promptState.partialSkillProfileInstallPrompts = 0;
+
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => ({ code: 0 }),
+  };
+  const code = await runArea("profiles", runtime, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    verbose: true,
+    selectedSkillProfileIds: ["stitch"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.deepEqual(promptState.recoveryPrompts, [[
+    { id: "react-components", label: "react:components", source: "example/react" },
+    { id: "stitch-remotion", label: "Stitch Remotion", source: "example/remotion" },
+  ]]);
+  assert.equal(promptState.partialSkillProfileInstallPrompts, 1);
+  assert.ok(text.includes("Ready to install (3)\n  design-md, react-components, stitch-remotion"), text);
+  assert.ok(!text.includes("Not included"), text);
+  assert.ok(text.includes("--skill design-md"), text);
+  assert.ok(text.includes("--skill react:components"), text);
+  assert.ok(text.includes("--skill remotion"), text);
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string; source: string; imported?: boolean }>;
+  };
+  assert.deepEqual(cached.items.map((item) => item.id), ["design-md", "react-components", "stitch-remotion"]);
+  assert.deepEqual(cached.items.slice(1), [
+    { id: "react-components", label: "react:components", source: "example/react", args: ["--skill", "react:components"], default: false, autoInvocation: true, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
+    { id: "stitch-remotion", label: "Stitch Remotion", source: "example/remotion", args: ["--skill", "remotion"], default: false, autoInvocation: true, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
+  ]);
+});
+
+test("runArea profiles does not restore recovered catalog entries when installation fails", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 1,
+      mode: "context",
+      alwaysOn: [],
+      items: [{ id: "stitch", name: "Stitch", skills: ["design-md", "react-components"] }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "design-md", label: "Design MD", source: "example/stitch", args: ["--skill", "design-md"], default: false }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  writeInstalledSkill(homeDir, "react-components", "React Components");
+  writeGlobalSkillLock(homeDir, { "react-components": { source: "example/react" } });
+  const output: string[] = [];
+  promptState.recoverableSkillIds = ["react-components"];
+  promptState.recoveryPrompts = [];
+  promptState.partialSkillProfileInstallAccepted = true;
+  promptState.partialSkillProfileInstallPrompts = 0;
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => ({ code: 7 }),
+  };
+
+  const code = await runArea("profiles", runtime, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    selectedSkillProfileIds: ["stitch"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string }>;
+  };
+
+  assert.equal(code, 7);
+  assert.deepEqual(cached.items.map((item) => item.id), ["design-md"]);
+});
+
+test("runArea profiles rejects catalog recovery when post-install metadata cannot be verified", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 1,
+      mode: "context",
+      alwaysOn: [],
+      items: [{ id: "stitch", name: "Stitch", skills: ["design-md", "react-components"] }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "design-md", label: "Design MD", source: "example/stitch", args: ["--skill", "design-md"], default: false }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  writeInstalledSkill(homeDir, "react-components", "React Components");
+  writeGlobalSkillLock(homeDir, { "react-components": { source: "example/react" } });
+  const output: string[] = [];
+  promptState.recoverableSkillIds = ["react-components"];
+  promptState.recoveryPrompts = [];
+  promptState.partialSkillProfileInstallAccepted = true;
+  promptState.partialSkillProfileInstallPrompts = 0;
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => {
+      rmSync(join(homeDir, ".agents", "skills", "react-components"), { recursive: true, force: true });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runArea("profiles", runtime, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    selectedSkillProfileIds: ["stitch"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string }>;
+  };
+
+  assert.equal(code, 1);
+  assert.deepEqual(cached.items.map((item) => item.id), ["design-md"]);
+  assert.ok(output.join("\n").includes("installed folders and lock metadata could not be verified"));
 });
 
 test("runArea merges selected explicit-source skills into the cache after installing them", async () => {
@@ -779,6 +1060,10 @@ test("runArea merges selected explicit-source skills into the cache after instal
     },
     spawn: async (command, args) => {
       commands.push({ command, args });
+      writeInstalledSkill(homeDir, "remote-skill", "Remote Skill");
+      writeGlobalSkillLock(homeDir, {
+        "remote-skill": { source: "remote/source" },
+      });
       return { code: 0 };
     },
   }, {
@@ -802,6 +1087,107 @@ test("runArea merges selected explicit-source skills into the cache after instal
   ]);
   const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as { defaultsSource: string };
   assert.equal(presets.defaultsSource, "acme/default-kit");
+});
+
+test("runArea does not claim explicit-source skills when installation leaves no lock metadata", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{
+        id: "remote-skill",
+        label: "Remote Skill",
+        source: "remote/source",
+        args: ["--skill", "remote-skill"],
+        default: false,
+      }],
+    },
+  });
+  const output: string[] = [];
+
+  const code = await runArea("skills", {
+    ...fakeRuntime(output),
+    spawn: async () => ({ code: 0 }),
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["remote-skill"],
+  });
+
+  assert.equal(code, 0);
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string }>;
+  };
+  assert.deepEqual(cached.items, []);
+  assert.ok(
+    output.join("\n").includes("Missing lock metadata for installed one-shot source skills: remote-skill"),
+    output.join("\n"),
+  );
+});
+
+test("runArea catalogs every installed skill from an explicit whole-source entry", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  });
+  const repoDir = localRepoWithRules();
+  const sourceDir = localDefaultsSource({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{
+        id: "whole-source",
+        label: "Whole Source",
+        source: "remote/source",
+        args: [],
+        default: false,
+      }],
+    },
+  });
+  const output: string[] = [];
+  writeInstalledSkill(homeDir, "existing", "Existing");
+  writeGlobalSkillLock(homeDir, {
+    existing: { source: "remote/source" },
+  });
+
+  const code = await runArea("skills", {
+    ...fakeRuntime(output),
+    spawn: async () => {
+      writeInstalledSkill(homeDir, "alpha", "Alpha");
+      writeInstalledSkill(homeDir, "beta", "Beta");
+      writeInstalledSkill(homeDir, "unrelated", "Unrelated");
+      writeInstalledSkill(homeDir, "orphan", "Orphan");
+      writeGlobalSkillLock(homeDir, {
+        existing: { source: "remote/source" },
+        alpha: { source: "remote/source" },
+        beta: { source: "remote/source" },
+        unrelated: { source: "other/source" },
+      });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    rulesSource: "github",
+    defaultsSource: sourceDir,
+    defaultsSourceExplicit: true,
+    selectedSkillIds: ["whole-source"],
+  });
+
+  assert.equal(code, 0);
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string; imported?: boolean }>;
+  };
+  assert.deepEqual(cached.items.map((item) => ({ id: item.id, imported: item.imported })), [
+    { id: "alpha", imported: true },
+    { id: "beta", imported: true },
+  ], output.join("\n"));
 });
 
 test("runArea dry-run reports explicit-source skill merges without writing the cache", async () => {
@@ -981,6 +1367,18 @@ function localDefaultsSource(overrides: Record<string, unknown> = {}): string {
   }
 
   return sourceDir;
+}
+
+function writeInstalledSkill(homeDir: string, id: string, label: string): void {
+  const skillDir = join(homeDir, ".agents", "skills", id);
+  mkdirSync(skillDir, { recursive: true });
+  writeFileSync(join(skillDir, "SKILL.md"), `---\nname: ${label}\n---\n`);
+}
+
+function writeGlobalSkillLock(homeDir: string, skills: Record<string, { source: string; skillPath?: string; skillFolderHash?: string }>): void {
+  const agentsDir = join(homeDir, ".agents");
+  mkdirSync(agentsDir, { recursive: true });
+  writeFileSync(join(agentsDir, ".skill-lock.json"), `${JSON.stringify({ version: 3, skills }, null, 2)}\n`);
 }
 
 function localRepoWithRules(): string {

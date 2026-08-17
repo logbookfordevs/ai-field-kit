@@ -49,9 +49,11 @@ export type CliOptions = {
   verbose: boolean;
   yes: boolean;
   presetId?: string;
+  presetPrompt?: boolean;
   allSkills: boolean;
   allCustomAgents?: boolean;
   selectedSkillIds: string[];
+  selectedSkillProfileIds?: string[];
   selectedCustomAgentIds?: string[];
   selectedSkillAgentIds: SkillAgentId[];
   skillAddArgs: string[];
@@ -66,6 +68,8 @@ export type CliOptions = {
   initOnly: boolean;
   empty: boolean;
   refreshDefaults: boolean;
+  overrideRefresh?: boolean;
+  refreshBeforeSetup?: boolean;
   defaultsSource: string;
   defaultsSourceExplicit: boolean;
   defaultSourceUpdate: string;

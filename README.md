@@ -124,7 +124,7 @@ install flow, and custom defaults workflow, read the
 |---|---|---|
 | Rules | `afk setup rules` | Composes ordered public, organization, personal, or project rules layers into managed instruction regions. |
 | Skills | `afk setup skills` | Delegates selected skill installs to the official `skills` CLI. |
-| Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
+| Skills Profiles | `afk setup profiles` | Offers profiles from `profiles.json`, offers lock-backed recovery for missing references, and installs the available skills after confirmation. |
 | Custom Agents | `afk setup agents` | Provisions selected portable agent files into Codex, Claude Code, or Pi. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `add-mcp`. |
 | Tools | `afk setup tools` | Runs curated tool installer commands and supported post-install setup. |
@@ -146,15 +146,19 @@ from those projects without AFK reimplementing their installers.
 |---|---|
 | Preview the whole setup | `afk setup --dry-run` |
 | Apply the whole setup | `afk setup` |
-| Install the optimized AFK Architect bundle | `afk setup --preset afk-architect` |
+| Install every cataloged item for detected harnesses | `afk setup --all --yes` |
+| Choose a preset from the cached catalog | `afk preset` |
+| Choose a preset from another source | `afk preset --source <source>` |
+| Install every rule, skill, tool, and Custom Agent | `afk preset daily-routine` |
+| Install the optimized AFK Architect bundle | `afk preset afk-architect` |
 | Run project-local setup | `afk setup --local` |
 | Refresh the global catalog cache | `afk refresh` |
 | Inspect the cached catalog | `afk show` |
 | Provision portable Custom Agents | `afk setup agents` |
-| Edit Custom Agent sources | `afk catalog agents` |
+| Edit Custom Agent sources | `afk agents catalog` |
 | Inspect skills as a composition tree | `afk show skills --react` |
 | Generate the local skill composition page | `afk show skills --visualize` |
-| Backfill installed skills into the catalog | `afk catalog skills import --dry-run` |
+| Backfill installed skills into the catalog | `afk skills catalog import --dry-run` |
 | Load one local skill into agent context | `afk skills get <skill>` |
 | Use a skill profile for the current request | `afk skills profiles use <profile>` |
 | Route UI work through UI Skills | `afk ui start` |
@@ -295,7 +299,7 @@ Agent File rather than editing generated targets. Pi additionally needs the
 `pi-subagents` extension; if it is missing, AFK suggests the install command,
 skips Pi, and asks you to rerun setup afterward.
 
-Use `afk catalog agents` to add, edit, or remove cached catalog entries.
+Use `afk agents catalog` to add, edit, or remove cached catalog entries.
 `afk refresh` includes `agents.json` and merges entries by ID, so new source
 entries are added, matching source entries are updated, and unrelated local
 entries remain. Refresh changes catalog data only; provisioning happens during
@@ -392,6 +396,8 @@ useful, open a PR.
    behavior changes.
 
 **Adding a skill:**
+
+Start lean: prompts earn detail through observed failure, not anticipated failure.
 
 1. Scaffold it with the CLI: `npx skills init my-skill`
 2. Fill in `my-skill/SKILL.md` following the existing patterns in

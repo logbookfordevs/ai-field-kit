@@ -9,7 +9,6 @@ export type LobbyChoiceValue =
   | "setup"
   | "source"
   | "refresh"
-  | "catalog"
   | "skills"
   | "agents"
   | "catalog-agents"
@@ -89,11 +88,6 @@ export const compassLobbyChoices: MenuChoice<LobbyChoiceValue>[] = [
     description: "Route: afk refresh",
   },
   {
-    name: "Edit local catalog",
-    value: "catalog",
-    description: "Route: afk catalog",
-  },
-  {
     name: "Install skills",
     value: "skills",
     description: "Route: afk setup skills",
@@ -111,7 +105,7 @@ export const compassLobbyChoices: MenuChoice<LobbyChoiceValue>[] = [
   {
     name: "Manage Custom Agent catalog",
     value: "catalog-agents",
-    description: "Route: afk catalog agents",
+    description: "Route: afk agents catalog",
   },
   {
     name: "Add MCP tools",
@@ -146,7 +140,7 @@ export const compassLobbyChoices: MenuChoice<LobbyChoiceValue>[] = [
   {
     name: "Import installed skills into a catalog",
     value: "catalog-import",
-    description: "Route: afk catalog skills import",
+    description: "Route: afk skills catalog import",
   },
   {
     name: "Show command help",
@@ -218,7 +212,7 @@ export const skillsLobbyChoices: Array<{
   {
     name: "Import installed skills into the catalog",
     value: "skills-catalog-import",
-    description: "Route: afk catalog skills import",
+    description: "Route: afk skills catalog import",
   },
   {
     name: "Manage skill profiles",
@@ -236,42 +230,42 @@ export const catalogSkillsLobbyChoices: MenuChoice<CatalogSkillsLobbyChoiceValue
   {
     name: "Add a skill catalog item",
     value: "catalog-skills-add",
-    description: "Route: afk catalog skills add",
+    description: "Route: afk skills catalog add",
   },
   {
     name: "Bulk edit skill policies",
     value: "catalog-skills-bulk-edit",
-    description: "Route: afk catalog skills bulk-edit",
+    description: "Route: afk skills catalog bulk-edit",
   },
   {
     name: "Edit a skill catalog item",
     value: "catalog-skills-edit",
-    description: "Route: afk catalog skills edit",
+    description: "Route: afk skills catalog edit",
   },
   {
     name: "Remove a skill catalog item",
     value: "catalog-skills-remove",
-    description: "Route: afk catalog skills remove",
+    description: "Route: afk skills catalog remove",
   },
   {
     name: "Toggle default skills",
     value: "catalog-skills-toggle-default",
-    description: "Route: afk catalog skills toggle-default",
+    description: "Route: afk skills catalog toggle-default",
   },
   {
     name: "Toggle skill autoInvocation",
     value: "catalog-skills-toggle-auto",
-    description: "Route: afk catalog skills toggle-auto",
+    description: "Route: afk skills catalog toggle-auto",
   },
   {
     name: "Import installed skills",
     value: "catalog-skills-import",
-    description: "Route: afk catalog skills import",
+    description: "Route: afk skills catalog import",
   },
   {
     name: "Check catalog status",
     value: "catalog-skills-status",
-    description: "Route: afk catalog skills status",
+    description: "Route: afk skills catalog status",
   },
 ];
 
@@ -303,7 +297,7 @@ export const skillProfilesLobbyChoices: Array<{
   {
     name: "Manage profile definitions",
     value: "profiles-manage-definitions",
-    description: "Route: afk catalog profiles",
+    description: "Route: afk profiles catalog",
   },
 ];
 
@@ -315,37 +309,37 @@ export const catalogProfilesLobbyChoices: Array<{
   {
     name: "Set profile mode",
     value: "profiles-set-mode",
-    description: "Route: afk catalog profiles set-mode",
+    description: "Route: afk profiles catalog set-mode",
   },
   {
     name: "Toggle always-on skills",
     value: "profiles-toggle-always-on",
-    description: "Route: afk catalog profiles toggle-always-on",
+    description: "Route: afk profiles catalog toggle-always-on",
   },
   {
     name: "List profile definitions",
     value: "profiles-list",
-    description: "Route: afk catalog profiles list",
+    description: "Route: afk profiles catalog list",
   },
   {
     name: "Show a profile definition",
     value: "profiles-show",
-    description: "Route: afk catalog profiles show",
+    description: "Route: afk profiles catalog show",
   },
   {
     name: "Create a profile definition",
     value: "profiles-create",
-    description: "Route: afk catalog profiles create",
+    description: "Route: afk profiles catalog create",
   },
   {
     name: "Edit a profile definition",
     value: "profiles-edit",
-    description: "Route: afk catalog profiles edit",
+    description: "Route: afk profiles catalog edit",
   },
   {
     name: "Delete a profile definition",
     value: "profiles-delete",
-    description: "Route: afk catalog profiles delete",
+    description: "Route: afk profiles catalog delete",
   },
 ];
 
@@ -484,8 +478,6 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
       return defaultSource ? ["refresh", "--default-source", defaultSource] : ["refresh", "--default-source"];
     case "refresh":
       return ["refresh"];
-    case "catalog":
-      return ["catalog"];
     case "skills":
       return ["setup", "skills"];
     case "skill-management":
@@ -493,7 +485,7 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
     case "agents":
       return ["setup", "agents"];
     case "catalog-agents":
-      return ["catalog", "agents"];
+      return ["agents", "catalog"];
     case "mcps":
       return ["setup", "mcps"];
     case "tools":
@@ -507,7 +499,7 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
     case "skills-visualize":
       return ["show", "skills", "--visualize"];
     case "catalog-import":
-      return ["catalog", "skills", "import"];
+      return ["skills", "catalog", "import"];
     case "help":
       return ["--help"];
   }
@@ -542,7 +534,7 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue, addOpti
     case "skills-categorize":
       return ["skills", "categorize"];
     case "skills-catalog-import":
-      return ["catalog", "skills", "import"];
+      return ["skills", "catalog", "import"];
     case "skills-profiles":
       return ["skills", "profiles"];
     case "skills-profile-status":
@@ -561,47 +553,47 @@ export function routeForSkillProfilesLobbyChoice(value: SkillProfilesLobbyChoice
     case "profiles-status":
       return ["skills", "profiles", "status"];
     case "profiles-manage-definitions":
-      return ["catalog", "profiles"];
+      return ["profiles", "catalog"];
   }
 }
 
 export function routeForCatalogSkillsLobbyChoice(value: CatalogSkillsLobbyChoiceValue): string[] {
   switch (value) {
     case "catalog-skills-add":
-      return ["catalog", "skills", "add"];
+      return ["skills", "catalog", "add"];
     case "catalog-skills-edit":
-      return ["catalog", "skills", "edit"];
+      return ["skills", "catalog", "edit"];
     case "catalog-skills-bulk-edit":
-      return ["catalog", "skills", "bulk-edit"];
+      return ["skills", "catalog", "bulk-edit"];
     case "catalog-skills-remove":
-      return ["catalog", "skills", "remove"];
+      return ["skills", "catalog", "remove"];
     case "catalog-skills-toggle-default":
-      return ["catalog", "skills", "toggle-default"];
+      return ["skills", "catalog", "toggle-default"];
     case "catalog-skills-toggle-auto":
-      return ["catalog", "skills", "toggle-auto"];
+      return ["skills", "catalog", "toggle-auto"];
     case "catalog-skills-import":
-      return ["catalog", "skills", "import"];
+      return ["skills", "catalog", "import"];
     case "catalog-skills-status":
-      return ["catalog", "skills", "status"];
+      return ["skills", "catalog", "status"];
   }
 }
 
 export function routeForCatalogProfilesLobbyChoice(value: CatalogProfilesLobbyChoiceValue): string[] {
   switch (value) {
     case "profiles-set-mode":
-      return ["catalog", "profiles", "set-mode"];
+      return ["profiles", "catalog", "set-mode"];
     case "profiles-toggle-always-on":
-      return ["catalog", "profiles", "toggle-always-on"];
+      return ["profiles", "catalog", "toggle-always-on"];
     case "profiles-list":
-      return ["catalog", "profiles", "list"];
+      return ["profiles", "catalog", "list"];
     case "profiles-show":
-      return ["catalog", "profiles", "show"];
+      return ["profiles", "catalog", "show"];
     case "profiles-create":
-      return ["catalog", "profiles", "create"];
+      return ["profiles", "catalog", "create"];
     case "profiles-edit":
-      return ["catalog", "profiles", "edit"];
+      return ["profiles", "catalog", "edit"];
     case "profiles-delete":
-      return ["catalog", "profiles", "delete"];
+      return ["profiles", "catalog", "delete"];
   }
 }
 

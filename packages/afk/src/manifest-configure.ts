@@ -172,9 +172,17 @@ export async function runManifestConfigureWithPrompts(
     return 0;
   }
 
-  runtime.io.stdout(`\n${sectionTitle("Catalog preview")}`);
-  for (const [filename, content] of Object.entries(serialized)) {
-    runtime.io.stdout(`\n--- ${filename} ---\n${content.trimEnd()}`);
+  runtime.io.stdout(`\n${sectionTitle("Catalog changes")}`);
+  for (const filename of Object.keys(serialized) as Array<keyof SerializedDrafts>) {
+    const area = filename.slice(0, -5) as ManifestArea;
+    runtime.io.stdout(`- ${filename}: ${summarizeDraftChange(area, original[area], drafts[area])}`);
+  }
+
+  if (options.verbose) {
+    runtime.io.stdout(`\n${sectionTitle("Catalog preview")}`);
+    for (const [filename, content] of Object.entries(serialized)) {
+      runtime.io.stdout(`\n--- ${filename} ---\n${content.trimEnd()}`);
+    }
   }
 
   if (options.dryRun) {
@@ -182,7 +190,8 @@ export async function runManifestConfigureWithPrompts(
     return 0;
   }
 
-  runtime.io.stdout(renderPromptStep("Write catalog", "Review the preview above, then confirm whether AFK should write the files."));
+  const reviewLabel = options.verbose ? "preview" : "summary";
+  runtime.io.stdout(renderPromptStep("Write catalog", `Review the ${reviewLabel} above, then confirm whether AFK should write the files.`));
   const shouldWrite = await prompts.confirm(`Write ${Object.keys(serialized).length} catalog file(s)?`, true);
   if (!shouldWrite) {
     runtime.io.stdout("\nCancelled. No catalog files written.");
@@ -679,6 +688,79 @@ function changedDrafts(original: Drafts, drafts: Drafts, touched: Set<ManifestAr
   }
 
   return serialized;
+}
+
+export function summarizeDraftChange(area: ManifestArea, original: EditableDraft, draft: EditableDraft): string {
+  const collectionKey = area === "rules" ? "layers" : "items";
+  const noun = catalogEntryNoun(area);
+  const previousEntries = identifiedEntries(area, original, collectionKey);
+  const nextEntries = identifiedEntries(area, draft, collectionKey);
+  const previousById = new Map(previousEntries.map((entry) => [entry.id, JSON.stringify(entry)]));
+  const nextById = new Map(nextEntries.map((entry) => [entry.id, JSON.stringify(entry)]));
+  const added = nextEntries.filter((entry) => !previousById.has(entry.id)).length;
+  const removed = previousEntries.filter((entry) => !nextById.has(entry.id)).length;
+  const updated = nextEntries.filter((entry) => {
+    const previous = previousById.get(entry.id);
+    return previous !== undefined && previous !== JSON.stringify(entry);
+  }).length;
+  const details = [
+    changeCount(added, noun, "added"),
+    changeCount(updated, noun, "updated"),
+    changeCount(removed, noun, "removed"),
+  ].filter((detail): detail is string => detail !== null);
+
+  if (hasNonCollectionChanges(area, original, draft, collectionKey)) {
+    details.push("settings updated");
+  }
+
+  const summary = details.length > 0 ? details.join(", ") : "updated";
+  return `${summary} (${previousEntries.length} → ${nextEntries.length})`;
+}
+
+function catalogEntryNoun(area: ManifestArea): "item" | "layer" | "profile" {
+  if (area === "rules") {
+    return "layer";
+  }
+  if (area === "profiles") {
+    return "profile";
+  }
+  return "item";
+}
+
+function identifiedEntries(area: ManifestArea, draft: EditableDraft, key: "items" | "layers"): Array<Record<string, unknown> & { id: string }> {
+  if (area === "rules" && isRulesManifest(draft)) {
+    return rulesManifestLayers(draft).map(({ legacy: _legacy, ...layer }) => layer);
+  }
+
+  const record = toRecord(draft);
+  const entries = record?.[key];
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+
+  return entries.filter((entry): entry is Record<string, unknown> & { id: string } => (
+    isRecord(entry) && typeof entry.id === "string"
+  ));
+}
+
+function changeCount(count: number, noun: string, action: string): string | null {
+  if (count === 0) {
+    return null;
+  }
+
+  return `${count} ${noun}${count === 1 ? "" : "s"} ${action}`;
+}
+
+function hasNonCollectionChanges(area: ManifestArea, original: EditableDraft, draft: EditableDraft, collectionKey: "items" | "layers"): boolean {
+  if (area === "rules") {
+    return false;
+  }
+  return JSON.stringify(withoutKey(original, collectionKey)) !== JSON.stringify(withoutKey(draft, collectionKey));
+}
+
+function withoutKey(draft: EditableDraft, key: "items" | "layers"): Record<string, unknown> {
+  const record = toRecord(draft) ?? {};
+  return Object.fromEntries(Object.entries(record).filter(([entryKey]) => entryKey !== key));
 }
 
 function changedSkillIds(

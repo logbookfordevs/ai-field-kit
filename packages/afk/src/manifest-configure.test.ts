@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
-import { filterCatalogSelectChoices, inferId, inferLabel, runManifestConfigureWithPrompts, type ManifestAction, type ManifestConfigurePrompts } from "./manifest-configure.js";
+import { filterCatalogSelectChoices, inferId, inferLabel, runManifestConfigureWithPrompts, summarizeDraftChange, type ManifestAction, type ManifestConfigurePrompts } from "./manifest-configure.js";
 import {
   addManifestItem,
   addRulesLayer,
@@ -256,6 +256,23 @@ test("serializeEditableManifest formats JSON with trailing newline", () => {
   assert.equal(JSON.parse(content).source, "github");
 });
 
+test("summarizeDraftChange ignores legacy rules migration metadata", () => {
+  const legacyRules: EditableManifest = {
+    version: 1,
+    source: "github",
+    url: "rules/AGENTS.md",
+  };
+  const layeredRules: EditableManifest = {
+    version: 2,
+    layers: [
+      { id: "legacy", label: "Rules", source: "rules/AGENTS.md" },
+      { id: "personal", label: "Personal rules", source: "rules/PERSONAL.md" },
+    ],
+  };
+
+  assert.equal(summarizeDraftChange("rules", legacyRules, layeredRules), "1 layer added (1 → 2)");
+});
+
 test("runManifestConfigureWithPrompts loads existing manifests by default and writes confirmed settings-style toggles", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-"));
   const manifestDir = join(homeDir, ".agents", "afk", "catalog");
@@ -290,7 +307,7 @@ test("runManifestConfigureWithPrompts loads existing manifests by default and wr
   const written = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as { items: Array<{ id: string; default: boolean }> };
   assert.equal(code, 0);
   assert.equal(written.items[0]?.default, false);
-  assert.ok(output.join("\n").includes("Catalog preview"));
+  assert.ok(output.join("\n").includes("Catalog changes"));
 });
 
 test("runManifestConfigureWithPrompts previews dry-run edits without writing", async () => {
@@ -325,7 +342,49 @@ test("runManifestConfigureWithPrompts previews dry-run edits without writing", a
   const written = JSON.parse(readFileSync(join(manifestDir, "mcps.json"), "utf8")) as { items: Array<{ id: string }> };
   assert.equal(code, 0);
   assert.equal(written.items.length, 1);
+  assert.ok(output.join("\n").includes("Catalog changes"));
+  assert.ok(output.join("\n").includes("mcps.json: 1 item removed (1 → 0)"));
+  assert.ok(!output.join("\n").includes("--- mcps.json ---"));
+  assert.ok(!output.join("\n").includes('"items":'));
   assert.ok(output.join("\n").includes("Dry run complete. No catalog files written."));
+});
+
+test("runManifestConfigureWithPrompts shows the complete catalog preview in verbose mode", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-configure-verbose-"));
+  const manifestDir = join(homeDir, ".agents", "afk", "catalog");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "mcps.json"), `${JSON.stringify({
+    version: 1,
+    items: [
+      {
+        id: "stitch",
+        label: "Stitch MCP",
+        source: "https://stitch.googleapis.com/mcp",
+        args: ["--name", "stitchmcp"],
+        default: true,
+      },
+    ],
+  }, null, 2)}\n`);
+
+  const output: string[] = [];
+  const code = await runManifestConfigureWithPrompts(
+    { io: captureIo(output), spawn: async () => ({ code: 0 }) },
+    cliOptions({ homeDir, dryRun: true, verbose: true }),
+    scriptedPrompts({
+      areas: ["mcps", "finish"],
+      actions: ["remove", "back"],
+      items: ["stitch"],
+      confirms: [true],
+    }),
+  );
+
+  const text = output.join("\n");
+  assert.equal(code, 0);
+  assert.ok(text.includes("Catalog changes"));
+  assert.ok(text.includes("mcps.json: 1 item removed (1 → 0)"));
+  assert.ok(text.includes("Catalog preview"));
+  assert.ok(text.includes("--- mcps.json ---"));
+  assert.ok(text.includes('"items": []'));
 });
 
 test("runManifestConfigureWithPrompts preserves existing skill args during no-op edit", async () => {
@@ -473,7 +532,7 @@ test("runManifestConfigureWithPrompts can finish and review from a catalog subme
   assert.equal(code, 0);
   assert.ok(actionLabels.includes("Finish and review"));
   assert.ok(actionLabels.includes("Back to manage other catalogs"));
-  assert.ok(output.join("\n").includes("Catalog preview"));
+  assert.ok(output.join("\n").includes("Catalog changes"));
 });
 
 test("runManifestConfigureWithPrompts offers review before Ctrl-C discards unsaved changes", async () => {
@@ -506,7 +565,7 @@ test("runManifestConfigureWithPrompts offers review before Ctrl-C discards unsav
 
   assert.equal(code, 0);
   assert.ok(confirmMessages.includes("Finish and review changes before exiting?"));
-  assert.ok(output.join("\n").includes("Catalog preview"));
+  assert.ok(output.join("\n").includes("Catalog changes"));
 });
 
 test("runManifestConfigureWithPrompts toggles profile alwaysOn skills", async () => {
@@ -799,7 +858,8 @@ test("runManifestConfigureWithPrompts edits project manifests for local configur
   assert.deepEqual(written.layers[0]?.files, [
     { source: "rules/artifacts.md", destination: "artifacts.md" },
   ]);
-  assert.ok(output.join("\n").includes("Catalog preview"));
+  assert.ok(output.join("\n").includes("Catalog changes"));
+  assert.ok(output.join("\n").includes("rules.json: 1 layer added, 1 layer removed (1 → 1)"));
 });
 
 test("runManifestConfigureWithPrompts loads default hooks from the configured defaults source", async () => {
@@ -834,6 +894,7 @@ test("runManifestConfigureWithPrompts loads default hooks from the configured de
       { io: captureIo(output), spawn: async () => ({ code: 0 }) },
       cliOptions({
         dryRun: true,
+        verbose: true,
         rulesSource: "github",
         defaultsSource: "acme/dev-kit",
         defaultsSourceExplicit: true,

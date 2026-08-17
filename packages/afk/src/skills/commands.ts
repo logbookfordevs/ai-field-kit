@@ -67,6 +67,7 @@ import {
   planSkillStartupStorageForItems,
   snapshotDisabledSkillIds,
   syncPreviouslyDisabledSkillStorage,
+  syncSkillInvocationPolicy,
   upsertFrontmatterBoolean,
   upsertOpenAiImplicitInvocation,
 } from "../skills.js";
@@ -74,7 +75,7 @@ import {
 type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "update" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
-  if (commandPath[0] === "catalog" && commandPath[1] === "profiles") {
+  if (commandPath[0] === "profiles" && commandPath[1] === "catalog") {
     return runCatalogProfilesCommand(commandPath.slice(2), runtime, options);
   }
 
@@ -248,11 +249,11 @@ async function ensureSkillsAddCatalogReady(runtime: Runtime, options: CliOptions
     theme: afkPromptTheme,
   });
   if (!accepted) {
-    runtime.io.stdout("Skill add cancelled. Import the existing skills through afk catalog skills before trying again.");
+    runtime.io.stdout("Skill add cancelled. Import the existing skills through afk skills catalog before trying again.");
     return 0;
   }
 
-  runtime.io.stdout(`${accent("Route")} afk catalog skills import`);
+  runtime.io.stdout(`${accent("Route")} afk skills catalog import`);
   for (const operation of importPlan.operations) {
     applyOperation(operation);
   }
@@ -262,7 +263,7 @@ async function ensureSkillsAddCatalogReady(runtime: Runtime, options: CliOptions
     runtime.io.stderr([
       "Catalog import could not catalog every lock-tracked installed skill:",
       ...remaining.map((id) => `  - ${id}`),
-      "Resolve them through afk catalog skills before trying skills add again.",
+      "Resolve them through afk skills catalog before trying skills add again.",
     ].join("\n"));
     return 1;
   }
@@ -411,7 +412,7 @@ export async function runCatalogProfilesCommand(operands: string[], runtime: Run
   }
 
   if (command === "enable" || command === "disable" || command === "status") {
-    runtime.io.stderr(`afk catalog profiles ${command} is a runtime profile operation. Use afk skills profiles ${command} instead.`);
+    runtime.io.stderr(`afk profiles catalog ${command} is a runtime profile operation. Use afk skills profiles ${command} instead.`);
     return 1;
   }
 
@@ -425,7 +426,7 @@ async function runSkillProfilesCommand(operands: string[], runtime: Runtime, opt
       return 0;
     }
 
-    if (route[0] === "catalog" && route[1] === "profiles") {
+    if (route[0] === "profiles" && route[1] === "catalog") {
       return runCatalogProfilesCommand(route.slice(2), runtime, options);
     }
 
@@ -434,7 +435,7 @@ async function runSkillProfilesCommand(operands: string[], runtime: Runtime, opt
 
   const command = operands[0] ?? "list";
   if (command === "list" || command === "show" || command === "create" || command === "edit" || command === "delete") {
-    runtime.io.stderr(`afk skills profiles ${command} is a profile definition operation. Use afk catalog profiles ${command} instead.`);
+    runtime.io.stderr(`afk skills profiles ${command} is a profile definition operation. Use afk profiles catalog ${command} instead.`);
     return 1;
   }
 
@@ -685,6 +686,13 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
   }));
 
   return runSkillUpdateCommands(runtime, commands, (command) => {
+    if (options.manifestContents?.["skills.json"] || pathExists(skillCatalogPath(options.homeDir))) {
+      syncSkillInvocationPolicy(runtime, {
+        ...options,
+        setupScope: command.scope,
+        selectedSkillIds: command.skillNames,
+      });
+    }
     syncPreviouslyDisabledSkillStorage(runtime, {
       homeDir: options.homeDir,
       cwd: options.cwd,
@@ -739,7 +747,7 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
     category: options.skillsCategory,
     tag: options.skillsTag,
     uncategorized: options.skillsUncategorized,
-    storage: options.skillsListStorage,
+    storage: options.skillsListStorage ?? "active",
   });
 
   if (options.skillsJson) {
@@ -847,7 +855,7 @@ async function runSkillsShow(folder: string | undefined, runtime: Runtime, optio
     agent: options.skillsAgent,
     agentPath: options.skillsAgentPath,
   });
-  const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage });
+  const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage ?? "active" });
   const record = folder
     ? findSkillRecord(records, folder)
     : await promptSkillRecord(records, "Select a skill to show:");
@@ -1042,11 +1050,19 @@ async function runSkillsDeleteProfile(profileId: string | undefined, runtime: Ru
     return 1;
   }
 
-  const records = skillRecordsForProfile(options, profile);
-  if (records.length === 0) {
+  const profileRecords = skillRecordsForProfile(options, profile);
+  if (profileRecords.length === 0) {
     runtime.io.stderr(`No installed skills found for profile: ${profile.id}`);
     return 1;
   }
+
+  const records = options.yes
+    ? profileRecords
+    : await promptSkillRecords(
+      profileRecords,
+      `Select skills to delete from profile ${profile.id}:`,
+      { checked: true },
+    );
 
   const readOnlyRecord = records.find((record) => record.readOnly);
   if (readOnlyRecord) {
@@ -1422,7 +1438,7 @@ async function promptSkillRecord(records: SkillRecord[], message: string): Promi
 async function promptSkillRecords(
   records: SkillRecord[],
   message: string,
-  options: { includeCatalogOrigin?: boolean } = {},
+  options: { checked?: boolean; includeCatalogOrigin?: boolean } = {},
 ): Promise<SkillRecord[]> {
   if (records.length === 0) {
     return [];
@@ -1436,6 +1452,7 @@ async function promptSkillRecords(
       value: record,
       description: renderSkillChoiceDescription(record, options),
       short: record.folder,
+      ...(options.checked === undefined ? {} : { checked: options.checked }),
     })),
     pageSize: 12,
     required: true,

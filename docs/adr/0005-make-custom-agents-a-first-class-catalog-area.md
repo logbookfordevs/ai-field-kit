@@ -1,6 +1,6 @@
 # Make Custom Agents a first-class catalog area
 
-Custom Agents will use the same public AFK catalog model as other setup areas rather than a standalone entry point. The area includes `agents.json`, `afk refresh`, `afk setup agents`, `afk show agents`, and `afk catalog agents`, with contextual help, summaries, and interactive menu routes so both people and agents can discover and operate it consistently. Catalog maintenance supports `add`, `edit`, and `remove`; Custom Agent entries have no `default` field or default-toggle command.
+Custom Agents will use the same public AFK catalog model as other setup areas rather than a standalone entry point. The area includes `agents.json`, `afk refresh`, `afk setup agents`, `afk show agents`, and `afk agents catalog`, with contextual help, summaries, and interactive menu routes so both people and agents can discover and operate it consistently. Catalog maintenance supports `add`, `edit`, and `remove`; Custom Agent entries have no `default` field or default-toggle command.
 
 Refresh merges by Agent Name: incoming entries replace matches, new entries are appended, and existing entries absent upstream remain until explicitly removed. Refresh remains catalog-only and does not provision agents.
 

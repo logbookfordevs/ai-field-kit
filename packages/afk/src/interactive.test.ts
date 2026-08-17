@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectToolsInstall, selectSkillsInstall } from "./interactive.js";
+import { confirmSkillProfileInstall, normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectToolsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
@@ -14,7 +14,9 @@ const promptState = vi.hoisted(() => ({
   searchableCheckboxMessages: [] as string[],
   searchableCheckboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string; searchAliases?: string[] }>>,
   setupAreas: ["tools"] as string[],
+  presetId: "afk-architect",
   inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
+  confirmMessages: [] as string[],
 }));
 
 vi.mock("./searchable-checkbox.js", () => ({
@@ -51,7 +53,11 @@ vi.mock("@inquirer/prompts", () => ({
 
     return [];
   }),
-  select: vi.fn(async () => "global"),
+  select: vi.fn(async ({ message }: { message: string }) => message === "Choose an AFK preset" ? promptState.presetId : "global"),
+  confirm: vi.fn(async ({ message }: { message: string }) => {
+    promptState.confirmMessages.push(message);
+    return true;
+  }),
   input: vi.fn(async ({ default: defaultValue, required, validate }: { default?: string; required?: boolean; validate: (value: string) => true | string }) => {
     promptState.inputCalls.push({
       default: defaultValue,
@@ -61,6 +67,15 @@ vi.mock("@inquirer/prompts", () => ({
     return defaultValue ?? "acme/dev-kit";
   }),
 }));
+
+test("profile install confirmation keeps dynamic skill lists out of the live prompt", async () => {
+  promptState.confirmMessages = [];
+
+  const accepted = await confirmSkillProfileInstall();
+
+  assert.equal(accepted, true);
+  assert.deepEqual(promptState.confirmMessages, ["Install available profile skills?"]);
+});
 
 test("normalizeSetupSelection removes item areas when every item is unselected", () => {
   const selection = normalizeSetupSelection({
@@ -109,6 +124,57 @@ test("normalizeSetupSelection keeps profile setup because it is catalog-level", 
   });
 
   assert.deepEqual(selection.areas, ["profiles"]);
+});
+
+test("selectSkillProfilesInstall offers source profiles and returns the selected ids", async () => {
+  const homeDir = localHomeWithComposedSkillManifest();
+  writeFileSync(join(localManifestDir(homeDir), "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [
+      { id: "review", name: "Review", skills: ["afk-code-grill"] },
+      { id: "quiet", name: "Quiet", skills: ["grilling"] },
+    ],
+  })}\n`);
+  promptState.checkboxResponses["Choose skill profiles to install"] = ["review"];
+
+  const selection = await selectSkillProfilesInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.profileIds, ["review"]);
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose skill profiles to install"]?.map((choice) => choice.value),
+    ["quiet", "review"],
+  );
+});
+
+test("selectSkillProfilesInstall prefers prepared source profiles over the saved catalog", async () => {
+  const homeDir = localHomeWithComposedSkillManifest();
+  writeFileSync(join(localManifestDir(homeDir), "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "saved", name: "Saved", skills: ["grilling"] }],
+  })}\n`);
+  promptState.checkboxResponses["Choose skill profiles to install"] = ["remote"];
+
+  const selection = await selectSkillProfilesInstall({
+    ...defaultOptions(homeDir),
+    manifestContents: {
+      "profiles.json": JSON.stringify({
+        version: 1,
+        mode: "context",
+        alwaysOn: [],
+        items: [{ id: "remote", name: "Remote", skills: ["afk-code-grill"] }],
+      }),
+    },
+  });
+
+  assert.deepEqual(selection.profileIds, ["remote"]);
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose skill profiles to install"]?.map((choice) => choice.value),
+    ["remote"],
+  );
 });
 
 test("normalizeSetupSelection keeps hooks when at least one hook is selected", () => {
@@ -179,6 +245,18 @@ test("selectSetup offers profiles as a setup area", async () => {
 
   assert.deepEqual(selection.areas, ["profiles"]);
   assert.ok(promptState.checkboxChoices["Choose what AFK should prepare"]?.some((choice) => choice.name === "Profiles" && choice.value === "profiles"));
+});
+
+test("selectSetup presents the guided areas in daily-first order", async () => {
+  promptState.checkboxChoices = {};
+  promptState.setupAreas = [];
+
+  await selectSetup(defaultOptions(localHomeWithAllManifests()));
+
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose what AFK should prepare"]?.map((choice) => choice.value),
+    ["rules", "skills", "tools", "agents", "profiles", "mcps", "hooks"],
+  );
 });
 
 test("selectToolsInstall does not ask for agent targets when installing tools", async () => {
@@ -320,6 +398,76 @@ test("selectSetup resolves a preset to its exact required selections", async () 
   assert.deepEqual(selection.mcpIds, []);
   assert.deepEqual(selection.toolIds, []);
   assert.deepEqual(selection.hookIds, []);
+});
+
+test("selectSetup prompts for a preset from the prepared source manifest", async () => {
+  promptState.presetId = "source-preset";
+  const homeDir = localHomeWithArchitectPreset();
+  const selection = await selectSetup({
+    ...defaultOptions(homeDir),
+    presetPrompt: true,
+    yes: true,
+    agents: ["codex"],
+    manifestContents: {
+      "presets.json": JSON.stringify({
+        version: 1,
+        defaultsSource: "acme/source-kit",
+        presets: [{
+          id: "source-preset",
+          label: "Source preset",
+          areas: ["skills"],
+          selections: { skills: ["afk-architect"] },
+        }],
+      }),
+    },
+  });
+
+  assert.deepEqual(selection.areas, ["skills"]);
+  assert.deepEqual(selection.skillIds, ["afk-architect"]);
+});
+
+test("selectSetup resolves an all-area preset to every item in its declared areas", async () => {
+  const homeDir = localHomeWithAllManifests();
+  writeFileSync(join(localManifestDir(homeDir), "presets.json"), `${JSON.stringify({
+    version: 1,
+    defaultsSource: "",
+    presets: [{
+      id: "daily-routine",
+      label: "Daily Routine",
+      areas: ["rules", "skills", "tools", "agents"],
+      all: true,
+    }],
+  }, null, 2)}\n`);
+  writeFileSync(join(localManifestDir(homeDir), "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "afk-cartographer", label: "AFK Cartographer", source: "agents/afk-cartographer.md" },
+      { id: "afk-builder", label: "AFK Builder", source: "agents/afk-builder.md" },
+      { id: "afk-pathfinder", label: "AFK Pathfinder", source: "agents/afk-pathfinder.md" },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(localManifestDir(homeDir), "tools.json"), `${JSON.stringify({
+    version: 1,
+    items: [{
+      id: "sample-tool",
+      label: "Sample Tool",
+      description: "Sample tool install.",
+      install: { command: "sample-tool", args: [] },
+      default: true,
+    }],
+  }, null, 2)}\n`);
+
+  const selection = await selectSetup({
+    ...defaultOptions(homeDir),
+    yes: true,
+    presetId: "daily-routine",
+    agents: ["codex"],
+  });
+
+  assert.deepEqual(selection.areas, ["rules", "skills", "tools", "agents"]);
+  assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
+  assert.deepEqual(selection.toolIds, ["sample-tool"]);
+  assert.deepEqual(selection.customAgentIds, ["afk-cartographer", "afk-builder", "afk-pathfinder"]);
 });
 
 test("selectSetup yes mode includes all skills when requested", async () => {
