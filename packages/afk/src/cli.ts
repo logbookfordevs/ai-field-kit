@@ -7,6 +7,7 @@ import { runRefresh } from "./refresh.js";
 import { runManifestShow } from "./manifest-show.js";
 import { runManifestConfigureArea, runManifestConfigureAreaAction, type ManifestAction, type ManifestArea } from "./manifest-configure.js";
 import { runCatalogProfilesCommand, runSkillsCommand } from "./skills/commands.js";
+import { runCatalogDoctor } from "./catalog-doctor.js";
 import { managedSkillAgents } from "./skills/catalog.js";
 import { runUiCommand } from "./ui.js";
 import { selectCatalogSkillsLobbyRoute, selectCompassLobbyRoute, shouldOpenCompassLobby } from "./lobby.js";
@@ -97,6 +98,9 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
     return runAfkOpen(runtime, options);
   }
 
+  if (key === "doctor") {
+    return runCatalogDoctor(runtime, options);
+  }
   if (isCatalogAreaCommand(commandPath)) {
     return runCatalogAreaCommand(commandPath, runtime, options);
   }
@@ -132,8 +136,8 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
     return 1;
   }
 
-  if (key === "setup") {
-    return runSetup(runtime, options);
+  if (key === "setup" || isPresetSetupCommand(commandPath)) {
+    return runSetupCommand(commandPath, runtime, options);
   }
 
   if (commandPath[0] === "skills") {
@@ -150,7 +154,7 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
 
   const area = commandToArea(commandPath);
   if (area) {
-    return runArea(area, runtime, options);
+    return runSetupCommand(commandPath, runtime, options);
   }
 
   runtime.io.stderr(`Unknown command: ${key || "(none)"}`);
@@ -195,8 +199,10 @@ type CommandHelp = {
 };
 
 const setupOptions = {
+  refresh: "--refresh                         Refresh the matching catalog scope before setup",
   dryRun: "--dry-run                         Preview changes without applying them",
   verbose: "--verbose                         Show delegated installer output",
+  catalogVerbose: "--verbose                         Show complete JSON for catalog editor previews",
   yes: "--yes, -y                         Accept defaults and skip prompts",
   scope: "--scope global|project            Choose machine-wide or current-project setup",
   localScope: "--local                           Alias for --scope project",
@@ -209,12 +215,14 @@ const setupOptions = {
   initOnly: "--init-only                       Create/update the local catalog only, then exit",
   empty: "--empty                           Create empty catalog files with --init-only or refresh",
   defaultSource: "--default-source <source>         Save the default source and refresh the cache",
+  overrideRefresh: "--override                        Replace targeted catalog files instead of merging",
   allSkills: "--all                            Include imported skills when installing skills",
   customAgent: "--custom-agent <id>             Select a Custom Agent; repeatable",
   allCustomAgents: "--all                            Select every cataloged Custom Agent",
 };
 
 const setupAreaOptions = [
+  setupOptions.refresh,
   setupOptions.dryRun,
   setupOptions.verbose,
   setupOptions.yes,
@@ -235,6 +243,14 @@ const commandHelps: Record<string, CommandHelp> = {
     options: ["--code                            Open in VS Code instead of Finder"],
     examples: ["afk open", "afk open --code"],
   },
+  doctor: {
+    title: "AFK doctor",
+    summary: "Validate the attributes and structure of every local AFK catalog file.",
+    usage: "afk doctor [options]",
+    notes: ["Checks the global catalog by default. Pass --local to check ./afk/catalog."],
+    options: ["--local                           Validate ./afk/catalog instead of the global catalog"],
+    examples: ["afk doctor", "afk doctor --local"],
+  },
   setup: {
     title: "AFK setup",
     summary: "Guided setup for rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks.",
@@ -242,8 +258,10 @@ const commandHelps: Record<string, CommandHelp> = {
     notes: [
       "Use this when you want AFK to prepare agent-facing surfaces on this machine or in the current project.",
       "Pass --source to merge and apply selected source entries without changing the remembered source.",
+      "Use afk setup --all --yes to install every cataloged item non-interactively for detected harnesses.",
     ],
     options: [
+      setupOptions.refresh,
       setupOptions.dryRun,
       setupOptions.verbose,
       setupOptions.yes,
@@ -273,6 +291,39 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup --local",
       "afk setup --source your-org/dev-kit",
       "afk setup --preset afk-architect",
+      "afk setup --all --yes",
+    ],
+  },
+  preset: {
+    title: "AFK preset",
+    summary: "Choose and apply a preset from the cached or selected AFK catalog.",
+    usage: "afk preset [id] [options]",
+    notes: [
+      "Without an id, AFK opens a menu of presets from the current cache or --source.",
+      "This is a shortcut for afk setup preset.",
+    ],
+    options: setupAreaOptions,
+    examples: [
+      "afk preset",
+      "afk preset daily-routine",
+      "afk preset afk-architect",
+      "afk preset --source your-org/dev-kit",
+    ],
+  },
+  "setup preset": {
+    title: "AFK setup preset",
+    summary: "Choose and apply a preset from the cached or selected AFK catalog.",
+    usage: "afk setup preset [id] [options]",
+    notes: [
+      "Without an id, AFK opens a menu of presets from the current cache or --source.",
+      "The --preset <id> setup flag remains available for compatibility.",
+    ],
+    options: setupAreaOptions,
+    examples: [
+      "afk setup preset",
+      "afk setup preset daily-routine",
+      "afk setup preset afk-architect",
+      "afk setup preset --source your-org/dev-kit",
     ],
   },
   refresh: {
@@ -282,6 +333,7 @@ const commandHelps: Record<string, CommandHelp> = {
     notes: [
       "Use refresh when you want the local catalog cache to change.",
       "Use --source for a one-off refresh source; use --default-source to save the source for future setup/show runs.",
+      "Override removes local-only entries from targeted files and requires two confirmations unless --dry-run is active.",
     ],
     options: [
       setupOptions.dryRun,
@@ -290,6 +342,7 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.ref,
       setupOptions.empty,
       setupOptions.defaultSource,
+      setupOptions.overrideRefresh,
     ],
     examples: [
       "afk refresh",
@@ -297,6 +350,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk refresh --local",
       "afk refresh --source your-org/dev-kit",
       "afk refresh --default-source your-org/dev-kit",
+      "afk refresh --override",
     ],
   },
   update: {
@@ -606,13 +660,13 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills list": {
     title: "AFK skills list",
-    summary: "List shared global skills by default or one explicit agent root.",
+    summary: "List enabled shared global skills by default or one explicit agent root.",
     usage: "afk skills list [options]",
     options: [
       "--scope global|project|all        Choose a preset agent scope; shared defaults to global",
       "--agent <agent>|custom            Select one explicit agent root",
       "--agent-path <folder>             Required with --agent custom",
-      "--enabled                         Show enabled skills only",
+      "--enabled                         Show enabled skills only (default)",
       "--disabled                        Show disabled skills only",
       "--auto-invocation <state>         Filter by enabled, disabled, mixed, or default",
       "--category <id-or-label>          Filter by AFK category",
@@ -633,13 +687,13 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills show": {
     title: "AFK skills show",
-    summary: "Show details for one discovered skill.",
+    summary: "Show details for one enabled skill by default.",
     usage: "afk skills show <folder> [options]",
     options: [
       "--scope global|project|all        Choose the preset agent scope",
       "--agent <agent>|custom            Select one explicit agent root",
       "--agent-path <folder>             Required with --agent custom",
-      "--enabled                         Show enabled skills only",
+      "--enabled                         Show enabled skills only (default)",
       "--disabled                        Show disabled skills only",
       "--json                            Print JSON record",
     ],
@@ -747,7 +801,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--dry-run                         Preview the delete without applying it",
       "--yes, -y                         Skip confirmation",
       "--catalog-only                    Limit deletion to skills present in AFK's skills catalog",
-      "--profile                         Choose a profile and delete its installed skills",
+      "--profile                         Choose a profile and select installed skills to delete",
     ],
     examples: [
       "afk skills delete",
@@ -867,6 +921,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "remove                            Remove a rules layer",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       "afk rules catalog",
@@ -886,6 +941,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "remove                            Remove a Custom Agent source",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       "afk agents catalog",
@@ -1115,6 +1171,7 @@ function catalogItemAreaHelp(title: string, area: "mcps" | "plugins" | "hooks", 
       "toggle-default                    Toggle defaults",
       "--local                          Edit ./afk/catalog instead of the global cache",
       setupOptions.dryRun,
+      setupOptions.catalogVerbose,
     ],
     examples: [
       `afk ${area} catalog`,
@@ -1133,7 +1190,12 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let dryRun = false;
   let verbose = false;
   let yes = false;
-  let presetId = "";
+  const presetRoute = presetRouteFromCommandPath(commandPath);
+  if (presetRoute.kind === "error") {
+    return { help: false, kind: "error", error: presetRoute.error };
+  }
+  let presetId = presetRoute.presetId;
+  const presetPrompt = presetRoute.prompt;
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
   let allSkills = false;
@@ -1143,7 +1205,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let rulesSource: "manifest" | "github" | "local" = "manifest";
   let initOnly = false;
   let empty = false;
+  let overrideRefresh = false;
   const refreshDefaults = isRefreshCommand(key);
+  let refreshBeforeSetup = false;
   let defaultsSource = "";
   let defaultsSourceExplicit = false;
   let defaultSourceUpdate = "";
@@ -1263,6 +1327,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (arg === "--refresh") {
+      if (key !== "setup" && !commandToArea(commandPath) && !isPresetSetupCommand(commandPath)) {
+        return { help: false, kind: "error", error: "--refresh is only supported with afk setup commands" };
+      }
+      refreshBeforeSetup = true;
+      continue;
+    }
+
     if ((isAfkSkillsCommand || isAfkCatalogProfilesCommand) && arg === "--json") {
       skillsJson = true;
       continue;
@@ -1279,6 +1351,11 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--local") {
+      if (key === "doctor") {
+        manifestLocal = true;
+        continue;
+      }
+
       if (isAfkProfileCommand) {
         manifestLocal = true;
         manifestConfigureLocal = true;
@@ -1438,6 +1515,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
 
     if (arg === "--empty") {
       empty = true;
+      continue;
+    }
+
+    if (arg === "--override") {
+      if (commandPath[0] !== "refresh") {
+        return { help: false, kind: "error", error: "--override is only supported with afk refresh" };
+      }
+      overrideRefresh = true;
       continue;
     }
 
@@ -1764,6 +1849,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       verbose,
       yes,
       ...(presetId ? { presetId } : {}),
+      ...(presetPrompt ? { presetPrompt: true } : {}),
       allSkills,
       allCustomAgents,
       selectedSkillIds: [],
@@ -1781,6 +1867,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       initOnly,
       empty,
       refreshDefaults,
+      overrideRefresh,
+      refreshBeforeSetup,
       defaultsSource,
       defaultsSourceExplicit,
       defaultSourceUpdate,
@@ -1873,6 +1961,41 @@ function commandToArea(commandPath: string[]): Area | null {
   }
 
   return null;
+}
+
+function isPresetSetupCommand(commandPath: string[]): boolean {
+  return commandPath[0] === "preset" || (commandPath[0] === "setup" && commandPath[1] === "preset");
+}
+
+function presetRouteFromCommandPath(commandPath: string[]): { kind: "ok"; presetId: string; prompt: boolean } | { kind: "error"; error: string } {
+  if (!isPresetSetupCommand(commandPath)) {
+    return { kind: "ok", presetId: "", prompt: false };
+  }
+
+  const idIndex = commandPath[0] === "preset" ? 1 : 2;
+  const presetId = commandPath[idIndex] ?? "";
+  if (commandPath.length > idIndex + 1) {
+    return { kind: "error", error: `Unexpected preset argument: ${commandPath[idIndex + 1]}` };
+  }
+
+  return { kind: "ok", presetId, prompt: presetId.length === 0 };
+}
+
+async function runSetupCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
+  const area = commandToArea(commandPath);
+  if (options.refreshBeforeSetup) {
+    const refreshCode = await runRefresh(runtime, {
+      ...options,
+      refreshBeforeSetup: false,
+      manifestLocal: options.setupScope === "project",
+      selectedManifestCategories: area ? [area] : [],
+    });
+    if (refreshCode !== 0) {
+      return refreshCode;
+    }
+  }
+
+  return area ? runArea(area, runtime, options) : runSetup(runtime, options);
 }
 
 function isSetupSkillsCommand(key: string): boolean {
@@ -2026,6 +2149,13 @@ function isCliUpdateCommand(key: string): boolean {
 }
 
 function helpCommandPath(commandPath: string[], key: string): string[] {
+  if (key === "preset" || key.startsWith("preset ")) {
+    return ["preset"];
+  }
+
+  if (key === "setup preset" || key.startsWith("setup preset ")) {
+    return ["setup", "preset"];
+  }
   if (key === "skills add" || key.startsWith("skills add ")) {
     return ["skills", "add"];
   }
@@ -2141,8 +2271,10 @@ Usage:
   afk --version
   afk                         Open the interactive lobby when your terminal supports prompts
   afk open                    Open the user AFK folder
+  afk doctor [options]        Validate every local AFK catalog file
   afk refresh [category...] [options]               Update the local catalog cache
   afk setup [options]         Prepare rules, skills, Custom Agents, MCPs, plugins, and hooks
+  afk setup preset [id] [options]                   Choose and apply a catalog preset
   afk setup rules [options]   Sync AFK rules into managed agent rule regions
   afk setup skills [options]  Install and reconcile shared skills
   afk setup profiles [options] Prepare focus profile definitions
@@ -2159,6 +2291,7 @@ Usage:
   afk plugins catalog [command] [options]            Manage plugin catalog entries
   afk hooks catalog [command] [options]              Manage lifecycle hook catalog entries
   afk show [category...] [options]                   Inspect cached catalog data without changing it
+  afk preset [id] [options]   Choose and apply a catalog preset
   afk ui <command> [options]  Delegate UI-focused skill routing to UI Skills
   afk update [options]        Update AFK from the latest GitHub release
 

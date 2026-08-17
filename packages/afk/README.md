@@ -217,13 +217,23 @@ areas in one guided flow. A failure in one delegated area does not prevent AFK
 from attempting the remaining selected areas; the overall command exits
 non-zero when any selected area fails.
 
-Use `afk setup --preset <id>` to apply one cataloged bundle. Presets with
-explicit selections install exactly those members in their declared area
-order. For example, `afk setup --preset afk-architect` installs the Architect
-skill before provisioning its three required portable Custom Agents.
+Use `afk preset` or `afk setup preset` to choose a bundle from the cached
+catalog. Pass `--source <source>` to choose from another catalog for one run,
+or include the preset ID to skip the preset menu. Presets with explicit
+selections install exactly those members in their declared area order. For
+example, `afk preset afk-architect` installs the Architect skill before
+provisioning its three required portable Custom Agents. The existing
+`afk setup --preset <id>` form remains available for compatibility.
+
+Use `afk preset daily-routine` to install every rule, skill, plugin, and Custom
+Agent from the current cache or `--source`. Use `afk setup --all --yes` when the
+goal is broader: install every item in every catalog area for the detected
+harnesses.
 
 | Command | What it does | Owner of the effect |
 |---|---|---|
+| `afk preset [id]` | Choose or directly apply one named catalog preset. | AFK routes the preset's declared setup areas. |
+| `afk setup preset [id]` | Long-form route for `afk preset [id]`. | AFK routes the preset's declared setup areas. |
 | `afk setup rules` | Compose configured rules layers into AFK-managed regions and install their isolated dependency files without replacing user-owned content outside those regions. | AFK. |
 | `afk setup skills` | Select catalog skills, delegate installation, restore previously disabled storage, apply invocation policy, and reconcile enabled profiles. | Official `skills` CLI for installation; AFK for policy and reconciliation. |
 | `afk setup profiles` | Prepare `profiles.json` definitions from the selected source. It does not install skills or enable a profile. | AFK. |
@@ -261,6 +271,7 @@ afk show skills profiles
 | `afk refresh --local` | Refresh `./afk/catalog` instead of the global cache. |
 | `afk refresh --source <source>` | Refresh once from a source without remembering it as the default. |
 | `afk refresh --default-source <source>` | Save the source in `presets.json` and refresh from it. |
+| `afk refresh --override` | Replace targeted catalog files from the source after two confirmations instead of preserving local-only entries. |
 | `afk refresh --empty` | Prepare empty catalog files instead of seeding source defaults. |
 | `afk show` | Print every cached catalog category. |
 | `afk show <category...>` | Print only the named categories. |
@@ -339,8 +350,8 @@ can be selected with `--agent`; exact custom roots require both
 
 | Command | Purpose | Important options and effects |
 |---|---|---|
-| `afk skills list` | List discovered skills. | Filters: `--enabled`, `--disabled`, `--auto-invocation` with `enabled`, `disabled`, `mixed`, or `default`, `--category`, `--tag`, `--uncategorized`; `--json` prints records. |
-| `afk skills show <folder>` | Show one discovered skill's metadata and paths. | Supports root selection, storage filters, and `--json`. |
+| `afk skills list` | List enabled skills by default. | Use `--disabled` for disabled skills; additional filters include `--auto-invocation` with `enabled`, `disabled`, `mixed`, or `default`, `--category`, `--tag`, and `--uncategorized`; `--json` prints records. |
+| `afk skills show <folder>` | Show one enabled skill's metadata and paths by default. | Use `--disabled` to inspect a disabled skill; supports root selection and `--json`. |
 | `afk skills get <folder>` | Print one skill as agent context, including disabled skills. | Read-only; includes the absolute skill root so referenced files remain resolvable. |
 | `afk skills open <folder>` | Open `SKILL.md` or its folder. | `--file` is the default; use `--folder` or select `finder`, `code`, `cursor`, `zed`, or `agy` with `--app`. |
 | `afk skills add <source> [flags...]` | Delegate installation to `skills add`, then synchronize AFK catalog and profile state. | Supports upstream `--skill`, `--agent`, `--global`, `--yes`; AFK adds `--profile`, `--profile-only`, and `--start-disabled`. |
@@ -368,8 +379,11 @@ metadata together. Untracked and agent-specific skills update only their
 installed metadata.
 
 `afk skills delete --profile` accepts zero or one profile ID. Without an ID it
-prompts for a profile. AFK warns again because a referenced skill may belong to
-other profiles. Deleting by profile does not delete the profile definition from
+prompts for a profile. AFK then presents the profile's installed skills with all
+selected by default, so you can narrow the deletion before confirming it. With
+`--yes`, AFK keeps the non-interactive default and deletes every installed skill
+in the profile. AFK warns again because a referenced skill may belong to other
+profiles. Deleting by profile does not delete the profile definition from
 `profiles.json`; use `afk profiles catalog delete` for that.
 
 ### Profile Runtime Commands
@@ -425,15 +439,16 @@ These flags apply to `afk setup` and most area commands.
 
 | Flag | Meaning |
 |---|---|
+| `--refresh` | Refresh the relevant catalog before setup. Top-level setup refreshes the full catalog; area commands refresh only their matching category and respect `--local`/project scope. |
 | `--dry-run` | Preview planned actions without applying them. Use this before real setup. |
 | `--verbose` | Show delegated installer output instead of keeping it quiet. |
 | `--yes`, `-y` | Accept defaults and skip prompts. Useful for scripts. |
-| `--preset <id>` | With top-level `afk setup`, apply one cataloged bundle in its declared area order. |
+| `--preset <id>` | Compatibility form for applying one cataloged bundle with top-level `afk setup`. |
 | `--scope global/project` | Choose machine-wide setup or current-project setup. |
 | `--local` | Alias for `--scope project`. |
 | `--agent <agent>`, `-a <agent>` | Override detected setup targets and limit setup to selected agents. Repeat the flag for multiple agents. |
 | `--custom-agent <id>` | Select one cataloged Custom Agent. Repeat the flag for multiple agents. |
-| `--all` | With `afk setup agents`, select every cataloged Custom Agent. |
+| `--all` | Include every cataloged skill and Custom Agent; with top-level `afk setup --yes`, every setup area also selects all cataloged MCPs, plugins, and hooks. |
 | `--source <source>` | Merge the source entries setup applies into the cache without changing the remembered default source. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
 | `--init-only` | Legacy cache-prep flag; prefer `afk refresh`. |
@@ -449,6 +464,7 @@ These flags apply to `afk refresh`.
 | `--local` | Refresh `./afk/catalog` instead of the global catalog cache. |
 | `--source <source>` | Refresh the cache from this source once, without changing the remembered default source. |
 | `--default-source <source>` | Save the default source and refresh the cache from it. |
+| `--override` | Replace targeted catalog files from the source instead of merging; requires two confirmations. |
 | `--ref <git-ref>` | Choose the Git ref used when fetching default AFK catalog and rules. |
 | `--empty` | Create empty catalog files. |
 
@@ -657,13 +673,20 @@ hooks.json
 
 ### Presets
 
-`presets.json` can describe an area shortcut or an exact required bundle:
+`presets.json` can describe an area shortcut, every item within declared areas,
+or an exact required bundle:
 
 ```json
 {
   "version": 1,
   "defaultsSource": "logbookfordevs/ai-field-kit",
   "presets": [
+    {
+      "id": "daily-routine",
+      "label": "Daily Routine",
+      "areas": ["rules", "skills", "plugins", "agents"],
+      "all": true
+    },
     {
       "id": "afk-architect",
       "label": "AFK Architect",
@@ -681,11 +704,13 @@ hooks.json
 }
 ```
 
-When `selections` is omitted, each area keeps its normal interactive or default
-selection behavior. When present, its arrays are exact required members, and
-`areas` defines execution order. AFK continues into later areas after a
-failure, then exits non-zero if any required member could not be provisioned.
-Use `afk show presets` to inspect the members before setup.
+When `all` is `true`, AFK selects every current catalog item within the declared
+areas, including entries supplied by `--source`. When `selections` is present,
+its arrays are exact required members. When both are omitted, each area keeps
+its normal default selection behavior. In every mode, `areas` defines execution
+order. AFK continues into later areas after a failure, then exits non-zero if
+any required provisioning is incomplete. Use `afk show presets` to inspect the
+mode and members before setup.
 
 ### Layered Rules and Dependency Files
 
@@ -754,6 +779,11 @@ matching layer IDs in place, preserves absent cached layers, and appends new
 layers in source order. Refreshing a legacy version 1 rules cache from version 2
 performs the one-time transition to the layered shape.
 
+Use `afk refresh --override` when the selected source should become the entire
+targeted catalog state. Override removes local-only entries in those files and
+therefore asks for confirmation twice before writing. `--dry-run` previews the
+replacement without prompting or changing files.
+
 Use these commands to prepare catalog files without running setup:
 
 ```bash
@@ -761,6 +791,7 @@ afk refresh
 afk refresh skills
 afk refresh --empty
 afk refresh --local
+afk refresh --override --dry-run
 ```
 
 If you want to inspect another source without changing the cache, use `show`
@@ -1364,8 +1395,8 @@ remain easy to read.
 `--agent <agent>` to select a preset agent root and `--scope
 global|project|all` to choose that preset's root family. Use `--agent custom
 --agent-path <folder>` to select an exact custom skills root; custom paths do
-not combine with `--scope`. Use `--enabled` to show active folders,
-`--disabled` to show disabled folders, and `--category`, `--tag`, or
+not combine with `--scope`. List and show include only active folders by
+default. Use `--disabled` to show disabled folders, and `--category`, `--tag`, or
 `--uncategorized` to filter AFK catalog metadata. The same
 `--enabled` and `--disabled` folder filters are also available on `afk skills
 show`, `open`, `delete`, and `invocation`, plus `afk profiles catalog
@@ -1378,8 +1409,9 @@ the shared global library by default. They can manage preset agent roots with
 `afk skills delete --disabled` is useful when pruning disabled skills. Use
 `--catalog-only` to limit deletion candidates to installed skills represented
 in AFK's `skills.json` catalog. Use `--profile` to choose a profile and delete
-the installed skills referenced by it; AFK asks for an extra confirmation
-because those skills may also be used by other profiles.
+selected installed skills referenced by it. Every installed profile skill starts
+selected, and AFK asks for an extra confirmation because the chosen skills may
+also be used by other profiles.
 Delete is permanent; use `--dry-run` to preview the selected folders before
 removing them.
 

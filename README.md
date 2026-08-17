@@ -146,7 +146,11 @@ from those projects without AFK reimplementing their installers.
 |---|---|
 | Preview the whole setup | `afk setup --dry-run` |
 | Apply the whole setup | `afk setup` |
-| Install the optimized AFK Architect bundle | `afk setup --preset afk-architect` |
+| Install every cataloged item for detected harnesses | `afk setup --all --yes` |
+| Choose a preset from the cached catalog | `afk preset` |
+| Choose a preset from another source | `afk preset --source <source>` |
+| Install every rule, skill, plugin, and Custom Agent | `afk preset daily-routine` |
+| Install the optimized AFK Architect bundle | `afk preset afk-architect` |
 | Run project-local setup | `afk setup --local` |
 | Refresh the global catalog cache | `afk refresh` |
 | Inspect the cached catalog | `afk show` |
@@ -392,6 +396,8 @@ useful, open a PR.
    behavior changes.
 
 **Adding a skill:**
+
+Start lean: prompts earn detail through observed failure, not anticipated failure.
 
 1. Scaffold it with the CLI: `npx skills init my-skill`
 2. Fill in `my-skill/SKILL.md` following the existing patterns in

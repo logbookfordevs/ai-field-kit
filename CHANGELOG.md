@@ -13,24 +13,37 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added interactive `afk preset` and `afk setup preset` routes that choose named bundles from the cached catalog or a one-off `--source`, plus a source-aware `daily-routine` preset for every rule, skill, plugin, and Custom Agent, while preserving `afk setup --preset <id>` for compatibility.
+- `cli:` added `afk refresh --override` to make the selected source authoritative for targeted catalog files after two confirmations, with dry-run preview support.
+- `cli:` added `--refresh` to setup commands so the matching global or project catalog scope refreshes before setup begins.
 - `skills:` added the optional manual `afk-code-review-check` wrapper for verifying AFK Code Review findings against the code and discussing verdicts before making changes.
 - `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
 - `skills:` added Emil Kowalski's optional model-invoked `animate` utility for implementing purposeful interface motion.
+- `skills:` added Emil Kowalski's optional manual `apple-design` utility for shaping fluid, gesture-driven interfaces with Apple's interaction principles.
 
 ### Changed
 
 - `cli:` moved catalog editing under each owning command family (`afk skills catalog`, `afk profiles catalog`, and their peers), removed the top-level `afk catalog` route, and made root help describe every command inline.
+- `cli:` reordered the guided setup areas around the daily path: Rules, Skills, Plugins, and Custom Agents now appear before Profiles, MCPs, and Hooks.
+- `cli:` made `afk skills list` and `afk skills show` include only enabled skills by default, with `--disabled` required to inspect disabled entries.
+- `cli:` made `afk skills delete --profile` present the profile's installed skills as an all-selected checklist before deletion, while `--yes` keeps deleting the full installed set non-interactively.
 - `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.
 - `skills:` distilled Code Grill into a manual wrapper that composes Grilling, Truss Evaluation, and Codebase Design around the material technical frontier without duplicating their workflows.
 - `skills:` taught AFK Code Review to review an implementation ticket alongside its originating material, detect lost or distorted requirements, and substantiate the ticket's recorded implementation and verification claims.
+- `skills:` gave Implement Tickets bounded authority for green atomic local implementation commits, kept local tracking commits opt-in, added agreed TDD seams, focused and final validation, and automatic AFK Code Review while preserving the user's final code-gate decision.
+- `skills:` removed automatic Plannotator recommendations and ticket-annotation loops while retaining user-approved external review as a valid code-gate acceptance path.
 - `skills:` let `afk-implement-tickets` use either a local Markdown counterpart or an available remote mechanism as the ticket's durable tracking home, with an explicit user choice before remote-ticket implementation begins.
 - `skills:` renamed `afk-implement-tasks` to `afk-implement-tickets`, aligning the implementation workflow with the ticket files produced by `afk-to-tickets`.
 - `skills:` made AFK Architect announce the selected crew member before delegation.
 
 ### Fixed
 
-- `skills:` made `afk-code-review-check` run AFK Code Review and capture its findings before validation instead of asking the user to provide findings.
+- `skills:` made `afk-code-review-check` run AFK Code Review, preserve its complete findings verbatim, and append validation verdicts instead of asking for or summarizing the review input.
 - `rules:` made the bundled AFK rules layer fetch its files from the source repository and replaced missing-local-file stack traces with guidance to use a full URL or `--source <owner/repo>`.
+
+### Removed
+
+- `cli:` removed the bundled `baseline` preset; use the source-aware `daily-routine` preset or guided `afk setup` instead.
 
 ## v1.2.2 - 2026-08-09
 

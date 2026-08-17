@@ -19,12 +19,15 @@ Pick the best-fit mature source for the UX problem, not a default registry by ha
 ## Preferred Sources
 
 - `Shadcn`: app primitives, forms, tables, dialogs, sheets, sidebars, command menus, and dashboard surfaces.
+- `Shadcn Directory`, `21st.dev`: broad community directories for discovering a suitable component or registry source.
 - `Shadcn IO - AI`: AI-focused shadcn component references.
 - `AI Elements`, `Assistant UI`: AI chat, assistant, and generative interface components.
 - `KiboUI`: richer shadcn-compatible app components when the base primitive is too plain, especially kanban and data-table surfaces.
 - `COSS`: scroll areas and mixed app primitives.
 - `BK Lit UI`: data visualization components, charts, and utilities.
 - `Terminal-Kit`: terminal UI components.
+- `UI Ball`, `CSS Loaders`: loading indicators and progress animations.
+- `UI Verse`: copy-and-paste community components and visual experiments.
 - `MagicUI`, `Acerternity`, `React Bits`, `Animate UI`, `EldoraUI`, `PaceUI`, `Watermelon`, `Hover`, `Neobrutalism`, `CanvasUI`: expressive sections, motion-heavy UI, animated interactions, and visual delight.
 - `Motion Examples`: React animation reference when the interaction depends on Motion patterns.
 - `Remocn`: Remotion-related UI and video composition references.

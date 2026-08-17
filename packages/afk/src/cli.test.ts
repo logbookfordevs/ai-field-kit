@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "vitest";
@@ -30,6 +30,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk refresh [category...] [options]"));
   assert.ok(output.join("\n").includes("afk open"));
   assert.ok(!output.join("\n").includes("afk catalog [options]"));
+  assert.ok(output.join("\n").includes("afk doctor [options]"));
   assert.ok(output.join("\n").includes("afk setup [options]"));
   assert.ok(output.join("\n").includes("afk setup profiles [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
@@ -50,6 +51,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk skills catalog <command> [options]             Manage skills catalog definitions"));
   assert.ok(output.join("\n").includes("afk profiles catalog <command> [options]           Edit profile catalog data"));
   assert.ok(output.join("\n").includes("afk update [options]        Update AFK from the latest GitHub release"));
+  assert.ok(output.join("\n").includes("afk doctor [options]        Validate every local AFK catalog file"));
   assert.ok(!output.join("\n").includes("afk config [options]"));
   assert.ok(!output.join("\n").includes("afk manifests configure [options]"));
   assert.ok(!output.join("\n").includes("afk manifests show [options]"));
@@ -92,6 +94,18 @@ test("runCli prints contextual open help", async () => {
   assert.ok(text.includes("afk open"));
   assert.ok(text.includes("Open the user AFK folder"));
   assert.ok(text.includes("--code"));
+});
+
+test("runCli prints contextual doctor help", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["doctor", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK doctor"));
+  assert.ok(text.includes("afk doctor [options]"));
+  assert.ok(text.includes("--local"));
+  assert.ok(text.includes("global catalog by default"));
 });
 
 test("runCli accepts --code for afk open", async () => {
@@ -142,6 +156,56 @@ test("runCli reports operational errors without exposing a stack trace", async (
   assert.ok(!text.includes("\n    at "));
 });
 
+test("runCli doctor validates the global AFK catalog by default", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-cli-doctor-global-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "skills.json"), JSON.stringify({ version: 1, items: [] }));
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(["doctor"], { HOME: homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 1);
+  assert.ok(text.includes("skills.json"));
+  assert.ok(text.includes("Invalid"));
+  assert.ok(text.includes(manifestDir));
+});
+
+test("runCli doctor accepts a valid global AFK catalog", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-cli-doctor-valid-"));
+  const manifestDir = localManifestDir(homeDir);
+  cpSync(resolve(new URL("../catalog", import.meta.url).pathname), manifestDir, { recursive: true });
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(["doctor"], { HOME: homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("AFK doctor found 8 valid catalog files."));
+});
+
+test("runCli doctor --local validates the project AFK catalog", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "afk-cli-doctor-local-"));
+  const projectCatalogDir = join(cwd, "afk", "catalog");
+  cpSync(resolve(new URL("../catalog", import.meta.url).pathname), projectCatalogDir, { recursive: true });
+  writeFileSync(join(projectCatalogDir, "hooks.json"), JSON.stringify({ version: 1, items: [{ id: "broken" }] }));
+  const originalCwd = process.cwd();
+  const output: string[] = [];
+
+  try {
+    process.chdir(cwd);
+    const code = await withConsole(output, () => runCli(["doctor", "--local"], { HOME: mkdtempSync(join(tmpdir(), "afk-cli-doctor-home-")) }));
+    const text = output.join("\n");
+
+    assert.equal(code, 1);
+    assert.ok(text.includes(projectCatalogDir));
+    assert.ok(text.includes("Invalid hooks.json"));
+  } finally {
+    process.chdir(originalCwd);
+  }
+});
+
 test("runCli exposes Custom Agents as a first-class command family", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["setup", "agents", "--help"]));
@@ -180,6 +244,133 @@ test("runCli exposes preset setup and rejects a missing preset id", async () => 
 
   assert.equal(missingCode, 1);
   assert.ok(output.join("\n").includes("Missing --preset value"));
+});
+
+test("runCli exposes the preset command family and setup preset routes", async () => {
+  const output: string[] = [];
+  const presetHelpCode = await withConsole(output, () => runCli(["preset", "--help"]));
+  const presetHelp = output.join("\n");
+
+  assert.equal(presetHelpCode, 0);
+  assert.ok(presetHelp.includes("AFK preset"));
+  assert.ok(presetHelp.includes("afk preset [id] [options]"));
+  assert.ok(presetHelp.includes("--source <source>"));
+
+  output.length = 0;
+  const setupHelpCode = await withConsole(output, () => runCli(["setup", "preset", "--help"]));
+  const setupHelp = output.join("\n");
+
+  assert.equal(setupHelpCode, 0);
+  assert.ok(setupHelp.includes("AFK setup preset"));
+  assert.ok(setupHelp.includes("afk setup preset [id] [options]"));
+  assert.ok(setupHelp.includes("afk setup preset afk-architect"));
+});
+
+test("runCli accepts explicit preset ids through both new routes", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-preset-routes-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+
+  for (const route of [["preset", "afk-architect"], ["setup", "preset", "afk-architect"]]) {
+    const output: string[] = [];
+    const code = await withConsole(output, () => runCli([
+      ...route,
+      "--source",
+      repoDir,
+      "--agent",
+      "codex",
+      "--yes",
+      "--dry-run",
+    ], { HOME: homeDir, AI_RULES_REPO: repoDir }));
+
+    assert.equal(code, 0);
+    assert.ok(output.join("\n").includes("- Preset: afk-architect"));
+  }
+});
+
+test("runCli dry-runs the source-aware daily routine in declared area order", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-daily-routine-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli([
+    "preset",
+    "daily-routine",
+    "--source",
+    repoDir,
+    "--agent",
+    "codex",
+    "--yes",
+    "--dry-run",
+  ], { HOME: homeDir, AI_RULES_REPO: repoDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0, text);
+  assert.ok(text.includes("- Preset: daily-routine"));
+  assert.ok(text.includes("- Areas: rules, skills, plugins, agents"));
+  assert.ok(text.indexOf("◆ Rules") < text.indexOf("◆ Skills"));
+  assert.ok(text.indexOf("◆ Skills") < text.indexOf("◆ Plugins"));
+  assert.ok(text.indexOf("◆ Plugins") < text.indexOf("◆ Custom Agents"));
+  assert.ok(text.includes("- afk-architect ->"));
+  assert.ok(text.includes("afk-cartographer.toml"));
+});
+
+test("runCli documents the existing all-catalog setup path", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("afk setup --all --yes"));
+  assert.ok(text.includes("every cataloged item"));
+});
+
+test("runCli refreshes the full catalog before setup when --refresh is passed", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-refresh-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli([
+    "setup",
+    "--refresh",
+    "--source",
+    repoDir,
+    "--yes",
+    "--dry-run",
+    "--init-only",
+  ], { HOME: homeDir, AI_RULES_REPO: repoDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("Refreshing global AFK catalog."));
+  assert.ok(text.indexOf("Refreshing global AFK catalog.") < text.indexOf("Choose the parts of your AI field setup"));
+});
+
+test("runCli limits project setup area refreshes to the matching local catalog category", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-skills-refresh-"));
+  const projectDir = mkdtempSync(join(tmpdir(), "afk-setup-skills-project-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const originalCwd = process.cwd();
+
+  process.chdir(projectDir);
+  try {
+    const code = await runCli([
+      "setup",
+      "skills",
+      "--local",
+      "--refresh",
+      "--source",
+      repoDir,
+      "--yes",
+      "--init-only",
+    ], { HOME: homeDir, AI_RULES_REPO: repoDir });
+
+    assert.equal(code, 0);
+    assert.equal(existsSync(join(projectDir, "afk", "catalog", "skills.json")), true);
+    assert.equal(existsSync(join(projectDir, "afk", "catalog", "rules.json")), false);
+    assert.equal(existsSync(join(projectDir, "afk", "catalog", "mcps.json")), false);
+    assert.equal(existsSync(join(localManifestDir(homeDir), "skills.json")), false);
+  } finally {
+    process.chdir(originalCwd);
+  }
 });
 
 test("runCli dry-runs the AFK Architect required bundle in dependency order", async () => {
@@ -290,7 +481,28 @@ test("runCli prints contextual refresh help", async () => {
   assert.ok(output.join("\n").includes("afk refresh skills"));
   assert.ok(output.join("\n").includes("Refresh cached AFK catalog"));
   assert.ok(output.join("\n").includes("Use refresh when you want the local catalog cache to change."));
+  assert.ok(output.join("\n").includes("--override"));
   assert.ok(!output.join("\n").includes("--refresh-defaults"));
+});
+
+test("runCli limits override to the top-level refresh command", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "refresh", "--override"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("--override is only supported with afk refresh"));
+});
+
+test("runCli accepts override for a targeted refresh", async () => {
+  const output: string[] = [];
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-targeted-override-"));
+  const code = await withConsole(output, () => runCli(
+    ["refresh", "skills", "--override", "--empty", "--dry-run"],
+    { HOME: homeDir },
+  ));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("skills.json"));
 });
 
 test("runCli prints contextual skills catalog import help", async () => {
@@ -359,6 +571,7 @@ test("runCli prints contextual setup help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK setup"));
+  assert.ok(text.includes("--refresh"));
   assert.ok(text.includes("Use this when you want AFK to prepare agent-facing surfaces"));
   assert.ok(text.includes("Subcommands:"));
   assert.ok(!text.includes("afk setup refresh"));
@@ -384,6 +597,7 @@ test("runCli prints contextual area help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK setup MCPs"));
+  assert.ok(text.includes("--refresh"));
   assert.ok(text.includes("Delegate selected MCP recommendations to add-mcp."));
   assert.ok(text.includes("--verbose                         Show delegated installer output"));
   assert.ok(text.includes("--yes, -y                         Accept defaults and skip prompts"));
@@ -641,6 +855,54 @@ test("runCli validates skills list auto invocation filters", async () => {
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Invalid --auto-invocation value: invalid"));
+});
+
+test("runCli lists only enabled skills unless disabled storage is requested", async () => {
+  const homeDir = localHomeWithManifests({});
+  writeSkill(join(homeDir, ".agents", "skills"), "active-demo", "Active Demo");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-demo", "Disabled Demo");
+  const output: string[] = [];
+
+  const defaultCode = await withConsole(output, () => runCli(["skills", "list"], { HOME: homeDir }));
+  const defaultText = output.join("\n");
+
+  assert.equal(defaultCode, 0);
+  assert.ok(defaultText.includes("active-demo"));
+  assert.ok(!defaultText.includes("disabled-demo"));
+
+  output.length = 0;
+  const disabledCode = await withConsole(output, () => runCli(["skills", "list", "--disabled"], { HOME: homeDir }));
+  const disabledText = output.join("\n");
+
+  assert.equal(disabledCode, 0);
+  assert.ok(!disabledText.includes("active-demo"));
+  assert.ok(disabledText.includes("disabled-demo"));
+});
+
+test("runCli shows disabled skills only when disabled storage is requested", async () => {
+  const homeDir = localHomeWithManifests({});
+  writeSkill(join(homeDir, ".agents", "skills"), "active-demo", "Active Demo");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled-demo", "Disabled Demo");
+  const output: string[] = [];
+
+  const activeCode = await withConsole(output, () => runCli(["skills", "show", "active-demo"], { HOME: homeDir }));
+
+  assert.equal(activeCode, 0);
+  assert.ok(output.join("\n").includes("Active Demo"));
+
+  output.length = 0;
+  const defaultDisabledCode = await withConsole(output, () => runCli(["skills", "show", "disabled-demo"], { HOME: homeDir }));
+
+  assert.equal(defaultDisabledCode, 1);
+  assert.ok(output.join("\n").includes("Skill not found: disabled-demo"));
+
+  output.length = 0;
+  const explicitDisabledCode = await withConsole(output, () =>
+    runCli(["skills", "show", "disabled-demo", "--disabled"], { HOME: homeDir })
+  );
+
+  assert.equal(explicitDisabledCode, 0);
+  assert.ok(output.join("\n").includes("Disabled Demo"));
 });
 
 test("runCli prints contextual ui help", async () => {
@@ -1529,6 +1791,12 @@ test("runCli shows explicit preset members", async () => {
       defaultsSource: "acme/dev-kit",
       presets: [
         {
+          id: "daily-routine",
+          label: "Daily Routine",
+          areas: ["rules", "skills", "plugins", "agents"],
+          all: true,
+        },
+        {
           id: "afk-architect",
           label: "AFK Architect",
           areas: ["skills", "agents"],
@@ -1547,6 +1815,8 @@ test("runCli shows explicit preset members", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("skills: afk-architect"));
   assert.ok(text.includes("custom agents: afk-cartographer, afk-builder, afk-pathfinder"));
+  assert.ok(text.includes("Daily Routine"));
+  assert.ok(text.includes("all items in declared areas"));
 });
 
 test("isPromptExit detects Inquirer Ctrl-C exits", () => {

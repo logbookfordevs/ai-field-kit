@@ -67,6 +67,7 @@ import {
   planSkillStartupStorageForItems,
   snapshotDisabledSkillIds,
   syncPreviouslyDisabledSkillStorage,
+  syncSkillInvocationPolicy,
   upsertFrontmatterBoolean,
   upsertOpenAiImplicitInvocation,
 } from "../skills.js";
@@ -685,6 +686,13 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
   }));
 
   return runSkillUpdateCommands(runtime, commands, (command) => {
+    if (options.manifestContents?.["skills.json"] || pathExists(skillCatalogPath(options.homeDir))) {
+      syncSkillInvocationPolicy(runtime, {
+        ...options,
+        setupScope: command.scope,
+        selectedSkillIds: command.skillNames,
+      });
+    }
     syncPreviouslyDisabledSkillStorage(runtime, {
       homeDir: options.homeDir,
       cwd: options.cwd,
@@ -739,7 +747,7 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
     category: options.skillsCategory,
     tag: options.skillsTag,
     uncategorized: options.skillsUncategorized,
-    storage: options.skillsListStorage,
+    storage: options.skillsListStorage ?? "active",
   });
 
   if (options.skillsJson) {
@@ -847,7 +855,7 @@ async function runSkillsShow(folder: string | undefined, runtime: Runtime, optio
     agent: options.skillsAgent,
     agentPath: options.skillsAgentPath,
   });
-  const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage });
+  const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage ?? "active" });
   const record = folder
     ? findSkillRecord(records, folder)
     : await promptSkillRecord(records, "Select a skill to show:");
@@ -1042,11 +1050,19 @@ async function runSkillsDeleteProfile(profileId: string | undefined, runtime: Ru
     return 1;
   }
 
-  const records = skillRecordsForProfile(options, profile);
-  if (records.length === 0) {
+  const profileRecords = skillRecordsForProfile(options, profile);
+  if (profileRecords.length === 0) {
     runtime.io.stderr(`No installed skills found for profile: ${profile.id}`);
     return 1;
   }
+
+  const records = options.yes
+    ? profileRecords
+    : await promptSkillRecords(
+      profileRecords,
+      `Select skills to delete from profile ${profile.id}:`,
+      { checked: true },
+    );
 
   const readOnlyRecord = records.find((record) => record.readOnly);
   if (readOnlyRecord) {
@@ -1422,7 +1438,7 @@ async function promptSkillRecord(records: SkillRecord[], message: string): Promi
 async function promptSkillRecords(
   records: SkillRecord[],
   message: string,
-  options: { includeCatalogOrigin?: boolean } = {},
+  options: { checked?: boolean; includeCatalogOrigin?: boolean } = {},
 ): Promise<SkillRecord[]> {
   if (records.length === 0) {
     return [];
@@ -1436,6 +1452,7 @@ async function promptSkillRecords(
       value: record,
       description: renderSkillChoiceDescription(record, options),
       short: record.folder,
+      ...(options.checked === undefined ? {} : { checked: options.checked }),
     })),
     pageSize: 12,
     required: true,

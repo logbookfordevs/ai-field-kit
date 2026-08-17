@@ -117,7 +117,10 @@
             "default": true,
             "autoInvocation": false,
             "role": "workflow",
-            "composes": []
+            "composes": [
+                "tdd",
+                "afk-code-review"
+            ]
         },
         {
             "id": "afk-ui-registry-preferences",
@@ -501,6 +504,20 @@
             ],
             "default": false,
             "autoInvocation": true,
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "apple-design",
+            "label": "Apple Design",
+            "source": "https://github.com/emilkowalski/skills",
+            "args": [
+                "--skill",
+                "apple-design",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
             "role": "utility",
             "composes": []
         },

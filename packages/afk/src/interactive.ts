@@ -15,6 +15,7 @@ type Choice<Value extends string> = {
 };
 
 export type SetupSelection = {
+  presetId?: string;
   areas: Area[];
   agents: AgentId[];
   hookAgents: AgentId[];
@@ -44,10 +45,10 @@ const setupAreaChoices: Choice<Area>[] = [
     description: "Delegate AFK and recommended skill installs to the skills CLI.",
   },
   {
-    name: "Profiles",
-    value: "profiles",
+    name: "Plugins",
+    value: "plugins",
     checked: DEFAULT_CHECKED,
-    description: "Prepare AFK focus profile definitions from profiles.json.",
+    description: "Install optional developer plugins AFK recommends.",
   },
   {
     name: "Custom Agents",
@@ -56,16 +57,16 @@ const setupAreaChoices: Choice<Area>[] = [
     description: "Provision portable Custom Agents into supported harnesses.",
   },
   {
+    name: "Profiles",
+    value: "profiles",
+    checked: DEFAULT_CHECKED,
+    description: "Prepare AFK focus profile definitions from profiles.json.",
+  },
+  {
     name: "MCPs",
     value: "mcps",
     checked: DEFAULT_CHECKED,
     description: "Delegate recommended MCP installs to add-mcp.",
-  },
-  {
-    name: "Plugins",
-    value: "plugins",
-    checked: DEFAULT_CHECKED,
-    description: "Install optional developer plugins AFK recommends.",
   },
   {
     name: "Hooks",
@@ -78,6 +79,10 @@ const setupAreaChoices: Choice<Area>[] = [
 export async function selectSetup(options: CliOptions): Promise<SetupSelection> {
   if (options.presetId) {
     return selectPresetSetup(options, options.presetId);
+  }
+
+  if (options.presetPrompt) {
+    return selectPresetSetup(options, await selectPresetId(options));
   }
 
   if (options.yes) {
@@ -142,6 +147,24 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
   });
 }
 
+async function selectPresetId(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string> {
+  const presets = loadPresetsManifest(options).presets;
+  if (presets.length === 0) {
+    throw new Error("No AFK presets are available in the selected catalog.");
+  }
+
+  console.log(renderPromptStep("Preset", "Choose a preset from the selected catalog source."));
+  return select({
+    message: "Choose an AFK preset",
+    choices: presets.map((preset) => ({
+      name: preset.label,
+      value: preset.id,
+      description: `${preset.id} · ${preset.areas.join(", ")}`,
+    })),
+    theme: afkSelectTheme,
+  });
+}
+
 async function selectPresetSetup(options: CliOptions, presetId: string): Promise<SetupSelection> {
   const preset = loadPresetsManifest(options).presets.find((candidate) => candidate.id === presetId);
   if (!preset) {
@@ -149,13 +172,14 @@ async function selectPresetSetup(options: CliOptions, presetId: string): Promise
   }
 
   const areas = presetAreas(preset);
+  const selectAll = preset.all === true;
   const setupScope = options.scopeExplicit || options.yes ? options.setupScope : await selectSetupScope(options.cwd);
   const detected = detectSetupTargets({ ...options, setupScope });
   const skillIds = areas.includes("skills")
-    ? presetIds("skill", preset.selections?.skills, loadSkillManifest(options).items.map((item) => item.id), nonInteractiveSkillIds(options))
+    ? presetIds("skill", preset.selections?.skills, loadSkillManifest(options).items.map((item) => item.id), selectAll ? loadSkillManifest(options).items.map((item) => item.id) : nonInteractiveSkillIds(options))
     : [];
   const customAgentIds = areas.includes("agents")
-    ? presetIds("Custom Agent", preset.selections?.customAgents, loadCustomAgentManifest(options).items.map((item) => item.id), [])
+    ? presetIds("Custom Agent", preset.selections?.customAgents, loadCustomAgentManifest(options).items.map((item) => item.id), selectAll ? loadCustomAgentManifest(options).items.map((item) => item.id) : [])
     : [];
   const mcpIds = areas.includes("mcps")
     ? presetIds("MCP", preset.selections?.mcps, loadMcpManifest(options).items.map((item) => item.id), loadMcpManifest(options).items.map((item) => item.id))
@@ -192,6 +216,7 @@ async function selectPresetSetup(options: CliOptions, presetId: string): Promise
     : { agents: [], source: "none" as TargetSelectionSource };
 
   return normalizeSetupSelection({
+    presetId,
     areas,
     agents: agentSelection.agents,
     hookAgents: hookAgentSelection.agents,
