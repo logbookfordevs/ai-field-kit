@@ -34,8 +34,9 @@ import {
   type RulesManifestLayer,
   type SkillManifest,
   type SkillManifestItem,
-  type PluginManifestItem,
-  type PluginPostInstallCommand,
+  type ToolManifestItem,
+  type ToolPostInstallCommand,
+  type ToolUpdateCommand,
 } from "./manifest.js";
 import type { SkillProfileCatalog } from "./skills/profiles.js";
 import { isPromptExit } from "./menu.js";
@@ -84,7 +85,7 @@ export type ManifestConfigurePrompts = {
   confirm: (message: string, defaultValue: boolean) => Promise<boolean>;
 };
 
-const manifestAreas: ManifestArea[] = ["rules", "skills", "profiles", "agents", "mcps", "plugins", "hooks"];
+const manifestAreas: ManifestArea[] = ["rules", "skills", "profiles", "agents", "mcps", "tools", "hooks"];
 
 const areaDescriptions: Record<ManifestArea, string> = {
   rules: "Compose ordered, independently owned rules layers.",
@@ -92,7 +93,7 @@ const areaDescriptions: Record<ManifestArea, string> = {
   profiles: "Edit profile-level always-on skills.",
   agents: "Add, edit, and remove portable Custom Agent sources.",
   mcps: "Add, edit, remove, and toggle MCP recommendations.",
-  plugins: "Add, edit, remove, and toggle plugin installers.",
+  tools: "Add, edit, remove, and toggle tool installers.",
   hooks: "Add, edit, remove, and toggle lifecycle hooks.",
 };
 
@@ -503,8 +504,8 @@ async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<Edita
       return promptCustomAgent(prompts, existing as CustomAgentManifestItem | undefined);
     case "mcps":
       return promptMcp(prompts, existing as McpManifestItem | undefined);
-    case "plugins":
-      return promptPlugin(prompts, existing as PluginManifestItem | undefined);
+    case "tools":
+      return promptTool(prompts, existing as ToolManifestItem | undefined);
     case "hooks":
       return promptHook(prompts, existing as HookManifestItem | undefined);
   }
@@ -560,14 +561,16 @@ async function promptMcp(prompts: ManifestConfigurePrompts, existing?: McpManife
   };
 }
 
-async function promptPlugin(prompts: ManifestConfigurePrompts, existing?: PluginManifestItem): Promise<PluginManifestItem> {
-  const installLine = installLineFromCommand(existing?.install);
-  const existingPostInstallLine = postInstallLine(existing?.postInstall);
-  const id = await prompts.input({ message: "Plugin id", default: existing?.id ?? inferId(installLine || "plugin"), required: true });
-  const label = await prompts.input({ message: "Plugin label", default: existing?.label ?? inferLabel(id), required: true });
-  const description = await prompts.input({ message: "Plugin description", default: existing?.description ?? `${label} install script.`, required: true });
-  const nextInstallLine = await prompts.input({ message: "Plugin install command", default: installLine, required: true });
+async function promptTool(prompts: ManifestConfigurePrompts, existing?: ToolManifestItem): Promise<ToolManifestItem> {
+  const installLine = commandLineFromCommand(existing?.install);
+  const existingPostInstallLine = commandLineFromCommand(existing?.postInstall);
+  const existingUpdateLine = commandLineFromCommand(existing?.update);
+  const id = await prompts.input({ message: "Tool id", default: existing?.id ?? inferId(installLine || "tool"), required: true });
+  const label = await prompts.input({ message: "Tool label", default: existing?.label ?? inferLabel(id), required: true });
+  const description = await prompts.input({ message: "Tool description", default: existing?.description ?? `${label} install script.`, required: true });
+  const nextInstallLine = await prompts.input({ message: "Tool install command", default: installLine, required: true });
   const nextPostInstallLine = await prompts.input({ message: "Post-install command (optional)", default: existingPostInstallLine });
+  const nextUpdateLine = await prompts.input({ message: "Update command (optional)", default: existingUpdateLine });
   const defaultValue = existing?.default ?? true;
   const isDefault = await prompts.confirm(booleanPrompt("Selected by default?", defaultValue, existing ? "current" : "default"), defaultValue);
 
@@ -578,6 +581,9 @@ async function promptPlugin(prompts: ManifestConfigurePrompts, existing?: Plugin
     install: installLine === nextInstallLine && existing?.install ? existing.install : { command: "sh", args: ["-c", nextInstallLine] },
     ...(nextPostInstallLine.trim()
       ? { postInstall: postInstallFromLine(nextPostInstallLine, existing?.postInstall) }
+      : {}),
+    ...(nextUpdateLine.trim()
+      ? { update: commandFromLine(nextUpdateLine, existing?.update) }
       : {}),
     default: isDefault,
   };
@@ -628,7 +634,7 @@ function readEditableManifests(outputDir: string): Drafts {
     profiles: readProfilesOrEmpty(outputDir),
     agents: readManifestOrEmpty(outputDir, "agents"),
     mcps: readManifestOrEmpty(outputDir, "mcps"),
-    plugins: readManifestOrEmpty(outputDir, "plugins"),
+    tools: readManifestOrEmpty(outputDir, "tools"),
     hooks: readManifestOrEmpty(outputDir, "hooks"),
   };
 }
@@ -658,7 +664,7 @@ function cloneDrafts(drafts: Drafts): Drafts {
     profiles: cloneProfileDraft(drafts.profiles),
     agents: cloneDraft(drafts.agents),
     mcps: cloneDraft(drafts.mcps),
-    plugins: cloneDraft(drafts.plugins),
+    tools: cloneDraft(drafts.tools),
     hooks: cloneDraft(drafts.hooks),
   };
 }
@@ -1013,8 +1019,8 @@ function areaTitle(area: ManifestArea): string {
       return "Custom Agents";
     case "mcps":
       return "MCPs";
-    case "plugins":
-      return "Plugins";
+    case "tools":
+      return "Tools";
     case "hooks":
       return "Hooks";
   }
@@ -1030,8 +1036,8 @@ function singularArea(area: Exclude<EditableManifestArea, "rules"> | "profiles")
       return "Custom Agent";
     case "mcps":
       return "MCP";
-    case "plugins":
-      return "plugin";
+    case "tools":
+      return "tool";
     case "hooks":
       return "hook";
   }
@@ -1149,32 +1155,28 @@ function updateAlwaysOn(current: string[], selectedIds: string[], enabled: boole
     : current.filter((id) => !selected.has(id)));
 }
 
-function installLineFromCommand(install?: PluginManifestItem["install"]): string {
-  if (!install) {
+function commandLineFromCommand(command?: ToolManifestItem["install"]): string {
+  if (!command) {
     return "";
   }
 
-  if ((install.command === "sh" || install.command === "bash") && install.args[0] === "-c" && install.args[1]) {
-    return install.args[1];
+  if ((command.command === "sh" || command.command === "bash") && command.args[0] === "-c" && command.args[1]) {
+    return command.args[1];
   }
 
-  return [install.command, ...install.args].join(" ");
+  return [command.command, ...command.args].join(" ");
 }
 
-function postInstallLine(postInstall?: PluginManifestItem["postInstall"]): string {
-  if (!postInstall) {
-    return "";
+function postInstallFromLine(line: string, existing?: ToolManifestItem["postInstall"]): ToolPostInstallCommand {
+  if (line === commandLineFromCommand(existing) && typeof existing === "object") {
+    return existing;
   }
 
-  if ((postInstall.command === "sh" || postInstall.command === "bash") && postInstall.args[0] === "-c" && postInstall.args[1]) {
-    return postInstall.args[1];
-  }
-
-  return [postInstall.command, ...postInstall.args].join(" ");
+  return { command: "sh", args: ["-c", line] };
 }
 
-function postInstallFromLine(line: string, existing?: PluginManifestItem["postInstall"]): PluginPostInstallCommand {
-  if (line === postInstallLine(existing) && typeof existing === "object") {
+function commandFromLine(line: string, existing?: ToolUpdateCommand): ToolUpdateCommand {
+  if (line === commandLineFromCommand(existing) && existing) {
     return existing;
   }
 

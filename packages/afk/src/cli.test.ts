@@ -34,7 +34,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk setup [options]"));
   assert.ok(output.join("\n").includes("afk setup profiles [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
-  assert.ok(output.join("\n").includes("afk setup plugins [options]"));
+  assert.ok(output.join("\n").includes("afk setup tools [options]"));
   assert.ok(output.join("\n").includes("afk setup hooks [options]"));
   assert.ok(output.join("\n").includes("afk ui <command> [options]"));
   assert.ok(output.join("\n").includes("afk update [options]"));
@@ -43,11 +43,11 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk profiles catalog <command> [options]"));
   assert.ok(output.join("\n").includes("afk agents catalog [command] [options]"));
   assert.ok(output.join("\n").includes("afk mcps catalog [command] [options]"));
-  assert.ok(output.join("\n").includes("afk plugins catalog [command] [options]"));
+  assert.ok(output.join("\n").includes("afk tools catalog [command] [options]"));
   assert.ok(output.join("\n").includes("afk hooks catalog [command] [options]"));
   assert.ok(!output.join("\n").includes("afk setup utils"));
   assert.ok(output.join("\n").includes("afk show [category...] [options]"));
-  assert.ok(output.join("\n").includes("afk setup [options]         Prepare rules, skills, Custom Agents, MCPs, plugins, and hooks"));
+  assert.ok(output.join("\n").includes("afk setup [options]         Prepare rules, skills, Custom Agents, MCPs, tools, and hooks"));
   assert.ok(output.join("\n").includes("afk skills catalog <command> [options]             Manage skills catalog definitions"));
   assert.ok(output.join("\n").includes("afk profiles catalog <command> [options]           Edit profile catalog data"));
   assert.ok(output.join("\n").includes("afk update [options]        Update AFK from the latest GitHub release"));
@@ -69,7 +69,7 @@ test("runCli routes catalog operations under their command families", async () =
     ["profiles", "AFK profiles catalog"],
     ["agents", "AFK agents catalog"],
     ["mcps", "AFK mcps catalog"],
-    ["plugins", "AFK plugins catalog"],
+    ["tools", "AFK tools catalog"],
     ["hooks", "AFK hooks catalog"],
   ] as const) {
     output.length = 0;
@@ -137,6 +137,50 @@ test("runCli prints contextual update help", async () => {
   assert.ok(text.includes("afk update [options]"));
   assert.ok(text.includes("Update the AFK CLI from the latest GitHub release."));
   assert.ok(text.includes("afk update --dry-run"));
+});
+
+test("runCli exposes tool updates and delegates an explicitly selected tool", async () => {
+  const homeDir = localHomeWithManifests({
+    "tools.json": {
+      version: 1,
+      items: [{
+        id: "sample-tool",
+        label: "Sample Tool",
+        description: "A sample updateable tool.",
+        install: { command: "sample-tool", args: ["install"] },
+        update: { command: "sample-tool", args: ["update"] },
+        default: true,
+      }],
+    },
+  });
+  const output: string[] = [];
+  const calls: Array<{ command: string; args: string[] }> = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async (command, args) => {
+      calls.push({ command, args });
+      return { code: 0 };
+    },
+  };
+
+  const helpCode = await withConsole(output, () => runCli(["tools", "update", "--help"]));
+  const code = await runCliWithRuntime(["tools", "update", "sample-tool"], { HOME: homeDir }, runtime);
+
+  assert.equal(helpCode, 0);
+  assert.ok(output.join("\n").includes("AFK tools update"));
+  assert.equal(code, 0);
+  assert.deepEqual(calls, [{ command: "sample-tool", args: ["update"] }]);
+});
+
+test("runCli rejects the renamed plugin command family", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "plugins", "--help"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Unknown command: setup plugins"));
 });
 
 test("runCli reports operational errors without exposing a stack trace", async () => {
@@ -305,10 +349,10 @@ test("runCli dry-runs the source-aware daily routine in declared area order", as
 
   assert.equal(code, 0, text);
   assert.ok(text.includes("- Preset: daily-routine"));
-  assert.ok(text.includes("- Areas: rules, skills, plugins, agents"));
+  assert.ok(text.includes("- Areas: rules, skills, tools, agents"));
   assert.ok(text.indexOf("◆ Rules") < text.indexOf("◆ Skills"));
-  assert.ok(text.indexOf("◆ Skills") < text.indexOf("◆ Plugins"));
-  assert.ok(text.indexOf("◆ Plugins") < text.indexOf("◆ Custom Agents"));
+  assert.ok(text.indexOf("◆ Skills") < text.indexOf("◆ Tools"));
+  assert.ok(text.indexOf("◆ Tools") < text.indexOf("◆ Custom Agents"));
   assert.ok(text.includes("- afk-architect ->"));
   assert.ok(text.includes("afk-cartographer.toml"));
 });
@@ -409,7 +453,7 @@ test("runCli dry-runs the AFK Architect required bundle in dependency order", as
   assert.ok(text.includes("→ Pathfinder →"));
   assert.ok(text.includes("1 skill and 3 Custom Agents would be provisioned for Codex."));
   assert.ok(text.includes("☠"));
-  assert.ok(!text.includes("Plugins /"));
+  assert.ok(!text.includes("Tools /"));
   assert.ok(!text.includes("MCPs /"));
 });
 
@@ -578,7 +622,7 @@ test("runCli prints contextual setup help", async () => {
   assert.ok(text.includes("afk setup profiles"));
   assert.ok(text.includes("afk setup profiles                Install skills from Skills Profiles"));
   assert.ok(text.includes("afk setup mcps"));
-  assert.ok(text.includes("afk setup plugins"));
+  assert.ok(text.includes("afk setup tools"));
   assert.ok(text.includes("afk setup hooks"));
   assert.ok(!text.includes("afk setup utils"));
   assert.ok(text.includes("--verbose"));
@@ -717,7 +761,7 @@ test("runCli accepts skills CLI agent targets for noninteractive skill installs"
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "local", presets: [] },
     "rules.json": { version: 1, source: "github", url: "" },
-    "plugins.json": { version: 1, items: [] },
+    "tools.json": { version: 1, items: [] },
     "hooks.json": { version: 1, items: [] },
   });
   const output: string[] = [];
@@ -1795,7 +1839,7 @@ test("runCli shows explicit preset members", async () => {
         {
           id: "daily-routine",
           label: "Daily Routine",
-          areas: ["rules", "skills", "plugins", "agents"],
+          areas: ["rules", "skills", "tools", "agents"],
           all: true,
         },
         {
@@ -1870,7 +1914,7 @@ function emptyCatalogResponse(input: string | URL | Request): Response {
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "github", url: "https://example.com/AGENTS.md" },
-    "plugins.json": { version: 1, items: [] },
+    "tools.json": { version: 1, items: [] },
     "hooks.json": { version: 1, items: [] },
   };
   return Response.json(manifests[name ?? ""] ?? {});

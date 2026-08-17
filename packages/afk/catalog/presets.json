@@ -14,7 +14,7 @@
     {
       "id": "daily-routine",
       "label": "Daily Routine",
-      "areas": ["rules", "skills", "plugins", "agents"],
+      "areas": ["rules", "skills", "tools", "agents"],
       "all": true
     }
   ]

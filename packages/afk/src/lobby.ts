@@ -14,7 +14,7 @@ export type LobbyChoiceValue =
   | "catalog-agents"
   | "skill-management"
   | "mcps"
-  | "plugins"
+  | "tools"
   | "hooks"
   | "inspect"
   | "skills-react"
@@ -113,9 +113,9 @@ export const compassLobbyChoices: MenuChoice<LobbyChoiceValue>[] = [
     description: "Route: afk setup mcps",
   },
   {
-    name: "Install optional plugins",
-    value: "plugins",
-    description: "Route: afk setup plugins",
+    name: "Install optional tools",
+    value: "tools",
+    description: "Route: afk setup tools",
   },
   {
     name: "Add lifecycle hooks",
@@ -488,8 +488,8 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
       return ["agents", "catalog"];
     case "mcps":
       return ["setup", "mcps"];
-    case "plugins":
-      return ["setup", "plugins"];
+    case "tools":
+      return ["setup", "tools"];
     case "hooks":
       return ["setup", "hooks"];
     case "inspect":

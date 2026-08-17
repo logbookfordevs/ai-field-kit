@@ -12,6 +12,13 @@
                     "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"
                 ]
             },
+            "update": {
+                "command": "bash",
+                "args": [
+                    "-c",
+                    "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"
+                ]
+            },
             "default": true
         },
         {
@@ -24,6 +31,14 @@
                     "install",
                     "-g",
                     "@plannotator/tot"
+                ]
+            },
+            "update": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "@plannotator/tot@latest"
                 ]
             },
             "default": false
@@ -39,6 +54,12 @@
                     "curl -fsSL https://yggtree.logbookfordevs.com/install.sh | bash"
                 ]
             },
+            "update": {
+                "command": "yggtree",
+                "args": [
+                    "update"
+                ]
+            },
             "default": true
         },
         {
@@ -46,6 +67,13 @@
             "label": "Impeccable",
             "description": "Install Impeccable's frontend design skills and design hook globally through its official installer.",
             "install": {
+                "command": "sh",
+                "args": [
+                    "-c",
+                    "npx --yes impeccable install --scope=global --providers=claude,codex --force -y"
+                ]
+            },
+            "update": {
                 "command": "sh",
                 "args": [
                     "-c",
@@ -64,6 +92,14 @@
                     "install",
                     "-g",
                     "@backnotprop/orchestrator-cli"
+                ]
+            },
+            "update": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "@backnotprop/orchestrator-cli@latest"
                 ]
             },
             "default": false

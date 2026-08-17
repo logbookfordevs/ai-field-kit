@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { addMcpAgentNames } from "./agents.js";
-import { loadMcpManifest, loadSkillManifest, loadPluginManifest, type SkillManifestItem, type PluginManifestItem } from "./manifest.js";
+import { loadMcpManifest, loadSkillManifest, loadToolManifest, type SkillManifestItem, type ToolManifestItem } from "./manifest.js";
 import type { AgentId, CliOptions, Runtime, SkillAgentId } from "./types.js";
 
 export type DelegateCommand = {
@@ -53,17 +53,35 @@ export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "h
     }));
 }
 
-export function buildPluginCommands(options: Pick<CliOptions, "agents" | "homeDir" | "selectedPluginIds" | "setupScope">): DelegateCommand[] {
-  const manifest = loadPluginManifest(options);
+export function buildToolCommands(options: Pick<CliOptions, "agents" | "homeDir" | "selectedToolIds" | "setupScope">): DelegateCommand[] {
+  const manifest = loadToolManifest(options);
   const selected =
-    options.selectedPluginIds.length > 0
-      ? manifest.items.filter((item) => options.selectedPluginIds.includes(item.id))
+    options.selectedToolIds.length > 0
+      ? manifest.items.filter((item) => options.selectedToolIds.includes(item.id))
       : manifest.items.filter((item) => item.default);
 
   return selected.flatMap((item) => [
-    buildPluginInstallCommand(item),
-    ...buildPluginPostInstallCommands(item),
+    buildToolInstallCommand(item),
+    ...buildToolPostInstallCommands(item),
   ]);
+}
+
+export function buildToolUpdateCommands(
+  options: Pick<CliOptions, "homeDir" | "manifestContents">,
+  selectedToolIds: string[],
+): DelegateCommand[] {
+  const selected = new Set(selectedToolIds);
+  return loadToolManifest(options).items.flatMap((item) => {
+    if (!selected.has(item.id) || !item.update) {
+      return [];
+    }
+
+    return [{
+      label: `${item.label} / update`,
+      command: item.update.command,
+      args: item.update.args,
+    }];
+  });
 }
 
 export async function runDelegateCommands(
@@ -172,7 +190,7 @@ function buildAddMcpAgentArgs(agents: AgentId[], nonInteractive: boolean, scope:
   return args;
 }
 
-function buildPluginInstallCommand(item: PluginManifestItem): DelegateCommand {
+function buildToolInstallCommand(item: ToolManifestItem): DelegateCommand {
   return {
     label: `${item.label} / install`,
     command: item.install.command,
@@ -180,7 +198,7 @@ function buildPluginInstallCommand(item: PluginManifestItem): DelegateCommand {
   };
 }
 
-function buildPluginPostInstallCommands(item: PluginManifestItem): DelegateCommand[] {
+function buildToolPostInstallCommands(item: ToolManifestItem): DelegateCommand[] {
   if (typeof item.postInstall === "object") {
     return [{
       label: item.postInstall.label ?? `${item.label} / post-install`,

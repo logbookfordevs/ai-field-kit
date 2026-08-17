@@ -13,7 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
-- `cli:` added interactive `afk preset` and `afk setup preset` routes that choose named bundles from the cached catalog or a one-off `--source`, plus a source-aware `daily-routine` preset for every rule, skill, plugin, and Custom Agent, while preserving `afk setup --preset <id>` for compatibility.
+- `cli:` added interactive `afk preset` and `afk setup preset` routes that choose named bundles from the cached catalog or a one-off `--source`, plus a source-aware `daily-routine` preset for every rule, skill, tool, and Custom Agent, while preserving `afk setup --preset <id>` for compatibility.
 - `cli:` added `afk refresh --override` to make the selected source authoritative for targeted catalog files after two confirmations, with dry-run preview support.
 - `cli:` added `--refresh` to setup commands so the matching global or project catalog scope refreshes before setup begins.
 - `skills:` added the optional manual `afk-code-review-check` wrapper for verifying AFK Code Review findings against the code and discussing verdicts before making changes.
@@ -23,9 +23,10 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `cli:` renamed the Plugins catalog and command surface to Tools and added `afk tools update` for running declared update commands on selected tools.
 - `cli:` made `afk setup profiles` offer profiles from the selected source, recover lock-backed missing skills across renamed upstream IDs after verified installation, and present a grouped, wrapping-safe readiness review before installing available skills with always-on and transitive composed dependencies.
 - `cli:` moved catalog editing under each owning command family (`afk skills catalog`, `afk profiles catalog`, and their peers), removed the top-level `afk catalog` route, and made root help describe every command inline.
-- `cli:` reordered the guided setup areas around the daily path: Rules, Skills, Plugins, and Custom Agents now appear before Profiles, MCPs, and Hooks.
+- `cli:` reordered the guided setup areas around the daily path: Rules, Skills, Tools, and Custom Agents now appear before Profiles, MCPs, and Hooks.
 - `cli:` made `afk skills list` and `afk skills show` include only enabled skills by default, with `--disabled` required to inspect disabled entries.
 - `cli:` made `afk skills delete --profile` present the profile's installed skills as an all-selected checklist before deletion, while `--yes` keeps deleting the full installed set non-interactively.
 - `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.

@@ -1381,7 +1381,7 @@ test("runSkillsCommand add imports uncataloged installed skills before adding an
   const homeDir = join(root, "home");
   const output: string[] = [];
   writeSkill(join(homeDir, ".agents", "skills"), "existing", "Existing");
-  writeSkill(join(homeDir, ".agents", "skills"), "plugin-owned", "Plugin Owned");
+  writeSkill(join(homeDir, ".agents", "skills"), "tool-owned", "Tool Owned");
   writeGlobalSkillLock(homeDir, {
     existing: { source: "existing/skills", sourceType: "github" },
   });
@@ -1413,7 +1413,7 @@ test("runSkillsCommand add imports uncataloged installed skills before adding an
   assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["new-skill"] }]);
   assert.ok(output.join("\n").includes("Catalog Required"));
   assert.ok(output.join("\n").includes("Route afk skills catalog import"));
-  assert.ok(!output.join("\n").includes("plugin-owned"));
+  assert.ok(!output.join("\n").includes("tool-owned"));
 });
 
 test("runSkillsCommand add ignores uncataloged installed skills without lock metadata", async () => {
@@ -2517,7 +2517,7 @@ function baseOptions(root: string) {
     skillAddProfileOnlyIds: [],
     skillAddStartDisabled: false,
     selectedMcpIds: [],
-    selectedPluginIds: [],
+    selectedToolIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "manifest" as const,

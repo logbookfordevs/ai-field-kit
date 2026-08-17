@@ -15,6 +15,8 @@ import { resolveHome, resolveRepoDir } from "./paths.js";
 import { packageVersion, runUpdateCommand } from "./update-check.js";
 import { runAfkOpen } from "./open.js";
 import { isPromptExit } from "./menu.js";
+import { buildToolUpdateCommands, runDelegateCommands } from "./delegates.js";
+import { selectToolUpdates } from "./interactive.js";
 import type {
   AgentId,
   Area,
@@ -144,6 +146,23 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
     return runSkillsCommand(commandPath, runtime, options);
   }
 
+  if (commandPath[0] === "tools" && commandPath[1] === "update") {
+    const requestedToolIds = commandPath.slice(2);
+    const selectedToolIds = requestedToolIds.length > 0
+      ? requestedToolIds
+      : await selectToolUpdates(options);
+    const commands = buildToolUpdateCommands(options, selectedToolIds);
+    if (commands.length === 0) {
+      runtime.io.stdout("No updateable tools selected. No changes planned.");
+      return 0;
+    }
+
+    return runDelegateCommands(runtime, commands, {
+      ...options,
+      continueOnError: true,
+    });
+  }
+
   if (commandPath[0] === "ui") {
     return runUiCommand(commandPath, runtime, options);
   }
@@ -253,7 +272,7 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   setup: {
     title: "AFK setup",
-    summary: "Guided setup for rules, skills, profiles, Custom Agents, MCPs, plugins, and hooks.",
+    summary: "Guided setup for rules, skills, profiles, Custom Agents, MCPs, tools, and hooks.",
     usage: "afk setup [options]",
     notes: [
       "Use this when you want AFK to prepare agent-facing surfaces on this machine or in the current project.",
@@ -282,7 +301,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup profiles                Install skills from Skills Profiles",
       "afk setup agents                  Provision portable Custom Agents",
       "afk setup mcps                    Delegate MCP installation to add-mcp",
-      "afk setup plugins                   Install optional developer plugins",
+      "afk setup tools                   Install optional developer tools",
       "afk setup hooks                   Merge AFK lifecycle hooks into agent hook configs",
     ],
     examples: [
@@ -366,6 +385,28 @@ const commandHelps: Record<string, CommandHelp> = {
     examples: [
       "afk update",
       "afk update --dry-run",
+    ],
+  },
+  tools: {
+    title: "AFK tools",
+    summary: "Manage cataloged developer tools.",
+    usage: "afk tools <command> [options]",
+    options: [],
+    subcommands: [
+      "afk tools update                  Select and run cataloged tool update commands",
+    ],
+    examples: ["afk tools update"],
+  },
+  "tools update": {
+    title: "AFK tools update",
+    summary: "Select cataloged tools and run their update commands.",
+    usage: "afk tools update [tool...] [options]",
+    notes: ["Only tools with an update command in tools.json are available."],
+    options: [setupOptions.dryRun, setupOptions.verbose],
+    examples: [
+      "afk tools update",
+      "afk tools update --dry-run",
+      "afk tools update plannotator yggtree",
     ],
   },
   "setup refresh": {
@@ -523,15 +564,15 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup mcps --local --agent codex",
     ],
   },
-  "setup plugins": {
-    title: "AFK setup plugins",
-    summary: "Install optional developer plugins and run supported post-install setup.",
-    usage: "afk setup plugins [options]",
+  "setup tools": {
+    title: "AFK setup tools",
+    summary: "Install optional developer tools and run supported post-install setup.",
+    usage: "afk setup tools [options]",
     options: setupAreaOptions,
     examples: [
-      "afk setup plugins --dry-run",
-      "afk setup plugins --yes",
-      "afk setup plugins --local --agent opencode",
+      "afk setup tools --dry-run",
+      "afk setup tools --yes",
+      "afk setup tools --local --agent opencode",
     ],
   },
   show: {
@@ -951,7 +992,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk agents catalog remove --local",
     ],
   },
-  "plugins catalog": catalogItemAreaHelp("AFK plugins catalog", "plugins", "plugin installers"),
+  "tools catalog": catalogItemAreaHelp("AFK tools catalog", "tools", "tool installers"),
   "hooks catalog": catalogItemAreaHelp("AFK hooks catalog", "hooks", "lifecycle hooks"),
   "show skills": {
     title: "AFK show skills",
@@ -1021,19 +1062,19 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk show agents --local",
     ],
   },
-  "show plugins": {
-    title: "AFK show plugins",
-    summary: "Inspect optional plugin installers and post-install commands.",
-    usage: "afk show plugins [options]",
+  "show tools": {
+    title: "AFK show tools",
+    summary: "Inspect optional tool installers and post-install commands.",
+    usage: "afk show tools [options]",
     options: [
-      "--source <source>                Show plugins from this source for this run only",
+      "--source <source>                Show tools from this source for this run only",
       "--ref <git-ref>                  Git ref for GitHub catalog sources",
       "--local                          Show ./afk/catalog instead of the global cache",
     ],
     examples: [
-      "afk show plugins",
-      "afk show plugins --source logbookfordevs/ai-field-kit",
-      "afk show plugins --local",
+      "afk show tools",
+      "afk show tools --source logbookfordevs/ai-field-kit",
+      "afk show tools --local",
     ],
   },
   "show hooks": {
@@ -1161,7 +1202,7 @@ const commandHelps: Record<string, CommandHelp> = {
   },
 };
 
-function catalogItemAreaHelp(title: string, area: "mcps" | "plugins" | "hooks", label: string): CommandHelp {
+function catalogItemAreaHelp(title: string, area: "mcps" | "tools" | "hooks", label: string): CommandHelp {
   return {
     title,
     summary: `Edit ${area}.json ${label}.`,
@@ -1862,7 +1903,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillAddProfileOnlyIds,
       skillAddStartDisabled,
       selectedMcpIds: [],
-      selectedPluginIds: [],
+      selectedToolIds: [],
       selectedHookIds: [],
       rulesRef,
       rulesSource,
@@ -1954,8 +1995,8 @@ function commandToArea(commandPath: string[]): Area | null {
     return "mcps";
   }
 
-  if (key === "setup plugins") {
-    return "plugins";
+  if (key === "setup tools") {
+    return "tools";
   }
 
   if (key === "setup hooks" || key === "setup hooks install") {
@@ -2031,11 +2072,11 @@ function isCatalogProfilesCommand(key: string): boolean {
 }
 
 function isCatalogCommand(key: string): boolean {
-  return /^(rules|skills|profiles|agents|mcps|plugins|hooks) catalog(?: |$)/.test(key);
+  return /^(rules|skills|profiles|agents|mcps|tools|hooks) catalog(?: |$)/.test(key);
 }
 
 function isCatalogAreaCommand(commandPath: string[]): boolean {
-  return commandPath[1] === "catalog" && ["rules", "agents", "mcps", "plugins", "hooks"].includes(commandPath[0] ?? "");
+  return commandPath[1] === "catalog" && ["rules", "agents", "mcps", "tools", "hooks"].includes(commandPath[0] ?? "");
 }
 
 async function runCatalogAreaCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
@@ -2074,7 +2115,7 @@ function catalogAreaFromCommand(value: string | undefined): ManifestArea | null 
     case "profiles":
     case "agents":
     case "mcps":
-    case "plugins":
+    case "tools":
     case "hooks":
       return value;
     default:
@@ -2275,14 +2316,14 @@ Usage:
   afk open                    Open the user AFK folder
   afk doctor [options]        Validate every local AFK catalog file
   afk refresh [category...] [options]               Update the local catalog cache
-  afk setup [options]         Prepare rules, skills, Custom Agents, MCPs, plugins, and hooks
+  afk setup [options]         Prepare rules, skills, Custom Agents, MCPs, tools, and hooks
   afk setup preset [id] [options]                   Choose and apply a catalog preset
   afk setup rules [options]   Sync AFK rules into managed agent rule regions
   afk setup skills [options]  Install and reconcile shared skills
   afk setup profiles [options] Prepare focus profile definitions
   afk setup agents [options]  Provision portable Custom Agents
   afk setup mcps [options]    Install cataloged MCP servers
-  afk setup plugins [options] Install cataloged developer plugins
+  afk setup tools [options]   Install cataloged developer tools
   afk setup hooks [options]   Merge lifecycle hooks into agent configs
   afk rules catalog [command] [options]              Manage ordered rules catalog layers
   afk skills <command> [options]                     Inspect and manage local skill libraries
@@ -2290,7 +2331,8 @@ Usage:
   afk profiles catalog <command> [options]           Edit profile catalog data
   afk agents catalog [command] [options]             Manage portable Custom Agent sources
   afk mcps catalog [command] [options]               Manage MCP catalog entries
-  afk plugins catalog [command] [options]            Manage plugin catalog entries
+  afk tools catalog [command] [options]              Manage tool catalog entries
+  afk tools update [tool...] [options]               Update selected cataloged tools
   afk hooks catalog [command] [options]              Manage lifecycle hook catalog entries
   afk show [category...] [options]                   Inspect cached catalog data without changing it
   afk preset [id] [options]   Choose and apply a catalog preset
@@ -2335,6 +2377,10 @@ function helpKey(commandPath: string[] = []): string {
   }
 
   if (commandPath[0] === "skills" && commandPath[1] && commandPath[1] !== "catalog") {
+    return commandPath.slice(0, 2).join(" ");
+  }
+
+  if (commandPath[0] === "tools" && commandPath[1]) {
     return commandPath.slice(0, 2).join(" ");
   }
 
@@ -2423,9 +2469,9 @@ function manifestCategory(arg: string): ManifestCategory | null {
     case "mcp":
     case "mcps":
       return "mcps";
-    case "plugin":
-    case "plugins":
-      return "plugins";
+    case "tool":
+    case "tools":
+      return "tools";
     case "hook":
     case "hooks":
       return "hooks";

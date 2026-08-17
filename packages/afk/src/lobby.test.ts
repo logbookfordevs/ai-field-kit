@@ -52,7 +52,7 @@ test("compass lobby choices route intents to existing command paths", () => {
   assert.deepEqual(routeForLobbyChoice("agents"), ["setup", "agents"]);
   assert.deepEqual(routeForLobbyChoice("catalog-agents"), ["agents", "catalog"]);
   assert.deepEqual(routeForLobbyChoice("mcps"), ["setup", "mcps"]);
-  assert.deepEqual(routeForLobbyChoice("plugins"), ["setup", "plugins"]);
+  assert.deepEqual(routeForLobbyChoice("tools"), ["setup", "tools"]);
   assert.deepEqual(routeForLobbyChoice("hooks"), ["setup", "hooks"]);
   assert.deepEqual(routeForLobbyChoice("inspect"), ["show"]);
   assert.deepEqual(routeForLobbyChoice("skills-react"), ["show", "skills", "--react"]);

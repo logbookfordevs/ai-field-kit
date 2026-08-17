@@ -74,7 +74,7 @@ function baseOptions(root: string): CliOptions {
   return {
     agents: [], setupScope: "global", scopeExplicit: false, dryRun: false, verbose: false, yes: false,
     allSkills: false, selectedSkillIds: [], selectedSkillAgentIds: [], skillAddArgs: [], skillAddProfileIds: [],
-    skillAddProfileOnlyIds: [], skillAddStartDisabled: false, selectedMcpIds: [], selectedPluginIds: [],
+    skillAddProfileOnlyIds: [], skillAddStartDisabled: false, selectedMcpIds: [], selectedToolIds: [],
     selectedHookIds: [], rulesRef: "main", rulesSource: "manifest", initOnly: false, empty: false,
     refreshDefaults: false, defaultsSource: "", defaultsSourceExplicit: false, defaultSourceUpdate: "",
     manifestLocal: false, manifestConfigureLocal: false, manifestConfigureFromCurrent: false,
