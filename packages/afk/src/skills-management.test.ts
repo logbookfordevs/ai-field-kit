@@ -897,7 +897,7 @@ test("runSkillsCommand rejects profile definition writes under skills profiles",
   });
 
   assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("Use afk catalog profiles create instead."));
+  assert.ok(output.join("\n").includes("Use afk profiles catalog create instead."));
 });
 
 test("runSkillsCommand catalog profiles edit profile-only disables explicit profile skills", async () => {
@@ -913,7 +913,7 @@ test("runSkillsCommand catalog profiles edit profile-only disables explicit prof
     items: [{ id: "video", name: "Video", skills: ["alpha"] }],
   });
 
-  const code = await runSkillsCommand(["catalog", "profiles", "edit", "video"], outputRuntime(output), {
+  const code = await runSkillsCommand(["profiles", "catalog", "edit", "video"], outputRuntime(output), {
     ...baseOptions(root),
     skillProfileSkills: ["beta"],
     skillProfileOnly: true,
@@ -1412,7 +1412,7 @@ test("runSkillsCommand add imports uncataloged installed skills before adding an
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
   assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["new-skill"] }]);
   assert.ok(output.join("\n").includes("Catalog Required"));
-  assert.ok(output.join("\n").includes("Route afk catalog skills import"));
+  assert.ok(output.join("\n").includes("Route afk skills catalog import"));
   assert.ok(!output.join("\n").includes("plugin-owned"));
 });
 

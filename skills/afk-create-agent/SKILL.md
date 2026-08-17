@@ -39,7 +39,7 @@ Add an `agents.json` item with a stable installation `id`, a human label, and a
 repository-relative path to the file. The portable file's `name` may differ
 when the harness-facing identity should be cleaner. Preserve unrelated
 catalog entries. Edit the source catalog when the definition is shared; use
-`afk catalog agents add` when the user explicitly wants a writable local cache
+`afk agents catalog add` when the user explicitly wants a writable local cache
 entry.
 
 Complete when `afk show agents` or `afk show agents --source <source>` exposes

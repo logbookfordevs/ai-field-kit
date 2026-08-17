@@ -23,6 +23,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `cli:` moved catalog editing under each owning command family (`afk skills catalog`, `afk profiles catalog`, and their peers), removed the top-level `afk catalog` route, and made root help describe every command inline.
 - `cli:` reordered the guided setup areas around the daily path: Rules, Skills, Plugins, and Custom Agents now appear before Profiles, MCPs, and Hooks.
 - `cli:` made `afk skills list` and `afk skills show` include only enabled skills by default, with `--disabled` required to inspect disabled entries.
 - `cli:` made `afk skills delete --profile` present the profile's installed skills as an all-selected checklist before deletion, while `--yes` keeps deleting the full installed set non-interactively.

@@ -155,10 +155,10 @@ from those projects without AFK reimplementing their installers.
 | Refresh the global catalog cache | `afk refresh` |
 | Inspect the cached catalog | `afk show` |
 | Provision portable Custom Agents | `afk setup agents` |
-| Edit Custom Agent sources | `afk catalog agents` |
+| Edit Custom Agent sources | `afk agents catalog` |
 | Inspect skills as a composition tree | `afk show skills --react` |
 | Generate the local skill composition page | `afk show skills --visualize` |
-| Backfill installed skills into the catalog | `afk catalog skills import --dry-run` |
+| Backfill installed skills into the catalog | `afk skills catalog import --dry-run` |
 | Load one local skill into agent context | `afk skills get <skill>` |
 | Use a skill profile for the current request | `afk skills profiles use <profile>` |
 | Route UI work through UI Skills | `afk ui start` |
@@ -299,7 +299,7 @@ Agent File rather than editing generated targets. Pi additionally needs the
 `pi-subagents` extension; if it is missing, AFK suggests the install command,
 skips Pi, and asks you to rerun setup afterward.
 
-Use `afk catalog agents` to add, edit, or remove cached catalog entries.
+Use `afk agents catalog` to add, edit, or remove cached catalog entries.
 `afk refresh` includes `agents.json` and merges entries by ID, so new source
 entries are added, matching source entries are updated, and unrelated local
 entries remain. Refresh changes catalog data only; provisioning happens during

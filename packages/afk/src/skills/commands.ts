@@ -75,7 +75,7 @@ import {
 type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "update" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
-  if (commandPath[0] === "catalog" && commandPath[1] === "profiles") {
+  if (commandPath[0] === "profiles" && commandPath[1] === "catalog") {
     return runCatalogProfilesCommand(commandPath.slice(2), runtime, options);
   }
 
@@ -249,11 +249,11 @@ async function ensureSkillsAddCatalogReady(runtime: Runtime, options: CliOptions
     theme: afkPromptTheme,
   });
   if (!accepted) {
-    runtime.io.stdout("Skill add cancelled. Import the existing skills through afk catalog skills before trying again.");
+    runtime.io.stdout("Skill add cancelled. Import the existing skills through afk skills catalog before trying again.");
     return 0;
   }
 
-  runtime.io.stdout(`${accent("Route")} afk catalog skills import`);
+  runtime.io.stdout(`${accent("Route")} afk skills catalog import`);
   for (const operation of importPlan.operations) {
     applyOperation(operation);
   }
@@ -263,7 +263,7 @@ async function ensureSkillsAddCatalogReady(runtime: Runtime, options: CliOptions
     runtime.io.stderr([
       "Catalog import could not catalog every lock-tracked installed skill:",
       ...remaining.map((id) => `  - ${id}`),
-      "Resolve them through afk catalog skills before trying skills add again.",
+      "Resolve them through afk skills catalog before trying skills add again.",
     ].join("\n"));
     return 1;
   }
@@ -412,7 +412,7 @@ export async function runCatalogProfilesCommand(operands: string[], runtime: Run
   }
 
   if (command === "enable" || command === "disable" || command === "status") {
-    runtime.io.stderr(`afk catalog profiles ${command} is a runtime profile operation. Use afk skills profiles ${command} instead.`);
+    runtime.io.stderr(`afk profiles catalog ${command} is a runtime profile operation. Use afk skills profiles ${command} instead.`);
     return 1;
   }
 
@@ -426,7 +426,7 @@ async function runSkillProfilesCommand(operands: string[], runtime: Runtime, opt
       return 0;
     }
 
-    if (route[0] === "catalog" && route[1] === "profiles") {
+    if (route[0] === "profiles" && route[1] === "catalog") {
       return runCatalogProfilesCommand(route.slice(2), runtime, options);
     }
 
@@ -435,7 +435,7 @@ async function runSkillProfilesCommand(operands: string[], runtime: Runtime, opt
 
   const command = operands[0] ?? "list";
   if (command === "list" || command === "show" || command === "create" || command === "edit" || command === "delete") {
-    runtime.io.stderr(`afk skills profiles ${command} is a profile definition operation. Use afk catalog profiles ${command} instead.`);
+    runtime.io.stderr(`afk skills profiles ${command} is a profile definition operation. Use afk profiles catalog ${command} instead.`);
     return 1;
   }
 
