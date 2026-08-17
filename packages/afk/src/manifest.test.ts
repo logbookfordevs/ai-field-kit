@@ -1033,7 +1033,7 @@ test("ensureLocalManifests preserves local profiles absent from refreshed source
         version: 2,
         mode: "context",
         alwaysOn: ["source-always"],
-        items: [{ id: "source", name: "Fresh Source", skills: ["source-skill"] }],
+        items: [{ id: "source", name: "Fresh Source", catalogSkills: ["source-skill"], packages: [] }],
       }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
@@ -1076,14 +1076,14 @@ test("ensureLocalManifests preserves local profiles absent from refreshed source
       version: number;
       mode: string;
       alwaysOn: string[];
-      items: Array<{ id: string; name: string; skills: string[] }>;
+      items: Array<{ id: string; name: string; catalogSkills: string[]; packages: unknown[] }>;
     };
     assert.equal(next.version, 2);
     assert.equal(next.mode, "context");
     assert.deepEqual(next.alwaysOn, ["source-always"]);
     assert.deepEqual(next.items, [
-      { id: "source", name: "Fresh Source", skills: ["source-skill"] },
-      { id: "local", name: "Local", skills: ["local-skill"] },
+      { id: "source", name: "Fresh Source", catalogSkills: ["source-skill"], packages: [] },
+      { id: "local", name: "Local", catalogSkills: ["local-skill"], packages: [] },
     ]);
   } finally {
     globalThis.fetch = originalFetch;

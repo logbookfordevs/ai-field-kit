@@ -391,7 +391,7 @@ profiles. Deleting by profile does not delete the profile definition from
 | Command | Behavior | Writes or movement |
 |---|---|---|
 | `afk skills profiles use <profile>` | Print the profile's locally available skills as compact agent context. | Read-only. Add `--all` for full `SKILL.md` content. |
-| `afk skills profiles enable <profile>` | Activate a focus profile and reconcile desired skill storage. | Writes runtime state and may move folders. Add `--additive` to avoid filtering unrelated active skills. |
+| `afk skills profiles enable <profile>` | Activate a profile additively and reconcile desired skill storage. | Writes runtime state and may move folders. Add `--focus` to filter unrelated active skills. |
 | `afk skills profiles disable <profile>` | Remove one activation and recompute the desired state from the remaining activations. | Writes runtime state and restores or disables eligible folders. |
 | `afk skills profiles status` | Show active profiles, activation modes, kept skills, and runtime paths. | Read-only. |
 
@@ -1196,10 +1196,10 @@ best-effort because these installers are owned by their upstream tools.
 
 ### Profiles
 
-Profile setup prepares the local `profiles.json` catalog file from the
-remembered or selected setup source. Profiles are definitions, not installs:
-use `afk skills profiles enable <profile>` after the referenced skills exist
-to apply one.
+Profile setup prepares the local `profiles.json` catalog from the remembered
+or selected source, lets you select profiles, and installs their catalog skills,
+composed dependencies, and remote packages. Setup installs but does not enable
+profiles; use `afk skills profiles enable <profile>` to apply one.
 
 ### Custom Agents
 
@@ -1417,10 +1417,54 @@ removing them.
 
 ### Profile Definitions and Runtime
 
-`afk profiles catalog` edits focus profile definitions in `profiles.json`. A
+`afk profiles catalog` edits profile definitions in `profiles.json`. A
 profile is a named group of skill folders. `afk skills profiles
 enable|disable|status` applies those definitions to the shared global skill
 library.
+
+Version 2 profile definitions separate AFK catalog membership from remote
+skill packages:
+
+```json
+{
+  "version": 2,
+  "mode": "context",
+  "alwaysOn": [],
+  "items": [
+    {
+      "id": "video",
+      "name": "Video",
+      "catalogSkills": ["afk-animate"],
+      "packages": [
+        { "source": "remotion-dev/skills" },
+        {
+          "source": "another-org/video-skills",
+          "skills": ["captions", "video-editing"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Every `catalogSkills` ID must exist in the selected `skills.json`. A package
+without `skills` delegates whole-source installation to `npx skills add`; a
+package with `skills` installs only those upstream IDs. After successful
+lock-backed verification, AFK caches installed package skills in `skills.json`
+with `imported: true` and `startDisabled: true`. Package-owned skills are
+profile-only: setup keeps them in `.disabled` until an enabled profile needs
+them. Verified cached skills from a whole package, or the selected skills from
+a selective package, become runtime members of the profile.
+
+Ownership is resolved per skill ID. If a package also contains a source-owned
+`skills.json` entry, the catalog keeps ownership: AFK does not change that
+entry to imported or override its `startDisabled` policy. A selective package
+cannot repeat a catalog skill already named by the same profile; whole-package
+overlap is allowed because the package contents may not be known beforehand.
+
+Version 1 `skills` definitions remain readable for compatibility and retain
+their existing lock-backed recovery behavior. Profile writes use version 2 and
+serialize membership as `catalogSkills`.
 
 `afk skills profiles use <profile>` prints a compact agent-context list with
 each profile skill's local description and matching `afk skills get <skill>`
@@ -1429,23 +1473,30 @@ profile state or moving folders. Add `--all` to include every profile skill's
 complete `SKILL.md` content. `afk skills get` wraps complete local skill
 content with its absolute root so referenced files remain resolvable.
 
-By default, enabling a profile focuses the library by filtering unrelated
-skills according to the configured `strict` or `context` mode. Use
-`--additive` when you only want its skills for the current activity:
+By default, enabling a profile is additive: it activates the profile's skills
+without filtering unrelated active skills. The explicit `--additive` flag is
+kept as a compatibility alias for that default:
 
 ```bash
 afk skills profiles enable video --additive
 ```
 
-Additive activation leaves unrelated active skills alone. AFK remembers how
+Use `--focus` when you want the profile to filter unrelated skills according
+to the configured `strict` or `context` mode:
+
+```bash
+afk skills profiles enable video --focus
+```
+
+AFK remembers how
 the profile was enabled, so the ordinary disable command restores only the
-skills that were disabled before the additive activation:
+skills that were disabled before that activation:
 
 ```bash
 afk skills profiles disable video
 ```
 
-Disable a profile before switching it between normal and additive activation.
+Disable a profile before switching it between focus and additive activation.
 This keeps restoration predictable instead of changing an active profile's
 behavior in place.
 
@@ -1456,11 +1507,11 @@ disable one. The kept set includes every active profile, regardless of how it
 was enabled:
 
 ```text
-alwaysOn + skills from every currently enabled profile
+alwaysOn + catalogSkills + verified package skills from every enabled profile
 ```
 
 The top-level `profiles.json` `mode` controls what happens to skills outside
-that set while at least one normally enabled focus profile is active:
+that set while at least one explicitly enabled focus profile is active:
 
 | Mode | Behavior |
 |---|---|

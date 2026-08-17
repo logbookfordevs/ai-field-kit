@@ -574,7 +574,7 @@ async function selectSkillProfiles(options: Pick<CliOptions, "homeDir" | "cwd" |
       name: profile.name,
       value: profile.id,
       checked: false,
-      description: profile.skills.length > 0 ? profile.skills.join(", ") : "No skills assigned.",
+      description: [...profile.catalogSkills, ...profile.packages.map((item) => `package:${item.source}`)].join(", ") || "No skills assigned.",
     })),
     "Skill profiles",
   );

@@ -469,6 +469,10 @@ const commandHelps: Record<string, CommandHelp> = {
     usage: "afk setup profiles [options]",
     notes: [
       "Setup refreshes profiles.json, offers its profiles for selection, and installs the selected profile skills.",
+      "Version 2 profiles use catalogSkills for skills.json references and packages for remote skills sources.",
+      "A package without skills installs its whole source; package skills select individual upstream skills.",
+      "Package-owned skills are cached as imported and start disabled; enabling the profile activates them.",
+      "If a package overlaps a source-owned skills.json entry, the catalog keeps ownership and startup policy.",
       "When a selected skill composes other skills, setup warns and automatically includes their composed dependencies.",
       "If referenced skills are unavailable, setup offers lock-backed recovery, then asks before installing the available skills; --yes accepts.",
       "Use afk skills profiles enable to apply an installed profile at runtime.",
@@ -852,18 +856,19 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills profiles": {
     title: "AFK skills profiles",
-    summary: "Apply profile definitions to temporarily focus the global skill library.",
+    summary: "Apply profile definitions to the global skill library.",
     usage: "afk skills profiles <command> [options]",
     notes: [
       "Use afk profiles catalog to manage profile definitions.",
     ],
     options: [
       "use <profile>                     Print the profile skill list as agent context",
-      "enable <profile>                  Enable a profile and apply filtering",
+      "enable <profile>                  Enable a profile additively by default",
       "disable <profile>                 Disable a profile and restore eligible skills",
       "status                            Show enabled profiles and state",
       "--all                             Include every profile skill's full content with use",
-      "--additive                        Enable profile skills without filtering unrelated active skills",
+      "--focus                           Enable profile skills and filter unrelated active skills",
+      "--additive                        Explicit compatibility alias for the default mode",
       "--local                           Use ./afk/catalog and ./afk/state for profile runtime data",
       "--dry-run                         Preview filesystem-changing operations",
     ],
@@ -871,7 +876,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills profiles use video",
       "afk skills profiles use video --all",
       "afk skills profiles enable video --dry-run",
-      "afk skills profiles enable video --additive",
+      "afk skills profiles enable video --focus",
       "afk skills profiles status --local",
       "afk profiles catalog create video --name Video --skill hyperframes --skill tailwind",
     ],
@@ -1241,6 +1246,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const skillProfileAlwaysOn: string[] = [];
   let skillProfileMode: SkillProfileMode | undefined;
   let skillProfileAdditive = false;
+  let skillProfileFocus = false;
   let skillProfileOnly = false;
   let skillProfileUseAll = false;
   let uiCategory = "";
@@ -1767,7 +1773,21 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       if (commandPath[2] !== "enable") {
         return { help: false, kind: "error", error: "--additive is only available for afk skills profiles enable" };
       }
+      if (skillProfileFocus) {
+        return { help: false, kind: "error", error: "Use either --focus or --additive, not both" };
+      }
       skillProfileAdditive = true;
+      continue;
+    }
+
+    if (isAfkSkillsProfilesCommand && arg === "--focus") {
+      if (commandPath[2] !== "enable") {
+        return { help: false, kind: "error", error: "--focus is only available for afk skills profiles enable" };
+      }
+      if (skillProfileAdditive) {
+        return { help: false, kind: "error", error: "Use either --focus or --additive, not both" };
+      }
+      skillProfileFocus = true;
       continue;
     }
 
@@ -1902,6 +1922,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       skillProfileAlwaysOn,
       skillProfileMode,
       skillProfileAdditive,
+      skillProfileFocus,
       skillProfileOnly,
       skillProfileUseAll,
       uiCategory,
@@ -2279,7 +2300,7 @@ Usage:
   afk setup preset [id] [options]                   Choose and apply a catalog preset
   afk setup rules [options]   Sync AFK rules into managed agent rule regions
   afk setup skills [options]  Install and reconcile shared skills
-  afk setup profiles [options] Prepare focus profile definitions
+  afk setup profiles [options] Prepare profile definitions
   afk setup agents [options]  Provision portable Custom Agents
   afk setup mcps [options]    Install cataloged MCP servers
   afk setup plugins [options] Install cataloged developer plugins

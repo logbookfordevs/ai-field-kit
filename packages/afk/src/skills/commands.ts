@@ -34,7 +34,9 @@ import {
   loadSkillProfileCatalog,
   loadSkillProfileState,
   reconcileSkillProfiles,
+  resolvedProfileSkillIds,
   skillProfileStatus,
+  skillProfilePaths,
   upsertSkillProfile,
   type SkillProfileContext,
   type SkillProfileItem,
@@ -573,7 +575,8 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
         scope: "global",
         agent: undefined,
       }).records;
-      const profileRecords = profile.skills.map((skillId) => findSkillRecord(records, skillId));
+      const profileRecords = resolvedProfileSkillIds(profile, skillProfilePaths(context).catalogPath)
+        .map((skillId) => findSkillRecord(records, skillId));
 
       runtime.io.stdout(renderSkillProfileContext({
         profile,
@@ -589,7 +592,7 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
         runtime.io.stderr("No skill profiles found.");
         return 1;
       }
-      const activationMode = options.skillProfileAdditive ? "additive" : "focus";
+      const activationMode = options.skillProfileFocus ? "focus" : "additive";
       runtime.io.stdout(renderSkillProfileApply(enableSkillProfile(context, selectedId, options.dryRun, activationMode)));
       return 0;
     }
@@ -713,7 +716,8 @@ async function updateSkillNamesForProfile(
   runtime: Runtime,
   options: CliOptions,
 ): Promise<string[]> {
-  const profiles = listSkillProfiles({ homeDir: options.homeDir, cwd: options.cwd, local: false }).catalog.items;
+  const profileSnapshot = listSkillProfiles({ homeDir: options.homeDir, cwd: options.cwd, local: false });
+  const profiles = profileSnapshot.catalog.items;
   const profile = profileId
     ? findSkillProfile(profiles, profileId)
     : await promptSkillProfile(profiles, "Select a profile whose skills should be updated:");
@@ -722,11 +726,12 @@ async function updateSkillNamesForProfile(
   }
 
   const trackedByName = new Map(lockedSkills.map((record) => [record.name.toLowerCase(), record.name]));
-  const selected = profile.skills.flatMap((skill) => {
+  const profileSkills = resolvedProfileSkillIds(profile, profileSnapshot.paths.catalogPath);
+  const selected = profileSkills.flatMap((skill) => {
     const tracked = trackedByName.get(skill.toLowerCase());
     return tracked ? [tracked] : [];
   });
-  const skipped = profile.skills.filter((skill) => !trackedByName.has(skill.toLowerCase()));
+  const skipped = profileSkills.filter((skill) => !trackedByName.has(skill.toLowerCase()));
   if (skipped.length > 0) {
     runtime.io.stdout(`Skipped untracked profile skills: ${skipped.join(", ")}.`);
   }
@@ -1108,7 +1113,8 @@ async function runSkillsDeleteProfile(profileId: string | undefined, runtime: Ru
 function skillRecordsForProfile(options: CliOptions, profile: SkillProfileItem): SkillRecord[] {
   const records = loadMutationSkillRecords(options);
   const selected = new Map<string, SkillRecord>();
-  for (const skill of profile.skills) {
+  const context = skillProfileContext(options);
+  for (const skill of resolvedProfileSkillIds(profile, listSkillProfiles(context).paths.catalogPath)) {
     const record = findSkillRecord(records, skill);
     if (record) {
       selected.set(`${record.rootPath}:${record.folder}`, record);
@@ -1402,7 +1408,7 @@ async function promptSkillProfile(profiles: SkillProfileItem[], message: string)
     source: async (term) => filterSkillProfiles(profiles, term).map((profile) => ({
       name: `${strong(accent(profile.name))} ${muted(`[${profile.id}]`)}`,
       value: profile,
-      description: profile.skills.join(", "),
+      description: [...profile.catalogSkills, ...profile.packages.map((item) => item.source)].join(", "),
     })),
     pageSize: 12,
     instructions: {
@@ -1482,7 +1488,7 @@ function filterSkillProfiles(profiles: SkillProfileItem[], term: string | undefi
   }
 
   return profiles.filter((profile) => {
-    const searchable = [profile.id, profile.name, ...profile.skills].join(" ").toLowerCase();
+    const searchable = [profile.id, profile.name, ...profile.catalogSkills, ...profile.packages.map((item) => item.source)].join(" ").toLowerCase();
     return tokens.every((token) => searchable.includes(token));
   });
 }

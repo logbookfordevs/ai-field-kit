@@ -2,7 +2,7 @@ import { syncRules } from "./rules.js";
 import { syncHooks } from "./hooks.js";
 import { customAgentTargetPath, syncCustomAgents, type CustomAgentHarness } from "./custom-agents.js";
 import { snapshotDisabledStartupSkills, syncSkillInvocationPolicy, syncSkillStartupStorage } from "./skills.js";
-import { loadSetupSkillProfileCatalog, loadSkillProfileState, reconcileSkillProfiles } from "./skills/profiles.js";
+import { loadSetupSkillProfileCatalog, loadSkillProfileState, reconcileSkillProfiles, type SkillProfilePackage } from "./skills/profiles.js";
 import { mergeSetupSourceSkillsIntoCatalog, syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { planSetupSourceCatalogImport, planSkillCatalogRecovery, snapshotSetupSourceLockedSkillIds } from "./catalog-import.js";
 import { detectSetupTargets } from "./agent-detection.js";
@@ -10,7 +10,7 @@ import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateC
 import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
 import { confirmSkillProfileInstall, selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRecoverableProfileSkills, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectPluginsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
-import { builtInDefaultsSource, ensureLocalManifests, expandComposedSkillIds, loadSkillManifest, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource } from "./manifest.js";
+import { builtInDefaultsSource, ensureLocalManifests, expandComposedSkillIds, loadSkillManifest, loadSourceManifestContents, localManifestDir, mergedRulesManifestContent, projectManifestDir, readRememberedDefaultsSource, type SkillManifest, type SkillManifestItem } from "./manifest.js";
 import { defaultCheckedDetail, renderSkillProfileReview } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
@@ -299,39 +299,44 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 
       const catalog = loadSetupSkillProfileCatalog(prepared.options);
       const selectedProfiles = catalog.items.filter((profile) => selection.profileIds?.includes(profile.id));
-      const directSkillIds = [...new Set([...catalog.alwaysOn, ...selectedProfiles.flatMap((profile) => profile.skills)])];
-      let skillManifest = loadSkillManifest(prepared.options);
-      const selectedSkillIds = expandComposedSkillIds(skillManifest.items, directSkillIds);
-      const initialAvailableIds = new Set(skillManifest.items.map((item) => item.id));
-      const missingIds = selectedSkillIds.filter((id) => !initialAvailableIds.has(id));
+      const directSkillIds = [...new Set([...catalog.alwaysOn, ...selectedProfiles.flatMap((profile) => profile.catalogSkills)])];
+      let catalogManifest = loadSkillManifest(prepared.options);
+      const catalogIds = new Set(catalogManifest.items.map((item) => item.id));
+      const missingCatalogIds = directSkillIds.filter((id) => !catalogIds.has(id));
+      const duplicatePackageClaim = duplicateSelectivePackageClaim(selectedProfiles, catalogManifest.items);
+      if (duplicatePackageClaim) {
+        runtime.io.stderr(`Profile ${duplicatePackageClaim.profileId} declares catalog skill ${duplicatePackageClaim.catalogSkillId} again in package ${duplicatePackageClaim.source}`);
+        return 1;
+      }
       let recoveryOperation: PathOperation | undefined;
       let recoveryIdsToVerify: string[] = [];
-      if (missingIds.length > 0) {
-        const recoveryCandidates = planSkillCatalogRecovery(prepared.options, missingIds, catalog.skillAliases).recovered;
-        if (recoveryCandidates.length > 0) {
-          const selectedRecoveryIds = prepared.options.yes
-            ? recoveryCandidates.map((item) => item.id)
-            : await selectRecoverableProfileSkills(recoveryCandidates.map(({ id, label, source }) => ({ id, label, source })));
-          const recoveryPlan = planSkillCatalogRecovery(prepared.options, selectedRecoveryIds, catalog.skillAliases);
-          recoveryOperation = recoveryPlan.operation;
-          recoveryIdsToVerify = recoveryPlan.recovered.map((item) => item.id);
-          if (recoveryPlan.recovered.length > 0) {
-            skillManifest = recoveryPlan.manifest;
-          }
-        }
+      if (missingCatalogIds.length > 0 && catalog.version >= 2) {
+        runtime.io.stderr(`Catalog skills missing from skills.json: ${missingCatalogIds.join(", ")}`);
+        return 1;
       }
-      const availableIds = new Set(skillManifest.items.map((item) => item.id));
-      const unavailableIds = selectedSkillIds.filter((id) => !availableIds.has(id));
-      const availableSkillIds = selectedSkillIds.filter((id) => availableIds.has(id));
-      if (missingIds.length > 0) {
-        if (availableSkillIds.length === 0) {
+      if (missingCatalogIds.length > 0) {
+        const recoveryCandidates = planSkillCatalogRecovery(prepared.options, missingCatalogIds, catalog.skillAliases).recovered;
+        const selectedRecoveryIds = prepared.options.yes
+          ? recoveryCandidates.map((item) => item.id)
+          : await selectRecoverableProfileSkills(recoveryCandidates.map(({ id, label, source }) => ({ id, label, source })));
+        const recoveryPlan = planSkillCatalogRecovery(prepared.options, selectedRecoveryIds, catalog.skillAliases);
+        recoveryOperation = recoveryPlan.operation;
+        recoveryIdsToVerify = recoveryPlan.recovered.map((item) => item.id);
+        catalogManifest = recoveryPlan.manifest;
+      }
+      const requestedCatalogSkillIds = expandComposedSkillIds(catalogManifest.items, directSkillIds);
+      const availableCatalogIds = new Set(catalogManifest.items.map((item) => item.id));
+      const unavailableCatalogIds = requestedCatalogSkillIds.filter((id) => !availableCatalogIds.has(id));
+      const catalogSkillIds = requestedCatalogSkillIds.filter((id) => availableCatalogIds.has(id));
+      if (missingCatalogIds.length > 0 && catalog.version < 2) {
+        if (catalogSkillIds.length === 0) {
           runtime.io.stderr("No available profile skills remain. No changes planned.");
           return 1;
         }
         runtime.io.stdout(`\n${renderSkillProfileReview({
           profileNames: selectedProfiles.map((profile) => profile.name),
-          availableIds: availableSkillIds,
-          unavailableIds,
+          availableIds: catalogSkillIds,
+          unavailableIds: unavailableCatalogIds,
         })}`);
         const accepted = prepared.options.yes || await confirmSkillProfileInstall();
         if (!accepted) {
@@ -339,13 +344,19 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
           return 0;
         }
       }
-
-      const dependencyIds = availableSkillIds.filter((id) => !directSkillIds.includes(id));
+      const packageManifest = skillPackageManifest(selectedProfiles.flatMap((profile) => profile.packages));
+      const packageSkillIds = packageManifest.items.map((item) => item.id);
+      const installManifest: SkillManifest = {
+        ...catalogManifest,
+        items: [...catalogManifest.items, ...packageManifest.items],
+      };
+      const selectedSkillIds = [...catalogSkillIds, ...packageSkillIds];
+      const dependencyIds = catalogSkillIds.filter((id) => !directSkillIds.includes(id));
       runtime.io.stdout(`\nSelected skill profiles: ${selectedProfiles.map((profile) => profile.name).join(", ")}`);
       if (dependencyIds.length > 0) {
         runtime.io.stdout("Selected profiles include composable skills.");
         runtime.io.stdout(`Dependencies added automatically: ${dependencyIds.map((id) => {
-          const item = skillManifest.items.find((candidate) => candidate.id === id);
+          const item = catalogManifest.items.find((candidate) => candidate.id === id);
           return `${item?.label ?? id} (${id})`;
         }).join(", ")}.`);
       }
@@ -354,21 +365,26 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         ...prepared.options,
         manifestContents: {
           ...prepared.options.manifestContents,
-          "skills.json": JSON.stringify(skillManifest),
+          "skills.json": JSON.stringify(installManifest),
         },
-        selectedSkillIds: availableSkillIds,
+        selectedSkillIds,
         selectedSkillAgentIds: selection.skillAgents,
       };
       const disabledBeforeInstall = snapshotDisabledStartupSkills(selectedOptions);
-      const preexistingWholeSourceSkillIds = explicitSetupSource && selectedOptions.manifestContents
+      const packageOptions = packageManifest.items.length > 0 ? {
+        ...selectedOptions,
+        manifestContents: { ...selectedOptions.manifestContents, "skills.json": JSON.stringify(packageManifest) },
+        selectedSkillIds: packageSkillIds,
+      } : undefined;
+      const preexistingWholeSourceSkillIds = packageOptions?.manifestContents
         ? snapshotSetupSourceLockedSkillIds({
-            homeDir: selectedOptions.homeDir,
-            cwd: selectedOptions.cwd,
-            manifestLocal: selectedOptions.manifestLocal,
-            manifestContents: selectedOptions.manifestContents,
-            selectedSkillIds: selectedOptions.selectedSkillIds,
-            allSkills: selectedOptions.allSkills,
-            dryRun: selectedOptions.dryRun,
+            homeDir: packageOptions.homeDir,
+            cwd: packageOptions.cwd,
+            manifestLocal: packageOptions.manifestLocal,
+            manifestContents: packageOptions.manifestContents,
+            selectedSkillIds: packageOptions.selectedSkillIds,
+            allSkills: packageOptions.allSkills,
+            dryRun: packageOptions.dryRun,
           })
         : [];
       const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
@@ -376,8 +392,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         if (recoveryOperation && !selectedOptions.dryRun) {
           const verifiedRecovery = planSkillCatalogRecovery(prepared.options, recoveryIdsToVerify, catalog.skillAliases);
           const verifiedIds = new Set(verifiedRecovery.recovered.map((item) => item.id));
-          const recoveryVerified = recoveryIdsToVerify.every((id) => verifiedIds.has(id));
-          if (!recoveryVerified || !verifiedRecovery.operation) {
+          if (!recoveryIdsToVerify.every((id) => verifiedIds.has(id)) || !verifiedRecovery.operation) {
             runtime.io.stderr("Recovered profile skills were not added to the cached catalog because their installed folders and lock metadata could not be verified.");
             return 1;
           }
@@ -385,7 +400,18 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         }
         syncSkillInvocationPolicy(runtime, selectedOptions);
         syncSkillStartupStorage(runtime, selectedOptions, disabledBeforeInstall);
-        syncSetupSkillCatalog(runtime, selectedOptions, explicitSetupSource, preexistingWholeSourceSkillIds);
+        const catalogOptions = { ...selectedOptions, manifestContents: prepared.options.manifestContents ?? {}, selectedSkillIds: catalogSkillIds };
+        syncSetupSkillCatalog(runtime, catalogOptions, explicitSetupSource, []);
+        if (packageOptions) {
+          const packageImports = syncSetupSkillCatalog(runtime, packageOptions, true, preexistingWholeSourceSkillIds, true);
+          if (packageImports.length > 0) {
+            const { manifestContents: _manifestContents, ...cachedPackageOptions } = packageOptions;
+            syncSkillStartupStorage(runtime, {
+              ...cachedPackageOptions,
+              selectedSkillIds: packageImports.map((item) => item.id),
+            }, disabledBeforeInstall);
+          }
+        }
         reconcileEnabledSetupSkillProfiles(runtime, selectedOptions);
       }
       return code;
@@ -493,7 +519,8 @@ function syncSetupSkillCatalog(
   options: CliOptions,
   explicitSetupSource: boolean,
   preexistingWholeSourceSkillIds: string[],
-): void {
+  preserveCatalogOwnership = false,
+): SkillManifestItem[] {
   try {
     let sourceMerge: ReturnType<typeof mergeSetupSourceSkillsIntoCatalog> | undefined;
     if (options.dryRun && explicitSetupSource && options.manifestContents) {
@@ -512,7 +539,7 @@ function syncSetupSkillCatalog(
           runtime.io.stdout(`- ${id} -> ${sourceMerge.path}`);
         }
       }
-      return;
+      return [];
     }
     if (explicitSetupSource && options.manifestContents) {
       const importPlan = planSetupSourceCatalogImport({
@@ -523,6 +550,7 @@ function syncSetupSkillCatalog(
         selectedSkillIds: options.selectedSkillIds,
         allSkills: options.allSkills,
         preexistingWholeSourceSkillIds,
+        preserveCatalogOwnership,
         dryRun: false,
       });
       if (importPlan.operation) {
@@ -531,7 +559,7 @@ function syncSetupSkillCatalog(
       if (importPlan.missingLock.length > 0) {
         runtime.io.stderr(`Missing lock metadata for installed one-shot source skills: ${importPlan.missingLock.join(", ")}. Re-run setup with --verbose, then retry after the installer writes its skill lock.`);
       }
-      return;
+      return importPlan.imported;
     }
     syncSkillCatalogFromManifest({
       homeDir: options.homeDir,
@@ -539,9 +567,57 @@ function syncSetupSkillCatalog(
       allSkills: options.allSkills,
       dryRun: false,
     });
+    return [];
   } catch (error) {
     runtime.io.stderr(`Warning: could not update AFK skill catalog. ${error instanceof Error ? error.message : String(error)}`);
+    return [];
   }
+}
+
+function skillPackageManifest(packages: SkillProfilePackage[]): SkillManifest {
+  const seen = new Set<string>();
+  const items: SkillManifestItem[] = [];
+  for (const profilePackage of packages) {
+    const source = profilePackage.source.trim();
+    const selectedSkills = profilePackage.skills?.map((skill) => skill.trim()).filter(Boolean);
+    const packageSelections = selectedSkills === undefined ? [undefined] : selectedSkills;
+    for (const skill of packageSelections) {
+      const key = `${source}\0${skill ?? "*"}`;
+      if (!source || seen.has(key)) continue;
+      seen.add(key);
+      items.push({
+        id: `profile-package-${items.length + 1}`,
+        label: skill ? `${source} / ${skill}` : source,
+        source,
+        args: skill ? ["--skill", skill] : [],
+        default: false,
+        startDisabled: true,
+      });
+    }
+  }
+  return { version: 1, defaultSource: "", items };
+}
+
+function duplicateSelectivePackageClaim(
+  profiles: ReturnType<typeof loadSetupSkillProfileCatalog>["items"],
+  catalogItems: SkillManifestItem[],
+): { profileId: string; catalogSkillId: string; source: string } | undefined {
+  const catalogById = new Map(catalogItems.map((item) => [item.id, item]));
+  for (const profile of profiles) {
+    for (const catalogSkillId of profile.catalogSkills) {
+      const catalogItem = catalogById.get(catalogSkillId);
+      if (!catalogItem) continue;
+      const selectorIndex = catalogItem.args.indexOf("--skill");
+      const selector = selectorIndex >= 0 ? catalogItem.args[selectorIndex + 1] ?? catalogItem.id : catalogItem.id;
+      const duplicatePackage = profile.packages.find((profilePackage) => (
+        profilePackage.source === catalogItem.source && profilePackage.skills?.includes(selector)
+      ));
+      if (duplicatePackage) {
+        return { profileId: profile.id, catalogSkillId, source: duplicatePackage.source };
+      }
+    }
+  }
+  return undefined;
 }
 
 async function resolveRulesOptions(options: CliOptions): Promise<CliOptions> {

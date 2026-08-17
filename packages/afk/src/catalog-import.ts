@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { basename, dirname, join, relative } from "node:path";
 import { sectionTitle, muted } from "./brand.js";
 import { applyOperation, formatOperation, isDirectory, summarizeOperations } from "./fs-utils.js";
 import { loadSkillManifest, localManifestDir, projectManifestDir, type SkillManifest, type SkillManifestItem } from "./manifest.js";
@@ -203,6 +203,7 @@ export function planSetupSourceCatalogImport(options: CatalogImportOptions & {
   selectedSkillIds: string[];
   allSkills: boolean;
   preexistingWholeSourceSkillIds?: string[];
+  preserveCatalogOwnership?: boolean;
 }): SetupSourceCatalogImportPlan {
   const sourceManifest = loadSkillManifest(options);
   const selectedIds = new Set(options.selectedSkillIds.map((id) => id.toLowerCase()));
@@ -216,48 +217,67 @@ export function planSetupSourceCatalogImport(options: CatalogImportOptions & {
   const importedById = new Map<string, SkillManifestItem>();
   const missingLock: string[] = [];
   const preexistingWholeSourceSkillIds = new Set(options.preexistingWholeSourceSkillIds ?? []);
+  const targetCatalogPath = join(options.manifestLocal ? projectManifestDir(options.cwd) : localManifestDir(options.homeDir), "skills.json");
+  const existing = readSkillCatalog(targetCatalogPath);
+  const existingById = new Map(existing.items.map((item) => [item.id.toLowerCase(), item]));
+  const isCatalogOwned = (id: string): boolean => {
+    const existingItem = existingById.get(id.toLowerCase());
+    return options.preserveCatalogOwnership === true && existingItem !== undefined && existingItem.imported !== true;
+  };
 
   for (const item of selected) {
     const requestedId = skillIdFromArgs(item.args);
     if (requestedId) {
-      const installedSkill = installedById.get(requestedId.toLowerCase());
       const lockEntry = lock.skills?.[requestedId];
+      const installedFolder = lockEntry?.skillPath ? basename(dirname(lockEntry.skillPath)) : requestedId;
+      const installedSkill = installedById.get(installedFolder.toLowerCase()) ?? installedById.get(requestedId.toLowerCase());
       if (!installedSkill || lockEntry?.source !== item.source) {
         missingLock.push(requestedId);
         continue;
       }
-      importedById.set(requestedId.toLowerCase(), { ...item, id: requestedId, imported: true });
+      if (isCatalogOwned(installedSkill.id)) {
+        continue;
+      }
+      const importedItem = options.preserveCatalogOwnership
+        ? skillManifestItemFromInstalledSkill(installedSkill.id, installedSkill.root, lockEntry.source, item.startDisabled === true || installedSkill.startDisabled, requestedId)
+        : { ...item, id: requestedId, imported: true };
+      importedById.set(importedItem.id.toLowerCase(), importedItem);
       continue;
     }
 
+    let sourceVerified = false;
     for (const installedSkill of installed) {
-      if (preexistingWholeSourceSkillIds.has(installedSkill.id.toLowerCase())) {
+      const existingItem = existingById.get(installedSkill.id.toLowerCase());
+      if (preexistingWholeSourceSkillIds.has(installedSkill.id.toLowerCase()) && !(options.preserveCatalogOwnership && existingItem?.imported === true)) {
         continue;
       }
-      const lockEntry = lock.skills?.[installedSkill.id];
-      if (lockEntry?.source !== item.source) {
+      const resolvedLock = resolveInstalledSkillLock(installedSkill, lock);
+      if (resolvedLock?.entry.source !== item.source) {
+        continue;
+      }
+      sourceVerified = true;
+      if (isCatalogOwned(installedSkill.id)) {
         continue;
       }
       importedById.set(installedSkill.id.toLowerCase(), skillManifestItemFromInstalledSkill(
         installedSkill.id,
         installedSkill.root,
-        lockEntry.source,
-        installedSkill.startDisabled,
+        resolvedLock.entry.source,
+        item.startDisabled === true || installedSkill.startDisabled,
+        resolvedLock.id,
       ));
     }
 
-    if (![...importedById.values()].some((candidate) => candidate.source === item.source)) {
+    if (!sourceVerified) {
       missingLock.push(item.id);
     }
   }
 
   const imported = [...importedById.values()];
-  const targetCatalogPath = join(options.manifestLocal ? projectManifestDir(options.cwd) : localManifestDir(options.homeDir), "skills.json");
   if (imported.length === 0) {
     return { imported, missingLock: uniqueSorted(missingLock), targetCatalogPath };
   }
 
-  const existing = readSkillCatalog(targetCatalogPath);
   const nextItems = [
     ...existing.items.map((item) => importedById.get(item.id.toLowerCase()) ?? item),
     ...imported.filter((item) => !existing.items.some((existingItem) => existingItem.id.toLowerCase() === item.id.toLowerCase())),

@@ -9,7 +9,13 @@ export const skillProfilesStateFileName = "skill-profiles.json";
 export type SkillProfileItem = {
   id: string;
   name: string;
-  skills: string[];
+  catalogSkills: string[];
+  packages: SkillProfilePackage[];
+};
+
+export type SkillProfilePackage = {
+  source: string;
+  skills?: string[];
 };
 
 export type SkillProfileCatalog = {
@@ -165,7 +171,8 @@ export function upsertSkillProfile(context: SkillProfileContext, input: {
   const profile: SkillProfileItem = {
     id,
     name: input.name?.trim() || existing?.name || humanizeProfileId(id),
-    skills: input.skills.length > 0 ? uniqueNormalized(input.skills) : existing?.skills ?? [],
+    catalogSkills: input.skills.length > 0 ? uniqueNormalized(input.skills) : existing?.catalogSkills ?? [],
+    packages: existing?.packages ?? [],
   };
   const next: SkillProfileCatalog = {
     ...catalog,
@@ -204,7 +211,8 @@ export function appendSkillsToSkillProfile(context: SkillProfileContext, input: 
   const profile: SkillProfileItem = {
     id,
     name: existing?.name || humanizeProfileId(id),
-    skills: uniqueNormalized([...(existing?.skills ?? []), ...input.skills]),
+    catalogSkills: uniqueNormalized([...(existing?.catalogSkills ?? []), ...input.skills]),
+    packages: existing?.packages ?? [],
   };
   const next: SkillProfileCatalog = {
     ...catalog,
@@ -255,7 +263,7 @@ export function enableSkillProfile(
   context: SkillProfileContext,
   idValue: string,
   dryRun: boolean,
-  mode: SkillProfileActivationMode = "focus",
+  mode: SkillProfileActivationMode = "additive",
 ): SkillProfileApplyResult {
   const id = normalizeId(idValue);
   const catalog = loadSkillProfileCatalog(context);
@@ -305,11 +313,12 @@ export function disableSkillProfile(context: SkillProfileContext, idValue: strin
 export function skillProfileStatus(context: SkillProfileContext): SkillProfileApplyResult {
   const catalog = loadSkillProfileCatalog(context);
   const state = loadSkillProfileState(context);
+  const paths = skillProfilePaths(context);
   return {
     catalog,
     state,
-    paths: skillProfilePaths(context),
-    keptSkills: keptSkillsFor(catalog, state),
+    paths,
+    keptSkills: keptSkillsFor(catalog, state, paths.catalogPath),
     movements: [],
     dryRun: false,
   };
@@ -336,7 +345,7 @@ function applySkillProfileState(
   const active = existingSkillFolders(paths.skillsRoot);
   const disabled = existingSkillFolders(paths.disabledRoot);
   const autoInvocationBySkill = skillAutoInvocationById(paths.catalogPath);
-  const kept = new Set(keptSkillsFor(catalog, requestedState).map((skill) => skill.toLowerCase()));
+  const kept = new Set(keptSkillsFor(catalog, requestedState, paths.catalogPath).map((skill) => skill.toLowerCase()));
   const hasEnabledProfiles = requestedState.activations.length > 0;
   const hasEnabledFocusProfiles = requestedState.activations.some((activation) => activation.mode === "focus");
   const moved = new Set(currentState.profileMovedSkills.map((skill) => skill.toLowerCase()));
@@ -443,7 +452,7 @@ function applySkillProfileMovements(movements: SkillProfileMovement[]): void {
 function writeSkillProfileCatalog(context: SkillProfileContext, catalog: SkillProfileCatalog): void {
   const path = skillProfilePaths(context).catalogPath;
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(normalizeSkillProfileCatalog(catalog), null, 2)}\n`);
+  writeFileSync(path, `${JSON.stringify({ ...normalizeSkillProfileCatalog(catalog), version: 2 }, null, 2)}\n`);
 }
 
 function writeSkillProfileState(context: SkillProfileContext, state: SkillProfileState): void {
@@ -452,14 +461,26 @@ function writeSkillProfileState(context: SkillProfileContext, state: SkillProfil
   writeFileSync(path, `${JSON.stringify(normalizeSkillProfileState(state), null, 2)}\n`);
 }
 
-function keptSkillsFor(catalog: SkillProfileCatalog, state: SkillProfileState): string[] {
+function keptSkillsFor(catalog: SkillProfileCatalog, state: SkillProfileState, catalogPath?: string): string[] {
   const enabled = new Set(enabledSkillProfileIds(state));
   return uniqueNormalized([
     ...catalog.alwaysOn,
     ...catalog.items
       .filter((profile) => enabled.has(profile.id))
-      .flatMap((profile) => profile.skills),
+      .flatMap((profile) => resolvedProfileSkillIds(profile, catalogPath)),
   ]);
+}
+
+export function resolvedProfileSkillIds(profile: SkillProfileItem, profileCatalogPath?: string): string[] {
+  if (!profileCatalogPath || profile.packages.length === 0) {
+    return profile.catalogSkills;
+  }
+
+  const packageSkills = skillManifestItems(profileCatalogPath).flatMap((item) => profile.packages.some((profilePackage) => (
+    profilePackage.source === item.source &&
+    (profilePackage.skills === undefined || profilePackage.skills.includes(skillIdFromManifestItem(item)))
+  )) ? [item.id] : []);
+  return uniqueNormalized([...profile.catalogSkills, ...packageSkills]);
 }
 
 export function enabledSkillProfileIds(state: SkillProfileState): string[] {
@@ -475,21 +496,24 @@ function shouldProfileDisableSkill(folder: string, mode: SkillProfileMode, autoI
 }
 
 function skillAutoInvocationById(profileCatalogPath: string): Map<string, boolean> {
-  const skillsCatalogPath = join(dirname(profileCatalogPath), "skills.json");
-  if (!existsSync(skillsCatalogPath)) {
-    return new Map();
-  }
+  return new Map(skillManifestItems(profileCatalogPath).map((item) => [item.id.toLowerCase(), item.autoInvocation !== false]));
+}
 
+function skillManifestItems(profileCatalogPath: string): SkillManifestItem[] {
+  const skillsCatalogPath = join(dirname(profileCatalogPath), "skills.json");
+  if (!existsSync(skillsCatalogPath)) return [];
   try {
     const parsed = JSON.parse(readFileSync(skillsCatalogPath, "utf8")) as { items?: unknown[] };
-    return new Map(
-      (Array.isArray(parsed.items) ? parsed.items : [])
-        .filter((item): item is SkillManifestItem => isRecord(item) && typeof item.id === "string")
-        .map((item) => [item.id.toLowerCase(), item.autoInvocation !== false]),
-    );
+    return (Array.isArray(parsed.items) ? parsed.items : [])
+      .filter((item): item is SkillManifestItem => isRecord(item) && typeof item.id === "string" && typeof item.source === "string");
   } catch {
-    return new Map();
+    return [];
   }
+}
+
+function skillIdFromManifestItem(item: SkillManifestItem): string {
+  const skillIndex = item.args.indexOf("--skill");
+  return (skillIndex >= 0 ? item.args[skillIndex + 1] : undefined) ?? item.id;
 }
 
 function existingSkillFolders(root: string): string[] {
@@ -513,7 +537,7 @@ function readdirSafe(root: string): string[] {
 }
 
 function emptySkillProfileCatalog(): SkillProfileCatalog {
-  return { version: 1, mode: "strict", alwaysOn: [], skillAliases: {}, items: [] };
+  return { version: 2, mode: "strict", alwaysOn: [], skillAliases: {}, items: [] };
 }
 
 function emptySkillProfileState(): SkillProfileState {
@@ -529,9 +553,20 @@ function normalizeSkillProfileCatalog(catalog: SkillProfileCatalog): SkillProfil
     items: catalog.items.map((item) => ({
       id: normalizeId(item.id),
       name: item.name.trim() || humanizeProfileId(item.id),
-      skills: uniqueNormalized(item.skills),
+      catalogSkills: uniqueNormalized(item.catalogSkills ?? (item as SkillProfileItem & { skills?: string[] }).skills ?? []),
+      packages: normalizeSkillProfilePackages(item.packages ?? []),
     })).filter((item) => item.id).sort((left, right) => left.id.localeCompare(right.id)),
   };
+}
+
+function normalizeSkillProfilePackages(packages: SkillProfilePackage[]): SkillProfilePackage[] {
+  return packages
+    .map((item) => ({
+      source: item.source.trim(),
+      ...(item.skills === undefined ? {} : { skills: uniqueNormalized(item.skills) }),
+    }))
+    .filter((item) => item.source)
+    .sort((left, right) => left.source.localeCompare(right.source));
 }
 
 function normalizeSkillAliases(aliases: Record<string, string> | undefined): Record<string, string> {
@@ -580,9 +615,23 @@ function isSkillProfileCatalog(value: unknown): value is SkillProfileCatalog {
       isRecord(item) &&
       typeof item.id === "string" &&
       typeof item.name === "string" &&
-      Array.isArray(item.skills) &&
-      item.skills.every((skill) => typeof skill === "string")
+      ((value.version as number) >= 2
+        ? isStringArray(item.catalogSkills) && item.skills === undefined &&
+          (item.packages === undefined || isSkillProfilePackages(item.packages))
+        : isStringArray(item.skills) && item.catalogSkills === undefined && item.packages === undefined)
     );
+}
+
+function isSkillProfilePackages(value: unknown): value is SkillProfilePackage[] {
+  return Array.isArray(value) && value.every((profilePackage) =>
+    isRecord(profilePackage) &&
+    typeof profilePackage.source === "string" &&
+    (profilePackage.skills === undefined || isStringArray(profilePackage.skills))
+  );
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
 function isSkillProfileState(value: unknown): value is StoredSkillProfileState {

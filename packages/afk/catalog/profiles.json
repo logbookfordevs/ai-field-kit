@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "mode": "context",
   "alwaysOn": [
     "grilling",
@@ -8,52 +8,54 @@
     "diagnosing-bugs",
     "truss-evaluation"
   ],
-  "skillAliases": {
-    "react-components": "react:components",
-    "stitch-remotion": "remotion"
-  },
   "items": [
     {
       "id": "stitch",
       "name": "Stitch",
-      "skills": [
-        "design-md",
-        "enhance-prompt",
-        "react-components",
-        "stitch-loop",
-        "stitch-remotion"
+      "catalogSkills": [],
+      "packages": [
+        {
+          "source": "google-labs-code/stitch-skills",
+          "skills": [
+            "design-md",
+            "enhance-prompt",
+            "react:components",
+            "remotion",
+            "stitch-loop"
+          ]
+        }
       ]
     },
     {
       "id": "html",
       "name": "HTML",
-      "skills": [
+      "catalogSkills": [
         "html",
         "html-wireframe",
         "html-prototype",
         "html-plan",
         "html-diagram"
-      ]
+      ],
+      "packages": []
     },
     {
       "id": "video",
       "name": "Video",
-      "skills": [
-        "embedded-captions",
-        "faceless-explainer",
-        "general-video",
-        "graphic-overlays",
-        "hyperframes-animation",
-        "hyperframes-core",
-        "hyperframes-creative",
-        "hyperframes-media",
-        "motion-graphics",
-        "music-to-video",
-        "pr-to-video",
-        "product-launch-video",
-        "remotion-to-hyperframes",
-        "slideshow",
-        "website-to-video"
+      "catalogSkills": [],
+      "packages": [
+        {
+          "source": "heygen-com/hyperframes"
+        }
+      ]
+    },
+    {
+      "id": "remotion",
+      "name": "Remotion",
+      "catalogSkills": [],
+      "packages": [
+        {
+          "source": "remotion-dev/skills"
+        }
       ]
     }
   ]

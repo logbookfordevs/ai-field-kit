@@ -1038,13 +1038,14 @@ test("runCli prints contextual skills profiles help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills profiles"));
   assert.ok(text.includes("enable <profile>"));
+  assert.ok(text.includes("--focus"));
   assert.ok(text.includes("--additive"));
   assert.ok(text.includes("--local"));
   assert.ok(!text.includes("--always-on <skill>"));
   assert.ok(!text.includes("create <profile>"));
 });
 
-test("runCli enables a profile additively through the runtime flag", async () => {
+test("runCli enables a profile additively by default", async () => {
   const homeDir = localHomeWithManifests({
     "profiles.json": {
       version: 1,
@@ -1057,7 +1058,7 @@ test("runCli enables a profile additively through the runtime flag", async () =>
   const output: string[] = [];
 
   const code = await withConsole(output, () => runCli(
-    ["skills", "profiles", "enable", "video", "--additive", "--dry-run"],
+    ["skills", "profiles", "enable", "video", "--dry-run"],
     { HOME: homeDir },
   ));
   const text = output.join("\n");
@@ -1068,6 +1069,46 @@ test("runCli enables a profile additively through the runtime flag", async () =>
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "video")), true);
 });
 
+test("runCli enables a profile in focus mode through the runtime flag", async () => {
+  const homeDir = localHomeWithManifests({
+    "profiles.json": {
+      version: 1,
+      alwaysOn: [],
+      items: [{ id: "video", name: "Video", skills: ["video"] }],
+    },
+  });
+  writeSkill(join(homeDir, ".agents", "skills"), "baseline", "Baseline");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "video", "Video");
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(
+    ["skills", "profiles", "enable", "video", "--focus", "--dry-run"],
+    { HOME: homeDir },
+  ));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("Deactivated (1)"), text);
+  assert.ok(text.includes("baseline"), text);
+  assert.ok(!text.includes("video (additive)"), text);
+});
+
+test("runCli rejects conflicting profile activation modes", async () => {
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli([
+    "skills",
+    "profiles",
+    "enable",
+    "video",
+    "--focus",
+    "--additive",
+  ]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Use either --focus or --additive"));
+});
+
 test("runCli rejects additive mode outside profile enable", async () => {
   const output: string[] = [];
 
@@ -1075,6 +1116,15 @@ test("runCli rejects additive mode outside profile enable", async () => {
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("--additive is only available for afk skills profiles enable"));
+});
+
+test("runCli rejects focus mode outside profile enable", async () => {
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(["skills", "profiles", "disable", "video", "--focus"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("--focus is only available for afk skills profiles enable"));
 });
 
 test("runCli prints contextual catalog profiles help", async () => {
@@ -1128,7 +1178,7 @@ test("runCli creates local catalog profiles with repeated skill flags", async ()
     };
     assert.equal(catalog.mode, "context");
     assert.deepEqual(catalog.alwaysOn, ["afk-compass"]);
-    assert.deepEqual(catalog.items, [{ id: "video", name: "Video", skills: ["hyperframes", "tailwind"] }]);
+    assert.deepEqual(catalog.items, [{ id: "video", name: "Video", catalogSkills: ["hyperframes", "tailwind"], packages: [] }]);
   } finally {
     process.chdir(originalCwd);
   }
