@@ -45,6 +45,24 @@ export type SkillManifestItem = {
 
 export type SkillManifestItemRole = "primitive" | "wrapper" | "workflow" | "utility" | "reference" | "router";
 
+export function expandComposedSkillIds(items: SkillManifestItem[], selectedIds: string[]): string[] {
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const expanded = new Set(selectedIds);
+  const queue = [...selectedIds];
+
+  while (queue.length > 0) {
+    const id = queue.shift();
+    if (!id) continue;
+    for (const dependencyId of byId.get(id)?.composes ?? []) {
+      if (expanded.has(dependencyId)) continue;
+      expanded.add(dependencyId);
+      queue.push(dependencyId);
+    }
+  }
+
+  return [...expanded];
+}
+
 export type McpManifest = {
   version: number;
   items: McpManifestItem[];
@@ -1220,6 +1238,7 @@ type ProfilesManifest = {
   version: number;
   mode?: "strict" | "context";
   alwaysOn: string[];
+  skillAliases?: Record<string, string>;
   items: Array<{ id: string; name: string; skills: string[] }>;
 };
 
@@ -1254,6 +1273,10 @@ function isProfilesManifest(value: unknown): value is ProfilesManifest {
     (value.mode === undefined || value.mode === "strict" || value.mode === "context") &&
     Array.isArray(value.alwaysOn) &&
     value.alwaysOn.every((item) => typeof item === "string") &&
+    (value.skillAliases === undefined || (
+      isRecord(value.skillAliases) &&
+      Object.values(value.skillAliases).every((upstreamId) => typeof upstreamId === "string")
+    )) &&
     Array.isArray(value.items) &&
     value.items.every(isProfileManifestItem);
 }

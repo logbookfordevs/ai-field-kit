@@ -8,6 +8,10 @@
     "diagnosing-bugs",
     "truss-evaluation"
   ],
+  "skillAliases": {
+    "react-components": "react:components",
+    "stitch-remotion": "remotion"
+  },
   "items": [
     {
       "id": "stitch",

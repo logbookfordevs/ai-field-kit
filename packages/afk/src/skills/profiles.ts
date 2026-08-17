@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { localAfkDir, localManifestDir, projectManifestDir, type SkillManifestItem } from "../manifest.js";
-import type { SkillProfileMode } from "../types.js";
+import type { CliOptions, SkillProfileMode } from "../types.js";
 
 export const skillProfilesFileName = "profiles.json";
 export const skillProfilesStateFileName = "skill-profiles.json";
@@ -16,6 +16,7 @@ export type SkillProfileCatalog = {
   version: number;
   mode: SkillProfileMode;
   alwaysOn: string[];
+  skillAliases?: Record<string, string>;
   items: SkillProfileItem[];
 };
 
@@ -98,6 +99,26 @@ export function loadSkillProfileCatalog(context: SkillProfileContext): SkillProf
   }
 
   return normalizeSkillProfileCatalog(parsed);
+}
+
+export function loadSetupSkillProfileCatalog(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "manifestLocal" | "manifestContents">): SkillProfileCatalog {
+  const content = options.manifestContents?.[skillProfilesFileName];
+  if (content) {
+    const parsed = JSON.parse(content) as unknown;
+    if (!isSkillProfileCatalog(parsed)) {
+      throw new Error("Invalid skill profiles catalog from setup source");
+    }
+    return normalizeSkillProfileCatalog(parsed);
+  }
+  return loadSkillProfileCatalog(skillProfileContext(options));
+}
+
+export function skillProfileContext(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "manifestLocal">): SkillProfileContext {
+  return {
+    homeDir: options.homeDir,
+    cwd: options.cwd,
+    local: options.setupScope === "project" || options.manifestLocal,
+  };
 }
 
 export function loadSkillProfileState(context: SkillProfileContext): SkillProfileState {
@@ -492,7 +513,7 @@ function readdirSafe(root: string): string[] {
 }
 
 function emptySkillProfileCatalog(): SkillProfileCatalog {
-  return { version: 1, mode: "strict", alwaysOn: [], items: [] };
+  return { version: 1, mode: "strict", alwaysOn: [], skillAliases: {}, items: [] };
 }
 
 function emptySkillProfileState(): SkillProfileState {
@@ -504,12 +525,20 @@ function normalizeSkillProfileCatalog(catalog: SkillProfileCatalog): SkillProfil
     version: Math.max(catalog.version, 1),
     mode: catalog.mode === "context" ? "context" : "strict",
     alwaysOn: uniqueNormalized(catalog.alwaysOn),
+    skillAliases: normalizeSkillAliases(catalog.skillAliases),
     items: catalog.items.map((item) => ({
       id: normalizeId(item.id),
       name: item.name.trim() || humanizeProfileId(item.id),
       skills: uniqueNormalized(item.skills),
     })).filter((item) => item.id).sort((left, right) => left.id.localeCompare(right.id)),
   };
+}
+
+function normalizeSkillAliases(aliases: Record<string, string> | undefined): Record<string, string> {
+  return Object.fromEntries(Object.entries(aliases ?? {})
+    .map(([id, upstreamId]) => [normalizeId(id), upstreamId.trim()] as const)
+    .filter(([id, upstreamId]) => Boolean(id && upstreamId))
+    .sort(([left], [right]) => left.localeCompare(right)));
 }
 
 function normalizeSkillProfileState(state: StoredSkillProfileState): SkillProfileState {
@@ -542,6 +571,10 @@ function isSkillProfileCatalog(value: unknown): value is SkillProfileCatalog {
     (value.mode === undefined || value.mode === "strict" || value.mode === "context") &&
     Array.isArray(value.alwaysOn) &&
     value.alwaysOn.every((item) => typeof item === "string") &&
+    (value.skillAliases === undefined || (
+      isRecord(value.skillAliases) &&
+      Object.values(value.skillAliases).every((upstreamId) => typeof upstreamId === "string")
+    )) &&
     Array.isArray(value.items) &&
     value.items.every((item) =>
       isRecord(item) &&

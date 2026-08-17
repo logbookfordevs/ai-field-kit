@@ -124,7 +124,7 @@ install flow, and custom defaults workflow, read the
 |---|---|---|
 | Rules | `afk setup rules` | Composes ordered public, organization, personal, or project rules layers into managed instruction regions. |
 | Skills | `afk setup skills` | Delegates selected skill installs to the official `skills` CLI. |
-| Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
+| Skills Profiles | `afk setup profiles` | Offers profiles from `profiles.json`, offers lock-backed recovery for missing references, and installs the available skills after confirmation. |
 | Custom Agents | `afk setup agents` | Provisions selected portable agent files into Codex, Claude Code, or Pi. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `add-mcp`. |
 | Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |

@@ -74,7 +74,7 @@ remembered default source.
 |---|---|---|
 | Rules | `afk setup rules` | Syncs AFK rules into managed regions of supported agent rule files. |
 | Skills | `afk setup skills` | Delegates selected skill installs to `npx skills add`. |
-| Profiles | `afk setup profiles` | Prepares focus profile definitions from `profiles.json`. |
+| Skills Profiles | `afk setup profiles` | Offers profiles from `profiles.json`, offers lock-backed recovery for missing references, and installs the available skills after confirmation. |
 | Custom Agents | `afk setup agents` | Translates portable agent files into native Codex, Claude Code, or Pi definitions. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `npx add-mcp`. |
 | Plugins | `afk setup plugins` | Runs curated plugin installer commands and supported post-install setup. |
@@ -236,7 +236,7 @@ harnesses.
 | `afk setup preset [id]` | Long-form route for `afk preset [id]`. | AFK routes the preset's declared setup areas. |
 | `afk setup rules` | Compose configured rules layers into AFK-managed regions and install their isolated dependency files without replacing user-owned content outside those regions. | AFK. |
 | `afk setup skills` | Select catalog skills, delegate installation, restore previously disabled storage, apply invocation policy, and reconcile enabled profiles. | Official `skills` CLI for installation; AFK for policy and reconciliation. |
-| `afk setup profiles` | Prepare `profiles.json` definitions from the selected source. It does not install skills or enable a profile. | AFK. |
+| `afk setup profiles` | Prepare `profiles.json`, select profiles from that source, and install available profile skills plus composed dependencies. Missing references require confirmation before a partial install; `--yes` accepts. It does not enable a profile. | AFK for selection and policy; official `skills` CLI for installation. |
 | `afk setup agents` | Select portable Custom Agents and translate them into native Codex, Claude Code, or Pi definitions. | AFK adapters; the harness owns orchestration. |
 | `afk setup mcps` | Select catalog MCPs and delegate their installation for supported agents/scopes. | `add-mcp`. |
 | `afk setup plugins` | Run selected catalog installer commands and supported post-install commands. | Each plugin installer. |
@@ -772,7 +772,7 @@ Refresh replaces source-owned catalog content while preserving local catalog
 extensions. In `skills.json`, imported skills absent from the refreshed source
 survive. In `profiles.json`, locally created profiles whose IDs are absent from
 the refreshed source survive. The refreshed source wins on matching IDs and
-owns top-level profile policy such as `mode` and `alwaysOn`. In `agents.json`,
+owns top-level profile policy such as `mode`, `alwaysOn`, and `skillAliases`. In `agents.json`,
 refresh updates matching IDs, appends new source entries, and preserves local
 entries absent from the source. In version 2 `rules.json`, refresh updates
 matching layer IDs in place, preserves absent cached layers, and appends new
@@ -1466,6 +1466,11 @@ that set while at least one normally enabled focus profile is active:
 |---|---|
 | `strict` | Default. Profiles act like an availability sandbox: active skills outside the kept set move to `.disabled`. |
 | `context` | Profiles act like a context filter: cataloged manual skills with `autoInvocation: false` stay active, while discoverable or uncataloged skills outside the kept set move to `.disabled`. |
+
+The optional top-level `skillAliases` map declares renamed upstream skills-lock
+IDs used during setup recovery. The key remains the profile-facing skill ID and
+the value becomes the upstream `--skill` argument, such as
+`"stitch-remotion": "remotion"`. Omit aliases when both IDs already match.
 
 Use `afk profiles catalog create|edit --mode strict|context` to set the mode,
 or use `afk profiles catalog set-mode`.

@@ -576,6 +576,7 @@ test("runCli prints contextual setup help", async () => {
   assert.ok(text.includes("Subcommands:"));
   assert.ok(!text.includes("afk setup refresh"));
   assert.ok(text.includes("afk setup profiles"));
+  assert.ok(text.includes("afk setup profiles                Install skills from Skills Profiles"));
   assert.ok(text.includes("afk setup mcps"));
   assert.ok(text.includes("afk setup plugins"));
   assert.ok(text.includes("afk setup hooks"));
@@ -613,8 +614,9 @@ test("runCli prints contextual setup profiles help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK setup profiles"));
-  assert.ok(text.includes("Prepare focus profile definitions from profiles.json."));
-  assert.ok(text.includes("Profiles are catalog definitions"));
+  assert.ok(text.includes("Install skills from selected profiles in profiles.json."));
+  assert.ok(text.includes("automatically includes their composed dependencies"));
+  assert.ok(text.includes("offers lock-backed recovery, then asks before installing the available skills"));
   assert.ok(text.includes("afk setup profiles --local"));
   assert.ok(!text.includes("AFK setup skills"));
 });

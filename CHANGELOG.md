@@ -23,6 +23,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `cli:` made `afk setup profiles` offer profiles from the selected source, recover lock-backed missing skills across renamed upstream IDs after verified installation, and present a grouped, wrapping-safe readiness review before installing available skills with always-on and transitive composed dependencies.
 - `cli:` moved catalog editing under each owning command family (`afk skills catalog`, `afk profiles catalog`, and their peers), removed the top-level `afk catalog` route, and made root help describe every command inline.
 - `cli:` reordered the guided setup areas around the daily path: Rules, Skills, Plugins, and Custom Agents now appear before Profiles, MCPs, and Hooks.
 - `cli:` made `afk skills list` and `afk skills show` include only enabled skills by default, with `--disabled` required to inspect disabled entries.
