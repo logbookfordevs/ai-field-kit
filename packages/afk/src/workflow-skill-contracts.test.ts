@@ -20,8 +20,9 @@ describe("AFK ticket workflow contracts", () => {
     const skill = readRepositoryFile("skills/afk-implement-tickets/SKILL.md");
 
     expect(skill).toContain("review_base");
-    expect(skill).toContain("green atomic local commit");
-    expect(skill).toContain("ticket-owned paths");
+    expect(skill).toContain("## Green Atomic Commits");
+    expect(skill).toContain("Commit each green behavior slice");
+    expect(skill).toContain("ticket-owned implementation");
     expect(skill).toContain(
       "outside agent-created commits unless the user or repository convention explicitly opts them in",
     );
@@ -29,9 +30,15 @@ describe("AFK ticket workflow contracts", () => {
     expect(skill).toContain("awaiting_acceptance");
     expect(skill).toContain("compact receipt");
     expect(skill).toContain("complete review output");
-    expect(skill).toContain("Rewriting history and any push, PR, publish, tag, or release action");
-    expect(skill).toContain("including Plannotator Review when used");
+    expect(skill).toContain("revalidate");
+    expect(skill).toContain("This authorizes forward local commits.");
+    expect(skill).toContain("History rewrites and remote or public actions still require approval.");
+    expect(skill).toContain("If local commits are unavailable, ask.");
+    expect(skill).toContain(
+      "only the user's explicit acceptance, directly or through approval of an external review result, sets `accepted`.",
+    );
     expect(skill.match(/review_base/g)).toHaveLength(3);
+    expect(skill).not.toContain("A user-approved external code review");
     expect(skill).not.toContain("tracking_commits");
     expect(skill).not.toContain("selected tracking policy");
     expect(skill).not.toContain("repository-owned tracking");
@@ -49,11 +56,12 @@ describe("AFK ticket workflow contracts", () => {
     expect(reference).toContain("review-gate states");
   });
 
-  test("code review accepts a fixed point from its invoking workflow", () => {
+  test("code review preserves upstream fixed-point ownership", () => {
     const skill = readRepositoryFile("skills/afk-code-review/SKILL.md");
 
-    expect(skill).toContain("user or invoking workflow");
-    expect(skill).toContain("Ask only if no fixed point was supplied.");
+    expect(skill).toContain("fixed point the user supplies");
+    expect(skill).toContain("Whatever the user said is the fixed point");
+    expect(skill).not.toContain("invoking workflow");
     expect(skill).not.toContain("Send a single message with two sub-agent calls.");
   });
 

@@ -77,8 +77,6 @@ Keep the ticket status `review` while any review gate remains open. Retain every
 - For actionable findings, preserve the complete review output plus the judgment and resolution for each finding.
 - For a clean review, keep a compact receipt with the reviewed range, finding count per axis, verification gaps, and `awaiting_acceptance` gate state.
 
-A user-approved external code review, including Plannotator Review when used, may move the code gate from `awaiting_acceptance` to `accepted`.
-
 Do not name gates after evidence sources such as tests, lint, Figma, or backend contracts. Record those under validation or discipline evidence.
 
 Use `blocked_by` for ticket dependencies, human decisions, missing context, or external blockers.
@@ -97,25 +95,22 @@ Before moving a ticket to `review`, record evidence for each selected discipline
 
 Do not mark the ticket `review` while selected discipline evidence is missing without an explicit skip reason.
 
-During implementation, run the narrowest relevant test files and relevant typechecking regularly. Before the code gate begins, run the complete relevant test suite and required project checks. If a full project suite is disproportionate, unavailable, or outside the ticket's validation boundary, record the reason and strongest substitute.
+During implementation, run focused tests and relevant typechecking. Run the complete relevant validation before review, or record the strongest available substitute.
 
 ## Green Atomic Commits
-Record the current `HEAD` as `review_base` before editing and keep it unchanged across every review round.
+Record `HEAD` as `review_base` before editing. Keep it unchanged across every review round.
 
-After each meaningful behavior slice is green, create a green atomic local commit from explicit ticket-owned paths. Preserve unrelated working-tree changes.
+Commit each green behavior slice, and commit all ticket-owned implementation before review.
 
-This workflow authorizes forward local commits for the active ticket. Rewriting history and any push, PR, publish, tag, or release action still require explicit user approval.
-
-Commit every ticket-owned implementation change before opening the code gate. If local commits are unavailable, record the limitation and ask before continuing.
+This authorizes forward local commits. History rewrites and remote or public actions still require approval. If local commits are unavailable, ask.
 
 ## Code Gate
-After final validation, run `afk-code-review` from the unchanged `review_base`.
+After final validation, run `afk-code-review` from `review_base`.
 
-- If it reports actionable findings, set the code gate to `changes_requested`, preserve the findings, reconcile and fix them, commit the fixes, then review the complete original range again.
-- If it reports no actionable findings, set the gate to `awaiting_acceptance`.
-- Only user approval or a user-approved external review moves the gate to `accepted`.
+- Findings: set `changes_requested`, reconcile, fix, revalidate, commit, and review the original range again.
+- Clean: set `awaiting_acceptance`; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
 
-Persist review evidence after each round. A tracking-only review receipt does not trigger another review; implementation fixes do.
+Persist each review round. Tracking-only receipts do not trigger another review.
 
 ## Ticket Record
 Keep task-local state in the tracking home. Preserve `Parent` and `User Stories Covered` when present. Keep these sections or equivalent fields when creating or normalizing the record: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, `Code Review Findings`, and `Handoff Notes`.
