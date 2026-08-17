@@ -1069,6 +1069,26 @@ test("runCli enables a profile additively by default", async () => {
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "video")), true);
 });
 
+test("runCli accepts additive as an explicit compatibility alias", async () => {
+  const homeDir = localHomeWithManifests({
+    "profiles.json": {
+      version: 1,
+      alwaysOn: [],
+      items: [{ id: "video", name: "Video", skills: ["video"] }],
+    },
+  });
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "video", "Video");
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(
+    ["skills", "profiles", "enable", "video", "--additive", "--dry-run"],
+    { HOME: homeDir },
+  ));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("video (additive)"));
+});
+
 test("runCli enables a profile in focus mode through the runtime flag", async () => {
   const homeDir = localHomeWithManifests({
     "profiles.json": {
