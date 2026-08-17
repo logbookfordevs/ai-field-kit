@@ -141,7 +141,7 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
     return 1;
   }
 
-  if (key === "setup") {
+  if (key === "setup" || isPresetSetupCommand(commandPath)) {
     return runSetupCommand(commandPath, runtime, options);
   }
 
@@ -263,6 +263,7 @@ const commandHelps: Record<string, CommandHelp> = {
     notes: [
       "Use this when you want AFK to prepare agent-facing surfaces on this machine or in the current project.",
       "Pass --source to merge and apply selected source entries without changing the remembered source.",
+      "Use afk setup --all --yes to install every cataloged item non-interactively for detected harnesses.",
     ],
     options: [
       setupOptions.refresh,
@@ -295,6 +296,39 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup --local",
       "afk setup --source your-org/dev-kit",
       "afk setup --preset afk-architect",
+      "afk setup --all --yes",
+    ],
+  },
+  preset: {
+    title: "AFK preset",
+    summary: "Choose and apply a preset from the cached or selected AFK catalog.",
+    usage: "afk preset [id] [options]",
+    notes: [
+      "Without an id, AFK opens a menu of presets from the current cache or --source.",
+      "This is a shortcut for afk setup preset.",
+    ],
+    options: setupAreaOptions,
+    examples: [
+      "afk preset",
+      "afk preset daily-routine",
+      "afk preset afk-architect",
+      "afk preset --source your-org/dev-kit",
+    ],
+  },
+  "setup preset": {
+    title: "AFK setup preset",
+    summary: "Choose and apply a preset from the cached or selected AFK catalog.",
+    usage: "afk setup preset [id] [options]",
+    notes: [
+      "Without an id, AFK opens a menu of presets from the current cache or --source.",
+      "The --preset <id> setup flag remains available for compatibility.",
+    ],
+    options: setupAreaOptions,
+    examples: [
+      "afk setup preset",
+      "afk setup preset daily-routine",
+      "afk setup preset afk-architect",
+      "afk setup preset --source your-org/dev-kit",
     ],
   },
   refresh: {
@@ -1194,7 +1228,12 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let dryRun = false;
   let verbose = false;
   let yes = false;
-  let presetId = "";
+  const presetRoute = presetRouteFromCommandPath(commandPath);
+  if (presetRoute.kind === "error") {
+    return { help: false, kind: "error", error: presetRoute.error };
+  }
+  let presetId = presetRoute.presetId;
+  const presetPrompt = presetRoute.prompt;
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
   let allSkills = false;
@@ -1327,7 +1366,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--refresh") {
-      if (key !== "setup" && !commandToArea(commandPath)) {
+      if (key !== "setup" && !commandToArea(commandPath) && !isPresetSetupCommand(commandPath)) {
         return { help: false, kind: "error", error: "--refresh is only supported with afk setup commands" };
       }
       refreshBeforeSetup = true;
@@ -1848,6 +1887,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       verbose,
       yes,
       ...(presetId ? { presetId } : {}),
+      ...(presetPrompt ? { presetPrompt: true } : {}),
       allSkills,
       allCustomAgents,
       selectedSkillIds: [],
@@ -1959,6 +1999,24 @@ function commandToArea(commandPath: string[]): Area | null {
   }
 
   return null;
+}
+
+function isPresetSetupCommand(commandPath: string[]): boolean {
+  return commandPath[0] === "preset" || (commandPath[0] === "setup" && commandPath[1] === "preset");
+}
+
+function presetRouteFromCommandPath(commandPath: string[]): { kind: "ok"; presetId: string; prompt: boolean } | { kind: "error"; error: string } {
+  if (!isPresetSetupCommand(commandPath)) {
+    return { kind: "ok", presetId: "", prompt: false };
+  }
+
+  const idIndex = commandPath[0] === "preset" ? 1 : 2;
+  const presetId = commandPath[idIndex] ?? "";
+  if (commandPath.length > idIndex + 1) {
+    return { kind: "error", error: `Unexpected preset argument: ${commandPath[idIndex + 1]}` };
+  }
+
+  return { kind: "ok", presetId, prompt: presetId.length === 0 };
 }
 
 async function runSetupCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
@@ -2129,6 +2187,13 @@ function isCliUpdateCommand(key: string): boolean {
 }
 
 function helpCommandPath(commandPath: string[], key: string): string[] {
+  if (key === "preset" || key.startsWith("preset ")) {
+    return ["preset"];
+  }
+
+  if (key === "setup preset" || key.startsWith("setup preset ")) {
+    return ["setup", "preset"];
+  }
   if (key === "skills add" || key.startsWith("skills add ")) {
     return ["skills", "add"];
   }
@@ -2252,6 +2317,7 @@ Usage:
   afk refresh [category...] [options]
   afk catalog [options]
   afk setup [options]
+  afk setup preset [id] [options]
   afk setup rules [options]
   afk setup skills [options]
   afk setup agents [options]
@@ -2259,6 +2325,7 @@ Usage:
   afk setup plugins [options]
   afk setup hooks [options]
   afk skills <command> [options]
+  afk preset [id] [options]
   afk ui <command> [options]
   afk update [options]
   afk catalog rules [options]
@@ -2275,6 +2342,7 @@ Common paths:
   afk open                    Open the user AFK folder
   afk doctor                  Validate every local AFK catalog file
   afk setup                   Prepare rules, skills, Custom Agents, MCPs, plugins, and hooks
+  afk preset                  Choose and apply a catalog preset
   afk refresh                 Update the local catalog cache
   afk catalog                 Edit writable local catalog files
   afk update                  Update AFK from the latest GitHub release

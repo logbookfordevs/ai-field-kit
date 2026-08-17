@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added interactive `afk preset` and `afk setup preset` routes that choose named bundles from the cached catalog or a one-off `--source`, plus a source-aware `daily-routine` preset for every rule, skill, plugin, and Custom Agent, while preserving `afk setup --preset <id>` for compatibility.
 - `cli:` added `afk refresh --override` to make the selected source authoritative for targeted catalog files after two confirmations, with dry-run preview support.
 - `cli:` added `--refresh` to setup commands so the matching global or project catalog scope refreshes before setup begins.
 - `skills:` added the optional manual `afk-code-review-check` wrapper for verifying AFK Code Review findings against the code and discussing verdicts before making changes.
@@ -22,6 +23,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `cli:` reordered the guided setup areas around the daily path: Rules, Skills, Plugins, and Custom Agents now appear before Profiles, MCPs, and Hooks.
 - `cli:` made `afk skills list` and `afk skills show` include only enabled skills by default, with `--disabled` required to inspect disabled entries.
 - `cli:` made `afk skills delete --profile` present the profile's installed skills as an all-selected checklist before deletion, while `--yes` keeps deleting the full installed set non-interactively.
 - `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.
@@ -37,6 +39,10 @@ This changelog tracks meaningful updates by version and date.
 
 - `skills:` made `afk-code-review-check` run AFK Code Review, preserve its complete findings verbatim, and append validation verdicts instead of asking for or summarizing the review input.
 - `rules:` made the bundled AFK rules layer fetch its files from the source repository and replaced missing-local-file stack traces with guidance to use a full URL or `--source <owner/repo>`.
+
+### Removed
+
+- `cli:` removed the bundled `baseline` preset; use the source-aware `daily-routine` preset or guided `afk setup` instead.
 
 ## v1.2.2 - 2026-08-09
 
