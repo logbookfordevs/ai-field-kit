@@ -170,6 +170,7 @@ export type PresetManifestItem = {
   id: string;
   label: string;
   areas: string[];
+  all?: boolean;
   selections?: PresetSelections;
 };
 
@@ -835,6 +836,8 @@ function isPresetManifestItem(value: unknown): value is PresetsManifest["presets
     typeof value.label === "string" &&
     Array.isArray(value.areas) &&
     value.areas.every((area) => typeof area === "string") &&
+    (value.all === undefined || typeof value.all === "boolean") &&
+    !(value.all === true && value.selections !== undefined) &&
     (value.selections === undefined || (
       isRecord(value.selections) &&
       (value.selections.skills === undefined || isStringArray(value.selections.skills)) &&

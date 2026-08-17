@@ -14,6 +14,7 @@ const promptState = vi.hoisted(() => ({
   searchableCheckboxMessages: [] as string[],
   searchableCheckboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string; searchAliases?: string[] }>>,
   setupAreas: ["plugins"] as string[],
+  presetId: "afk-architect",
   inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
   confirmMessages: [] as string[],
 }));
@@ -52,7 +53,7 @@ vi.mock("@inquirer/prompts", () => ({
 
     return [];
   }),
-  select: vi.fn(async () => "global"),
+  select: vi.fn(async ({ message }: { message: string }) => message === "Choose an AFK preset" ? promptState.presetId : "global"),
   confirm: vi.fn(async ({ message }: { message: string }) => {
     promptState.confirmMessages.push(message);
     return true;
@@ -243,7 +244,19 @@ test("selectSetup offers profiles as a setup area", async () => {
   const selection = await selectSetup(defaultOptions(localHomeWithPluginManifest()));
 
   assert.deepEqual(selection.areas, ["profiles"]);
-  assert.ok(promptState.checkboxChoices["Choose what AFK should prepare"]?.some((choice) => choice.name === "Skills Profiles" && choice.value === "profiles"));
+  assert.ok(promptState.checkboxChoices["Choose what AFK should prepare"]?.some((choice) => choice.name === "Profiles" && choice.value === "profiles"));
+});
+
+test("selectSetup presents the guided areas in daily-first order", async () => {
+  promptState.checkboxChoices = {};
+  promptState.setupAreas = [];
+
+  await selectSetup(defaultOptions(localHomeWithAllManifests()));
+
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose what AFK should prepare"]?.map((choice) => choice.value),
+    ["rules", "skills", "plugins", "agents", "profiles", "mcps", "hooks"],
+  );
 });
 
 test("selectPluginsInstall does not ask for agent targets when installing plugins", async () => {
@@ -385,6 +398,76 @@ test("selectSetup resolves a preset to its exact required selections", async () 
   assert.deepEqual(selection.mcpIds, []);
   assert.deepEqual(selection.pluginIds, []);
   assert.deepEqual(selection.hookIds, []);
+});
+
+test("selectSetup prompts for a preset from the prepared source manifest", async () => {
+  promptState.presetId = "source-preset";
+  const homeDir = localHomeWithArchitectPreset();
+  const selection = await selectSetup({
+    ...defaultOptions(homeDir),
+    presetPrompt: true,
+    yes: true,
+    agents: ["codex"],
+    manifestContents: {
+      "presets.json": JSON.stringify({
+        version: 1,
+        defaultsSource: "acme/source-kit",
+        presets: [{
+          id: "source-preset",
+          label: "Source preset",
+          areas: ["skills"],
+          selections: { skills: ["afk-architect"] },
+        }],
+      }),
+    },
+  });
+
+  assert.deepEqual(selection.areas, ["skills"]);
+  assert.deepEqual(selection.skillIds, ["afk-architect"]);
+});
+
+test("selectSetup resolves an all-area preset to every item in its declared areas", async () => {
+  const homeDir = localHomeWithAllManifests();
+  writeFileSync(join(localManifestDir(homeDir), "presets.json"), `${JSON.stringify({
+    version: 1,
+    defaultsSource: "",
+    presets: [{
+      id: "daily-routine",
+      label: "Daily Routine",
+      areas: ["rules", "skills", "plugins", "agents"],
+      all: true,
+    }],
+  }, null, 2)}\n`);
+  writeFileSync(join(localManifestDir(homeDir), "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "afk-cartographer", label: "AFK Cartographer", source: "agents/afk-cartographer.md" },
+      { id: "afk-builder", label: "AFK Builder", source: "agents/afk-builder.md" },
+      { id: "afk-pathfinder", label: "AFK Pathfinder", source: "agents/afk-pathfinder.md" },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(localManifestDir(homeDir), "plugins.json"), `${JSON.stringify({
+    version: 1,
+    items: [{
+      id: "sample-plugin",
+      label: "Sample Plugin",
+      description: "Sample plugin install.",
+      install: { command: "sample-plugin", args: [] },
+      default: true,
+    }],
+  }, null, 2)}\n`);
+
+  const selection = await selectSetup({
+    ...defaultOptions(homeDir),
+    yes: true,
+    presetId: "daily-routine",
+    agents: ["codex"],
+  });
+
+  assert.deepEqual(selection.areas, ["rules", "skills", "plugins", "agents"]);
+  assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
+  assert.deepEqual(selection.pluginIds, ["sample-plugin"]);
+  assert.deepEqual(selection.customAgentIds, ["afk-cartographer", "afk-builder", "afk-pathfinder"]);
 });
 
 test("selectSetup yes mode includes all skills when requested", async () => {

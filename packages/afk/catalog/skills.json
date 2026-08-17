@@ -117,7 +117,10 @@
             "default": true,
             "autoInvocation": false,
             "role": "workflow",
-            "composes": []
+            "composes": [
+                "tdd",
+                "afk-code-review"
+            ]
         },
         {
             "id": "afk-ui-registry-preferences",

@@ -39,7 +39,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
   try {
     selection = await selectSetup(prepared.options);
   } catch (error) {
-    if (!prepared.options.presetId) {
+    if (!prepared.options.presetId && !prepared.options.presetPrompt) {
       throw error;
     }
     runtime.io.stderr(error instanceof Error ? error.message : String(error));
@@ -47,6 +47,7 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
   }
   const selectedOptions: CliOptions = {
     ...prepared.options,
+    ...(selection.presetId ? { presetId: selection.presetId } : {}),
     agents: selection.agents,
     setupScope: selection.setupScope,
     scopeExplicit: true,
@@ -71,11 +72,14 @@ export async function runSetup(runtime: Runtime, options: CliOptions): Promise<n
     return 0;
   }
 
-  const architectPreset = options.presetId === "afk-architect";
+  const selectedPresetId = selection.presetId ?? options.presetId;
+  const architectPreset = selectedPresetId === "afk-architect";
   runtime.io.stdout(architectPreset ? `\n${sectionTitle("AFK Architect")}` : "\nSetup path");
   if (architectPreset) {
     runtime.io.stdout("- Preset: afk-architect");
     runtime.io.stdout("- Bundle: Architect + Cartographer + Builder + Pathfinder");
+  } else if (selectedPresetId) {
+    runtime.io.stdout(`- Preset: ${selectedPresetId}`);
   }
   runtime.io.stdout(`- Scope: ${scopeLabel(selection.setupScope, options.cwd)}`);
   runtime.io.stdout(`- Areas: ${selection.areas.join(", ")}`);
