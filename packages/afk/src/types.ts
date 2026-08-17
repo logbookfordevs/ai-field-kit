@@ -49,6 +49,7 @@ export type CliOptions = {
   verbose: boolean;
   yes: boolean;
   presetId?: string;
+  presetPrompt?: boolean;
   allSkills: boolean;
   allCustomAgents?: boolean;
   selectedSkillIds: string[];

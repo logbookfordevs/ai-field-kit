@@ -22,7 +22,7 @@ import {
   type SkillManifest,
 } from "./manifest.js";
 
-test("loadPresetsManifest accepts area presets and explicit required selections", () => {
+test("loadPresetsManifest accepts area presets, all-area presets, and explicit required selections", () => {
   const manifest = loadPresetsManifest({
     homeDir: "/unused",
     manifestContents: {
@@ -31,6 +31,7 @@ test("loadPresetsManifest accepts area presets and explicit required selections"
         defaultsSource: "logbookfordevs/ai-field-kit",
         presets: [
           { id: "baseline", label: "Baseline", areas: ["rules", "skills"] },
+          { id: "daily-routine", label: "Daily Routine", areas: ["rules", "skills", "plugins", "agents"], all: true },
           {
             id: "afk-architect",
             label: "AFK Architect",
@@ -46,7 +47,13 @@ test("loadPresetsManifest accepts area presets and explicit required selections"
   });
 
   assert.deepEqual(manifest.presets[0], { id: "baseline", label: "Baseline", areas: ["rules", "skills"] });
-  assert.deepEqual(manifest.presets[1]?.selections, {
+  assert.deepEqual(manifest.presets[1], {
+    id: "daily-routine",
+    label: "Daily Routine",
+    areas: ["rules", "skills", "plugins", "agents"],
+    all: true,
+  });
+  assert.deepEqual(manifest.presets[2]?.selections, {
     skills: ["afk-architect"],
     customAgents: ["afk-cartographer", "afk-builder", "afk-pathfinder"],
   });
@@ -612,7 +619,7 @@ test("packaged plugin manifests keep npx installs non-interactive", () => {
 
 test("packaged catalogs expose the AFK Architect required bundle", () => {
   const presets = JSON.parse(readFileSync(new URL("../catalog/presets.json", import.meta.url), "utf8")) as {
-    presets: Array<{ id: string; selections?: { skills?: string[]; customAgents?: string[] } }>;
+    presets: Array<{ id: string; areas: string[]; all?: boolean; selections?: { skills?: string[]; customAgents?: string[] } }>;
   };
   const skills = JSON.parse(readFileSync(new URL("../catalog/skills.json", import.meta.url), "utf8")) as {
     items: Array<{ id: string }>;
@@ -623,6 +630,14 @@ test("packaged catalogs expose the AFK Architect required bundle", () => {
   assert.deepEqual(preset.selections?.skills, ["afk-architect"]);
   assert.deepEqual(preset.selections?.customAgents, ["afk-cartographer", "afk-builder", "afk-pathfinder"]);
   assert.ok(skills.items.some((item) => item.id === "afk-architect"));
+
+  const dailyRoutine = presets.presets.find((item) => item.id === "daily-routine");
+  assert.deepEqual(dailyRoutine, {
+    id: "daily-routine",
+    label: "Daily Routine",
+    areas: ["rules", "skills", "plugins", "agents"],
+    all: true,
+  });
 });
 
 test("plugin manifests reject shell control tokens outside shell commands", () => {

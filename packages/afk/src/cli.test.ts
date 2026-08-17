@@ -219,6 +219,83 @@ test("runCli exposes preset setup and rejects a missing preset id", async () => 
   assert.ok(output.join("\n").includes("Missing --preset value"));
 });
 
+test("runCli exposes the preset command family and setup preset routes", async () => {
+  const output: string[] = [];
+  const presetHelpCode = await withConsole(output, () => runCli(["preset", "--help"]));
+  const presetHelp = output.join("\n");
+
+  assert.equal(presetHelpCode, 0);
+  assert.ok(presetHelp.includes("AFK preset"));
+  assert.ok(presetHelp.includes("afk preset [id] [options]"));
+  assert.ok(presetHelp.includes("--source <source>"));
+
+  output.length = 0;
+  const setupHelpCode = await withConsole(output, () => runCli(["setup", "preset", "--help"]));
+  const setupHelp = output.join("\n");
+
+  assert.equal(setupHelpCode, 0);
+  assert.ok(setupHelp.includes("AFK setup preset"));
+  assert.ok(setupHelp.includes("afk setup preset [id] [options]"));
+  assert.ok(setupHelp.includes("afk setup preset afk-architect"));
+});
+
+test("runCli accepts explicit preset ids through both new routes", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-preset-routes-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+
+  for (const route of [["preset", "afk-architect"], ["setup", "preset", "afk-architect"]]) {
+    const output: string[] = [];
+    const code = await withConsole(output, () => runCli([
+      ...route,
+      "--source",
+      repoDir,
+      "--agent",
+      "codex",
+      "--yes",
+      "--dry-run",
+    ], { HOME: homeDir, AI_RULES_REPO: repoDir }));
+
+    assert.equal(code, 0);
+    assert.ok(output.join("\n").includes("- Preset: afk-architect"));
+  }
+});
+
+test("runCli dry-runs the source-aware daily routine in declared area order", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-daily-routine-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli([
+    "preset",
+    "daily-routine",
+    "--source",
+    repoDir,
+    "--agent",
+    "codex",
+    "--yes",
+    "--dry-run",
+  ], { HOME: homeDir, AI_RULES_REPO: repoDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0, text);
+  assert.ok(text.includes("- Preset: daily-routine"));
+  assert.ok(text.includes("- Areas: rules, skills, plugins, agents"));
+  assert.ok(text.indexOf("◆ Rules") < text.indexOf("◆ Skills"));
+  assert.ok(text.indexOf("◆ Skills") < text.indexOf("◆ Plugins"));
+  assert.ok(text.indexOf("◆ Plugins") < text.indexOf("◆ Custom Agents"));
+  assert.ok(text.includes("- afk-architect ->"));
+  assert.ok(text.includes("afk-cartographer.toml"));
+});
+
+test("runCli documents the existing all-catalog setup path", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "--help"]));
+  const text = output.join("\n");
+
+  assert.equal(code, 0);
+  assert.ok(text.includes("afk setup --all --yes"));
+  assert.ok(text.includes("every cataloged item"));
+});
+
 test("runCli refreshes the full catalog before setup when --refresh is passed", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-refresh-"));
   const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
@@ -1691,6 +1768,12 @@ test("runCli shows explicit preset members", async () => {
       defaultsSource: "acme/dev-kit",
       presets: [
         {
+          id: "daily-routine",
+          label: "Daily Routine",
+          areas: ["rules", "skills", "plugins", "agents"],
+          all: true,
+        },
+        {
           id: "afk-architect",
           label: "AFK Architect",
           areas: ["skills", "agents"],
@@ -1709,6 +1792,8 @@ test("runCli shows explicit preset members", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("skills: afk-architect"));
   assert.ok(text.includes("custom agents: afk-cartographer, afk-builder, afk-pathfinder"));
+  assert.ok(text.includes("Daily Routine"));
+  assert.ok(text.includes("all items in declared areas"));
 });
 
 test("isPromptExit detects Inquirer Ctrl-C exits", () => {
