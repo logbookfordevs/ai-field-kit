@@ -393,6 +393,8 @@ useful, open a PR.
 
 **Adding a skill:**
 
+Start lean: prompts earn detail through observed failure, not anticipated failure.
+
 1. Scaffold it with the CLI: `npx skills init my-skill`
 2. Fill in `my-skill/SKILL.md` following the existing patterns in
    [`skills/`](./skills).
