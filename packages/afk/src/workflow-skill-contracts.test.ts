@@ -35,7 +35,7 @@ describe("AFK ticket workflow contracts", () => {
     expect(skill).toContain("History rewrites and remote or public actions still require approval.");
     expect(skill).toContain("If local commits are unavailable, ask.");
     expect(skill).toContain(
-      "only the user's explicit acceptance, directly or through approval of an external review result, sets `accepted`.",
+      "only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.",
     );
     expect(skill.match(/review_base/g)).toHaveLength(3);
     expect(skill).not.toContain("A user-approved external code review");
