@@ -154,9 +154,9 @@ function startDelegateStatus(runtime: Runtime, label: string): { stop: (success:
 
   const frames = ["-", "\\", "|", "/"];
   let index = 0;
-  process.stdout.write(`${start} `);
+  process.stdout.write(fitStatusFrame(start, " "));
   const timer = setInterval(() => {
-    process.stdout.write(`\r${start} ${frames[index % frames.length]}`);
+    process.stdout.write(`\r${fitStatusFrame(start, ` ${frames[index % frames.length]}`)}`);
     index += 1;
   }, 80);
 
@@ -166,6 +166,22 @@ function startDelegateStatus(runtime: Runtime, label: string): { stop: (success:
       process.stdout.write(`\r${success ? done : failed}${" ".repeat(12)}\n`);
     },
   };
+}
+
+function fitStatusFrame(message: string, suffix: string): string {
+  const columns = process.stdout.columns;
+  const frame = `${message}${suffix}`;
+  if (!columns || frame.length <= columns) {
+    return frame;
+  }
+
+  if (columns <= suffix.length) {
+    return frame.slice(0, columns);
+  }
+
+  const messageWidth = columns - suffix.length;
+  const fittedMessage = messageWidth === 1 ? "…" : `${message.slice(0, messageWidth - 1)}…`;
+  return `${fittedMessage}${suffix}`;
 }
 
 function isInteractiveTerminal(): boolean {

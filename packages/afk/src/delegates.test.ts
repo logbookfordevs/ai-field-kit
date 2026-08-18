@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "vitest";
+import { test, vi } from "vitest";
 import { buildMcpCommands, buildSkillCommands, buildToolCommands, buildToolUpdateCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions, Runtime } from "./types.js";
@@ -362,6 +362,54 @@ test("runDelegateCommands hides delegated command details by default", async () 
   assert.deepEqual(output, ["- First: preparing...", "- First: ready"]);
 });
 
+test("runDelegateCommands keeps animated status frames within the terminal width", async () => {
+  const stdoutDescriptor = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
+  const columnsDescriptor = Object.getOwnPropertyDescriptor(process.stdout, "columns");
+  const ci = process.env.CI;
+  const writes: string[] = [];
+  const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+    writes.push(String(chunk));
+    return true;
+  });
+
+  Object.defineProperty(process.stdout, "isTTY", { configurable: true, value: true });
+  Object.defineProperty(process.stdout, "columns", { configurable: true, value: 60 });
+  delete process.env.CI;
+
+  try {
+    const runtime: Runtime = {
+      io: {
+        stdout: () => undefined,
+        stderr: () => undefined,
+      },
+      spawn: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 90));
+        return { code: 0 };
+      },
+    };
+    const command: DelegateCommand = {
+      label: "Shared skills / https://github.com/jakubkrehel/make-interfaces-feel-better",
+      command: "skills",
+      args: [],
+    };
+
+    await runDelegateCommands(runtime, [command], { ...options, dryRun: false, verbose: false });
+
+    const animatedFrames = writes.filter((value) => !value.endsWith("\n"));
+    assert.ok(animatedFrames.length >= 2);
+    assert.ok(animatedFrames.every((value) => value.replace(/^\r/, "").length <= 60));
+  } finally {
+    write.mockRestore();
+    restoreProperty(process.stdout, "isTTY", stdoutDescriptor);
+    restoreProperty(process.stdout, "columns", columnsDescriptor);
+    if (ci === undefined) {
+      delete process.env.CI;
+    } else {
+      process.env.CI = ci;
+    }
+  }
+});
+
 test("runDelegateCommands shows delegated command details in verbose mode", async () => {
   const output: string[] = [];
   const spawnBehaviors: boolean[] = [];
@@ -409,6 +457,15 @@ function sampleCommands(): DelegateCommand[] {
     { label: "First", command: "first", args: [] },
     { label: "Second", command: "second", args: [] },
   ];
+}
+
+function restoreProperty(target: NodeJS.WriteStream, property: "isTTY" | "columns", descriptor: PropertyDescriptor | undefined): void {
+  if (descriptor) {
+    Object.defineProperty(target, property, descriptor);
+    return;
+  }
+
+  delete (target as unknown as Record<string, unknown>)[property];
 }
 
 function fakeRuntime(calls: string[], codes: number[], warnings: string[] = []): Runtime {
