@@ -1,6 +1,7 @@
 ---
 name: afk-to-spec
 description: Turn the current conversation into a spec and save it as an AFK artifact, or publish it to the project issue tracker when requested — no interview, just synthesis of what you've already discussed.
+disable-model-invocation: true
 metadata:
   short-description: Create or normalize an agent-ready spec.
 ---

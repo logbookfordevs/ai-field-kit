@@ -1,6 +1,7 @@
 ---
 name: afk-doc-craft
 description: "Human-facing documentation only. Use when the user asks to create, rewrite, restructure, polish, or critique reader-facing docs such as READMEs, guides, API docs, onboarding, troubleshooting, runbooks, implementation docs, and PR descriptions. Do not use for agent-facing instruction work: AGENTS.md, CLAUDE.md, SKILL.md, prompts, agent rules, policies, workflows, skill/plugin content, or other harness instructions. Skip read-only documentation lookup, summarization, or context gathering."
+disable-model-invocation: true
 ---
 
 # AFK Doc Craft

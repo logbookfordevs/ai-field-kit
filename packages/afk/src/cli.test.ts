@@ -5,7 +5,7 @@ import { join, resolve } from "node:path";
 import { test } from "vitest";
 import { isPromptExit, runCli, runCliWithRuntime } from "./cli.js";
 import type { Runtime } from "./types.js";
-import { localManifestDir } from "./manifest.js";
+import { localManifestDir, manifestNames } from "./manifest.js";
 
 test("runCli prints package version for version flags", async () => {
   const output: string[] = [];
@@ -386,6 +386,74 @@ test("runCli refreshes the full catalog before setup when --refresh is passed", 
   assert.equal(code, 0);
   assert.ok(text.includes("Refreshing global AFK catalog."));
   assert.ok(text.indexOf("Refreshing global AFK catalog.") < text.indexOf("Choose the parts of your AI field setup"));
+});
+
+test("runCli setup init-only persists an explicit source for a new user", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-explicit-source-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+
+  const code = await runCli([
+    "setup",
+    "--source",
+    repoDir,
+    "--yes",
+    "--init-only",
+  ], { HOME: homeDir, AI_RULES_REPO: repoDir });
+
+  assert.equal(code, 0);
+  for (const filename of manifestNames) {
+    assert.equal(existsSync(join(localManifestDir(homeDir), filename)), true, filename);
+  }
+  const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as { defaultsSource: string };
+  const skills = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as { items: Array<{ id: string }> };
+  assert.equal(presets.defaultsSource, "");
+  assert.ok(skills.items.some((item) => item.id === "afk-architect"));
+});
+
+test("runCli setup repairs missing catalog files from the remembered source", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-partial-catalog-"));
+  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  const rememberedPresets = `${JSON.stringify({
+    version: 1,
+    defaultsSource: repoDir,
+    presets: [],
+  }, null, 2)}\n`;
+  writeFileSync(join(manifestDir, "presets.json"), rememberedPresets);
+
+  const code = await runCli([
+    "setup",
+    "--yes",
+    "--init-only",
+  ], { HOME: homeDir, AI_RULES_REPO: repoDir });
+
+  assert.equal(code, 0);
+  for (const filename of manifestNames) {
+    assert.equal(existsSync(join(manifestDir, filename)), true, filename);
+  }
+  const skills = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as { items: Array<{ id: string }> };
+  assert.equal(readFileSync(join(manifestDir, "presets.json"), "utf8"), rememberedPresets);
+  assert.ok(skills.items.some((item) => item.id === "afk-architect"));
+});
+
+test("runCli area refresh init-only does not initialize unrelated catalog files", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-area-refresh-init-"));
+
+  const code = await runCli([
+    "setup",
+    "skills",
+    "--refresh",
+    "--empty",
+    "--yes",
+    "--init-only",
+  ], { HOME: homeDir });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(localManifestDir(homeDir), "skills.json")), true);
+  for (const filename of manifestNames.filter((name) => name !== "skills.json")) {
+    assert.equal(existsSync(join(localManifestDir(homeDir), filename)), false, filename);
+  }
 });
 
 test("runCli limits project setup area refreshes to the matching local catalog category", async () => {

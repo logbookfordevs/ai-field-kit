@@ -1,6 +1,7 @@
 ---
 name: afk-pickup
 description: Find and resume from a disposable handoff document saved in the user's OS temporary directory.
+disable-model-invocation: true
 argument-hint: "Optional handoff path, repo name, topic, or 'latest'"
 metadata:
   short-description: Find and resume from temp-directory handoff notes.

@@ -1,6 +1,7 @@
 ---
 name: afk-implement-tickets
 description: Implement checkpointed local or remote tickets with statuses, review gates, handoff notes, parallel-agent coordination, interruption recovery, and durable progress state.
+disable-model-invocation: true
 metadata:
   short-description: Implement tickets with status, validation, and handoff tracking.
 ---
