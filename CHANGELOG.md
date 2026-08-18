@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v1.3.0 - 2026-08-18
+
 ### Added
 
 - `cli:` added interactive `afk preset` and `afk setup preset` routes that choose named bundles from the cached catalog or a one-off `--source`, plus a source-aware `daily-routine` preset for every rule, skill, tool, and Custom Agent, while preserving `afk setup --preset <id>` for compatibility.
