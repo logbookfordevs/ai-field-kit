@@ -1,6 +1,7 @@
 ---
 name: afk-ui-registry-preferences
 description: Reference map for choosing UI registries, component primitives, and headless foundations in React/Tailwind frontend work. Use when a task needs a mature UI primitive, registry block, shadcn/ui component, community registry, or headless component foundation.
+disable-model-invocation: true
 metadata:
   short-description: Choose preferred UI registries and primitives without defaulting blindly to shadcn.
 ---

@@ -759,14 +759,24 @@ async function ensureManifestFiles(runtime: Runtime, options: CliOptions): Promi
 }
 
 async function prepareSetupManifests(runtime: Runtime, options: CliOptions): Promise<{ code: number; options: CliOptions }> {
+  if (options.initOnly && options.refreshBeforeSetup) {
+    return { code: 0, options };
+  }
+
   if (options.defaultsSourceExplicit) {
+    if (options.initOnly) {
+      return prepareManifestFiles(runtime, { ...options, rememberDefaultsSource: false });
+    }
     const manifestContents = await loadSourceManifestContents({ ...options, rememberDefaultsSource: false });
     return { code: 0, options: { ...options, manifestContents, rememberDefaultsSource: false } };
   }
 
   const rememberedSource = readRememberedDefaultsSource(options);
   if (rememberedSource && options.selectedManifestCategories.length === 0) {
-    return { code: 0, options };
+    return prepareManifestFiles(runtime, {
+      ...options,
+      rememberDefaultsSource: false,
+    });
   }
 
   if (rememberedSource) {

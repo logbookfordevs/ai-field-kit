@@ -2,3 +2,5 @@ interface:
   display_name: "Implement Tickets"
   short_description: "Implement local or remote tickets with durable progress tracking."
   default_prompt: "Implement the existing tickets."
+policy:
+  allow_implicit_invocation: false

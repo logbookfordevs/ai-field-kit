@@ -1,6 +1,7 @@
 ---
 name: afk-animated-driven-frontend
 description: Cinematic frontend engineering for animated, interactive, immersive UIs with intentional motion, microinteractions, transitions, tactile feedback, optional sound, and optional 3D.
+disable-model-invocation: true
 ---
 
 # Animated-Driven Frontend
