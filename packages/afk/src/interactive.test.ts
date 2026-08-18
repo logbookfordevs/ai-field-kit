@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { confirmSkillProfileInstall, normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectToolsInstall } from "./interactive.js";
+import { confirmSkillProfileInstall, normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectSource, selectToolsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
@@ -15,6 +15,9 @@ const promptState = vi.hoisted(() => ({
   searchableCheckboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string; searchAliases?: string[] }>>,
   setupAreas: ["tools"] as string[],
   presetId: "afk-architect",
+  selectChoices: {} as Record<string, Array<{ name?: string; value?: string; description?: string }>>,
+  selectResponses: {} as Record<string, string>,
+  inputResponse: undefined as string | undefined,
   inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
   confirmMessages: [] as string[],
 }));
@@ -53,7 +56,10 @@ vi.mock("@inquirer/prompts", () => ({
 
     return [];
   }),
-  select: vi.fn(async ({ message }: { message: string }) => message === "Choose an AFK preset" ? promptState.presetId : "global"),
+  select: vi.fn(async ({ message, choices }: { message: string; choices?: Array<{ name?: string; value?: string; description?: string }> }) => {
+    promptState.selectChoices[message] = choices ?? [];
+    return promptState.selectResponses[message] ?? (message === "Choose an AFK preset" ? promptState.presetId : "global");
+  }),
   confirm: vi.fn(async ({ message }: { message: string }) => {
     promptState.confirmMessages.push(message);
     return true;
@@ -64,7 +70,7 @@ vi.mock("@inquirer/prompts", () => ({
       required,
       validateResult: validate(""),
     });
-    return defaultValue ?? "acme/dev-kit";
+    return promptState.inputResponse ?? defaultValue ?? "acme/dev-kit";
   }),
 }));
 
@@ -600,6 +606,34 @@ test("selectDefaultsSource pre-fills the remembered source and requires input", 
       validateResult: "Enter a setup source to continue.",
     },
   ]);
+});
+
+test("selectSource offers the default once, favorites in saved order, and another source", async () => {
+  promptState.selectChoices = {};
+  promptState.selectResponses = { "Choose a catalog source": "acme/second-kit" };
+
+  const source = await selectSource({
+    defaultSource: "acme/default-kit",
+    favoriteSources: ["acme/default-kit", "acme/first-kit", "acme/second-kit"],
+  });
+
+  assert.equal(source, "acme/second-kit");
+  assert.deepEqual(promptState.selectChoices["Choose a catalog source"], [
+    { name: "acme/default-kit", value: "acme/default-kit", description: "Default source" },
+    { name: "acme/first-kit", value: "acme/first-kit", description: "Favorite source" },
+    { name: "acme/second-kit", value: "acme/second-kit", description: "Favorite source" },
+    { name: "Enter another source", value: "__other_source__", description: "Use another source for this command" },
+  ]);
+});
+
+test("selectSource accepts another source without saving it", async () => {
+  promptState.selectResponses = { "Choose a catalog source": "__other_source__" };
+  promptState.inputResponse = "acme/one-off-kit";
+
+  const source = await selectSource({ defaultSource: "", favoriteSources: [] });
+
+  assert.equal(source, "acme/one-off-kit");
+  promptState.inputResponse = undefined;
 });
 
 function defaultOptions(homeDir: string): CliOptions {

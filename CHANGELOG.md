@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `cli:` added global favorite catalog sources with `afk sources list|add|remove`; bare `--source` now opens an on-demand picker containing the remembered default, saved favorites, and a one-off entry path, while normal commands continue directly with the default.
 - `cli:` added interactive `afk preset` and `afk setup preset` routes that choose named bundles from the cached catalog or a one-off `--source`, plus a source-aware `daily-routine` preset for every rule, skill, tool, and Custom Agent, while preserving `afk setup --preset <id>` for compatibility.
 - `cli:` added `afk refresh --override` to make the selected source authoritative for targeted catalog files after two confirmations, with dry-run preview support.
 - `cli:` added `--refresh` to setup commands so the matching global or project catalog scope refreshes before setup begins.

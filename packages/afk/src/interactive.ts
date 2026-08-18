@@ -275,6 +275,33 @@ export async function selectDefaultsSource(rememberedSource: string): Promise<st
   });
 }
 
+export async function selectSource(preferences: { defaultSource: string; favoriteSources: string[] }): Promise<string> {
+  const otherSource = "__other_source__";
+  const favorites = [...new Set(preferences.favoriteSources)].filter((source) => source !== preferences.defaultSource);
+  const selected = await select({
+    message: "Choose a catalog source",
+    choices: [
+      ...(preferences.defaultSource ? [{
+        name: preferences.defaultSource,
+        value: preferences.defaultSource,
+        description: "Default source",
+      }] : []),
+      ...favorites.map((source) => ({ name: source, value: source, description: "Favorite source" })),
+      { name: "Enter another source", value: otherSource, description: "Use another source for this command" },
+    ],
+    theme: afkSelectTheme,
+  });
+  if (selected !== otherSource) {
+    return selected;
+  }
+  return input({
+    message: "Which catalog source should be used?",
+    required: true,
+    validate: (value) => value.trim().length > 0 || "Enter a source to continue.",
+    theme: afkSelectTheme,
+  });
+}
+
 export async function selectRulesSync(options: CliOptions): Promise<Pick<SetupSelection, "agents" | "agentSource">> {
   if (options.yes) {
     const detected = detectSetupTargets(options);

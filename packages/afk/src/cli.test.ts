@@ -31,6 +31,7 @@ test("runCli prints general help for top-level help", async () => {
   assert.ok(output.join("\n").includes("afk open"));
   assert.ok(!output.join("\n").includes("afk catalog [options]"));
   assert.ok(output.join("\n").includes("afk doctor [options]"));
+  assert.ok(output.join("\n").includes("afk sources [command]"));
   assert.ok(output.join("\n").includes("afk setup [options]"));
   assert.ok(output.join("\n").includes("afk setup profiles [options]"));
   assert.ok(output.join("\n").includes("afk setup mcps [options]"));
@@ -298,7 +299,7 @@ test("runCli exposes the preset command family and setup preset routes", async (
   assert.equal(presetHelpCode, 0);
   assert.ok(presetHelp.includes("AFK preset"));
   assert.ok(presetHelp.includes("afk preset [id] [options]"));
-  assert.ok(presetHelp.includes("--source <source>"));
+  assert.ok(presetHelp.includes("--source [source]"));
 
   output.length = 0;
   const setupHelpCode = await withConsole(output, () => runCli(["setup", "preset", "--help"]));
@@ -716,6 +717,82 @@ test("runCli accepts default-source aliases on refresh", async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("runCli manages favorite sources without fetching catalogs", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": {
+      version: 1,
+      defaultsSource: "acme/default-kit",
+      favoriteSources: ["acme/first-kit"],
+      presets: [{ id: "daily", label: "Daily", areas: ["skills"] }],
+    },
+  });
+  const originalFetch = globalThis.fetch;
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    throw new Error("favorite source management must not fetch");
+  };
+
+  try {
+    const output: string[] = [];
+    const addCode = await withConsole(output, () => runCli(["sources", "add", "acme/dev-kit"], { HOME: homeDir }));
+    const duplicateCode = await withConsole(output, () => runCli(["sources", "add", "acme/dev-kit"], { HOME: homeDir }));
+    const listCode = await withConsole(output, () => runCli(["sources", "list"], { HOME: homeDir }));
+    const removeCode = await withConsole(output, () => runCli(["sources", "remove", "acme/first-kit"], { HOME: homeDir }));
+    const presets = JSON.parse(readFileSync(join(localManifestDir(homeDir), "presets.json"), "utf8")) as {
+      defaultsSource: string;
+      favoriteSources: string[];
+      presets: Array<{ id: string }>;
+    };
+
+    assert.equal(addCode, 0);
+    assert.equal(duplicateCode, 0);
+    assert.equal(listCode, 0);
+    assert.equal(removeCode, 0);
+    assert.equal(fetchCalls, 0);
+    assert.deepEqual(presets, {
+      version: 1,
+      defaultsSource: "acme/default-kit",
+      favoriteSources: ["acme/dev-kit"],
+      presets: [{ id: "daily", label: "Daily", areas: ["skills"] }],
+    });
+    assert.ok(output.join("\n").includes("acme/default-kit (default)"));
+    assert.ok(output.join("\n").includes("acme/dev-kit"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("runCli rejects a bare source picker in yes mode", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["setup", "--source", "--yes"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Bare --source requires an interactive prompt"));
+  assert.ok(output.join("\n").includes("--source <source>"));
+});
+
+test("runCli rejects a bare source picker without an interactive terminal", async () => {
+  const output: string[] = [];
+  const runtime: Runtime = {
+    io: {
+      stdout: (message) => output.push(message),
+      stderr: (message) => output.push(message),
+    },
+    spawn: async () => ({ code: 0 }),
+  };
+  const code = await runCliWithRuntime(
+    ["show", "--source"],
+    {},
+    runtime,
+    { stdin: false, stdout: false },
+  );
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Bare --source requires an interactive terminal"));
+  assert.ok(output.join("\n").includes("--source <source>"));
 });
 
 test("runCli keeps --source github mapped to the built-in AFK defaults source", async () => {

@@ -72,6 +72,7 @@ export type CliOptions = {
   refreshBeforeSetup?: boolean;
   defaultsSource: string;
   defaultsSourceExplicit: boolean;
+  sourcePrompt?: boolean;
   defaultSourceUpdate: string;
   rememberDefaultsSource?: boolean;
   setupManifestsPrepared?: boolean;
