@@ -15,6 +15,10 @@ This changelog tracks meaningful updates by version and date.
 
 - `cli:` made guided and non-interactive `afk setup` include only setup areas with actionable content in the selected catalog source, so partial custom catalogs no longer offer empty Tools, Profiles, MCPs, or Hooks flows.
 
+### Removed
+
+- `skills:` retired `afk-pickup`; use the `handoff` skill to save and resume disposable session context.
+
 ## v1.3.0 - 2026-08-18
 
 ### Added

@@ -137,20 +137,6 @@
             "composes": []
         },
         {
-            "id": "afk-pickup",
-            "label": "AFK - Pickup",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-pickup",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
-            "role": "utility",
-            "composes": []
-        },
-        {
             "id": "afk-compass",
             "label": "AFK - Compass",
             "source": "https://github.com/logbookfordevs/ai-field-kit",

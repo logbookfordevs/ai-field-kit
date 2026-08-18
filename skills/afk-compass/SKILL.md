@@ -31,7 +31,7 @@ The route is complete when the response contains one exact invocation, or explic
 | Implement existing checkpointed tickets | `afk-implement-tickets` |
 | Review code, verify every finding, and discuss verdicts before fixes | `afk-code-review-check` |
 | Report lint and typecheck findings without fixes | `afk-static-check` |
-| Save or resume disposable session context | `handoff` or `afk-pickup` |
+| Save or resume disposable session context | `handoff` |
 | Coordinate substantive work with native teammates in the current session | `afk-architect` |
 | Coordinate work across multiple runtimes or external agent processes | `orchestrator` |
 | Load a named AFK skill profile | `afk-profile-use` |
