@@ -51,9 +51,8 @@ When evaluating code and thinking between solutions, apply `Truss Evaluation` sk
 Push back when implementation convenience is prioritized over a materially better user experience.
 
 ## Comments
-- Default to no code comments; prefer clearer names, structure, types, ADRs.
-- Never add glossary, dictionary, taxonomy, ticket-note, or line-by-line explanation blocks in implementation files.
-- Use a short comment only to preserve a non-obvious constraint, dangerous edge case, external contract, or trade-off.
+- **Comment-sparse code:** express intent through names, structure, types, and ADRs.
+- A comment earns its place only when it preserves an enduring non-obvious invariant, dangerous edge case, external contract, or trade-off. Describe lasting code behavior, not task history.
 
 ## Sub-agents
 When spawning sub-agents, use the `afk-architect` skill as the coordination policy.
