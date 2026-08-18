@@ -271,6 +271,7 @@ afk show skills profiles
 | `afk refresh --local` | Refresh `./afk/catalog` instead of the global cache. |
 | `afk refresh --source <source>` | Refresh once from a source without remembering it as the default. |
 | `afk refresh --default-source <source>` | Save the source in `presets.json` and refresh from it. |
+| `afk sources [list|add|remove]` | Manage global favorite source shortcuts without fetching catalogs. |
 | `afk refresh --override` | Replace targeted catalog files from the source after two confirmations instead of preserving local-only entries. |
 | `afk refresh --empty` | Prepare empty catalog files instead of seeding source defaults. |
 | `afk show` | Print every cached catalog category. |
@@ -833,6 +834,18 @@ fetches the catalog.
 | GitHub tree URL | `https://github.com/your-org/dev-kit/tree/main/path/to/catalog` |
 | Raw GitHub directory URL | `https://raw.githubusercontent.com/your-org/dev-kit/main/afk/catalog` |
 | Local path | `./afk/catalog` |
+
+Use bare `--source` on any source-aware command to choose from the remembered
+default, favorite sources, or another one-off source. Commands without
+`--source` continue directly with the remembered default. Bare `--source`
+requires an interactive prompt; scripts and `--yes` must use
+`--source <source>`.
+
+Manage global favorites with `afk sources list`, `afk sources add <source>`, and
+`afk sources remove <source>`. Adding a favorite updates `presets.json` without
+fetching or validating the remote catalog. Using an entered source never saves
+it automatically, and removing a favorite does not change the remembered
+default.
 
 `--source` applies only to the current command. It can point at a local path or
 remote source and never changes the cache or remembered default by itself.

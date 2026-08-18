@@ -183,6 +183,7 @@ export type PresetManifestItem = {
 export type PresetsManifest = {
   version: number;
   defaultsSource: string;
+  favoriteSources?: string[];
   presets: PresetManifestItem[];
 };
 
@@ -250,10 +251,40 @@ export function planRememberedDefaultsSourceUpdate(options: ManifestDirOptions, 
   const next = {
     version: existing.version,
     defaultsSource: trimmedSource,
+    ...(existing.favoriteSources && existing.favoriteSources.length > 0 ? { favoriteSources: existing.favoriteSources } : {}),
     presets: existing.presets,
   };
 
   operations.push({ type: "write", path: presetsPath, content: `${JSON.stringify(next, null, 2)}\n` });
+  return operations;
+}
+
+export function readSourcePreferences(options: ManifestDirOptions): { defaultSource: string; favoriteSources: string[] } {
+  const manifest = readExistingPresetsManifest(join(manifestDirForOptions(options), "presets.json"));
+  return {
+    defaultSource: manifest.defaultsSource.trim(),
+    favoriteSources: unique(manifest.favoriteSources ?? []),
+  };
+}
+
+export function planFavoriteSourcesUpdate(options: ManifestDirOptions, favoriteSources: string[]): PathOperation[] {
+  const manifestDir = manifestDirForOptions(options);
+  const presetsPath = join(manifestDir, "presets.json");
+  const existing = readExistingPresetsManifest(presetsPath);
+  const operations: PathOperation[] = [];
+  if (!existsSync(manifestDir)) {
+    operations.push({ type: "mkdir", path: manifestDir });
+  }
+  operations.push({
+    type: "write",
+    path: presetsPath,
+    content: `${JSON.stringify({
+      version: existing.version,
+      defaultsSource: existing.defaultsSource,
+      favoriteSources: unique(favoriteSources.map((source) => source.trim()).filter(Boolean)),
+      presets: existing.presets,
+    }, null, 2)}\n`,
+  });
   return operations;
 }
 
@@ -263,6 +294,7 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
   const rememberedSource = rememberedDefaultsSource(manifestDir);
   const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
+  const favoriteSourcesForWrite = readExistingPresetsManifest(join(manifestDir, "presets.json")).favoriteSources ?? [];
   const shouldRefreshDefaults = options.refreshDefaults || options.defaultsSourceExplicit || Boolean(options.defaultsSource);
   const selectedNames = manifestNamesForCategories(options.selectedManifestCategories ?? []);
 
@@ -284,7 +316,7 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
 
       const rawContent = options.empty
         ? emptyManifestContent(name, options, effectiveDefaultsSource)
-        : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, sourceSession);
+        : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, favoriteSourcesForWrite, sourceSession);
       const content = rawContent ? mergedManifestContent(name, rawContent, target, options.overrideRefresh) : rawContent;
       if (content) {
         operations.push({ type: "write", path: target, content });
@@ -328,9 +360,10 @@ export async function loadDefaultManifestContent(name: ManifestName, options: Ma
   const rememberedSource = rememberedDefaultsSource(manifestDir);
   const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
+  const favoriteSourcesForWrite = readExistingPresetsManifest(join(manifestDir, "presets.json")).favoriteSources ?? [];
   const sourceSession = createManifestSourceSession(options, effectiveDefaultsSource);
   try {
-    return await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, sourceSession);
+    return await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, favoriteSourcesForWrite, sourceSession);
   } finally {
     sourceSession.cleanup();
   }
@@ -342,11 +375,12 @@ export async function loadSourceManifestContents(options: ManifestOptions): Prom
   const rememberedSource = rememberedDefaultsSource(manifestDir);
   const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
+  const favoriteSourcesForWrite = readExistingPresetsManifest(join(manifestDir, "presets.json")).favoriteSources ?? [];
   const sourceSession = createManifestSourceSession(options, effectiveDefaultsSource);
 
   try {
     for (const name of manifestNamesForCategories(options.selectedManifestCategories ?? [])) {
-      contents[name] = await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, sourceSession)
+      contents[name] = await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, favoriteSourcesForWrite, sourceSession)
         ?? emptyManifestContent(name, options, effectiveDefaultsSource);
     }
   } finally {
@@ -468,11 +502,12 @@ async function defaultManifestContent(
   options: ManifestOptions,
   defaultsSource: string,
   rememberedSourceForWrite: string,
+  favoriteSourcesForWrite: string[],
   sourceSession: ManifestSourceSession,
 ): Promise<string | null> {
   if (name === "presets.json") {
     const content = await fetchDefaultManifest(name, options, defaultsSource, sourceSession);
-    return content ? withRememberedDefaultsSource(content, rememberedSourceForWrite) : null;
+    return content ? withSourcePreferences(content, rememberedSourceForWrite, favoriteSourcesForWrite) : null;
   }
 
   const content = await fetchDefaultManifest(name, options, defaultsSource, sourceSession);
@@ -825,6 +860,7 @@ function readExistingPresetsManifest(path: string): PresetsManifest {
       return {
         version: typeof parsed.version === "number" ? parsed.version : 1,
         defaultsSource: typeof parsed.defaultsSource === "string" ? parsed.defaultsSource : "",
+        favoriteSources: Array.isArray(parsed.favoriteSources) ? parsed.favoriteSources.filter((source): source is string => typeof source === "string") : [],
         presets: Array.isArray(parsed.presets) ? parsed.presets.filter(isPresetManifestItem) : [],
       };
     }
@@ -1019,11 +1055,15 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
   return `${JSON.stringify({ version: 1, defaultsSource, presets: [] }, null, 2)}\n`;
 }
 
-function withRememberedDefaultsSource(content: string, defaultsSource: string): string {
+function withSourcePreferences(content: string, defaultsSource: string, favoriteSources: string[]): string {
   try {
     const parsed: unknown = JSON.parse(content);
     if (isRecord(parsed)) {
-      return `${JSON.stringify({ ...parsed, defaultsSource }, null, 2)}\n`;
+      return `${JSON.stringify({
+        ...parsed,
+        defaultsSource,
+        ...(favoriteSources.length > 0 ? { favoriteSources } : {}),
+      }, null, 2)}\n`;
     }
   } catch {
     return content;
@@ -1547,6 +1587,7 @@ function isPresetsManifest(value: unknown): value is PresetsManifest {
     isRecord(value) &&
     typeof value.version === "number" &&
     typeof value.defaultsSource === "string" &&
+    (value.favoriteSources === undefined || isStringArray(value.favoriteSources)) &&
     Array.isArray(value.presets) &&
     value.presets.every(isPresetManifestItem)
   );

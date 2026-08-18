@@ -886,9 +886,14 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
     const homeDir = mkdtempSync(join(tmpdir(), "afk-remembered-defaults-"));
     const manifestDir = localManifestDir(homeDir);
     mkdirSync(manifestDir, { recursive: true });
-    writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "acme/dev-kit", presets: [] }, null, 2)}\n`);
+    writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({
+      version: 1,
+      defaultsSource: "acme/dev-kit",
+      favoriteSources: ["acme/favorite-kit"],
+      presets: [],
+    }, null, 2)}\n`);
 
-    await ensureLocalManifests({
+    const operations = await ensureLocalManifests({
       homeDir,
       repoDir: "/tmp/repo",
       rulesRef: "main",
@@ -901,6 +906,9 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
     });
 
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
+    const presetsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("presets.json"));
+    assert.ok(presetsWrite && presetsWrite.type === "write");
+    assert.deepEqual((JSON.parse(presetsWrite.content) as { favoriteSources: string[] }).favoriteSources, ["acme/favorite-kit"]);
   } finally {
     globalThis.fetch = originalFetch;
   }

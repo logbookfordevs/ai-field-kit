@@ -153,6 +153,7 @@ from those projects without AFK reimplementing their installers.
 | Install the optimized AFK Architect bundle | `afk preset afk-architect` |
 | Run project-local setup | `afk setup --local` |
 | Refresh the global catalog cache | `afk refresh` |
+| Manage favorite catalog sources | `afk sources` |
 | Inspect the cached catalog | `afk show` |
 | Provision portable Custom Agents | `afk setup agents` |
 | Edit Custom Agent sources | `afk agents catalog` |
@@ -194,6 +195,27 @@ default source:
 afk setup --source your-org/dev-kit
 afk show skills --source your-org/dev-kit
 ```
+
+Run a source-aware command with bare `--source` to choose from the remembered
+default, saved favorites, or another one-off source. Without the flag, commands
+continue directly with the remembered default:
+
+```bash
+afk setup --source
+afk show skills --source
+```
+
+Favorite sources are global shortcuts stored in `presets.json`. Adding one is
+local and does not fetch or validate the catalog:
+
+```bash
+afk sources list
+afk sources add your-org/dev-kit
+afk sources remove your-org/dev-kit
+```
+
+Bare `--source` requires an interactive prompt. For scripts and `--yes`, pass
+the source explicitly as `--source <source>`.
 
 Setup caches only the entries it applies. Show remains read-only.
 

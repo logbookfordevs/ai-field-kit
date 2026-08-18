@@ -14,9 +14,11 @@ import { selectCatalogSkillsLobbyRoute, selectCompassLobbyRoute, shouldOpenCompa
 import { resolveHome, resolveRepoDir } from "./paths.js";
 import { packageVersion, runUpdateCommand } from "./update-check.js";
 import { runAfkOpen } from "./open.js";
+import { runSourcesCommand } from "./sources.js";
 import { isPromptExit } from "./menu.js";
 import { buildToolUpdateCommands, runDelegateCommands } from "./delegates.js";
-import { selectToolUpdates } from "./interactive.js";
+import { selectSource, selectToolUpdates } from "./interactive.js";
+import { readSourcePreferences } from "./manifest.js";
 import type {
   AgentId,
   Area,
@@ -59,10 +61,15 @@ export async function runCli(argv: string[], env: NodeJS.ProcessEnv = process.en
   }
 }
 
-export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, runtime: Runtime): Promise<number> {
-  if (shouldOpenCompassLobby(argv, env)) {
+export async function runCliWithRuntime(
+  argv: string[],
+  env: NodeJS.ProcessEnv,
+  runtime: Runtime,
+  tty: { stdin: boolean; stdout: boolean } = { stdin: Boolean(process.stdin.isTTY), stdout: Boolean(process.stdout.isTTY) },
+): Promise<number> {
+  if (shouldOpenCompassLobby(argv, env, tty)) {
     const route = await selectCompassLobbyRoute(runtime);
-    return runCliWithRuntime(route, env, runtime);
+    return runCliWithRuntime(route, env, runtime, tty);
   }
 
   const parsed = parseArgs(argv, env);
@@ -89,7 +96,20 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
     return 1;
   }
 
-  const { commandPath, options } = parsed;
+  const { commandPath } = parsed;
+  let { options } = parsed;
+  if (options.sourcePrompt) {
+    if (options.yes) {
+      runtime.io.stderr("Bare --source requires an interactive prompt. Use --source <source> with --yes.");
+      return 1;
+    }
+    if (!tty.stdin || !tty.stdout || env.CI === "true") {
+      runtime.io.stderr("Bare --source requires an interactive terminal. Use --source <source> instead.");
+      return 1;
+    }
+    const source = await selectSource(readSourcePreferences({ homeDir: options.homeDir, manifestLocal: false }));
+    options = { ...options, defaultsSource: source.trim(), defaultsSourceExplicit: true, sourcePrompt: false };
+  }
   const key = commandKey(commandPath);
 
   if (isRefreshCommand(key)) {
@@ -102,6 +122,9 @@ export async function runCliWithRuntime(argv: string[], env: NodeJS.ProcessEnv, 
 
   if (key === "doctor") {
     return runCatalogDoctor(runtime, options);
+  }
+  if (commandPath[0] === "sources") {
+    return runSourcesCommand(commandPath, runtime, options);
   }
   if (isCatalogAreaCommand(commandPath)) {
     return runCatalogAreaCommand(commandPath, runtime, options);
@@ -228,7 +251,7 @@ const setupOptions = {
   localManifest: "--local                           Refresh ./afk/catalog instead of the global catalog",
   localCatalog: "--local                           Write ./afk/catalog and prefer ./.agents/skills when available",
   agent: "--agent <agent>                   Override detected targets; repeatable",
-  source: "--source <source>                 Merge applied source entries, without remembering the source",
+  source: "--source [source]                 Choose a source or provide one for this command",
   preset: "--preset <id>                     Install one catalog preset as a required bundle",
   ref: "--ref <git-ref>                   Git ref for default AFK catalog URLs",
   initOnly: "--init-only                       Create/update the local catalog only, then exit",
@@ -588,7 +611,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "Without --source, show reads the local cache. With --source, it inspects that source for this run only.",
     ],
     options: [
-      "--source <source>                Show catalog files from this source",
+      "--source [source]                Choose a source or provide one for this command",
       "--local                          Show ./afk/catalog instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
       "--visualize                      Write a self-contained skills composition HTML file",
@@ -1028,7 +1051,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--visualize writes and opens a self-contained HTML diagram for a more spatial view.",
     ],
     options: [
-      "--source <source>                Show skills from this source for this run only",
+      "--source [source]                Choose a source or provide one for this command",
       "--ref <git-ref>                  Git ref for GitHub catalog sources",
       "--local                          Show ./afk/catalog instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
@@ -1047,7 +1070,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Inspect the rules catalog AFK would sync into managed rule regions.",
     usage: "afk show rules [options]",
     options: [
-      "--source <source>                Show rules from this source for this run only",
+      "--source [source]                Choose a source or provide one for this command",
       "--ref <git-ref>                  Git ref for GitHub catalog sources",
       "--local                          Show ./afk/catalog instead of the global cache",
     ],
@@ -1062,7 +1085,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Inspect MCP recommendations before delegating installation to add-mcp.",
     usage: "afk show mcps [options]",
     options: [
-      "--source <source>                Show MCPs from this source for this run only",
+      "--source [source]                Choose a source or provide one for this command",
       "--ref <git-ref>                  Git ref for GitHub catalog sources",
       "--local                          Show ./afk/catalog instead of the global cache",
     ],
@@ -1077,7 +1100,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Inspect portable Custom Agent catalog entries before provisioning.",
     usage: "afk show agents [options]",
     options: [
-      "--source <source>                Show Custom Agents from this source for this run only",
+      "--source [source]                Choose a source or provide one for this command",
       "--ref <git-ref>                  Git ref for GitHub catalog sources",
       "--local                          Show ./afk/catalog instead of the global cache",
     ],
@@ -1092,7 +1115,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Inspect optional tool installers and post-install commands.",
     usage: "afk show tools [options]",
     options: [
-      "--source <source>                Show tools from this source for this run only",
+      "--source [source]                Choose a source or provide one for this command",
       "--ref <git-ref>                  Git ref for GitHub catalog sources",
       "--local                          Show ./afk/catalog instead of the global cache",
     ],
@@ -1107,7 +1130,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Inspect lifecycle hooks AFK can merge into supported agent hook configs.",
     usage: "afk show hooks [options]",
     options: [
-      "--source <source>                Show hooks from this source for this run only",
+      "--source [source]                Choose a source or provide one for this command",
       "--ref <git-ref>                  Git ref for GitHub catalog sources",
       "--local                          Show ./afk/catalog instead of the global cache",
     ],
@@ -1122,7 +1145,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Inspect catalog presets such as remembered default source metadata.",
     usage: "afk show presets [options]",
     options: [
-      "--source <source>                Show presets from this source for this run only",
+      "--source [source]                Choose a source or provide one for this command",
       "--ref <git-ref>                  Git ref for GitHub catalog sources",
       "--local                          Show ./afk/catalog instead of the global cache",
     ],
@@ -1137,7 +1160,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Alias for afk show.",
     usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show catalog files from this source",
+      "--source [source]                Choose a source or provide one for this command",
       "--local                          Show ./afk/catalog instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
       "--visualize                      Write a self-contained skills composition HTML file",
@@ -1157,7 +1180,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Alias for afk show.",
     usage: "afk show [category...] [options]",
     options: [
-      "--source <source>                Show catalog files from this source",
+      "--source [source]                Choose a source or provide one for this command",
       "--local                          Show ./afk/catalog instead of the global cache",
       "--react                          Show skills as a React-style composition tree",
       "--visualize                      Write a self-contained skills composition HTML file",
@@ -1225,6 +1248,21 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills catalog status --local",
     ],
   },
+  sources: {
+    title: "AFK sources",
+    summary: "List and manage favorite catalog sources.",
+    usage: "afk sources [list|add|remove] [source]",
+    options: [
+      "list                              List the default and favorite sources",
+      "add <source>                      Add a favorite source without fetching it",
+      "remove <source>                   Remove a favorite source",
+    ],
+    examples: [
+      "afk sources list",
+      "afk sources add your-org/dev-kit",
+      "afk sources remove your-org/dev-kit",
+    ],
+  },
 };
 
 function catalogItemAreaHelp(title: string, area: "mcps" | "tools" | "hooks", label: string): CommandHelp {
@@ -1278,6 +1316,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let refreshBeforeSetup = false;
   let defaultsSource = "";
   let defaultsSourceExplicit = false;
+  let sourcePrompt = false;
   let defaultSourceUpdate = "";
   let manifestLocal = false;
   let manifestConfigureLocal = false;
@@ -1646,8 +1685,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     if (arg === "--source") {
       const value = args[index + 1];
       const trimmedValue = value?.trim();
-      if (!trimmedValue) {
-        return { help: false, kind: "error", error: "Missing --source value" };
+      if (!trimmedValue || trimmedValue.startsWith("-")) {
+        sourcePrompt = true;
+        continue;
       }
       defaultsSource = trimmedValue;
       defaultsSourceExplicit = true;
@@ -1954,6 +1994,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       refreshBeforeSetup,
       defaultsSource,
       defaultsSourceExplicit,
+      sourcePrompt,
       defaultSourceUpdate,
       manifestLocal,
       manifestConfigureLocal,
@@ -2356,6 +2397,7 @@ Usage:
   afk                         Open the interactive lobby when your terminal supports prompts
   afk open                    Open the user AFK folder
   afk doctor [options]        Validate every local AFK catalog file
+  afk sources [command]       List and manage favorite catalog sources
   afk refresh [category...] [options]               Update the local catalog cache
   afk setup [options]         Prepare rules, skills, Custom Agents, MCPs, tools, and hooks
   afk setup preset [id] [options]                   Choose and apply a catalog preset
