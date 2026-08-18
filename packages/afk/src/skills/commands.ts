@@ -34,7 +34,9 @@ import {
   loadSkillProfileCatalog,
   loadSkillProfileState,
   reconcileSkillProfiles,
+  resolvedProfileSkillIds,
   skillProfileStatus,
+  skillProfilePaths,
   upsertSkillProfile,
   type SkillProfileContext,
   type SkillProfileItem,
@@ -63,6 +65,7 @@ import {
   runSkillUpdateCommands,
   type LockedSkillRecord,
 } from "./update.js";
+import { applySkillReset, planSkillReset } from "./reset.js";
 import {
   planSkillStartupStorageForItems,
   snapshotDisabledSkillIds,
@@ -72,7 +75,7 @@ import {
   upsertOpenAiImplicitInvocation,
 } from "../skills.js";
 
-type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "update" | "categorize" | "profiles";
+type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "update" | "reset" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   if (commandPath[0] === "profiles" && commandPath[1] === "catalog") {
@@ -113,6 +116,8 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
         return runSkillsDelete(operands[0], runtime, options);
       case "update":
         return runSkillsUpdate(operands, runtime, options);
+      case "reset":
+        return await runSkillsReset(runtime, options);
       case "categorize":
         return runCodexCategorization(runtime, {
           homeDir: options.homeDir,
@@ -131,6 +136,43 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
     runtime.io.stderr(error instanceof Error ? error.message : String(error));
     return 1;
   }
+}
+
+async function runSkillsReset(runtime: Runtime, options: CliOptions): Promise<number> {
+  if (options.setupScope !== "global" || options.manifestLocal) {
+    runtime.io.stderr("afk skills reset only supports the shared global library.");
+    return 1;
+  }
+  const plan = planSkillReset(options);
+  const title = options.dryRun ? "Skills Reset Preview" : "Skills Reset";
+  const summary = [
+    section(title),
+    `Activate (${plan.activate.length})\n  ${plan.activate.join(", ") || "none"}`,
+    `Disable (${plan.disable.length})\n  ${plan.disable.join(", ") || "none"}`,
+    `Uncataloged (${plan.uncataloged.length})\n  ${plan.uncataloged.join(", ") || "none"}`,
+    `Missing (${plan.missing.length})\n  ${plan.missing.join(", ") || "none"}`,
+    `${muted("Profile state")} clear enabled profiles and movement history`,
+  ].join("\n\n");
+  runtime.io.stdout(summary);
+
+  if (options.dryRun) {
+    return 0;
+  }
+  if (!options.yes) {
+    const accepted = await confirm({
+      message: "Reset shared skills to cached skills.json policy?",
+      default: false,
+      theme: afkPromptTheme,
+    });
+    if (!accepted) {
+      runtime.io.stdout("Skills reset cancelled. Nothing was changed.");
+      return 0;
+    }
+  }
+
+  applySkillReset(plan);
+  runtime.io.stdout(`${accent("Reset")} shared skills now match cached skills.json policy.`);
+  return 0;
 }
 
 async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {
@@ -573,7 +615,8 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
         scope: "global",
         agent: undefined,
       }).records;
-      const profileRecords = profile.skills.map((skillId) => findSkillRecord(records, skillId));
+      const profileRecords = resolvedProfileSkillIds(profile, skillProfilePaths(context).catalogPath)
+        .map((skillId) => findSkillRecord(records, skillId));
 
       runtime.io.stdout(renderSkillProfileContext({
         profile,
@@ -589,7 +632,7 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
         runtime.io.stderr("No skill profiles found.");
         return 1;
       }
-      const activationMode = options.skillProfileAdditive ? "additive" : "focus";
+      const activationMode = options.skillProfileFocus ? "focus" : "additive";
       runtime.io.stdout(renderSkillProfileApply(enableSkillProfile(context, selectedId, options.dryRun, activationMode)));
       return 0;
     }
@@ -713,7 +756,8 @@ async function updateSkillNamesForProfile(
   runtime: Runtime,
   options: CliOptions,
 ): Promise<string[]> {
-  const profiles = listSkillProfiles({ homeDir: options.homeDir, cwd: options.cwd, local: false }).catalog.items;
+  const profileSnapshot = listSkillProfiles({ homeDir: options.homeDir, cwd: options.cwd, local: false });
+  const profiles = profileSnapshot.catalog.items;
   const profile = profileId
     ? findSkillProfile(profiles, profileId)
     : await promptSkillProfile(profiles, "Select a profile whose skills should be updated:");
@@ -722,11 +766,12 @@ async function updateSkillNamesForProfile(
   }
 
   const trackedByName = new Map(lockedSkills.map((record) => [record.name.toLowerCase(), record.name]));
-  const selected = profile.skills.flatMap((skill) => {
+  const profileSkills = resolvedProfileSkillIds(profile, profileSnapshot.paths.catalogPath);
+  const selected = profileSkills.flatMap((skill) => {
     const tracked = trackedByName.get(skill.toLowerCase());
     return tracked ? [tracked] : [];
   });
-  const skipped = profile.skills.filter((skill) => !trackedByName.has(skill.toLowerCase()));
+  const skipped = profileSkills.filter((skill) => !trackedByName.has(skill.toLowerCase()));
   if (skipped.length > 0) {
     runtime.io.stdout(`Skipped untracked profile skills: ${skipped.join(", ")}.`);
   }
@@ -1108,7 +1153,8 @@ async function runSkillsDeleteProfile(profileId: string | undefined, runtime: Ru
 function skillRecordsForProfile(options: CliOptions, profile: SkillProfileItem): SkillRecord[] {
   const records = loadMutationSkillRecords(options);
   const selected = new Map<string, SkillRecord>();
-  for (const skill of profile.skills) {
+  const context = skillProfileContext(options);
+  for (const skill of resolvedProfileSkillIds(profile, listSkillProfiles(context).paths.catalogPath)) {
     const record = findSkillRecord(records, skill);
     if (record) {
       selected.set(`${record.rootPath}:${record.folder}`, record);
@@ -1402,7 +1448,7 @@ async function promptSkillProfile(profiles: SkillProfileItem[], message: string)
     source: async (term) => filterSkillProfiles(profiles, term).map((profile) => ({
       name: `${strong(accent(profile.name))} ${muted(`[${profile.id}]`)}`,
       value: profile,
-      description: profile.skills.join(", "),
+      description: [...profile.catalogSkills, ...profile.packages.map((item) => item.source)].join(", "),
     })),
     pageSize: 12,
     instructions: {
@@ -1482,7 +1528,7 @@ function filterSkillProfiles(profiles: SkillProfileItem[], term: string | undefi
   }
 
   return profiles.filter((profile) => {
-    const searchable = [profile.id, profile.name, ...profile.skills].join(" ").toLowerCase();
+    const searchable = [profile.id, profile.name, ...profile.catalogSkills, ...profile.packages.map((item) => item.source)].join(" ").toLowerCase();
     return tokens.every((token) => searchable.includes(token));
   });
 }

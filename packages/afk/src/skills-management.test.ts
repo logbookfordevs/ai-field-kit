@@ -618,7 +618,7 @@ test("enableSkillProfile disables non-profile skills and preserves pre-disabled 
     items: [{ id: "engineering", name: "Engineering", skills: ["alpha"] }],
   });
 
-  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "engineering", false);
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "engineering", false, "focus");
 
   assert.deepEqual(enabled.state.activations, [{ profileId: "engineering", mode: "focus" }]);
   assert.deepEqual(enabled.state.profileMovedSkills, ["beta"]);
@@ -634,6 +634,35 @@ test("enableSkillProfile disables non-profile skills and preserves pre-disabled 
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "old")), true);
 });
 
+test("enableSkillProfile keeps imported skills supplied by a whole package", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-package-enable-"));
+  const homeDir = join(root, "home");
+  const cwd = join(root, "project");
+  writeSkill(join(homeDir, ".agents", "skills"), "remotion", "Remotion");
+  writeSkill(join(homeDir, ".agents", "skills"), "captions", "Captions");
+  writeSkill(join(homeDir, ".agents", "skills"), "unrelated", "Unrelated");
+  writeSkillManifest(homeDir, []);
+  const skillCatalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+  skillCatalog.items = [
+    { id: "remotion", label: "Remotion", source: "remotion-dev/skills", args: ["--skill", "remotion"], default: false, imported: true },
+    { id: "captions", label: "Captions", source: "remotion-dev/skills", args: ["--skill", "captions"], default: false, imported: true },
+  ];
+  writeFileSync(skillCatalogPath(homeDir), `${JSON.stringify(skillCatalog, null, 2)}\n`);
+  writeSkillProfiles(homeDir, {
+    version: 2,
+    mode: "strict",
+    alwaysOn: [],
+    items: [{ id: "video", name: "Video", catalogSkills: [], packages: [{ source: "remotion-dev/skills" }] }],
+  });
+
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "video", false, "focus");
+
+  assert.deepEqual(enabled.keptSkills, ["captions", "remotion"]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "remotion")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "captions")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "unrelated")), true);
+});
+
 test("enableSkillProfile temporarily enables pre-disabled skills kept by a profile", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-profile-pre-disabled-"));
   const homeDir = join(root, "home");
@@ -646,7 +675,7 @@ test("enableSkillProfile temporarily enables pre-disabled skills kept by a profi
     items: [{ id: "legacy", name: "Legacy", skills: ["old"] }],
   });
 
-  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "legacy", false);
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "legacy", false, "focus");
 
   assert.deepEqual(enabled.state.activations, [{ profileId: "legacy", mode: "focus" }]);
   assert.deepEqual(enabled.state.profileMovedSkills, ["alpha"]);
@@ -678,8 +707,8 @@ test("multiple enabled profiles keep the union of profile skills", () => {
     ],
   });
 
-  enableSkillProfile({ homeDir, cwd, local: false }, "front", false);
-  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "qa", false);
+  enableSkillProfile({ homeDir, cwd, local: false }, "front", false, "focus");
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "qa", false, "focus");
 
   assert.deepEqual(enabled.state.activations, [
     { profileId: "front", mode: "focus" },
@@ -704,7 +733,7 @@ test("additive profile activation preserves unrelated skills and restores borrow
     items: [{ id: "video", name: "Video", skills: ["video"] }],
   });
 
-  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "video", false, "additive");
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "video", false);
 
   assert.deepEqual(enabled.state.activations, [{ profileId: "video", mode: "additive" }]);
   assert.deepEqual(enabled.state.profileMovedSkills, []);
@@ -766,7 +795,7 @@ test("focus and additive profile activations reconcile independently", () => {
   });
 
   enableSkillProfile({ homeDir, cwd, local: false }, "video", false, "additive");
-  const focused = enableSkillProfile({ homeDir, cwd, local: false }, "engineering", false);
+  const focused = enableSkillProfile({ homeDir, cwd, local: false }, "engineering", false, "focus");
 
   assert.deepEqual(focused.state.activations, [
     { profileId: "engineering", mode: "focus" },
@@ -798,7 +827,7 @@ test("profile activation mode cannot change while the profile is enabled", () =>
   enableSkillProfile({ homeDir, cwd, local: false }, "video", false, "additive");
 
   assert.throws(
-    () => enableSkillProfile({ homeDir, cwd, local: false }, "video", false),
+    () => enableSkillProfile({ homeDir, cwd, local: false }, "video", false, "focus"),
     /already enabled in additive mode/,
   );
 });
@@ -846,7 +875,7 @@ test("context profile mode keeps cataloged manual skills active", () => {
     items: [{ id: "focus", name: "Focus", skills: ["alpha"] }],
   });
 
-  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "focus", false);
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "focus", false, "focus");
 
   assert.deepEqual(enabled.state.profileMovedSkills, ["unknown"]);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "manual")), true);
@@ -872,14 +901,14 @@ test("context profile mode restores manual skills moved by strict mode", () => {
     items: [{ id: "focus", name: "Focus", skills: ["alpha"] }],
   });
 
-  enableSkillProfile({ homeDir, cwd, local: false }, "focus", false);
+  enableSkillProfile({ homeDir, cwd, local: false }, "focus", false, "focus");
   writeSkillProfiles(homeDir, {
     version: 1,
     mode: "context",
     alwaysOn: [],
     items: [{ id: "focus", name: "Focus", skills: ["alpha"] }],
   });
-  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "focus", false);
+  const enabled = enableSkillProfile({ homeDir, cwd, local: false }, "focus", false, "focus");
 
   assert.deepEqual(enabled.state.profileMovedSkills, []);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "manual")), true);
@@ -921,7 +950,7 @@ test("runSkillsCommand catalog profiles edit profile-only disables explicit prof
 
   assert.equal(code, 0, output.join("\n"));
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
-  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["beta"] }]);
+  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", catalogSkills: ["beta"], packages: [] }]);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
   assert.equal(catalog.items.find((item) => item.id === "beta")?.startDisabled, true);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "beta")), false);
@@ -1096,7 +1125,7 @@ test("runSkillsCommand add appends imported skills to a profile", async () => {
   assert.equal(code, 0);
   assert.deepEqual(spawned[0]?.args, ["skills", "add", "owner/skills", "--global", "--agent", "universal", "--skill", "demo-skill", "--yes"]);
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
-  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["alpha", "demo-skill"] }]);
+  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", catalogSkills: ["alpha", "demo-skill"], packages: [] }]);
   assert.ok(output.join("\n").includes("Profile"));
 });
 
@@ -1183,7 +1212,7 @@ test("runSkillsCommand add profile-only appends every imported skill as disabled
   assert.equal(code, 0);
   assert.deepEqual(spawned[0]?.args, ["skills", "add", "owner/skills", "--global", "--agent", "universal", "--skill", "demo-one", "--skill", "demo-two", "--yes"]);
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
-  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["demo-one", "demo-two"] }]);
+  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", catalogSkills: ["demo-one", "demo-two"], packages: [] }]);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
   assert.deepEqual(catalog.items.map((item) => item.startDisabled), [true, true]);
   assert.deepEqual(loadSkillProfileState({ homeDir, cwd, local: false }).activations, []);
@@ -1225,7 +1254,7 @@ test("runSkillsCommand add consumes profile-only from interactive lobby routes",
   assert.equal(code, 0);
   assert.deepEqual(spawned[0]?.args, ["skills", "add", "https://github.com/pixijs/pixijs-skills", "--global", "--agent", "universal"]);
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
-  assert.deepEqual(profiles.items, [{ id: "gaming", name: "Gaming", skills: ["pixijs"] }]);
+  assert.deepEqual(profiles.items, [{ id: "gaming", name: "Gaming", catalogSkills: ["pixijs"], packages: [] }]);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "pixijs")), false);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "pixijs")), true);
   assert.ok(output.join("\n").includes("gaming created with 1 skill."));
@@ -1373,7 +1402,7 @@ test("runSkillsCommand add applies flags to a newly installed source-cataloged s
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
   assert.equal(catalog.items[0]?.startDisabled, true);
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
-  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["demo"] }]);
+  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", catalogSkills: ["demo"], packages: [] }]);
 });
 
 test("runSkillsCommand add imports uncataloged installed skills before adding and profiles only new skills", async () => {
@@ -1410,7 +1439,7 @@ test("runSkillsCommand add imports uncataloged installed skills before adding an
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
   assert.deepEqual(catalog.items.map((item) => item.id), ["existing", "new-skill"]);
   const profiles = JSON.parse(readFileSync(join(localManifestDir(homeDir), "profiles.json"), "utf8")) as SkillProfileCatalog;
-  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", skills: ["new-skill"] }]);
+  assert.deepEqual(profiles.items, [{ id: "video", name: "Video", catalogSkills: ["new-skill"], packages: [] }]);
   assert.ok(output.join("\n").includes("Catalog Required"));
   assert.ok(output.join("\n").includes("Route afk skills catalog import"));
   assert.ok(!output.join("\n").includes("tool-owned"));
@@ -1781,7 +1810,7 @@ test("renderSkillProfileApply summarizes profile movements compactly", () => {
   }), [
     "◆ Profile enabled: frontend",
     "Mode       strict",
-    "Active profiles frontend",
+    "Active profiles frontend (focus)",
     "",
     "Changes",
     "+ Activated (1)",
@@ -2425,7 +2454,7 @@ function writeSkillCatalog(homeDir: string, content: unknown, options: { legacy?
   writeFileSync(path, `${JSON.stringify(options.legacy ? content : skillManifestFixture(content), null, 2)}\n`);
 }
 
-function writeSkillProfiles(homeDir: string, content: SkillProfileCatalog | Omit<SkillProfileCatalog, "mode">): void {
+function writeSkillProfiles(homeDir: string, content: unknown): void {
   const path = join(localManifestDir(homeDir), "profiles.json");
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(content, null, 2)}\n`);

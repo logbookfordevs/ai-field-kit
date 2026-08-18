@@ -2,6 +2,40 @@
 
 AI Field Kit provides portable building blocks that can be installed across supported AI harnesses.
 
+## Skill Profiles
+
+**Skill Catalog**:
+The durable owner of individually configured skills and their global installation, invocation, composition, categorization, and startup policies.
+_Avoid_: Profile cache, package index
+
+**Catalog Skill**:
+A skill referenced by a profile through the Skill Catalog. Its catalog policy remains authoritative wherever the skill is used.
+_Avoid_: Profile Skill, Package Skill
+
+**Profile Package**:
+A remote skill source declared by a profile, optionally narrowed to selected upstream skills. Omitting the selection means the whole package.
+_Avoid_: Skill Catalog, bundled profile
+
+**Package Skill**:
+A skill acquired through a Profile Package. It belongs to the profile layer and remains profile-only unless promoted to the Skill Catalog.
+_Avoid_: Catalog Skill, imported skill
+
+**Skill Promotion**:
+The transfer of a Package Skill into Skill Catalog ownership so it can receive durable global configuration and be referenced as a Catalog Skill.
+_Avoid_: Cache import, profile enablement
+
+**Skill Provenance**:
+The record of how a skill entered the local cache. Provenance does not determine which layer owns its policy.
+_Avoid_: Skill ownership, startup policy
+
+**Additive Activation**:
+The default profile activation that enables the profile's skills without disabling unrelated active skills.
+_Avoid_: Focus Activation, permanent enablement
+
+**Focus Activation**:
+An explicit profile activation that filters unrelated active skills according to the profile reconciliation mode.
+_Avoid_: Additive Activation, catalog mode
+
 ## Custom Agents
 
 **Custom Agent**:

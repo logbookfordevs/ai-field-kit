@@ -105,6 +105,7 @@ export type CliOptions = {
   skillProfileAlwaysOn?: string[] | undefined;
   skillProfileMode?: SkillProfileMode | undefined;
   skillProfileAdditive?: boolean;
+  skillProfileFocus?: boolean;
   skillProfileOnly?: boolean;
   skillProfileUseAll?: boolean;
   uiCategory?: string;

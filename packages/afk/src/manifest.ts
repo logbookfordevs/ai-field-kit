@@ -1236,8 +1236,22 @@ function mergedProfilesManifestContent(content: string, targetPath: string, pres
   }
 
   const refreshedIds = new Set(refreshed.items.map((item) => item.id));
-  const localItems = existing.items.filter((item) => !refreshedIds.has(item.id));
+  const localItems = existing.items
+    .filter((item) => !refreshedIds.has(item.id))
+    .map((item) => migrateProfileManifestItem(item, refreshed.version));
   return `${JSON.stringify({ ...refreshed, items: [...refreshed.items, ...localItems] }, null, 2)}\n`;
+}
+
+function migrateProfileManifestItem(item: ProfilesManifest["items"][number], targetVersion: number): ProfilesManifest["items"][number] {
+  if (targetVersion >= 2) {
+    return {
+      id: item.id,
+      name: item.name,
+      catalogSkills: item.catalogSkills ?? item.skills ?? [],
+      packages: item.packages ?? [],
+    };
+  }
+  return { id: item.id, name: item.name, skills: item.skills ?? item.catalogSkills ?? [] };
 }
 
 type ProfilesManifest = {
@@ -1245,7 +1259,13 @@ type ProfilesManifest = {
   mode?: "strict" | "context";
   alwaysOn: string[];
   skillAliases?: Record<string, string>;
-  items: Array<{ id: string; name: string; skills: string[] }>;
+  items: Array<{
+    id: string;
+    name: string;
+    catalogSkills?: string[];
+    skills?: string[];
+    packages?: Array<{ source: string; skills?: string[] }>;
+  }>;
 };
 
 function readProfilesManifest(path: string): ProfilesManifest | undefined {
@@ -1284,15 +1304,25 @@ function isProfilesManifest(value: unknown): value is ProfilesManifest {
       Object.values(value.skillAliases).every((upstreamId) => typeof upstreamId === "string")
     )) &&
     Array.isArray(value.items) &&
-    value.items.every(isProfileManifestItem);
+    value.items.every((item) => isProfileManifestItem(item, value.version as number));
 }
 
-function isProfileManifestItem(value: unknown): value is ProfilesManifest["items"][number] {
+function isProfileManifestItem(value: unknown, version: number): value is ProfilesManifest["items"][number] {
   return isRecord(value) &&
     typeof value.id === "string" &&
     typeof value.name === "string" &&
-    Array.isArray(value.skills) &&
-    value.skills.every((skill) => typeof skill === "string");
+    (version >= 2
+      ? isStringArray(value.catalogSkills) && value.skills === undefined &&
+        (value.packages === undefined || isProfilePackages(value.packages))
+      : isStringArray(value.skills) && value.catalogSkills === undefined && value.packages === undefined);
+}
+
+function isProfilePackages(value: unknown): boolean {
+  return Array.isArray(value) && value.every((profilePackage) =>
+    isRecord(profilePackage) &&
+    typeof profilePackage.source === "string" &&
+    (profilePackage.skills === undefined || isStringArray(profilePackage.skills))
+  );
 }
 function stripRetiredSkillManifestFields(item: SkillManifestItem): SkillManifestItem {
   const next = { ...item } as SkillManifestItem & { profiles?: unknown };

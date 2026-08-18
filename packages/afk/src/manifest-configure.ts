@@ -1097,7 +1097,7 @@ function alwaysOnSearchAliases(item: EditableManifestItem): string[] {
 }
 
 function emptyProfileCatalog(): SkillProfileCatalog {
-  return { version: 1, mode: "strict", alwaysOn: [], items: [] };
+  return { version: 2, mode: "strict", alwaysOn: [], items: [] };
 }
 
 function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
@@ -1106,14 +1106,15 @@ function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
   }
 
   return {
-    version: Math.max(value.version, 1),
+    version: Math.max(value.version, 2),
     mode: value.mode === "context" ? "context" : "strict",
     alwaysOn: uniqueStrings(value.alwaysOn),
     items: value.items
       .map((item) => ({
         id: item.id.trim().toLowerCase(),
         name: item.name.trim() || item.id.trim(),
-        skills: uniqueStrings(item.skills),
+        catalogSkills: uniqueStrings(item.catalogSkills ?? (item as typeof item & { skills?: string[] }).skills ?? []),
+        packages: item.packages ?? [],
       }))
       .filter((item) => item.id)
       .sort((left, right) => left.id.localeCompare(right.id)),
@@ -1131,8 +1132,17 @@ function isProfileCatalogDraft(value: unknown): value is SkillProfileCatalog {
       isRecord(item) &&
       typeof item.id === "string" &&
       typeof item.name === "string" &&
-      Array.isArray(item.skills) &&
-      item.skills.every((skill) => typeof skill === "string")
+      ((value.version as number) >= 2
+        ? Array.isArray(item.catalogSkills) && item.catalogSkills.every((skill) => typeof skill === "string") &&
+          item.skills === undefined && (item.packages === undefined || (Array.isArray(item.packages) && item.packages.every((profilePackage) =>
+          isRecord(profilePackage) &&
+          typeof profilePackage.source === "string" &&
+          (profilePackage.skills === undefined || (
+            Array.isArray(profilePackage.skills) && profilePackage.skills.every((skill) => typeof skill === "string")
+          ))
+        )))
+        : Array.isArray(item.skills) && item.skills.every((skill) => typeof skill === "string") &&
+          item.catalogSkills === undefined && item.packages === undefined)
     );
 }
 

@@ -603,16 +603,18 @@ function renderProfilesSectionHtml(profiles: VisualizationProfiles | null, items
 }
 
 function renderProfileCardHtml(
-  profile: { id: string; name: string; skills: string[] },
+  profile: { id: string; name: string; catalogSkills: string[]; packages: Array<{ source: string }> },
   activationMode: "focus" | "additive" | undefined,
   itemIds: Set<string>,
 ): string {
-  const missing = profile.skills.filter((skill) => !itemIds.has(skill));
-  const skills = profile.skills.length > 0
-    ? profile.skills.map((skill) => renderProfileSkillPill(skill, itemIds.has(skill))).join("")
+  const missing = profile.catalogSkills.filter((skill) => !itemIds.has(skill));
+  const skills = profile.catalogSkills.length > 0
+    ? profile.catalogSkills.map((skill) => renderProfileSkillPill(skill, itemIds.has(skill))).join("")
     : `<span class="profile-skill missing">empty</span>`;
+  const packages = profile.packages.map((item) => `<span class="profile-skill">package:${escapeHtml(item.source)}</span>`).join("");
   const status = activationMode ? `enabled ${activationMode}` : "disabled";
-  return `<article class="profile-card${activationMode ? " enabled" : ""}"><b>${escapeHtml(profile.name)}</b><span class="profile-meta">${escapeHtml(profile.id)} · ${status} · ${profile.skills.length} skill${profile.skills.length === 1 ? "" : "s"}${missing.length > 0 ? ` · ${missing.length} missing` : ""}</span><div class="profile-skills">${skills}</div></article>`;
+  const packageSummary = profile.packages.length > 0 ? ` · ${profile.packages.length} package${profile.packages.length === 1 ? "" : "s"}` : "";
+  return `<article class="profile-card${activationMode ? " enabled" : ""}"><b>${escapeHtml(profile.name)}</b><span class="profile-meta">${escapeHtml(profile.id)} · ${status} · ${profile.catalogSkills.length} skill${profile.catalogSkills.length === 1 ? "" : "s"}${packageSummary}${missing.length > 0 ? ` · ${missing.length} missing` : ""}</span><div class="profile-skills">${skills}${packages}</div></article>`;
 }
 
 function renderAlwaysOnProfileCardHtml(skills: string[], itemIds: Set<string>): string {
@@ -639,7 +641,7 @@ function profileVisualizationSummary(profiles: VisualizationProfiles | null, ite
   }
 
   const itemIds = new Set(items.map((item) => stringValue(item.id, "unnamed")));
-  const profileSkills = profiles.catalog.items.flatMap((profile) => profile.skills);
+  const profileSkills = profiles.catalog.items.flatMap((profile) => profile.catalogSkills);
   return {
     profileCount: profiles.catalog.items.length,
     enabledCount: enabledSkillProfileIds(profiles.state).length,
@@ -681,7 +683,8 @@ function renderProfilesReactPlain(profiles: VisualizationProfiles | null, byId: 
       : []),
     ...profiles.catalog.items.flatMap((profile) => [
       `${childIndent}<SkillProfile id="${escapeJsxAttribute(profile.id)}"${activations.has(profile.id) ? ` enabled activation="${activations.get(profile.id)}"` : ""}>`,
-      ...profile.skills.map((skill) => renderSkillReferencePlain(skill, byId, indentLevel + 2)),
+      ...profile.catalogSkills.map((skill) => renderSkillReferencePlain(skill, byId, indentLevel + 2)),
+      ...profile.packages.map((item) => `${childIndent}  <SkillPackage source="${escapeJsxAttribute(item.source)}" />`),
       `${childIndent}</SkillProfile>`,
     ]),
     `${indent}</FocusProfiles>`,

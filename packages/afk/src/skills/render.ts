@@ -241,7 +241,8 @@ export function renderSkillProfileDetail(input: {
     renderField("State", activation ? success("enabled") : muted("disabled")),
     renderField("Activation", activation?.mode ?? muted("none")),
     renderField("Mode", input.catalog.mode),
-    renderField("Skills", input.profile.skills.length === 0 ? muted("none") : input.profile.skills.join(", ")),
+    renderField("Catalog skills", input.profile.catalogSkills.length === 0 ? muted("none") : input.profile.catalogSkills.join(", ")),
+    renderField("Packages", input.profile.packages.length === 0 ? muted("none") : input.profile.packages.map((item) => item.source).join(", ")),
     renderField("Always-on", input.catalog.alwaysOn.length === 0 ? muted("none") : input.catalog.alwaysOn.join(", ")),
     renderField("Catalog", input.catalogPath),
   ].join("\n");
@@ -259,7 +260,8 @@ export function renderSkillProfileWrite(input: {
     sectionTitle(input.dryRun ? `Profile ${verb} Preview` : `Profile ${verb} Complete`),
     `${input.dryRun ? muted("Would save") : accent("Saved")} ${strong(input.profile.name)} ${muted(`[${input.profile.id}]`)}`,
     renderField("Mode", input.mode),
-    renderField("Skills", input.profile.skills.length === 0 ? muted("none") : input.profile.skills.join(", ")),
+    renderField("Catalog skills", input.profile.catalogSkills.length === 0 ? muted("none") : input.profile.catalogSkills.join(", ")),
+    renderField("Packages", input.profile.packages.length === 0 ? muted("none") : input.profile.packages.map((item) => item.source).join(", ")),
     renderField("Catalog", input.catalogPath),
   ].join("\n");
 }
@@ -320,7 +322,7 @@ function renderSkillProfileActivations(state: SkillProfileState): string {
   }
 
   return state.activations
-    .map((activation) => activation.mode === "additive" ? `${activation.profileId} (additive)` : activation.profileId)
+    .map((activation) => `${activation.profileId} (${activation.mode})`)
     .join(", ");
 }
 
@@ -368,7 +370,8 @@ function renderSkillRow(record: SkillRecord, isLast: boolean): string {
 
 function renderSkillProfileRow(profile: SkillProfileItem, activationMode: "focus" | "additive" | undefined): string {
   const status = activationMode ? success(`enabled (${activationMode})`) : muted("disabled");
-  return `${paint(terminalPalette.sienna, "•")} ${strong(profile.name)} ${muted(`[${profile.id}]`)} ${status}\n  ${muted(profile.skills.length === 0 ? "No skills assigned." : profile.skills.join(", "))}`;
+  const members = [...profile.catalogSkills, ...profile.packages.map((item) => `package:${item.source}`)];
+  return `${paint(terminalPalette.sienna, "•")} ${strong(profile.name)} ${muted(`[${profile.id}]`)} ${status}\n  ${muted(members.length === 0 ? "No skills assigned." : members.join(", "))}`;
 }
 
 function renderLibrarySummary(records: SkillRecord[], categorization: SkillCategorizationState): string {

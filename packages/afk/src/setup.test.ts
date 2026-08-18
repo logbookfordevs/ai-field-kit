@@ -792,6 +792,282 @@ test("runArea profiles installs transitive composed skills after warning", async
   assert.ok(text.includes("--skill wrapper dependency"));
 });
 
+test("runArea profiles installs whole packages and imports their discovered skills", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 2,
+      mode: "context",
+      alwaysOn: [],
+      items: [{
+        id: "remotion",
+        name: "Remotion",
+        catalogSkills: [],
+        packages: [{ source: "remotion-dev/skills" }],
+      }],
+    },
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+  const spawned: Array<{ command: string; args: string[] }> = [];
+
+  const code = await runArea("profiles", {
+    ...fakeRuntime(output),
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      writeInstalledSkill(homeDir, "remotion", "Remotion");
+      writeInstalledSkill(homeDir, "captions", "Captions");
+      writeGlobalSkillLock(homeDir, {
+        remotion: { source: "remotion-dev/skills" },
+        captions: { source: "remotion-dev/skills" },
+      });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    yes: true,
+    selectedSkillProfileIds: ["remotion"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["skills", "add", "remotion-dev/skills", "--global", "--yes", "--agent", "universal"],
+  }]);
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string; source: string; imported?: boolean; startDisabled?: boolean }>;
+  };
+  assert.deepEqual(cached.items.map((item) => ({ id: item.id, source: item.source, imported: item.imported, startDisabled: item.startDisabled })), [
+    { id: "captions", source: "remotion-dev/skills", imported: true, startDisabled: true },
+    { id: "remotion", source: "remotion-dev/skills", imported: true, startDisabled: true },
+  ]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "captions")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "remotion")), true);
+});
+
+test("runArea profiles installs selective package skills", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 2,
+      mode: "context",
+      alwaysOn: [],
+      items: [{
+        id: "video",
+        name: "Video",
+        catalogSkills: ["afk-animate"],
+        packages: [{ source: "remotion-dev/skills", skills: ["remotion", "captions"] }],
+      }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "afk-animate", label: "AFK Animate", source: "example/afk", args: ["--skill", "afk-animate"], default: false }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  const spawned: Array<{ command: string; args: string[] }> = [];
+
+  const code = await runArea("profiles", {
+    ...fakeRuntime([]),
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    yes: true,
+    selectedSkillProfileIds: ["video"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [
+    { command: "npx", args: ["skills", "add", "example/afk", "--global", "--yes", "--skill", "afk-animate", "--agent", "universal"] },
+    { command: "npx", args: ["skills", "add", "remotion-dev/skills", "--global", "--yes", "--skill", "captions", "remotion", "--agent", "universal"] },
+  ]);
+});
+
+test("runArea profiles preserves catalog ownership when a whole package overlaps skills.json", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 2,
+      mode: "context",
+      alwaysOn: [],
+      items: [{
+        id: "video",
+        name: "Video",
+        catalogSkills: [],
+        packages: [{ source: "remotion-dev/skills" }],
+      }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{
+        id: "remotion",
+        label: "Remotion",
+        source: "remotion-dev/skills",
+        args: ["--skill", "remotion"],
+        default: false,
+        imported: false,
+      }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+
+  const code = await runArea("profiles", {
+    ...fakeRuntime([]),
+    spawn: async () => {
+      writeInstalledSkill(homeDir, "remotion", "Remotion");
+      writeInstalledSkill(homeDir, "captions", "Captions");
+      writeGlobalSkillLock(homeDir, {
+        remotion: { source: "remotion-dev/skills" },
+        captions: { source: "remotion-dev/skills" },
+      });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    yes: true,
+    selectedSkillProfileIds: ["video"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+
+  assert.equal(code, 0);
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string; imported?: boolean; startDisabled?: boolean }>;
+  };
+  assert.deepEqual(cached.items.map((item) => ({ id: item.id, imported: item.imported, startDisabled: item.startDisabled })), [
+    { id: "remotion", imported: false, startDisabled: undefined },
+    { id: "captions", imported: true, startDisabled: true },
+  ]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "remotion")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "captions")), true);
+});
+
+test("runArea profiles maps selective upstream package ids to installed folder ids", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 2,
+      mode: "context",
+      alwaysOn: [],
+      items: [{
+        id: "stitch",
+        name: "Stitch",
+        catalogSkills: [],
+        packages: [{ source: "google-labs-code/stitch-skills", skills: ["react:components"] }],
+      }],
+    },
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+
+  const code = await runArea("profiles", {
+    ...fakeRuntime([]),
+    spawn: async () => {
+      writeInstalledSkill(homeDir, "react-components", "React Components");
+      writeGlobalSkillLock(homeDir, {
+        "react:components": {
+          source: "google-labs-code/stitch-skills",
+          skillPath: "skills/react-components/SKILL.md",
+        },
+      });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    yes: true,
+    selectedSkillProfileIds: ["stitch"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+
+  assert.equal(code, 0);
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string; args: string[]; imported?: boolean; startDisabled?: boolean }>;
+  };
+  assert.deepEqual(cached.items.map((item) => ({ id: item.id, args: item.args, imported: item.imported, startDisabled: item.startDisabled })), [{
+    id: "react-components",
+    args: ["--skill", "react:components"],
+    imported: true,
+    startDisabled: true,
+  }]);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "react-components")), true);
+});
+
+test("runArea profiles rejects catalogSkills missing from skills.json", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 2,
+      mode: "context",
+      alwaysOn: [],
+      items: [{ id: "video", name: "Video", catalogSkills: ["missing"], packages: [] }],
+    },
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  const code = await runArea("profiles", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    yes: true,
+    selectedSkillProfileIds: ["video"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Catalog skills missing from skills.json: missing"));
+});
+
+test("runArea profiles rejects selective package skills already declared in catalogSkills", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 2,
+      mode: "context",
+      alwaysOn: [],
+      items: [{
+        id: "video",
+        name: "Video",
+        catalogSkills: ["remotion"],
+        packages: [{ source: "remotion-dev/skills", skills: ["remotion"] }],
+      }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "remotion", label: "Remotion", source: "remotion-dev/skills", args: ["--skill", "remotion"], default: false }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+
+  const code = await runArea("profiles", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir),
+    yes: true,
+    selectedSkillProfileIds: ["video"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Profile video declares catalog skill remotion again in package remotion-dev/skills"));
+});
+
 test("runArea profiles warns and installs available skills when missing references are accepted", async () => {
   const manifests = {
     "profiles.json": {
