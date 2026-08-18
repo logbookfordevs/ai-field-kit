@@ -40,6 +40,8 @@ The route is complete when the response contains one exact invocation, or explic
 | Ask another local model for a preserved second opinion | `afk-ask` |
 | Produce a critical before-or-after engineering briefing | `facts` |
 | Restate the last answer plainly | `bro` |
+| Restate the human's request for confirmation before work begins | `readback` |
+| Recap the current session to resync yourself | `recap` |
 | Collect missing decisions from another person | `to-questionnaire` |
 | Learn a topic across multiple sessions | `teach` |
 | Design a motion-led immersive frontend | `afk-animated-driven-frontend` |

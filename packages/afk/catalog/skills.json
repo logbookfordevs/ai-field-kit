@@ -291,6 +291,34 @@
             "composes": []
         },
         {
+            "id": "readback",
+            "label": "Readback",
+            "source": "backnotprop/bro",
+            "args": [
+                "--skill",
+                "readback",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "recap",
+            "label": "Recap",
+            "source": "backnotprop/bro",
+            "args": [
+                "--skill",
+                "recap",
+                "--global"
+            ],
+            "default": false,
+            "autoInvocation": false,
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "design-artifact",
             "label": "Design Artifact",
             "source": "https://github.com/plannotator/effective-html",

@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `skills:` added Backnotprop's optional manual `readback` and `recap` utilities for confirming complex requests before work and quickly resyncing on the current session.
+
 ### Changed
 
 - `cli:` made guided and non-interactive `afk setup` include only setup areas with actionable content in the selected catalog source, so partial custom catalogs no longer offer empty Tools, Profiles, MCPs, or Hooks flows.
