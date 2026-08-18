@@ -108,8 +108,9 @@ This authorizes forward local commits. History rewrites and remote or public act
 ## Code Gate
 After final validation, run `afk-code-review` from `review_base`.
 
-- Findings: set `changes_requested`, reconcile, fix, revalidate, commit, and review the original range again.
-- Clean: set `awaiting_acceptance`; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
+- Findings: set `changes_requested`, reconcile, fix, revalidate, commit, and review the original range once more.
+- Second review still has findings: keep `changes_requested` and hand the gate to the user without further automatic fixes or reviews.
+- Clean: set `awaiting_acceptance` and hand the gate to the user. The user decides whether later changes require another review; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
 
 Persist each review round. Tracking-only receipts do not trigger another review.
 
