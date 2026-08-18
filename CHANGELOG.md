@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Changed
+
+- `cli:` made guided and non-interactive `afk setup` include only setup areas with actionable content in the selected catalog source, so partial custom catalogs no longer offer empty Tools, Profiles, MCPs, or Hooks flows.
+
 ## v1.3.0 - 2026-08-18
 
 ### Added

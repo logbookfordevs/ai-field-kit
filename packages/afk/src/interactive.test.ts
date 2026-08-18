@@ -247,13 +247,20 @@ test("selectSetup offers profiles as a setup area", async () => {
   promptState.checkboxMessages = [];
   promptState.checkboxChoices = {};
   promptState.setupAreas = ["profiles"];
-  const selection = await selectSetup(defaultOptions(localHomeWithToolManifest()));
+  const homeDir = localHomeWithToolManifest();
+  writeFileSync(join(localManifestDir(homeDir), "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "review", name: "Review", skills: [] }],
+  })}\n`);
+  const selection = await selectSetup(defaultOptions(homeDir));
 
   assert.deepEqual(selection.areas, ["profiles"]);
   assert.ok(promptState.checkboxChoices["Choose what AFK should prepare"]?.some((choice) => choice.name === "Profiles" && choice.value === "profiles"));
 });
 
-test("selectSetup presents the guided areas in daily-first order", async () => {
+test("selectSetup presents available guided areas in daily-first order", async () => {
   promptState.checkboxChoices = {};
   promptState.setupAreas = [];
 
@@ -261,7 +268,37 @@ test("selectSetup presents the guided areas in daily-first order", async () => {
 
   assert.deepEqual(
     promptState.checkboxChoices["Choose what AFK should prepare"]?.map((choice) => choice.value),
-    ["rules", "skills", "tools", "agents", "profiles", "mcps", "hooks"],
+    ["rules", "skills", "hooks"],
+  );
+});
+
+test("selectSetup only offers areas represented by actionable source catalog content", async () => {
+  promptState.checkboxChoices = {};
+  promptState.setupAreas = [];
+
+  await selectSetup({
+    ...defaultOptions(localHomeWithAllManifests()),
+    manifestContents: {
+      "rules.json": JSON.stringify({ version: 1, source: "local", url: "rules/AGENTS.md" }),
+      "skills.json": JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [{ id: "review", label: "Review", source: "skills/review", args: [], default: false }],
+      }),
+      "agents.json": JSON.stringify({
+        version: 1,
+        items: [{ id: "reviewer", label: "Reviewer", source: "agents/reviewer.md" }],
+      }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": JSON.stringify({ version: 1, items: [] }),
+    },
+  });
+
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose what AFK should prepare"]?.map((choice) => choice.value),
+    ["rules", "skills", "agents"],
   );
 });
 
@@ -379,7 +416,7 @@ test("selectSetup yes mode uses detected targets", async () => {
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
   const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true });
 
-  assert.ok(selection.areas.includes("profiles"));
+  assert.ok(!selection.areas.includes("profiles"));
   assert.deepEqual(selection.agents, ["codex"]);
   assert.deepEqual(selection.hookAgents, ["codex"]);
   assert.deepEqual(selection.skillIds, ["afk-default"]);

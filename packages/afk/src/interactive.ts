@@ -1,11 +1,13 @@
 import { checkbox, confirm, input, select } from "@inquirer/prompts";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { detectSetupTargets, type TargetSelectionSource } from "./agent-detection.js";
 import { agentIds, hookAgentIds, skillAgentIds } from "./agents.js";
-import { expandComposedSkillIds, loadCustomAgentManifest, loadHookManifest, loadMcpManifest, loadPresetsManifest, loadSkillManifest, loadToolManifest, type PresetManifestItem, type SkillManifestItem } from "./manifest.js";
+import { expandComposedSkillIds, loadCustomAgentManifest, loadHookManifest, loadMcpManifest, loadPresetsManifest, loadSkillManifest, loadToolManifest, localManifestDir, type PresetManifestItem, type SkillManifestItem } from "./manifest.js";
 import { loadSetupSkillProfileCatalog } from "./skills/profiles.js";
 import { DEFAULT_CHECKED, afkCheckboxTheme, afkPromptTheme, afkSearchableCheckboxTheme, afkSelectTheme, defaultCheckedDetail, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
 import { searchableCheckbox } from "./searchable-checkbox.js";
-import type { AgentId, Area, CliOptions, SetupScope, SkillAgentId } from "./types.js";
+import type { AgentId, Area, CliOptions, ManifestFilename, SetupScope, SkillAgentId } from "./types.js";
 
 type Choice<Value extends string> = {
   name: string;
@@ -33,7 +35,7 @@ export type SetupSelection = {
   skillAgentSource?: TargetSelectionSource;
 };
 
-const setupAreaChoices: Choice<Area>[] = [
+const allSetupAreaChoices: Choice<Area>[] = [
   {
     name: "Rules",
     value: "rules",
@@ -88,6 +90,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
   }
 
   if (options.yes) {
+    const setupAreaChoices = availableSetupAreaChoices(options);
     const detected = detectSetupTargets(options);
     const agentSelection = resolveNonInteractiveAgentSelection(options.agents, detected.agents);
     const hookAgentSelection = resolveNonInteractiveAgentSelection(options.agents, detected.hookAgents);
@@ -116,6 +119,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
   resetPromptSteps();
   const setupScope = options.scopeExplicit ? options.setupScope : await selectSetupScope(options.cwd);
   const detected = detectSetupTargets({ ...options, setupScope });
+  const setupAreaChoices = availableSetupAreaChoices(options);
   const areas = await selectCheckbox("Choose what AFK should prepare", setupAreaChoices);
   const toolIds = areas.includes("tools") ? await selectTools(options) : [];
   const needsAgents = areas.some((area) => area === "rules" || area === "mcps" || area === "agents");
@@ -150,6 +154,25 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     hookAgentSource: hookAgentSelection.source,
     skillAgentSource: skillAgentSelection.source,
   });
+}
+
+function availableSetupAreaChoices(options: CliOptions): Choice<Area>[] {
+  const availableAreas = new Set<Area>();
+
+  if (hasManifest(options, "rules.json")) availableAreas.add("rules");
+  if (hasManifest(options, "skills.json") && loadSkillManifest(options).items.length > 0) availableAreas.add("skills");
+  if (hasManifest(options, "tools.json") && loadToolManifest(options).items.length > 0) availableAreas.add("tools");
+  if (hasManifest(options, "agents.json") && loadCustomAgentManifest(options).items.length > 0) availableAreas.add("agents");
+  if (hasManifest(options, "profiles.json") && loadSetupSkillProfileCatalog(options).items.length > 0) availableAreas.add("profiles");
+  if (hasManifest(options, "mcps.json") && loadMcpManifest(options).items.length > 0) availableAreas.add("mcps");
+  if (hasManifest(options, "hooks.json") && loadHookManifest(options).items.length > 0) availableAreas.add("hooks");
+
+  return allSetupAreaChoices.filter((choice) => availableAreas.has(choice.value));
+}
+
+function hasManifest(options: CliOptions, filename: ManifestFilename): boolean {
+  return options.manifestContents?.[filename] !== undefined
+    || existsSync(join(localManifestDir(options.homeDir), filename));
 }
 
 async function selectPresetId(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string> {
@@ -244,7 +267,7 @@ function presetAgentSelection(preselected: AgentId[], detected: AgentId[]): { ag
 }
 
 function presetAreas(preset: PresetManifestItem): Area[] {
-  const supportedAreas = new Set<Area>(setupAreaChoices.map((choice) => choice.value));
+  const supportedAreas = new Set<Area>(allSetupAreaChoices.map((choice) => choice.value));
   const invalidArea = preset.areas.find((area) => !supportedAreas.has(area as Area));
   if (invalidArea) {
     throw new Error(`Preset ${preset.id} contains an unsupported setup area: ${invalidArea}`);
