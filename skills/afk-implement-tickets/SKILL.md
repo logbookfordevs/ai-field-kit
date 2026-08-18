@@ -106,12 +106,7 @@ Commit each green behavior slice, and commit all ticket-owned implementation bef
 This authorizes forward local commits. History rewrites and remote or public actions still require approval. If local commits are unavailable, ask.
 
 ## Code Gate
-After final validation, run `afk-code-review` from `review_base`.
-
-- Findings: set `changes_requested`; judge each finding against the code and its cited source, fix warranted findings, record evidence for dismissals, revalidate, commit, then set `awaiting_acceptance`.
-- Clean: set `awaiting_acceptance`.
-
-At `awaiting_acceptance`, hand the gate to the user. The user decides whether fixes or later changes require another review; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
+After final validation, run `afk-code-review` from `review_base`. If it reports findings, set `changes_requested`; judge each finding against the code and its cited source, fix warranted findings, record evidence for dismissals, revalidate, and commit. Once the review is clean or warranted fixes are committed, set `awaiting_acceptance` and hand the gate to the user. The user decides whether fixes or later changes require another review; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
 
 ## Ticket Record
 Keep task-local state in the tracking home. Preserve `Parent` and `User Stories Covered` when present. Keep these sections or equivalent fields when creating or normalizing the record: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, `Code Review Findings`, and `Handoff Notes`.
