@@ -53,7 +53,9 @@ export function planSkillReset(options: CliOptions): SkillResetPlan {
     const targetDisabled = item.startDisabled === true;
     const sourceDir = join(currentlyDisabled ? disabledRoot : skillsRoot, id);
     const targetDir = join(targetDisabled ? disabledRoot : skillsRoot, id);
-    operations.push(...invocationPolicyOperations(sourceDir, targetDir, item.autoInvocation !== false));
+    if (item.autoInvocation !== undefined) {
+      operations.push(...invocationPolicyOperations(sourceDir, targetDir, item.autoInvocation));
+    }
   }
 
   const profileStatePath = skillProfilePaths({ homeDir: options.homeDir, cwd: options.cwd, local: false }).statePath;

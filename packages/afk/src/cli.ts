@@ -868,7 +868,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Reset installed shared skills to match cached skills.json policy.",
     usage: "afk skills reset [options]",
     notes: [
-      "Cataloged skills follow startDisabled and autoInvocation policy; uncataloged skills move to .disabled.",
+      "Cataloged skills follow startDisabled and explicit autoInvocation policy; omitted invocation policy preserves source metadata.",
       "Reset clears enabled profiles and their movement history, but does not install, update, or delete skills.",
       "Missing catalog skills are reported and left uninstalled.",
     ],

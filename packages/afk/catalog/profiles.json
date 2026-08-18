@@ -30,13 +30,13 @@
       "id": "html",
       "name": "HTML",
       "catalogSkills": [
-        "html",
-        "html-wireframe",
-        "html-prototype",
-        "html-plan",
-        "html-diagram"
+        "design-artifact"
       ],
-      "packages": []
+      "packages": [
+        {
+          "source": "plannotator/effective-html"
+        }
+      ]
     },
     {
       "id": "video",

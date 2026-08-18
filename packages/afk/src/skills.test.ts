@@ -105,6 +105,43 @@ test("planSkillInvocationPolicy re-enables installed automatic skills", () => {
   assert.match(readFileSync(join(skillDir, "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: true/);
 });
 
+test("planSkillInvocationPolicy preserves authored invocation policy when catalog policy is omitted", () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-policy-"));
+  const homeDir = join(root, "home");
+  const skillDir = join(homeDir, ".agents", "skills", "authored-skill");
+  mkdirSync(join(skillDir, "agents"), { recursive: true });
+  mkdirSync(localManifestDir(homeDir), { recursive: true });
+  const skillMd = "---\nname: authored-skill\ndisable-model-invocation: true\n---\n\n# Authored\n";
+  const openAiYaml = "policy:\n  allow_implicit_invocation: false\n";
+  writeFileSync(join(skillDir, "SKILL.md"), skillMd);
+  writeFileSync(join(skillDir, "agents", "openai.yaml"), openAiYaml);
+  writeFileSync(join(localManifestDir(homeDir), "skills.json"), JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [{
+      id: "authored-skill",
+      label: "Authored Skill",
+      source: "https://github.com/example/skills",
+      args: ["--skill", "authored-skill"],
+      default: true,
+    }],
+  }));
+
+  const operations = planSkillInvocationPolicy({
+    homeDir,
+    cwd: join(root, "project"),
+    setupScope: "global",
+    selectedSkillIds: ["authored-skill"],
+  });
+  for (const operation of operations) {
+    applyOperation(operation);
+  }
+
+  assert.equal(operations.length, 0);
+  assert.equal(readFileSync(join(skillDir, "SKILL.md"), "utf8"), skillMd);
+  assert.equal(readFileSync(join(skillDir, "agents", "openai.yaml"), "utf8"), openAiYaml);
+});
+
 test("planSkillStartupStorage moves start-disabled skills into .disabled", () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-storage-"));
   const homeDir = join(root, "home");

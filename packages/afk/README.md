@@ -554,11 +554,10 @@ Skill-agent values are:
 claude-code, kiro-cli, kilo, pi, droid
 ```
 
-AFK keeps the `skills` CLI default symlink fanout. For skill entries with
-`autoInvocation: false`, AFK adds policy metadata after install so supported
-agents hide the skill from normal model discovery unless it is explicitly
-attached or invoked. Use `autoInvocation: true` when plain-language requests
-should discover the skill.
+AFK keeps the `skills` CLI default symlink fanout. Invocation policy is
+three-state: `autoInvocation: false` forces manual invocation,
+`autoInvocation: true` forces model discovery, and an omitted field preserves
+the metadata authored by the skill source.
 
 Skill catalog entries can also describe architecture metadata:
 
@@ -1026,7 +1025,8 @@ active.
 `role`, `autoInvocation`, `startDisabled`, and `composes` make the catalog
 readable as a skill system instead of a flat install list. For example, a
 wrapper can stay manually invoked while composing smaller primitives that remain
-available to automatic model discovery.
+available to automatic model discovery. Omit `autoInvocation` when the source
+skill should retain its own Claude and OpenAI invocation metadata.
 
 ### Custom Agents
 
@@ -1357,8 +1357,9 @@ storage state even though the upstream flow reinstalls changed skill content.
 
 `afk skills reset` is the recovery route for shared-library drift. It clears
 enabled profile state, moves cataloged skills according to `startDisabled`,
-restores catalog `autoInvocation` metadata, and moves installed uncataloged
-skills into `.disabled`. It reports catalog skills that are not installed but
+applies explicit catalog `autoInvocation` metadata, preserves source policy
+when that field is omitted, and moves installed uncataloged skills into
+`.disabled`. It reports catalog skills that are not installed but
 does not install, update, or delete anything. Use `--dry-run` to inspect the
 reconciliation before applying it, or `--yes` to skip confirmation.
 

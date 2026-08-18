@@ -1132,6 +1132,7 @@ test("runCli resets shared storage, invocation policy, and profile state", async
       items: [
         { id: "active-catalog", label: "Active", source: "example/skills", args: ["--skill", "active-catalog"], default: false, autoInvocation: true },
         { id: "disabled-catalog", label: "Disabled", source: "example/skills", args: ["--skill", "disabled-catalog"], default: false, autoInvocation: false, startDisabled: true },
+        { id: "authored-catalog", label: "Authored", source: "example/skills", args: ["--skill", "authored-catalog"], default: false },
         { id: "missing-catalog", label: "Missing", source: "example/skills", args: ["--skill", "missing-catalog"], default: false },
       ],
     },
@@ -1141,6 +1142,8 @@ test("runCli resets shared storage, invocation policy, and profile state", async
   writeSkill(join(skillsRoot, ".disabled"), "active-catalog", "Active");
   writeSkill(join(skillsRoot, ".disabled"), "uncataloged-disabled", "Uncataloged Disabled");
   writeSkill(skillsRoot, "disabled-catalog", "Disabled");
+  writeSkill(skillsRoot, "authored-catalog", "Authored");
+  writeFileSync(join(skillsRoot, "authored-catalog", "SKILL.md"), "---\nname: Authored\ndisable-model-invocation: true\n---\n\n# Authored\n");
   writeSkill(skillsRoot, "uncataloged", "Uncataloged");
   const statePath = join(homeDir, ".agents", "afk", "state", "skill-profiles.json");
   mkdirSync(join(homeDir, ".agents", "afk", "state"), { recursive: true });
@@ -1164,6 +1167,8 @@ test("runCli resets shared storage, invocation policy, and profile state", async
   assert.match(readFileSync(join(skillsRoot, ".disabled", "disabled-catalog", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
   assert.match(readFileSync(join(skillsRoot, "active-catalog", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: true/);
   assert.match(readFileSync(join(skillsRoot, ".disabled", "disabled-catalog", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
+  assert.match(readFileSync(join(skillsRoot, "authored-catalog", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
+  assert.equal(existsSync(join(skillsRoot, "authored-catalog", "agents", "openai.yaml")), false);
   assert.deepEqual(JSON.parse(readFileSync(statePath, "utf8")), {
     version: 2,
     activations: [],

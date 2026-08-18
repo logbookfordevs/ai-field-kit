@@ -651,7 +651,7 @@ function skillChoices(items: SkillManifestItem[]): Choice<string>[] {
 
 function skillChoiceDetail(item: SkillManifestItem): string {
   const role = item.role ?? "primitive";
-  const autoInvocation = item.autoInvocation === false ? "off" : "on";
+  const autoInvocation = item.autoInvocation === undefined ? "source policy" : item.autoInvocation ? "on" : "off";
   const storage = item.startDisabled === true ? "starts disabled" : "starts active";
   const composes = item.composes && item.composes.length > 0 ? ` · composes ${item.composes.join(", ")}` : "";
   return `role: ${role} · auto-invocation: ${autoInvocation} · ${storage}${composes} · ${item.args.join(" ")}`;

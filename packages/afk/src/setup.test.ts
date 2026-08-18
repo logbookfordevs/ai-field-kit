@@ -1177,8 +1177,8 @@ test("runArea profiles offers lock-backed missing skills for recovery and instal
   };
   assert.deepEqual(cached.items.map((item) => item.id), ["design-md", "react-components", "stitch-remotion"]);
   assert.deepEqual(cached.items.slice(1), [
-    { id: "react-components", label: "react:components", source: "example/react", args: ["--skill", "react:components"], default: false, autoInvocation: true, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
-    { id: "stitch-remotion", label: "Stitch Remotion", source: "example/remotion", args: ["--skill", "remotion"], default: false, autoInvocation: true, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
+    { id: "react-components", label: "react:components", source: "example/react", args: ["--skill", "react:components"], default: false, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
+    { id: "stitch-remotion", label: "Stitch Remotion", source: "example/remotion", args: ["--skill", "remotion"], default: false, role: "utility", catalog: { scope: "uncategorized" }, imported: true },
   ]);
 });
 

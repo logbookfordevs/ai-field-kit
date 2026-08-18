@@ -406,8 +406,9 @@ Start lean: prompts earn detail through observed failure, not anticipated failur
 4. Open a PR with a short description of what the skill does and when to use it.
 
 For explicit multi-step procedures, use `autoInvocation: true` when normal
-language should discover the skill, and reserve `autoInvocation: false` for
-slash-only or attached-only procedures.
+language should discover the skill, reserve `autoInvocation: false` for
+slash-only or attached-only procedures, and omit the field to preserve the
+policy authored by the source skill.
 
 **Adding a Custom Agent:**
 

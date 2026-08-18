@@ -11,7 +11,10 @@ export function planSkillInvocationPolicy(options: Pick<CliOptions, "homeDir" | 
   const plannedRealPaths = new Set<string>();
 
   for (const item of selected) {
-    const allowInvocation = item.autoInvocation !== false;
+    if (item.autoInvocation === undefined) {
+      continue;
+    }
+    const allowInvocation = item.autoInvocation;
     for (const skillDir of skillDirectories(options, item)) {
       operations.push(...planSkillInvocation(skillDir, plannedRealPaths, allowInvocation));
     }

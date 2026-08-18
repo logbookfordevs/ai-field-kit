@@ -435,7 +435,6 @@ function skillManifestItemFromInstalledSkill(
     source,
     args: ["--skill", upstreamId],
     default: false,
-    autoInvocation: frontmatter["disable-model-invocation"] !== "true",
     role: "utility",
     catalog: { scope: "uncategorized" },
     imported: true,

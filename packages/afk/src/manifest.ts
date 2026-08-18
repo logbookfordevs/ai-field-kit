@@ -1097,11 +1097,6 @@ function migrateSkillsManifest(content: string): string | null {
   let changed = false;
   const items = parsed.items.map((item) => {
     const next = { ...item } as SkillManifestItem & { profiles?: unknown };
-    if (next.autoInvocation === undefined) {
-      next.autoInvocation = true;
-      changed = true;
-    }
-
     if (next.profiles !== undefined) {
       delete next.profiles;
       changed = true;

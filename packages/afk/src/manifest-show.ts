@@ -297,7 +297,7 @@ function renderSkills(manifest: Record<string, unknown>): string {
       const args = Array.isArray(item.args) && item.args.length > 0 ? item.args.filter((value) => typeof value === "string").join(" ") : "";
       const details = [
         `role: ${stringValue(item.role, "primitive")}`,
-        `auto-invocation: ${item.autoInvocation === false ? "off" : "on"}`,
+        `auto-invocation: ${item.autoInvocation === undefined ? "source policy" : item.autoInvocation ? "on" : "off"}`,
         `start-disabled: ${item.startDisabled === true ? "on" : "off"}`,
         ...stringListDetail("composes", item.composes),
         ...(args ? [`args: ${args}`] : []),

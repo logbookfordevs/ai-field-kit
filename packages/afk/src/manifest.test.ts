@@ -563,7 +563,7 @@ test("ensureLocalManifests migrates the old Stitch header default", async () => 
   assert.deepEqual(next.items[0]?.args, ["--name", "stitchmcp"]);
 });
 
-test("ensureLocalManifests migrates existing skills to invocation policy metadata", async () => {
+test("ensureLocalManifests preserves omitted invocation policy metadata", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-skills-manifest-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
@@ -604,7 +604,7 @@ test("ensureLocalManifests migrates existing skills to invocation policy metadat
   const write = operations.find((operation) => operation.type === "write" && operation.path === manifestPath);
   assert.ok(write && write.type === "write");
   const next = JSON.parse(write.content) as { items: Array<{ id: string; autoInvocation?: boolean }> };
-  assert.equal(next.items.find((item) => item.id === "afk-note")?.autoInvocation, true);
+  assert.equal(next.items.find((item) => item.id === "afk-note")?.autoInvocation, undefined);
   assert.equal(next.items.some((item) => item.id === "afk-typecheck"), false);
 });
 
