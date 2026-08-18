@@ -69,8 +69,8 @@ Allowed review gates are `code`, `design`, and `product`. Every implementation t
 Review gates use `pending` and `accepted`. The `code` gate also allows `changes_requested` and `awaiting_acceptance`:
 
 - `pending`: automated code review has not completed.
-- `changes_requested`: the latest review has actionable findings.
-- `awaiting_acceptance`: automated review has no actionable findings and awaits the user's final judgment.
+- `changes_requested`: the latest review has findings being judged or fixed.
+- `awaiting_acceptance`: the review was clean, or its findings were judged and warranted fixes were validated and committed; the gate awaits the user's final judgment.
 - `accepted`: the user accepted the code gate.
 
 Keep the ticket status `review` while any review gate remains open. Retain every review round under `## Code Review Findings — Round N`:
@@ -108,10 +108,10 @@ This authorizes forward local commits. History rewrites and remote or public act
 ## Code Gate
 After final validation, run `afk-code-review` from `review_base`.
 
-- Findings: set `changes_requested`, reconcile, fix, revalidate, commit, and review the original range again.
-- Clean: set `awaiting_acceptance`; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
+- Findings: set `changes_requested`; judge each finding against the code and its cited source, fix warranted findings, record evidence for dismissals, revalidate, commit, then set `awaiting_acceptance`.
+- Clean: set `awaiting_acceptance`.
 
-Persist each review round. Tracking-only receipts do not trigger another review.
+At `awaiting_acceptance`, hand the gate to the user. The user decides whether fixes or later changes require another review; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
 
 ## Ticket Record
 Keep task-local state in the tracking home. Preserve `Parent` and `User Stories Covered` when present. Keep these sections or equivalent fields when creating or normalizing the record: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gates`, `Review Guide`, `Code Review Findings`, and `Handoff Notes`.
