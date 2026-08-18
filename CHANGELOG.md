@@ -14,6 +14,7 @@ This changelog tracks meaningful updates by version and date.
 ### Changed
 
 - `cli:` made guided and non-interactive `afk setup` include only setup areas with actionable content in the selected catalog source, so partial custom catalogs no longer offer empty Tools, Profiles, MCPs, or Hooks flows.
+- `cli:` grouped enabled and disabled entries under labeled sections in the interactive `afk skills update` and `afk skills delete` pickers while keeping both available for selection.
 
 ### Removed
 

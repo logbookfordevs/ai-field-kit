@@ -7,11 +7,11 @@ import { runSkillsCommand } from "./skills/commands.js";
 import type { CliOptions, Runtime } from "./types.js";
 
 const promptState = vi.hoisted(() => ({
-  choices: [] as Array<{ checked?: boolean; value: { folder: string } }>,
+  choices: [] as Array<{ checked?: boolean; group?: string; value: { folder: string } }>,
 }));
 
 vi.mock("./searchable-checkbox.js", () => ({
-  searchableCheckbox: vi.fn(async ({ choices }: { choices: Array<{ checked?: boolean; value: { folder: string } }> }) => {
+  searchableCheckbox: vi.fn(async ({ choices }: { choices: Array<{ checked?: boolean; group?: string; value: { folder: string } }> }) => {
     promptState.choices = choices;
     return choices.filter((choice) => choice.value.folder === "alpha").map((choice) => choice.value);
   }),
@@ -54,8 +54,30 @@ test("delete --profile lets users choose a subset with every installed profile s
   assert.ok(!text.includes("beta"));
 });
 
-function writeSkill(homeDir: string, id: string, name: string): void {
-  const path = join(homeDir, ".agents", "skills", id, "SKILL.md");
+test("delete picker groups enabled and disabled skills under clear labels", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-picker-groups-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(homeDir, "alpha", "Alpha");
+  writeSkill(homeDir, "beta", "Beta", true);
+
+  const code = await runSkillsCommand(["skills", "delete"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(
+    promptState.choices.map((choice) => ({ folder: choice.value.folder, group: choice.group })),
+    [
+      { folder: "alpha", group: "Enabled skills" },
+      { folder: "beta", group: "Disabled skills" },
+    ],
+  );
+});
+
+function writeSkill(homeDir: string, id: string, name: string, disabled = false): void {
+  const path = join(homeDir, ".agents", "skills", ...(disabled ? [".disabled"] : []), id, "SKILL.md");
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `---\nname: ${name}\n---\n`);
 }

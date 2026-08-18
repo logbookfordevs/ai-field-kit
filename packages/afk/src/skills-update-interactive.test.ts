@@ -8,11 +8,11 @@ import { runSkillsCommand } from "./skills/commands.js";
 import type { Runtime } from "./types.js";
 
 const promptState = vi.hoisted(() => ({
-  choices: [] as Array<{ value: string }>,
+  choices: [] as Array<{ value: string; group?: string }>,
 }));
 
 vi.mock("./searchable-checkbox.js", () => ({
-  searchableCheckbox: vi.fn(async ({ choices }: { choices: Array<{ value: string }> }) => {
+  searchableCheckbox: vi.fn(async ({ choices }: { choices: Array<{ value: string; group?: string }> }) => {
     promptState.choices = choices;
     return [];
   }),
@@ -36,6 +36,11 @@ test("afk skills update picker lists only cataloged locked skills", async () => 
         sourceType: "github",
         skillPath: "skills/cataloged/SKILL.md",
       },
+      "disabled-cataloged": {
+        source: "owner/disabled-cataloged",
+        sourceType: "github",
+        skillPath: "skills/disabled-cataloged/SKILL.md",
+      },
       foreign: {
         source: "owner/foreign",
         sourceType: "github",
@@ -43,17 +48,28 @@ test("afk skills update picker lists only cataloged locked skills", async () => 
       },
     },
   }));
+  mkdirSync(join(homeDir, ".agents", "skills", "cataloged"), { recursive: true });
+  mkdirSync(join(homeDir, ".agents", "skills", ".disabled", "disabled-cataloged"), { recursive: true });
   mkdirSync(localManifestDir(homeDir), { recursive: true });
   writeFileSync(join(localManifestDir(homeDir), "skills.json"), JSON.stringify({
     version: 1,
     defaultSource: "",
-    items: [{
-      id: "cataloged",
-      label: "Cataloged",
-      source: "https://github.com/owner/cataloged",
-      args: ["--skill", "cataloged"],
-      default: true,
-    }],
+    items: [
+      {
+        id: "cataloged",
+        label: "Cataloged",
+        source: "https://github.com/owner/cataloged",
+        args: ["--skill", "cataloged"],
+        default: true,
+      },
+      {
+        id: "disabled-cataloged",
+        label: "Disabled Cataloged",
+        source: "https://github.com/owner/disabled-cataloged",
+        args: ["--skill", "disabled-cataloged"],
+        default: false,
+      },
+    ],
   }));
   const runtime: Runtime = {
     io: {
@@ -120,5 +136,8 @@ test("afk skills update picker lists only cataloged locked skills", async () => 
     cwd: join(root, "project"),
   });
 
-  assert.deepEqual(promptState.choices.map((choice) => choice.value), ["cataloged"]);
+  assert.deepEqual(promptState.choices.map((choice) => ({ value: choice.value, group: choice.group })), [
+    { value: "cataloged", group: "Enabled skills" },
+    { value: "disabled-cataloged", group: "Disabled skills" },
+  ]);
 });

@@ -682,13 +682,25 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
   const catalogedLockedSkills = skillNames.length > 0 || lockedSkills.length === 0
     ? lockedSkills
     : filterLockedSkillsToCatalog(lockedSkills, loadSkillManifest(options).items.map((item) => item.id));
+  const disabledLockedSkillKeys = new Set(
+    (["global", "project"] as const).flatMap((candidateScope) => {
+      const names = catalogedLockedSkills
+        .filter((record) => record.scope === candidateScope)
+        .map((record) => record.name);
+      return snapshotDisabledSkillIds({
+        homeDir: options.homeDir,
+        cwd: options.cwd,
+        setupScope: candidateScope,
+      }, names).map((name) => `${candidateScope}:${name.toLowerCase()}`);
+    }),
+  );
   const selectedNames = options.skillsUpdateByProfile
     ? await updateSkillNamesForProfile(skillNames[0], catalogedLockedSkills, runtime, options)
     : skillNames.length > 0
       ? skillNames
       : options.skillsUpdateAll
         ? []
-        : await promptLockedSkills(catalogedLockedSkills, scope);
+        : await promptLockedSkills(catalogedLockedSkills, scope, disabledLockedSkillKeys);
 
   if (!options.skillsUpdateAll && selectedNames.length === 0) {
     runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}tracked skills selected.`);
@@ -813,6 +825,7 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
 async function promptLockedSkills(
   records: LockedSkillRecord[],
   scope: string,
+  disabledSkillKeys: ReadonlySet<string>,
 ): Promise<string[]> {
   if (records.length === 0) {
     return [];
@@ -821,12 +834,13 @@ async function promptLockedSkills(
   console.log(renderPromptStep("Skill Update", "Type to filter, use space to select one or more skills, then enter to continue."));
   return searchableCheckbox<string>({
     message: scope === "all" ? "Select skills to update:" : `Select ${scope} skills to update:`,
-    choices: records.map((record) => ({
+    choices: sortEnabledChoicesFirst(records.map((record) => ({
       name: formatLockedSkillChoice(record),
       value: record.name,
+      group: disabledSkillKeys.has(`${record.scope}:${record.name.toLowerCase()}`) ? "Disabled skills" : "Enabled skills",
       description: [record.scope, record.source, record.skillPath].filter(Boolean).join(" · "),
       short: record.name,
-    })),
+    }))),
     pageSize: 12,
     required: true,
     instructions: "Use space to toggle, enter to continue.",
@@ -1037,7 +1051,7 @@ async function runSkillsDelete(folder: string | undefined, runtime: Runtime, opt
     : await promptSkillRecords(
       candidates,
       `Select ${mutationTargetLabel(options)} skill to delete:`,
-      { includeCatalogOrigin: true },
+      { includeCatalogOrigin: true, groupByStorage: true },
     );
 
   if (records.length === 0) {
@@ -1106,7 +1120,7 @@ async function runSkillsDeleteProfile(profileId: string | undefined, runtime: Ru
     : await promptSkillRecords(
       profileRecords,
       `Select skills to delete from profile ${profile.id}:`,
-      { checked: true },
+      { checked: true, groupByStorage: true },
     );
 
   const readOnlyRecord = records.find((record) => record.readOnly);
@@ -1484,22 +1498,26 @@ async function promptSkillRecord(records: SkillRecord[], message: string): Promi
 async function promptSkillRecords(
   records: SkillRecord[],
   message: string,
-  options: { checked?: boolean; includeCatalogOrigin?: boolean } = {},
+  options: { checked?: boolean; groupByStorage?: boolean; includeCatalogOrigin?: boolean } = {},
 ): Promise<SkillRecord[]> {
   if (records.length === 0) {
     return [];
   }
 
   console.log(renderPromptStep("Skill", "Type to filter, use space to select one or more skills, then enter to continue."));
+  const choices = records.map((record) => ({
+    name: renderSkillChoice(record),
+    value: record,
+    ...(options.groupByStorage
+      ? { group: record.storage === "disabled" ? "Disabled skills" : "Enabled skills" }
+      : {}),
+    description: renderSkillChoiceDescription(record, options),
+    short: record.folder,
+    ...(options.checked === undefined ? {} : { checked: options.checked }),
+  }));
   return searchableCheckbox<SkillRecord>({
     message,
-    choices: records.map((record) => ({
-      name: renderSkillChoice(record),
-      value: record,
-      description: renderSkillChoiceDescription(record, options),
-      short: record.folder,
-      ...(options.checked === undefined ? {} : { checked: options.checked }),
-    })),
+    choices: options.groupByStorage ? sortEnabledChoicesFirst(choices) : choices,
     pageSize: 12,
     required: true,
     instructions: "Use space to toggle, enter to continue.",
@@ -1513,6 +1531,12 @@ function findSkillRecord(records: SkillRecord[], value: string): SkillRecord | u
     record.folder.toLowerCase() === normalized ||
     record.name.toLowerCase() === normalized ||
     record.originalName.toLowerCase() === normalized
+  );
+}
+
+function sortEnabledChoicesFirst<Choice extends { group?: string }>(choices: Choice[]): Choice[] {
+  return choices.sort((left, right) =>
+    Number(left.group === "Disabled skills") - Number(right.group === "Disabled skills")
   );
 }
 

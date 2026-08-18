@@ -17,6 +17,7 @@ import {
 export type SearchableCheckboxChoice<Value> = {
   value: Value;
   name: string;
+  group?: string;
   checkedName?: string;
   short?: string;
   description?: string;
@@ -29,6 +30,7 @@ export type NormalizedSearchableCheckboxChoice<Value> = {
   id: number;
   value: Value;
   name: string;
+  group?: string;
   checkedName: string;
   short: string;
   description?: string;
@@ -106,6 +108,7 @@ export function normalizeSearchableCheckboxChoices<Value>(
     id: index,
     value: choice.value,
     name: choice.name,
+    ...(choice.group ? { group: choice.group } : {}),
     checkedName: choice.checkedName ?? choice.name,
     short: choice.short ?? choice.name,
     ...(choice.description ? { description: choice.description } : {}),
@@ -134,6 +137,7 @@ export function filterSearchableCheckboxChoicesByTerms<Value>(
   return choices.filter((choice) => {
     const searchable = [
       choice.name,
+      choice.group ?? "",
       choice.checkedName,
       choice.short,
       choice.description ?? "",
@@ -316,7 +320,12 @@ export const searchableCheckbox = createPrompt(<Value>(config: {
       const row = item.disabled
         ? theme.style.disabledChoice(`${checkbox} ${name}`)
         : `${isActive ? theme.icon.cursor : " "}${checkbox} ${name}`;
-      return isActive && !item.disabled ? theme.style.highlight(row) : row;
+      const renderedRow = isActive && !item.disabled ? theme.style.highlight(row) : row;
+      const itemIndex = visibleItems.findIndex((choice) => choice.id === item.id);
+      const previousGroup = itemIndex > 0 ? visibleItems[itemIndex - 1]?.group : undefined;
+      return item.group && item.group !== previousGroup
+        ? `${theme.style.description(item.group)}\n${renderedRow}`
+        : renderedRow;
     },
     pageSize,
     loop: false,
