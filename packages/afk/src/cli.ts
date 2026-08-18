@@ -578,6 +578,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "invocation [disable|enable] [folder] Toggle auto invocation metadata",
       "delete [folder]                   Permanently delete one or more skills",
       "update [skills...]                Update selected or all cataloged tracked skills",
+      "reset                             Reset shared skills to cached catalog policy",
       "profiles <command>                Manage skill focus profiles",
       "categorize                        Create or update skills.json categories with Codex",
     ],
@@ -589,6 +590,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills disable old-skill --dry-run",
       "afk skills invocation disable afk-doc-craft",
       "afk skills update --all",
+      "afk skills reset --dry-run",
       "afk skills categorize --mode append-missing --dry-run",
     ],
   },
@@ -818,6 +820,24 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills delete video --profile",
       "afk skills delete old-skill --dry-run",
       "afk skills delete old-skill --yes",
+    ],
+  },
+  "skills reset": {
+    title: "AFK skills reset",
+    summary: "Reset installed shared skills to match cached skills.json policy.",
+    usage: "afk skills reset [options]",
+    notes: [
+      "Cataloged skills follow startDisabled and autoInvocation policy; uncataloged skills move to .disabled.",
+      "Reset clears enabled profiles and their movement history, but does not install, update, or delete skills.",
+      "Missing catalog skills are reported and left uninstalled.",
+    ],
+    options: [
+      "--dry-run                         Preview storage, invocation, and profile-state reconciliation",
+      "--yes, -y                         Skip confirmation",
+    ],
+    examples: [
+      "afk skills reset --dry-run",
+      "afk skills reset --yes",
     ],
   },
   "skills update": {

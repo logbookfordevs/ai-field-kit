@@ -360,6 +360,7 @@ can be selected with `--agent`; exact custom roots require both
 | `afk skills invocation [disable|enable] [folder]` | Review or change skill invocation policy. | The bare command opens a searchable batch editor; explicit actions change one skill. Both update matching shared `skills.json` policy and installed host metadata; supports `--dry-run`. |
 | `afk skills delete [folder]` | Permanently remove selected skill folders. | `--catalog-only`, `--profile`, storage filters, `--yes`, and `--dry-run`; profile deletion mode deletes referenced folders, not the profile definition. |
 | `afk skills update [skills...]` | Select AFK-cataloged skills with lock metadata and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
+| `afk skills reset` | Reconcile the installed shared library with cached `skills.json`. | Applies `startDisabled` and invocation policy, disables uncataloged skills, clears runtime profile state, and reports missing catalog skills; supports `--dry-run` and `--yes`. |
 | `afk skills categorize` | Ask `codex exec` to create or update catalog categorization metadata. | `--mode` with `append-missing` or `recategorize-all`, `--instruction`, `--runner codex-exec`, `--dry-run`. |
 | `afk skills profiles <command>` | Read or apply profile runtime state. | Detailed below. |
 
@@ -1326,6 +1327,8 @@ afk skills delete --profile
 afk skills update --all
 afk skills update --profile
 afk skills update video --profile
+afk skills reset --dry-run
+afk skills reset --yes
 afk skills categorize --dry-run
 afk profiles catalog create video --name Video --skill hyperframes --skill tailwind --mode context
 afk skills profiles use video
@@ -1351,6 +1354,13 @@ skills lock, and reports other members it skips. The picker and `--all` use the
 same catalog-and-lock intersection; use the official skills CLI directly for
 locked skills outside AFK's catalog. Update preserves active and disabled
 storage state even though the upstream flow reinstalls changed skill content.
+
+`afk skills reset` is the recovery route for shared-library drift. It clears
+enabled profile state, moves cataloged skills according to `startDisabled`,
+restores catalog `autoInvocation` metadata, and moves installed uncataloged
+skills into `.disabled`. It reports catalog skills that are not installed but
+does not install, update, or delete anything. Use `--dry-run` to inspect the
+reconciliation before applying it, or `--yes` to skip confirmation.
 
 AFK uses one skills catalog file for both setup metadata and skill-management
 enrichment:

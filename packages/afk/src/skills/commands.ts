@@ -65,6 +65,7 @@ import {
   runSkillUpdateCommands,
   type LockedSkillRecord,
 } from "./update.js";
+import { applySkillReset, planSkillReset } from "./reset.js";
 import {
   planSkillStartupStorageForItems,
   snapshotDisabledSkillIds,
@@ -74,7 +75,7 @@ import {
   upsertOpenAiImplicitInvocation,
 } from "../skills.js";
 
-type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "update" | "categorize" | "profiles";
+type SkillCommandName = "list" | "show" | "get" | "open" | "add" | "disable" | "enable" | "invocation" | "delete" | "update" | "reset" | "categorize" | "profiles";
 
 export async function runSkillsCommand(commandPath: string[], runtime: Runtime, options: CliOptions): Promise<number> {
   if (commandPath[0] === "profiles" && commandPath[1] === "catalog") {
@@ -115,6 +116,8 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
         return runSkillsDelete(operands[0], runtime, options);
       case "update":
         return runSkillsUpdate(operands, runtime, options);
+      case "reset":
+        return await runSkillsReset(runtime, options);
       case "categorize":
         return runCodexCategorization(runtime, {
           homeDir: options.homeDir,
@@ -133,6 +136,43 @@ export async function runSkillsCommand(commandPath: string[], runtime: Runtime, 
     runtime.io.stderr(error instanceof Error ? error.message : String(error));
     return 1;
   }
+}
+
+async function runSkillsReset(runtime: Runtime, options: CliOptions): Promise<number> {
+  if (options.setupScope !== "global" || options.manifestLocal) {
+    runtime.io.stderr("afk skills reset only supports the shared global library.");
+    return 1;
+  }
+  const plan = planSkillReset(options);
+  const title = options.dryRun ? "Skills Reset Preview" : "Skills Reset";
+  const summary = [
+    section(title),
+    `Activate (${plan.activate.length})\n  ${plan.activate.join(", ") || "none"}`,
+    `Disable (${plan.disable.length})\n  ${plan.disable.join(", ") || "none"}`,
+    `Uncataloged (${plan.uncataloged.length})\n  ${plan.uncataloged.join(", ") || "none"}`,
+    `Missing (${plan.missing.length})\n  ${plan.missing.join(", ") || "none"}`,
+    `${muted("Profile state")} clear enabled profiles and movement history`,
+  ].join("\n\n");
+  runtime.io.stdout(summary);
+
+  if (options.dryRun) {
+    return 0;
+  }
+  if (!options.yes) {
+    const accepted = await confirm({
+      message: "Reset shared skills to cached skills.json policy?",
+      default: false,
+      theme: afkPromptTheme,
+    });
+    if (!accepted) {
+      runtime.io.stdout("Skills reset cancelled. Nothing was changed.");
+      return 0;
+    }
+  }
+
+  applySkillReset(plan);
+  runtime.io.stdout(`${accent("Reset")} shared skills now match cached skills.json policy.`);
+  return 0;
 }
 
 async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOptions): Promise<number> {

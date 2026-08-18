@@ -840,7 +840,7 @@ test("runCli prints contextual skills help", async () => {
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
 });
 
-test("runCli lists get and update in the skills command help", async () => {
+test("runCli lists get, update, and reset in the skills command help", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["skills", "--help"]));
   const text = output.join("\n");
@@ -848,6 +848,7 @@ test("runCli lists get and update in the skills command help", async () => {
   assert.equal(code, 0);
   assert.ok(text.includes("get <folder>"));
   assert.ok(text.includes("update [skills...]"));
+  assert.ok(text.includes("reset"));
   assert.ok(!text.includes("upgrade [skills...]"));
 });
 
@@ -1043,6 +1044,89 @@ test("runCli prints contextual skills profiles help", async () => {
   assert.ok(text.includes("--local"));
   assert.ok(!text.includes("--always-on <skill>"));
   assert.ok(!text.includes("create <profile>"));
+});
+
+test("runCli dry-runs a shared skills reset against catalog policy", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        { id: "active-catalog", label: "Active", source: "example/skills", args: ["--skill", "active-catalog"], default: false, autoInvocation: true },
+        { id: "disabled-catalog", label: "Disabled", source: "example/skills", args: ["--skill", "disabled-catalog"], default: false, autoInvocation: false, startDisabled: true },
+      ],
+    },
+    "profiles.json": { version: 2, mode: "context", alwaysOn: [], items: [] },
+  });
+  const skillsRoot = join(homeDir, ".agents", "skills");
+  writeSkill(join(skillsRoot, ".disabled"), "active-catalog", "Active");
+  writeSkill(join(skillsRoot, ".disabled"), "uncataloged-disabled", "Uncataloged Disabled");
+  writeSkill(skillsRoot, "disabled-catalog", "Disabled");
+  writeSkill(skillsRoot, "uncataloged", "Uncataloged");
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(["skills", "reset", "--dry-run"], { HOME: homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0, text);
+  assert.ok(text.includes("Skills Reset Preview"), text);
+  assert.ok(text.includes("Activate (1)"), text);
+  assert.ok(text.includes("active-catalog"), text);
+  assert.ok(text.includes("Disable (2)"), text);
+  assert.ok(text.includes("disabled-catalog, uncataloged"), text);
+  assert.equal(existsSync(join(skillsRoot, ".disabled", "active-catalog")), true);
+  assert.equal(existsSync(join(skillsRoot, "disabled-catalog")), true);
+  assert.equal(existsSync(join(skillsRoot, "uncataloged")), true);
+  assert.equal(existsSync(join(skillsRoot, ".disabled", "uncataloged-disabled")), true);
+});
+
+test("runCli resets shared storage, invocation policy, and profile state", async () => {
+  const homeDir = localHomeWithManifests({
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [
+        { id: "active-catalog", label: "Active", source: "example/skills", args: ["--skill", "active-catalog"], default: false, autoInvocation: true },
+        { id: "disabled-catalog", label: "Disabled", source: "example/skills", args: ["--skill", "disabled-catalog"], default: false, autoInvocation: false, startDisabled: true },
+        { id: "missing-catalog", label: "Missing", source: "example/skills", args: ["--skill", "missing-catalog"], default: false },
+      ],
+    },
+    "profiles.json": { version: 2, mode: "context", alwaysOn: [], items: [] },
+  });
+  const skillsRoot = join(homeDir, ".agents", "skills");
+  writeSkill(join(skillsRoot, ".disabled"), "active-catalog", "Active");
+  writeSkill(join(skillsRoot, ".disabled"), "uncataloged-disabled", "Uncataloged Disabled");
+  writeSkill(skillsRoot, "disabled-catalog", "Disabled");
+  writeSkill(skillsRoot, "uncataloged", "Uncataloged");
+  const statePath = join(homeDir, ".agents", "afk", "state", "skill-profiles.json");
+  mkdirSync(join(homeDir, ".agents", "afk", "state"), { recursive: true });
+  writeFileSync(statePath, `${JSON.stringify({
+    version: 2,
+    activations: [{ profileId: "video", mode: "focus" }],
+    profileMovedSkills: ["uncataloged"],
+    preExistingDisabledSkills: ["active-catalog"],
+  }, null, 2)}\n`);
+  const output: string[] = [];
+
+  const code = await withConsole(output, () => runCli(["skills", "reset", "--yes"], { HOME: homeDir }));
+  const text = output.join("\n");
+
+  assert.equal(code, 0, text);
+  assert.equal(existsSync(join(skillsRoot, "active-catalog")), true);
+  assert.equal(existsSync(join(skillsRoot, ".disabled", "disabled-catalog")), true);
+  assert.equal(existsSync(join(skillsRoot, ".disabled", "uncataloged")), true);
+  assert.equal(existsSync(join(skillsRoot, ".disabled", "uncataloged-disabled")), true);
+  assert.match(readFileSync(join(skillsRoot, "active-catalog", "SKILL.md"), "utf8"), /disable-model-invocation: false/);
+  assert.match(readFileSync(join(skillsRoot, ".disabled", "disabled-catalog", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
+  assert.match(readFileSync(join(skillsRoot, "active-catalog", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: true/);
+  assert.match(readFileSync(join(skillsRoot, ".disabled", "disabled-catalog", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
+  assert.deepEqual(JSON.parse(readFileSync(statePath, "utf8")), {
+    version: 2,
+    activations: [],
+    profileMovedSkills: [],
+    preExistingDisabledSkills: [],
+  });
+  assert.ok(text.includes("missing-catalog"), text);
 });
 
 test("runCli enables a profile additively by default", async () => {
