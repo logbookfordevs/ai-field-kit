@@ -34,10 +34,11 @@ describe("AFK ticket workflow contracts", () => {
     expect(skill).toContain("This authorizes forward local commits.");
     expect(skill).toContain("History rewrites and remote or public actions still require approval.");
     expect(skill).toContain("If local commits are unavailable, ask.");
-    expect(skill).toContain("review the original range once more");
-    expect(skill).toContain("without further automatic fixes or reviews");
+    expect(skill).toContain("judge each finding against the code and its cited source");
+    expect(skill).toContain("fix warranted findings");
+    expect(skill).toContain("record evidence for dismissals");
     expect(skill).toContain("hand the gate to the user");
-    expect(skill).toContain("later changes require another review");
+    expect(skill).toContain("fixes or later changes require another review");
     expect(skill).toContain("only the user's explicit acceptance");
     expect(skill).toContain("Plannotator Review");
     expect(skill).toContain("sets `accepted`");
