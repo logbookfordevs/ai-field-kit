@@ -2,12 +2,18 @@
 
 Use this reference when accepting a checkpoint requires visual, copy, workflow, or product judgment.
 
-Write the guide as a reviewer journey, not as a generic QA checklist. When handing off the checkpoint, name the reviews needed and the visual states, behavior, copy, or workflow to check.
+### Product Review
+For every user-facing behavior, copy, or workflow change, include a walkthrough of the implemented experience, even when the underlying product decisions were approved earlier.
+
+### Design Review
+Include when acceptance requires visual fidelity to an explicit reference or approved visual direction.
+
+Write each included review as a reviewer journey, not as a generic QA checklist. When handing off the checkpoint, name the visual states, behavior, copy, or workflow to check.
 
 Use this shape when helpful:
 
 ```markdown
-### Review Guide: <phase or task name>
+### <Product or Design> Review: <phase or task name>
 
 - Start from: <screen, command, route, state, or fixture>
 - Walkthrough: <the happy-path flow the reviewer should try>

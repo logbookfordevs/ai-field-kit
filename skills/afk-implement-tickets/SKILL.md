@@ -116,7 +116,7 @@ Before final handoff after implementation or review fixes:
 - Create or update an ADR for reusable policy, ownership, shared component, integration contract, data/model, migration, or long-term product decisions.
 - Record material simplification opportunities and offer `code-simplification`; do not silently refactor outside the checkpoint scope.
 
-For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.md). When acceptance needs visual, copy, workflow, or product judgment, see [review-guides.md](references/review-guides.md).
+For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.md). When implementation changes user-facing behavior, copy, or workflow, or acceptance needs visual judgment, follow [review-guides.md](references/review-guides.md).
 
 ## Operating Loop
 1. Resolve the ticket identifier and select its tracking home.

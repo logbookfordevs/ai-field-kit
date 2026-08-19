@@ -50,6 +50,11 @@ describe("AFK ticket workflow contracts", () => {
     expect(skill).not.toContain("code gate");
     expect(skill).not.toContain("Allowed review gates are `code`, `design`, and `product`");
     expect(reviewGuide).toContain("accepting a checkpoint requires visual, copy, workflow, or product judgment");
+    expect(skill).toContain("changes user-facing behavior, copy, or workflow");
+    expect(reviewGuide).toContain("### Product Review");
+    expect(reviewGuide).toContain("even when the underlying product decisions were approved earlier");
+    expect(reviewGuide).toContain("### Design Review");
+    expect(reviewGuide).toContain("visual fidelity to an explicit reference or approved visual direction");
     expect(reviewGuide).not.toContain("includes a `design` or `product` review gate");
     expect(skill.match(/review_base/g)).toHaveLength(3);
     expect(skill).not.toContain("A user-approved external code review");
