@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v1.3.1 - 2026-08-19
+
 ### Added
 
 - `skills:` added Backnotprop's optional manual `readback` and `recap` utilities for confirming complex requests before work and quickly resyncing on the current session.
