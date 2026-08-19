@@ -38,6 +38,8 @@ describe("AFK ticket workflow contracts", () => {
     expect(skill).toContain("judge each finding against the code and its cited source");
     expect(skill).toContain("fix warranted findings");
     expect(skill).toContain("record evidence for dismissals");
+    expect(skill).toContain("run `afk-code-review` once automatically from `review_base`");
+    expect(skill).toContain("Do not rerun it automatically");
     expect(skill).toContain("hand the gate to the user");
     expect(skill).toContain("fixes or later changes require another review");
     expect(skill).toContain("only the user's explicit acceptance");
