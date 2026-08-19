@@ -11,9 +11,38 @@ function readRepositoryFile(path: string): string {
 describe("AFK ticket workflow contracts", () => {
   test("tickets agree on a public TDD seam without prescribing Plannotator", () => {
     const skill = readRepositoryFile("skills/afk-to-tickets/SKILL.md");
+    const templates = readRepositoryFile("skills/afk-to-tickets/references/ticket-templates.md");
 
-    expect(skill).toContain("Test Seam");
-    expect(skill.toLowerCase()).not.toContain("plannotator");
+    expect(templates).toContain("Test Seam");
+    expect(`${skill}\n${templates}`.toLowerCase()).not.toContain("plannotator");
+  });
+
+  test("local and remote tickets route authoritative source material", () => {
+    const skill = readRepositoryFile("skills/afk-to-tickets/SKILL.md");
+    const templates = readRepositoryFile("skills/afk-to-tickets/references/ticket-templates.md");
+    const localTemplate = templates.split("<local-ticket-template>")[1]?.split("</local-ticket-template>")[0];
+    const issueTemplate = templates.split("<issue-template>")[1]?.split("</issue-template>")[0];
+
+    expect(skill).toContain("Every ticket derived from source artifacts must include a compact `Source` reference");
+    expect(skill).toContain("named sections, quoted headings, line ranges, or a combination");
+    expect(skill).toContain("most stable and precise reference");
+    expect(skill).toContain("Inline a small, decision-critical contract when");
+    expect(skill).toContain("approved prototypes or design references");
+    expect(skill).toContain("frames, states, or flows");
+    expect(skill).toContain("read [ticket-templates.md](references/ticket-templates.md) completely");
+    expect(skill).not.toContain("<local-ticket-template>");
+    expect(skill).not.toContain("<issue-template>");
+    expect(templates).toContain("Avoid prescribing implementation file paths");
+    expect(localTemplate).toContain("\nsource:");
+    expect(localTemplate).not.toContain("**Source:**");
+    expect(localTemplate).not.toContain("## Source Material");
+    expect(localTemplate).not.toContain("## Authoritative Decisions");
+    expect(issueTemplate).toContain("**Source:**");
+    expect(issueTemplate).not.toContain("## Source Material");
+    expect(issueTemplate).not.toContain("## Authoritative Decisions");
+    expect(readRepositoryFile("skills/afk-implement-tickets/SKILL.md")).toContain(
+      "source: <artifact-or-issue-reference>",
+    );
   });
 
   test("implementation owns atomic local commits without assuming local tracking commit permission", () => {
@@ -31,6 +60,9 @@ describe("AFK ticket workflow contracts", () => {
     expect(skill).toContain("awaiting_acceptance");
     expect(skill).toContain("compact receipt");
     expect(skill).toContain("complete review output");
+    expect(skill).toContain("Preserve the automatic review under `## Code Review Findings`");
+    expect(skill).not.toContain("Round N");
+    expect(skill).not.toContain("every review round");
     expect(skill).toContain("revalidate");
     expect(skill).toContain("This authorizes forward local commits.");
     expect(skill).toContain("History rewrites and remote or public actions still require approval.");
@@ -38,6 +70,8 @@ describe("AFK ticket workflow contracts", () => {
     expect(skill).toContain("judge each finding against the code and its cited source");
     expect(skill).toContain("fix warranted findings");
     expect(skill).toContain("record evidence for dismissals");
+    expect(skill).toContain("run `afk-code-review` once automatically from `review_base`");
+    expect(skill).toContain("Do not rerun it automatically");
     expect(skill).toContain("hand the gate to the user");
     expect(skill).toContain("fixes or later changes require another review");
     expect(skill).toContain("only the user's explicit acceptance");
@@ -48,6 +82,11 @@ describe("AFK ticket workflow contracts", () => {
     expect(skill).not.toContain("code gate");
     expect(skill).not.toContain("Allowed review gates are `code`, `design`, and `product`");
     expect(reviewGuide).toContain("accepting a checkpoint requires visual, copy, workflow, or product judgment");
+    expect(skill).toContain("changes user-facing behavior, copy, or workflow");
+    expect(reviewGuide).toContain("### Product Review");
+    expect(reviewGuide).toContain("even when the underlying product decisions were approved earlier");
+    expect(reviewGuide).toContain("### Design Review");
+    expect(reviewGuide).toContain("visual fidelity to an explicit reference or approved visual direction");
     expect(reviewGuide).not.toContain("includes a `design` or `product` review gate");
     expect(skill.match(/review_base/g)).toHaveLength(3);
     expect(skill).not.toContain("A user-approved external code review");
@@ -66,6 +105,8 @@ describe("AFK ticket workflow contracts", () => {
     expect(reference).toContain("explicit opt-in");
     expect(reference).not.toContain("tracking_commits");
     expect(reference).toContain("review-gate states");
+    expect(reference).toContain("automatic code-review evidence");
+    expect(reference).not.toContain("current code-review round");
   });
 
   test("code review preserves upstream fixed-point ownership", () => {

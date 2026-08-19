@@ -70,7 +70,7 @@ Statuses: `pending`, `in_progress`, `validating`, `review`, `blocked`, `done`.
 - `awaiting_acceptance`: the review was clean, or its findings were judged and warranted fixes were validated and committed; the gate awaits the user's final judgment.
 - `accepted`: the user accepted the checkpoint.
 
-Keep the ticket status `review` until the review gate is accepted. Retain every review round under `## Code Review Findings — Round N`:
+Keep the ticket status `review` until the review gate is accepted. Preserve the automatic review under `## Code Review Findings`:
 
 - For actionable findings, preserve the complete review output plus the judgment and resolution for each finding.
 - For a clean review, keep a compact receipt with the reviewed range, finding count per axis, verification gaps, and `awaiting_acceptance` gate state.
@@ -94,14 +94,14 @@ Do not mark the ticket `review` while selected discipline evidence is missing wi
 During implementation, run focused tests and relevant typechecking. Run the complete relevant validation before review, or record the strongest available substitute.
 
 ## Green Atomic Commits
-Record `HEAD` as `review_base` before editing. Keep it unchanged across every review round.
+Record `HEAD` as `review_base` before editing. Keep it unchanged for any later user-requested review.
 
 Commit each green behavior slice, and commit all ticket-owned implementation before review.
 
 This authorizes forward local commits. History rewrites and remote or public actions still require approval. If local commits are unavailable, ask.
 
 ## Review Gate
-After final validation, run `afk-code-review` from `review_base`. If it reports findings, set `changes_requested`; judge each finding against the code and its cited source, fix warranted findings, record evidence for dismissals, revalidate, and commit. Once the review is clean or warranted fixes are committed, set `awaiting_acceptance` and hand the gate to the user. The user decides whether fixes or later changes require another review; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
+After final validation, run `afk-code-review` once automatically from `review_base`. If it reports findings, set `changes_requested`; judge each finding against the code and its cited source, fix warranted findings, record evidence for dismissals, revalidate, and commit. Do not rerun it automatically. Once the review is clean or warranted fixes are committed, set `awaiting_acceptance` and hand the gate to the user. The user decides whether fixes or later changes require another review; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
 
 ## Ticket Record
 Keep task-local state in the tracking home. Preserve `Parent` and `User Stories Covered` when present. Keep these sections or equivalent fields when creating or normalizing the record: `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gate`, `Review Guide`, `Code Review Findings`, and `Handoff Notes`.
@@ -116,7 +116,7 @@ Before final handoff after implementation or review fixes:
 - Create or update an ADR for reusable policy, ownership, shared component, integration contract, data/model, migration, or long-term product decisions.
 - Record material simplification opportunities and offer `code-simplification`; do not silently refactor outside the checkpoint scope.
 
-For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.md). When acceptance needs visual, copy, workflow, or product judgment, see [review-guides.md](references/review-guides.md).
+For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.md). When implementation changes user-facing behavior, copy, or workflow, or acceptance needs visual judgment, follow [review-guides.md](references/review-guides.md).
 
 ## Operating Loop
 1. Resolve the ticket identifier and select its tracking home.
