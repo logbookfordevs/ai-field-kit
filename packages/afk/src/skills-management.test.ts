@@ -1518,6 +1518,31 @@ test("runSkillsCommand delete --catalog-only rejects explicit skills outside AFK
   assert.ok(output.join("\n").includes("Skill not found in skills.json catalog: beta"));
 });
 
+test("runSkillsCommand delete filters explicit skills by effective invocation", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-invocation-filter-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  writeSkill(join(homeDir, ".agents", "skills"), "automatic", "Automatic");
+  writeSkill(join(homeDir, ".agents", "skills"), "manual", "Manual", { disableModelInvocation: true });
+
+  const rejected = await runSkillsCommand(["skills", "delete", "automatic"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+    skillsInvocation: "manual",
+  });
+  assert.equal(rejected, 1);
+  assert.ok(output.join("\n").includes("Skill not found: automatic"));
+
+  output.length = 0;
+  const accepted = await runSkillsCommand(["skills", "delete", "manual"], outputRuntime(output), {
+    ...baseOptions(root),
+    dryRun: true,
+    skillsInvocation: "manual",
+  });
+  assert.equal(accepted, 0);
+  assert.ok(output.join("\n").includes("manual"));
+});
+
 test("runSkillsCommand delete --profile deletes installed skills from a profile", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-delete-profile-"));
   const homeDir = join(root, "home");

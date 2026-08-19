@@ -1209,8 +1209,17 @@ test("runCli prints contextual skills delete help", async () => {
   assert.ok(text.includes("--agent-path <folder>"));
   assert.ok(text.includes("--enabled"));
   assert.ok(text.includes("--disabled"));
+  assert.ok(text.includes("--invocation <state>"));
   assert.ok(text.includes("--catalog-only"));
   assert.ok(text.includes("--profile"));
+});
+
+test("runCli accepts invocation filters for skills delete", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "delete", "missing", "--invocation", "manual", "--dry-run"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Skill not found: missing"));
 });
 
 test("runCli prints contextual skills invocation help", async () => {

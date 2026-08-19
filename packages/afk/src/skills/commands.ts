@@ -1048,7 +1048,9 @@ async function runSkillsDelete(folder: string | undefined, runtime: Runtime, opt
     return runSkillsDeleteProfile(folder, runtime, options);
   }
 
-  const globalCandidates = loadMutationSkillRecords(options);
+  const globalCandidates = filterSkillRecords(loadMutationSkillRecords(options), {
+    invocation: options.skillsInvocation,
+  });
   const candidates = options.skillsDeleteCatalogOnly
     ? filterManifestSkillRecords(globalCandidates, options)
     : globalCandidates;

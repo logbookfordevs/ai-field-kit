@@ -805,6 +805,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only",
       "--disabled                        Show disabled skills only",
+      "--invocation <state>              Filter candidates by auto, manual, or mixed",
     ],
     examples: [
       "afk skills open afk-note",
@@ -874,6 +875,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only",
       "--disabled                        Show disabled skills only",
+      "--invocation <state>              Filter candidates by auto, manual, or mixed",
       "--dry-run                         Preview the delete without applying it",
       "--yes, -y                         Skip confirmation",
       "--catalog-only                    Limit deletion to skills present in AFK's skills catalog",
@@ -1769,7 +1771,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (isAfkSkillsCommand && arg === "--invocation") {
-      if (commandPath[1] !== "list" && commandPath[1] !== "show") {
+      if (commandPath[1] !== "list" && commandPath[1] !== "show" && commandPath[1] !== "delete") {
         return { help: false, kind: "error", error: "Unknown option: --invocation" };
       }
 
