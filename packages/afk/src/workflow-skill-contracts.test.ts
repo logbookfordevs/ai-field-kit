@@ -18,6 +18,7 @@ describe("AFK ticket workflow contracts", () => {
 
   test("implementation owns atomic local commits without assuming local tracking commit permission", () => {
     const skill = readRepositoryFile("skills/afk-implement-tickets/SKILL.md");
+    const reviewGuide = readRepositoryFile("skills/afk-implement-tickets/references/review-guides.md");
 
     expect(skill).toContain("review_base");
     expect(skill).toContain("## Green Atomic Commits");
@@ -42,6 +43,12 @@ describe("AFK ticket workflow contracts", () => {
     expect(skill).toContain("only the user's explicit acceptance");
     expect(skill).toContain("Plannotator Review");
     expect(skill).toContain("sets `accepted`");
+    expect(skill).toContain("review_gate: pending");
+    expect(skill).not.toContain("review_gates:");
+    expect(skill).not.toContain("code gate");
+    expect(skill).not.toContain("Allowed review gates are `code`, `design`, and `product`");
+    expect(reviewGuide).toContain("accepting a checkpoint requires visual, copy, workflow, or product judgment");
+    expect(reviewGuide).not.toContain("includes a `design` or `product` review gate");
     expect(skill.match(/review_base/g)).toHaveLength(3);
     expect(skill).not.toContain("A user-approved external code review");
     expect(skill).not.toContain("tracking_commits");

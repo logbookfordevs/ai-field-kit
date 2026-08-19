@@ -1,6 +1,6 @@
 # Review Guides
 
-Use this reference when a checkpoint includes a `design` or `product` review gate.
+Use this reference when accepting a checkpoint requires visual, copy, workflow, or product judgment.
 
 Write the guide as a reviewer journey, not as a generic QA checklist. When handing off the checkpoint, name the reviews needed and the visual states, behavior, copy, or workflow to check.
 
