@@ -164,7 +164,9 @@ export function toggleSkillAutoInvocation(manifest: EditableManifest, id: string
 
   return {
     ...manifest,
-    items: manifest.items.map((item) => item.id === id ? { ...item, autoInvocation: !item.autoInvocation } : { ...item }),
+    items: manifest.items.map((item) => item.id === id
+      ? { ...item, invocation: item.invocation === "auto" ? "manual" : "auto" }
+      : { ...item }),
   };
 }
 
@@ -177,7 +179,7 @@ export function setSkillAutoInvocationValues(manifest: EditableManifest, values:
     ...manifest,
     items: manifest.items.map((item) => {
       const nextValue = values[item.id];
-      return nextValue === undefined ? { ...item } : { ...item, autoInvocation: nextValue };
+      return nextValue === undefined ? { ...item } : { ...item, invocation: nextValue ? "auto" : "manual" };
     }),
   };
 }
@@ -300,7 +302,7 @@ function isSkillManifest(value: EditableManifest): value is SkillManifest {
       typeof item.source === "string" &&
       isStringArray(item.args) &&
       typeof item.default === "boolean" &&
-      (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean") &&
+      (item.invocation === undefined || item.invocation === "auto" || item.invocation === "manual" || item.invocation === "source") &&
       (item.startDisabled === undefined || typeof item.startDisabled === "boolean")
     ))
   );

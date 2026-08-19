@@ -583,11 +583,11 @@ test("selectSkillsInstall presents composed skills for selected wrappers", async
   );
   assert.match(
     promptState.searchableCheckboxChoices["Choose skills to install"]?.find((choice) => choice.value === "afk-code-grill")?.description ?? "",
-    /role: wrapper · auto-invocation: off/,
+    /role: wrapper · invocation: manual/,
   );
   assert.match(
     promptState.searchableCheckboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
-    /role: primitive · auto-invocation: on/,
+    /role: primitive · invocation: auto/,
   );
 });
 
@@ -890,7 +890,7 @@ function localHomeWithComposedSkillManifest(): string {
           source: "https://github.com/example/afk",
           args: ["--skill", "afk-code-grill", "--global"],
           default: true,
-          autoInvocation: false,
+          invocation: "manual",
           role: "wrapper",
           composes: ["grilling", "truss-evaluation"],
         },
@@ -900,7 +900,7 @@ function localHomeWithComposedSkillManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "grilling", "--global"],
           default: false,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
           composes: [],
         },
@@ -910,7 +910,7 @@ function localHomeWithComposedSkillManifest(): string {
           source: "https://github.com/example/truss",
           args: ["--skill", "truss-evaluation", "--global"],
           default: false,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
           composes: [],
         },
@@ -953,7 +953,7 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "grill-me", "--global"],
           default: false,
-          autoInvocation: false,
+          invocation: "manual",
           role: "wrapper",
           composes: ["grilling"],
         },
@@ -963,7 +963,7 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "grill-with-docs", "--global"],
           default: false,
-          autoInvocation: false,
+          invocation: "manual",
           role: "wrapper",
           composes: ["grilling", "domain-modeling"],
         },
@@ -973,7 +973,7 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "grilling", "--global"],
           default: false,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
           composes: [],
         },
@@ -983,7 +983,7 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "domain-modeling", "--global"],
           default: false,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
           composes: [],
         },

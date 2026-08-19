@@ -800,7 +800,7 @@ function runSkillsList(runtime: Runtime, options: CliOptions): number {
   });
 
   const records = filterSkillRecords(snapshot.records, {
-    autoInvocation: options.skillsListAutoInvocation,
+    invocation: options.skillsInvocation,
     category: options.skillsCategory,
     tag: options.skillsTag,
     uncategorized: options.skillsUncategorized,
@@ -914,7 +914,13 @@ async function runSkillsShow(folder: string | undefined, runtime: Runtime, optio
     agent: options.skillsAgent,
     agentPath: options.skillsAgentPath,
   });
-  const records = filterSkillRecords(snapshot.records, { storage: options.skillsListStorage ?? "active" });
+  const records = filterSkillRecords(snapshot.records, {
+    invocation: options.skillsInvocation,
+    category: options.skillsCategory,
+    tag: options.skillsTag,
+    uncategorized: options.skillsUncategorized,
+    storage: options.skillsListStorage ?? "active",
+  });
   const record = folder
     ? findSkillRecord(records, folder)
     : await promptSkillRecord(records, "Select a skill to show:");
@@ -1239,9 +1245,10 @@ function buildSkillInvocationPolicyBatchOperations(
 
   const nextItems = manifest.items.map((item) => {
     const allowInvocation = catalogPolicies.get(item.id);
-    return allowInvocation === undefined || item.autoInvocation === allowInvocation
+    const invocation = allowInvocation ? "auto" : "manual";
+    return allowInvocation === undefined || item.invocation === invocation
       ? item
-      : { ...item, autoInvocation: allowInvocation };
+      : { ...item, invocation };
   });
   const catalogChanged = nextItems.some((item, index) => item !== manifest.items[index]);
   if (!catalogChanged) {

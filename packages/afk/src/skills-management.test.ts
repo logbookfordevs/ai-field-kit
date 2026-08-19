@@ -286,17 +286,16 @@ test("loadSkillCatalog resolves auto invocation states from SKILL and OpenAI met
   const snapshot = loadSkillCatalog({ homeDir, cwd, scope: "global", agent: undefined });
   const byFolder = new Map(snapshot.records.map((record) => [record.folder, record]));
 
-  assert.equal(byFolder.get("default-skill")?.autoInvocation, "default");
-  assert.equal(byFolder.get("manual-skill")?.autoInvocation, "disabled");
-  assert.deepEqual(byFolder.get("manual-skill")?.autoInvocationDetails, ["SKILL.md disables"]);
-  assert.equal(byFolder.get("auto-skill")?.autoInvocation, "enabled");
-  assert.deepEqual(byFolder.get("auto-skill")?.autoInvocationDetails, ["agents/openai.yaml enables"]);
-  assert.equal(byFolder.get("mixed-skill")?.autoInvocation, "mixed");
-  assert.deepEqual(byFolder.get("mixed-skill")?.autoInvocationDetails, ["SKILL.md disables", "agents/openai.yaml enables"]);
-  assert.deepEqual(filterSkillRecords(snapshot.records, { autoInvocation: "enabled" }).map((record) => record.folder), ["auto-skill"]);
-  assert.deepEqual(filterSkillRecords(snapshot.records, { autoInvocation: "disabled" }).map((record) => record.folder), ["manual-skill"]);
-  assert.deepEqual(filterSkillRecords(snapshot.records, { autoInvocation: "mixed" }).map((record) => record.folder), ["mixed-skill"]);
-  assert.deepEqual(filterSkillRecords(snapshot.records, { autoInvocation: "default" }).map((record) => record.folder), ["default-skill"]);
+  assert.equal(byFolder.get("default-skill")?.invocation, "auto");
+  assert.equal(byFolder.get("manual-skill")?.invocation, "manual");
+  assert.deepEqual(byFolder.get("manual-skill")?.invocationDetails, ["SKILL.md disables"]);
+  assert.equal(byFolder.get("auto-skill")?.invocation, "auto");
+  assert.deepEqual(byFolder.get("auto-skill")?.invocationDetails, ["agents/openai.yaml enables"]);
+  assert.equal(byFolder.get("mixed-skill")?.invocation, "mixed");
+  assert.deepEqual(byFolder.get("mixed-skill")?.invocationDetails, ["SKILL.md disables", "agents/openai.yaml enables"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { invocation: "auto" }).map((record) => record.folder), ["auto-skill", "default-skill"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { invocation: "manual" }).map((record) => record.folder), ["manual-skill"]);
+  assert.deepEqual(filterSkillRecords(snapshot.records, { invocation: "mixed" }).map((record) => record.folder), ["mixed-skill"]);
 });
 
 test("filterSkillChoices searches folders, names, categories, tags, and roots", () => {
@@ -864,8 +863,8 @@ test("context profile mode keeps cataloged manual skills active", () => {
       { folder: "manual", scope: "uncategorized" },
     ],
     items: [
-      { id: "alpha", label: "Alpha", source: "owner/kit", args: ["--skill", "alpha"], default: false, autoInvocation: true },
-      { id: "manual", label: "Manual", source: "owner/kit", args: ["--skill", "manual"], default: false, autoInvocation: false },
+      { id: "alpha", label: "Alpha", source: "owner/kit", args: ["--skill", "alpha"], default: false, invocation: "auto" },
+      { id: "manual", label: "Manual", source: "owner/kit", args: ["--skill", "manual"], default: false, invocation: "manual" },
     ],
   });
   writeSkillProfiles(homeDir, {
@@ -891,7 +890,7 @@ test("context profile mode restores manual skills moved by strict mode", () => {
   writeSkillCatalog(homeDir, {
     skills: [{ folder: "manual", scope: "uncategorized" }],
     items: [
-      { id: "manual", label: "Manual", source: "owner/kit", args: ["--skill", "manual"], default: false, autoInvocation: false },
+      { id: "manual", label: "Manual", source: "owner/kit", args: ["--skill", "manual"], default: false, invocation: "manual" },
     ],
   });
   writeSkillProfiles(homeDir, {
@@ -1277,7 +1276,7 @@ test("runSkillsCommand add ignores profile-only for already cataloged skills fro
         source: "pixijs/pixijs-skills",
         args: ["--skill", "pixijs"],
         default: false,
-        autoInvocation: true,
+        invocation: "auto",
         role: "utility",
         imported: true,
       },
@@ -1287,7 +1286,7 @@ test("runSkillsCommand add ignores profile-only for already cataloged skills fro
         source: "pixijs/pixijs-skills",
         args: ["--skill", "pixijs-assets"],
         default: false,
-        autoInvocation: true,
+        invocation: "auto",
         role: "utility",
         imported: true,
       },
@@ -1667,7 +1666,7 @@ test("runSkillsCommand disables auto invocation metadata for one skill", async (
       source: "owner/skills",
       args: ["--skill", "demo"],
       default: false,
-      autoInvocation: true,
+      invocation: "auto",
     }],
   });
   writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo", {
@@ -1682,7 +1681,7 @@ test("runSkillsCommand disables auto invocation metadata for one skill", async (
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
-  assert.equal(catalog.items[0]?.autoInvocation, false);
+  assert.equal(catalog.items[0]?.invocation, "manual");
 });
 
 test("runSkillsCommand previews auto invocation enable without writing metadata", async () => {
@@ -1699,7 +1698,7 @@ test("runSkillsCommand previews auto invocation enable without writing metadata"
       source: "owner/skills",
       args: ["--skill", "demo"],
       default: false,
-      autoInvocation: false,
+      invocation: "manual",
     }],
   });
   writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo", {
@@ -1717,7 +1716,7 @@ test("runSkillsCommand previews auto invocation enable without writing metadata"
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
-  assert.equal(catalog.items[0]?.autoInvocation, false);
+  assert.equal(catalog.items[0]?.invocation, "manual");
 });
 
 test("runSkillsCommand enables auto invocation in installed metadata and catalog", async () => {
@@ -1734,7 +1733,7 @@ test("runSkillsCommand enables auto invocation in installed metadata and catalog
       source: "owner/skills",
       args: ["--skill", "demo"],
       default: false,
-      autoInvocation: false,
+      invocation: "manual",
     }],
   });
   writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo", {
@@ -1748,7 +1747,7 @@ test("runSkillsCommand enables auto invocation in installed metadata and catalog
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: false/);
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: true/);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
-  assert.equal(catalog.items[0]?.autoInvocation, true);
+  assert.equal(catalog.items[0]?.invocation, "auto");
 });
 
 test("runSkillsCommand enables agent-specific project skills with --scope project --agent", async () => {
@@ -1844,9 +1843,9 @@ test("buildSkillOpenCommand targets files, folders, and supported apps", () => {
     categoryId: undefined,
     catalogOrigin: "untracked",
     tags: [],
-    autoInvocation: "default",
-    autoInvocationSources: [],
-    autoInvocationDetails: [],
+    invocation: "auto",
+    invocationSources: [],
+    invocationDetails: [],
   };
 
   assert.deepEqual(buildSkillOpenCommand(record, { app: "finder", target: "file" }), {
@@ -1878,9 +1877,9 @@ test("renderSkillChoice keeps picker rows compact", () => {
     categoryId: "docs",
     catalogOrigin: "native",
     tags: [],
-    autoInvocation: "enabled",
-    autoInvocationSources: ["SKILL.md"],
-    autoInvocationDetails: ["SKILL.md enables"],
+    invocation: "auto",
+    invocationSources: ["SKILL.md"],
+    invocationDetails: ["SKILL.md enables"],
   }), "Demo Skill [demo] Global Library");
 
   assert.equal(renderSkillChoice({
@@ -1899,9 +1898,9 @@ test("renderSkillChoice keeps picker rows compact", () => {
     categoryId: undefined,
     catalogOrigin: "untracked",
     tags: [],
-    autoInvocation: "disabled",
-    autoInvocationSources: ["agents/openai.yaml"],
-    autoInvocationDetails: ["agents/openai.yaml disables"],
+    invocation: "manual",
+    invocationSources: ["agents/openai.yaml"],
+    invocationDetails: ["agents/openai.yaml disables"],
   }), "Disabled Demo [disabled-demo] Global Library / Disabled");
 });
 
@@ -1922,9 +1921,9 @@ test("renderSkillChoiceDescription adds hovered skill metadata below the picker"
     categoryId: "docs",
     catalogOrigin: "imported",
     tags: ["writing"],
-    autoInvocation: "enabled",
-    autoInvocationSources: ["SKILL.md"],
-    autoInvocationDetails: ["SKILL.md enables"],
+    invocation: "auto",
+    invocationSources: ["SKILL.md"],
+    invocationDetails: ["SKILL.md enables"],
   }), [
     "Demo description",
     "",
@@ -1947,9 +1946,9 @@ test("renderSkillChoiceDescription adds hovered skill metadata below the picker"
     categoryId: "docs",
     catalogOrigin: "imported",
     tags: [],
-    autoInvocation: "enabled",
-    autoInvocationSources: ["SKILL.md"],
-    autoInvocationDetails: ["SKILL.md enables"],
+    invocation: "auto",
+    invocationSources: ["SKILL.md"],
+    invocationDetails: ["SKILL.md enables"],
   }, { includeCatalogOrigin: true }), /Category: Docs · Catalog: imported/);
 });
 
@@ -1970,13 +1969,13 @@ test("renderSkillDetails shows mixed auto invocation diagnostics", () => {
     categoryId: undefined,
     catalogOrigin: "untracked",
     tags: [],
-    autoInvocation: "mixed",
-    autoInvocationSources: ["SKILL.md", "agents/openai.yaml"],
-    autoInvocationDetails: ["SKILL.md disables", "agents/openai.yaml enables"],
+    invocation: "mixed",
+    invocationSources: ["SKILL.md", "agents/openai.yaml"],
+    invocationDetails: ["SKILL.md disables", "agents/openai.yaml enables"],
   });
 
-  assert.ok(output.includes("Auto       mixed"));
-  assert.ok(output.includes("Auto source SKILL.md disables, agents/openai.yaml enables"));
+  assert.ok(output.includes("Invocation mixed"));
+  assert.ok(output.includes("Invocation source SKILL.md disables, agents/openai.yaml enables"));
   assert.ok(output.includes("Catalog    untracked"));
 });
 
@@ -2190,7 +2189,7 @@ test("runSkillsCommand update restores catalog invocation policy after the upstr
       skillFolderHash: "abc",
     },
   });
-  writeSkillManifest(homeDir, ["demo"], { autoInvocation: false });
+  writeSkillManifest(homeDir, ["demo"], { invocation: "manual" });
   const skillRoot = join(homeDir, ".agents", "skills");
   writeSkill(skillRoot, "demo", "Old Demo", {
     disableModelInvocation: true,
@@ -2482,7 +2481,7 @@ function skillManifestFixture(content: unknown): unknown {
       source: "",
       args: ["--skill", skill.folder],
       default: false,
-      autoInvocation: true,
+      invocation: "auto",
       role: "utility",
       catalog: {
         scope: skill.scope,
@@ -2502,7 +2501,7 @@ function writeProjectSkillLock(cwd: string, skills: Record<string, object>): voi
   writeFileSync(join(cwd, "skills-lock.json"), JSON.stringify({ version: 1, skills }));
 }
 
-function writeSkillManifest(homeDir: string, ids: string[], options: { autoInvocation?: boolean } = {}): void {
+function writeSkillManifest(homeDir: string, ids: string[], options: { invocation?: "auto" | "manual" | "source" } = {}): void {
   mkdirSync(localManifestDir(homeDir), { recursive: true });
   writeFileSync(join(localManifestDir(homeDir), "skills.json"), JSON.stringify({
     version: 1,
@@ -2513,7 +2512,7 @@ function writeSkillManifest(homeDir: string, ids: string[], options: { autoInvoc
       source: "https://github.com/example/skills",
       args: ["--skill", id],
       default: true,
-      ...(options.autoInvocation === undefined ? {} : { autoInvocation: options.autoInvocation }),
+      ...(options.invocation === undefined ? {} : { invocation: options.invocation }),
     })),
   }));
 }
@@ -2563,7 +2562,7 @@ function baseOptions(root: string) {
     manifestShowVisualize: false,
     skillsListScope: "all" as const,
     skillsListStorage: undefined,
-    skillsListAutoInvocation: undefined,
+    skillsInvocation: undefined,
     skillsUpdateScope: "global" as const,
     skillsUpdateAll: false,
     skillsUpdateByProfile: false,
@@ -2603,8 +2602,8 @@ function skillRecord(input: { folder: string; rootPath: string }): SkillRecord {
     categoryId: undefined,
     catalogOrigin: "untracked",
     tags: [],
-    autoInvocation: "default",
-    autoInvocationSources: [],
-    autoInvocationDetails: [],
+    invocation: "auto",
+    invocationSources: [],
+    invocationDetails: [],
   };
 }

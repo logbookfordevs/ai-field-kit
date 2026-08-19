@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ManagedSkillAgent, SkillAgentFilter, SkillsListAutoInvocation, SkillsListScope, SkillsListStorage } from "../types.js";
+import type { ManagedSkillAgent, SkillAgentFilter, SkillsInvocationFilter, SkillsListScope, SkillsListStorage } from "../types.js";
 import { loadSkillManifest, localManifestDir, type SkillManifest, type SkillManifestItem } from "../manifest.js";
 
 export const skillCatalogFileName = "skills.json";
@@ -9,7 +9,7 @@ export const legacySkillCatalogFileName = "afk-skills.json";
 
 export type SkillStorage = "active" | "disabled";
 export type SkillRootKind = "global-library" | "project-agent" | "agent-library";
-export type SkillAutoInvocationState = SkillsListAutoInvocation;
+export type SkillInvocationState = SkillsInvocationFilter;
 export type SkillCatalogOrigin = "native" | "imported" | "untracked";
 
 export type SkillRecord = {
@@ -28,9 +28,9 @@ export type SkillRecord = {
   categoryId: string | undefined;
   catalogOrigin: SkillCatalogOrigin;
   tags: string[];
-  autoInvocation: SkillAutoInvocationState;
-  autoInvocationSources: string[];
-  autoInvocationDetails: string[];
+  invocation: SkillInvocationState;
+  invocationSources: string[];
+  invocationDetails: string[];
 };
 
 export type SkillCatalogScope = {
@@ -131,7 +131,7 @@ export function loadSkillCatalog(options: {
 }
 
 export type SkillListFilters = {
-  autoInvocation?: SkillAutoInvocationState | undefined;
+  invocation?: SkillInvocationState | undefined;
   category?: string | undefined;
   tag?: string | undefined;
   uncategorized?: boolean | undefined;
@@ -140,7 +140,7 @@ export type SkillListFilters = {
 
 export function filterSkillRecords(records: SkillRecord[], filters: SkillListFilters): SkillRecord[] {
   return records.filter((record) => {
-    if (filters.autoInvocation && record.autoInvocation !== filters.autoInvocation) {
+    if (filters.invocation && record.invocation !== filters.invocation) {
       return false;
     }
 
@@ -632,7 +632,7 @@ function loadRootSkills(
       }
 
       const metadata = parseSkillFile(readFileSync(skillFilePath, "utf8"), entry.name);
-      const autoInvocation = resolveAutoInvocation({
+      const invocation = resolveInvocation({
         skillFile: metadata.disableModelInvocation === undefined ? undefined : !metadata.disableModelInvocation,
         openAi: readOpenAiImplicitInvocation(root.path, entry.name),
       });
@@ -660,9 +660,9 @@ function loadRootSkills(
         categoryId: scope?.id,
         catalogOrigin: resolveCatalogOrigin(catalogItem),
         tags: taxonomyEntry?.tags ?? [],
-        autoInvocation: autoInvocation.state,
-        autoInvocationSources: autoInvocation.sources,
-        autoInvocationDetails: autoInvocation.details,
+        invocation: invocation.state,
+        invocationSources: invocation.sources,
+        invocationDetails: invocation.details,
       } satisfies SkillRecord];
     });
 }
@@ -684,10 +684,10 @@ function readOpenAiImplicitInvocation(rootPath: string, folder: string): boolean
   return parseOpenAiImplicitInvocation(readFileSync(path, "utf8"));
 }
 
-function resolveAutoInvocation(input: {
+function resolveInvocation(input: {
   skillFile?: boolean | undefined;
   openAi?: boolean | undefined;
-}): { state: SkillAutoInvocationState; sources: string[]; details: string[] } {
+}): { state: SkillInvocationState; sources: string[]; details: string[] } {
   const signals = [
     input.skillFile === undefined
       ? undefined
@@ -706,12 +706,12 @@ function resolveAutoInvocation(input: {
   ].filter((signal): signal is { source: string; enabled: boolean; detail: string } => Boolean(signal));
 
   if (signals.length === 0) {
-    return { state: "default", sources: [], details: [] };
+    return { state: "auto", sources: [], details: [] };
   }
 
   const first = signals[0];
   const state = signals.every((signal) => signal.enabled === first?.enabled)
-    ? first?.enabled ? "enabled" : "disabled"
+    ? first?.enabled ? "auto" : "manual"
     : "mixed";
 
   return {
@@ -845,7 +845,7 @@ function skillCatalogEntryToManifestItem(entry: SkillCategorizationEntry): Skill
     source: "",
     args: ["--skill", entry.folder],
     default: false,
-    autoInvocation: true,
+    invocation: "auto",
     role: "utility",
     catalog: {
       scope: entry.scope,

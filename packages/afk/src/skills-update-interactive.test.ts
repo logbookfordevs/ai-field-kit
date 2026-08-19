@@ -24,7 +24,7 @@ vi.mock("@inquirer/prompts", () => ({
   search: vi.fn(),
 }));
 
-test("afk skills update picker lists only cataloged locked skills", async () => {
+test("afk skills update picker includes imported catalog skills with lock metadata", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-update-catalog-picker-"));
   const homeDir = join(root, "home");
   mkdirSync(join(homeDir, ".agents"), { recursive: true });
@@ -61,6 +61,7 @@ test("afk skills update picker lists only cataloged locked skills", async () => 
         source: "https://github.com/owner/cataloged",
         args: ["--skill", "cataloged"],
         default: true,
+        imported: true,
       },
       {
         id: "disabled-cataloged",
@@ -114,7 +115,7 @@ test("afk skills update picker lists only cataloged locked skills", async () => 
     manifestShowVisualize: false,
     skillsListScope: "all",
     skillsListStorage: undefined,
-    skillsListAutoInvocation: undefined,
+    skillsInvocation: undefined,
     skillsUpdateScope: "global",
     skillsUpdateAll: false,
     skillsUpdateByProfile: false,

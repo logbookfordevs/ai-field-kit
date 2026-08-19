@@ -49,7 +49,7 @@ test("planSkillInvocationPolicy updates installed manual skills", () => {
         source: "https://github.com/example/skills",
         args: ["--skill", "manual-skill"],
         default: true,
-        autoInvocation: false,
+        invocation: "manual",
       },
     ],
   }));
@@ -86,7 +86,7 @@ test("planSkillInvocationPolicy re-enables installed automatic skills", () => {
         source: "https://github.com/example/skills",
         args: ["--skill", "auto-skill"],
         default: true,
-        autoInvocation: true,
+        invocation: "auto",
       },
     ],
   }));

@@ -35,13 +35,25 @@ export type SkillManifestItem = {
   source: string;
   args: string[];
   default: boolean;
-  autoInvocation?: boolean;
+  invocation?: SkillInvocationPolicy;
   startDisabled?: boolean;
   role?: SkillManifestItemRole;
   composes?: string[];
   catalog?: SkillManifestItemCatalog;
   imported?: boolean;
 };
+
+export type SkillInvocationPolicy = "auto" | "manual" | "source";
+
+type InvocationPolicyInput = { invocation?: unknown; autoInvocation?: unknown };
+
+export function skillInvocationPolicy(item: InvocationPolicyInput): SkillInvocationPolicy {
+  if (item.invocation === "auto" || item.invocation === "manual" || item.invocation === "source") return item.invocation;
+  if (typeof item.autoInvocation === "boolean") {
+    return item.autoInvocation ? "auto" : "manual";
+  }
+  return "source";
+}
 
 export type SkillManifestItemRole = "primitive" | "wrapper" | "workflow" | "utility" | "reference" | "router";
 
@@ -1136,7 +1148,7 @@ function migrateSkillsManifest(content: string): string | null {
 
   let changed = false;
   const items = parsed.items.map((item) => {
-    const next = { ...item } as SkillManifestItem & { profiles?: unknown };
+    const next = { ...item } as SkillManifestItem & { autoInvocation?: boolean; profiles?: unknown };
     if (next.profiles !== undefined) {
       delete next.profiles;
       changed = true;
@@ -1144,6 +1156,12 @@ function migrateSkillsManifest(content: string): string | null {
 
     if (next.imported === undefined) {
       next.imported = false;
+      changed = true;
+    }
+
+    if (next.autoInvocation !== undefined) {
+      next.invocation = next.autoInvocation ? "auto" : "manual";
+      delete next.autoInvocation;
       changed = true;
     }
 
@@ -1360,8 +1378,12 @@ function isProfilePackages(value: unknown): boolean {
   );
 }
 function stripRetiredSkillManifestFields(item: SkillManifestItem): SkillManifestItem {
-  const next = { ...item } as SkillManifestItem & { profiles?: unknown };
+  const next = { ...item } as SkillManifestItem & { autoInvocation?: boolean; profiles?: unknown };
   delete next.profiles;
+  if (next.autoInvocation !== undefined) {
+    next.invocation = next.autoInvocation ? "auto" : "manual";
+    delete next.autoInvocation;
+  }
   return next;
 }
 
@@ -1448,6 +1470,7 @@ function isSkillManifest(value: unknown): value is SkillManifest {
       typeof item.source === "string" &&
       isStringArray(item.args) &&
       typeof item.default === "boolean" &&
+      (item.invocation === undefined || item.invocation === "auto" || item.invocation === "manual" || item.invocation === "source") &&
       (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean") &&
       (item.startDisabled === undefined || typeof item.startDisabled === "boolean") &&
       (item.role === undefined || isSkillManifestItemRole(item.role)) &&

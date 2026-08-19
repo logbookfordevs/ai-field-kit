@@ -33,7 +33,7 @@ import type {
   SkillCategorizationRunner,
   SkillOpenApp,
   SkillProfileMode,
-  SkillsListAutoInvocation,
+  SkillsInvocationFilter,
   SkillsListScope,
   SkillsListStorage,
   SkillsUpdateScope,
@@ -740,7 +740,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only (default)",
       "--disabled                        Show disabled skills only",
-      "--auto-invocation <state>         Filter by enabled, disabled, mixed, or default",
+      "--invocation <state>              Filter by auto, manual, or mixed",
       "--category <id-or-label>          Filter by AFK category",
       "--tag <tag>                       Filter by AFK tag",
       "--uncategorized                   Show records without an AFK category",
@@ -751,7 +751,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills list --scope global",
       "afk skills list --enabled",
       "afk skills list --disabled",
-      "afk skills list --auto-invocation disabled",
+      "afk skills list --invocation manual",
       "afk skills list --scope global --agent codex",
       "afk skills list --scope project --agent codex",
       "afk skills list --agent custom --agent-path ~/.my-agent/skills",
@@ -760,13 +760,17 @@ const commandHelps: Record<string, CommandHelp> = {
   "skills show": {
     title: "AFK skills show",
     summary: "Show details for one enabled skill by default.",
-    usage: "afk skills show <folder> [options]",
+    usage: "afk skills show [folder] [options]",
     options: [
       "--scope global|project|all        Choose the preset agent scope",
       "--agent <agent>|custom            Select one explicit agent root",
       "--agent-path <folder>             Required with --agent custom",
       "--enabled                         Show enabled skills only (default)",
       "--disabled                        Show disabled skills only",
+      "--invocation <state>              Filter the selector by auto, manual, or mixed",
+      "--category <id-or-label>          Filter the selector by AFK category",
+      "--tag <tag>                       Filter the selector by AFK tag",
+      "--uncategorized                   Show selector records without an AFK category",
       "--json                            Print JSON record",
     ],
     examples: [
@@ -891,7 +895,7 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Reset installed shared skills to match cached skills.json policy.",
     usage: "afk skills reset [options]",
     notes: [
-      "Cataloged skills follow startDisabled and explicit autoInvocation policy; omitted invocation policy preserves source metadata.",
+      "Cataloged skills follow startDisabled and explicit invocation policy; source policy preserves authored metadata.",
       "Reset clears enabled profiles and their movement history, but does not install, update, or delete skills.",
       "Missing catalog skills are reported and left uninstalled.",
     ],
@@ -1205,7 +1209,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "bulk-edit                         Set invocation and always-on policy for multiple skills",
       "remove                            Remove a skill catalog item",
       "toggle-default                    Toggle default skills",
-      "toggle-auto                       Toggle skill autoInvocation",
+      "toggle-auto                       Toggle skill invocation between auto and manual",
       "import                            Backfill missing skills catalog entries",
       "status                            Compare installed skills with catalog entries",
     ],
@@ -1323,7 +1327,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let manifestConfigureFromCurrent = false;
   let skillsListScope: SkillsListScope = "global";
   let skillsListStorage: SkillsListStorage | undefined;
-  let skillsListAutoInvocation: SkillsListAutoInvocation | undefined;
+  let skillsInvocation: SkillsInvocationFilter | undefined;
   let skillsUpdateScope: SkillsUpdateScope = "global";
   let skillsUpdateAll = false;
   let skillsUpdateByProfile = false;
@@ -1764,17 +1768,17 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
-    if (isAfkSkillsCommand && arg === "--auto-invocation") {
-      if (commandPath[1] !== "list") {
-        return { help: false, kind: "error", error: "Unknown option: --auto-invocation" };
+    if (isAfkSkillsCommand && arg === "--invocation") {
+      if (commandPath[1] !== "list" && commandPath[1] !== "show") {
+        return { help: false, kind: "error", error: "Unknown option: --invocation" };
       }
 
       const value = args[index + 1];
-      if (value !== "enabled" && value !== "disabled" && value !== "mixed" && value !== "default") {
-        return { help: false, kind: "error", error: `Invalid --auto-invocation value: ${value ?? "(missing)"}` };
+      if (value !== "auto" && value !== "manual" && value !== "mixed") {
+        return { help: false, kind: "error", error: `Invalid --invocation value: ${value ?? "(missing)"}` };
       }
 
-      skillsListAutoInvocation = value;
+      skillsInvocation = value;
       index += 1;
       continue;
     }
@@ -2001,7 +2005,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       manifestConfigureFromCurrent,
       skillsListScope,
       skillsListStorage,
-      skillsListAutoInvocation,
+      skillsInvocation,
       skillsUpdateAll,
       skillsUpdateScope,
       skillsUpdateByProfile,

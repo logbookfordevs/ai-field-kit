@@ -253,7 +253,7 @@ export const catalogSkillsLobbyChoices: MenuChoice<CatalogSkillsLobbyChoiceValue
     description: "Route: afk skills catalog toggle-default",
   },
   {
-    name: "Toggle skill autoInvocation",
+    name: "Toggle skill invocation",
     value: "catalog-skills-toggle-auto",
     description: "Route: afk skills catalog toggle-auto",
   },

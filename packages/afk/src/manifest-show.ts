@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sectionTitle, muted } from "./brand.js";
-import { loadDefaultManifestContent, localManifestDir, readRememberedDefaultsSource, type ManifestName } from "./manifest.js";
+import { loadDefaultManifestContent, localManifestDir, readRememberedDefaultsSource, skillInvocationPolicy, type ManifestName } from "./manifest.js";
 import { enabledSkillProfileIds, skillProfileStatus, type SkillProfileApplyResult } from "./skills/profiles.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, ManifestCategory, Runtime } from "./types.js";
@@ -297,7 +297,7 @@ function renderSkills(manifest: Record<string, unknown>): string {
       const args = Array.isArray(item.args) && item.args.length > 0 ? item.args.filter((value) => typeof value === "string").join(" ") : "";
       const details = [
         `role: ${stringValue(item.role, "primitive")}`,
-        `auto-invocation: ${item.autoInvocation === undefined ? "source policy" : item.autoInvocation ? "on" : "off"}`,
+        `invocation: ${skillInvocationPolicy(item)}`,
         `start-disabled: ${item.startDisabled === true ? "on" : "off"}`,
         ...stringListDetail("composes", item.composes),
         ...(args ? [`args: ${args}`] : []),
@@ -310,8 +310,8 @@ function renderSkills(manifest: Record<string, unknown>): string {
 function renderSkillsAsReact(manifest: Record<string, unknown>): string {
   const items = Array.isArray(manifest.items) ? manifest.items.filter(isRecord) : [];
   const byId = new Map(items.map((item) => [stringValue(item.id, "unnamed"), item]));
-  const modelDiscovered = items.filter((item) => item.autoInvocation !== false);
-  const userInvoked = items.filter((item) => item.autoInvocation === false);
+  const modelDiscovered = items.filter((item) => skillInvocationPolicy(item) !== "manual");
+  const userInvoked = items.filter((item) => skillInvocationPolicy(item) === "manual");
   const composed = items.filter((item) => stringList(item.composes).length > 0);
 
   if (items.length === 0) {
@@ -341,8 +341,8 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
   profiles: VisualizationProfiles | null;
 }): string {
   const items = skillItems(manifest);
-  const modelDiscovered = items.filter((item) => item.autoInvocation !== false);
-  const userInvoked = items.filter((item) => item.autoInvocation === false);
+  const modelDiscovered = items.filter((item) => skillInvocationPolicy(item) !== "manual");
+  const userInvoked = items.filter((item) => skillInvocationPolicy(item) === "manual");
   const composed = items.filter((item) => stringList(item.composes).length > 0);
   const roleCounts = roleSummary(items);
   const profileSummary = profileVisualizationSummary(context.profiles, items);
@@ -531,7 +531,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
     <section>
       <div class="section-head">
         <h2>React analogy.</h2>
-        <p>The tree below is not runtime code. It is a readable projection of <code>role</code>, <code>autoInvocation</code>, and <code>composes</code>.</p>
+        <p>The tree below is not runtime code. It is a readable projection of <code>role</code>, <code>invocation</code>, and <code>composes</code>.</p>
       </div>
       <pre class="code-window">${highlightJsxForHtml(reactTree)}</pre>
     </section>
@@ -653,8 +653,8 @@ function profileVisualizationSummary(profiles: VisualizationProfiles | null, ite
 function renderSkillsAsReactPlain(manifest: Record<string, unknown>, profiles: VisualizationProfiles | null = null): string {
   const items = skillItems(manifest);
   const byId = new Map(items.map((item) => [stringValue(item.id, "unnamed"), item]));
-  const modelDiscovered = items.filter((item) => item.autoInvocation !== false);
-  const userInvoked = items.filter((item) => item.autoInvocation === false);
+  const modelDiscovered = items.filter((item) => skillInvocationPolicy(item) !== "manual");
+  const userInvoked = items.filter((item) => skillInvocationPolicy(item) === "manual");
   return [
     "<AFKSkillTree>",
     ...renderReactGroupPlain("ModelDiscovery", modelDiscovered, byId, 1),
@@ -731,7 +731,7 @@ function renderSkillReferencePlain(id: string, byId: Map<string, Record<string, 
 function skillAttributesPlain(item: Record<string, unknown>, idProp: "id" | "ref"): string {
   const attrs = [
     `${idProp}="${escapeJsxAttribute(stringValue(item.id, "unnamed"))}"`,
-    item.autoInvocation === false ? "autoDiscovery={false}" : "autoDiscovery",
+    skillInvocationPolicy(item) === "manual" ? "autoDiscovery={false}" : "autoDiscovery",
   ];
   if (item.default === true) {
     attrs.push("defaultInstalled");
@@ -872,7 +872,7 @@ function skillAttributes(item: Record<string, unknown>, idProp: "id" | "ref"): J
   const id = stringValue(item.id, "unnamed");
   const attrs: JsxAttribute[] = [
     { name: idProp, stringValue: id, tone: "identity" },
-    item.autoInvocation === false
+    skillInvocationPolicy(item) === "manual"
       ? { name: "autoDiscovery", expressionValue: "false", tone: "false" }
       : { name: "autoDiscovery", tone: "boolean" },
   ];

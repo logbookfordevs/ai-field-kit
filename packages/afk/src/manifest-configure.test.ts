@@ -151,7 +151,7 @@ test("addManifestItem rejects duplicate ids", () => {
         source: "https://github.com/logbookfordevs/ai-field-kit",
         args: ["--skill", "afk-note"],
         default: true,
-        autoInvocation: true,
+        invocation: "auto",
       },
     ],
   };
@@ -163,7 +163,7 @@ test("addManifestItem rejects duplicate ids", () => {
       source: "https://github.com/logbookfordevs/ai-field-kit",
       args: ["--skill", "afk-note"],
       default: false,
-      autoInvocation: true,
+      invocation: "auto",
     }),
     /Duplicate skills id: afk-note/,
   );
@@ -205,15 +205,15 @@ test("toggleSkillAutoInvocation toggles only skills", () => {
         source: "https://github.com/logbookfordevs/ai-field-kit",
         args: ["--skill", "afk-note"],
         default: true,
-        autoInvocation: true,
+        invocation: "auto",
       },
     ],
   };
 
   const toggled = toggleSkillAutoInvocation(manifest, "afk-note");
 
-  assert.equal(toggled.items[0]?.autoInvocation, false);
-  assert.equal(manifest.items[0]?.autoInvocation, true);
+  assert.equal(toggled.items[0]?.invocation, "manual");
+  assert.equal(manifest.items[0]?.invocation, "auto");
 });
 
 test("validateEditableManifest catches duplicate ids and invalid shapes", () => {
@@ -287,7 +287,7 @@ test("runManifestConfigureWithPrompts loads existing manifests by default and wr
         source: "https://github.com/logbookfordevs/ai-field-kit",
         args: ["--skill", "afk-note"],
         default: true,
-        autoInvocation: true,
+        invocation: "auto",
       },
     ],
   }, null, 2)}\n`);
@@ -401,7 +401,7 @@ test("runManifestConfigureWithPrompts preserves existing skill args during no-op
         source: "https://github.com/logbookfordevs/ai-field-kit",
         args: ["--skill", "afk-note", "--global"],
         default: true,
-        autoInvocation: true,
+        invocation: "auto",
       },
     ],
   }, null, 2)}\n`);
@@ -436,7 +436,7 @@ test("runManifestConfigureWithPrompts offers setup for an edited skill", async (
       source: "owner/skills",
       args: ["--skill", "alpha"],
       default: true,
-      autoInvocation: true,
+      invocation: "auto",
     }],
   }, null, 2)}\n`);
   const spawned: Array<{ command: string; args: string[] }> = [];
@@ -509,7 +509,7 @@ test("runManifestConfigureWithPrompts defaults automatic model invocation off fo
   );
 
   assert.ok(confirmPrompts.some(({ message, defaultValue }) => (
-    message === "Allow automatic model invocation? (default: off)" && defaultValue === false
+    message === "Use automatic model invocation? (default: off)" && defaultValue === false
   )));
 });
 
@@ -615,9 +615,9 @@ test("runManifestConfigureWithPrompts bulk edits invocation and always-on policy
     version: 1,
     defaultSource: "",
     items: [
-      { id: "alpha", label: "Alpha", source: "owner/skills", args: ["--skill", "alpha"], default: true, autoInvocation: true },
-      { id: "beta", label: "Beta", source: "owner/skills", args: ["--skill", "beta"], default: false, autoInvocation: true },
-      { id: "gamma", label: "Gamma", source: "owner/skills", args: ["--skill", "gamma"], default: false, autoInvocation: true },
+      { id: "alpha", label: "Alpha", source: "owner/skills", args: ["--skill", "alpha"], default: true, invocation: "auto" },
+      { id: "beta", label: "Beta", source: "owner/skills", args: ["--skill", "beta"], default: false, invocation: "auto" },
+      { id: "gamma", label: "Gamma", source: "owner/skills", args: ["--skill", "gamma"], default: false, invocation: "auto" },
     ],
   }, null, 2)}\n`);
   writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
@@ -654,14 +654,14 @@ test("runManifestConfigureWithPrompts bulk edits invocation and always-on policy
   );
 
   const skills = JSON.parse(readFileSync(join(manifestDir, "skills.json"), "utf8")) as {
-    items: Array<{ id: string; autoInvocation: boolean }>;
+    items: Array<{ id: string; invocation: "auto" | "manual" | "source" }>;
   };
   const profiles = JSON.parse(readFileSync(join(manifestDir, "profiles.json"), "utf8")) as { alwaysOn: string[] };
   assert.equal(code, 0);
-  assert.deepEqual(skills.items.map((item) => [item.id, item.autoInvocation]), [
-    ["alpha", false],
-    ["beta", false],
-    ["gamma", true],
+  assert.deepEqual(skills.items.map((item) => [item.id, item.invocation]), [
+    ["alpha", "manual"],
+    ["beta", "manual"],
+    ["gamma", "auto"],
   ]);
   assert.deepEqual(profiles.alwaysOn, ["alpha", "beta", "gamma"]);
   assert.deepEqual(settingMessages, [
@@ -929,7 +929,7 @@ test("runManifestConfigureWithPrompts shows boolean state in toggle choices", as
         source: "https://github.com/logbookfordevs/ai-field-kit",
         args: ["--skill", "afk-note"],
         default: true,
-        autoInvocation: false,
+        invocation: "manual",
       },
     ],
   }, null, 2)}\n`);
@@ -1000,7 +1000,7 @@ test("runManifestConfigureWithPrompts presents skill edit choices with branded i
         source: "owner/skills",
         args: ["--skill", "alpha"],
         default: false,
-        autoInvocation: false,
+        invocation: "manual",
         startDisabled: true,
       },
     ],
@@ -1023,7 +1023,7 @@ test("runManifestConfigureWithPrompts presents skill edit choices with branded i
 
   assert.equal(choices[0]?.name, "alpha");
   assert.ok(choices[0]?.description?.includes("label: Alpha"));
-  assert.ok(choices[0]?.description?.includes("autoInvocation: off"));
+  assert.ok(choices[0]?.description?.includes("invocation: manual"));
   assert.ok(choices[0]?.description?.includes("startDisabled: on"));
   assert.ok(choices[0]?.description?.includes("owner/skills"));
 });

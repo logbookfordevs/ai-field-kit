@@ -13,7 +13,7 @@ import { afkInvocationPolicyStyle, afkSearchableCheckboxTheme } from "../prompt-
 import type { SkillRecord } from "./catalog.js";
 
 export type InvocationPolicy = "auto" | "manual";
-export type InvocationPolicyDisplayState = InvocationPolicy | "mixed" | "default";
+export type InvocationPolicyDisplayState = InvocationPolicy | "mixed";
 
 export type InvocationPolicyEditorItem = {
   record: SkillRecord;
@@ -217,13 +217,13 @@ export function invocationPolicyChanges(state: InvocationPolicyEditorState): Inv
 }
 
 function invocationPolicyDisplayState(record: SkillRecord): InvocationPolicyDisplayState {
-  if (record.autoInvocation === "enabled") {
+  if (record.invocation === "auto") {
     return "auto";
   }
-  if (record.autoInvocation === "disabled") {
+  if (record.invocation === "manual") {
     return "manual";
   }
-  return record.autoInvocation;
+  return record.invocation;
 }
 
 function renderPolicy(policy: InvocationPolicyDisplayState): string {
@@ -235,8 +235,6 @@ function renderPolicy(policy: InvocationPolicyDisplayState): string {
       return afkInvocationPolicyStyle.policy.manual(label);
     case "mixed":
       return afkInvocationPolicyStyle.policy.mixed(label);
-    case "default":
-      return afkInvocationPolicyStyle.policy.default(label);
   }
 }
 

@@ -427,8 +427,8 @@ Start lean: prompts earn detail through observed failure, not anticipated failur
 3. Add or update the catalog entry that should install it.
 4. Open a PR with a short description of what the skill does and when to use it.
 
-For explicit multi-step procedures, use `autoInvocation: true` when normal
-language should discover the skill, reserve `autoInvocation: false` for
+For explicit multi-step procedures, use `invocation: "auto"` when normal
+language should discover the skill, reserve `invocation: "manual"` for
 slash-only or attached-only procedures, and omit the field to preserve the
 policy authored by the source skill.
 
