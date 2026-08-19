@@ -18,7 +18,7 @@ const defaultHomeDir = localHomeWithManifests({
         source: "https://github.com/logbookfordevs/ai-field-kit",
         args: ["--skill", "afk-note", "--global"],
         default: true,
-        autoInvocation: true,
+        invocation: "auto",
       },
     ],
   },

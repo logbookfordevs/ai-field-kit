@@ -42,11 +42,11 @@ test("bare skills invocation applies every drafted policy change", async () => {
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "alpha", "SKILL.md"), "utf8"), /disable-model-invocation: false/);
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "beta", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as {
-    items: Array<{ id: string; autoInvocation: boolean }>;
+    items: Array<{ id: string; invocation: "auto" | "manual" | "source" }>;
   };
-  assert.deepEqual(catalog.items.map(({ id, autoInvocation }) => ({ id, autoInvocation })), [
-    { id: "alpha", autoInvocation: true },
-    { id: "beta", autoInvocation: false },
+  assert.deepEqual(catalog.items.map(({ id, invocation }) => ({ id, invocation })), [
+    { id: "alpha", invocation: "auto" },
+    { id: "beta", invocation: "manual" },
   ]);
   assert.ok(output.join("\n").includes("Updated 2 skills"));
 });
@@ -82,8 +82,8 @@ function writeCatalog(homeDir: string): void {
     version: 1,
     defaultSource: "",
     items: [
-      { id: "alpha", label: "Alpha", source: "owner/skills", args: ["--skill", "alpha"], default: false, autoInvocation: false },
-      { id: "beta", label: "Beta", source: "owner/skills", args: ["--skill", "beta"], default: false, autoInvocation: true },
+      { id: "alpha", label: "Alpha", source: "owner/skills", args: ["--skill", "alpha"], default: false, invocation: "manual" },
+      { id: "beta", label: "Beta", source: "owner/skills", args: ["--skill", "beta"], default: false, invocation: "auto" },
     ],
   }, null, 2)}\n`);
 }

@@ -603,9 +603,45 @@ test("ensureLocalManifests preserves omitted invocation policy metadata", async 
 
   const write = operations.find((operation) => operation.type === "write" && operation.path === manifestPath);
   assert.ok(write && write.type === "write");
-  const next = JSON.parse(write.content) as { items: Array<{ id: string; autoInvocation?: boolean }> };
-  assert.equal(next.items.find((item) => item.id === "afk-note")?.autoInvocation, undefined);
+  const next = JSON.parse(write.content) as { items: Array<{ id: string; invocation?: string }> };
+  assert.equal(next.items.find((item) => item.id === "afk-note")?.invocation, undefined);
   assert.equal(next.items.some((item) => item.id === "afk-typecheck"), false);
+});
+
+test("ensureLocalManifests migrates legacy autoInvocation policy during refresh", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-skills-invocation-migration-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  const manifestPath = join(manifestDir, "skills.json");
+  writeFileSync(manifestPath, `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      { id: "auto", label: "Auto", source: "owner/skills", args: ["--skill", "auto"], default: true, autoInvocation: true },
+      { id: "manual", label: "Manual", source: "owner/skills", args: ["--skill", "manual"], default: false, autoInvocation: false },
+    ],
+  }, null, 2)}\n`);
+
+  const operations = await ensureLocalManifests({
+    homeDir,
+    repoDir: "/tmp/repo",
+    rulesRef: "main",
+    rulesSource: "local",
+    empty: false,
+    refreshDefaults: false,
+    manifestLocal: false,
+    defaultsSource: "",
+    dryRun: false,
+  });
+
+  const write = operations.find((operation) => operation.type === "write" && operation.path === manifestPath);
+  assert.ok(write && write.type === "write");
+  const migrated = JSON.parse(write.content) as { items: Array<Record<string, unknown>> };
+  assert.deepEqual(migrated.items.map(({ id, invocation }) => ({ id, invocation })), [
+    { id: "auto", invocation: "auto" },
+    { id: "manual", invocation: "manual" },
+  ]);
+  assert.ok(migrated.items.every((item) => !("autoInvocation" in item)));
 });
 
 test("packaged tool manifests keep npx installs non-interactive", () => {
@@ -1003,6 +1039,7 @@ test("ensureLocalManifests preserves imported skills that are absent from refres
             source: "acme/local-kit",
             args: ["--skill", "local-skill"],
             default: false,
+            autoInvocation: true,
             imported: true,
           },
         ],
@@ -1026,6 +1063,8 @@ test("ensureLocalManifests preserves imported skills that are absent from refres
     const next = JSON.parse(skillsWrite.content) as SkillManifest;
     assert.equal(next.items.find((item) => item.id === "source-skill")?.imported, false);
     assert.equal(next.items.find((item) => item.id === "local-skill")?.imported, true);
+    assert.equal(next.items.find((item) => item.id === "local-skill")?.invocation, "auto");
+    assert.ok(next.items.every((item) => !("autoInvocation" in item)));
   } finally {
     globalThis.fetch = originalFetch;
   }

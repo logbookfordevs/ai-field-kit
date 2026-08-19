@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { applyOperation, isDirectory, pathExists, readText } from "../fs-utils.js";
-import { loadSkillManifest } from "../manifest.js";
+import { loadSkillManifest, skillInvocationPolicy } from "../manifest.js";
 import { upsertFrontmatterBoolean, upsertOpenAiImplicitInvocation } from "../skills.js";
 import type { CliOptions, PathOperation } from "../types.js";
 import { skillProfilePaths } from "./profiles.js";
@@ -53,8 +53,9 @@ export function planSkillReset(options: CliOptions): SkillResetPlan {
     const targetDisabled = item.startDisabled === true;
     const sourceDir = join(currentlyDisabled ? disabledRoot : skillsRoot, id);
     const targetDir = join(targetDisabled ? disabledRoot : skillsRoot, id);
-    if (item.autoInvocation !== undefined) {
-      operations.push(...invocationPolicyOperations(sourceDir, targetDir, item.autoInvocation));
+    const invocation = skillInvocationPolicy(item);
+    if (invocation !== "source") {
+      operations.push(...invocationPolicyOperations(sourceDir, targetDir, invocation === "auto"));
     }
   }
 

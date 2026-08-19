@@ -9,8 +9,8 @@ import {
 } from "./invocation-policy-editor.js";
 
 test("invocation policy editor drafts filtered keyboard changes before submit", () => {
-  const alpha = skillRecord("alpha", "disabled");
-  const beta = skillRecord("beta", "enabled");
+  const alpha = skillRecord("alpha", "manual");
+  const beta = skillRecord("beta", "auto");
   let state = createInvocationPolicyEditorState([alpha, beta]);
 
   state = reduceInvocationPolicyEditor(state, { type: "move", offset: 1 });
@@ -28,9 +28,9 @@ test("invocation policy editor drafts filtered keyboard changes before submit", 
   ]);
 });
 
-test("invocation policy editor preserves mixed and default states until changed", () => {
+test("invocation policy editor preserves mixed and effective auto states until changed", () => {
   const mixed = skillRecord("mixed", "mixed");
-  const inherited = skillRecord("inherited", "default");
+  const inherited = skillRecord("inherited", "auto");
   let state = createInvocationPolicyEditorState([mixed, inherited]);
 
   assert.deepEqual(invocationPolicyChanges(state), []);
@@ -44,12 +44,11 @@ test("invocation policy editor preserves mixed and default states until changed"
     allowInvocation,
   })), [
     { folder: "mixed", allowInvocation: false },
-    { folder: "inherited", allowInvocation: true },
   ]);
 });
 
 test("invocation policy editor discards every drafted policy on cancel", () => {
-  const alpha = skillRecord("alpha", "enabled");
+  const alpha = skillRecord("alpha", "auto");
   let state = createInvocationPolicyEditorState([alpha]);
 
   state = reduceInvocationPolicyEditor(state, { type: "set-policy", policy: "manual" });
@@ -61,7 +60,7 @@ test("invocation policy editor discards every drafted policy on cancel", () => {
   assert.deepEqual(invocationPolicyChanges(state), []);
 });
 
-function skillRecord(folder: string, autoInvocation: SkillRecord["autoInvocation"]): SkillRecord {
+function skillRecord(folder: string, invocation: SkillRecord["invocation"]): SkillRecord {
   return {
     folder,
     name: folder,
@@ -78,8 +77,8 @@ function skillRecord(folder: string, autoInvocation: SkillRecord["autoInvocation
     categoryId: undefined,
     catalogOrigin: "native",
     tags: [],
-    autoInvocation,
-    autoInvocationSources: [],
-    autoInvocationDetails: [],
+    invocation,
+    invocationSources: [],
+    invocationDetails: [],
   };
 }

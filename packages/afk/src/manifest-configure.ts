@@ -391,7 +391,7 @@ async function applyItemAction(
   if (action === "toggle-auto" && area === "skills") {
     return setSkillAutoInvocationValues(
       manifest,
-      await prompts.toggleBooleans(area, booleanToggleChoices(manifest, "autoInvocation"), "Toggle skill autoInvocation"),
+      await prompts.toggleBooleans(area, booleanToggleChoices(manifest, "invocation"), "Toggle skill invocation"),
     );
   }
 
@@ -525,10 +525,10 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
   const id = await prompts.input({ message: "Skill id", default: existing?.id ?? inferId(skill || source), required: true });
   const label = await prompts.input({ message: "Skill label", default: existing?.label ?? inferLabel(id), required: true });
   const defaultValue = existing?.default ?? true;
-  const autoInvocationValue = existing?.autoInvocation ?? false;
+  const autoInvocationValue = existing?.invocation === "auto";
   const startDisabledValue = existing?.startDisabled ?? false;
   const isDefault = await prompts.confirm(booleanPrompt("Selected by default?", defaultValue, existing ? "current" : "default"), defaultValue);
-  const autoInvocation = await prompts.confirm(booleanPrompt("Allow automatic model invocation?", autoInvocationValue, existing ? "current" : "default"), autoInvocationValue);
+  const autoInvocation = await prompts.confirm(booleanPrompt("Use automatic model invocation?", autoInvocationValue, existing ? "current" : "default"), autoInvocationValue);
   const startDisabled = await prompts.confirm(booleanPrompt("Start installed skill disabled?", startDisabledValue, existing ? "current" : "default"), startDisabledValue);
 
   return {
@@ -537,7 +537,7 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
     source,
     args: skillArgsFromInput(existing, skill),
     default: isDefault,
-    autoInvocation,
+    invocation: autoInvocation ? "auto" : "manual",
     startDisabled,
     role: existing?.role ?? "primitive",
     composes: existing?.composes ?? [],
@@ -795,7 +795,7 @@ function setupSkillSignature(item: SkillManifestItem): string {
     id: item.id,
     source: item.source,
     args: item.args,
-    autoInvocation: item.autoInvocation ?? true,
+    invocation: item.invocation ?? "source",
     startDisabled: item.startDisabled === true,
   });
 }
@@ -851,7 +851,7 @@ function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<Selec
     ...(hasItems ? [{ name: `Edit ${singularArea(area)}`, value: "edit" as const }] : []),
     ...(hasItems ? [{ name: `Remove ${singularArea(area)}`, value: "remove" as const }] : []),
     ...(hasItems && area !== "agents" ? [{ name: "Toggle default", value: "toggle-default" as const }] : []),
-    ...(area === "skills" && hasItems ? [{ name: "Toggle autoInvocation", value: "toggle-auto" as const }] : []),
+    ...(area === "skills" && hasItems ? [{ name: "Toggle invocation", value: "toggle-auto" as const }] : []),
     finishActionChoice(),
     manageOtherCatalogsChoice(),
   ];
@@ -892,7 +892,7 @@ function skillItemDescription(item: EditableManifestItem): string {
   ].filter((value): value is string => Boolean(value)).join(" · ");
 }
 
-function booleanToggleChoices(manifest: EditableManifest, field: "default" | "autoInvocation"): BooleanToggleChoice[] {
+function booleanToggleChoices(manifest: EditableManifest, field: "default" | "invocation"): BooleanToggleChoice[] {
   return itemsFromManifest(manifest).map((item) => {
     const enabled = field === "default" ? item.default ?? false : autoInvocationValue(item);
     return {
@@ -968,8 +968,8 @@ function ensureSkillDefaultSource(manifest: SkillManifest, item: SkillManifestIt
 
 function itemDescription(item: EditableManifestItem): string {
   const states = "default" in item ? [`default: ${booleanState(item.default)}`] : [];
-  if ("autoInvocation" in item) {
-    states.push(`autoInvocation: ${booleanState(item.autoInvocation ?? true)}`);
+  if ("invocation" in item) {
+    states.push(`invocation: ${String(item.invocation)}`);
   }
   if ("startDisabled" in item) {
     states.push(`startDisabled: ${booleanState(item.startDisabled ?? false)}`);
@@ -997,7 +997,7 @@ function actionLabel(action: ManifestAction): string {
     case "toggle-default":
       return "Toggle default for";
     case "toggle-auto":
-      return "Toggle autoInvocation for";
+      return "Toggle invocation for";
     case "toggle-always-on":
       return "Toggle alwaysOn for";
     case "set-profile-mode":
@@ -1085,9 +1085,8 @@ function alwaysOnSearchAliases(item: EditableManifestItem): string[] {
   const aliases = [
     `default:${booleanState(item.default ?? false)}`,
   ];
-  if ("autoInvocation" in item) {
-    aliases.push(`auto:${booleanState(item.autoInvocation ?? true)}`);
-    aliases.push(`autoInvocation:${booleanState(item.autoInvocation ?? true)}`);
+  if ("invocation" in item) {
+    aliases.push(`invocation:${String(item.invocation)}`);
   }
   if ("startDisabled" in item) {
     aliases.push(`startDisabled:${booleanState(item.startDisabled ?? false)}`);
@@ -1212,7 +1211,7 @@ function booleanSwitch(value: boolean): string {
 }
 
 function autoInvocationValue(item: EditableManifestItem): boolean {
-  return "autoInvocation" in item ? item.autoInvocation ?? true : false;
+  return "invocation" in item ? item.invocation !== "manual" : false;
 }
 
 function inquirerPrompts(): ManifestConfigurePrompts {

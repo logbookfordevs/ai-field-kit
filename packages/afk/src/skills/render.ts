@@ -31,8 +31,8 @@ export function renderSkillDetails(record: SkillRecord): string {
     "",
     renderField("Root", record.rootLabel),
     renderField("Storage", record.storage),
-    renderField("Auto", renderAutoInvocation(record)),
-    record.autoInvocationDetails.length > 0 ? renderField("Auto source", record.autoInvocationDetails.join(", ")) : undefined,
+    renderField("Invocation", renderAutoInvocation(record)),
+    record.invocationDetails.length > 0 ? renderField("Invocation source", record.invocationDetails.join(", ")) : undefined,
     record.agent ? renderField("Agent", record.agent) : undefined,
     record.category ? renderField("Category", record.category) : undefined,
     renderField("Catalog", record.catalogOrigin),
@@ -462,28 +462,24 @@ function wrapSkillProfileNames(skills: string[]): string[] {
 }
 
 function renderAutoInvocation(record: SkillRecord): string {
-  switch (record.autoInvocation) {
-    case "enabled":
-      return "enabled";
-    case "disabled":
-      return "disabled";
+  switch (record.invocation) {
+    case "auto":
+      return "auto";
+    case "manual":
+      return "manual";
     case "mixed":
       return "mixed";
-    case "default":
-      return "default";
   }
 }
 
 function renderAutoInvocationBadge(record: SkillRecord): string {
-  switch (record.autoInvocation) {
-    case "enabled":
+  switch (record.invocation) {
+    case "auto":
       return success("auto");
-    case "disabled":
+    case "manual":
       return warn("manual");
     case "mixed":
       return warn("mixed");
-    case "default":
-      return muted("default");
   }
 }
 

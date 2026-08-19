@@ -233,7 +233,7 @@ test("catalog skills lobby labels include catalog actions", () => {
   assert.ok(labels.includes("Check catalog status"));
   assert.ok(labels.includes("Add a skill catalog item"));
   assert.ok(labels.includes("Bulk edit skill policies"));
-  assert.ok(labels.includes("Toggle skill autoInvocation"));
+  assert.ok(labels.includes("Toggle skill invocation"));
   assert.ok(descriptions.some((description) => description.includes("afk skills catalog import")));
   assert.ok(descriptions.some((description) => description.includes("afk skills catalog status")));
   assert.ok(descriptions.some((description) => description.includes("afk skills catalog toggle-auto")));

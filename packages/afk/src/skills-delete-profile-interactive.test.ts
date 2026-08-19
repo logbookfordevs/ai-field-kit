@@ -101,7 +101,7 @@ function baseOptions(root: string): CliOptions {
     refreshDefaults: false, defaultsSource: "", defaultsSourceExplicit: false, defaultSourceUpdate: "",
     manifestLocal: false, manifestConfigureLocal: false, manifestConfigureFromCurrent: false,
     manifestShowReact: false, manifestShowVisualize: false, skillsListScope: "all", skillsListStorage: undefined,
-    skillsListAutoInvocation: undefined, skillsUpdateScope: "global", skillsUpdateAll: false,
+    skillsInvocation: undefined, skillsUpdateScope: "global", skillsUpdateAll: false,
     skillsUpdateByProfile: false, skillsDeleteCatalogOnly: false, skillsDeleteByProfile: false,
     skillsAgent: undefined, skillsJson: false, skillsCategory: "", skillsTag: "", skillsUncategorized: false,
     skillOpenApp: "finder", skillOpenTarget: "file", skillCategorizationMode: undefined,

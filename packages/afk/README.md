@@ -306,7 +306,7 @@ Running a family catalog without an action opens its interactive editor. Use
 | Skills | `afk skills catalog add`, `edit`, `remove` | Skill definitions and installation metadata in `skills.json`. |
 | Skills policy | `afk skills catalog bulk-edit` | Select multiple skills, then set invocation and always-on policy together. |
 | Skills policy | `afk skills catalog toggle-default` | Which catalog skills non-interactive default setup selects. |
-| Skills policy | `afk skills catalog toggle-auto` | Catalog-owned `autoInvocation` policy. |
+| Skills policy | `afk skills catalog toggle-auto` | Catalog-owned `invocation` policy. |
 | Skills status | `afk skills catalog status` | Read-only comparison of installed shared skills and catalog entries. |
 | Skills import | `afk skills catalog import` | Missing catalog entries recovered from official `skills` CLI lock metadata. Existing entries are preserved. |
 | Profiles | `afk profiles catalog list`, `show` | Read-only profile definition inspection. Add `--json` for machine-readable output. |
@@ -351,15 +351,15 @@ can be selected with `--agent`; exact custom roots require both
 
 | Command | Purpose | Important options and effects |
 |---|---|---|
-| `afk skills list` | List enabled skills by default. | Use `--disabled` for disabled skills; additional filters include `--auto-invocation` with `enabled`, `disabled`, `mixed`, or `default`, `--category`, `--tag`, and `--uncategorized`; `--json` prints records. |
-| `afk skills show <folder>` | Show one enabled skill's metadata and paths by default. | Use `--disabled` to inspect a disabled skill; supports root selection and `--json`. |
+| `afk skills list` | List enabled skills by default. | Use `--disabled` for disabled skills; additional filters include `--invocation` with `auto`, `manual`, or `mixed`, `--category`, `--tag`, and `--uncategorized`; `--json` prints records. |
+| `afk skills show [folder]` | Show one enabled skill's metadata, or open a selector when the folder is omitted. | The selector supports `--invocation`, `--category`, `--tag`, and `--uncategorized`; use `--disabled` for disabled skills and `--json` for the selected record. |
 | `afk skills get <folder>` | Print one skill as agent context, including disabled skills. | Read-only; includes the absolute skill root so referenced files remain resolvable. |
 | `afk skills open <folder>` | Open `SKILL.md` or its folder. | `--file` is the default; use `--folder` or select `finder`, `code`, `cursor`, `zed`, or `agy` with `--app`. |
 | `afk skills add <source> [flags...]` | Delegate installation to `skills add`, then synchronize AFK catalog and profile state. | Supports upstream `--skill`, `--agent`, `--global`, `--yes`; AFK adds `--profile`, `--profile-only`, and `--start-disabled`. |
 | `afk skills disable [folder]` | Move active skill folders into `.disabled`. | Omit the folder for an interactive multi-select; supports `--dry-run`. |
 | `afk skills enable [folder]` | Move disabled skill folders back to active storage. | Omit the folder for an interactive picker; supports `--dry-run`. |
 | `afk skills invocation [disable|enable] [folder]` | Review or change skill invocation policy. | The bare command opens a searchable batch editor; explicit actions change one skill. Both update matching shared `skills.json` policy and installed host metadata; supports `--dry-run`. |
-| `afk skills delete [folder]` | Permanently remove selected skill folders. | `--catalog-only`, `--profile`, storage filters, `--yes`, and `--dry-run`; profile deletion mode deletes referenced folders, not the profile definition. |
+| `afk skills delete [folder]` | Permanently remove selected skill folders. | `--invocation auto|manual|mixed`, `--catalog-only`, `--profile`, storage filters, `--yes`, and `--dry-run`; profile deletion mode deletes referenced folders, not the profile definition. |
 | `afk skills update [skills...]` | Select AFK-cataloged skills with lock metadata and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
 | `afk skills reset` | Reconcile the installed shared library with cached `skills.json`. | Applies `startDisabled` and invocation policy, disables uncataloged skills, clears runtime profile state, and reports missing catalog skills; supports `--dry-run` and `--yes`. |
 | `afk skills categorize` | Ask `codex exec` to create or update catalog categorization metadata. | `--mode` with `append-missing` or `recategorize-all`, `--instruction`, `--runner codex-exec`, `--dry-run`. |
@@ -556,9 +556,10 @@ claude-code, kiro-cli, kilo, pi, droid
 ```
 
 AFK keeps the `skills` CLI default symlink fanout. Invocation policy is
-three-state: `autoInvocation: false` forces manual invocation,
-`autoInvocation: true` forces model discovery, and an omitted field preserves
-the metadata authored by the skill source.
+three-state: `invocation: "manual"` forces manual invocation,
+`invocation: "auto"` forces model discovery, and `invocation: "source"`
+preserves the metadata authored by the skill source. An omitted field is
+treated as `source`.
 
 Skill catalog entries can also describe architecture metadata:
 
@@ -636,7 +637,7 @@ Imported skills are conservative by default:
   "source": "owner/repo",
   "args": ["--skill", "some-skill"],
   "default": false,
-  "autoInvocation": true,
+  "invocation": "source",
   "role": "utility"
 }
 ```
@@ -1018,7 +1019,7 @@ catalog merge without applying the rules.
       "source": "https://github.com/your-org/dev-kit",
       "args": ["--skill", "review-pr"],
       "default": true,
-      "autoInvocation": false,
+      "invocation": "manual",
       "startDisabled": false,
       "role": "wrapper",
       "composes": ["source-driven-development"]
@@ -1035,10 +1036,10 @@ is also installed by default.
 stays quiet until the user enables it directly or a skill profile keeps it
 active.
 
-`role`, `autoInvocation`, `startDisabled`, and `composes` make the catalog
+`role`, `invocation`, `startDisabled`, and `composes` make the catalog
 readable as a skill system instead of a flat install list. For example, a
 wrapper can stay manually invoked while composing smaller primitives that remain
-available to automatic model discovery. Omit `autoInvocation` when the source
+available to automatic model discovery. Use `invocation: "source"` when the
 skill should retain its own Claude and OpenAI invocation metadata.
 
 ### Custom Agents
@@ -1370,8 +1371,8 @@ storage state even though the upstream flow reinstalls changed skill content.
 
 `afk skills reset` is the recovery route for shared-library drift. It clears
 enabled profile state, moves cataloged skills according to `startDisabled`,
-applies explicit catalog `autoInvocation` metadata, preserves source policy
-when that field is omitted, and moves installed uncataloged skills into
+applies explicit catalog `invocation` policy, preserves source policy when that
+field is `source` or omitted, and moves installed uncataloged skills into
 `.disabled`. It reports catalog skills that are not installed but
 does not install, update, or delete anything. Use `--dry-run` to inspect the
 reconciliation before applying it, or `--yes` to skip confirmation.
@@ -1540,7 +1541,7 @@ that set while at least one explicitly enabled focus profile is active:
 | Mode | Behavior |
 |---|---|
 | `strict` | Default. Profiles act like an availability sandbox: active skills outside the kept set move to `.disabled`. |
-| `context` | Profiles act like a context filter: cataloged manual skills with `autoInvocation: false` stay active, while discoverable or uncataloged skills outside the kept set move to `.disabled`. |
+| `context` | Profiles act like a context filter: cataloged skills with `invocation: "manual"` stay active, while discoverable or uncataloged skills outside the kept set move to `.disabled`. |
 
 The optional top-level `skillAliases` map declares renamed upstream skills-lock
 IDs used during setup recovery. The key remains the profile-facing skill ID and
@@ -1566,8 +1567,8 @@ once no enabled profile keeps it.
 
 `afk profiles catalog toggle-always-on` can edit profile-level `alwaysOn`
 skills. In the interactive always-on picker, existing `alwaysOn` skills
-start checked. Use search to filter by text, or press `1` for auto-invocation
-on, `2` for auto-invocation off, `3` for default on, and `4` for
+start checked. Use search to filter by text, or press `1` for automatic
+invocation, `2` for manual invocation, `3` for default on, and `4` for
 start-disabled skills. Press the same number again to clear that shortcut
 filter.
 

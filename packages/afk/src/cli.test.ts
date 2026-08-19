@@ -899,7 +899,7 @@ test("runCli accepts skills CLI agent targets for noninteractive skill installs"
           source: "https://github.com/logbookfordevs/ai-field-kit",
           args: ["--skill", "afk-note"],
           default: true,
-          autoInvocation: true,
+          invocation: "auto",
         },
       ],
     },
@@ -1024,7 +1024,7 @@ test("runCli prints contextual skills help", async () => {
   assert.ok(output.join("\n").includes("--agent-path <folder>"));
   assert.ok(output.join("\n").includes("--enabled"));
   assert.ok(output.join("\n").includes("--disabled"));
-  assert.ok(output.join("\n").includes("--auto-invocation <state>"));
+  assert.ok(output.join("\n").includes("--invocation <state>"));
   assert.ok(output.join("\n").includes("--category <id-or-label>"));
   assert.ok(!output.join("\n").includes("AFK setup skills install"));
 });
@@ -1041,12 +1041,20 @@ test("runCli lists get, update, and reset in the skills command help", async () 
   assert.ok(!text.includes("upgrade [skills...]"));
 });
 
-test("runCli validates skills list auto invocation filters", async () => {
+test("runCli validates skills list invocation filters", async () => {
   const output: string[] = [];
-  const code = await withConsole(output, () => runCli(["skills", "list", "--auto-invocation", "invalid"]));
+  const code = await withConsole(output, () => runCli(["skills", "list", "--invocation", "invalid"]));
 
   assert.equal(code, 1);
-  assert.ok(output.join("\n").includes("Invalid --auto-invocation value: invalid"));
+  assert.ok(output.join("\n").includes("Invalid --invocation value: invalid"));
+});
+
+test("runCli exposes invocation filters for the skills show selector", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "show", "--help"]));
+
+  assert.equal(code, 0);
+  assert.ok(output.join("\n").includes("--invocation <state>"));
 });
 
 test("runCli lists only enabled skills unless disabled storage is requested", async () => {
@@ -1201,8 +1209,17 @@ test("runCli prints contextual skills delete help", async () => {
   assert.ok(text.includes("--agent-path <folder>"));
   assert.ok(text.includes("--enabled"));
   assert.ok(text.includes("--disabled"));
+  assert.ok(text.includes("--invocation <state>"));
   assert.ok(text.includes("--catalog-only"));
   assert.ok(text.includes("--profile"));
+});
+
+test("runCli accepts invocation filters for skills delete", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "delete", "missing", "--invocation", "manual", "--dry-run"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Skill not found: missing"));
 });
 
 test("runCli prints contextual skills invocation help", async () => {
@@ -1241,8 +1258,8 @@ test("runCli dry-runs a shared skills reset against catalog policy", async () =>
       version: 1,
       defaultSource: "",
       items: [
-        { id: "active-catalog", label: "Active", source: "example/skills", args: ["--skill", "active-catalog"], default: false, autoInvocation: true },
-        { id: "disabled-catalog", label: "Disabled", source: "example/skills", args: ["--skill", "disabled-catalog"], default: false, autoInvocation: false, startDisabled: true },
+        { id: "active-catalog", label: "Active", source: "example/skills", args: ["--skill", "active-catalog"], default: false, invocation: "auto" },
+        { id: "disabled-catalog", label: "Disabled", source: "example/skills", args: ["--skill", "disabled-catalog"], default: false, invocation: "manual", startDisabled: true },
       ],
     },
     "profiles.json": { version: 2, mode: "context", alwaysOn: [], items: [] },
@@ -1275,8 +1292,8 @@ test("runCli resets shared storage, invocation policy, and profile state", async
       version: 1,
       defaultSource: "",
       items: [
-        { id: "active-catalog", label: "Active", source: "example/skills", args: ["--skill", "active-catalog"], default: false, autoInvocation: true },
-        { id: "disabled-catalog", label: "Disabled", source: "example/skills", args: ["--skill", "disabled-catalog"], default: false, autoInvocation: false, startDisabled: true },
+        { id: "active-catalog", label: "Active", source: "example/skills", args: ["--skill", "active-catalog"], default: false, invocation: "auto" },
+        { id: "disabled-catalog", label: "Disabled", source: "example/skills", args: ["--skill", "disabled-catalog"], default: false, invocation: "manual", startDisabled: true },
         { id: "authored-catalog", label: "Authored", source: "example/skills", args: ["--skill", "authored-catalog"], default: false },
         { id: "missing-catalog", label: "Missing", source: "example/skills", args: ["--skill", "missing-catalog"], default: false },
       ],
@@ -1772,7 +1789,7 @@ test("runCli shows cached manifests by default", async () => {
             source: "https://github.com/acme/dev-kit",
             args: ["--skill", "remote-skill"],
             default: true,
-            autoInvocation: true,
+            invocation: "auto",
             role: "wrapper",
             composes: ["grilling", "truss-evaluation"],
           },
@@ -1795,7 +1812,7 @@ test("runCli shows cached manifests by default", async () => {
             source: "https://github.com/acme/local-kit",
             args: ["--skill", "local-skill"],
             default: true,
-            autoInvocation: true,
+            invocation: "auto",
           },
         ],
       },
@@ -1809,7 +1826,7 @@ test("runCli shows cached manifests by default", async () => {
     assert.ok(text.includes("AFK catalog"));
     assert.ok(text.includes("Cache"));
     assert.ok(text.includes("local-skill"));
-    assert.ok(text.includes("auto-invocation: on"));
+    assert.ok(text.includes("invocation: auto"));
     assert.ok(!text.includes("remote-skill"));
   } finally {
     globalThis.fetch = originalFetch;
@@ -1861,7 +1878,7 @@ test("runCli shows skills as a React-style composition tree", async () => {
             source: "https://github.com/acme/local-kit",
             args: ["--skill", "afk-code-grill"],
             default: true,
-            autoInvocation: false,
+            invocation: "manual",
             role: "wrapper",
             composes: ["grilling", "truss-evaluation", "codebase-design"],
           },
@@ -1871,7 +1888,7 @@ test("runCli shows skills as a React-style composition tree", async () => {
             source: "https://github.com/acme/local-kit",
             args: ["--skill", "grilling"],
             default: true,
-            autoInvocation: true,
+            invocation: "auto",
             role: "primitive",
           },
           {
@@ -1880,7 +1897,7 @@ test("runCli shows skills as a React-style composition tree", async () => {
             source: "https://github.com/acme/local-kit",
             args: ["--skill", "truss-evaluation"],
             default: true,
-            autoInvocation: true,
+            invocation: "auto",
             role: "primitive",
           },
         ],
@@ -1942,7 +1959,7 @@ test("runCli writes a skills visualization HTML file", async () => {
           source: "https://github.com/acme/local-kit",
           args: ["--skill", "afk-code-grill"],
           default: true,
-          autoInvocation: false,
+          invocation: "manual",
           role: "wrapper",
           composes: ["grilling"],
         },
@@ -1952,7 +1969,7 @@ test("runCli writes a skills visualization HTML file", async () => {
           source: "https://github.com/acme/local-kit",
           args: ["--skill", "grilling"],
           default: true,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
         },
       ],
@@ -1995,7 +2012,7 @@ test("runCli includes skill profiles in the visualization HTML", async () => {
           source: "https://github.com/acme/local-kit",
           args: ["--skill", "hyperframes"],
           default: true,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
         },
         {
@@ -2004,7 +2021,7 @@ test("runCli includes skill profiles in the visualization HTML", async () => {
           source: "https://github.com/acme/local-kit",
           args: ["--skill", "tailwind"],
           default: true,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
         },
       ],

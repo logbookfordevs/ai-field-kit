@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { localAfkDir, localManifestDir, projectManifestDir, type SkillManifestItem } from "../manifest.js";
+import { localAfkDir, localManifestDir, projectManifestDir, skillInvocationPolicy, type SkillManifestItem } from "../manifest.js";
 import type { CliOptions, SkillProfileMode } from "../types.js";
 
 export const skillProfilesFileName = "profiles.json";
@@ -496,7 +496,7 @@ function shouldProfileDisableSkill(folder: string, mode: SkillProfileMode, autoI
 }
 
 function skillAutoInvocationById(profileCatalogPath: string): Map<string, boolean> {
-  return new Map(skillManifestItems(profileCatalogPath).map((item) => [item.id.toLowerCase(), item.autoInvocation !== false]));
+  return new Map(skillManifestItems(profileCatalogPath).map((item) => [item.id.toLowerCase(), skillInvocationPolicy(item) !== "manual"]));
 }
 
 function skillManifestItems(profileCatalogPath: string): SkillManifestItem[] {

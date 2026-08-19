@@ -1,7 +1,7 @@
 import { realpathSync } from "node:fs";
 import { join } from "node:path";
 import { applyOperation, formatOperation, isDirectory, pathExists, readText, summarizeOperations } from "./fs-utils.js";
-import { loadSkillManifest, type SkillManifestItem } from "./manifest.js";
+import { loadSkillManifest, skillInvocationPolicy, type SkillManifestItem } from "./manifest.js";
 import type { CliOptions, PathOperation, Runtime } from "./types.js";
 
 export function planSkillInvocationPolicy(options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope" | "selectedSkillIds" | "manifestContents"> & { allSkills?: boolean }): PathOperation[] {
@@ -11,10 +11,11 @@ export function planSkillInvocationPolicy(options: Pick<CliOptions, "homeDir" | 
   const plannedRealPaths = new Set<string>();
 
   for (const item of selected) {
-    if (item.autoInvocation === undefined) {
+    const invocation = skillInvocationPolicy(item);
+    if (invocation === "source") {
       continue;
     }
-    const allowInvocation = item.autoInvocation;
+    const allowInvocation = invocation === "auto";
     for (const skillDir of skillDirectories(options, item)) {
       operations.push(...planSkillInvocation(skillDir, plannedRealPaths, allowInvocation));
     }

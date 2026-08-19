@@ -9,7 +9,7 @@ describe("source skill invocation policy", () => {
     const catalog = JSON.parse(
       readFileSync(resolve(repositoryRoot, "packages/afk/catalog/skills.json"), "utf8"),
     ) as {
-      items: Array<{ id: string; autoInvocation: boolean }>;
+      items: Array<{ id: string; invocation: "auto" | "manual" | "source" }>;
     };
     const skillSource = readFileSync(
       resolve(repositoryRoot, "skills/afk-compass/SKILL.md"),
@@ -22,7 +22,7 @@ describe("source skill invocation policy", () => {
       readFileSync(resolve(repositoryRoot, "skills/afk-compass/agents/openai.yaml"), "utf8"),
     ) as { policy?: { allow_implicit_invocation?: boolean } };
 
-    expect(catalog.items.find(({ id }) => id === "afk-compass")?.autoInvocation).toBe(false);
+    expect(catalog.items.find(({ id }) => id === "afk-compass")?.invocation).toBe("manual");
     expect(skill["disable-model-invocation"]).toBe(true);
     expect(openAi.policy?.allow_implicit_invocation).toBe(false);
   });
@@ -32,14 +32,14 @@ describe("source skill invocation policy", () => {
     const catalog = JSON.parse(
       readFileSync(resolve(repositoryRoot, "packages/afk/catalog/skills.json"), "utf8"),
     ) as {
-      items: Array<{ id: string; autoInvocation: boolean }>;
+      items: Array<{ id: string; invocation: "auto" | "manual" | "source" }>;
     };
     const compass = readFileSync(
       resolve(repositoryRoot, "skills/afk-compass/SKILL.md"),
       "utf8",
     );
     const missingRoutes = catalog.items
-      .filter(({ id, autoInvocation }) => id !== "afk-compass" && !autoInvocation)
+      .filter(({ id, invocation }) => id !== "afk-compass" && invocation === "manual")
       .filter(({ id }) => !compass.includes(`\`${id}\``))
       .map(({ id }) => id);
 
