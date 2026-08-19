@@ -64,6 +64,12 @@ Iterate until the user approves the breakdown.
 
 Write the approved tickets. **How** depends on the user requested or default — the tickets are the same either way, only the shape of the blocking edges changes. Follow the active repo or user artifact convention for local paths.
 
+Every ticket derived from source artifacts must include a compact `Source` reference naming the relevant artifacts and locating exact material with named sections, quoted headings, line ranges, or a combination. Use the most stable and precise reference available, and include related links or exclusions when useful. Inline a small, decision-critical contract when it governs acceptance or would be costly to misread.
+
+Include approved prototypes or design references when they govern implementation or acceptance, identifying the relevant frames, states, or flows.
+
+After the user approves the breakdown and destination, read [ticket-templates.md](references/ticket-templates.md) completely and use the matching local or remote template.
+
 - **Local files** → write one file per ticket in the scope's tracking folder, numbered from `01` in dependency order (blockers first). Each file's "Blocked by" lists the numbers/titles it depends on. Use the per-ticket file template below — one ticket per file, never a single combined file.
 - **A real issue tracker (GitHub, Linear, …)** → publish one issue per ticket in dependency order (blockers first) so each ticket's blocking edges can reference real identifiers. Use the platform's native blocking / sub-issue relationship where it has one; otherwise set each ticket's "Blocked by" to the blocking issues.
 
@@ -72,78 +78,3 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 Publish new tracker issues only when the user requested tracker publication or existing project context clearly expects it. If writing both local packets and external issues, create local files first and add tracker links after publication.
 
 Do NOT close or modify any parent issue.
-
-<local-ticket-template>
----
-id: <NN>
-title: <Ticket title>
-status: pending
-blocked_by: []
-source: <artifact-or-issue-reference>
-review_gates:
-  code: pending
----
-
-# <NN> — <Ticket title>
-
-## Parent
-Omit this section unless the source was an existing tracker issue.
-
-## What To Build
-Describe the end-to-end behavior, not layer-by-layer implementation. Avoid specific file paths or code snippets unless a prototype snippet encodes a decision more precisely than prose can.
-
-## User Stories Covered
-- Omit this section when the source has no user stories.
-
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-- [ ] Criterion 3
-
-## Blocked By
-Use one of:
-- None - can start immediately
-- Checkpoint dependencies, human decisions, missing context, or external blockers.
-
-## Execution Bundle
-- tdd | source-driven-development | doubt-driven-development | normal validation
-- Test Seam: <public interface and behavior, or `TDD skipped: <reason>`>
-
-## Verification
-- [ ] Expected proof before review
-
-## Handoff Notes
-- Notes a later checkpoint or future agent must know
-
-## Implementation Notes
-## Changes
-## Review Gates
-</local-ticket-template>
-
-<issue-template>
-
-## Parent
-
-A reference to the parent issue on the tracker (if the source was an existing issue, otherwise omit this section).
-
-## What to build
-
-The end-to-end behaviour this ticket makes work, from the user's perspective — not layer-by-layer implementation.
-
-## Acceptance criteria
-
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-## Blocked by
-
-- A reference to each blocking ticket, or "None — can start immediately".
-
-## Execution bundle
-
-- tdd | source-driven-development | doubt-driven-development | normal validation
-- Test seam: <public interface and behavior, or `TDD skipped: <reason>`>
-
-</issue-template>
-
-In either form, avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.

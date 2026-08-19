@@ -70,7 +70,7 @@ Statuses: `pending`, `in_progress`, `validating`, `review`, `blocked`, `done`.
 - `awaiting_acceptance`: the review was clean, or its findings were judged and warranted fixes were validated and committed; the gate awaits the user's final judgment.
 - `accepted`: the user accepted the checkpoint.
 
-Keep the ticket status `review` until the review gate is accepted. Retain every review round under `## Code Review Findings — Round N`:
+Keep the ticket status `review` until the review gate is accepted. Preserve the automatic review under `## Code Review Findings`:
 
 - For actionable findings, preserve the complete review output plus the judgment and resolution for each finding.
 - For a clean review, keep a compact receipt with the reviewed range, finding count per axis, verification gaps, and `awaiting_acceptance` gate state.
@@ -94,7 +94,7 @@ Do not mark the ticket `review` while selected discipline evidence is missing wi
 During implementation, run focused tests and relevant typechecking. Run the complete relevant validation before review, or record the strongest available substitute.
 
 ## Green Atomic Commits
-Record `HEAD` as `review_base` before editing. Keep it unchanged across every review round.
+Record `HEAD` as `review_base` before editing. Keep it unchanged for any later user-requested review.
 
 Commit each green behavior slice, and commit all ticket-owned implementation before review.
 
