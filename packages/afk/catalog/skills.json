@@ -319,6 +319,20 @@
             "composes": []
         },
         {
+            "id": "clean-room",
+            "label": "Clean Room",
+            "source": "backnotprop/bro",
+            "args": [
+                "--skill",
+                "clean-room",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "workflow",
+            "composes": []
+        },
+        {
             "id": "design-artifact",
             "label": "Design Artifact",
             "source": "https://github.com/plannotator/effective-html",

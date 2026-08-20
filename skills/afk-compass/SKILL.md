@@ -42,6 +42,7 @@ The route is complete when the response contains one exact invocation, or explic
 | Restate the last answer plainly | `bro` |
 | Restate the human's request for confirmation before work begins | `readback` |
 | Recap the current session to resync yourself | `recap` |
+| Get an independent decision from a fresh agent with no inherited conversation | `clean-room` |
 | Collect missing decisions from another person | `to-questionnaire` |
 | Learn a topic across multiple sessions | `teach` |
 | Design a motion-led immersive frontend | `afk-animated-driven-frontend` |
