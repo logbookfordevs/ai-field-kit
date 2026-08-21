@@ -11,6 +11,7 @@ AFK Compass is the user-invoked router for skills that stay out of automatic dis
 ## Route
 
 1. Identify the outcome and current phase from the conversation. If one missing distinction would change the route, ask one question.
+   If the uncertainty is between frontend design, prototyping, or motion routes, read [`references/frontend-crossroads.md`](references/frontend-crossroads.md).
 2. Choose the smallest matching route below. A skill the user names directly wins.
 3. Return its exact invocation in the current host and one sentence explaining why it fits. Include one alternative only when the choice is genuinely close.
 4. End after the recommendation so the user remains the activation boundary.

@@ -17,6 +17,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `skills:` taught AFK Compass to resolve close frontend choices across visual direction, in-project versus standalone prototypes, bounded versus surface-wide animation, and motion-led experiences without expanding its main manual route table.
 - `skills:` rebuilt Animated-Driven Frontend around story spines, interaction gates, deterministic progress, warm-path loading, adaptive fidelity, and real-device acceptance for motion-led and immersive experiences.
 - `cli:` made interactive profile enable and disable menus show only profiles whose state can change, with clear messages when every profile is already enabled or none are enabled.
 
