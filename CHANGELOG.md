@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v1.3.2 - 2026-08-21
+
 ### Added
 
 - `skills:` added Backnotprop's optional manual `clean-room` workflow for obtaining an independent decision from a fresh agent without inherited conversation bias.
