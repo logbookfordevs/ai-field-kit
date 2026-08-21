@@ -15,6 +15,10 @@ This changelog tracks meaningful updates by version and date.
 
 - `skills:` added Backnotprop's optional manual `clean-room` workflow for obtaining an independent decision from a fresh agent without inherited conversation bias.
 
+### Fixed
+
+- `cli:` stopped `afk setup profiles` from installing top-level `alwaysOn` skills; those skills now affect only profile activation and reconciliation.
+
 ## v1.3.1 - 2026-08-19
 
 ### Added

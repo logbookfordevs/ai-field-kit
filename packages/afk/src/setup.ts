@@ -299,7 +299,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
 
       const catalog = loadSetupSkillProfileCatalog(prepared.options);
       const selectedProfiles = catalog.items.filter((profile) => selection.profileIds?.includes(profile.id));
-      const directSkillIds = [...new Set([...catalog.alwaysOn, ...selectedProfiles.flatMap((profile) => profile.catalogSkills)])];
+      const directSkillIds = [...new Set(selectedProfiles.flatMap((profile) => profile.catalogSkills))];
       let catalogManifest = loadSkillManifest(prepared.options);
       const catalogIds = new Set(catalogManifest.items.map((item) => item.id));
       const missingCatalogIds = directSkillIds.filter((id) => !catalogIds.has(id));

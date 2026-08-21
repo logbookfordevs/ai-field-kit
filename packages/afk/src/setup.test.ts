@@ -849,6 +849,65 @@ test("runArea profiles installs whole packages and imports their discovered skil
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "remotion")), true);
 });
 
+test("runArea profiles does not install always-on skills", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 2,
+      mode: "context",
+      alwaysOn: ["quality-guardrail"],
+      items: [{
+        id: "remotion",
+        name: "Remotion",
+        catalogSkills: [],
+        packages: [{ source: "remotion-dev/skills" }],
+      }],
+    },
+    "skills.json": {
+      version: 1,
+      defaultSource: "",
+      items: [{
+        id: "quality-guardrail",
+        label: "Quality Guardrail",
+        source: "example/quality-skills",
+        args: ["--skill", "quality-guardrail"],
+        default: false,
+        invocation: "auto",
+      }],
+    },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  const output: string[] = [];
+  const spawned: Array<{ command: string; args: string[] }> = [];
+
+  const code = await runArea("profiles", {
+    ...fakeRuntime(output),
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      writeInstalledSkill(homeDir, "remotion", "Remotion");
+      writeGlobalSkillLock(homeDir, {
+        remotion: { source: "remotion-dev/skills" },
+      });
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    yes: true,
+    selectedSkillProfileIds: ["remotion"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+    defaultsSource: "local",
+    defaultsSourceExplicit: true,
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned, [{
+    command: "npx",
+    args: ["skills", "add", "remotion-dev/skills", "--global", "--yes", "--agent", "universal"],
+  }]);
+});
+
 test("runArea profiles installs selective package skills", async () => {
   const manifests = {
     "profiles.json": {

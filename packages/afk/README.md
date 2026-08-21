@@ -236,7 +236,7 @@ harnesses.
 | `afk setup preset [id]` | Long-form route for `afk preset [id]`. | AFK routes the preset's declared setup areas. |
 | `afk setup rules` | Compose configured rules layers into AFK-managed regions and install their isolated dependency files without replacing user-owned content outside those regions. | AFK. |
 | `afk setup skills` | Select catalog skills, delegate installation, restore previously disabled storage, apply invocation policy, and reconcile enabled profiles. | Official `skills` CLI for installation; AFK for policy and reconciliation. |
-| `afk setup profiles` | Prepare `profiles.json`, select profiles from that source, and install available profile skills plus composed dependencies. Missing references require confirmation before a partial install; `--yes` accepts. It does not enable a profile. | AFK for selection and policy; official `skills` CLI for installation. |
+| `afk setup profiles` | Prepare `profiles.json`, select profiles from that source, and install available profile skills plus composed dependencies. It does not install top-level `alwaysOn` skills or enable a profile. Missing references require confirmation before a partial install; `--yes` accepts. | AFK for selection and policy; official `skills` CLI for installation. |
 | `afk setup agents` | Select portable Custom Agents and translate them into native Codex, Claude Code, or Pi definitions. | AFK adapters; the harness owns orchestration. |
 | `afk setup mcps` | Select catalog MCPs and delegate their installation for supported agents/scopes. | `add-mcp`. |
 | `afk setup tools` | Run selected catalog installer commands and supported post-install commands. | Each tool installer. |
