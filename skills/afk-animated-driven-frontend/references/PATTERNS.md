@@ -1,51 +1,51 @@
-# references/PATTERNS.md
+# Interaction Patterns
 
-## Patterns Library
+Select patterns by narrative role and input contract. Use one mechanism deeply before stacking more channels.
 
-Use these patterns as building blocks. Pick a few. Don’t stack everything everywhere.
+## Orient and connect
 
-### Narrative flow patterns
-- Shared element transitions (layoutId / shared keys)
-- Staggered reveals for lists/grids (small delays, consistent rhythm)
-- State-driven layout morph (expand → details → collapse)
-- Progressive disclosure (surface detail only when needed)
+- **Shared geometry** — retain a recognizable element across route, panel, or detail transitions.
+- **Spatial handoff** — move focus from one region to the next through position, scale, or camera framing.
+- **Staggered hierarchy** — reveal in reading order with small, consistent offsets.
+- **Focus pull** — sharpen, brighten, or increase contrast as content becomes relevant.
 
-### Interactive “gameplay” patterns
-- Magnetic hover (subtle pull toward cursor)
-- Parallax tilt cards (bounded, small angles)
-- Direction-aware hover (fill enters from cursor direction)
-- Liquid fill feedback (progress-like heart, toggle, reaction)
-- Tactile press (scale 0.98 + translateY 1px)
-- Cursor-reactive illustrations (eyes/hand pointers, small follow)
+## Invite and acknowledge
 
-### Immersive patterns
-- OS metaphor: windows, dock, menu bar, “apps”
-- Cozy desk: ambient audio panel, soft motion, layered depth
-- Cockpit panels: modular surfaces, tight hierarchy, instrument vibe
+- **Magnetic affordance** — a bounded pull advertises that an element can be touched.
+- **Directional entry** — feedback enters from the pointer or navigation direction.
+- **Tactile press** — small scale, depth, or material change confirms contact immediately.
+- **Cursor-reactive character** — an illustration attends to the pointer without stealing input or focus.
 
-### Sound patterns (optional)
-- Click/confirm sounds on meaningful actions
-- “Fill” sound that changes with progress
-- Toggle on/off feedback
-Rules: user-controllable, no autoplay, no critical info conveyed only by sound.
+## Accumulate and commit
 
-### Haptic patterns (optional)
-- Tap confirmation for committed actions
-- Soft snap when a draggable or slider reaches a meaningful threshold
-- Toggle pulse for mode changes
-- Error bump for invalid or blocked actions
-Rules: brief, meaningful, never continuous, never the only cue.
+- **Hold gate** — normalized dwell progress builds tension before a deliberate action.
+- **Drag or scrub gate** — direct displacement controls a reversible transformation.
+- **Semantic gesture** — a small invariant recognizer accepts expressive input, with an equivalent control.
+- **Threshold snap** — a continuous buildup resolves through a short, causal commit.
 
-### Keyboard and shortcut patterns
-- Command palette open/focus
-- Mode toggle shortcuts (preview/edit, dock open/close, panel expand/collapse)
-- Spatial navigation for OS-like or cockpit-like interfaces
-- Shortcut hints revealed on hover, focus, or help overlays
-Rules: discoverable, scoped, and aligned with the mental model of the UI.
+## Transform and release
 
-### When to avoid these
-- Complex cursor tracking on low-power mobile contexts
-- Infinite loops on dense pages
-- Scroll hijacks (unless intentionally in a storytelling section and accessible)
-- Shortcut-heavy interaction models on low-complexity pages
-- Haptic or sound spam for every hover or passive state
+- **Material transition** — dissolve, burn, frost, tear, or refract expresses a change in meaning.
+- **State morph** — a control, card, or scene changes form while preserving identity.
+- **Impact field** — color, light, sound, or haptics briefly coordinate around a committed event.
+- **Agency handoff** — an authored sequence opens into free navigation, exploration, or creation.
+
+## Establish atmosphere
+
+- **Low-frequency ambient loop** — sparse background motion implies a living world.
+- **Layered depth** — parallax, blur, scale, and occlusion establish planes.
+- **Instrument surface** — persistent panels and controls follow one spatial and feedback grammar.
+- **Optional ambience** — user-initiated audio supports place without carrying essential information.
+
+## Selection test
+
+For each chosen pattern, write:
+
+1. the beat it serves;
+2. its input and cancellation behavior;
+3. the state or progress value that owns it;
+4. its reduced-motion and unsupported fallback;
+5. its performance ceiling;
+6. the evidence that will establish its feel.
+
+Remove a pattern when those answers are missing or duplicate another pattern’s job.

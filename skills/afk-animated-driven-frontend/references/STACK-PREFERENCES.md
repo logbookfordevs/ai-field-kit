@@ -1,77 +1,39 @@
-# references/STACK-PREFERENCES.md
+# Stack Preferences
 
-## Stack Preferences (with fallbacks)
+Inspect the repository before selecting tools. Reuse its headless foundation, styling system, renderer, animation stack, audio bus, and input utilities when they fit. Introduce one owner per concern.
 
-Rule: Use what the project already has. Do not assume libraries exist.
-If a library is missing and needed, suggest the install command before using it.
+## Escalation ladder
 
-### Motion
-Default:
-- `motion/react` (React) or `motion` (agnostic) as the primary choreography engine.
+| Need | First choice | Escalate when |
+| --- | --- | --- |
+| CSS state feedback | CSS transitions / keyframes | sequencing or interruption becomes stateful |
+| React choreography | `motion/react` | a long authored timeline or render-loop integration is central |
+| Framework-agnostic motion | `motion` or Web Animations API | the project already owns a stronger timeline system |
+| Timeline and scroll sequence | GSAP | existing project primitives already solve it cleanly |
+| Spatial or shader world | existing Three.js stack; otherwise Three.js or React Three Fiber according to architecture | DOM/CSS cannot express the required scene or effect |
+| Simple UI sound | existing audio layer or a small hook | scheduling, sprites, mixing, or spatial audio requires a dedicated engine such as Howler |
+| Haptics | platform API or existing wrapper | richer device support is justified and degrades cleanly |
+| Hotkeys | existing command system | scoped chords, discovery, and conflict handling justify a library |
 
-Escalation:
-- GSAP for timeline-heavy sequences and scrolltelling (ScrollTrigger).
-- react-spring for nuanced physics control and “feel-first” interactions.
-- Web Animations API / CSS for lightweight, dependency-free animation.
+Import from `motion` or `motion/react`, not `framer-motion`.
 
-### 3D
-Use only when depth strengthens narrative or environment:
-- Three.js as base
-- react-three-fiber for React ecosystems
-- Keep 3D isolated (canvas layer) and avoid mixing 3D + heavy UI animation in the same component tree.
+## Ownership rules
 
-### Sound
-Optional. Must be user-controllable, easy to mute, and respect accessibility.
-Preference:
-- Package: `use-sound`
-- Use for simple sound effects and toggles.
-- If missing and needed, suggest: `npm i use-sound`
+- Keep DOM choreography and WebGL rendering in separate owners joined by semantic state or normalized progress.
+- Keep per-frame values out of React state; use motion values, refs, external stores, or the renderer’s loop.
+- Avoid overlapping animation engines inside one component subtree unless their boundary is explicit.
+- Keep one audio clock and one mute/preference owner.
+- Keep input normalization separate from scene interpretation.
+- Express motion tokens in the project’s existing token system.
 
-Guidelines:
-- no autoplay without clear user intent
-- provide a visible sound toggle with remembered state
-- avoid sound-only feedback for critical actions
+## Dependency gate
 
-### Haptics
-Optional. Use when tactile confirmation strengthens a mobile or app-like experience.
-Preference:
-- Package: `web-haptics`
-- Reference inspiration: Web Haptics from Lochie.
-- Use for lightweight tactile feedback on supported devices.
-- If missing and needed, suggest: `npm i web-haptics`
+Before adding a package, confirm:
 
-Guidelines:
-- treat haptics as a feedback accent, not a primary information channel
-- map haptics to meaningful events: confirm, snap, toggle, error, threshold reached
-- always degrade gracefully when the device or browser does not support haptics
-- keep patterns brief; avoid repetitive vibration spam
+1. the repository does not already provide the capability;
+2. the package owns a distinct concern rather than duplicating another engine;
+3. its bytes and runtime work fit the opening and steady-state budgets;
+4. it supports target browsers, SSR boundaries, reduced motion, and cleanup;
+5. the project’s current package manager and version policy are followed.
 
-### Hotkeys
-Use when the UI benefits from power-user flow, command surfaces, app-like navigation, or OS metaphors.
-Preference:
-- Package: `@tanstack/react-hotkeys`
-- Use for React-based shortcut handling and command-oriented interaction.
-- If missing and needed, suggest: `npm i @tanstack/react-hotkeys`
-
-Guidelines:
-- reserve hotkeys for meaningful actions (open panel, focus search, toggle modes, quick actions)
-- keep shortcuts discoverable through visible hints, menus, or command palettes
-- avoid conflicting with core browser/system shortcuts unless the app clearly justifies it
-- do not force a hotkey-heavy model onto simple marketing pages or casual browsing flows
-
-### Icons
-Rule: If icons already exist in the repo, use them.
-If none:
-- Prefer Phosphor (easy to animate, consistent).
-- Otherwise Lucide is acceptable.
-- For special cases: inline SVG crafted for the exact animation.
-
-### Styling
-Follow project conventions (Tailwind, CSS Modules, etc).
-Motion tokens should be expressed in the same system used by the codebase (theme tokens, CSS vars, TS constants).
-
-### Dependency safety checklist
-Before importing:
-- check `package.json`
-- avoid mixing overlapping animation stacks in the same component tree unless intentional and isolated
-- confirm feedback libraries are justified by the requested experience, not added by habit
+Three.js, GLSL, GSAP, Howler, DRACO, and Vite formed ZERO’s proven stack. They are evidence of a coherent composition, not a cargo-cult recipe.

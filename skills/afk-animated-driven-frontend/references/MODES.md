@@ -1,67 +1,60 @@
-# references/MODES.md
+# Modes
 
-## Modes
+A mode defines the experience’s motion philosophy. Choose one primary mode for a flow; borrow a secondary mode only for a named beat.
 
-Modes select the *philosophy of motion* for the whole experience. Pick a mode early and keep it consistent per screen/flow.
+## Kinetic clarity
 
-### 1) cinematic-clarity
-Use when: product UI, enterprise apps, UX-heavy flows, anything where reliability + comprehension are the priority.
+Use for products, tools, commerce, and state-heavy flows.
 
-What it feels like: editorial direction. Smooth cuts, guided attention, calm confidence. The user is “floating on a buoy” and the current gently takes them where they need to go.
+- Motion explains hierarchy, continuity, and outcome.
+- Familiar controls remain primary.
+- Transitions are short, interruptible, and quiet during reading or work.
+- The payoff is faster comprehension or stronger confidence.
 
-Primary tactics:
-- subtle entrance/exit (opacity + translate + blur used carefully)
-- clear state transitions (shared elements, layout transitions)
-- microinteractions for feedback (press, hover, focus), not spectacle
-- restrained sound (usually none)
-- few surprises; every motion has meaning
+Failure signal: the user waits for the interface to finish performing.
 
-Good references:
-- Focusbrew (narrative and environment are strong, but if you reduce the “OS” metaphor, its transitions and calm states fit this mode well)
-- Most premium SaaS product pages with strong clarity and gentle motion
+## Tactile play
 
-### 2) playful-showcase
-Use when: personal portfolio, creative brand sites, interactive storytelling pages, “I want it memorable” projects.
+Use for portfolios, creative tools, launches, and moments that invite experimentation.
 
-What it feels like: creative coding playground. The UI reacts to the user and invites exploration.
+- Direct manipulation produces immediate, bounded response.
+- Springs, magnetism, tilt, and deformation communicate material character.
+- Discoverable surprises reward exploration without replacing the main path.
+- The payoff is a memorable sense of touch or authorship.
 
-Primary tactics:
-- cursor-reactive elements (magnetic hover, parallax tilt, directional hover)
-- tactile micro-physics (springs, overshoot, squish, liquid fills)
-- small surprises (easter eggs, unexpected hover behavior)
-- optional sound feedback (always user-controllable)
-- “delight layer” is allowed to be visible and proud
+Failure signal: reactions are everywhere, but none changes what the user can understand or do.
 
-Good references:
-- Josh Comeau’s site (playful interactive elements + strong clarity)
-- David Haz’s site (distinct visuals, reactive cursor, high-tech vibe)
-- nkt-frlv.dev (especially the energetic intro behavior)
+## Cinematic narrative
 
-### 3) immersive-worldbuilding
-Use when: you want the user to feel like they entered a place (OS metaphor, cockpit, studio, room, “cozy desk”).
+Use for an argument, launch story, editorial sequence, or reveal with authored pacing.
 
-What it feels like: worldbuilding. The interface is not just UI; it’s a setting with rules.
+- Beats, gates, reversals, and payoff form a deliberate story spine.
+- One driver coordinates text, scene, loading, and feedback.
+- Timing uses contrast: anticipation, hold, impact, and release.
+- The payoff returns agency after the directed sequence.
 
-Primary tactics:
-- environment metaphors (windows, dock, desktop, console, studio panels)
-- persistent ambient motion (subtle, low-frequency)
-- layered depth cues (blur, parallax, z-plane separation, optional 3D)
-- sound as ambience or state feedback (opt-in)
-- narrative is not only navigation, but atmosphere
+Failure signal: scroll advances a showreel rather than an idea.
 
-Good references:
-- Focusbrew (strong OS metaphor and cozy “place” feeling)
+## Immersive world
 
-### 4) full-spectrum
-Use when: it’s your project, you want maximum impact, or you intentionally want “GOTY UI energy”: narrative + visuals + gameplay.
+Use when the interface should feel like a place, instrument, room, map, or spatial system.
 
-What it feels like: directed cinema + special effects + interaction. Still coherent, still engineered.
+- Persistent rules bind depth, atmosphere, controls, and sound.
+- Segments share a stable world while owning their resources.
+- A fidelity ladder protects the same experience on weaker devices.
+- Semantic content and controls survive without the rendered layer.
 
-Primary tactics:
-- combine cinematic flow + playful interactivity + immersive environment
-- stronger creative coding patterns
-- carefully scoped higher-motion sections (avoid “everything everywhere”)
-- strict performance and accessibility guardrails
+Failure signal: worldbuilding obscures navigation, content, or device viability.
 
-Rule that protects this mode:
-Delight must never reduce clarity. If the user is confused, you overdid it.
+## Selecting a mode
+
+Choose by the dominant job:
+
+| Dominant job | Mode |
+| --- | --- |
+| Explain change | Kinetic clarity |
+| Make interaction itself delightful | Tactile play |
+| Direct attention through an argument | Cinematic narrative |
+| Establish a coherent place or spatial tool | Immersive world |
+
+A “maximum everything” mode is not a direction. If several jobs matter, name the primary mode and assign each secondary behavior to a specific beat.

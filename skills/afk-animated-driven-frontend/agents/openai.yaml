@@ -1,5 +1,5 @@
-display_name: Cinematic Frontend Engineering
-short_description: Design expressive, performance-conscious interfaces with cinematic motion, tactile feedback, sonic cues, and narrative interaction.
-default_prompt: Design and implement this frontend as a cinematic experience with intentional motion, meaningful microinteractions, optional sound and haptics, keyboard-aware interactions where appropriate, strong performance, and maintainable code.
+display_name: Animated-Driven Frontend
+short_description: Forge motion-led interfaces and immersive narratives as coherent, adaptive systems.
+default_prompt: Design and implement this frontend as a directed experience. Define its story spine, beats, gates, payoff, authoritative motion driver, interaction contracts, warm path, fidelity ladder, accessibility direction, and real-device acceptance evidence before treating visual effects as finished.
 policy:
   allow_implicit_invocation: false

@@ -1,86 +1,91 @@
 ---
 name: afk-animated-driven-frontend
-description: Cinematic frontend engineering for animated, interactive, immersive UIs with intentional motion, microinteractions, transitions, tactile feedback, optional sound, and optional 3D.
+description: Forge motion-led interfaces and immersive narratives as coherent, adaptive systems.
 disable-model-invocation: true
 ---
 
 # Animated-Driven Frontend
 
-Turn the UI into a directed experience: clear narrative flow, responsive interactivity, and optional worldbuilding. Motion is not decoration by default. It is a communication layer.
+Build a directed experience, not a collection of effects. Motion carries state, attention, causality, and story; interaction lets the user touch that story; engineering keeps the illusion intact.
 
-## Default preference (with escalation)
+## Workflow
 
-* Default motion library: **`motion` / `motion/react`** (Framer Motion successor) for UI choreography.
-* Never use `framer-motion` in this codebase.
-* Escalate to **GSAP** for scrolltelling or timeline-heavy sequences.
-* Use **react-spring** when nuanced physics control is central.
-* Use **3D** (Three.js / react-three-fiber) only when depth or spatial metaphor strengthens the narrative.
-* Sound is optional; if used, it must be user-controllable and accessible.
-* Haptics are optional; use them when tactile confirmation strengthens the experience, especially on mobile or app-like surfaces.
-* Keyboard interactions and shortcuts are part of the interaction language when they improve flow, responsiveness, or OS-like immersion.
+### 1. Read the stage
 
-For full stack selection rules and dependency checks, see: `references/STACK-PREFERENCES.md`.
+Inspect the product intent, existing stack and primitives, visual language, target inputs, device floor, asset sources, and accessibility requirements. Name the primary feeling and the action the experience should make irresistible.
 
-## Core principles
+Classify the work:
 
-* Motion communicates state, intent, and hierarchy. Avoid “movement for movement’s sake”.
-* Clarity first, delight second.
-* Performance is part of aesthetics.
-* Interactivity is gameplay: the user should feel they can “touch” the UI.
-* Feedback can be visual, sonic, tactile, or keyboard-mediated. Choose the channels that reinforce the intended feeling without overwhelming the UI.
-* Surprise is allowed, but never at the cost of comprehension.
-* Respect accessibility: `prefers-reduced-motion`, focus continuity, and readable states.
+- **UI choreography** — state transitions, layout motion, feedback, microinteractions.
+- **Narrative sequence** — authored beats connected by scroll, time, or interaction.
+- **Immersive world** — a continuously rendered environment with spatial effects or 3D.
 
-## Modes
+Choose the lightest class capable of the intended experience. Completion: the class, device floor, input paths, and non-motion fallback are explicit.
 
-Choose a mode before designing motion. For full definitions and examples, see: `references/MODES.md`.
+### 2. Write the story spine
 
-* **cinematic-clarity**: guided flow, subtle direction, editorial polish.
-* **playful-showcase**: interactive delight, reactive elements, “creative coding” energy.
-* **immersive-worldbuilding**: environment-first UI (place/OS metaphor), deep immersion.
-* **full-spectrum**: author mode; combine all, with guardrails.
+Describe the experience as **beats**, **gates**, and a **payoff**:
 
-## Design dials
+- A **beat** changes what the user knows, sees, or feels.
+- A **gate** asks for meaningful input before the next change.
+- The **payoff** converts authored momentum into useful agency.
 
-Use dials to calibrate outputs without changing the mode.
+Give every motion a role: orient, reveal, focus, connect, confirm, transform, or exit. Remove effects without a role. Choose a mode and dials from [`references/MODES.md`](references/MODES.md) and [`references/DIALS.md`](references/DIALS.md) only after the spine exists.
 
-* **motion-intensity**: static → fluid → cinematic
-* **spatial-variance**: symmetric → offset → asymmetric
-* **visual-density**: gallery → standard app → data-dense
+Completion: every beat advances the idea, every gate earns the pause, and the ending gives the user somewhere meaningful to go.
 
-Dial definitions and defaults live here: `references/DIALS.md`.
+### 3. Prove the magic
 
-## Execution workflow
+Build a **tracer bullet** for the riskiest signature interaction before constructing the full page. Make the real input drive the real visual response on a target device. Compare timing, easing, visual treatment, and feedback variants; initial code is raw material, not evidence of quality.
 
-1. Clarify intent: what changes, why, and what the user should perceive/feel.
-2. Pick a mode + set dials.
-3. Choose feedback channels: visual motion, sound, haptics, keyboard interactions.
-4. Define motion roles: entrance, emphasis, feedback, transition, exit.
-5. Assign tokens: duration, easing/spring, delay, stagger.
-6. Prototype the smallest viable motion. Validate performance early.
-7. Add interactive "gameplay" where it strengthens memorability.
-8. Validate accessibility, fallback behavior, and state continuity.
-9. Ship with maintainable primitives and names.
+For a gesture, validate a few semantic invariants rather than matching an exact path. For a hold, drag, or scrub, expose normalized progress and let the scene interpret it. Preserve a clear alternate path for keyboard, reduced-motion, and unsupported environments.
 
-If you need a grab-bag of building blocks, see: `references/PATTERNS.md`.
+Completion: the signature interaction is compelling, understandable, interruptible, and reproducible with each required input mode.
 
-## Engineering guardrails
+### 4. Build one spine
 
-Use these as non-negotiables. Details and recipes: `references/GUARDRAILS.md`.
+Choose one authoritative driver for the authored sequence: semantic UI state, timeline time, or normalized virtual progress. Derive animation, text, effects, loading decisions, and overlays from that spine instead of synchronizing independent clocks.
 
-* Prefer `transform` + `opacity` animations.
-* Avoid layout thrashing and heavy re-renders.
-* Isolate continuous/CPU-heavy effects.
-* Sound is opt-in and must be easy to mute.
-* Haptics must be additive, never the only cue, and degrade gracefully when unsupported.
-* Hotkeys should feel intentional, discoverable, and aligned with the product's interaction model.
+Model long experiences as self-contained segments with `enter`, `scrub`, optional `update`, and `teardown` responsibilities. Gates may pause or redirect progress without corrupting it. Seeking to a later segment must reconstruct the same state as natural traversal.
 
-## What to produce
+Read [`references/NARRATIVE-SYSTEMS.md`](references/NARRATIVE-SYSTEMS.md) when the experience has multiple beats, scroll-driven progress, gesture gates, deep links, or replay. Completion: ownership, progress ranges, gate transitions, interruption behavior, and deterministic replay are specified.
 
-Depending on the request, produce one or more of:
+### 5. Choreograph the channels
 
-* a short motion spec (states, roles, tokens, constraints)
-* recommended component primitives (e.g., `MotionProvider`, token maps)
-* implementation guidance or code snippets aligned to the project stack
+Assign motion tokens and coordinate visual, sonic, tactile, and keyboard feedback around the same state change. Prefer one dominant cue with supporting accents. Synchronize time-sensitive sound to the rendered event that makes it meaningful, not to an unrelated timer.
 
-Templates live in: `references/TEMPLATES.md`.
+Use the project’s existing design system and animation stack. Read [`references/STACK-PREFERENCES.md`](references/STACK-PREFERENCES.md) before introducing a dependency and [`references/PATTERNS.md`](references/PATTERNS.md) when selecting interaction primitives.
+
+Completion: each state has legible entry, active, completion, cancellation, and exit behavior; feedback remains understandable when any optional channel is absent.
+
+### 6. Engineer the illusion
+
+Treat frame pacing, loading, and memory as part of the art direction. Establish a **fidelity ladder** whose lower tiers remove polish while preserving content, interaction, and story. Keep the critical path small; decode, upload, compile, and prewarm future work during known quiet windows. Profile frame spikes on the device floor rather than trusting averages or desktop emulation.
+
+For WebGL, shaders, large media, post-processing, or continuously rendered effects, read [`references/IMMERSIVE-PIPELINE.md`](references/IMMERSIVE-PIPELINE.md) before implementation. Apply [`references/GUARDRAILS.md`](references/GUARDRAILS.md) to every class of work.
+
+Completion: budgets exist for startup, bytes, memory, and worst-frame time; the opening path is isolated; upcoming beats are warm; quality can step down without changing the experience’s meaning.
+
+### 7. Validate the whole performance
+
+Test the natural path, backward movement, interruption, resize, background/foreground, deep link or seek, slow loading, input changes, and repeated playback. Validate pointer, touch, keyboard, reduced motion, muted audio, and the lowest quality tier. Use real mobile hardware early enough to change the design.
+
+Judge both comprehension and feel: the user knows what changed, why it changed, what they control, and what happens next. Tune with rendered evidence. A beautiful still, generated prototype, or green synthetic benchmark does not establish a fluid interaction.
+
+Completion: no required path depends on motion, sound, hover, or high-end rendering; no first-use compilation or upload hitch lands inside a signature beat; replay and natural traversal converge on the same state.
+
+### 8. Leave a system
+
+Deliver maintainable primitives, semantic names, tokenized timing, quality-tier rules, asset decisions, and a short motion spec. Record the reason for unusual render ordering or synchronization contracts next to their owner. Use [`references/TEMPLATES.md`](references/TEMPLATES.md) for the spec and implementation cards.
+
+Completion: another developer can change one beat, effect, or quality tier without reverse-engineering the whole experience.
+
+## Non-negotiables
+
+- Preserve native scrolling unless an authored virtual spine materially enables the narrative; when virtualized, provide keyboard, reduced-motion, restoration, and escape behavior.
+- Preserve content and agency across the fidelity ladder. Degrade polish first.
+- Keep continuous values outside React render state; project them into the view at the rendering cadence.
+- Prefer `transform` and `opacity` for DOM motion and bounded work for continuous effects.
+- Keep focus, reading order, selection, history, and controls coherent through visual transitions.
+- Make sound user-initiated and mutable; make haptics supplemental; make shortcuts discoverable.
+- Test shader precision, memory, and frame pacing on real mobile GPUs when WebGL is involved.
