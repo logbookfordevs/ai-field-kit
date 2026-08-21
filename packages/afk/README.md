@@ -363,7 +363,7 @@ can be selected with `--agent`; exact custom roots require both
 | `afk skills update [skills...]` | Select AFK-cataloged skills with lock metadata and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
 | `afk skills reset` | Reconcile the installed shared library with cached `skills.json`. | Applies `startDisabled` and invocation policy, disables uncataloged skills, clears runtime profile state, and reports missing catalog skills; supports `--dry-run` and `--yes`. |
 | `afk skills categorize` | Ask `codex exec` to create or update catalog categorization metadata. | `--mode` with `append-missing` or `recategorize-all`, `--instruction`, `--runner codex-exec`, `--dry-run`. |
-| `afk skills profiles <command>` | Read or apply profile runtime state. | Detailed below. |
+| `afk skills profiles <command>` | Read or apply profile runtime state. | Detailed below; `afk profiles <command>` is the shorter equivalent. |
 
 `afk skills add` always includes the shared global target. `--profile <id>` and
 `--profile-only <id>` are repeatable and apply only to skills introduced by the
@@ -396,6 +396,10 @@ profiles. Deleting by profile does not delete the profile definition from
 | `afk skills profiles enable <profile>` | Activate a profile additively and reconcile desired skill storage. | Writes runtime state and may move folders. Add `--focus` to filter unrelated active skills. |
 | `afk skills profiles disable <profile>` | Remove one activation and recompute the desired state from the remaining activations. | Writes runtime state and restores or disables eligible folders. |
 | `afk skills profiles status` | Show active profiles, activation modes, kept skills, and runtime paths. | Read-only. |
+
+Interactive enable menus omit profiles that are already enabled, while disable
+menus offer only enabled profiles. If no state change is available, AFK reports
+that directly instead of opening an empty picker.
 
 Add `--local` to use project-local profile definitions and runtime state under
 `./afk/catalog` and `./afk/state`. In v1, reconciliation still moves folders in

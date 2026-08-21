@@ -11,6 +11,14 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Added
+
+- `cli:` added `afk profiles` as a shorter equivalent of `afk skills profiles` for profile runtime commands.
+
+### Changed
+
+- `cli:` made interactive profile enable and disable menus show only profiles whose state can change, with clear messages when every profile is already enabled or none are enabled.
+
 ## v1.3.2 - 2026-08-21
 
 ### Added

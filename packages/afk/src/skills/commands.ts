@@ -626,8 +626,14 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
       return 0;
     }
     case "enable": {
-      const profiles = listSkillProfiles(context).catalog.items;
-      const selectedId = id ?? (await promptSkillProfile(profiles, "Select a profile to enable:"))?.id;
+      const profiles = listSkillProfiles(context);
+      const enabledProfileIds = new Set(profiles.state.activations.map((activation) => activation.profileId));
+      const availableProfiles = profiles.catalog.items.filter((profile) => !enabledProfileIds.has(profile.id));
+      if (!id && availableProfiles.length === 0) {
+        runtime.io.stdout("All skill profiles are already enabled.");
+        return 0;
+      }
+      const selectedId = id ?? (await promptSkillProfile(availableProfiles, "Select a profile to enable:"))?.id;
       if (!selectedId) {
         runtime.io.stderr("No skill profiles found.");
         return 1;
@@ -637,8 +643,14 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
       return 0;
     }
     case "disable": {
-      const profiles = listSkillProfiles(context).catalog.items;
-      const selectedId = id ?? (await promptSkillProfile(profiles, "Select a profile to disable:"))?.id;
+      const profiles = listSkillProfiles(context);
+      const enabledProfileIds = new Set(profiles.state.activations.map((activation) => activation.profileId));
+      const availableProfiles = profiles.catalog.items.filter((profile) => enabledProfileIds.has(profile.id));
+      if (!id && availableProfiles.length === 0) {
+        runtime.io.stdout("No skill profiles are enabled.");
+        return 0;
+      }
+      const selectedId = id ?? (await promptSkillProfile(availableProfiles, "Select a profile to disable:"))?.id;
       if (!selectedId) {
         runtime.io.stderr("No skill profiles found.");
         return 1;

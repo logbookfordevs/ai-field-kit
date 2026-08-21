@@ -72,7 +72,7 @@ export async function runCliWithRuntime(
     return runCliWithRuntime(route, env, runtime, tty);
   }
 
-  const parsed = parseArgs(argv, env);
+  const parsed = parseArgs(expandProfileShortcut(argv), env);
 
   if (parsed.version) {
     runtime.io.stdout(`afk ${packageVersion()}`);
@@ -2417,6 +2417,7 @@ Usage:
   afk rules catalog [command] [options]              Manage ordered rules catalog layers
   afk skills <command> [options]                     Inspect and manage local skill libraries
   afk skills catalog <command> [options]             Manage skills catalog definitions
+  afk profiles <command> [options]                    Apply skill profile runtime state
   afk profiles catalog <command> [options]           Edit profile catalog data
   afk agents catalog [command] [options]             Manage portable Custom Agent sources
   afk mcps catalog [command] [options]               Manage MCP catalog entries
@@ -2436,6 +2437,14 @@ Agents:
 Aliases:
   agy, gemini -> antigravity
   cursor, cursor-ide, cursor-cli -> cursor-local`;
+}
+
+function expandProfileShortcut(argv: string[]): string[] {
+  if (argv[0] !== "profiles" || argv[1] === "catalog") {
+    return argv;
+  }
+
+  return ["skills", "profiles", ...argv.slice(1)];
 }
 
 function commandKey(commandPath: string[] = []): string {
