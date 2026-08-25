@@ -24,12 +24,13 @@ A rough `prototype` may answer structure or behavior but cannot approve visual f
 | Open decision | Route |
 |---|---|
 | Explore image-based visual alternatives before choosing a target | Product Design `ideate` |
-| Faithfully realize a selected image, screenshot, mockup, or generated direction | Product Design `image-to-code` |
-| Compare that implementation against its visual source | Product Design `design-qa` |
+| Faithfully recreate a selected image whose visible composition is approved as the implementation reference | Product Design `image-to-code`, including its blocking `design-qa` gate |
 
 Impeccable may generate deliberately unfinished direction sketches while choosing a new or replacement visual world. Those sketches help select a world. Product Design owns the stricter image-source lane: alternatives, faithful realization, and source comparison.
 
-When the user's problem is silent loss of identity-bearing color, typography, composition, imagery, illustration, SVG, texture, depth, perspective, or motion, route the whole decision-and-handoff problem to `afk-design-grill`. Route a selected image that already serves as the visual authority directly to `image-to-code`, followed by `design-qa`.
+When an image was selected during direction exploration, ask what the selection approves. If it approves the **visual world only**, preserve that identity and route by destination: `html-prototype` for a standalone artifact or real-app realization when application context is material. If it approves the **visible composition as the implementation reference**, route directly to `image-to-code`. Selection alone does not decide authority.
+
+When the user's problem is silent loss of identity-bearing color, typography, composition, imagery, illustration, SVG, texture, depth, perspective, or motion, route the whole decision-and-handoff problem to `afk-design-grill`. `design-qa` remains an internal gate owned by Product Design build workflows, not an independent Compass route.
 
 ## Finish and review
 
