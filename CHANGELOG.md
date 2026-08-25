@@ -21,6 +21,10 @@ This changelog tracks meaningful updates by version and date.
 - `skills:` rebuilt Animated-Driven Frontend around story spines, interaction gates, deterministic progress, warm-path loading, adaptive fidelity, and real-device acceptance for motion-led and immersive experiences.
 - `cli:` made interactive profile enable and disable menus show only profiles whose state can change, with clear messages when every profile is already enabled or none are enabled.
 
+### Removed
+
+- `skills:` removed the optional `animation-vocabulary` and `make-interfaces-feel-better` utilities from the bundled catalog; their overlapping guidance remains covered by the existing frontend design and motion routes.
+
 ## v1.3.2 - 2026-08-21
 
 ### Added

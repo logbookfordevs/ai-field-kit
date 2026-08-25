@@ -50,6 +50,23 @@
             ]
         },
         {
+            "id": "afk-design-grill",
+            "label": "AFK - Design Grill",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-design-grill",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "manual",
+            "role": "wrapper",
+            "composes": [
+                "grilling",
+                "truss-evaluation"
+            ]
+        },
+        {
             "id": "afk-create-agent",
             "label": "AFK - Create Agent",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -347,18 +364,36 @@
             "composes": []
         },
         {
-            "id": "make-interfaces-feel-better",
-            "label": "Make Interfaces Feel Better",
-            "source": "https://github.com/jakubkrehel/make-interfaces-feel-better",
+            "id": "html-wireframe",
+            "label": "HTML Wireframe",
+            "source": "https://github.com/plannotator/effective-html",
             "args": [
                 "--skill",
-                "make-interfaces-feel-better",
+                "html-wireframe",
                 "--global"
             ],
             "default": false,
             "invocation": "manual",
             "role": "utility",
-            "composes": []
+            "composes": [
+                "design-artifact"
+            ]
+        },
+        {
+            "id": "html-prototype",
+            "label": "HTML Prototype",
+            "source": "https://github.com/plannotator/effective-html",
+            "args": [
+                "--skill",
+                "html-prototype",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": [
+                "design-artifact"
+            ]
         },
         {
             "id": "tdd",
@@ -467,20 +502,6 @@
             "args": [
                 "--skill",
                 "apple-design",
-                "--global"
-            ],
-            "default": false,
-            "invocation": "manual",
-            "role": "utility",
-            "composes": []
-        },
-        {
-            "id": "animation-vocabulary",
-            "label": "Animation Vocabulary",
-            "source": "https://github.com/emilkowalski/skills",
-            "args": [
-                "--skill",
-                "animation-vocabulary",
                 "--global"
             ],
             "default": false,

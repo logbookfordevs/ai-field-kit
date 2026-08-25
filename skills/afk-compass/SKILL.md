@@ -25,8 +25,11 @@ The route is complete when the response contains one exact invocation, or explic
 | Relentlessly question a plan or design | `grill-me` |
 | Question a plan while maintaining its ADRs and domain language | `grill-with-docs` |
 | Settle bounded implementation, architecture, or UX trade-offs | `afk-code-grill` |
+| Settle frontend design without an approved external design | `afk-design-grill` |
 | Map a foggy effort too large for one session | `wayfinder` |
-| Build a throwaway experiment to answer one design question | `prototype` |
+| Compare UI variants inside the real product or test a logic/state model through a throwaway experiment | `prototype` |
+| Compare low-fidelity standalone frontend structures | `html-wireframe` |
+| Build a polished standalone frontend mockup or bounded interactive flow | `html-prototype` |
 | Synthesize the conversation into an agent-ready spec | `afk-to-spec` |
 | Slice a plan or spec into dependency-aware tickets | `afk-to-tickets` |
 | Implement existing checkpointed tickets | `afk-implement-tickets` |
@@ -50,9 +53,7 @@ The route is complete when the response contains one exact invocation, or explic
 | Choose a UI registry, component primitive, or headless foundation | `afk-ui-registry-preferences` |
 | Shape or review fluid, gesture-driven interfaces using Apple's interaction principles | `apple-design` |
 | Review motion implementation | `review-animations` |
-| Name a motion effect from a vague description | `animation-vocabulary` |
 | Animate text in a frontend | `animate-text` |
-| Audit and polish the interaction details of an interface | `make-interfaces-feel-better` |
 | Create a general, plan, or architecture HTML artifact | `html`, `html-plan`, or `html-diagram` |
 | Create a Plannotator-themed visual explanation | `plannotator-visual-explainer` |
 | Analyze accumulated Plannotator plan feedback | `plannotator-compound` |

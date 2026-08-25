@@ -46,6 +46,38 @@ describe("source skill invocation policy", () => {
     expect(missingRoutes).toEqual([]);
   });
 
+  test("keeps prototype instruments outside Design Grill's primary composition", () => {
+    const repositoryRoot = resolve(import.meta.dirname, "../../..");
+    const catalog = JSON.parse(
+      readFileSync(resolve(repositoryRoot, "packages/afk/catalog/skills.json"), "utf8"),
+    ) as {
+      items: Array<{ id: string; invocation: string; role: string; composes: string[] }>;
+    };
+    const designGrill = catalog.items.find(({ id }) => id === "afk-design-grill");
+
+    expect(designGrill).toMatchObject({
+      invocation: "manual",
+      role: "wrapper",
+      composes: [
+        "grilling",
+        "truss-evaluation",
+      ],
+    });
+
+    expect(catalog.items.find(({ id }) => id === "html-wireframe")?.invocation).toBe("manual");
+    expect(catalog.items.find(({ id }) => id === "html-prototype")?.invocation).toBe("manual");
+
+    const designGrillSkill = readFileSync(
+      resolve(repositoryRoot, "skills/afk-design-grill/SKILL.md"),
+      "utf8",
+    );
+    expect(designGrillSkill).not.toContain("html-wireframe");
+    expect(designGrillSkill).not.toContain("html-prototype");
+    expect(designGrillSkill).not.toContain("`prototype`");
+    expect(designGrillSkill).not.toContain("image-to-code");
+    expect(designGrillSkill).not.toContain("afk-animated-driven-frontend");
+  });
+
   test("makes Code Review Check preserve review findings before appending verdicts", () => {
     const repositoryRoot = resolve(import.meta.dirname, "../../..");
     const skill = readFileSync(
