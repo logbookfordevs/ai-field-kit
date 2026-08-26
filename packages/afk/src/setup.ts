@@ -376,17 +376,6 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         manifestContents: { ...selectedOptions.manifestContents, "skills.json": JSON.stringify(packageManifest) },
         selectedSkillIds: packageSkillIds,
       } : undefined;
-      const preexistingWholeSourceSkillIds = packageOptions?.manifestContents
-        ? snapshotSetupSourceLockedSkillIds({
-            homeDir: packageOptions.homeDir,
-            cwd: packageOptions.cwd,
-            manifestLocal: packageOptions.manifestLocal,
-            manifestContents: packageOptions.manifestContents,
-            selectedSkillIds: packageOptions.selectedSkillIds,
-            allSkills: packageOptions.allSkills,
-            dryRun: packageOptions.dryRun,
-          })
-        : [];
       const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
       if (code === 0) {
         if (recoveryOperation && !selectedOptions.dryRun) {
@@ -403,7 +392,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         const catalogOptions = { ...selectedOptions, manifestContents: prepared.options.manifestContents ?? {}, selectedSkillIds: catalogSkillIds };
         syncSetupSkillCatalog(runtime, catalogOptions, explicitSetupSource, []);
         if (packageOptions) {
-          const packageImports = syncSetupSkillCatalog(runtime, packageOptions, true, preexistingWholeSourceSkillIds, true);
+          const packageImports = syncSetupSkillCatalog(runtime, packageOptions, true, [], true);
           if (packageImports.length > 0) {
             const { manifestContents: _manifestContents, ...cachedPackageOptions } = packageOptions;
             syncSkillStartupStorage(runtime, {

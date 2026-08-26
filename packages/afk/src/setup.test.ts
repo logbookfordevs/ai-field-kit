@@ -6,6 +6,7 @@ import { test, vi } from "vitest";
 import { builtInDefaultsSource, localManifestDir } from "./manifest.js";
 import { runArea, runSetup } from "./setup.js";
 import { skillCatalogPath } from "./skills/catalog.js";
+import { runSkillsCommand } from "./skills/commands.js";
 import type { SetupSelection } from "./interactive.js";
 import type { CliOptions, Runtime } from "./types.js";
 
@@ -849,6 +850,70 @@ test("runArea profiles installs whole packages and imports their discovered skil
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "remotion")), true);
 });
 
+test("runArea profiles reinstalls an enabled whole package without colliding with disabled copies", async () => {
+  const manifests = {
+    "profiles.json": {
+      version: 2,
+      mode: "context",
+      alwaysOn: [],
+      items: [{
+        id: "html",
+        name: "HTML",
+        catalogSkills: [],
+        packages: [{ source: "plannotator/effective-html" }],
+      }],
+    },
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  };
+  const homeDir = localHomeWithManifests(manifests);
+  const repoDir = localRepoWithRules();
+  const disabledSkillDir = join(homeDir, ".agents", "skills", ".disabled", "html");
+  mkdirSync(disabledSkillDir, { recursive: true });
+  writeFileSync(join(disabledSkillDir, "SKILL.md"), "---\nname: stale-html\n---\n");
+  writeGlobalSkillLock(homeDir, {
+    html: { source: "plannotator/effective-html", skillPath: "skills/html/SKILL.md" },
+  });
+  const stateDir = join(homeDir, ".agents", "afk", "state");
+  mkdirSync(stateDir, { recursive: true });
+  writeFileSync(join(stateDir, "skill-profiles.json"), `${JSON.stringify({
+    version: 2,
+    activations: [{ profileId: "html", mode: "additive" }],
+    profileMovedSkills: [],
+    preExistingDisabledSkills: ["html"],
+  }, null, 2)}\n`);
+
+  const output: string[] = [];
+  const code = await runArea("profiles", {
+    ...fakeRuntime(output),
+    spawn: async () => {
+      writeInstalledSkill(homeDir, "html", "fresh-html");
+      return { code: 0 };
+    },
+  }, {
+    ...defaultOptions(homeDir, repoDir),
+    dryRun: false,
+    yes: true,
+    selectedSkillProfileIds: ["html"],
+    setupManifestsPrepared: true,
+    manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+  });
+
+  assert.equal(code, 0, output.join("\n"));
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "html")), true);
+  assert.equal(existsSync(disabledSkillDir), false);
+  assert.ok(readFileSync(join(homeDir, ".agents", "skills", "html", "SKILL.md"), "utf8").includes("fresh-html"));
+  const cached = JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")) as {
+    items: Array<{ id: string; source: string; imported?: boolean; startDisabled?: boolean }>;
+  };
+  assert.deepEqual(cached.items.map(({ id, source, imported, startDisabled }) => ({ id, source, imported, startDisabled })), [{
+    id: "html",
+    source: "plannotator/effective-html",
+    imported: true,
+    startDisabled: true,
+  }]);
+  assert.ok(!output.join("\n").includes("Missing lock metadata"), output.join("\n"));
+});
+
 test("runArea profiles does not install always-on skills", async () => {
   const manifests = {
     "profiles.json": {
@@ -981,6 +1046,14 @@ test("runArea profiles preserves catalog ownership when a whole package overlaps
   };
   const homeDir = localHomeWithManifests(manifests);
   const repoDir = localRepoWithRules();
+  const stateDir = join(homeDir, ".agents", "afk", "state");
+  mkdirSync(stateDir, { recursive: true });
+  writeFileSync(join(stateDir, "skill-profiles.json"), `${JSON.stringify({
+    version: 2,
+    activations: [{ profileId: "video", mode: "additive" }],
+    profileMovedSkills: [],
+    preExistingDisabledSkills: [],
+  }, null, 2)}\n`);
 
   const code = await runArea("profiles", {
     ...fakeRuntime([]),
@@ -1011,6 +1084,17 @@ test("runArea profiles preserves catalog ownership when a whole package overlaps
     { id: "captions", imported: true, startDisabled: true },
   ]);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "remotion")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "captions")), true);
+
+  const disableCode = await runSkillsCommand(
+    ["skills", "profiles", "disable", "video"],
+    fakeRuntime([]),
+    { ...defaultOptions(homeDir, repoDir), dryRun: false },
+  );
+
+  assert.equal(disableCode, 0);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "remotion")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "remotion")), false);
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "captions")), true);
 });
 
