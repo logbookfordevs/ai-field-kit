@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v1.4.0 - 2026-08-26
+
 ### Added
 
 - `cli:` added `afk profiles` as a shorter equivalent of `afk skills profiles` for profile runtime commands.
