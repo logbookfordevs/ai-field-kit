@@ -1,9 +1,8 @@
 # Library Preferences
-
 - Always import from `motion` or `motion/react` instead of `framer-motion`.
 - Tailwind CSS v4 is preferred library for CSS.
 - Default to Tailwind v4 zero-config setup; do NOT create `tailwind.config.js`/`tailwind.config.ts` unless explicitly required.
-- Use the project’s existing headless foundation if one exists. Otherwise prefer Base UI.
+- Use the project's existing headless foundation if one exists. Otherwise prefer Base UI.
 
 # Personal Preferences
 
@@ -21,7 +20,7 @@ When choosing where to store or find an artifact and the repo or user convention
 - TypeScript changes must pass the repo typecheck before final handoff.
 
 ## Testing
-- When tests are planned or about to be written, use the `tdd` skill. Add regression tests when they protect meaningful behavior; do not require them for trivial copy or similarly low-risk changes.
+- When tests are planned or about to be written. Add regression tests when they protect meaningful behavior; do not require them for trivial copy or similarly low-risk changes.
 
 ## React
 - Keep conditional rendering explicit: use `&&` for one optional JSX element and keep simple local conditions inline; for mutually exclusive JSX branches, compute a named element before the return or extract a component. Keep value-selection ternaries short and flat; hoist nested or hard-to-scan expressions into named values.
@@ -59,4 +58,3 @@ When spawning sub-agents, use the `afk-architect` skill as the coordination poli
 
 ## Dictionary
 - Team of agents/multi agents = spawn sub-agents/child agents
-- Users/developers = people using the product or tooling being built;
