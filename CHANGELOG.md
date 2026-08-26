@@ -11,6 +11,12 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+## v1.4.1 - 2026-08-26
+
+### Fixed
+
+- `cli:` made `afk setup profiles` safely reinstall whole-package profiles when their skills already exist in disabled storage, preserving catalog-owned overlap and avoiding duplicate-folder reconciliation failures.
+
 ## v1.4.0 - 2026-08-26
 
 ### Added
