@@ -1,6 +1,6 @@
 {
   "name": "@logbookfordevs/afk",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "AI Field Kit setup router CLI.",
   "type": "module",
   "repository": {
