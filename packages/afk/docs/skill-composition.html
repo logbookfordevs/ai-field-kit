@@ -843,7 +843,7 @@
 {
   <span class="prop">"id"</span>: <span class="str">"afk-code-grill"</span>,
   <span class="prop">"role"</span>: <span class="str">"wrapper"</span>,
-  <span class="prop">"autoInvocation"</span>: <span class="bool">false</span>,
+  <span class="prop">"invocation"</span>: <span class="str">"manual"</span>,
   <span class="prop">"composes"</span>: [
     <span class="str">"grilling"</span>,
     <span class="str">"truss-evaluation"</span>,
@@ -864,7 +864,7 @@
           </div>
           <div class="translation-item">
             <b>props</b>
-            <span><code>autoInvocation</code> declares discovery behavior.</span>
+            <span><code>invocation</code> declares discovery behavior.</span>
           </div>
           <div class="translation-item">
             <b>app route</b>
@@ -914,7 +914,7 @@
 
       <section id="invocation">
         <div class="section-head">
-          <h2><code>autoInvocation</code> says the real thing.</h2>
+          <h2><code>invocation</code> says the real thing.</h2>
           <p>The field is about discovery, not permission. A discoverable skill can still be invoked manually.</p>
         </div>
         <div class="split">
@@ -927,11 +927,11 @@
             <div class="invocation-switch">
               <div class="switch-row">
                 <span class="dot"></span>
-                <div><b>autoInvocation: true</b><span>Expose this skill to automatic model discovery.</span></div>
+                <div><b>invocation: auto</b><span>Expose this skill to automatic model discovery.</span></div>
               </div>
               <div class="switch-row off">
                 <span class="dot"></span>
-                <div><b>autoInvocation: false</b><span>Keep this as a manually invoked wrapper, workflow, or specialist surface.</span></div>
+                <div><b>invocation: manual</b><span>Keep this as a manually invoked wrapper, workflow, or specialist surface.</span></div>
               </div>
             </div>
           </div>
@@ -954,7 +954,11 @@
           <p>The person asks for one experience. The skill can still be built from smaller pieces.</p>
         </div>
         <div class="quote">
-          <p>Ask for <code>afk-code-grill</code>. Get the interview loop, the Truss lens, and the architecture vocabulary.</p>
+          <p>
+            Ask for <code>afk-code-grill</code> to combine an interview loop, the Truss lens, and architecture vocabulary.
+            Ask for <code>afk-design-grill</code> to combine that interview loop and decision lens into a durable visual commitment.
+            Optional prototype specialists stay outside either wrapper; Compass recommends one only when the open decision needs it.
+          </p>
           <a class="action" href="#catalog">inspect JSON</a>
         </div>
       </section>
@@ -962,7 +966,7 @@
       <section id="catalog">
         <div class="section-head">
           <h2>A skill entry should explain itself.</h2>
-          <p>The catalog becomes a system map: shape, discovery, composition, and profile membership.</p>
+          <p>The catalog becomes a system map: shape, discovery, composition, and installation policy.</p>
         </div>
         <div class="split">
           <div class="panel">
@@ -970,22 +974,21 @@
             <p>A well-shaped entry should answer these quickly.</p>
             <div class="steps">
               <div class="step"><div class="num">01</div><b>What is it?</b><span>`role` gives the compositional shape.</span></div>
-              <div class="step"><div class="num">02</div><b>Can it auto-discover?</b><span>`autoInvocation` controls model discovery.</span></div>
+              <div class="step"><div class="num">02</div><b>Can it auto-discover?</b><span>`invocation` controls model discovery.</span></div>
               <div class="step"><div class="num">03</div><b>What does it build on?</b><span>`composes` names the dependency story.</span></div>
-              <div class="step"><div class="num">04</div><b>Where can it focus?</b><span>`profiles` connects skills to activation sets.</span></div>
+              <div class="step"><div class="num">04</div><b>Is it installed by default?</b><span>`default` records the baseline installation set.</span></div>
             </div>
           </div>
           <pre class="catalog" aria-label="Example skill catalog entry"><span class="punct">{</span>
   <span class="key">"id"</span><span class="punct">:</span> <span class="str">"afk-code-grill"</span><span class="punct">,</span>
   <span class="key">"label"</span><span class="punct">:</span> <span class="str">"AFK - Code Grill"</span><span class="punct">,</span>
   <span class="key">"role"</span><span class="punct">:</span> <span class="str">"wrapper"</span><span class="punct">,</span>
-  <span class="key">"autoInvocation"</span><span class="punct">:</span> <span class="bool">false</span><span class="punct">,</span>
+  <span class="key">"invocation"</span><span class="punct">:</span> <span class="str">"manual"</span><span class="punct">,</span>
   <span class="key">"composes"</span><span class="punct">:</span> <span class="punct">[</span>
     <span class="str">"grilling"</span><span class="punct">,</span>
     <span class="str">"truss-evaluation"</span><span class="punct">,</span>
     <span class="str">"codebase-design"</span>
   <span class="punct">],</span>
-  <span class="key">"profiles"</span><span class="punct">:</span> <span class="punct">[],</span>
   <span class="key">"default"</span><span class="punct">:</span> <span class="bool">true</span>
 <span class="punct">}</span></pre>
         </div>
@@ -1017,7 +1020,7 @@
         <div class="current-tree-card">
           <p class="current-tree-note">
             The code is not runtime React. It is a readable projection of AFK's skill architecture: roles become
-            component names, <code>autoInvocation</code> becomes <code>autoDiscovery</code>, and <code>composes</code>
+            component names, <code>invocation</code> becomes <code>autoDiscovery</code>, and <code>composes</code>
             becomes children.
           </p>
           <pre class="code-window current-tree-window" aria-label="Current AFK skills rendered as React-style composition" data-jsx-tree>&lt;AFKSkillTree&gt;
@@ -1049,6 +1052,10 @@
       &lt;PrimitiveSkill ref="truss-evaluation" autoDiscovery defaultInstalled /&gt;
       &lt;PrimitiveSkill ref="codebase-design" autoDiscovery defaultInstalled /&gt;
     &lt;/WrapperSkill&gt;
+    &lt;WrapperSkill id="afk-design-grill" autoDiscovery={false} defaultInstalled&gt;
+      &lt;PrimitiveSkill ref="grilling" autoDiscovery defaultInstalled /&gt;
+      &lt;PrimitiveSkill ref="truss-evaluation" autoDiscovery defaultInstalled /&gt;
+    &lt;/WrapperSkill&gt;
     &lt;WrapperSkill id="afk-to-spec" autoDiscovery={false} defaultInstalled /&gt;
     &lt;WrapperSkill id="afk-to-tickets" autoDiscovery={false} defaultInstalled /&gt;
     &lt;WorkflowSkill id="afk-implement-tickets" autoDiscovery={false} defaultInstalled&gt;
@@ -1061,6 +1068,12 @@
     &lt;UtilitySkill id="html" autoDiscovery={false} /&gt;
     &lt;UtilitySkill id="html-plan" autoDiscovery={false} /&gt;
     &lt;UtilitySkill id="html-diagram" autoDiscovery={false} /&gt;
+    &lt;UtilitySkill id="html-wireframe" autoDiscovery={false}&gt;
+      &lt;UtilitySkill ref="design-artifact" autoDiscovery defaultInstalled /&gt;
+    &lt;/UtilitySkill&gt;
+    &lt;UtilitySkill id="html-prototype" autoDiscovery={false}&gt;
+      &lt;UtilitySkill ref="design-artifact" autoDiscovery defaultInstalled /&gt;
+    &lt;/UtilitySkill&gt;
     &lt;UtilitySkill id="apple-design" autoDiscovery={false} /&gt;
     &lt;UtilitySkill id="animate-text" autoDiscovery={false} /&gt;
     &lt;WrapperSkill id="to-questionnaire" autoDiscovery={false} /&gt;
