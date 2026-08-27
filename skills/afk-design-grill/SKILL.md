@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # AFK Design Grill
 
-Run a `grilling` session for frontend work without an approved external design. Use `truss-evaluation` for consequential comparisons and Impeccable to establish or extend the visual world.
+Run a `grilling` session for frontend work without an approved external design. Use `truss-evaluation` for consequential comparisons and `impeccable` to establish or extend the visual world.
 
 Inspect the product context, current interface, and supplied references. Grill the material choices across structure, visual world, behavior, incumbent constraints, and motion. Settled facts remain fixed.
 
