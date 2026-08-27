@@ -57,6 +57,7 @@ The route is complete when the response contains one exact invocation, or explic
 | Create a general, plan, or architecture HTML artifact | `html`, `html-plan`, or `html-diagram` |
 | Create a Plannotator-themed visual explanation | `plannotator-visual-explainer` |
 | Analyze accumulated Plannotator plan feedback | `plannotator-compound` |
+| Create a portable guided walkthrough of a diff | `plannotator-guide` |
 | Design or revise predictable agent instructions | `writing-for-agents` |
 
 Recommend only skills available in the current host. If the best route is unavailable, name the missing skill and give the closest available invocation.

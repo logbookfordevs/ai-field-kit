@@ -238,6 +238,20 @@
             "composes": []
         },
         {
+            "id": "plannotator-guide",
+            "label": "Plannotator Guide",
+            "source": "plannotator/guides",
+            "args": [
+                "--skill",
+                "plannotator-guide",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "plannotator-setup-goal",
             "label": "Plannotator Setup Goal",
             "source": "backnotprop/plannotator/apps/skills/extra",
