@@ -21,6 +21,7 @@ When choosing where to store or find an artifact and the repo or user convention
 
 ## Testing
 - When tests are planned or about to be written. Add regression tests when they protect meaningful behavior; do not require them for trivial copy or similarly low-risk changes.
+- Tautological tests considered harmful.
 
 ## React
 - Keep conditional rendering explicit: use `&&` for one optional JSX element and keep simple local conditions inline; for mutually exclusive JSX branches, compute a named element before the return or extract a component. Keep value-selection ternaries short and flat; hoist nested or hard-to-scan expressions into named values.
