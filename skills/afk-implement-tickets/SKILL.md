@@ -10,7 +10,7 @@ metadata:
 Keep implementation state visible in the selected tracking home. The tracking home is the source of truth for its slice.
 
 ## Activation
-Use after executable local or remote tickets exist. If there is only a spec, plan, goal package, unsliced parent issue, or rough implementation context, create tickets first, typically with `afk-to-tickets` or another approved slicing source.
+Require an executable local or remote ticket. If none was provided or found, recommend `afk-to-tickets` or another approved slicing source and stop.
 
 If the user asks to resume task implementation, use [resume.md](references/resume.md).
 
@@ -120,17 +120,16 @@ For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.
 
 ## Operating Loop
 1. Resolve the ticket identifier and select its tracking home.
-2. If no executable ticket exists and the request is one quick action, use the available context to create a single local ticket and continue; otherwise recommend `afk-to-tickets` and stop.
-3. Select the active ticket.
-4. Read blockers and relevant previous handoff notes.
-5. Record the selected execution bundle and confirm its Test Seam or skip reason.
-6. Mark the active ticket `in_progress` before editing.
-7. Before editing, adopt a comment-free default: express intent through names, structure, and types; every new comment must preserve enduring, non-obvious code behavior.
-8. Implement one green behavior slice at a time and create its atomic local commit.
-9. Record important scope changes, working set changes, and blockers as they happen.
-10. Move to `validating`, run the complete relevant validation bundle, and record discipline evidence.
-11. Commit remaining ticket-owned implementation changes.
-12. Move to `review` and run the Review Gate workflow.
-13. Run the checkpoint-notes/ADR check before final handoff.
-14. Move to `done` only after the review gate is accepted.
-15. For a local ticket, update `updated_at` whenever it changes; for a remote ticket, rely on or update the tracking home's equivalent modification signal.
+2. Select the active ticket.
+3. Read blockers and relevant previous handoff notes.
+4. Record the selected execution bundle and confirm its Test Seam or skip reason.
+5. Mark the active ticket `in_progress` before editing.
+6. Before editing, adopt a comment-free default: express intent through names, structure, and types; every new comment must preserve enduring, non-obvious code behavior.
+7. Implement one green behavior slice at a time and create its atomic local commit.
+8. Record important scope changes, working set changes, and blockers as they happen.
+9. Move to `validating`, run the complete relevant validation bundle, and record discipline evidence.
+10. Commit remaining ticket-owned implementation changes.
+11. Move to `review` and run the Review Gate workflow.
+12. Run the checkpoint-notes/ADR check before final handoff.
+13. Move to `done` only after the review gate is accepted.
+14. For a local ticket, update `updated_at` whenever it changes; for a remote ticket, rely on or update the tracking home's equivalent modification signal.
