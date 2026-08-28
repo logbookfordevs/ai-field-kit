@@ -1,6 +1,6 @@
 interface:
   display_name: "AFK Compass"
-  short_description: "Find the right manual AFK skill"
-  default_prompt: "Use $afk-compass to recommend the one manual skill or execution package that best fits the current task. Give its exact invocation and stop so I can choose whether to run it."
+  short_description: "Find the right manual AFK skill or flow"
+  default_prompt: "Use $afk-compass to recommend the manual skill or ordered workflow that best fits the current task. Give exact invocations, include consequential phase-boundary guidance, and stop so I can choose whether to run it."
 policy:
   allow_implicit_invocation: false

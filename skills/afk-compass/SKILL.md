@@ -1,6 +1,6 @@
 ---
 name: afk-compass
-description: Find the manual skill or execution package that fits the current task.
+description: Find the manual skill or workflow that fits the current task.
 disable-model-invocation: true
 ---
 
@@ -12,11 +12,13 @@ AFK Compass is the user-invoked router for skills that stay out of automatic dis
 
 1. Identify the outcome and current phase from the conversation. If one missing distinction would change the route, ask one question.
    If the uncertainty is between frontend design, prototyping, or motion routes, read [`references/frontend-crossroads.md`](references/frontend-crossroads.md).
-2. Choose the smallest matching route below. A skill the user names directly wins.
-3. Return its exact invocation in the current host and one sentence explaining why it fits. Include one alternative only when the choice is genuinely close.
-4. End after the recommendation so the user remains the activation boundary.
+   If the work crosses idea-shaping, specification, ticket grooming, implementation, review, or a context boundary, read [`references/workflow-crossroads.md`](references/workflow-crossroads.md).
+2. Choose the smallest matching route or flow. A skill the user names directly wins.
+3. Before claiming what a skill's process includes, or recommending that a step be skipped or combined, read that skill's current `SKILL.md` and any reference governing the claim. The table below is orientation, not process authority.
+4. Return the exact invocation or ordered invocations for the current host and one sentence explaining why they fit. Add phase-boundary guidance only when it changes how the flow should run. Include one alternative only when the choice is genuinely close.
+5. End after the recommendation so the user remains the activation boundary.
 
-The route is complete when the response contains one exact invocation, or explicitly concludes that ordinary agent behavior fits better than a manual skill.
+The route is complete when the response contains one exact invocation, an ordered flow with its consequential boundaries, or explicitly concludes that ordinary agent behavior fits better than a manual skill.
 
 ## Manual Routes
 
