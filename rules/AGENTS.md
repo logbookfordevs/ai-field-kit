@@ -1,10 +1,8 @@
-# Library Preferences
+## Library Preferences
 - Always import from `motion` or `motion/react` instead of `framer-motion`.
 - Tailwind CSS v4 is preferred library for CSS.
 - Default to Tailwind v4 zero-config setup; do NOT create `tailwind.config.js`/`tailwind.config.ts` unless explicitly required.
 - Use the project's existing headless foundation if one exists. Otherwise prefer Base UI.
-
-# Personal Preferences
 
 ## Skills
 Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
@@ -58,4 +56,5 @@ Push back when implementation convenience is prioritized over a materially bette
 When spawning sub-agents, use the `afk-architect` skill as the coordination policy.
 
 ## Dictionary
-- Team of agents/multi agents = spawn sub-agents/child agents
+- Team of agents = spawn sub-agents/child agents
+- Quick win = a small, low-risk change that can be implemented quickly and easily, often minimal impact on overall system
