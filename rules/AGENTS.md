@@ -22,8 +22,10 @@ When choosing where to store or find an artifact and the repo or user convention
 - Tautological tests considered harmful.
 
 ## React
-- Keep conditional rendering explicit: use `&&` for one optional JSX element and keep simple local conditions inline; for mutually exclusive JSX branches, compute a named element before the return or extract a component. Keep value-selection ternaries short and flat; hoist nested or hard-to-scan expressions into named values.
-- Name complex or repeated JSX conditions and hoist chained `||` logic above the return. For repeated status unions like `active | pending` or `loading | refreshing`, use shared helpers in `utils/`, such as `isActiveStatus`, instead of duplicating OR expressions.
+- Name compound JSX conditions before the return with domain-specific booleans. JSX conditions should contain one named boolean, optionally negated.
+- For two mutually exclusive branches, name the deciding condition and use paired `&&` expressions, such as `{showsDetails && <Details />}` followed by `{!showsDetails && <Summary />}`.
+- For three or more mutually exclusive branches, both named `&&` branches and a local render function with early returns are acceptable. Invoke a local render function as a function from JSX. Extract a component when the rendered section has a meaningful interface or obscures the surrounding structure.
+- Keep short, flat ternaries for selecting non-JSX values such as strings, classes, or numbers. Hoist nested or hard-to-scan value expressions. Move repeated condition logic into a shared helper.
 
 ## Browser Testing
 - Prefer `agent-browser` CLI when available over playwright CLI.
