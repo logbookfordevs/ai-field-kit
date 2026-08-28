@@ -12,7 +12,7 @@ AFK Compass is the user-invoked router for skills that stay out of automatic dis
 
 1. Identify the outcome and current phase from the conversation. If one missing distinction would change the route, ask one question.
    If the uncertainty is between frontend design, prototyping, or motion routes, read [`references/frontend-crossroads.md`](references/frontend-crossroads.md).
-   If the work crosses idea-shaping, specification, ticket grooming, implementation, review, or a context boundary, read [`references/workflow-crossroads.md`](references/workflow-crossroads.md).
+   If the work crosses feature orientation, idea-shaping, specification, ticket grooming, implementation, review, or a context boundary, read [`references/workflow-crossroads.md`](references/workflow-crossroads.md).
 2. Choose the smallest matching route or flow. A skill the user names directly wins.
 3. Before claiming what a skill's process includes, or recommending that a step be skipped or combined, read that skill's current `SKILL.md` and any reference governing the claim. The table below is orientation, not process authority.
 4. Return the exact invocation or ordered invocations for the current host, or a copyable ordinary implementation prompt when no manual execution skill is wanted. Give one sentence explaining why the route fits. Add phase-boundary guidance only when it changes how the flow should run. Include one alternative only when the choice is genuinely close.

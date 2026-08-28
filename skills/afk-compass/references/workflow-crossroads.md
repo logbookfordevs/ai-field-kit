@@ -2,6 +2,18 @@
 
 Use this reference when the user needs a path through skills or advice about where one phase, context, task, or worker should end. Verify every recommended skill against its current `SKILL.md` before applying this guidance.
 
+## Orient before decision work
+
+When the user is new to an already-shaped feature, has not read its specifications, does not know which artifacts exist, or cannot yet explain its motivation and current behavior, recommend orientation before grilling. This is a human-readiness gate: the agent having read the sources does not mean the user is ready to challenge assumptions or make decisions.
+
+Choose the depth that fits the user's learning goal:
+
+- **Brief orientation:** `research` → `facts` → `grill-with-docs`. Research inventories and reconciles primary sources; Facts gives the user the critical briefing; Grill begins after the user has enough context to judge its questions.
+- **Durable learning:** `research` → `teach` → `facts` → `grill-with-docs`. Use Teach when the user wants a stateful, multi-session learning workspace with lessons and retained learning records, not merely a feature summary.
+- **Personal exploration:** the user may read designs, prototypes, tickets, specifications, decision records, and shipped behavior themselves before either route. Skills support the orientation; they do not replace the user's learning.
+
+Orientation is complete when the user can explain the feature's motivation, governing sources, current behavior, active scope, adjacent work, and known contradictions well enough to participate in decisions. If only the agent can do that, continue orientation instead of starting Grill.
+
 ## Choose the tracking posture
 
 Determine whether the user wants durable execution tracking before choosing the build path.
