@@ -8,6 +8,33 @@
         "value": "decorative grid-line background.",
         "createdAt": "2026-08-27T23:21:07.624Z",
         "reason": "Agent triage: the grid is confined to the interactive state-machine diagram canvas (#diagram), which is the rule's sanctioned canvas use case."
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "docs/afk-skills-profiles-state-machine.html"
+        ],
+        "createdAt": "2026-08-28T02:12:54.243Z",
+        "reason": "Domain-appropriate state-machine diagram canvas; the grid supports spatial graph reading."
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "packages/afk/docs/skill-composition.html"
+        ],
+        "createdAt": "2026-08-28T02:12:54.271Z",
+        "reason": "Domain-appropriate skill-composition graph canvas; the grid supports node placement."
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "packages/afk/docs/skill-composition.html"
+        ],
+        "createdAt": "2026-08-28T02:12:54.301Z",
+        "reason": "Intentional semantic utility tokens coexist with clear body, quote, section, and display hierarchy jumps."
       }
     ]
   }

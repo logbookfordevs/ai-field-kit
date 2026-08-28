@@ -14,12 +14,12 @@ route is materially complete for the core Impeccable behavior, including its
 references, scripts, and Codex-nested subagents. However, it is not equivalent
 to `npx impeccable install` for provider integration.
 
-Recommended model:
+General installation model:
 
 - Catalog `impeccable` as a skill for normal composition and Agent Skills
   installation.
-- Treat `npx impeccable install` as an optional full-integration companion (or
-  tool entry), not as a prerequisite for using the skill.
+- Treat `npx impeccable install` as an optional full-integration companion,
+  not as a prerequisite for using the skill.
 - Keep the full CLI path available when the user wants provider-specific
   compilation, native agent files, project hooks, detector CLI usage, or
   Impeccable-aware update/migration behavior.
@@ -99,10 +99,11 @@ There are two different questions:
    when native agents, hooks, exact provider compilation, detector commands,
    or Impeccable-specific update/migration are wanted.
 
-Therefore, adding Impeccable to the AFK catalog does not make the CLI
-redundant; it makes the core skill composable. AFK should not imply that its
-normal skill installer creates the full Impeccable integration. If AFK later
-supports companion tools, expose `npx impeccable install` as an explicit
-optional full-integration path rather than silently running it as part of
-ordinary catalog setup.
+Therefore, adding Impeccable to the AFK catalog makes the core skill composable
+without making the upstream CLI technically redundant. AFK should not imply
+that its normal skill installer creates the full Impeccable integration.
 
+AFK's chosen policy is catalog-only: hooks are rarely wanted in its normal
+setup, so Impeccable is a default catalog skill and has no AFK tool entry. A
+user who wants the upstream hooks, provider-native integration, or standalone
+detector can invoke `npx impeccable install` separately.

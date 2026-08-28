@@ -63,26 +63,6 @@
             "default": true
         },
         {
-            "id": "impeccable",
-            "label": "Impeccable",
-            "description": "Install Impeccable's frontend design skills and design hook globally through its official installer.",
-            "install": {
-                "command": "sh",
-                "args": [
-                    "-c",
-                    "npx --yes impeccable install --scope=global --providers=claude,codex --force -y"
-                ]
-            },
-            "update": {
-                "command": "sh",
-                "args": [
-                    "-c",
-                    "npx --yes impeccable install --scope=global --providers=claude,codex --force -y"
-                ]
-            },
-            "default": false
-        },
-        {
             "id": "orchestrator",
             "label": "Orchestrator",
             "description": "Install Orchestrator's CLI for launching, coordinating, and supervising work across coding-agent runtimes.",

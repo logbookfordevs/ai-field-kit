@@ -63,8 +63,23 @@
             "role": "wrapper",
             "composes": [
                 "grilling",
-                "truss-evaluation"
+                "truss-evaluation",
+                "impeccable"
             ]
+        },
+        {
+            "id": "impeccable",
+            "label": "Impeccable",
+            "source": "https://github.com/pbakaus/impeccable",
+            "args": [
+                "--skill",
+                "impeccable",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "auto",
+            "role": "router",
+            "composes": []
         },
         {
             "id": "afk-create-agent",

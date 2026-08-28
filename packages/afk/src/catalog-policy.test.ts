@@ -72,8 +72,11 @@ describe("source skill invocation policy", () => {
     const catalog = JSON.parse(
       readFileSync(resolve(repositoryRoot, "packages/afk/catalog/skills.json"), "utf8"),
     ) as {
-      items: Array<{ id: string; invocation: string; role: string; composes: string[] }>;
+      items: Array<{ id: string; default: boolean; invocation: string; role: string; composes: string[] }>;
     };
+    const tools = JSON.parse(
+      readFileSync(resolve(repositoryRoot, "packages/afk/catalog/tools.json"), "utf8"),
+    ) as { items: Array<{ id: string }> };
     const designGrill = catalog.items.find(({ id }) => id === "afk-design-grill");
 
     expect(designGrill).toMatchObject({
@@ -82,8 +85,16 @@ describe("source skill invocation policy", () => {
       composes: [
         "grilling",
         "truss-evaluation",
+        "impeccable",
       ],
     });
+
+    expect(catalog.items.find(({ id }) => id === "impeccable")).toMatchObject({
+      default: true,
+      invocation: "auto",
+      role: "router",
+    });
+    expect(tools.items.some(({ id }) => id === "impeccable")).toBe(false);
 
     expect(catalog.items.find(({ id }) => id === "html-wireframe")?.invocation).toBe("manual");
     expect(catalog.items.find(({ id }) => id === "html-prototype")?.invocation).toBe("manual");
