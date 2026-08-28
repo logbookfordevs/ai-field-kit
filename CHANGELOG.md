@@ -11,6 +11,11 @@ This changelog tracks meaningful updates by version and date.
 
 ## TBD - TBD
 
+### Changed
+
+- `skills:` renamed `afk-code-review-check` to `afk-code-review-verdicts` and `afk-static-check` to `afk-static-review` so their names reflect reviewing and validating findings rather than merely running checks.
+- `skills:` renamed `afk-doc-craft` to `afk-docs-for-humans` and rebuilt it around evidence-grounded claims, an explicit reader contract, conditional PR and narrative guidance, and one acceptance gate.
+
 ## v1.4.1 - 2026-08-26
 
 ### Fixed

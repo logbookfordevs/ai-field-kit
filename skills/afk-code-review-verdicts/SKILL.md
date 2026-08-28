@@ -1,5 +1,5 @@
 ---
-name: afk-code-review-check
+name: afk-code-review-verdicts
 description: Run AFK Code Review, verify its findings against the code, and discuss the verdicts before changing code.
 disable-model-invocation: true
 ---

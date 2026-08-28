@@ -604,7 +604,7 @@ const SKILLS = [
   ["afk-create-agent","workflow",true,false,"ai-field-kit",[]],
   ["afk-to-spec","wrapper",true,false,"ai-field-kit",[]],
   ["afk-to-tickets","wrapper",true,false,"ai-field-kit",[]],
-  ["afk-doc-craft","primitive",true,false,"ai-field-kit",[]],
+  ["afk-docs-for-humans","primitive",true,false,"ai-field-kit",[]],
   ["afk-implement-tickets","workflow",true,false,"ai-field-kit",["tdd","afk-code-review"]],
   ["afk-ui-registry-preferences","reference",true,true,"ai-field-kit",[]],
   ["afk-compass","router",true,false,"ai-field-kit",[]],
@@ -646,8 +646,8 @@ const SKILLS = [
   ["handoff","utility",true,false,"mattpocock/skills",[]],
   ["wayfinder","workflow",false,false,"mattpocock/skills",["grilling","domain-modeling","prototype","research"]],
   ["afk-code-review","wrapper",true,true,"ai-field-kit",[]],
-  ["afk-code-review-check","wrapper",false,false,"ai-field-kit",["afk-code-review"]],
-  ["afk-static-check","utility",false,false,"ai-field-kit",[]],
+  ["afk-code-review-verdicts","wrapper",false,false,"ai-field-kit",["afk-code-review"]],
+  ["afk-static-review","utility",false,false,"ai-field-kit",[]],
   ["grilling","primitive",true,true,"mattpocock/skills",[]],
   ["domain-modeling","primitive",true,true,"mattpocock/skills",[]],
   ["codebase-design","primitive",true,true,"mattpocock/skills",[]]
@@ -892,7 +892,7 @@ const WORKFLOW_MOMENTS = [
     {id:"teach",use:"transfer the understanding"}
   ]},
   {id:"ship",title:"SHIP",action:"leave a trustworthy trail",skills:[
-    {id:"afk-doc-craft",use:"write human-facing docs"},
+    {id:"afk-docs-for-humans",use:"write human-facing docs"},
     {id:"handoff",use:"compact context for the next agent"},
     {id:"plannotator-compound",use:"compound reviewed learnings"},
     {id:"writing-for-agents",use:"harden agent-facing instructions"}
@@ -1086,7 +1086,7 @@ function renderCatalog() {
   addText(catalogView,90,profileY+182,"zone-note","15 external members · may borrow disabled skills while active");
   addText(catalogView,1110,profileY+42,"skill-role-title","alwaysOn");
   addText(catalogView,1110,profileY+67,"zone-note","5 source-catalog members protected across every profile");
-  addText(catalogView,1110,profileY+105,"mono","grilling · afk-doc-craft · code-simplification · diagnosing-bugs · truss-evaluation");
+  addText(catalogView,1110,profileY+105,"mono","grilling · afk-docs-for-humans · code-simplification · diagnosing-bugs · truss-evaluation");
   addText(catalogView,1110,profileY+157,"skill-role-title","mode = context");
   addText(catalogView,1110,profileY+182,"zone-note","manual cataloged outsiders stay active; discoverable or uncataloged outsiders filter out");
 

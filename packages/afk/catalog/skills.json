@@ -109,12 +109,12 @@
             "composes": []
         },
         {
-            "id": "afk-doc-craft",
-            "label": "AFK - Doc Craft",
+            "id": "afk-docs-for-humans",
+            "label": "AFK - Docs for Humans",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-doc-craft",
+                "afk-docs-for-humans",
                 "--global"
             ],
             "default": true,
@@ -688,12 +688,12 @@
             "composes": []
         },
         {
-            "id": "afk-code-review-check",
-            "label": "AFK - Code Review Check",
+            "id": "afk-code-review-verdicts",
+            "label": "AFK - Code Review Verdicts",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-code-review-check",
+                "afk-code-review-verdicts",
                 "--global"
             ],
             "default": false,
@@ -704,12 +704,12 @@
             ]
         },
         {
-            "id": "afk-static-check",
-            "label": "AFK - Static Check",
+            "id": "afk-static-review",
+            "label": "AFK - Static Review",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-static-check",
+                "afk-static-review",
                 "--global"
             ],
             "default": false,

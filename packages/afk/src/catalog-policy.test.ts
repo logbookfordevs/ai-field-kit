@@ -78,10 +78,10 @@ describe("source skill invocation policy", () => {
     expect(designGrillSkill).not.toContain("afk-animated-driven-frontend");
   });
 
-  test("makes Code Review Check preserve review findings before appending verdicts", () => {
+  test("makes Code Review Verdicts preserve review findings before appending verdicts", () => {
     const repositoryRoot = resolve(import.meta.dirname, "../../..");
     const skill = readFileSync(
-      resolve(repositoryRoot, "skills/afk-code-review-check/SKILL.md"),
+      resolve(repositoryRoot, "skills/afk-code-review-verdicts/SKILL.md"),
       "utf8",
     );
     const runReview = "Run the `afk-code-review` skill to completion and capture its complete output.";

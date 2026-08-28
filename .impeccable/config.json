@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "codex-grid-background",
+        "value": "decorative grid-line background.",
+        "createdAt": "2026-08-27T23:21:07.624Z",
+        "reason": "Agent triage: the grid is confined to the interactive state-machine diagram canvas (#diagram), which is the rule's sanctioned canvas use case."
+      }
+    ]
+  }
+}

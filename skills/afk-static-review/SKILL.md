@@ -1,6 +1,6 @@
 ---
-name: afk-static-check
-description: Run the repository's lint and typecheck checks and report their findings.
+name: afk-static-review
+description: Run the repository's lint and typecheck checks and review their findings.
 disable-model-invocation: true
 ---
 

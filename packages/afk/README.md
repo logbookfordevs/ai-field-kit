@@ -1338,7 +1338,7 @@ afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
 afk skills enable old-skill
 afk skills invocation
-afk skills invocation disable afk-doc-craft --dry-run
+afk skills invocation disable afk-docs-for-humans --dry-run
 afk skills delete old-skill --dry-run
 afk skills delete --catalog-only --dry-run
 afk skills delete --profile

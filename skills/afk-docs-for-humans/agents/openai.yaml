@@ -1,0 +1,5 @@
+display_name: AFK Docs for Humans
+short_description: Write and improve evidence-grounded, human-facing documentation.
+default_prompt: "Write, revise, or critique this human-facing documentation. Ground consequential claims in available evidence, establish the reader contract, load only the relevant branch guidance, and satisfy the acceptance gate."
+policy:
+  allow_implicit_invocation: false

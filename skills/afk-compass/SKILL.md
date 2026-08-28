@@ -33,14 +33,14 @@ The route is complete when the response contains one exact invocation, or explic
 | Synthesize the conversation into an agent-ready spec | `afk-to-spec` |
 | Slice a plan or spec into dependency-aware tickets | `afk-to-tickets` |
 | Implement existing checkpointed tickets | `afk-implement-tickets` |
-| Review code, verify every finding, and discuss verdicts before fixes | `afk-code-review-check` |
-| Report lint and typecheck findings without fixes | `afk-static-check` |
+| Review code, verify every finding, and discuss verdicts before fixes | `afk-code-review-verdicts` |
+| Review lint and typecheck findings without fixes | `afk-static-review` |
 | Save or resume disposable session context | `handoff` |
 | Coordinate substantive work with native teammates in the current session | `afk-architect` |
 | Coordinate work across multiple runtimes or external agent processes | `orchestrator` |
 | Load a named AFK skill profile | `afk-profile-use` |
 | Create a portable AFK Custom Agent | `afk-create-agent` |
-| Write or improve human-facing documentation | `afk-doc-craft` |
+| Write or improve human-facing documentation | `afk-docs-for-humans` |
 | Ask another local model for a preserved second opinion | `afk-ask` |
 | Produce a critical before-or-after engineering briefing | `facts` |
 | Restate the last answer plainly | `bro` |

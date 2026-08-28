@@ -1,0 +1,6 @@
+interface:
+  display_name: "AFK Static Review"
+  short_description: "Review lint and typecheck warnings and errors"
+  default_prompt: "Run the repository's existing lint and typecheck checks and review their findings without making fixes."
+policy:
+  allow_implicit_invocation: false

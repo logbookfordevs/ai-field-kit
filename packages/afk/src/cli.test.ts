@@ -2136,7 +2136,7 @@ test("runCli shows profile catalog summaries", async () => {
     "profiles.json": {
       version: 1,
       mode: "context",
-      alwaysOn: ["afk-doc-craft"],
+      alwaysOn: ["afk-docs-for-humans"],
       items: [{ id: "video", name: "Video", skills: ["hyperframes"] }],
     },
   });

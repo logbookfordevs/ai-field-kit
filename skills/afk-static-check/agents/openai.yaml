@@ -1,6 +1,0 @@
-interface:
-  display_name: "AFK Static Check"
-  short_description: "Report lint and typecheck warnings and errors"
-  default_prompt: "Run the repository's existing lint and typecheck checks and report their findings without making fixes."
-policy:
-  allow_implicit_invocation: false
