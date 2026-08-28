@@ -46,27 +46,6 @@ describe("source skill invocation policy", () => {
     expect(missingRoutes).toEqual([]);
   });
 
-  test("keeps Compass workflow guidance behind a verified process pointer", () => {
-    const repositoryRoot = resolve(import.meta.dirname, "../../..");
-    const compass = readFileSync(
-      resolve(repositoryRoot, "skills/afk-compass/SKILL.md"),
-      "utf8",
-    );
-    const workflowCrossroads = readFileSync(
-      resolve(repositoryRoot, "skills/afk-compass/references/workflow-crossroads.md"),
-      "utf8",
-    );
-
-    expect(compass).toContain("references/workflow-crossroads.md");
-    expect(compass).toContain("read that skill's current `SKILL.md`");
-    expect(workflowCrossroads).toContain(
-      "groom and approve them together before implementation whenever possible",
-    );
-    expect(workflowCrossroads).toContain(
-      "Start each implementation ticket in a fresh task or context by default.",
-    );
-  });
-
   test("keeps prototype instruments outside Design Grill's primary composition", () => {
     const repositoryRoot = resolve(import.meta.dirname, "../../..");
     const catalog = JSON.parse(

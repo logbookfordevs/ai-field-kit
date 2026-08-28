@@ -15,10 +15,10 @@ AFK Compass is the user-invoked router for skills that stay out of automatic dis
    If the work crosses idea-shaping, specification, ticket grooming, implementation, review, or a context boundary, read [`references/workflow-crossroads.md`](references/workflow-crossroads.md).
 2. Choose the smallest matching route or flow. A skill the user names directly wins.
 3. Before claiming what a skill's process includes, or recommending that a step be skipped or combined, read that skill's current `SKILL.md` and any reference governing the claim. The table below is orientation, not process authority.
-4. Return the exact invocation or ordered invocations for the current host and one sentence explaining why they fit. Add phase-boundary guidance only when it changes how the flow should run. Include one alternative only when the choice is genuinely close.
+4. Return the exact invocation or ordered invocations for the current host, or a copyable ordinary implementation prompt when no manual execution skill is wanted. Give one sentence explaining why the route fits. Add phase-boundary guidance only when it changes how the flow should run. Include one alternative only when the choice is genuinely close.
 5. End after the recommendation so the user remains the activation boundary.
 
-The route is complete when the response contains one exact invocation, an ordered flow with its consequential boundaries, or explicitly concludes that ordinary agent behavior fits better than a manual skill.
+The route is complete when the response contains one exact invocation, an ordered flow with its consequential boundaries, or a copyable prompt for ordinary agent behavior.
 
 ## Manual Routes
 
