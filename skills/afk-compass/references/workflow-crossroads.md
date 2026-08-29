@@ -1,6 +1,6 @@
 # Workflow Crossroads
 
-Use this reference when the user needs a path through skills or advice about where one phase, context, task, or worker should end. Verify every recommended skill against its current `SKILL.md` before applying this guidance.
+Use this reference when the user needs a path through skills or advice about where one phase, context, task, or worker should end.
 
 ## Orient before decision work
 
@@ -13,6 +13,18 @@ Choose the depth that fits the user's learning goal:
 - **Personal exploration:** the user may read designs, prototypes, tickets, specifications, decision records, and shipped behavior themselves before either route. Skills support the orientation; they do not replace the user's learning.
 
 Orientation is complete when the user can explain the feature's motivation, governing sources, current behavior, active scope, adjacent work, and known contradictions well enough to participate in decisions. If only the agent can do that, continue orientation instead of starting Grill.
+
+## Choose the planning scale
+
+Start with the lowest specialist that can coherently own the uncertainty now:
+
+- **`grill-me` or `grill-with-docs`:** one evolving plan, design, or domain question that can be pressured in a coherent session;
+- **a domain specialist:** one connected specialist problem, such as frontend direction or a motion-led experience; consult the relevant crossroads reference for the route;
+- **`wayfinder`:** a destination whose route already contains several independently substantial, interdependent decisions and needs a durable map across sessions.
+
+Uncertainty alone does not require Wayfinder. Enter it directly when the decision landscape is already visible. Otherwise begin with the fitting specialist and promote only when its exploration reveals a decision graph that no longer fits one coherent session. Preserve settled decisions, rejected directions, evidence, artifacts, and the unresolved graph at that boundary; use `handoff` when the promotion also crosses contexts.
+
+Wayfinder owns that decision graph, not every discipline used to resolve it. Name a governing specialist in the map's Notes when one should constrain relevant tickets, and use the fitting specialist for each ticket's decision work. Wayfinder remains planning by default: specialist work inside the map resolves a decision or produces evidence rather than silently delivering the destination. When the map converges, continue into the specialist or synthesis route that owns the destination.
 
 ## Choose the tracking posture
 
@@ -83,4 +95,4 @@ Treat each ticket's review and acceptance gate as part of that ticket's implemen
 
 ## Recommendation
 
-Return the shortest complete flow that reaches the user's outcome. Show exact invocations in order, or give the free implementation prompt when the route is untracked. State only the tracking trade-off and boundaries that materially protect context quality, isolation, dependency order, or recoverability.
+Return the shortest complete flow that reaches the user's outcome. Show exact invocations in order, or give the free implementation prompt when the route is untracked. State only the planning-scale, tracking, and context boundaries that materially protect coherence, isolation, dependency order, or recoverability.

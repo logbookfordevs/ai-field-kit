@@ -58,6 +58,8 @@ When the user's problem is silent loss of identity-bearing color, typography, co
 
 Use `impeccable animate` for the surface motion thesis and `animate` for a bounded construction problem. Compose them only when that ownership is explicit. Use `afk-animated-driven-frontend` when motion changes the product experience itself rather than decorating a largely static page.
 
+When the doubt is whether one frontend specialist can still own the exploration or the work has become a multi-session decision landscape, consult [`workflow-crossroads.md`](workflow-crossroads.md). A frontend specialist may be the entry point and later promote the unresolved decision graph to Wayfinder; Wayfinder may in turn use frontend specialists for individual decisions before the governing specialist resumes at convergence.
+
 ## Recommendation
 
 Return one exact invocation for the current host and one reason tied to the open decision. Mention one alternative only when the choice remains genuinely close. Profile-owned specialists must be available before recommending direct invocation; otherwise route through `afk-profile-use` or name the required profile.
