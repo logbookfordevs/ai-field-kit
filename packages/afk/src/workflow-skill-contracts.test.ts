@@ -142,6 +142,8 @@ describe("AFK workflow skill contracts", () => {
     expect(skill).toContain("This is a specialist workflow, not an automatic site generator.");
     expect(skill).toContain("Only the user's explicit approval advances a gate.");
     expect(skill).toContain("resume at the first unapproved gate");
+    expect(skill).toContain("Root its design tree in the one greenlight being prepared");
+    expect(skill).toContain("return to this workflow and present the gate artifact for approval");
     expect(skill).toContain("**Greenlight — tracer:**");
     expect(skill).toContain("Expand into the page only after the user explicitly opens production.");
     expect(skill).toContain("Only the user can declare **picture lock**");
@@ -151,7 +153,7 @@ describe("AFK workflow skill contracts", () => {
     expect(hostMetadata).toContain("stop for my greenlight");
     expect(catalog.items.find(({ id }) => id === "afk-animated-driven-frontend")).toMatchObject({
       role: "workflow",
-      composes: [],
+      composes: ["grilling"],
     });
   });
 });

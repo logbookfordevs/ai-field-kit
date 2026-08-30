@@ -15,7 +15,9 @@
             "default": true,
             "invocation": "manual",
             "role": "workflow",
-            "composes": []
+            "composes": [
+                "grilling"
+            ]
         },
         {
             "id": "afk-ask",

@@ -30,6 +30,12 @@ Determine the current production stage from the supplied artifacts and director'
 
 When the work splits into several independently substantial, interdependent decisions that no longer fit one coherent specialist session, offer to promote the unresolved decision graph to Wayfinder. Preserve the director's notebook, approved and rejected treatments, prototypes, evidence, and open questions in the handoff. Wayfinder may use this skill to resolve cinematic frontend leaves; after convergence, this skill can resume as governing specialist from the approved output in a fresh implementation session.
 
+## Bound Grilling to the current gate
+
+Use the composed `grilling` skill when the current unapproved production gate still contains material creative decisions. Root its design tree in the one greenlight being prepared and include only decisions that gate requires. Treat carried approvals and the director's notebook as constraints, find environmental facts yourself, and leave taste and consequential choices to the user.
+
+When the gate's frontier is empty and the user confirms shared understanding, return to this workflow and present the gate artifact for approval. When the tree instead reveals several substantial interdependent branches beyond one coherent cinematic frontend problem, preserve its unresolved frontier and offer the Wayfinder promotion described above.
+
 ## Production workflow
 
 ### 1. Development meeting
