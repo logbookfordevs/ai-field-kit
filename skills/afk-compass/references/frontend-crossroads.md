@@ -54,9 +54,9 @@ When the user's problem is silent loss of identity-bearing color, typography, co
 | Implement one already-chosen component animation or transition correctly | `animate` |
 | Review an existing motion implementation for craft and interaction quality | `review-animations` |
 | Shape or review fluid, gesture-driven direct manipulation | `apple-design` |
-| Make motion, interaction, or immersion the frontend's defining experience | `afk-animated-driven-frontend` |
+| Co-direct a cinematic experience where motion, interaction, or immersion defines the frontend | `afk-animated-driven-frontend` |
 
-Use `impeccable animate` for the surface motion thesis and `animate` for a bounded construction problem. Compose them only when that ownership is explicit. Use `afk-animated-driven-frontend` when motion changes the product experience itself rather than decorating a largely static page.
+Use `impeccable animate` for the surface motion thesis and `animate` for a bounded construction problem. Compose them only when that ownership is explicit. Use `afk-animated-driven-frontend` when motion changes the product experience itself and the user wants to co-direct its treatment, shots, tracer, production batches, and final cut.
 
 When the doubt is whether one frontend specialist can still own the exploration or the work has become a multi-session decision landscape, consult [`workflow-crossroads.md`](workflow-crossroads.md). A frontend specialist may be the entry point and later promote the unresolved decision graph to Wayfinder; Wayfinder may in turn use frontend specialists for individual decisions before the governing specialist resumes at convergence.
 

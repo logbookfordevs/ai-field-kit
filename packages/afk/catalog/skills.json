@@ -14,7 +14,7 @@
             ],
             "default": true,
             "invocation": "manual",
-            "role": "wrapper",
+            "role": "workflow",
             "composes": []
         },
         {

@@ -28,7 +28,8 @@ Failure signal: reactions are everywhere, but none changes what the user can und
 
 Use for an argument, launch story, editorial sequence, or reveal with authored pacing.
 
-- Beats, gates, reversals, and payoff form a deliberate story spine.
+- A director's treatment turns beats, gates, reversals, and payoff into deliberate scenes and shots.
+- Framing, camera or viewport movement, editing, grade, sound, and silence carry named dramatic jobs.
 - One driver coordinates text, scene, loading, and feedback.
 - Timing uses contrast: anticipation, hold, impact, and release.
 - The payoff returns agency after the directed sequence.

@@ -8,7 +8,7 @@ function readRepositoryFile(path: string): string {
   return readFileSync(resolve(repositoryRoot, path), "utf8");
 }
 
-describe("AFK ticket workflow contracts", () => {
+describe("AFK workflow skill contracts", () => {
   test("tickets agree on a public TDD seam without prescribing Plannotator", () => {
     const skill = readRepositoryFile("skills/afk-to-tickets/SKILL.md");
     const templates = readRepositoryFile("skills/afk-to-tickets/references/ticket-templates.md");
@@ -127,5 +127,31 @@ describe("AFK ticket workflow contracts", () => {
       "tdd",
       "afk-code-review",
     ]);
+  });
+
+  test("Animated-Driven Frontend keeps the user in the director's chair", () => {
+    const skill = readRepositoryFile("skills/afk-animated-driven-frontend/SKILL.md");
+    const hostMetadata = readRepositoryFile("skills/afk-animated-driven-frontend/agents/openai.yaml");
+    const immersivePipeline = readRepositoryFile(
+      "skills/afk-animated-driven-frontend/references/IMMERSIVE-PIPELINE.md",
+    );
+    const catalog = JSON.parse(
+      readRepositoryFile("packages/afk/catalog/skills.json"),
+    ) as { items: Array<{ id: string; role: string; composes: string[] }> };
+
+    expect(skill).toContain("This is a specialist workflow, not an automatic site generator.");
+    expect(skill).toContain("Only the user's explicit approval advances a gate.");
+    expect(skill).toContain("resume at the first unapproved gate");
+    expect(skill).toContain("**Greenlight — tracer:**");
+    expect(skill).toContain("Expand into the page only after the user explicitly opens production.");
+    expect(skill).toContain("Only the user can declare **picture lock**");
+    expect(skill).toContain("**Greenlight — final cut:**");
+    expect(immersivePipeline).toContain("ZERO: The Engineering Behind a Defiant Interactive Narrative");
+    expect(hostMetadata).toContain("Co-direct this cinematic frontend with me.");
+    expect(hostMetadata).toContain("stop for my greenlight");
+    expect(catalog.items.find(({ id }) => id === "afk-animated-driven-frontend")).toMatchObject({
+      role: "workflow",
+      composes: [],
+    });
   });
 });

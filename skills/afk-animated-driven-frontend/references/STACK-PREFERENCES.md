@@ -17,6 +17,10 @@ Inspect the repository before selecting tools. Reuse its headless foundation, st
 
 Import from `motion` or `motion/react`, not `framer-motion`.
 
+## Curated sources
+
+When the user, organization, or repository provides a curated library of tools, assets, sound sources, or production references, search it before adding a dependency or inventing a new pipeline. Curated options remain candidates rather than mandates; apply the dependency gate and verify licensing, delivery, accessibility, and target-device cost.
+
 ## Ownership rules
 
 - Keep DOM choreography and WebGL rendering in separate owners joined by semantic state or normalized progress.

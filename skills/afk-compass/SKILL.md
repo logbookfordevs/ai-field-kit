@@ -51,7 +51,7 @@ The route is complete when the response contains one exact invocation, an ordere
 | Get an independent decision from a fresh agent with no inherited conversation | `clean-room` |
 | Collect missing decisions from another person | `to-questionnaire` |
 | Learn a topic across multiple sessions | `teach` |
-| Design a motion-led immersive frontend | `afk-animated-driven-frontend` |
+| Co-direct a cinematic, motion-led frontend through human-approved production stages | `afk-animated-driven-frontend` |
 | Choose a UI registry, component primitive, or headless foundation | `afk-ui-registry-preferences` |
 | Shape or review fluid, gesture-driven interfaces using Apple's interaction principles | `apple-design` |
 | Review motion implementation | `review-animations` |

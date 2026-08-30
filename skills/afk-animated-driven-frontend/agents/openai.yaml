@@ -1,5 +1,5 @@
 display_name: Animated-Driven Frontend
-short_description: Forge motion-led interfaces and immersive narratives as coherent, adaptive systems.
-default_prompt: Design and implement this frontend as a directed experience. Define its story spine, beats, gates, payoff, authoritative motion driver, interaction contracts, warm path, fidelity ladder, accessibility direction, and real-device acceptance evidence before treating visual effects as finished.
+short_description: Co-direct cinematic, motion-led frontends through human-approved production stages.
+default_prompt: Co-direct this cinematic frontend with me. Begin with the creative battery and director's treatment, then stop for my greenlight at treatment, preproduction, tracer, production batches, and final cut. Bring cinematographic choices and rendered evidence to each screening; use ZERO-derived narrative, warm-path, fidelity, accessibility, and real-device engineering inside the stage I approve.
 policy:
   allow_implicit_invocation: false

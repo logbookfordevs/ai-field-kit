@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `skills:` rebuilt Animated-Driven Frontend as a co-directed cinematic production workflow with human greenlights for treatment, shot planning, tracer dailies, production batches, and final cut, while preserving its ZERO-derived narrative and rendering engineering.
 - `skills:` expanded AFK Compass from single-skill routing into authoritative crossroads guidance, including feature orientation before grilling, specialist-to-Wayfinder promotion, context and handoff boundaries, same-task spec and ticket grooming, fresh-context tracked implementation, and direct implementation when users intentionally decline ticket-level execution tracking.
 - `skills:` renamed `afk-code-review-check` to `afk-code-review-verdicts` and `afk-static-check` to `afk-static-review` so their names reflect reviewing and validating findings rather than merely running checks.
 - `skills:` renamed `afk-doc-craft` to `afk-docs-for-humans` and rebuilt it around evidence-grounded claims, an explicit reader contract, conditional PR and narrative guidance, and one acceptance gate.
