@@ -651,7 +651,7 @@
                 "--global"
             ],
             "default": true,
-            "invocation": "manual",
+            "invocation": "auto",
             "role": "wrapper",
             "composes": []
         },
