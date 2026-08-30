@@ -2,6 +2,7 @@
 - Import animation APIs from `motion` or `motion/react`.
 - Prefer the project's existing headless foundation; otherwise use Base UI.
 - Use Tailwind CSS v4 without a configuration file unless the project requires one.
+- Before introducing a project-specific library or tool, use `use-logbook-notion` to search Treasures by the closest `Category`; prefer a suitable curated option when it fits the project's stack and constraints.
 
 ## Skills
 State "I will use the X skill" whenever using a skill.
