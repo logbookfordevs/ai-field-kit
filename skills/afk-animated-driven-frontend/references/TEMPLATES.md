@@ -2,9 +2,35 @@
 
 Use only the cards required by the work. Delete empty fields rather than delivering placeholders.
 
+## Production binder
+
+The production binder is the durable memory for a cinematic frontend expected to cross sessions, tickets, or agents. Follow the active repository or user artifact convention. Otherwise use:
+
+```text
+docs/specs/<scope>/production/
+├── director-notebook.md
+├── treatment.md
+├── script.md
+├── shot-plan.md
+├── production-cards.md
+├── asset-ledger.md
+├── screenings.md
+└── motion-spec.md
+```
+
+Create `director-notebook.md` first and add the other files only when the work earns them. The filenames illustrate roles rather than a mandatory file set: combine small related records when that keeps the production clearer, and split an artifact when independent ownership or review requires it.
+
+- Treat the director's notebook as the canonical continuity index. Link detailed artifacts instead of copying them into it.
+- Update existing artifacts across greenlights. Create parallel treatment, script, or shot variants only while the co-directors are genuinely comparing them; after selection, make the approved direction canonical and preserve rejection rationale in the notebook.
+- Link storyboards, drawings, animatics, recordings, prototypes, and traces from the artifact that governs them. Preserve an exact frame, state, take, path, or revision when it affects approval.
+- Run a continuity pass after every greenlight and before any handoff, Wayfinder promotion, ticket transition, or pause between sessions.
+- Keep ticket execution state in the ticket and cinematic continuity in this binder. Cross-link them when a ticket implements a production batch.
+- Use a formal spec only when synthesis improves a handoff. The binder remains the production source even when `afk-to-spec` or `afk-to-tickets` derives another artifact from it.
+
 ## Director's notebook
 
 ```md
+Production home:
 Current stage:
 Approved production boundary:
 Creative battery:
@@ -13,8 +39,30 @@ Open questions:
 Rejected directions and reasons:
 References / anti-references:
 Technical findings:
+Artifact index:
 Last greenlight:
 Next co-directing decision:
+
+## Continuity log
+
+- <date / gate> — <continuity entry or link>
+```
+
+## Continuity entry
+
+```md
+Gate / production batch:
+Status: <approved | revision requested | unapproved pause>
+Decision and approved boundary:
+Why this direction:
+Material rejected directions:
+Creative findings:
+Technical findings:
+Evidence and exact revision:
+Artifacts created or updated:
+Open questions:
+Next unapproved gate:
+Manual route now appropriate: <continue ADF | afk-to-spec | afk-to-tickets | Wayfinder | none>
 ```
 
 ## Director's treatment
@@ -46,6 +94,27 @@ Authority: <semantic state | timeline time | normalized progress>
 Opening budget:
 Worst-frame budget:
 Fidelity tiers:
+Greenlight requested:
+```
+
+## Script
+
+Use a script when narration, interface copy, dialogue, silence, or beat order carries the experience. Visual-first work may begin with boards or a shot list and add the script as the sequence converges.
+
+```md
+Status: <exploring | selected | approved>
+Approved treatment:
+Delivery: <spoken narration | interface copy | dialogue | visual / silent | hybrid>
+Audience journey:
+Voice and performance direction:
+Timing or interaction authority:
+
+| Beat / scene | Dramatic change | Picture / action | Narration / copy / silence | Product interaction | Sound / haptic cue | Transition |
+| --- | --- | --- | --- | --- | --- | --- |
+
+Continuity constraints:
+Open performance questions:
+Rendered or recorded evidence:
 Greenlight requested:
 ```
 
@@ -149,6 +218,8 @@ Next production boundary if approved:
 
 ```md
 - [ ] Director's notebook names the current stage and approved production boundary.
+- [ ] Every approved greenlight has a persisted continuity entry and exact evidence link.
+- [ ] Treatment, script, boards, and production cards exist only where the production needs them and identify their approval state.
 - [ ] Treatment, preproduction, tracer, production batches, and final cut retain their explicit greenlights.
 - [ ] Approved and rejected directions preserve rationale and rendered evidence.
 - [ ] Every motion has a named role.

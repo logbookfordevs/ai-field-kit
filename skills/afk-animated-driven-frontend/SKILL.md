@@ -22,6 +22,23 @@ Work autonomously inside the stage or batch the user has greenlit, then stop at 
 
 Treat production time honestly. Name costly shots, assets, and technical risks; work in reviewable cuts; and allow seconds of excellent experience to earn hours of iteration when the result demands it.
 
+## Production continuity
+
+Treat the production as multi-session by default. At the first development meeting, create or resume one durable **production binder** using the active repository or user artifact convention. When no convention exists, use `docs/specs/<scope>/production/`. Read the production-binder rules in [`references/TEMPLATES.md`](references/TEMPLATES.md) completely before writing it.
+
+The binder's `director-notebook.md` is the canonical continuity index. Create it first, keep it current, and link from it to the detailed artifacts the production actually earns: treatment, script, shot plan, storyboard or animatic, production cards, asset ledger, screening notes, and motion spec. Create these lazily rather than manufacturing a complete paperwork set. A narration- or message-led experience usually earns a script early; a visual-first experience may let boards and shot exploration lead before the script converges.
+
+After every explicit greenlight, run a **continuity pass** before entering the next stage:
+
+1. Record the approved decision, production boundary, rationale, material rejected directions, and the next unapproved gate.
+2. Persist the gate artifact and update the notebook's stage, locked choices, findings, open questions, and artifact index.
+3. Link the exact prototype, live cut, recording, trace, or other evidence that informed the decision; keep large media in its existing artifact home rather than duplicating it.
+4. Give the user a concise **production slate** naming what was recorded, the next gate, and any newly appropriate manual route such as `afk-to-spec` or `afk-to-tickets`.
+
+Recording an approved decision does not require a second approval. Before a handoff, Wayfinder promotion, ticket transition, or pause between sessions, run the same pass and label unapproved work accurately. If the production home is not writable, return a self-contained continuity entry and say that durable persistence remains pending.
+
+When ADF governs an implementation ticket, keep execution status, validation, and code-review evidence in the ticket; keep cross-ticket creative continuity and greenlights in the production binder. Link the two instead of duplicating their contents.
+
 ## Specialist boundary
 
 This skill can begin from a creative idea, an existing surface, a Grill or Docs outcome, a Wayfinder ticket, or a converged Wayfinder map. It can also lead without Wayfinder when one coherent motion-led experience remains the problem. In every entry path, the user remains co-director.
@@ -42,7 +59,7 @@ When the gate's frontier is empty and the user confirms shared understanding, re
 
 Inspect the product intent, existing stack and primitives, visual language, device floor, input paths, accessibility requirements, asset sources, and any user- or organization-curated tools. Draw out the creative battery: premise, audience-facing theme, product truth, conflict and change, primary feeling, irresistible action, reference frames, anti-references, and non-negotiables.
 
-Start the director's notebook from [`references/TEMPLATES.md`](references/TEMPLATES.md) and keep it current throughout the production.
+Start or resume the production binder and director's notebook from [`references/TEMPLATES.md`](references/TEMPLATES.md), then keep them current throughout the production.
 
 Classify the work:
 

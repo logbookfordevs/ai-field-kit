@@ -129,9 +129,12 @@ describe("AFK workflow skill contracts", () => {
     ]);
   });
 
-  test("Animated-Driven Frontend keeps the user in the director's chair", () => {
+  test("Animated-Driven Frontend keeps the user in the director's chair and preserves production continuity", () => {
     const skill = readRepositoryFile("skills/afk-animated-driven-frontend/SKILL.md");
     const hostMetadata = readRepositoryFile("skills/afk-animated-driven-frontend/agents/openai.yaml");
+    const templates = readRepositoryFile(
+      "skills/afk-animated-driven-frontend/references/TEMPLATES.md",
+    );
     const immersivePipeline = readRepositoryFile(
       "skills/afk-animated-driven-frontend/references/IMMERSIVE-PIPELINE.md",
     );
@@ -144,13 +147,20 @@ describe("AFK workflow skill contracts", () => {
     expect(skill).toContain("resume at the first unapproved gate");
     expect(skill).toContain("Root its design tree in the one greenlight being prepared");
     expect(skill).toContain("return to this workflow and present the gate artifact for approval");
+    expect(skill).toContain("Treat the production as multi-session by default.");
+    expect(skill).toContain("run a **continuity pass** before entering the next stage");
+    expect(skill).toContain("Recording an approved decision does not require a second approval.");
     expect(skill).toContain("**Greenlight — tracer:**");
     expect(skill).toContain("Expand into the page only after the user explicitly opens production.");
     expect(skill).toContain("Only the user can declare **picture lock**");
     expect(skill).toContain("**Greenlight — final cut:**");
     expect(immersivePipeline).toContain("ZERO: The Engineering Behind a Defiant Interactive Narrative");
     expect(hostMetadata).toContain("Co-direct this cinematic frontend with me.");
+    expect(hostMetadata).toContain("keep a durable production binder across sessions");
     expect(hostMetadata).toContain("stop for my greenlight");
+    expect(templates).toContain("## Production binder");
+    expect(templates).toContain("## Continuity entry");
+    expect(templates).toContain("## Script");
     expect(catalog.items.find(({ id }) => id === "afk-animated-driven-frontend")).toMatchObject({
       role: "workflow",
       composes: ["grilling"],
