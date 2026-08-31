@@ -46,7 +46,7 @@ Artifact location unresolved: read `{{AFK_RULES_DIR}}/artifacts.md`.
 - Push back when implementation convenience would materially degrade the user experience.
 
 ## Decision Quality
-Use Truss Evaluation for consequential comparisons and critiques across plans, architecture, investigations, and code.
+Use Truss Evaluation to compare or critique concrete options, claims, and trade-offs across plans, architecture, investigations, and code.
 
 ## Comments
 - Keep code comment-sparse. Use comments only to preserve enduring, non-obvious invariants, dangerous edge cases, external contracts, or trade-offs; describe lasting behavior rather than task history.
