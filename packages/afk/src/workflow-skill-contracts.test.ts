@@ -143,6 +143,8 @@ describe("AFK workflow skill contracts", () => {
     ) as { items: Array<{ id: string; role: string; composes: string[] }> };
 
     expect(skill).toContain("This is a specialist workflow, not an automatic site generator.");
+    expect(skill).toContain("Invoking ADF opens a **Director's Room**");
+    expect(skill).toContain("ADF is installed as a skill and experienced as a production.");
     expect(skill).toContain("Only the user's explicit approval advances a gate.");
     expect(skill).toContain("resume at the first unapproved gate");
     expect(skill).toContain("Root its design tree in the one greenlight being prepared");
@@ -150,17 +152,25 @@ describe("AFK workflow skill contracts", () => {
     expect(skill).toContain("Treat the production as multi-session by default.");
     expect(skill).toContain("run a **continuity pass** before entering the next stage");
     expect(skill).toContain("Recording an approved decision does not require a second approval.");
+    expect(skill).toContain("Tickets organize known production work; ADF explores creative unknowns through production.");
+    expect(skill).toContain("Ticket only the approved production frontier.");
+    expect(skill).toContain("pair the resulting tickets with `afk-implement-tickets` by default");
+    expect(skill).toContain("**Screen the rough cut**");
+    expect(skill).toContain("**Deliver the system**");
+    expect(skill).not.toContain("afk-to-spec");
     expect(skill).toContain("**Greenlight — tracer:**");
     expect(skill).toContain("Expand into the page only after the user explicitly opens production.");
     expect(skill).toContain("Only the user can declare **picture lock**");
     expect(skill).toContain("**Greenlight — final cut:**");
     expect(immersivePipeline).toContain("ZERO: The Engineering Behind a Defiant Interactive Narrative");
-    expect(hostMetadata).toContain("Co-direct this cinematic frontend with me.");
-    expect(hostMetadata).toContain("keep a durable production binder across sessions");
+    expect(hostMetadata).toContain("Open a Director's Room and co-direct this cinematic frontend with me.");
+    expect(hostMetadata).toContain("Keep a durable production binder across sessions");
     expect(hostMetadata).toContain("stop for my greenlight");
     expect(templates).toContain("## Production binder");
     expect(templates).toContain("## Continuity entry");
+    expect(templates).toContain("## Production slate");
     expect(templates).toContain("## Script");
+    expect(templates).not.toContain("afk-to-spec");
     expect(catalog.items.find(({ id }) => id === "afk-animated-driven-frontend")).toMatchObject({
       role: "workflow",
       composes: ["grilling"],

@@ -6,7 +6,9 @@ disable-model-invocation: true
 
 # Animated-Driven Frontend
 
-Co-direct a cinematic, motion-led experience. The user's idea, taste, references, and critique are the creative battery; the agent brings cinematographic options, frontend craft, and the production engineering needed to make approved choices survive contact with real devices.
+Invoking ADF opens a **Director's Room** for one cinematic, motion-led frontend production. The user's idea, taste, references, and critique are the creative battery; the agent brings cinematographic options, frontend craft, and the production engineering needed to make approved choices survive contact with real devices.
+
+ADF is installed as a skill and experienced as a production. The Director's Room is its governing co-directing context, not a requirement to keep every task in one chat. It may continue, compact, or reopen fresh from the production binder. Specialist sessions operate as production units; their findings return as dailies before they change the approved production.
 
 This is a specialist workflow, not an automatic site generator. It may govern an experience from its first premise to final cut, but it does so through deliberate collaboration rather than one uninterrupted end-to-end run.
 
@@ -33,7 +35,7 @@ After every explicit greenlight, run a **continuity pass** before entering the n
 1. Record the approved decision, production boundary, rationale, material rejected directions, and the next unapproved gate.
 2. Persist the gate artifact and update the notebook's stage, locked choices, findings, open questions, and artifact index.
 3. Link the exact prototype, live cut, recording, trace, or other evidence that informed the decision; keep large media in its existing artifact home rather than duplicating it.
-4. Give the user a concise **production slate** naming what was recorded, the next gate, and any newly appropriate manual route such as `afk-to-spec` or `afk-to-tickets`.
+4. Give the user a concise **production slate** naming what was recorded, the next gate, and the Director's Room's recommended production move.
 
 Recording an approved decision does not require a second approval. Before a handoff, Wayfinder promotion, ticket transition, or pause between sessions, run the same pass and label unapproved work accurately. If the production home is not writable, return a self-contained continuity entry and say that durable persistence remains pending.
 
@@ -52,6 +54,24 @@ When the work splits into several independently substantial, interdependent deci
 Use the composed `grilling` skill when the current unapproved production gate still contains material creative decisions. Root its design tree in the one greenlight being prepared and include only decisions that gate requires. Treat carried approvals and the director's notebook as constraints, find environmental facts yourself, and leave taste and consequential choices to the user.
 
 When the gate's frontier is empty and the user confirms shared understanding, return to this workflow and present the gate artifact for approval. When the tree instead reveals several substantial interdependent branches beyond one coherent cinematic frontend problem, preserve its unresolved frontier and offer the Wayfinder promotion described above.
+
+## Call the next production move
+
+ADF discovers through production rather than finishing all discovery before implementation. At every greenlight where work can move forward, the Director's Room must recommend one next move and explain why it fits the current production topology:
+
+- **Keep directing** — the next consequential choice still needs conversation, references, or bounded Grilling.
+- **Shoot a tracer** — one creative or technical unknown is best answered by real implementation and dailies.
+- **Produce the next batch** — one coherent approved cut is ready for the current room or one bounded production unit.
+- **Dispatch a production unit** — one bounded cut belongs in another session; send the binder context, approved source, evidence request, and return path.
+- **Schedule production** — several approved, independently screenable cuts have known blocking edges and acceptance evidence; recommend the user manually invoke `afk-to-tickets` for that approved frontier.
+- **Call Wayfinder** — several substantial interdependent creative unknowns exceed one coherent production problem.
+- **Screen the rough cut** — every intended sequence has approved coverage; assemble them and ask the user whether to declare picture lock.
+- **Enter post-production** — the user has declared picture lock.
+- **Deliver the system** — the user has approved the final cut; run delivery validation and prepare the maintainable handoff.
+
+Tickets organize known production work; ADF explores creative unknowns through production. Ticket only the approved production frontier. Keep unresolved scenes in the Director's Room, and add later tickets through rolling greenlights rather than converting uncertainty into implementation commitments. A long or difficult tracer remains a tracer; duration alone does not justify tickets.
+
+When the Director's Room recommends scheduling, recommend the user pair the resulting tickets with `afk-implement-tickets` by default while ADF remains governing specialist for cinematic dailies and creative acceptance. The user chooses whether work stays in the current room, moves through an ordinary or skill-assisted handoff, opens in a fresh session, or uses another executor. Venue changes do not change the production's binder, authority, or greenlights.
 
 ## Production workflow
 

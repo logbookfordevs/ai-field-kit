@@ -25,7 +25,7 @@ Create `director-notebook.md` first and add the other files only when the work e
 - Link storyboards, drawings, animatics, recordings, prototypes, and traces from the artifact that governs them. Preserve an exact frame, state, take, path, or revision when it affects approval.
 - Run a continuity pass after every greenlight and before any handoff, Wayfinder promotion, ticket transition, or pause between sessions.
 - Keep ticket execution state in the ticket and cinematic continuity in this binder. Cross-link them when a ticket implements a production batch.
-- Use a formal spec only when synthesis improves a handoff. The binder remains the production source even when `afk-to-spec` or `afk-to-tickets` derives another artifact from it.
+- Ticket only approved, independently screenable cuts with known blocking edges. The binder remains the production source when `afk-to-tickets` schedules that frontier.
 
 ## Director's notebook
 
@@ -62,7 +62,20 @@ Evidence and exact revision:
 Artifacts created or updated:
 Open questions:
 Next unapproved gate:
-Manual route now appropriate: <continue ADF | afk-to-spec | afk-to-tickets | Wayfinder | none>
+Recommended production move: <keep directing | shoot tracer | produce batch | dispatch unit | afk-to-tickets | Wayfinder | screen rough cut | enter post-production | deliver system | none>
+```
+
+## Production slate
+
+```md
+Recorded:
+Current gate and approved boundary:
+Recommended production move:
+Why this move fits now:
+Approved production frontier:
+Still unresolved in the Director's Room:
+Venue for the user to choose: <current room | ordinary handoff | skill-assisted handoff | fresh session | ticket workflow | other>
+Next evidence or greenlight:
 ```
 
 ## Director's treatment
@@ -219,6 +232,7 @@ Next production boundary if approved:
 ```md
 - [ ] Director's notebook names the current stage and approved production boundary.
 - [ ] Every approved greenlight has a persisted continuity entry and exact evidence link.
+- [ ] The latest production slate names one next move and separates the approved frontier from unresolved directing work.
 - [ ] Treatment, script, boards, and production cards exist only where the production needs them and identify their approval state.
 - [ ] Treatment, preproduction, tracer, production batches, and final cut retain their explicit greenlights.
 - [ ] Approved and rejected directions preserve rationale and rendered evidence.

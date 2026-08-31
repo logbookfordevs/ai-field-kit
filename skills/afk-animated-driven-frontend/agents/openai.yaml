@@ -1,5 +1,5 @@
 display_name: Animated-Driven Frontend
 short_description: Co-direct cinematic, motion-led frontends through human-approved production stages.
-default_prompt: Co-direct this cinematic frontend with me. Begin with the creative battery and director's treatment, keep a durable production binder across sessions, and stop for my greenlight at treatment, preproduction, tracer, production batches, and final cut. Bring cinematographic choices and rendered evidence to each screening; record approved decisions through continuity passes, and use ZERO-derived narrative, warm-path, fidelity, accessibility, and real-device engineering inside the stage I approve.
+default_prompt: Open a Director's Room and co-direct this cinematic frontend with me. Keep a durable production binder across sessions, discover through tracers and dailies, and stop for my greenlight at treatment, preproduction, tracer, production batches, and final cut. After each greenlight, record a continuity pass and recommend one next production move; ticket only an approved production frontier. Use ZERO-derived narrative, warm-path, fidelity, accessibility, and real-device engineering inside the stage I approve.
 policy:
   allow_implicit_invocation: false
