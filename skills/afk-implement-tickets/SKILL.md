@@ -96,9 +96,11 @@ During implementation, run focused tests and relevant typechecking. Run the comp
 ## Green Atomic Commits
 Record `HEAD` as `review_base` before editing. Keep it unchanged for any later user-requested review.
 
-Commit each green behavior slice, and commit all ticket-owned implementation before review.
+Forward local commits are authorized, not mandatory. Create a green atomic commit when a durable checkpoint improves the work.
 
-This authorizes forward local commits. History rewrites and remote or public actions still require approval. If local commits are unavailable, ask.
+Commit all ticket-owned implementation before opening the automated Review Gate. When the user would benefit from reviewing a small or judgment-sensitive change first, hand off for pre-commit user review instead.
+
+History rewrites and remote or public actions still require approval. If local commits are unavailable, ask.
 
 ## Review Gate
 After final validation, run `afk-code-review` once automatically from `review_base`. If it reports findings, set `changes_requested`; judge each finding against the code and its cited source, fix warranted findings, record evidence for dismissals, revalidate, and commit. Do not rerun it automatically. Once the review is clean or warranted fixes are committed, set `awaiting_acceptance` and hand the gate to the user. The user decides whether fixes or later changes require another review; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
@@ -125,11 +127,11 @@ For ADR boundaries, see [notes-and-decisions.md](references/notes-and-decisions.
 4. Record the selected execution bundle and confirm its Test Seam or skip reason.
 5. Mark the active ticket `in_progress` before editing.
 6. Before editing, adopt a comment-free default: express intent through names, structure, and types; every new comment must preserve enduring, non-obvious code behavior.
-7. Implement one green behavior slice at a time and create its atomic local commit.
+7. Implement one green behavior slice at a time, creating atomic checkpoints when useful.
 8. Record important scope changes, working set changes, and blockers as they happen.
 9. Move to `validating`, run the complete relevant validation bundle, and record discipline evidence.
-10. Commit remaining ticket-owned implementation changes.
-11. Move to `review` and run the Review Gate workflow.
+10. Commit remaining ticket-owned implementation changes, or hand off for pre-commit user review.
+11. Once ticket-owned implementation is committed, move to `review` and run the Review Gate workflow.
 12. Run the checkpoint-notes/ADR check before final handoff.
 13. Move to `done` only after the review gate is accepted.
 14. For a local ticket, update `updated_at` whenever it changes; for a remote ticket, rely on or update the tracking home's equivalent modification signal.

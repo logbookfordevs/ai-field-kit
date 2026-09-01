@@ -45,13 +45,15 @@ describe("AFK workflow skill contracts", () => {
     );
   });
 
-  test("implementation owns atomic local commits without assuming local tracking commit permission", () => {
+  test("implementation authorizes discretionary atomic local commits without assuming local tracking commit permission", () => {
     const skill = readRepositoryFile("skills/afk-implement-tickets/SKILL.md");
     const reviewGuide = readRepositoryFile("skills/afk-implement-tickets/references/review-guides.md");
 
     expect(skill).toContain("review_base");
     expect(skill).toContain("## Green Atomic Commits");
-    expect(skill).toContain("Commit each green behavior slice");
+    expect(skill).toContain("Forward local commits are authorized, not mandatory.");
+    expect(skill).toContain("durable checkpoint improves the work");
+    expect(skill).toContain("pre-commit user review");
     expect(skill).toContain("ticket-owned implementation");
     expect(skill).toContain(
       "outside agent-created commits unless the user or repository convention explicitly opts them in",
@@ -64,7 +66,6 @@ describe("AFK workflow skill contracts", () => {
     expect(skill).not.toContain("Round N");
     expect(skill).not.toContain("every review round");
     expect(skill).toContain("revalidate");
-    expect(skill).toContain("This authorizes forward local commits.");
     expect(skill).toContain("History rewrites and remote or public actions still require approval.");
     expect(skill).toContain("If local commits are unavailable, ask.");
     expect(skill).toContain("judge each finding against the code and its cited source");
