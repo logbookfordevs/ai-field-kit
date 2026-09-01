@@ -138,6 +138,9 @@ describe("AFK workflow skill contracts", () => {
     const immersivePipeline = readRepositoryFile(
       "skills/afk-animated-driven-frontend/references/IMMERSIVE-PIPELINE.md",
     );
+    const productionMedia = readRepositoryFile(
+      "skills/afk-animated-driven-frontend/references/PRODUCTION-MEDIA.md",
+    );
     const catalog = JSON.parse(
       readRepositoryFile("packages/afk/catalog/skills.json"),
     ) as { items: Array<{ id: string; role: string; composes: string[] }> };
@@ -162,7 +165,12 @@ describe("AFK workflow skill contracts", () => {
     expect(skill).toContain("Expand into the page only after the user explicitly opens production.");
     expect(skill).toContain("Only the user can declare **picture lock**");
     expect(skill).toContain("**Greenlight — final cut:**");
+    expect(skill).toContain("Run a **medium scout** for every signature shot");
     expect(immersivePipeline).toContain("ZERO: The Engineering Behind a Defiant Interactive Narrative");
+    expect(productionMedia).toContain("The browser may be the camera, stage, performer, compositor, or projector.");
+    expect(productionMedia).toContain("AI video or audio generation");
+    expect(productionMedia).toContain("such as DaVinci Resolve");
+    expect(productionMedia).toContain("A human-operated production step is a valid part of the cut.");
     expect(hostMetadata).toContain("Open a Director's Room and co-direct this cinematic frontend with me.");
     expect(hostMetadata).toContain("Keep a durable production binder across sessions");
     expect(hostMetadata).toContain("stop for my greenlight");

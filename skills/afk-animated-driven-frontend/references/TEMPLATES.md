@@ -140,6 +140,8 @@ Subject and environment:
 Shot size / perspective:
 Camera or viewport movement:
 Subject action / product interaction:
+Production medium / source strategy:
+Human production step / return material:
 Composition, lighting, and grade intent:
 Copy / narration / silence:
 Transition in / out:
@@ -208,8 +210,8 @@ First-use trace result:
 ## Asset ledger
 
 ```md
-| Asset | Segment | Opening? | Runtime format | Dimensions / geometry | Transfer | Memory estimate | Warm step | Release |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Asset / plate | Dramatic job | Source strategy / producer | Provenance / license | Runtime form | Segment | Opening? | Transfer / memory | Warm step | Fallback / release | Status / evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 ```
 
 ## Screening note

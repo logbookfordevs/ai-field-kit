@@ -89,6 +89,8 @@ Classify the work:
 
 Choose the lightest class capable of the intended experience. For a narrative sequence, immersive world, or explicitly cinematic or cinematographic direction, read [`references/CINEMATIC-DIRECTION.md`](references/CINEMATIC-DIRECTION.md) completely before proposing a treatment.
 
+When a treatment may depend on video, externally authored animation or 3D, generated or acquired media, sound assets, or a hybrid composition, read [`references/PRODUCTION-MEDIA.md`](references/PRODUCTION-MEDIA.md) completely before proposing it. Choose how the shot should be produced before choosing how the browser should render it.
+
 Completion: the director's notebook captures the creative battery, experience class, device floor, input paths, fallback, locked choices, and open questions.
 
 **Greenlight — development:** present your read of the idea and the production path. Wait for the user to correct or approve it.
@@ -113,9 +115,9 @@ Completion: every beat advances the idea, every gate earns the pause, the cinema
 
 Use the approved treatment to create only the planning artifacts the production needs: script, shot list, storyboard, animatic, or a combination. A visual-first experience may begin with shot list or storyboard and let the script follow; a message-led experience usually begins with the script. Map each scene to framing, perspective, camera or viewport movement, subject action, transition, copy, product interaction, sound or haptic intent, and reduced-motion coverage.
 
-Run a technical scout. Choose one authoritative driver for the sequence: semantic UI state, timeline time, or normalized virtual progress. Define segment ownership, asset groups, warm-path needs, fidelity tiers, and the riskiest signature shot. Read [`references/NARRATIVE-SYSTEMS.md`](references/NARRATIVE-SYSTEMS.md) for multiple beats, scroll progress, gesture gates, deep links, or replay.
+Run a **medium scout** for every signature shot: decide whether it should be performed live in the browser, authored and exported, generated and finished, acquired or recorded, or composited from more than one medium. Identify any bounded human production step and the exact material that must return as dailies. Then run the technical scout. Choose one authoritative driver for the sequence: semantic UI state, timeline time, or normalized virtual progress. Define segment ownership, asset groups, warm-path needs, fidelity tiers, and the riskiest signature shot. Read [`references/NARRATIVE-SYSTEMS.md`](references/NARRATIVE-SYSTEMS.md) for multiple beats, scroll progress, gesture gates, deep links, or replay.
 
-Completion: the co-directors can inspect the intended sequence before production, and the signature risk has a bounded tracer plan.
+Completion: the co-directors can inspect the intended sequence and production-media strategy before production, and the signature risk has a bounded tracer plan.
 
 **Greenlight — preproduction:** present the script, boards, or shot plan at the fidelity needed to judge the direction. Wait for approval of the signature shot and tracer boundary.
 
