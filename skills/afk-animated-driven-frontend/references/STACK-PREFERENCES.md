@@ -1,8 +1,10 @@
 # Stack Preferences
 
-Inspect the repository before selecting tools. Reuse its headless foundation, styling system, renderer, animation stack, audio bus, and input utilities when they fit. Introduce one owner per concern.
+Inspect the repository before selecting tools. Reuse its headless foundation, styling system, renderer, animation stack, audio bus, and input utilities when they fit the approved shot and reference bar. Introduce one owner per concern.
 
-## Escalation ladder
+## Runtime ownership guide
+
+Use this guide only after the medium scout establishes the creative master. It minimizes accidental overlap inside a chosen production route; it is not a ladder that makes ambition justify itself from CSS upward.
 
 | Need | First choice | Escalate when |
 | --- | --- | --- |
@@ -10,7 +12,9 @@ Inspect the repository before selecting tools. Reuse its headless foundation, st
 | React choreography | `motion/react` | a long authored timeline or render-loop integration is central |
 | Framework-agnostic motion | `motion` or Web Animations API | the project already owns a stronger timeline system |
 | Timeline and scroll sequence | GSAP | existing project primitives already solve it cleanly |
+| Authored 2D or Canvas world | existing Canvas or 2D engine; otherwise choose from the medium scout | DOM/CSS cannot carry the approved material, scale, or composition |
 | Spatial or shader world | existing Three.js stack; otherwise Three.js or React Three Fiber according to architecture | DOM/CSS cannot express the required scene or effect |
+| Externally authored performance | existing asset runtime; otherwise the approved export or runtime | live browser production adds no meaningful agency or weakens art direction |
 | Simple UI sound | existing audio layer or a small hook | scheduling, sprites, mixing, or spatial audio requires a dedicated engine such as Howler |
 | Haptics | platform API or existing wrapper | richer device support is justified and degrades cleanly |
 | Hotkeys | existing command system | scoped chords, discovery, and conflict handling justify a library |

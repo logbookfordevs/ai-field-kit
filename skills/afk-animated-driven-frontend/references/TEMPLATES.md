@@ -95,6 +95,9 @@ Reduced-motion direction:
 Preproduction order: <script first | shot list / storyboard first | iterative>
 Cinematographic thesis:
 Reference frames / anti-references:
+Reference bar:
+Creative-master target / required hardware:
+Distribution cuts and preserved meaning:
 
 Story spine:
 1. Promise —
@@ -141,6 +144,8 @@ Shot size / perspective:
 Camera or viewport movement:
 Subject action / product interaction:
 Production medium / source strategy:
+Reference-bar qualities this medium must carry:
+Credible alternatives excluded / reasons:
 Human production step / return material:
 Composition, lighting, and grade intent:
 Copy / narration / silence:
@@ -222,7 +227,7 @@ Approved source it interprets:
 Live build or recording:
 Device / input / motion preference / fidelity tier:
 Variants or compromises shown:
-Creative observations:
+Creative observations against the dramatic job and reference bar:
 Technical findings:
 Director's recommendation:
 Decision or notes requested from the user:

@@ -6,6 +6,7 @@
 
 ## Skills
 State "I will use the X skill" whenever using a skill.
+When the user or a handoff names a skill as required or governing, treat its unavailability as a blocker; stop and request its invocation or an explicitly approved fallback.
 
 ## Artifacts
 Artifact location unresolved: read `{{AFK_RULES_DIR}}/artifacts.md`.

@@ -16,9 +16,32 @@ Consider these production routes for every signature shot:
 
 Recommend one route or deliberate hybrid. Use the least operationally expensive medium that preserves the shot's dramatic job and required agency. More real-time rendering is not inherently more cinematic, and a baked asset is not inherently less interactive when the meaningful response lives in the layers around it.
 
+Test each credible route against the production's **reference bar** before optimizing for familiarity, implementation speed, or the current dependency graph. The reference bar describes the demanded qualities—such as material richness, authored environment, camera language, depth, continuity, sound, and finish—not a surface to imitate. A route that cannot carry the qualities being screened is not a cheaper tracer; it is evidence for a different question.
+
 ## Use the production capabilities in the room
 
-During development and preproduction, discover what the user or organization can already produce or access: footage, recordings, asset libraries, 3D or animation authoring, AI video or audio generation, and editing or grading tools such as DaVinci Resolve. Consult maintained, curated tool and asset libraries when available instead of relying on a static vendor list.
+During development and preproduction, discover what the user or organization can already produce or access: footage, recordings, asset libraries, 3D or animation authoring, AI video or audio generation, and editing or grading tools such as DaVinci Resolve. Consult maintained, curated tool and asset libraries when available instead of relying on a static vendor list. Use the library's configured access method, search its closest capability category first, and broaden to adjacent categories only when no suitable candidate appears.
+
+This lookup is a production scout, not a creative authority. The shot and reference bar decide what capability to seek; the curated library keeps viable media, tools, assets, and human production paths from disappearing behind the agent's most familiar implementation stack.
+
+## Keep the production palette open
+
+Consider the full palette before committing a signature shot:
+
+- semantic DOM, CSS, Motion, GSAP, Anime.js, or another timeline for interface choreography;
+- Canvas, CanvasUI references, p5.js, PixiJS, particles, textures, or custom 2D rendering for authored graphic worlds;
+- WebGL, Three.js, React Three Fiber, shaders, post-processing, or a game-style renderer for spatial, material, or GPU-led worlds;
+- Rive, Lottie, Spline, Blender, video, image sequences, generated media, or edited plates for externally authored performances;
+- hybrid compositions such as video beneath synchronized Canvas, WebGL, or semantic DOM layers;
+- recorded, licensed, generated, or synthesized sound plus optional device-appropriate haptics.
+
+These are reminders, not an escalation order or a vendor whitelist. Search the live curated source and current authoritative documentation when the shot reaches that branch.
+
+## Master and distribution cuts
+
+Define the **creative master** for the capable target before deriving broader distribution cuts. Device reach, accessibility, reduced motion, muted playback, bandwidth, and renderer availability shape the tiering strategy; they do not retroactively redefine the approved art direction.
+
+Every tier must preserve essential content, product agency, semantic access, and an honest experience. Tiers may differ materially in cinematography: the master may use GPU rendering, richer assets, spatial sound, or a taller canvas while another cut uses reduced depth, authored plates, static composition, or direct navigation. State those differences openly and screen the master on the hardware it actually targets.
 
 A human-operated production step is a valid part of the cut. When the recommended tool is not available to the agent, prepare a bounded production brief for the user or another production unit:
 
@@ -45,7 +68,20 @@ Evaluate the routes against the same production facts:
 | Can an export preserve the intended shot? | Prefer a controlled, versioned runtime asset over an unnecessary third-party runtime dependency. |
 | Can a hybrid preserve fidelity and agency? | Use a plate for atmosphere and synchronize live overlays from the authoritative narrative driver. |
 
-The recommendation must name what becomes fixed in the asset and what remains controllable at runtime.
+The recommendation must name what becomes fixed in the asset, what remains controllable at runtime, how the route meets the reference bar, and which credible alternatives were excluded with reasons.
+
+## Match evidence to the claim
+
+Name what each tracer is allowed to prove before producing it:
+
+- a blocking study may prove timing, position, state authority, or interaction plumbing;
+- a material study must show representative surface, light, compositing, and motion behavior;
+- a camera study must show representative framing, depth, travel, and transition continuity;
+- a world study must show representative authored or generated environment layers;
+- a sound or haptic study must be screened with the rendered event it supports;
+- a cinematic tracer combines every representative dimension needed for the creative greenlight it requests.
+
+When representative evidence requires an external asset, richer runtime, or human-operated tool, schedule that production step before the cinematic screening. Otherwise narrow the claim and label the result as a blocking or engineering study.
 
 ## Direct video as a plate or performer
 
