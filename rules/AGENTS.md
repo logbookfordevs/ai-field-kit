@@ -2,6 +2,7 @@
 - Import animation APIs from `motion` or `motion/react`.
 - Prefer the project's existing headless foundation; otherwise use Base UI.
 - Use Tailwind CSS v4 without a configuration file unless the project requires one.
+- When choosing a linter for a project without one, default to Biome.
 
 ## Skills
 State "I will use the X skill" whenever using a skill.
