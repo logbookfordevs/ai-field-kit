@@ -52,3 +52,6 @@ Artifact location unresolved: read `{{AFK_RULES_DIR}}/artifacts.md`.
 
 ## Sub-agents
 When spawning sub-agents, use the `afk-architect` skill as the coordination policy.
+
+## Dictionary
+- **Quick win**: a small, obvious, low-risk change. Use proportionate local validation; reserve browser automation and agent review for changes whose UX or correctness risk warrants them.
