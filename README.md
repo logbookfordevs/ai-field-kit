@@ -349,6 +349,9 @@ Start here:
   primitive, wrapper, workflow, utility, reference, and router model.
 - [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg) is the
   visual companion.
+- [ADF Cinematic Production Map](https://tot.page/BKxaG-aUkUFc5f180RsQ4Q)
+  shows how filmmaking stages, language, artifacts, and greenlights translate
+  into cinematic frontend production.
 - [`skills/`](./skills) contains the authored AFK skill packages.
 
 For planning, choose the smallest surface that fits the fog:
