@@ -12,6 +12,8 @@ ADF is installed as a skill and experienced as a production. The Director's Room
 
 This is a specialist workflow, not an automatic site generator. It may govern an experience from its first premise to final cut, but it does so through deliberate collaboration rather than one uninterrupted end-to-end run.
 
+When the user explicitly requests **Workprint mode**, read [`references/WORKPRINT.md`](references/WORKPRINT.md) completely before proceeding. Workprint is the only ADF branch that replaces stage-by-stage greenlight waits with delegated provisional choices; it preserves the rest of ADF's craft, evidence, continuity, and safety standards.
+
 ## Co-directing contract
 
 The user and agent are co-directors:
