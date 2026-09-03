@@ -119,9 +119,7 @@ Completion: every beat advances the idea, every gate earns the pause, the cinema
 
 Use the approved treatment to create only the planning artifacts the production needs: script, shot list, storyboard, animatic, or a combination. A visual-first experience may begin with shot list or storyboard and let the script follow; a message-led experience usually begins with the script. Map each scene to framing, perspective, camera or viewport movement, subject action, transition, copy, product interaction, sound or haptic intent, and reduced-motion coverage.
 
-Run a **medium scout** for every signature shot: decide whether it should be performed live in the browser, authored and exported, generated and finished, acquired or recorded, or composited from more than one medium. Judge each route against the reference bar before engineering convenience. When the user or organization provides a curated production library, consult it through its configured access method and search the closest capability categories before selecting a renderer, animation system, authoring tool, asset source, sound source, or haptic layer. Curated candidates inform the scout; they do not override the shot, existing stack, authoritative documentation, or device constraints.
-
-Identify any bounded human production step and the exact material that must return as dailies. Then run the technical scout. Choose one authoritative driver for the sequence: semantic UI state, timeline time, or normalized virtual progress. Define segment ownership, asset groups, warm-path needs, fidelity tiers, and the riskiest signature shot. Read [`references/NARRATIVE-SYSTEMS.md`](references/NARRATIVE-SYSTEMS.md) for multiple beats, scroll progress, gesture gates, deep links, or replay.
+Run a **medium scout** for every signature shot. Read [`references/PRODUCTION-MEDIA.md`](references/PRODUCTION-MEDIA.md) completely before the scout; it governs production routes, reference-bar judgment, curated capabilities, and bounded human production steps. Then run the technical scout: choose one authoritative driver, define segment and asset ownership, warm-path needs, fidelity tiers, and the riskiest signature shot. Read [`references/NARRATIVE-SYSTEMS.md`](references/NARRATIVE-SYSTEMS.md) for multiple beats, scroll progress, gesture gates, deep links, or replay.
 
 Completion: the co-directors can inspect the intended sequence, reference bar, production-media strategy, credible medium candidates, and deliberate exclusions before production; the signature risk has a bounded tracer plan whose evidence can actually judge it.
 
@@ -143,9 +141,7 @@ Completion: the tracer establishes both technical feasibility and enough rendere
 
 ### 5. Produce approved sequences
 
-Implement one approved scene or production batch at a time. Derive animation, text, effects, loading, sound, haptics, and overlays from the authoritative spine instead of synchronizing independent clocks. Model long experiences as self-contained segments with `enter`, `scrub`, optional `update`, and `teardown` responsibilities. Seeking to a later segment must reconstruct the same state as natural traversal.
-
-Coordinate visual, sonic, tactile, and keyboard feedback around the same state change. Prefer one dominant cue with supporting accents. Synchronize time-sensitive sound to the rendered event that makes it meaningful. Use the project's existing design system and animation stack. Read [`references/STACK-PREFERENCES.md`](references/STACK-PREFERENCES.md) before introducing a dependency and [`references/PATTERNS.md`](references/PATTERNS.md) when selecting interaction primitives.
+Implement one approved scene or production batch at a time from the authoritative spine. Read [`references/NARRATIVE-SYSTEMS.md`](references/NARRATIVE-SYSTEMS.md) for segment lifecycle, seeking, or cross-channel synchronization; [`references/PATTERNS.md`](references/PATTERNS.md) when selecting interaction primitives; and [`references/STACK-PREFERENCES.md`](references/STACK-PREFERENCES.md) before introducing a dependency.
 
 At the end of each approved batch, screen dailies against the treatment and shot plan. Record the user's notes and update the director's notebook before continuing.
 
@@ -165,7 +161,7 @@ Once the user greenlights **picture lock**, finish the approved cut in passes:
 4. **Sound and touch** — add purposeful ambience, impacts, risers, tonal cues, silence, and haptics; preserve meaning when optional channels are absent.
 5. **Technical finish** — protect frame pacing, loading, memory, accessibility, and responsive coverage without flattening the approved direction.
 
-Treat frame pacing, loading, and memory as art direction. Establish a fidelity ladder from the creative master downward; lower tiers may simplify rendering and cinematic coverage while preserving content, interaction, story, and an honest route through the experience. Decode, upload, compile, and prewarm future work during known quiet windows. For WebGL, shaders, large media, post-processing, or continuously rendered effects, read [`references/IMMERSIVE-PIPELINE.md`](references/IMMERSIVE-PIPELINE.md) completely before implementation. Apply [`references/GUARDRAILS.md`](references/GUARDRAILS.md) to every class of work.
+Treat frame pacing, loading, and memory as art direction. Establish a fidelity ladder from the creative master downward while preserving content, interaction, story, and an honest route through the experience. For WebGL, shaders, large media, post-processing, or continuously rendered effects, read [`references/IMMERSIVE-PIPELINE.md`](references/IMMERSIVE-PIPELINE.md) completely before implementation.
 
 Completion: a screening cut shows the intended edit, grade, sound or silent mix, tactile cues, responsive coverage, and fidelity ladder on the device floor. Budgets exist for startup, bytes, memory, and worst-frame time; the opening path is isolated; upcoming beats are warm; and lower tiers preserve the experience's meaning.
 
@@ -184,11 +180,6 @@ Completion: another developer can change one scene, shot, effect, or quality tie
 ## Non-negotiables
 
 - Treat explicit user greenlights as the authority for treatment, preproduction, tracer, production batches, and final cut.
-- Preserve native scrolling unless an authored virtual spine materially enables the narrative; when virtualized, provide keyboard, reduced-motion, restoration, and escape behavior.
-- Preserve content and agency across the fidelity ladder. Degrade polish first.
+- Read [`references/GUARDRAILS.md`](references/GUARDRAILS.md) completely before the first implementation and apply every relevant section to each screening and delivery.
+- Preserve content and agency across the fidelity ladder; degrade polish before meaning.
 - Preserve the creative master on the capable tier. Treat compatibility as distribution design, not permission to lower the reference bar.
-- Keep continuous values outside React render state; project them into the view at the rendering cadence.
-- Prefer `transform` and `opacity` for DOM motion and bounded work for continuous effects.
-- Keep focus, reading order, selection, history, and controls coherent through visual transitions.
-- Make sound user-initiated and mutable; make haptics supplemental; make shortcuts discoverable.
-- Test shader precision, memory, and frame pacing on real mobile GPUs when WebGL is involved.
