@@ -1,6 +1,6 @@
 ---
 name: afk-docs-for-humans
-description: Write, revise, or critique human-facing documentation with a reader-first, evidence-grounded workflow.
+description: Write, revise, or critique durable human-facing documentation: guides, PR descriptions, explainers, and decision documents.
 disable-model-invocation: true
 ---
 
@@ -12,7 +12,7 @@ Human-facing documentation helps a reader build the right mental model and act w
 
 1. **Ground the document.** Identify whether the task is to create, revise, or critique; inspect the artifact and the available sources of truth. Verify consequential inputs against code, commands, product behavior, tickets, decisions, or material supplied by the user. Preserve established terminology and intentional constraints. This step is complete when each consequential topic has an authoritative source or an explicit uncertainty to carry into the document.
 2. **Set the reader contract.** Establish the intended reader, their job, starting knowledge, likely friction, and next action. Ask only when a missing answer would materially change the document; otherwise state the assumption. This step is complete when the document has one clear primary reader and outcome.
-3. **Load branch guidance.** Read `references/pr-descriptions.md` for pull request descriptions. Read `references/narrative-calibration.md` for tutorials, explainers, decision documents, product briefs, or articles whose pacing and narrative shape materially affect comprehension.
+3. **Load branch guidance.** Read `references/pr-descriptions.md` for pull request descriptions. Read `references/narrative-calibration.md` for tutorials, explainers, decision documents, product briefs, or articles whose pacing and narrative shape materially affect comprehension. Read `references/visual-explanations.md` when logic, runtime flow, UI structure, file responsibility, interactions, or a change would be faster to understand visually than through prose alone.
 4. **Design the path.** Structure around the reader's journey rather than the author's inventory. Lead with the fastest useful orientation, then the common path, consequential constraints, friction and failure recovery, and exhaustive reference only where needed. This step is complete when the headings alone reveal the document's path.
 5. **Produce the requested artifact.**
    - For a new document, write the complete reader journey.
