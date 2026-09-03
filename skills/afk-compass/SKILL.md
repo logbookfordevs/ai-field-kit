@@ -52,7 +52,6 @@ The route is complete when the response contains one exact invocation, an ordere
 | Collect missing decisions from another person | `to-questionnaire` |
 | Learn a topic across multiple sessions | `teach` |
 | Co-direct a cinematic, motion-led frontend through human-approved production stages | `afk-animated-driven-frontend` |
-| Choose a UI registry, component primitive, or headless foundation | `afk-ui-registry-preferences` |
 | Shape or review fluid, gesture-driven interfaces using Apple's interaction principles | `apple-design` |
 | Review motion implementation | `review-animations` |
 | Animate text in a frontend | `animate-text` |

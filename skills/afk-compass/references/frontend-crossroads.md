@@ -40,12 +40,6 @@ When the user's problem is silent loss of identity-bearing color, typography, co
 | Audit measurable accessibility, performance, theming, or responsive implementation quality | `impeccable audit` |
 | Refine an implemented interface into a coherent, production-ready experience | `impeccable polish` |
 
-## Implementation choice
-
-| Open decision | Route |
-|---|---|
-| Choose a mature UI registry, component primitive, or headless foundation | `afk-ui-registry-preferences` |
-
 ## Motion
 
 | Open decision | Route |

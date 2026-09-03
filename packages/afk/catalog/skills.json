@@ -157,20 +157,6 @@
             ]
         },
         {
-            "id": "afk-ui-registry-preferences",
-            "label": "AFK - UI Registry Preferences",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-ui-registry-preferences",
-                "--global"
-            ],
-            "default": true,
-            "invocation": "manual",
-            "role": "reference",
-            "composes": []
-        },
-        {
             "id": "afk-compass",
             "label": "AFK - Compass",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
