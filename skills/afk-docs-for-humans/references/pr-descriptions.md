@@ -34,6 +34,8 @@ Use narrative as orientation, not as the genre. Keep the opening direct and grou
 
 ## Useful Detail
 
+Read `visual-explanations.md` when a visual would help the reviewer understand logic, runtime flow, UI structure, file responsibility, interactions, or the shape of a change. Choose the smallest useful form and place it beside the text it supports.
+
 Include detail that:
 
 - names the exact function, module, API, or invariant involved

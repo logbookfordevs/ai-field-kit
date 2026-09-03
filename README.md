@@ -533,6 +533,8 @@ projects:
 - [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)
 - [agent-skills](https://github.com/addyosmani/agent-skills)
 - [matt-pocock](https://github.com/mattpocock/skills)
+- [HumanLayer skills](https://github.com/humanlayer/skills), including the
+  `show-me` skill that inspired AFK's visual-explanation guidance
 
 Thanks to the maintainers and contributors behind those repos for sharing ideas,
 workflows, and techniques in the open. AI Field Kit borrows selectively, adapts
