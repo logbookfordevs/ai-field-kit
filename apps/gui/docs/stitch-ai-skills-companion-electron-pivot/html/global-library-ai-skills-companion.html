@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tactile Architect | Global Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#566158",
+                    "secondary": "#645d54",
+                    "error": "#ba1a1a",
+                    "surface-container": "#f0eee8",
+                    "primary-container": "#2f3a32",
+                    "secondary-fixed-dim": "#cfc5b9",
+                    "primary-fixed": "#d9e6da",
+                    "on-background": "#1b1c18",
+                    "surface-dim": "#dcdad4",
+                    "on-tertiary": "#ffffff",
+                    "surface-variant": "#e4e2dd",
+                    "on-primary": "#ffffff",
+                    "outline-variant": "#c3c8c2",
+                    "inverse-primary": "#bdcabe",
+                    "on-secondary": "#ffffff",
+                    "primary": "#1a241d",
+                    "inverse-on-surface": "#f3f1eb",
+                    "on-primary-container": "#98a499",
+                    "surface": "#fbf9f3",
+                    "surface-container-high": "#eae8e2",
+                    "on-surface-variant": "#434844",
+                    "surface-container-highest": "#e4e2dd",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#30312d",
+                    "on-tertiary-fixed": "#1c1c17",
+                    "on-tertiary-container": "#a3a099",
+                    "surface-bright": "#fbf9f3",
+                    "error-container": "#ffdad6",
+                    "background": "#fbf9f3",
+                    "secondary-fixed": "#ebe1d4",
+                    "on-primary-fixed-variant": "#3e4941",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#23221d",
+                    "tertiary-container": "#383732",
+                    "surface-container-low": "#f5f3ed",
+                    "tertiary-fixed": "#e6e2da",
+                    "on-tertiary-fixed-variant": "#484741",
+                    "outline": "#747873",
+                    "on-secondary-fixed": "#1f1b13",
+                    "on-secondary-container": "#6a6359",
+                    "on-primary-fixed": "#131e17",
+                    "tertiary-fixed-dim": "#cac6bf",
+                    "primary-fixed-dim": "#bdcabe",
+                    "on-surface": "#1b1c18",
+                    "on-secondary-fixed-variant": "#4c463d",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-container": "#ebe1d4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "display": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
+      }
+      .ghost-border {
+        outline: 1px solid rgba(195, 200, 194, 0.15);
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #C3C8C2;
+        border-radius: 10px;
+      }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full py-6 px-4 h-screen w-64 border-r border-[#C3C8C2]/15 bg-[#F5F3ED] dark:bg-stone-900 transition-colors duration-200">
+<div class="mb-8 px-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold">TA</div>
+<div>
+<h1 class="text-lg font-bold text-[#1A241D] dark:text-stone-100 leading-none">Tactile Architect</h1>
+<p class="text-[10px] tracking-wider uppercase text-secondary font-medium mt-1">~/.agents/skills</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-all duration-200 rounded-lg label-sm tracking-wider uppercase font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-all duration-200 rounded-lg label-sm tracking-wider uppercase font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="inventory_2">inventory_2</span>
+<span>Skill Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-all duration-200 rounded-lg label-sm tracking-wider uppercase font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="hub">hub</span>
+<span>Hub</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-all duration-200 rounded-lg label-sm tracking-wider uppercase font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="smart_toy">smart_toy</span>
+<span>Per Agent</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#1A241D] dark:text-stone-50 font-bold bg-[#E4E2DD] dark:bg-stone-800 rounded-lg label-sm tracking-wider uppercase" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="public" style="font-variation-settings: 'FILL' 1;">public</span>
+<span>Global Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-all duration-200 rounded-lg label-sm tracking-wider uppercase font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings_backup_restore">settings_backup_restore</span>
+<span>Catalog Backup</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-all duration-200 rounded-lg label-sm tracking-wider uppercase font-medium opacity-50" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="auto_awesome">auto_awesome</span>
+<span>Coming Soon</span>
+</a>
+<div class="pt-4 mt-4 border-t border-[#C3C8C2]/15">
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-all duration-200 rounded-lg label-sm tracking-wider uppercase font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</nav>
+<div class="mt-auto px-2">
+<div class="flex items-center gap-3 p-2 rounded-xl bg-surface-container-high transition-colors">
+<img alt="User Profile" class="w-8 h-8 rounded-full object-cover" data-alt="portrait of a professional designer in a minimal studio setting, soft natural window light, clean background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvKYXSn0A8t8GzP-I3zkyb8izOgsxXxXCoBSghm8e795ZlvJH0aF0HiUUtD-J0mCNldixFE_PiNPDCjWgfZukZScpNMDkWcXawVavgkekcAtSVkZqxzfrz8k_VFAiVval3F_fCBCGXf7UimeZVM-Nw3mlgJzDgaCveOsZUg6YC8iZW2h-ws_vhXnGQ3g0U6RjH_tabwFZiXvGX9dKylzjjvrBRVLJ7tWP_43FxqSZ7B4702ROoG2yBYZDbbwKtSM6visPbM1ZpQGOc"/>
+<div class="flex-1 overflow-hidden">
+<p class="text-xs font-bold truncate">Archie Tact</p>
+<p class="text-[10px] text-secondary truncate">Lead Architect</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 bg-surface">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-8 h-16 docked full-width top-0 sticky z-10 bg-[#FBF9F3]/80 dark:bg-stone-950/80 backdrop-blur-md border-b border-[#C3C8C2]/15">
+<div class="flex items-center gap-4">
+<h2 class="text-xl font-bold tracking-tight text-[#1A241D] dark:text-stone-50">Global Library</h2>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-primary-fixed text-on-primary-fixed-variant tracking-wider uppercase">Local Instance</span>
+</div>
+<div class="flex items-center gap-6 flex-1 justify-end">
+<div class="relative w-full max-w-md group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-lg group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-transparent focus:border-primary rounded-lg text-sm transition-all focus:ring-0 placeholder:text-secondary/60" placeholder="Search skills, tags, or paths..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-surface-container transition-colors rounded-lg text-secondary active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold hover:bg-primary-container transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-sm" data-icon="auto_fix_high">auto_fix_high</span>
+<span>Auto Categorize</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto custom-scrollbar p-8">
+<!-- Header and Status -->
+<div class="mb-8">
+<p class="text-secondary text-sm mb-4">Manage skills stored in <code class="bg-surface-container-high px-1.5 py-0.5 rounded font-mono text-[13px]">~/.agents/skills</code></p>
+<!-- Status Banner -->
+<div class="bg-surface-container-low rounded-xl p-4 flex items-center justify-between ghost-border">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h3 class="font-semibold text-sm">Valid skills.json</h3>
+<p class="text-xs text-secondary">generatedAt: 2024-05-12 • All integrity checks passed</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 text-xs font-semibold bg-surface-container-highest hover:bg-outline-variant/30 rounded-lg transition-colors">Open skills.json</button>
+<button class="px-3 py-1.5 text-xs font-semibold border border-outline-variant/30 hover:bg-surface-container-high rounded-lg transition-colors">Copy Template</button>
+</div>
+</div>
+</div>
+<!-- Filter Chips -->
+<div class="flex flex-wrap gap-2 mb-10">
+<button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-primary text-on-primary transition-all">All Skills</button>
+<button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-surface-container-highest text-secondary hover:text-primary hover:bg-surface-container-high transition-all">Frontend</button>
+<button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-surface-container-highest text-secondary hover:text-primary hover:bg-surface-container-high transition-all">Docs</button>
+<button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-surface-container-highest text-secondary hover:text-primary hover:bg-surface-container-high transition-all">Debugging</button>
+<button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-surface-container-highest text-secondary hover:text-primary hover:bg-surface-container-high transition-all">Automation</button>
+<button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-surface-container-highest text-secondary hover:text-primary hover:bg-surface-container-high transition-all">Design</button>
+<button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-surface-container-highest text-secondary hover:text-primary hover:bg-surface-container-high transition-all">Uncategorized</button>
+</div>
+<!-- Skill Sections -->
+<div class="space-y-12">
+<!-- Frontend Section -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<h4 class="label-sm tracking-widest uppercase font-bold text-secondary">Frontend</h4>
+<div class="h-[1px] flex-1 bg-[#C3C8C2]/15"></div>
+<span class="text-[10px] font-mono text-secondary/50">2 Skills</span>
+</div>
+<div class="space-y-2">
+<!-- Skill Row: frontend-design -->
+<div class="group grid grid-cols-[1fr_auto] items-center p-4 bg-surface-container-lowest rounded-xl ghost-border hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center gap-6">
+<div class="flex-shrink-0 relative">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary overflow-hidden">
+<img alt="Frontend Icon" class="w-full h-full object-cover opacity-80" data-alt="minimal geometric vector shapes in olive and charcoal colors on a warm neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAedVRIiwA5EF_NFOtJH3lqCuGszA1YIJGAP_uso_yJ_yGPRyozaXx0Qd5vbv1_LrtcBBGD00SfDSk4lvyqkQ03bmgarc23MWS3vLRz6Gm8383dOoKyJEbsFA0I-eg8vLoY1PxHauCivDkdCCKMEUqw3LFghxMysZSMgLTrk3C4pkmwDgRcn7cFNKCQy2Clty6LJ2_BBkRjRNPgnwMqciIKWdW4ebPdTta5QzSBBh5TzwtE71ybQfzNzuFsupb-0urFQPcsiAoI4ffJ"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-surface-container-lowest rounded-full"></div>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-3">
+<h5 class="font-bold text-primary">frontend-design</h5>
+<span class="text-[10px] font-mono text-secondary bg-surface-container-high px-1.5 rounded">ui-kit</span>
+</div>
+<p class="text-sm text-secondary truncate mt-0.5">Comprehensive UI generation patterns for tactile interfaces and high-density dashboards.</p>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold rounded-sm uppercase tracking-tighter">node</span>
+<span class="px-2 py-0.5 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold rounded-sm uppercase tracking-tighter">react</span>
+</div>
+<span class="text-[11px] text-secondary/60 italic">~/.agents/skills/frontend-design</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Toggle -->
+<div class="w-10 h-5 bg-primary rounded-full relative cursor-pointer shadow-inner">
+<div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 text-secondary hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg" title="Open SKILL.md">
+<span class="material-symbols-outlined text-lg">description</span>
+</button>
+<button class="p-2 text-secondary hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg" title="More Actions">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Skill Row: tailwind-design-system -->
+<div class="group grid grid-cols-[1fr_auto] items-center p-4 bg-surface-container-lowest rounded-xl ghost-border hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center gap-6">
+<div class="flex-shrink-0 relative">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary overflow-hidden">
+<img alt="Tailwind Icon" class="w-full h-full object-cover opacity-80" data-alt="abstract grid pattern with subtle gradient shades of grey and sage green, minimalist architectural feel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCe_RLlE29s_CxsQJH_UPCK4y53Nk8N9YBlBWCsI2u2iR6ebsGf6e5SvcmTg_3Dxp5RBqGhffknk3VHMmePpV5jRX0rzArCG3rb1SlGgLJS6unGEsGdLh7PkGQzYwAvZuWohU60HlMwp4SjODhMR3cP2D3t9E2_jZIMO7c11ZAasMZp1kuEZ4qLu0JrdIRrZx5vmwiPVRXH5UrVE7oyXI8IFwusgVNVwack887Pns1wkmVmz9o58sXgHMUqX3sK7dfsPVjswb83LeNH"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-surface-container-lowest rounded-full"></div>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-3">
+<h5 class="font-bold text-primary">tailwind-design-system</h5>
+<span class="text-[10px] font-mono text-secondary bg-surface-container-high px-1.5 rounded">styling</span>
+</div>
+<p class="text-sm text-secondary truncate mt-0.5">Advanced Tailwind CSS configuration and automated design token application logic.</p>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold rounded-sm uppercase tracking-tighter">css</span>
+<span class="px-2 py-0.5 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold rounded-sm uppercase tracking-tighter">config</span>
+</div>
+<span class="text-[11px] text-secondary/60 italic">~/.agents/skills/tailwind-design-system</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-5 bg-primary rounded-full relative cursor-pointer shadow-inner">
+<div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 text-secondary hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg">
+<span class="material-symbols-outlined text-lg">description</span>
+</button>
+<button class="p-2 text-secondary hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Discovery Section -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<h4 class="label-sm tracking-widest uppercase font-bold text-secondary">Discovery</h4>
+<div class="h-[1px] flex-1 bg-[#C3C8C2]/15"></div>
+<span class="text-[10px] font-mono text-secondary/50">1 Skill</span>
+</div>
+<div class="space-y-2">
+<div class="group grid grid-cols-[1fr_auto] items-center p-4 bg-surface-container-lowest rounded-xl ghost-border hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center gap-6">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary overflow-hidden">
+<img alt="Discovery Icon" class="w-full h-full object-cover opacity-80" data-alt="microscopic view of a circuit board with soft glowing traces, tech aesthetics in muted earth tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDveK0uLaEftdk_ibQRanH54SLETGvJayP0BG6L7tUbUjVwkU0GgMjEt4jv7KCB-tfHA60fF_m41Ubxw3tx3tZ0drj9bYNlEbZ96q38U0NJ6US1xSLuvjLXneznB2TdJAmDkc-hSVEYsV_0TYwgdCPW5Qupb1XkX7hGAjMKP2lxYXvTVPVmexK_rnFSNc4aSD9NdMPKKsPC214KJ_KvxiGKI0Punjt0TKXAVLJB77ve9r9vi1XtZx8aAQ60DV_8x8SrjbhdJvzV2byD"/>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-3">
+<h5 class="font-bold text-primary">ai-companion</h5>
+<span class="text-[10px] font-mono text-secondary bg-surface-container-high px-1.5 rounded">core</span>
+</div>
+<p class="text-sm text-secondary truncate mt-0.5">Natural language orchestration and intent analysis for autonomous agent behavior.</p>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold rounded-sm uppercase tracking-tighter">python</span>
+</div>
+<span class="text-[11px] text-secondary/60 italic">~/.agents/skills/ai-companion</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-5 bg-primary rounded-full relative cursor-pointer shadow-inner">
+<div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 text-secondary hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg">
+<span class="material-symbols-outlined text-lg">description</span>
+</button>
+<button class="p-2 text-secondary hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Debugging Section -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<h4 class="label-sm tracking-widest uppercase font-bold text-secondary">Debugging</h4>
+<div class="h-[1px] flex-1 bg-[#C3C8C2]/15"></div>
+<span class="text-[10px] font-mono text-secondary/50">1 Skill</span>
+</div>
+<div class="space-y-2">
+<div class="group grid grid-cols-[1fr_auto] items-center p-4 bg-surface-container-lowest rounded-xl ghost-border hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center gap-6">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary overflow-hidden">
+<img alt="Debug Icon" class="w-full h-full object-cover opacity-80" data-alt="close up of code on a screen with warm amber lighting, focus on syntax highlighting in dark theme" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDovSDYeXKb1WOQa4S7onC0Fa1n6fOhSzLPe9QLkDVsYP0UTu_gBGj2xjnsa1BYYPlIJtSarsFOlhefukxlxfdCFAiPKiJsUwDMsmX_h8_9V0wHJZudc4C6hULBlSS9tXfasQ4-la_m93D-1bjePnBLLWU9dfhOVIblXJlnwu7omJr_QspzbMvWzf55ypWkHjhArtjRUd1Fk1E2aFm55n9WVityiWE4IwSubO6taE9ovONF3cAD8se05QNENKamQeaWhHv8RcepX346"/>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-3">
+<h5 class="font-bold text-primary">systematic-debugging</h5>
+<span class="text-[10px] font-mono text-secondary bg-surface-container-high px-1.5 rounded">tools</span>
+</div>
+<p class="text-sm text-secondary truncate mt-0.5">Automated stack trace analysis and root cause identification for distributed systems.</p>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold rounded-sm uppercase tracking-tighter">rust</span>
+<span class="px-2 py-0.5 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold rounded-sm uppercase tracking-tighter">shell</span>
+</div>
+<span class="text-[11px] text-secondary/60 italic">~/.agents/skills/systematic-debugging</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-5 bg-primary rounded-full relative cursor-pointer shadow-inner">
+<div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 text-secondary hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg">
+<span class="material-symbols-outlined text-lg">description</span>
+</button>
+<button class="p-2 text-secondary hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Uncategorized Section -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<h4 class="label-sm tracking-widest uppercase font-bold text-secondary">Uncategorized</h4>
+<div class="h-[1px] flex-1 bg-[#C3C8C2]/15"></div>
+<span class="text-[10px] font-mono text-secondary/50">1 Skill</span>
+</div>
+<div class="space-y-2">
+<!-- Disabled Row -->
+<div class="group grid grid-cols-[1fr_auto] items-center p-4 bg-surface-container/30 rounded-xl border border-dashed border-outline-variant/30 opacity-50 grayscale">
+<div class="flex items-center gap-6">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-2xl">folder_off</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-3">
+<h5 class="font-bold text-secondary">local-experimental-skill</h5>
+<span class="text-[10px] font-mono text-secondary/40 border border-secondary/20 px-1.5 rounded">legacy</span>
+</div>
+<p class="text-sm text-secondary/60 truncate mt-0.5">Experimental skill for internal testing. Currently parked in the disabled directory.</p>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1.5 opacity-30">
+<span class="px-2 py-0.5 bg-surface-container text-secondary text-[10px] font-bold rounded-sm uppercase">none</span>
+</div>
+<span class="text-[11px] text-error/60 italic font-mono">~/.agents/skills/.disabled/local-experimental-skill</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-5 bg-surface-variant rounded-full relative cursor-not-allowed shadow-inner">
+<div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 text-secondary hover:text-error transition-colors hover:bg-error-container rounded-lg" title="Move to Trash">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+<button class="p-2 text-secondary hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Panel: Auto Categorize -->
+<footer class="mt-auto border-t border-[#C3C8C2]/15 bg-surface-container-low px-8 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+<p class="text-[11px] font-semibold text-secondary uppercase tracking-widest">Auto Categorize Service: <span class="text-primary">Succeeded</span></p>
+</div>
+<div class="flex items-center gap-6">
+<p class="text-[11px] text-secondary/60 italic">Last scan 4 minutes ago</p>
+<button class="flex items-center gap-1.5 text-xs font-bold text-primary group">
+<span>Details</span>
+<span class="material-symbols-outlined text-sm group-hover:translate-y-0.5 transition-transform">keyboard_arrow_up</span>
+</button>
+</div>
+</footer>
+</div>
+</div>
+<!-- Floating Action Button (FAB) - Suppressed per rules for Library Screen -->
+</body></html>

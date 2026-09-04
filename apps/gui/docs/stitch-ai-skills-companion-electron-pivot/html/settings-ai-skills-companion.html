@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Skills Companion - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#1f1b13",
+                        "surface-bright": "#fbf9f3",
+                        "surface-variant": "#e4e2dd",
+                        "secondary-fixed-dim": "#cfc5b9",
+                        "inverse-surface": "#30312d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#a3a099",
+                        "on-secondary-container": "#6a6359",
+                        "on-primary-container": "#98a499",
+                        "primary-container": "#2f3a32",
+                        "outline-variant": "#c3c8c2",
+                        "on-primary-fixed": "#131e17",
+                        "surface-container-highest": "#e4e2dd",
+                        "outline": "#747873",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#cac6bf",
+                        "on-tertiary-fixed-variant": "#484741",
+                        "secondary": "#645d54",
+                        "tertiary-container": "#383732",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#4c463d",
+                        "secondary-fixed": "#ebe1d4",
+                        "tertiary-fixed": "#e6e2da",
+                        "on-tertiary-fixed": "#1c1c17",
+                        "on-tertiary": "#ffffff",
+                        "surface": "#fbf9f3",
+                        "background": "#fbf9f3",
+                        "on-background": "#1b1c18",
+                        "surface-container-low": "#f5f3ed",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#d9e6da",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#dcdad4",
+                        "surface-container": "#f0eee8",
+                        "inverse-on-surface": "#f3f1eb",
+                        "surface-tint": "#566158",
+                        "secondary-container": "#ebe1d4",
+                        "error": "#ba1a1a",
+                        "tertiary": "#23221d",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#bdcabe",
+                        "on-surface": "#1b1c18",
+                        "primary": "#1a241d",
+                        "on-surface-variant": "#434844",
+                        "on-primary-fixed-variant": "#3e4941",
+                        "surface-container-high": "#eae8e2",
+                        "inverse-primary": "#bdcabe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+        }
+        .ghost-border { border: 1px solid rgba(195, 200, 194, 0.15); }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex overflow-hidden">
+<!-- Sidebar (SideNavBar) -->
+<aside class="bg-surface-container-low text-primary font-inter text-[0.875rem] leading-tight flex flex-col p-4 gap-2 w-64 h-screen border-r border-primary/10 select-none">
+<div class="mb-8 px-2">
+<h1 class="text-xl font-black text-primary tracking-tight">AI Skills Companion</h1>
+<p class="text-xs text-secondary opacity-70">Tactile Architect v1.0</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-secondary hover:bg-surface-variant transition-all rounded-lg opacity-90 hover:opacity-100 duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-secondary hover:bg-surface-variant transition-all rounded-lg opacity-90 hover:opacity-100 duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="analytics">analytics</span>
+<span>Skill Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-secondary hover:bg-surface-variant transition-all rounded-lg opacity-90 hover:opacity-100 duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="hub">hub</span>
+<span>Hub</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-secondary hover:bg-surface-variant transition-all rounded-lg opacity-90 hover:opacity-100 duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="person_search">person_search</span>
+<span>Per Agent</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-secondary hover:bg-surface-variant transition-all rounded-lg opacity-90 hover:opacity-100 duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="public">public</span>
+<span>Global Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-secondary hover:bg-surface-variant transition-all rounded-lg opacity-90 hover:opacity-100 duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="backup">backup</span>
+<span>Catalog Backup</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-secondary hover:bg-surface-variant transition-all rounded-lg opacity-90 hover:opacity-100 duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="schedule">schedule</span>
+<span>Coming Soon</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-primary font-bold bg-surface-variant rounded-lg opacity-90 hover:opacity-100 duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="pt-4 border-t border-outline-variant/10">
+<div class="px-3 py-2 rounded-lg bg-primary-container text-on-primary-container flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-xs font-medium">Local Engine: Active</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto bg-surface-bright flex flex-col relative">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center h-14 px-8 w-full bg-surface-bright sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="text-lg font-bold tracking-tight text-primary">Settings</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-secondary hover:bg-surface-variant p-2 rounded transition-colors" data-icon="settings">settings</button>
+</div>
+</header>
+<div class="max-w-4xl w-full mx-auto p-8 space-y-12 pb-32">
+<!-- Page Header -->
+<section>
+<h1 class="text-2xl font-bold text-primary">Settings</h1>
+<p class="text-secondary text-sm">Configure local paths, runtime detection, and menu bar behavior.</p>
+</section>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Section 1: App Behavior -->
+<section class="md:col-span-7 space-y-6">
+<div>
+<h3 class="text-xs font-bold uppercase tracking-wider text-secondary mb-4 opacity-60">App Behavior</h3>
+<div class="space-y-4 bg-surface-container-lowest p-5 rounded-lg ghost-border">
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium">Launch at login</span>
+<button class="w-10 h-5 bg-primary rounded-full relative flex items-center px-1">
+<div class="w-3 h-3 bg-white rounded-full translate-x-5"></div>
+</button>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium text-secondary">Keep menu bar item</span>
+<button class="w-10 h-5 bg-outline-variant rounded-full relative flex items-center px-1">
+<div class="w-3 h-3 bg-white rounded-full translate-x-0"></div>
+</button>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium">Close window to tray</span>
+<button class="w-10 h-5 bg-primary rounded-full relative flex items-center px-1">
+<div class="w-3 h-3 bg-white rounded-full translate-x-5"></div>
+</button>
+</div>
+</div>
+</div>
+<!-- Section 5: Appearance (Tucked in layout) -->
+<div>
+<h3 class="text-xs font-bold uppercase tracking-wider text-secondary mb-4 opacity-60">Appearance</h3>
+<div class="flex p-1 bg-surface-container rounded-lg max-w-fit">
+<button class="px-4 py-1.5 text-xs font-semibold text-secondary hover:bg-surface-container-high rounded transition-all">System</button>
+<button class="px-4 py-1.5 text-xs font-bold text-primary bg-surface-container-lowest rounded-md shadow-sm">Light</button>
+<button class="px-4 py-1.5 text-xs font-semibold text-secondary hover:bg-surface-container-high rounded transition-all">Dark</button>
+</div>
+</div>
+</section>
+<!-- Section 1 Preview: Menu bar action -->
+<aside class="md:col-span-5 space-y-6">
+<div>
+<h3 class="text-xs font-bold uppercase tracking-wider text-secondary mb-4 opacity-60">Menu bar action preview</h3>
+<div class="bg-surface-container-highest/50 backdrop-blur-md rounded-lg ghost-border p-2 w-full max-w-[200px]">
+<ul class="text-[13px] font-medium space-y-0.5">
+<li class="px-3 py-1.5 hover:bg-primary hover:text-white rounded flex justify-between items-center group cursor-default">
+                                    Open Window
+                                    <span class="text-[10px] opacity-40 group-hover:opacity-100">⌘O</span>
+</li>
+<div class="h-[1px] bg-outline-variant/20 my-1 mx-2"></div>
+<li class="px-3 py-1.5 hover:bg-primary hover:text-white rounded flex justify-between items-center group cursor-default">
+                                    Quit
+                                    <span class="text-[10px] opacity-40 group-hover:opacity-100">⌘Q</span>
+</li>
+</ul>
+</div>
+</div>
+</aside>
+<!-- Section 2: Paths -->
+<section class="md:col-span-12 space-y-6">
+<h3 class="text-xs font-bold uppercase tracking-wider text-secondary opacity-60">Paths</h3>
+<div class="overflow-hidden rounded-lg ghost-border bg-surface-container-lowest">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant/10">
+<tr>
+<th class="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-secondary">Skill Collection</th>
+<th class="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-secondary">Local Directory</th>
+<th class="px-6 py-3 text-right text-[10px] font-black uppercase tracking-widest text-secondary">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10 text-sm">
+<tr>
+<td class="px-6 py-4 font-medium text-primary">Global skills path</td>
+<td class="px-6 py-4 font-mono text-xs text-secondary">~/.agents/skills</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reveal</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Open</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reset</button>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 font-medium text-primary">Disabled skills path</td>
+<td class="px-6 py-4 font-mono text-xs text-secondary">~/.agents/skills/.disabled</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reveal</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Open</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reset</button>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 font-medium text-primary">Codex skills path</td>
+<td class="px-6 py-4 font-mono text-xs text-secondary">~/.codex/skills</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reveal</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Open</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reset</button>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 font-medium text-primary">Claude skills path</td>
+<td class="px-6 py-4 font-mono text-xs text-secondary">~/.claude/skills</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reveal</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Open</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reset</button>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 font-medium text-primary">Gemini skills path</td>
+<td class="px-6 py-4 font-mono text-xs text-secondary">~/.gemini/skills</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reveal</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Open</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reset</button>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 font-medium text-primary">OpenCode skills path</td>
+<td class="px-6 py-4 font-mono text-xs text-secondary">~/.config/opencode/skills</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reveal</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Open</button>
+<button class="px-2 py-1 text-[11px] font-bold text-secondary hover:text-primary bg-secondary-container/30 hover:bg-secondary-container/60 rounded uppercase tracking-tighter transition-all">Reset</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Section 3: Runtime Detection -->
+<section class="md:col-span-6 space-y-6">
+<h3 class="text-xs font-bold uppercase tracking-wider text-secondary opacity-60">Runtime Detection</h3>
+<div class="bg-surface-container-low p-6 rounded-lg space-y-6 border border-outline-variant/10">
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium">npx status</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="text-xs font-bold text-primary">Found</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium">Codex CLI status</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error/40"></span>
+<span class="text-xs font-bold text-error">Not found</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary-container transition-all">Recheck Runtime</button>
+<button class="px-4 py-2 border border-primary text-primary text-xs font-bold rounded-lg hover:bg-surface-container transition-all">Show Attempted Paths</button>
+</div>
+</div>
+</section>
+<!-- Section 4: Safety -->
+<section class="md:col-span-6 space-y-6">
+<h3 class="text-xs font-bold uppercase tracking-wider text-secondary opacity-60">Safety</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between bg-surface-container-lowest p-4 rounded-lg ghost-border">
+<div class="flex flex-col">
+<span class="text-sm font-semibold">Confirm before Move to Trash</span>
+<span class="text-[10px] text-secondary">Prevents accidental skill deletion</span>
+</div>
+<button class="w-10 h-5 bg-primary rounded-full relative flex items-center px-1">
+<div class="w-3 h-3 bg-white rounded-full translate-x-5"></div>
+</button>
+</div>
+<div class="p-4 bg-primary-fixed/30 rounded-lg space-y-2 border border-primary-fixed-dim/20">
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="info">info</span>
+<p class="text-[11px] font-medium leading-relaxed text-on-primary-fixed">Conflict protection is active for restoring disabled skills. Existing skills with identical names will be renamed with a timestamp.</p>
+</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="shield">shield</span>
+<p class="text-[11px] font-medium leading-relaxed text-on-primary-fixed">Read-only preview is required before backup import to verify structural integrity of skill packages.</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Diagnostics Panel (Collapsed) -->
+<footer class="fixed bottom-0 right-0 left-64 bg-surface-container-highest/95 backdrop-blur shadow-2xl border-t border-outline-variant/10">
+<button class="w-full h-10 px-8 flex items-center justify-between text-secondary hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-sm" data-icon="terminal">terminal</span>
+<span class="text-xs font-black uppercase tracking-widest">Diagnostics: Runtime Logs</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-[10px] font-mono opacity-50">Last heartbeat: 12ms ago</span>
+<span class="material-symbols-outlined text-sm" data-icon="keyboard_arrow_up">keyboard_arrow_up</span>
+</div>
+</button>
+</footer>
+</main>
+</body></html>

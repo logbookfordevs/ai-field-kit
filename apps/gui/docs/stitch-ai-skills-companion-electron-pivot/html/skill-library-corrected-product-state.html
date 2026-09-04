@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#bdcabe",
+                    "on-secondary": "#ffffff",
+                    "surface": "#fbf9f3",
+                    "on-primary-fixed-variant": "#3e4941",
+                    "surface-tint": "#566158",
+                    "surface-container-highest": "#e4e2dd",
+                    "on-secondary-fixed-variant": "#4c463d",
+                    "on-tertiary-container": "#a3a099",
+                    "on-secondary-fixed": "#1f1b13",
+                    "inverse-on-surface": "#f3f1eb",
+                    "background": "#fbf9f3",
+                    "tertiary-fixed": "#e6e2da",
+                    "surface-dim": "#dcdad4",
+                    "secondary-container": "#ebe1d4",
+                    "primary-container": "#2f3a32",
+                    "tertiary-fixed-dim": "#cac6bf",
+                    "surface-variant": "#e4e2dd",
+                    "surface-container-high": "#eae8e2",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#f0eee8",
+                    "secondary-fixed-dim": "#cfc5b9",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-container": "#98a499",
+                    "inverse-primary": "#bdcabe",
+                    "primary-fixed": "#d9e6da",
+                    "on-tertiary-fixed": "#1c1c17",
+                    "on-surface-variant": "#434844",
+                    "primary": "#1a241d",
+                    "on-secondary-container": "#6a6359",
+                    "surface-bright": "#fbf9f3",
+                    "outline": "#747873",
+                    "error": "#ba1a1a",
+                    "on-surface": "#1b1c18",
+                    "secondary": "#645d54",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-background": "#1b1c18",
+                    "tertiary-container": "#383732",
+                    "secondary-fixed": "#ebe1d4",
+                    "tertiary": "#23221d",
+                    "outline-variant": "#c3c8c2",
+                    "on-tertiary-fixed-variant": "#484741",
+                    "inverse-surface": "#30312d",
+                    "surface-container-low": "#f5f3ed",
+                    "on-primary-fixed": "#131e17"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "display": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e4e2dd; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-primary selection:bg-primary-fixed antialiased">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar (Predicted Rail) -->
+<aside class="h-screen w-64 flex flex-col bg-surface-container-low border-r border-stone-200/30 p-4 space-y-2">
+<div class="mb-8 px-3">
+<div class="text-lg font-bold tracking-tighter text-primary">Architect</div>
+<div class="text-[0.7rem] font-medium tracking-widest uppercase opacity-40">AI Skills Companion</div>
+</div>
+<nav class="flex flex-col space-y-1">
+<a class="text-secondary hover:text-primary px-3 py-2 transition-colors flex items-center gap-3 font-medium text-[0.875rem]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+                    Overview
+                </a>
+<a class="text-primary font-semibold bg-surface-container-highest rounded-lg px-3 py-2 flex items-center gap-3 text-[0.875rem]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="library_books">library_books</span>
+                    Skill Library
+                </a>
+<a class="text-secondary hover:text-primary px-3 py-2 transition-colors flex items-center gap-3 font-medium text-[0.875rem]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="hub">hub</span>
+                    Hub
+                </a>
+<a class="text-secondary hover:text-primary px-3 py-2 transition-colors flex items-center gap-3 font-medium text-[0.875rem]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="smart_toy">smart_toy</span>
+                    Per Agent
+                </a>
+<a class="text-secondary hover:text-primary px-3 py-2 transition-colors flex items-center gap-3 font-medium text-[0.875rem]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="public">public</span>
+                    Global Library
+                </a>
+<a class="text-secondary hover:text-primary px-3 py-2 transition-colors flex items-center gap-3 font-medium text-[0.875rem]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="backup">backup</span>
+                    Catalog Backup
+                </a>
+<a class="text-secondary hover:text-primary px-3 py-2 transition-colors flex items-center gap-3 font-medium text-[0.875rem]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="schedule">schedule</span>
+                    Coming Soon
+                </a>
+</nav>
+<div class="mt-auto pt-4">
+<a class="text-secondary hover:text-primary px-3 py-2 transition-colors flex items-center gap-3 font-medium text-[0.875rem]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+                    Settings
+                </a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-surface relative">
+<!-- TopAppBar (Predicted Medium) -->
+<header class="w-full h-16 border-b border-stone-200/20 bg-surface-bright/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-40">
+<div class="flex items-center gap-8 flex-1">
+<h1 class="text-xl font-black text-primary">Skill Library</h1>
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">search</span>
+<input class="w-full h-9 bg-surface-container-lowest border-none ring-1 ring-stone-200/50 rounded-md pl-10 pr-4 text-sm focus:ring-primary focus:ring-1 transition-all outline-none" placeholder="Search installed skills..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="h-9 px-3 flex items-center gap-2 hover:bg-stone-200/40 rounded-md transition-all text-secondary text-sm font-medium">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+                        Source
+                    </button>
+<button class="h-9 px-3 flex items-center gap-2 hover:bg-stone-200/40 rounded-md transition-all text-secondary text-sm font-medium">
+<span class="material-symbols-outlined text-lg">tune</span>
+                        Filter
+                    </button>
+<button class="h-9 px-3 flex items-center gap-2 hover:bg-stone-200/40 rounded-md transition-all text-secondary text-sm font-medium">
+<span class="material-symbols-outlined text-lg">refresh</span>
+                        Refresh
+                    </button>
+<div class="w-px h-6 bg-stone-200/50 mx-2"></div>
+<button class="h-9 w-9 flex items-center justify-center hover:bg-stone-200/40 rounded-md transition-all text-secondary">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Table View -->
+<section class="flex-1 overflow-auto custom-scrollbar">
+<table class="w-full text-left border-separate border-spacing-0">
+<thead class="sticky top-0 bg-surface/95 backdrop-blur-sm z-10">
+<tr>
+<th class="px-8 py-4 text-[0.6875rem] font-bold tracking-widest text-secondary uppercase border-b border-stone-200/20">Name</th>
+<th class="px-4 py-4 text-[0.6875rem] font-bold tracking-widest text-secondary uppercase border-b border-stone-200/20">Source Folder</th>
+<th class="px-4 py-4 text-[0.6875rem] font-bold tracking-widest text-secondary uppercase border-b border-stone-200/20">Category</th>
+<th class="px-4 py-4 text-[0.6875rem] font-bold tracking-widest text-secondary uppercase border-b border-stone-200/20">Tags</th>
+<th class="px-4 py-4 text-[0.6875rem] font-bold tracking-widest text-secondary uppercase border-b border-stone-200/20">Portability</th>
+<th class="px-8 py-4 text-[0.6875rem] font-bold tracking-widest text-secondary uppercase border-b border-stone-200/20 text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-stone-100/50">
+<!-- Selected Row: ai-companion -->
+<tr class="bg-surface-container-highest group cursor-pointer transition-colors">
+<td class="px-8 py-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="font-semibold text-sm text-primary">ai-companion</span>
+</div>
+</td>
+<td class="px-4 py-4 text-sm text-secondary font-mono text-[0.8rem]">/root/skills/core</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-primary-fixed text-on-primary-fixed text-[0.65rem] font-bold rounded uppercase tracking-wider">Utility</span>
+</td>
+<td class="px-4 py-4 flex gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-low border border-stone-200 text-[0.65rem] font-medium text-stone-500">core</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-low border border-stone-200 text-[0.65rem] font-medium text-stone-500">active</span>
+</td>
+<td class="px-4 py-4 text-sm text-secondary">Locked</td>
+<td class="px-8 py-4 text-right">
+<span class="text-[0.65rem] font-black uppercase text-primary tracking-tighter">Enabled</span>
+</td>
+</tr>
+<!-- Rest of Skills -->
+<tr class="hover:bg-surface-container-low group cursor-pointer transition-colors">
+<td class="px-8 py-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-stone-200 group-hover:bg-stone-300"></div>
+<span class="font-medium text-sm text-primary">frontend-design</span>
+</div>
+</td>
+<td class="px-4 py-4 text-sm text-secondary font-mono text-[0.8rem]">/user/dev/ui</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-stone-100 text-stone-500 text-[0.65rem] font-bold rounded uppercase tracking-wider">Design</span>
+</td>
+<td class="px-4 py-4 flex gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-low border border-stone-200 text-[0.65rem] font-medium text-stone-500">tailwind</span>
+</td>
+<td class="px-4 py-4 text-sm text-secondary">Portable</td>
+<td class="px-8 py-4 text-right">
+<span class="text-[0.65rem] font-black uppercase text-secondary tracking-tighter opacity-50">Disabled</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low group cursor-pointer transition-colors">
+<td class="px-8 py-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-stone-200 group-hover:bg-stone-300"></div>
+<span class="font-medium text-sm text-primary">systematic-debugging</span>
+</div>
+</td>
+<td class="px-4 py-4 text-sm text-secondary font-mono text-[0.8rem]">/root/skills/debug</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-stone-100 text-stone-500 text-[0.65rem] font-bold rounded uppercase tracking-wider">System</span>
+</td>
+<td class="px-4 py-4 flex gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-low border border-stone-200 text-[0.65rem] font-medium text-stone-500">logic</span>
+</td>
+<td class="px-4 py-4 text-sm text-secondary">Locked</td>
+<td class="px-8 py-4 text-right">
+<span class="text-[0.65rem] font-black uppercase text-primary tracking-tighter">Enabled</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low group cursor-pointer transition-colors">
+<td class="px-8 py-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-stone-200 group-hover:bg-stone-300"></div>
+<span class="font-medium text-sm text-primary">afk-note</span>
+</div>
+</td>
+<td class="px-4 py-4 text-sm text-secondary font-mono text-[0.8rem]">/sync/notion</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-stone-100 text-stone-500 text-[0.65rem] font-bold rounded uppercase tracking-wider">Note</span>
+</td>
+<td class="px-4 py-4 flex gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-low border border-stone-200 text-[0.65rem] font-medium text-stone-500">productivity</span>
+</td>
+<td class="px-4 py-4 text-sm text-secondary">Portable</td>
+<td class="px-8 py-4 text-right">
+<span class="text-[0.65rem] font-black uppercase text-primary tracking-tighter">Enabled</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low group cursor-pointer transition-colors">
+<td class="px-8 py-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-stone-200 group-hover:bg-stone-300"></div>
+<span class="font-medium text-sm text-primary">design-lab</span>
+</div>
+</td>
+<td class="px-4 py-4 text-sm text-secondary font-mono text-[0.8rem]">/user/experiments</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-stone-100 text-stone-500 text-[0.65rem] font-bold rounded uppercase tracking-wider">Design</span>
+</td>
+<td class="px-4 py-4 flex gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-low border border-stone-200 text-[0.65rem] font-medium text-stone-500">lab</span>
+</td>
+<td class="px-4 py-4 text-sm text-secondary">Portable</td>
+<td class="px-8 py-4 text-right">
+<span class="text-[0.65rem] font-black uppercase text-primary tracking-tighter">Enabled</span>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+</main>
+<!-- Right Inspector Panel -->
+<aside class="w-80 h-screen bg-surface-container-low border-l border-stone-200/30 flex flex-col p-6 overflow-y-auto custom-scrollbar">
+<div class="flex items-center justify-between mb-8">
+<h2 class="text-sm font-bold tracking-tight text-primary">Inspector</h2>
+<span class="text-[0.65rem] px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-bold">ACTIVE</span>
+</div>
+<div class="space-y-8">
+<!-- Skill Identity -->
+<section>
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-primary tracking-tight">ai-companion</h3>
+<p class="text-[0.65rem] text-secondary font-mono">v1.2.4-stable</p>
+</div>
+</div>
+<p class="text-sm text-secondary leading-relaxed mb-4">
+                        Core orchestration skill providing natural language context awareness and agent-to-agent communication protocols.
+                    </p>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-1 rounded bg-stone-200/50 text-[0.6rem] font-bold text-primary uppercase">Core</span>
+<span class="px-2 py-1 rounded bg-stone-200/50 text-[0.6rem] font-bold text-primary uppercase">Orchestrator</span>
+</div>
+</section>
+<!-- Technical Details -->
+<section class="space-y-4">
+<div>
+<label class="text-[0.6rem] font-bold tracking-widest text-secondary uppercase block mb-1">Folder Path</label>
+<div class="p-2 bg-surface-container-lowest rounded border border-stone-200/50 text-[0.75rem] font-mono text-stone-600 truncate">
+                            /root/skills/core/ai-companion
+                        </div>
+</div>
+<div>
+<label class="text-[0.6rem] font-bold tracking-widest text-secondary uppercase block mb-1">Manifest Path</label>
+<div class="p-2 bg-surface-container-lowest rounded border border-stone-200/50 text-[0.75rem] font-mono text-stone-600 truncate">
+                            SKILL.md
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="text-[0.6rem] font-bold tracking-widest text-secondary uppercase block mb-1">Source</label>
+<span class="text-sm font-medium text-primary">S3-West-1</span>
+</div>
+<div>
+<label class="text-[0.6rem] font-bold tracking-widest text-secondary uppercase block mb-1">Portability</label>
+<span class="text-sm font-medium text-primary">Locked</span>
+</div>
+</div>
+</section>
+<!-- Metadata/Lock Status -->
+<section class="p-4 bg-primary-fixed/30 rounded-lg border border-primary-fixed-dim/30">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-sm text-on-primary-fixed-variant" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="text-[0.65rem] font-bold text-on-primary-fixed-variant uppercase tracking-widest">Metadata Locked</span>
+</div>
+<p class="text-[0.75rem] text-on-primary-fixed-variant opacity-80 leading-snug">
+                        This skill is part of the core runtime and cannot be moved or renamed manually.
+                    </p>
+</section>
+<!-- Actions -->
+<section class="space-y-2 pt-4 border-t border-stone-200/40">
+<button class="w-full h-10 bg-primary text-white text-sm font-semibold rounded-lg flex items-center justify-center gap-2 hover:bg-primary-container transition-all">
+<span class="material-symbols-outlined text-base">description</span>
+                        Open SKILL.md
+                    </button>
+<div class="grid grid-cols-2 gap-2">
+<button class="h-10 bg-surface-container-highest text-primary text-[0.8rem] font-medium rounded-lg flex items-center justify-center gap-2 hover:bg-stone-300/50 transition-all">
+<span class="material-symbols-outlined text-base">folder_open</span>
+                            Folder
+                        </button>
+<button class="h-10 bg-surface-container-highest text-primary text-[0.8rem] font-medium rounded-lg flex items-center justify-center gap-2 hover:bg-stone-300/50 transition-all">
+<span class="material-symbols-outlined text-base">content_copy</span>
+                            Name
+                        </button>
+</div>
+<div class="pt-4 flex items-center justify-between">
+<span class="text-sm font-semibold text-primary">Enabled State</span>
+<div class="w-10 h-5 bg-primary rounded-full relative p-0.5 cursor-pointer">
+<div class="w-4 h-4 bg-white rounded-full absolute right-0.5 shadow-sm"></div>
+</div>
+</div>
+<button class="w-full h-10 text-error text-sm font-semibold rounded-lg flex items-center justify-center gap-2 hover:bg-error-container/20 transition-all mt-4">
+<span class="material-symbols-outlined text-base">delete_outline</span>
+                        Move to Trash
+                    </button>
+</section>
+</div>
+</aside>
+</div>
+</body></html>

@@ -1,0 +1,123 @@
+{
+  "project": {
+    "id": "14905588168099202156",
+    "name": "projects/14905588168099202156",
+    "title": "AI Skills Companion Electron Pivot",
+    "deviceType": "DESKTOP",
+    "designSystem": {
+      "name": "assets/a77fb7d66c7b4003a0aee2ca7108c756",
+      "displayName": "Arcane Ivory",
+      "version": "1"
+    }
+  },
+  "screens": [
+    {
+      "id": "4b15d3301a12485b8aabad70177e9fe6",
+      "name": "projects/14905588168099202156/screens/4b15d3301a12485b8aabad70177e9fe6",
+      "title": "Catalog Backup - Local Export Flow",
+      "width": 2560,
+      "height": 2082,
+      "html": "../html/catalog-backup-local-export-flow.html",
+      "screenshot": "../screenshots/catalog-backup-local-export-flow.png"
+    },
+    {
+      "id": "37105e709a41423d95c72f3e62b242be",
+      "name": "projects/14905588168099202156/screens/37105e709a41423d95c72f3e62b242be",
+      "title": "Coming Soon - AI Skills Companion",
+      "width": 2816,
+      "height": 3100,
+      "html": "../html/coming-soon-ai-skills-companion.html",
+      "screenshot": "../screenshots/coming-soon-ai-skills-companion.png"
+    },
+    {
+      "id": "5790431284154a03bd82120c037e230d",
+      "name": "projects/14905588168099202156/screens/5790431284154a03bd82120c037e230d",
+      "title": "Catalog Backup - Corrected Flow",
+      "width": 2560,
+      "height": 2522,
+      "html": "../html/catalog-backup-corrected-flow.html",
+      "screenshot": "../screenshots/catalog-backup-corrected-flow.png"
+    },
+    {
+      "id": "a897caf1ef3143aaa19bc932ccfb04a3",
+      "name": "projects/14905588168099202156/screens/a897caf1ef3143aaa19bc932ccfb04a3",
+      "title": "Overview - AI Skills Companion",
+      "width": 2560,
+      "height": 2048,
+      "html": "../html/overview-ai-skills-companion.html",
+      "screenshot": "../screenshots/overview-ai-skills-companion.png"
+    },
+    {
+      "id": "d1f84d643d5f465aab51f73b15dcc8a6",
+      "name": "projects/14905588168099202156/screens/d1f84d643d5f465aab51f73b15dcc8a6",
+      "title": "Settings - AI Skills Companion",
+      "width": 2560,
+      "height": 2648,
+      "html": "../html/settings-ai-skills-companion.html",
+      "screenshot": "../screenshots/settings-ai-skills-companion.png"
+    },
+    {
+      "id": "f6041011b753410abe455c542f7dccad",
+      "name": "projects/14905588168099202156/screens/f6041011b753410abe455c542f7dccad",
+      "title": "Per Agent - AI Skills Companion",
+      "width": 2560,
+      "height": 2048,
+      "html": "../html/per-agent-ai-skills-companion.html",
+      "screenshot": "../screenshots/per-agent-ai-skills-companion.png"
+    },
+    {
+      "id": "1a2ab0fa5f394bcb95c15e77b9cadc7f",
+      "name": "projects/14905588168099202156/screens/1a2ab0fa5f394bcb95c15e77b9cadc7f",
+      "title": "Skill Library - Corrected Product State",
+      "width": 2560,
+      "height": 2048,
+      "html": "../html/skill-library-corrected-product-state.html",
+      "screenshot": "../screenshots/skill-library-corrected-product-state.png"
+    },
+    {
+      "id": "d0b6f0f740b548819e391e4819b3c1ee",
+      "name": "projects/14905588168099202156/screens/d0b6f0f740b548819e391e4819b3c1ee",
+      "title": "Hub - AI Skills Companion",
+      "width": 2560,
+      "height": 2048,
+      "html": "../html/hub-ai-skills-companion.html",
+      "screenshot": "../screenshots/hub-ai-skills-companion.png"
+    },
+    {
+      "id": "e512446274b243ea9b41ae78bb376742",
+      "name": "projects/14905588168099202156/screens/e512446274b243ea9b41ae78bb376742",
+      "title": "Catalog Backup",
+      "width": 2560,
+      "height": 2048,
+      "html": "../html/catalog-backup.html",
+      "screenshot": "../screenshots/catalog-backup.png"
+    },
+    {
+      "id": "802f31ccab1d4129ae3c6e54ddac7be5",
+      "name": "projects/14905588168099202156/screens/802f31ccab1d4129ae3c6e54ddac7be5",
+      "title": "Skill Library (Refined)",
+      "width": 2560,
+      "height": 2048,
+      "html": "../html/skill-library-refined.html",
+      "screenshot": "../screenshots/skill-library-refined.png"
+    },
+    {
+      "id": "c257742643f548078626ad38850c6bb5",
+      "name": "projects/14905588168099202156/screens/c257742643f548078626ad38850c6bb5",
+      "title": "Skill Library - Full Table View",
+      "width": 2560,
+      "height": 2048,
+      "html": "../html/skill-library-full-table-view.html",
+      "screenshot": "../screenshots/skill-library-full-table-view.png"
+    },
+    {
+      "id": "2fe63810b302457388eb00d5c6e6885a",
+      "name": "projects/14905588168099202156/screens/2fe63810b302457388eb00d5c6e6885a",
+      "title": "Global Library - AI Skills Companion",
+      "width": 2560,
+      "height": 2048,
+      "html": "../html/global-library-ai-skills-companion.html",
+      "screenshot": "../screenshots/global-library-ai-skills-companion.png"
+    }
+  ]
+}

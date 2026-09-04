@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Tactile Architect - Skill Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#4c463d",
+                        "outline-variant": "#c3c8c2",
+                        "surface-container-low": "#f5f3ed",
+                        "inverse-surface": "#30312d",
+                        "inverse-on-surface": "#f3f1eb",
+                        "primary-fixed-dim": "#bdcabe",
+                        "on-primary-container": "#98a499",
+                        "on-tertiary-fixed-variant": "#484741",
+                        "secondary-fixed-dim": "#cfc5b9",
+                        "on-tertiary-fixed": "#1c1c17",
+                        "primary": "#1a241d",
+                        "tertiary": "#23221d",
+                        "surface-container-highest": "#e4e2dd",
+                        "on-primary": "#ffffff",
+                        "surface": "#fbf9f3",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#cac6bf",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e4e2dd",
+                        "surface-dim": "#dcdad4",
+                        "on-secondary-fixed": "#1f1b13",
+                        "surface-container-high": "#eae8e2",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#2f3a32",
+                        "error-container": "#ffdad6",
+                        "on-background": "#1b1c18",
+                        "on-surface": "#1b1c18",
+                        "on-primary-fixed": "#131e17",
+                        "secondary-container": "#ebe1d4",
+                        "on-primary-fixed-variant": "#3e4941",
+                        "on-secondary-container": "#6a6359",
+                        "on-error-container": "#93000a",
+                        "background": "#fbf9f3",
+                        "tertiary-container": "#383732",
+                        "inverse-primary": "#bdcabe",
+                        "outline": "#747873",
+                        "surface-tint": "#566158",
+                        "surface-container": "#f0eee8",
+                        "on-tertiary-container": "#a3a099",
+                        "secondary-fixed": "#ebe1d4",
+                        "primary-fixed": "#d9e6da",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#fbf9f3",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#e6e2da",
+                        "secondary": "#645d54",
+                        "on-surface-variant": "#434844"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e4e2dd; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen overflow-hidden flex flex-col">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-6 h-16 bg-[#FBF9F3] dark:bg-[#1A241D] z-50">
+<div class="text-xl font-bold tracking-tighter text-[#1A241D] dark:text-[#FBF9F3] headline" style="">
+            AI Companion Skill</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<input class="bg-surface-container border-none text-sm font-medium px-4 py-1.5 rounded-full w-64 focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Search skills..." type="text"/>
+</div>
+<button class="p-2 text-[#1A241D] dark:text-[#FBF9F3] hover:bg-[#E4E2DD] dark:hover:bg-[#2F3A32] transition-colors duration-200 rounded-lg" style="">
+<span class="material-symbols-outlined" data-icon="memory" style="">memory</span>
+</button>
+<button class="p-2 text-[#1A241D] dark:text-[#FBF9F3] hover:bg-[#E4E2DD] dark:hover:bg-[#2F3A32] transition-colors duration-200 rounded-lg" style="">
+<span class="material-symbols-outlined" data-icon="terminal" style="">terminal</span>
+</button>
+</div>
+</header>
+<div class="h-[1px] w-full bg-[#F5F3ED] dark:bg-[#2F3A32]"></div>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="bg-[#F5F3ED] dark:bg-[#131E17] h-screen w-64 flex flex-col py-8 px-4 space-y-2 flex-shrink-0">
+<div class="mb-8 px-2">
+<h1 class="text-lg font-black text-[#1A241D] dark:text-[#D9E6DA]" style=""><br/></h1>
+<p class="text-[12px] font-medium text-[#6C655B] dark:text-[#E4E2DD]/70" style="">Local Intelligence</p>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-[#E4E2DD]/70 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-[#2F3A32]/50 transition-all text-[12px] font-medium rounded-lg" href="#" style="">
+<span class="material-symbols-outlined" data-icon="dashboard" style="">dashboard</span>
+                    Overview
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#1A241D] dark:text-[#FBF9F3] bg-[#E4E2DD] dark:bg-[#2F3A32] font-bold rounded-lg translate-x-1 transition-transform duration-150 text-[12px]" href="#" style="">
+<span class="material-symbols-outlined" data-icon="extension" style="">extension</span>
+                    Skill Library
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-[#E4E2DD]/70 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-[#2F3A32]/50 transition-all text-[12px] font-medium rounded-lg" href="#" style="">
+<span class="material-symbols-outlined" data-icon="hub" style="">hub</span>
+                    Hub
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-[#E4E2DD]/70 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-[#2F3A32]/50 transition-all text-[12px] font-medium rounded-lg" href="#" style="">
+<span class="material-symbols-outlined" data-icon="smart_toy" style="">smart_toy</span>
+                    Per Agent
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-[#E4E2DD]/70 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-[#2F3A32]/50 transition-all text-[12px] font-medium rounded-lg" href="#" style="">
+<span class="material-symbols-outlined" data-icon="public" style="">public</span>
+                    Global
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-[#E4E2DD]/70 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-[#2F3A32]/50 transition-all text-[12px] font-medium rounded-lg" href="#" style="">
+<span class="material-symbols-outlined" data-icon="settings_backup_restore" style="">settings_backup_restore</span>
+                    Catalog Backup
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-[#E4E2DD]/70 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-[#2F3A32]/50 transition-all text-[12px] font-medium rounded-lg" href="#" style="">
+<span class="material-symbols-outlined" data-icon="auto_awesome" style="">auto_awesome</span>
+                    Coming Soon
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-[#E4E2DD]/70 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-[#2F3A32]/50 transition-all text-[12px] font-medium rounded-lg" href="#" style="">
+<span class="material-symbols-outlined" data-icon="settings" style="">settings</span>
+                    Settings
+                </a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex overflow-hidden bg-surface">
+<!-- Skills Table -->
+<section class="flex-1 flex flex-col p-8 overflow-hidden">
+<header class="mb-8 flex justify-between items-end">
+<div>
+<span class="text-[11px] uppercase tracking-wider text-secondary font-bold mb-1 block" style="">Installed Components</span>
+<h2 class="text-3xl font-bold tracking-tight text-primary headline" style="">Skill Library</h2>
+</div>
+<div class="flex gap-3">
+<div class="flex bg-surface-container rounded-lg p-1">
+<button class="px-3 py-1 text-xs font-bold bg-surface-container-lowest text-primary rounded shadow-sm" style=""><br/></button>
+<button class="px-3 py-1 text-xs font-medium text-secondary" style=""><br/></button>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-auto custom-scrollbar bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container-lowest z-10">
+<tr class="border-b border-surface-container">
+<th class="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-secondary" style="">Name</th>
+<th class="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-secondary" style="">Source Folder</th>
+<th class="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-secondary" style="">Category</th>
+<th class="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-secondary" style="">Tags</th>
+<th class="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-secondary" style="">Portability</th>
+<th class="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-secondary" style="">Enabled</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<tr class="hover:bg-surface-container-low transition-colors group bg-surface-container-high/20">
+<td class="px-6 py-4" style="">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-primary-fixed-dim"></div>
+<span class="text-sm font-bold text-primary" style="">ai-companion</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs font-mono text-secondary" style="">~/skills/core</td>
+<td class="px-6 py-4" style="">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container uppercase" style="">Utility</span>
+</td>
+<td class="px-6 py-4" style="">
+<div class="flex gap-1">
+<span class="text-[10px] font-medium text-on-primary-fixed-variant bg-primary-fixed px-1.5 py-0.5 rounded" style="">llm</span>
+<span class="text-[10px] font-medium text-on-primary-fixed-variant bg-primary-fixed px-1.5 py-0.5 rounded" style="">chat</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs text-secondary" style="">High</td>
+<td class="px-6 py-4" style="">
+<div class="w-8 h-4 bg-primary rounded-full relative flex items-center px-0.5">
+<div class="w-3 h-3 bg-white rounded-full translate-x-4"></div>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4" style="">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+<span class="text-sm font-bold text-primary" style="">frontend-design</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs font-mono text-secondary" style="">~/skills/ux</td>
+<td class="px-6 py-4" style="">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container uppercase" style="">UI/UX</span>
+</td>
+<td class="px-6 py-4" style="">
+<div class="flex gap-1">
+<span class="text-[10px] font-medium text-on-primary-fixed-variant bg-primary-fixed px-1.5 py-0.5 rounded" style="">tailwind</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs text-secondary" style="">Medium</td>
+<td class="px-6 py-4" style="">
+<div class="w-8 h-4 bg-outline-variant/30 rounded-full relative flex items-center px-0.5">
+<div class="w-3 h-3 bg-white rounded-full"></div>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4" style="">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+<span class="text-sm font-bold text-primary" style="">systematic-debugging</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs font-mono text-secondary" style="">~/skills/dev</td>
+<td class="px-6 py-4" style="">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container uppercase" style="">Logic</span>
+</td>
+<td class="px-6 py-4" style="">
+<div class="flex gap-1">
+<span class="text-[10px] font-medium text-on-primary-fixed-variant bg-primary-fixed px-1.5 py-0.5 rounded" style="">python</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs text-secondary" style="">Full</td>
+<td class="px-6 py-4" style="">
+<div class="w-8 h-4 bg-outline-variant/30 rounded-full relative flex items-center px-0.5">
+<div class="w-3 h-3 bg-white rounded-full"></div>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4" style="">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+<span class="text-sm font-bold text-primary" style="">afk-note</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs font-mono text-secondary" style="">~/skills/notes</td>
+<td class="px-6 py-4" style="">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container uppercase" style="">System</span>
+</td>
+<td class="px-6 py-4" style="">
+<div class="flex gap-1">
+<span class="text-[10px] font-medium text-on-primary-fixed-variant bg-primary-fixed px-1.5 py-0.5 rounded" style="">md</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs text-secondary" style="">High</td>
+<td class="px-6 py-4" style="">
+<div class="w-8 h-4 bg-outline-variant/30 rounded-full relative flex items-center px-0.5">
+<div class="w-3 h-3 bg-white rounded-full"></div>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4" style="">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+<span class="text-sm font-bold text-primary" style="">design-lab</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs font-mono text-secondary" style="">~/skills/creative</td>
+<td class="px-6 py-4" style="">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container uppercase" style="">Creative</span>
+</td>
+<td class="px-6 py-4" style="">
+<div class="flex gap-1">
+<span class="text-[10px] font-medium text-on-primary-fixed-variant bg-primary-fixed px-1.5 py-0.5 rounded" style="">figma</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs text-secondary" style="">Medium</td>
+<td class="px-6 py-4" style="">
+<div class="w-8 h-4 bg-outline-variant/30 rounded-full relative flex items-center px-0.5">
+<div class="w-3 h-3 bg-white rounded-full"></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Right Inspector Panel -->
+<aside class="w-80 bg-surface-container-low flex flex-col border-l border-outline-variant/10 p-6 overflow-y-auto custom-scrollbar">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-sm font-bold text-primary Inter uppercase tracking-wider" style="">Inspector</h3>
+<button class="text-secondary hover:text-primary transition-colors" style="">
+<span class="material-symbols-outlined text-sm" data-icon="close" style="">close</span>
+</button>
+</div>
+<div class="flex flex-col items-center text-center mb-8">
+<div class="w-16 h-16 bg-primary-fixed flex items-center justify-center rounded-2xl mb-4 shadow-sm">
+<span class="material-symbols-outlined text-on-primary-fixed text-3xl" data-icon="extension" style='font-variation-settings: "FILL" 1;'>extension</span>
+</div>
+<h4 class="text-xl font-bold text-primary headline" style="">ai-companion</h4>
+<p class="text-xs font-mono text-secondary mt-1 tracking-tight" style="">v1.2.0-stable</p>
+</div>
+<div class="space-y-6">
+<div class="space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-widest text-secondary/60" style="">Path</label>
+<div class="bg-surface-container-lowest p-2 rounded border border-outline-variant/10 text-xs font-mono text-primary flex justify-between items-center group">
+<span class="truncate" style="">~/skills/core/ai-companion</span>
+<span class="material-symbols-outlined text-[14px] text-secondary/40 group-hover:text-primary cursor-pointer" data-icon="content_copy" style="">content_copy</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-widest text-secondary/60" style="">Description</label>
+<p class="text-xs text-on-surface-variant leading-relaxed font-medium" style="">
+                            Primary interface for LLM orchestration and conversation history management. Handles state preservation and multi-agent switching.
+                        </p>
+</div>
+<div class="space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-widest text-secondary/60" style="">Tags</label>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-1 text-[10px] font-medium bg-primary-fixed text-on-primary-fixed rounded" style="">llm</span>
+<span class="px-2 py-1 text-[10px] font-medium bg-primary-fixed text-on-primary-fixed rounded" style="">chat</span>
+<span class="px-2 py-1 text-[10px] font-medium bg-primary-fixed text-on-primary-fixed rounded" style="">core-system</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-widest text-secondary/60" style="">Category</label>
+<div class="text-sm font-bold text-primary flex items-center gap-2" style="">
+<span class="material-symbols-outlined text-sm" data-icon="category" style="">category</span>
+                            Utility
+                        </div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/20">
+<span class="text-xs font-bold text-primary" style="">Lock Metadata</span>
+<div class="w-8 h-4 bg-outline-variant/30 rounded-full relative flex items-center px-0.5">
+<div class="w-3 h-3 bg-white rounded-full"></div>
+</div>
+</div>
+<div class="space-y-2 pt-4">
+<button class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-on-primary text-xs font-bold rounded-lg hover:bg-primary-container transition-all active:scale-[0.98]" style="">
+<span class="material-symbols-outlined text-sm" data-icon="article" style="">article</span>
+                            Open SKILL.md
+                        </button>
+<button class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-secondary-container text-on-secondary-container text-xs font-bold rounded-lg hover:opacity-90 transition-all active:scale-[0.98]" style="">
+<span class="material-symbols-outlined text-sm" data-icon="folder_open" style="">folder_open</span>
+                            Open Folder
+                        </button>
+<div class="grid grid-cols-2 gap-2 mt-4">
+<button class="flex items-center justify-center gap-2 px-3 py-2 border border-outline-variant/20 text-secondary text-[10px] font-bold rounded-lg hover:bg-surface-container-highest transition-all" style="">
+<span class="material-symbols-outlined text-xs" data-icon="copy_all" style="">copy_all</span>
+                                Copy Name
+                            </button>
+<button class="flex items-center justify-center gap-2 px-3 py-2 border border-outline-variant/20 text-secondary text-[10px] font-bold rounded-lg hover:bg-surface-container-highest transition-all" style="">
+<span class="material-symbols-outlined text-xs" data-icon="pause_circle" style="">pause_circle</span>
+                                Disable
+                            </button>
+</div>
+<button class="w-full flex items-center justify-center gap-2 px-4 py-2 text-error text-xs font-bold rounded-lg hover:bg-error-container/20 transition-all mt-4" style="">
+<span class="material-symbols-outlined text-sm" data-icon="delete" style="">delete</span>
+                            Move to Trash
+                        </button>
+</div>
+</div>
+</aside>
+</main>
+</div>
+<!-- Background Decoration (Tactile Feel) -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] z-[-1]" data-alt="Subtle natural paper fiber texture for tactile high-end feel" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCtHzd4TwChR4K5Ca7gMFAHFsWehd2nWeMUPAVxvcrcSgbZ8B94ikoj7rl6c3u_3RUeGyTXbT3hwPIZ3T_WS8h2FfvXXSWdYxyhzeqIxdRT61kDvWPwhXbAzdlzn4mtsUJKRMQ08lEC62fiUV-k7F-sQzOtUlJ7i-Uc9Nxiyi34uqibLifb6aJKB95JiKkUHTuUTVbqC3_HQJkOjFdSgnZ84FVKCPs8nFHYOqM_Duud3fbStDhqZVdq83Q1VywylDD1s_UuyaepxszV");'></div>
+</body></html>

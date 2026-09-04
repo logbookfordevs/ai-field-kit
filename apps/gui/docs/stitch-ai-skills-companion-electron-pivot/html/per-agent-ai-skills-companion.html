@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Per Agent - AI Skills Companion</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f3f1eb",
+                        "surface-container-low": "#f5f3ed",
+                        "on-tertiary-fixed": "#1c1c17",
+                        "secondary-container": "#ebe1d4",
+                        "primary-container": "#2f3a32",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e4e2dd",
+                        "outline-variant": "#c3c8c2",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#1a241d",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed-dim": "#bdcabe",
+                        "background": "#fbf9f3",
+                        "primary-fixed": "#d9e6da",
+                        "tertiary-fixed-dim": "#cac6bf",
+                        "on-tertiary-container": "#a3a099",
+                        "on-secondary-fixed-variant": "#4c463d",
+                        "on-secondary-container": "#6a6359",
+                        "surface-dim": "#dcdad4",
+                        "surface-variant": "#e4e2dd",
+                        "inverse-primary": "#bdcabe",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#484741",
+                        "tertiary-fixed": "#e6e2da",
+                        "on-surface-variant": "#434844",
+                        "on-primary-fixed": "#131e17",
+                        "surface-container-high": "#eae8e2",
+                        "outline": "#747873",
+                        "inverse-surface": "#30312d",
+                        "surface-bright": "#fbf9f3",
+                        "surface": "#fbf9f3",
+                        "surface-container": "#f0eee8",
+                        "on-primary-fixed-variant": "#3e4941",
+                        "on-surface": "#1b1c18",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#23221d",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#383732",
+                        "secondary": "#645d54",
+                        "on-secondary-fixed": "#1f1b13",
+                        "on-background": "#1b1c18",
+                        "surface-tint": "#566158",
+                        "secondary-fixed-dim": "#cfc5b9",
+                        "secondary-fixed": "#ebe1d4",
+                        "on-primary-container": "#98a499",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .ghost-border { border: 1px solid rgba(195, 200, 194, 0.15); }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full py-6 px-4 bg-[#F5F3ED] dark:bg-stone-900 h-screen w-64 border-r border-transparent font-inter body-md tracking-tight">
+<div class="mb-10 px-2">
+<h1 class="text-lg font-bold tracking-tighter text-[#1A241D] dark:text-stone-100">The Architect</h1>
+<p class="text-xs text-[#6C655B] dark:text-stone-400 font-medium tracking-wide">AI Skills Companion</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>Skill Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+<span>Hub</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#E4E2DD] dark:bg-stone-800 text-[#1A241D] dark:text-white font-medium opacity-90 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+<span>Per Agent</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span>Global Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings_backup_restore">settings_backup_restore</span>
+<span>Catalog Backup</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="upcoming">upcoming</span>
+<span>Coming Soon</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</aside>
+<div class="flex-1 flex flex-col min-w-0">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-8 w-full h-20 bg-[#FBF9F3] dark:bg-stone-950 border-b border-stone-200/15">
+<div>
+<h2 class="text-[#1A241D] dark:text-stone-100 headline-sm font-semibold">Per Agent</h2>
+<p class="body-sm text-[#6C655B]">Inspect skills installed across supported agent folders.</p>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-[#6C655B] dark:text-stone-400 hover:bg-[#F5F3ED] dark:hover:bg-stone-900 rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="p-2 text-[#6C655B] dark:text-stone-400 hover:bg-[#F5F3ED] dark:hover:bg-stone-900 rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto p-8 space-y-8">
+<!-- Toolbar -->
+<section class="flex flex-wrap items-center gap-4">
+<div class="flex-1 min-w-[300px] relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest ghost-border rounded-lg text-body-md focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Search skills or paths..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<select class="bg-surface-container-lowest ghost-border rounded-lg px-3 py-2 text-body-sm text-on-surface focus:ring-1 focus:ring-primary outline-none">
+<option>All Sources</option>
+<option>Global</option>
+<option>Codex</option>
+<option>Claude</option>
+<option>Gemini</option>
+<option>OpenCode</option>
+</select>
+</div>
+<div class="flex items-center gap-2">
+<button class="bg-secondary-container hover:bg-[#E0D5C5] text-on-secondary-container px-4 py-2 rounded-lg text-body-sm font-medium transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="sync">sync</span>
+                        Refresh
+                    </button>
+<button class="bg-surface-container-highest hover:bg-surface-variant text-on-surface px-4 py-2 rounded-lg text-body-sm font-medium transition-colors">
+                        Check Updates
+                    </button>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded-lg text-body-sm font-medium transition-colors">
+                        Update All
+                    </button>
+</div>
+</section>
+<!-- Agent Groups (Bento-ish List) -->
+<div class="space-y-10 pb-32">
+<!-- Group: Global -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<h3 class="text-label-sm font-bold tracking-widest text-secondary uppercase">Global</h3>
+<span class="text-body-sm text-outline-variant font-mono">~/.agents/skills</span>
+<div class="flex-1 h-[1px] bg-outline-variant/15"></div>
+</div>
+<div class="grid gap-3">
+<!-- Skill Row -->
+<div class="bg-surface-container-lowest ghost-border rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-6 flex-1">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed" data-icon="hub" data-weight="fill" style="font-variation-settings: 'FILL' 1;">hub</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-semibold text-primary">ai-companion</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] bg-secondary-container text-on-secondary-container font-bold uppercase tracking-tighter">System</span>
+</div>
+<span class="text-body-sm text-secondary">Core orchestration logic for agentic workflows.</span>
+</div>
+<div class="hidden lg:block">
+<span class="text-body-sm text-outline font-mono">v2.4.1</span>
+</div>
+<div class="flex items-center gap-2 ml-auto lg:ml-0">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="text-body-sm text-on-surface-variant font-medium">Up-to-date</span>
+</div>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline" title="Copy Name"><span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline" title="Open SKILL.md"><span class="material-symbols-outlined text-sm" data-icon="description">description</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline" title="Open Folder"><span class="material-symbols-outlined text-sm" data-icon="folder_open">folder_open</span></button>
+</div>
+</div>
+<!-- Skill Row -->
+<div class="bg-surface-container-lowest ghost-border rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-6 flex-1">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed" data-icon="brush" data-weight="fill" style="font-variation-settings: 'FILL' 1;">brush</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-semibold text-primary">frontend-design</span>
+</div>
+<span class="text-body-sm text-secondary">Utility skills for rapid UI prototyping and CSS generation.</span>
+</div>
+<div class="hidden lg:block">
+<span class="text-body-sm text-outline font-mono">v1.0.8</span>
+</div>
+<div class="flex items-center gap-2 ml-auto lg:ml-0">
+<div class="w-2 h-2 rounded-full bg-amber-500"></div>
+<span class="text-body-sm text-on-surface-variant font-medium">Update available</span>
+</div>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline" title="Copy Name"><span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline" title="Open SKILL.md"><span class="material-symbols-outlined text-sm" data-icon="description">description</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline" title="Open Folder"><span class="material-symbols-outlined text-sm" data-icon="folder_open">folder_open</span></button>
+</div>
+</div>
+</div>
+</section>
+<!-- Group: Codex -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<h3 class="text-label-sm font-bold tracking-widest text-secondary uppercase">Codex</h3>
+<span class="text-body-sm text-outline-variant font-mono">~/.codex/skills</span>
+<div class="flex-1 h-[1px] bg-outline-variant/15"></div>
+</div>
+<div class="grid gap-3">
+<div class="bg-surface-container-lowest ghost-border rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-6 flex-1">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary-fixed" data-icon="bolt" data-weight="fill" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-primary">using-superpowers</span>
+<span class="text-body-sm text-secondary">Advanced prompt injection and context management.</span>
+</div>
+<div class="hidden lg:block">
+<span class="text-body-sm text-outline font-mono">v0.9.2</span>
+</div>
+<div class="flex items-center gap-2 ml-auto lg:ml-0">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="text-body-sm text-on-surface-variant font-medium">Up-to-date</span>
+</div>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="description">description</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="folder_open">folder_open</span></button>
+</div>
+</div>
+</div>
+</section>
+<!-- Group: Claude -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<h3 class="text-label-sm font-bold tracking-widest text-secondary uppercase">Claude</h3>
+<span class="text-body-sm text-outline-variant font-mono">~/.claude/skills</span>
+<div class="flex-1 h-[1px] bg-outline-variant/15"></div>
+</div>
+<div class="grid gap-3">
+<div class="bg-surface-container-lowest ghost-border rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-6 flex-1">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed-dim flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed-variant" data-icon="history_edu" data-weight="fill" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-primary">afk-documentation-authoring</span>
+<span class="text-body-sm text-secondary">Automated doc generation from codebase comments.</span>
+</div>
+<div class="hidden lg:block">
+<span class="text-body-sm text-outline font-mono">v3.0.0</span>
+</div>
+<div class="flex items-center gap-2 ml-auto lg:ml-0">
+<div class="w-2 h-2 rounded-full bg-stone-300"></div>
+<span class="text-body-sm text-on-surface-variant font-medium">Unknown</span>
+</div>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="description">description</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="folder_open">folder_open</span></button>
+</div>
+</div>
+</div>
+</section>
+<!-- Group: Gemini -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<h3 class="text-label-sm font-bold tracking-widest text-secondary uppercase">Gemini</h3>
+<span class="text-body-sm text-outline-variant font-mono">~/.gemini/skills</span>
+<div class="flex-1 h-[1px] bg-outline-variant/15"></div>
+</div>
+<div class="grid gap-3">
+<div class="bg-surface-container-lowest ghost-border rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-6 flex-1">
+<div class="w-10 h-10 rounded-lg bg-secondary-fixed-dim flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-fixed-variant" data-icon="bug_report" data-weight="fill" style="font-variation-settings: 'FILL' 1;">bug_report</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-primary">systematic-debugging</span>
+<span class="text-body-sm text-secondary">Step-by-step logic tracing for complex bugs.</span>
+</div>
+<div class="hidden lg:block">
+<span class="text-body-sm text-outline font-mono">v1.2.4</span>
+</div>
+<div class="flex items-center gap-2 ml-auto lg:ml-0">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="text-body-sm text-on-surface-variant font-medium">Up-to-date</span>
+</div>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="description">description</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="folder_open">folder_open</span></button>
+</div>
+</div>
+</div>
+</section>
+<!-- Group: OpenCode -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<h3 class="text-label-sm font-bold tracking-widest text-secondary uppercase">OpenCode</h3>
+<span class="text-body-sm text-outline-variant font-mono">~/.config/opencode/skills</span>
+<div class="flex-1 h-[1px] bg-outline-variant/15"></div>
+</div>
+<div class="grid gap-3">
+<div class="bg-surface-container-lowest ghost-border rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-6 flex-1">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="terminal" data-weight="fill" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-primary">stitch-loop</span>
+<span class="text-body-sm text-secondary">Local CI/CD pipeline automation for open source projects.</span>
+</div>
+<div class="hidden lg:block">
+<span class="text-body-sm text-outline font-mono">v0.4.5</span>
+</div>
+<div class="flex items-center gap-2 ml-auto lg:ml-0">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="text-body-sm text-on-surface-variant font-medium">Up-to-date</span>
+</div>
+</div>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="description">description</span></button>
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined text-sm" data-icon="folder_open">folder_open</span></button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Panel (Terminal Output) -->
+<footer class="absolute bottom-0 left-64 right-0 bg-surface-container border-t border-outline-variant/20 shadow-2xl transition-all duration-300">
+<div class="px-6 py-2 flex items-center justify-between cursor-pointer hover:bg-surface-container-high">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-sm" data-icon="terminal">terminal</span>
+<span class="text-label-sm font-bold tracking-widest text-primary uppercase">Terminal Output</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="text-[10px] text-outline font-bold uppercase tracking-tight">Status:</span>
+<span class="text-[10px] bg-primary-fixed text-on-primary-fixed px-2 py-0.5 rounded font-mono">IDLE</span>
+</div>
+<span class="material-symbols-outlined text-sm" data-icon="keyboard_arrow_up">keyboard_arrow_up</span>
+</div>
+</div>
+<div class="px-6 py-4 grid grid-cols-4 gap-4 h-12 overflow-hidden bg-surface-container-lowest">
+<div class="flex flex-col">
+<span class="text-[10px] text-outline-variant font-bold uppercase mb-1">Command</span>
+<code class="text-xs font-mono text-secondary truncate">npx skills check --all</code>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-outline-variant font-bold uppercase mb-1">Stdout</span>
+<code class="text-xs font-mono text-secondary truncate">Scanning directories... Done.</code>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-outline-variant font-bold uppercase mb-1">Stderr</span>
+<code class="text-xs font-mono text-secondary truncate">-</code>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-outline-variant font-bold uppercase mb-1">Exit Code</span>
+<code class="text-xs font-mono text-secondary truncate">0</code>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

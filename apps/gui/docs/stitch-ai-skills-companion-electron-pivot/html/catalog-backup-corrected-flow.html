@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#bdcabe",
+                        "surface-bright": "#fbf9f3",
+                        "on-primary": "#ffffff",
+                        "primary": "#1a241d",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#3e4941",
+                        "on-primary-container": "#98a499",
+                        "on-surface-variant": "#434844",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#cfc5b9",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#ebe1d4",
+                        "secondary": "#645d54",
+                        "inverse-on-surface": "#f3f1eb",
+                        "surface-container-low": "#f5f3ed",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#eae8e2",
+                        "on-secondary-container": "#6a6359",
+                        "surface-container-highest": "#e4e2dd",
+                        "on-tertiary-container": "#a3a099",
+                        "background": "#fbf9f3",
+                        "outline-variant": "#c3c8c2",
+                        "on-tertiary-fixed": "#1c1c17",
+                        "on-primary-fixed": "#131e17",
+                        "outline": "#747873",
+                        "tertiary-fixed": "#e6e2da",
+                        "tertiary": "#23221d",
+                        "surface": "#fbf9f3",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#cac6bf",
+                        "on-surface": "#1b1c18",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#383732",
+                        "primary-fixed": "#d9e6da",
+                        "on-background": "#1b1c18",
+                        "surface-dim": "#dcdad4",
+                        "primary-fixed-dim": "#bdcabe",
+                        "on-tertiary-fixed-variant": "#484741",
+                        "on-secondary-fixed": "#1f1b13",
+                        "primary-container": "#2f3a32",
+                        "inverse-surface": "#30312d",
+                        "secondary-container": "#ebe1d4",
+                        "surface-tint": "#566158",
+                        "on-secondary-fixed-variant": "#4c463d",
+                        "surface-container": "#f0eee8",
+                        "surface-variant": "#e4e2dd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f5f3ed; }
+        ::-webkit-scrollbar-thumb { background: #c3c8c2; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-background selection:bg-surface-container-highest">
+<!-- SideNavBar (from JSON) -->
+<nav class="flex flex-col gap-1 p-4 w-64 h-screen bg-[#F5F3ED] dark:bg-[#1A1C1A] fixed left-0 top-0 border-r border-transparent shadow-[inset_-1px_0_0_0_rgba(195,200,194,0.15)] z-20">
+<div class="mb-8 px-2">
+<h1 class="text-lg font-bold text-[#1A241D] dark:text-[#FBF9F3] uppercase tracking-widest">Tactile Architect</h1>
+<p class="text-[0.6875rem] font-bold text-[#6C655B] uppercase tracking-[0.1em] mt-1">Skills Companion</p>
+</div>
+<div class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-2.5 text-[#6C655B] dark:text-[#A8A29E] hover:bg-[#EBE1D4]/50 dark:hover:bg-[#2F3A32]/30 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined text-[1.25rem]">dashboard</span>
+<span class="text-[0.875rem] leading-[1.3] tracking-tight">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-[#6C655B] dark:text-[#A8A29E] hover:bg-[#EBE1D4]/50 dark:hover:bg-[#2F3A32]/30 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[1.25rem]">menu_book</span>
+<span class="text-[0.875rem] leading-[1.3] tracking-tight">Skill Library</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-[#6C655B] dark:text-[#A8A29E] hover:bg-[#EBE1D4]/50 dark:hover:bg-[#2F3A32]/30 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[1.25rem]">hub</span>
+<span class="text-[0.875rem] leading-[1.3] tracking-tight">Hub</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-[#6C655B] dark:text-[#A8A29E] hover:bg-[#EBE1D4]/50 dark:hover:bg-[#2F3A32]/30 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[1.25rem]">person_search</span>
+<span class="text-[0.875rem] leading-[1.3] tracking-tight">Per Agent</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-[#6C655B] dark:text-[#A8A29E] hover:bg-[#EBE1D4]/50 dark:hover:bg-[#2F3A32]/30 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[1.25rem]">public</span>
+<span class="text-[0.875rem] leading-[1.3] tracking-tight">Global Library</span>
+</a>
+<!-- Active Tab: Catalog Backup -->
+<a class="flex items-center gap-3 px-4 py-2.5 bg-[#E4E2DD] dark:bg-[#2F3A32] text-[#1A241D] dark:text-white font-semibold rounded-none border-r-2 border-[#1A241D] dark:border-[#D9E6DA] transition-all duration-200 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-[1.25rem]" style="font-variation-settings: 'FILL' 1;">settings_backup_restore</span>
+<span class="text-[0.875rem] leading-[1.3] tracking-tight">Catalog Backup</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-[#6C655B] dark:text-[#A8A29E] hover:bg-[#EBE1D4]/50 dark:hover:bg-[#2F3A32]/30 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[1.25rem]">upcoming</span>
+<span class="text-[0.875rem] leading-[1.3] tracking-tight">Coming Soon</span>
+</a>
+</div>
+<div class="mt-auto">
+<a class="flex items-center gap-3 px-4 py-2.5 text-[#6C655B] dark:text-[#A8A29E] hover:bg-[#EBE1D4]/50 dark:hover:bg-[#2F3A32]/30 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[1.25rem]">settings</span>
+<span class="text-[0.875rem] leading-[1.3] tracking-tight">Settings</span>
+</a>
+<div class="mt-4 px-4 py-3 border-t border-outline-variant/15 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary text-xs font-bold">AA</div>
+<div class="flex flex-col">
+<span class="text-[0.75rem] font-semibold text-primary">Architect</span>
+<span class="text-[0.625rem] text-secondary">Local Instance</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- TopAppBar (from JSON) -->
+<header class="flex justify-between items-center px-10 py-4 fixed top-0 right-0 left-64 h-16 bg-[#FBF9F3] dark:bg-[#131513] z-10 transition-colors">
+<h2 class="font-inter text-[1.5rem] font-medium tracking-tight text-[#1A241D] dark:text-[#E4E2DD]">Catalog Backup</h2>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-[#6C655B] dark:text-[#A8A29E]">
+<button class="material-symbols-outlined hover:opacity-70 transition-opacity">help_outline</button>
+<button class="material-symbols-outlined hover:opacity-70 transition-opacity">notifications</button>
+</div>
+<div class="h-8 w-px bg-outline-variant/30"></div>
+<div class="flex items-center gap-2">
+<span class="text-[0.75rem] font-bold text-primary-container">v1.2.4-PRO</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 p-10 min-h-screen bg-background">
+<!-- Header Section -->
+<div class="max-w-6xl mx-auto mb-10">
+<div class="flex flex-col">
+<h3 class="text-on-surface font-headline font-bold text-3xl tracking-tight">Catalog Backup</h3>
+<p class="text-secondary font-body mt-2 text-lg">Export selected skill sources to a portable JSON catalog for ecosystem sync or redundancy.</p>
+</div>
+</div>
+<!-- Bento Layout -->
+<div class="max-w-6xl mx-auto grid grid-cols-12 gap-8">
+<!-- Step 1: Select Sources (Asymmetric left column) -->
+<section class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<div class="p-6 bg-surface-container-low rounded-lg border border-outline-variant/15 flex flex-col h-full">
+<div class="flex items-center gap-3 mb-6">
+<span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs font-bold">1</span>
+<h4 class="font-bold text-primary uppercase tracking-widest text-xs">Select Sources</h4>
+</div>
+<div class="flex flex-col gap-3">
+<label class="group flex items-center justify-between p-3 bg-surface-container-lowest rounded-md cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">Global</span>
+<code class="text-[10px] text-secondary opacity-60">~/.agents/skills</code>
+</div>
+<input checked="" class="form-checkbox h-4 w-4 text-primary border-outline-variant rounded-sm focus:ring-primary ring-offset-background" type="checkbox"/>
+</label>
+<label class="group flex items-center justify-between p-3 bg-surface-container-lowest rounded-md cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">Codex</span>
+<code class="text-[10px] text-secondary opacity-60">~/.codex/skills</code>
+</div>
+<input checked="" class="form-checkbox h-4 w-4 text-primary border-outline-variant rounded-sm focus:ring-primary ring-offset-background" type="checkbox"/>
+</label>
+<label class="group flex items-center justify-between p-3 bg-surface-container-lowest rounded-md cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">Claude</span>
+<code class="text-[10px] text-secondary opacity-60">~/.claude/skills</code>
+</div>
+<input checked="" class="form-checkbox h-4 w-4 text-primary border-outline-variant rounded-sm focus:ring-primary ring-offset-background" type="checkbox"/>
+</label>
+<label class="group flex items-center justify-between p-3 bg-surface-container-lowest rounded-md cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">Gemini</span>
+<code class="text-[10px] text-secondary opacity-60">~/.gemini/skills</code>
+</div>
+<input class="form-checkbox h-4 w-4 text-primary border-outline-variant rounded-sm focus:ring-primary ring-offset-background" type="checkbox"/>
+</label>
+<label class="group flex items-center justify-between p-3 bg-surface-container-lowest rounded-md cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">OpenCode</span>
+<code class="text-[10px] text-secondary opacity-60">~/.config/opencode/skills</code>
+</div>
+<input class="form-checkbox h-4 w-4 text-primary border-outline-variant rounded-sm focus:ring-primary ring-offset-background" type="checkbox"/>
+</label>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant/10">
+<div class="bg-primary-container text-surface-container-lowest p-4 rounded-lg flex gap-3 items-start">
+<span class="material-symbols-outlined text-sm mt-0.5">info</span>
+<p class="text-[11px] leading-relaxed opacity-90 uppercase tracking-wider font-medium">
+                                Selection dictates the scope of the <span class="underline">computedHash</span> validation during export.
+                            </p>
+</div>
+</div>
+</div>
+</section>
+<!-- Step 2: Preview Export (Main wide panel) -->
+<section class="col-span-12 lg:col-span-8 flex flex-col gap-6">
+<div class="p-6 bg-surface-container-lowest rounded-lg border border-outline-variant/15 flex flex-col overflow-hidden">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs font-bold">2</span>
+<h4 class="font-bold text-primary uppercase tracking-widest text-xs">Preview Export</h4>
+</div>
+<div class="flex gap-2">
+<span class="px-2 py-1 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold rounded uppercase tracking-tighter">3 Portable</span>
+<span class="px-2 py-1 bg-error-container text-on-error-container text-[10px] font-bold rounded uppercase tracking-tighter">2 Non-Portable</span>
+</div>
+</div>
+<div class="overflow-x-auto border border-outline-variant/10 rounded">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-[10px] font-bold text-secondary uppercase tracking-widest border-b border-outline-variant/10">
+<th class="px-4 py-3">Skill Name</th>
+<th class="px-4 py-3">Status</th>
+<th class="px-4 py-3">Validation Note</th>
+</tr>
+</thead>
+<tbody class="text-sm font-body">
+<tr class="border-b border-outline-variant/5 hover:bg-surface-container-low transition-colors">
+<td class="px-4 py-3 font-semibold text-primary">ai-companion</td>
+<td class="px-4 py-3">
+<span class="text-on-primary-fixed-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                                            Portable
+                                        </span>
+</td>
+<td class="px-4 py-3 text-secondary text-xs italic">Checksum verified</td>
+</tr>
+<tr class="border-b border-outline-variant/5 hover:bg-surface-container-low transition-colors">
+<td class="px-4 py-3 font-semibold text-primary">frontend-design</td>
+<td class="px-4 py-3">
+<span class="text-on-primary-fixed-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                                            Portable
+                                        </span>
+</td>
+<td class="px-4 py-3 text-secondary text-xs italic">Checksum verified</td>
+</tr>
+<tr class="border-b border-outline-variant/5 hover:bg-surface-container-low transition-colors">
+<td class="px-4 py-3 font-semibold text-primary">systematic-debugging</td>
+<td class="px-4 py-3">
+<span class="text-on-primary-fixed-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                                            Portable
+                                        </span>
+</td>
+<td class="px-4 py-3 text-secondary text-xs italic">Checksum verified</td>
+</tr>
+<tr class="border-b border-outline-variant/5 bg-error-container/5 hover:bg-error-container/10 transition-colors">
+<td class="px-4 py-3 font-semibold text-error">afk-note</td>
+<td class="px-4 py-3">
+<span class="text-error flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs">warning</span>
+                                            Non-portable
+                                        </span>
+</td>
+<td class="px-4 py-3 text-error text-xs">missing skills-lock metadata</td>
+</tr>
+<tr class="hover:bg-error-container/10 bg-error-container/5 transition-colors">
+<td class="px-4 py-3 font-semibold text-error">local-experimental-skill</td>
+<td class="px-4 py-3">
+<span class="text-error flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs">warning</span>
+                                            Non-portable
+                                        </span>
+</td>
+<td class="px-4 py-3 text-error text-xs">missing source metadata</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Warning Note -->
+<div class="mt-4 flex gap-3 p-4 bg-surface-container-high rounded border-l-4 border-error">
+<span class="material-symbols-outlined text-error">report_problem</span>
+<div class="flex flex-col">
+<span class="text-[11px] font-black text-primary uppercase tracking-widest mb-1">Warning Note</span>
+<p class="text-xs text-secondary leading-relaxed">Skills without <span class="font-mono text-[10px] bg-secondary-fixed px-1 py-0.5 rounded">skills.sh</span> lock metadata are included for visibility in the JSON but cannot be restored automatically on another instance. Manual mapping will be required upon import.</p>
+</div>
+</div>
+</div>
+<!-- Info Panel: Detail on exported fields (Card in grid) -->
+<div class="p-6 bg-surface-container-high rounded-lg border border-outline-variant/15">
+<h4 class="font-bold text-primary uppercase tracking-widest text-xs mb-4">Export Schema Definition</h4>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-secondary uppercase opacity-70 mb-1">Source Bucket</span>
+<span class="text-xs font-mono bg-surface-container-lowest px-1.5 py-0.5 rounded w-fit border border-outline-variant/10 text-primary">sourceBucket</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-secondary uppercase opacity-70 mb-1">Folder Name</span>
+<span class="text-xs font-mono bg-surface-container-lowest px-1.5 py-0.5 rounded w-fit border border-outline-variant/10 text-primary">folderName</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-secondary uppercase opacity-70 mb-1">Provider Source</span>
+<span class="text-xs font-mono bg-surface-container-lowest px-1.5 py-0.5 rounded w-fit border border-outline-variant/10 text-primary">source</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-secondary uppercase opacity-70 mb-1">Source Type</span>
+<span class="text-xs font-mono bg-surface-container-lowest px-1.5 py-0.5 rounded w-fit border border-outline-variant/10 text-primary">sourceType</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-secondary uppercase opacity-70 mb-1">Verification Hash</span>
+<span class="text-xs font-mono bg-surface-container-lowest px-1.5 py-0.5 rounded w-fit border border-outline-variant/10 text-primary">computedHash</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-secondary uppercase opacity-70 mb-1">Taxonomy Tags</span>
+<span class="text-xs font-mono bg-surface-container-lowest px-1.5 py-0.5 rounded w-fit border border-outline-variant/10 text-primary">taxonomy</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Step 3: Export JSON (Full width bottom action area) -->
+<section class="col-span-12">
+<div class="p-8 bg-primary-container text-on-primary rounded-lg shadow-xl relative overflow-hidden">
+<!-- Subtle pattern/glow for "Premium AI active" feel -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-surface-container-highest opacity-5 blur-3xl -mr-20 -mt-20 rounded-full"></div>
+<div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+<div class="flex items-center gap-6">
+<span class="w-10 h-10 rounded-full bg-surface-container-lowest text-primary flex items-center justify-center text-lg font-black shrink-0">3</span>
+<div class="flex flex-col">
+<h4 class="font-bold uppercase tracking-[0.2em] text-xs text-on-primary-container mb-2">Finalize Catalog</h4>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-surface-container-highest">description</span>
+<span class="text-xl font-medium font-headline tracking-tight text-white">ai-skills-catalog.json</span>
+</div>
+<div class="flex items-center gap-2 mt-2 opacity-70">
+<span class="material-symbols-outlined text-xs">folder_open</span>
+<span class="text-xs font-mono tracking-tight">/Users/architect/Downloads</span>
+</div>
+</div>
+</div>
+<div class="flex flex-wrap gap-4 items-center">
+<button class="bg-surface-container-lowest text-primary px-8 py-3 rounded font-bold text-sm tracking-widest uppercase hover:bg-white transition-all transform active:scale-95 shadow-md">
+                                Export JSON
+                            </button>
+<div class="flex gap-2">
+<button class="px-4 py-3 rounded border border-outline-variant/30 text-surface-container-lowest text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">open_in_new</span>
+                                    Reveal File
+                                </button>
+<button class="px-4 py-3 rounded border border-outline-variant/30 text-surface-container-lowest text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+                                    Copy Path
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer / Credits -->
+<footer class="max-w-6xl mx-auto mt-20 pt-8 border-t border-outline-variant/10 flex justify-between items-center text-secondary">
+<div class="flex items-center gap-4">
+<span class="text-[10px] font-bold uppercase tracking-widest">Tactile Architect System v1.0</span>
+<span class="text-[10px] font-bold uppercase tracking-widest opacity-30">•</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Documentation</span>
+</div>
+<div class="flex gap-4">
+<img alt="System provider logo" class="w-6 h-6 rounded-full grayscale opacity-50 contrast-125" data-alt="abstract monochromatic architectural detail with sharp shadows and geometric precision" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVLlCPqKWJyAmIJxOHtFJddy0B-ltpWxuzct0sdt1RGeBzG5xUkiSERFeK0dgfjZaE9ZD3OtJS6uXhCIzbPNnF91gCC2JCcO3L5yJJn86hVrEUpQPsgI7mGGsUYV1RZkTZJaGeFueQKPj8Sg2xCvAMQcxP_NNYHr_blNEoRhQvGMLYpuhCPjw6FBWzSKjXtICMnSd25Djtb36TDWM1A6RiV2dczlNTFuyO5npIst9v2-ZhIvEbXDmA7sWRh7ZX91LqbnxixG6EYNQV"/>
+</div>
+</footer>
+</main>
+</body></html>

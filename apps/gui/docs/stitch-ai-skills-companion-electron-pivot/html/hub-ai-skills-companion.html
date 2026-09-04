@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Skills Companion - Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#383732",
+                        "secondary-fixed-dim": "#cfc5b9",
+                        "outline": "#747873",
+                        "inverse-surface": "#30312d",
+                        "tertiary-fixed": "#e6e2da",
+                        "on-background": "#1b1c18",
+                        "on-secondary-fixed": "#1f1b13",
+                        "surface-container": "#f0eee8",
+                        "on-primary-container": "#98a499",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#cac6bf",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f3f1eb",
+                        "on-primary-fixed": "#131e17",
+                        "surface": "#fbf9f3",
+                        "primary-fixed": "#d9e6da",
+                        "on-secondary-container": "#6a6359",
+                        "on-tertiary-fixed": "#1c1c17",
+                        "surface-dim": "#dcdad4",
+                        "secondary": "#645d54",
+                        "on-tertiary-container": "#a3a099",
+                        "outline-variant": "#c3c8c2",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#bdcabe",
+                        "tertiary": "#23221d",
+                        "background": "#fbf9f3",
+                        "secondary-container": "#ebe1d4",
+                        "on-primary-fixed-variant": "#3e4941",
+                        "surface-container-high": "#eae8e2",
+                        "primary-container": "#2f3a32",
+                        "surface-container-highest": "#e4e2dd",
+                        "surface-variant": "#e4e2dd",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#4c463d",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f5f3ed",
+                        "on-surface-variant": "#434844",
+                        "inverse-primary": "#bdcabe",
+                        "surface-bright": "#fbf9f3",
+                        "secondary-fixed": "#ebe1d4",
+                        "on-tertiary-fixed-variant": "#484741",
+                        "on-surface": "#1b1c18",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#566158",
+                        "primary": "#1a241d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex h-screen overflow-hidden">
+<!-- SideNavBar Component -->
+<aside class="flex flex-col h-full p-4 gap-2 h-screen w-64 docked left-0 border-r-0 bg-[#F5F3ED] dark:bg-stone-900 contrast-75 flat no shadows">
+<div class="flex items-center gap-3 px-2 mb-8 mt-2">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[1.25rem]">architecture</span>
+</div>
+<div>
+<h1 class="text-lg font-bold text-[#1A241D] dark:text-stone-100">Skills Companion</h1>
+<p class="text-[0.6875rem] uppercase tracking-wider text-secondary leading-none">The Tactile Architect</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors font-inter text-[0.875rem] leading-tight label-sm:tracking-wider" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors font-inter text-[0.875rem] leading-tight label-sm:tracking-wider" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span>Skill Library</span>
+</a>
+<!-- Active Tab: Hub -->
+<a class="flex items-center gap-3 px-3 py-2 bg-[#E4E2DD] dark:bg-stone-800 text-[#1A241D] dark:text-white font-semibold rounded-lg font-inter text-[0.875rem] leading-tight label-sm:tracking-wider" href="#">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+<span>Hub</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors font-inter text-[0.875rem] leading-tight label-sm:tracking-wider" href="#">
+<span class="material-symbols-outlined" data-icon="person_search">person_search</span>
+<span>Per Agent</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors font-inter text-[0.875rem] leading-tight label-sm:tracking-wider" href="#">
+<span class="material-symbols-outlined" data-icon="public">public</span>
+<span>Global Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors font-inter text-[0.875rem] leading-tight label-sm:tracking-wider" href="#">
+<span class="material-symbols-outlined" data-icon="backup">backup</span>
+<span>Catalog Backup</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 opacity-50 cursor-not-allowed text-[#6C655B] dark:text-stone-400 font-inter text-[0.875rem] leading-tight label-sm:tracking-wider" href="#">
+<span class="material-symbols-outlined" data-icon="hourglass_empty">hourglass_empty</span>
+<span>Coming Soon</span>
+</a>
+</nav>
+<div class="pt-4 border-t border-outline-variant/15">
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors font-inter text-[0.875rem] leading-tight label-sm:tracking-wider" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<div class="flex items-center gap-3 px-3 py-4 mt-2">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional architect portrait with neutral background and soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3FOkatlw4eAXO8p55Zffe7mv9zT5LUkGtoMPrQvj0aWGv8Qkn5Vw9q9sbZTBmpitqH8OlOJ7tz_AVIzbMWZnnB_EF_XZhXM1ktKNhmY9g6bJZ5by9Dz_Ls6xkIBf4uxHS6IIBLvq3e_grgOPwYKjfS6v8HC0Uy_kq0o3s3ueiuooewMy4V86E0nSEp7NV5j8hF3_d8qNMc6q8xsC0mZSqnu6uDzNb4ztqyvweogTSbZeqgUGYyPXOZAZRGdG6ClUfpXziPwIPnrnP"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold truncate text-on-surface">Architect Avatar</p>
+<p class="text-[10px] text-secondary truncate uppercase tracking-tighter">Premium Tier</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background">
+<!-- TopAppBar Component -->
+<header class="flex justify-between items-center px-8 w-full border-b border-[#C3C8C2]/15 bg-[#FBF9F3] dark:bg-stone-950 h-20">
+<div class="flex flex-col">
+<h2 class="text-2xl font-bold tracking-tighter text-[#1A241D] dark:text-stone-100">Hub</h2>
+<p class="text-[#6C655B] text-xs">Search official skills.sh sources and prepare install commands</p>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant/15 w-64">
+<span class="material-symbols-outlined text-outline text-sm mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm p-0 w-full placeholder:text-outline/50" placeholder="Jump to command..." type="text"/>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="material-symbols-outlined hover:opacity-80 transition-opacity" data-icon="sync">sync</button>
+<button class="material-symbols-outlined hover:opacity-80 transition-opacity" data-icon="help_outline">help_outline</button>
+<button class="material-symbols-outlined hover:opacity-80 transition-opacity" data-icon="account_circle">account_circle</button>
+</div>
+</div>
+</header>
+<!-- Scrollable Work Area -->
+<div class="flex-1 overflow-y-auto p-8 space-y-8">
+<!-- Bento-style Toolbar Grid -->
+<div class="grid grid-cols-12 gap-4">
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+<div class="flex flex-col gap-4">
+<label class="text-[0.6875rem] font-bold uppercase tracking-wider text-secondary">Search Toolbar</label>
+<div class="flex flex-wrap md:flex-nowrap gap-3">
+<div class="flex-1 relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/20 rounded-lg focus:border-primary focus:ring-0 text-sm" placeholder="Search official skills" type="text"/>
+</div>
+<button class="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container transition-all active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="bolt">bolt</span>
+                                Search
+                            </button>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+<div class="flex flex-col gap-4">
+<label class="text-[0.6875rem] font-bold uppercase tracking-wider text-secondary">Configuration</label>
+<div class="space-y-3">
+<div class="flex items-center gap-2 px-3 py-2 bg-surface-container-low border border-outline-variant/20 rounded-lg">
+<span class="material-symbols-outlined text-sm text-outline" data-icon="link">link</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm p-0 w-full" placeholder="GitHub shorthand/URL" type="text" value="anthropics/skills"/>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 text-xs py-1.5 px-2 rounded bg-primary-fixed text-on-primary-fixed font-medium border border-primary/10">Project</button>
+<button class="flex-1 text-xs py-1.5 px-2 rounded bg-surface-container-high text-secondary hover:text-on-surface transition-colors">Global</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Results Section -->
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="list_alt">list_alt</span>
+                        Results Table
+                    </h3>
+<span class="text-[0.6875rem] font-medium text-secondary uppercase tracking-widest">2 Results Found</span>
+</div>
+<div class="overflow-hidden rounded-xl bg-surface-container-lowest border border-outline-variant/10">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50 border-b border-outline-variant/10">
+<th class="px-6 py-4 text-[0.6875rem] font-bold uppercase tracking-wider text-secondary">Skill Title</th>
+<th class="px-6 py-4 text-[0.6875rem] font-bold uppercase tracking-wider text-secondary">Source</th>
+<th class="px-6 py-4 text-[0.6875rem] font-bold uppercase tracking-wider text-secondary">Description</th>
+<th class="px-6 py-4 text-[0.6875rem] font-bold uppercase tracking-wider text-secondary">Install Source</th>
+<th class="px-6 py-4 text-[0.6875rem] font-bold uppercase tracking-wider text-secondary text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-lg" data-icon="palette">palette</span>
+</div>
+<span class="font-semibold text-sm text-primary">frontend-design</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm text-on-surface-variant font-mono">anthropics/skills</td>
+<td class="px-6 py-5 text-sm text-secondary leading-relaxed">High-performance UI scaffolding and tailwind generation engine.</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-surface-container-high text-on-secondary-container uppercase tracking-tight">GitHub</span>
+</td>
+<td class="px-6 py-5 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-secondary hover:text-primary transition-colors" title="Copy Source">
+<span class="material-symbols-outlined text-xl" data-icon="content_copy">content_copy</span>
+</button>
+<button class="p-2 text-secondary hover:text-primary transition-colors" title="Copy Install Command">
+<span class="material-symbols-outlined text-xl" data-icon="terminal">terminal</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-lg" data-icon="bug_report">bug_report</span>
+</div>
+<span class="font-semibold text-sm text-primary">systematic-debugging</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm text-on-surface-variant font-mono">obra/superpowers</td>
+<td class="px-6 py-5 text-sm text-secondary leading-relaxed">Reasoning engine for trace analysis and bug isolation.</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-surface-container-high text-on-secondary-container uppercase tracking-tight">External</span>
+</td>
+<td class="px-6 py-5 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-secondary hover:text-primary transition-colors" title="Copy Source">
+<span class="material-symbols-outlined text-xl" data-icon="content_copy">content_copy</span>
+</button>
+<button class="p-2 text-secondary hover:text-primary transition-colors" title="Copy Install Command">
+<span class="material-symbols-outlined text-xl" data-icon="terminal">terminal</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Sticky Footer Area -->
+<div class="bg-surface-container p-6 border-t border-outline-variant/15 flex flex-col gap-4">
+<!-- Install Command Panel -->
+<div class="bg-primary-container text-on-primary-container p-4 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-4 overflow-hidden">
+<div class="flex items-center justify-center w-8 h-8 rounded bg-white/10 shrink-0">
+<span class="material-symbols-outlined text-white" data-icon="terminal">terminal</span>
+</div>
+<div class="overflow-hidden">
+<p class="text-[10px] uppercase font-bold tracking-widest text-on-primary-container/60 mb-0.5">Install Command</p>
+<code class="text-sm font-mono text-white truncate">npx skills add anthropics/skills@frontend-design</code>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-4">
+<div class="flex items-center gap-2 text-xs font-medium bg-white/10 px-3 py-1.5 rounded text-white border border-white/5">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+                        Copied command. Paste it into your terminal...
+                    </div>
+<button class="px-4 py-1.5 bg-white text-primary text-xs font-bold rounded-md hover:bg-surface-container-highest transition-colors">
+                        Re-copy
+                    </button>
+</div>
+</div>
+<!-- Command Output Collapsed -->
+<div class="group cursor-pointer">
+<div class="flex items-center justify-between px-4 py-2 bg-surface-container-highest/50 rounded-lg border border-outline-variant/15 hover:bg-surface-container-highest transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="keyboard_arrow_up">keyboard_arrow_up</span>
+<span class="text-[0.6875rem] font-bold uppercase tracking-wider text-secondary">Terminal Output (Collapsed)</span>
+</div>
+<div class="flex gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary-fixed"></div>
+<div class="w-2 h-2 rounded-full bg-secondary-fixed"></div>
+<div class="w-2 h-2 rounded-full bg-secondary-fixed"></div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

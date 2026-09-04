@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Catalog Backup - The Tactile Architect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e4e2dd",
+                        "on-primary-fixed-variant": "#3e4941",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#6a6359",
+                        "secondary-container": "#ebe1d4",
+                        "on-surface": "#1b1c18",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f5f3ed",
+                        "surface-container-high": "#eae8e2",
+                        "on-primary-container": "#98a499",
+                        "surface-tint": "#566158",
+                        "tertiary-container": "#383732",
+                        "surface": "#fbf9f3",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#1b1c18",
+                        "tertiary-fixed": "#e6e2da",
+                        "primary-fixed-dim": "#bdcabe",
+                        "primary": "#1a241d",
+                        "outline-variant": "#c3c8c2",
+                        "on-surface-variant": "#434844",
+                        "inverse-primary": "#bdcabe",
+                        "on-tertiary-fixed-variant": "#484741",
+                        "tertiary": "#23221d",
+                        "secondary-fixed": "#ebe1d4",
+                        "primary-fixed": "#d9e6da",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#f0eee8",
+                        "primary-container": "#2f3a32",
+                        "background": "#fbf9f3",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e4e2dd",
+                        "surface-dim": "#dcdad4",
+                        "on-error": "#ffffff",
+                        "secondary": "#645d54",
+                        "secondary-fixed-dim": "#cfc5b9",
+                        "on-tertiary-fixed": "#1c1c17",
+                        "surface-bright": "#fbf9f3",
+                        "on-secondary-fixed-variant": "#4c463d",
+                        "outline": "#747873",
+                        "on-primary-fixed": "#131e17",
+                        "on-secondary-fixed": "#1f1b13",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#a3a099",
+                        "tertiary-fixed-dim": "#cac6bf",
+                        "inverse-on-surface": "#f3f1eb",
+                        "inverse-surface": "#30312d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .step-inactive { opacity: 0.4; pointer-events: none; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-4 bg-[#F5F3ED] border-r border-[#C3C8C2]/15 w-64 z-50">
+<div class="mb-8 px-2">
+<h1 class="text-lg font-bold text-[#1A241D] tracking-tight">Skill Companion</h1>
+<p class="text-[0.6875rem] uppercase tracking-wider text-[#6C655B] font-medium">Arcane Ivory v1.0</p>
+</div>
+<nav class="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 text-[#6C655B] hover:bg-[#E4E2DD]/50 group" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="text-[0.875rem] font-medium">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 text-[#6C655B] hover:bg-[#E4E2DD]/50 group" href="#">
+<span class="material-symbols-outlined text-[20px]">library_books</span>
+<span class="text-[0.875rem] font-medium">Skill Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 text-[#6C655B] hover:bg-[#E4E2DD]/50 group" href="#">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+<span class="text-[0.875rem] font-medium">Hub</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 text-[#6C655B] hover:bg-[#E4E2DD]/50 group" href="#">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+<span class="text-[0.875rem] font-medium">Per Agent</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 text-[#6C655B] hover:bg-[#E4E2DD]/50 group" href="#">
+<span class="material-symbols-outlined text-[20px]">public</span>
+<span class="text-[0.875rem] font-medium">Global</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[#E4E2DD] text-[#1A241D] font-semibold scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">backup</span>
+<span class="text-[0.875rem]">Catalog Backup</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 text-[#6C655B] hover:bg-[#E4E2DD]/50 group" href="#">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+<span class="text-[0.875rem] font-medium">Coming Soon</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-[#C3C8C2]/10 pt-4">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 text-[#6C655B] hover:bg-[#E4E2DD]/50 group" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-[0.875rem] font-medium">Settings</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-64 h-16 flex justify-between items-center px-8 bg-[#FBF9F3]/80 backdrop-blur-md border-b border-[#C3C8C2]/10 z-40">
+<h2 class="text-xl font-black text-[#1A241D] tracking-tight">The Tactile Architect</h2>
+<div class="flex items-center gap-6">
+<div class="relative">
+<input class="w-64 h-9 pl-9 pr-4 bg-surface-container-lowest border border-outline-variant/15 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary transition-all duration-300" placeholder="Search parameters..." type="text"/>
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-[20px] text-[#6C655B]">search</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 text-[#6C655B] hover:text-[#1A241D] transition-colors duration-300">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-[#6C655B] hover:text-[#1A241D] transition-colors duration-300">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden ml-2 border border-outline-variant/20">
+<img alt="Profile" data-alt="Abstract geometric avatar for a technical professional with earthy tones and architectural shapes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1coHa2yJd00XKJqe3iGBleCYGt49i20FF5rhTNYkLsvzmfOBfRDWukypv0lrlESgkexpgZbb6e2i5vWBzScfDxMpzzAa3F6cF-N6T-xwn_Riv111DPAIXGFX0G7pbUQ6DPSRpDcK6OP0wUvq3oApYFEP8ADQK2E6MkXle-rOHKaoZBgayjvQlBsBR1hafhNnawAs1tCU0mGKPchenhvfT45WNgoDnJBI_3oUtaY5MkiabMb8TnHGa1BzDi5hbWzONuAbuQMIIkXLo"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 pt-16 min-h-screen bg-background p-8">
+<div class="max-w-5xl mx-auto">
+<!-- Header Section -->
+<div class="mb-10">
+<h3 class="text-2xl font-bold text-primary tracking-tight mb-2">Local Catalog Export</h3>
+<p class="text-secondary text-sm max-w-2xl leading-relaxed">
+                    Export your skill configurations as a portable JSON file. Please note that import compatibility depends on skills installed via the <code class="bg-surface-container-high px-1.5 py-0.5 rounded text-[12px] font-mono">skills.sh</code> CLI and utilizes taxonomy defined in <code class="bg-surface-container-high px-1.5 py-0.5 rounded text-[12px] font-mono">skills.json</code>.
+                </p>
+</div>
+<!-- Bento Layout Content -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left: Step 1 & 3 -->
+<div class="lg:col-span-4 space-y-8">
+<!-- Step 1: Select Sources -->
+<section class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/15 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<span class="w-6 h-6 flex items-center justify-center bg-primary text-on-primary text-[10px] font-bold rounded-full">01</span>
+<h4 class="text-sm font-bold uppercase tracking-wider text-primary">Select Sources</h4>
+</div>
+<div class="space-y-3">
+<label class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer group">
+<input checked="" class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">Global Registry</span>
+<span class="text-[11px] text-secondary">Base system parameters</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer group">
+<input checked="" class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">Codex</span>
+<span class="text-[11px] text-secondary">Local development snippets</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer group">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">Claude Config</span>
+<span class="text-[11px] text-secondary">Anthropic model specific instructions</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer group">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">Gemini Settings</span>
+<span class="text-[11px] text-secondary">Google AI profile mappings</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer group">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">OpenCode</span>
+<span class="text-[11px] text-secondary">Open source model extensions</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Step 3: Finalize Export -->
+<section class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-6">
+<span class="w-6 h-6 flex items-center justify-center bg-primary text-on-primary text-[10px] font-bold rounded-full">03</span>
+<h4 class="text-sm font-bold uppercase tracking-wider text-primary">Generate File</h4>
+</div>
+<div class="space-y-4">
+<button class="w-full py-4 px-6 bg-primary text-on-primary font-bold rounded-lg hover:bg-primary-container transition-all duration-300 flex flex-col items-center gap-1 group">
+<span class="text-sm">Export ai-skills-catalog.json</span>
+<span class="text-[11px] font-normal opacity-70">JSON Format • 1.4 MB</span>
+</button>
+<div class="pt-4 space-y-2 border-t border-outline-variant/20">
+<button class="w-full flex items-center justify-between px-3 py-2 text-[12px] font-medium text-secondary hover:text-primary hover:bg-surface-container-high rounded transition-colors group">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">folder_open</span>
+                                        Reveal in Folder
+                                    </span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between px-3 py-2 text-[12px] font-medium text-secondary hover:text-primary hover:bg-surface-container-high rounded transition-colors group">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+                                        Copy Path
+                                    </span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between px-3 py-2 text-[12px] font-medium text-secondary hover:text-primary hover:bg-surface-container-high rounded transition-colors group">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">open_in_new</span>
+                                        Open File
+                                    </span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+<!-- Right: Step 2 Preview -->
+<div class="lg:col-span-8">
+<section class="bg-surface-container-lowest h-full p-8 rounded-xl border border-outline-variant/15 shadow-sm overflow-hidden flex flex-col">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-3">
+<span class="w-6 h-6 flex items-center justify-center bg-primary text-on-primary text-[10px] font-bold rounded-full">02</span>
+<h4 class="text-sm font-bold uppercase tracking-wider text-primary">Preview Export Data</h4>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary-fixed"></span>
+<span class="text-[11px] text-secondary font-medium">Portable</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-surface-container-highest"></span>
+<span class="text-[11px] text-secondary font-medium">Static</span>
+</div>
+</div>
+</div>
+<div class="flex-1 space-y-6">
+<!-- Portable Skills -->
+<div>
+<h5 class="text-[11px] font-bold uppercase tracking-widest text-[#6C655B] mb-4">Portable Skills (Found in skills.sh)</h5>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-primary-fixed/30 group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<p class="text-sm font-bold text-primary">CLI_Automator_v4</p>
+<p class="text-[11px] text-secondary font-mono">ID: xf92-ak88 • Lock Hash: e4d2...</p>
+</div>
+</div>
+<div class="flex items-center gap-2 px-2.5 py-1 bg-primary text-on-primary text-[10px] font-bold rounded uppercase tracking-tighter">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+                                            Secure
+                                        </div>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-primary-fixed/30 group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">database</span>
+</div>
+<div>
+<p class="text-sm font-bold text-primary">Postgres_Optimizer</p>
+<p class="text-[11px] text-secondary font-mono">ID: qp11-m92s • Lock Hash: b190...</p>
+</div>
+</div>
+<div class="flex items-center gap-2 px-2.5 py-1 bg-primary text-on-primary text-[10px] font-bold rounded uppercase tracking-tighter">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+                                            Secure
+                                        </div>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-primary-fixed/30 group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">api</span>
+</div>
+<div>
+<p class="text-sm font-bold text-primary">REST_Interface_Generator</p>
+<p class="text-[11px] text-secondary font-mono">ID: d881-v22k • Lock Hash: c9a2...</p>
+</div>
+</div>
+<div class="flex items-center gap-2 px-2.5 py-1 bg-primary text-on-primary text-[10px] font-bold rounded uppercase tracking-tighter">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+                                            Secure
+                                        </div>
+</div>
+</div>
+</div>
+<!-- Non-portable Skills -->
+<div>
+<h5 class="text-[11px] font-bold uppercase tracking-widest text-[#6C655B] mb-4">Non-Portable Skills (Missing metadata)</h5>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-4 bg-surface-container rounded-lg border-l-4 border-error/40 group">
+<div class="flex items-center gap-4 opacity-75">
+<div class="w-10 h-10 rounded bg-surface-container-highest flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div>
+<p class="text-sm font-bold text-primary">Draft_Reviewer_Legacy</p>
+<p class="text-[11px] text-error font-medium">Missing skills.sh lock reference</p>
+</div>
+</div>
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">info</span>
+</button>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container rounded-lg border-l-4 border-error/40 group">
+<div class="flex items-center gap-4 opacity-75">
+<div class="w-10 h-10 rounded bg-surface-container-highest flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">psychology</span>
+</div>
+<div>
+<p class="text-sm font-bold text-primary">Local_Model_Wrapper</p>
+<p class="text-[11px] text-error font-medium">Manual installation path detected</p>
+</div>
+</div>
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">info</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-12 p-5 bg-tertiary-fixed rounded-lg border border-outline-variant/20 flex gap-4 items-start">
+<span class="material-symbols-outlined text-[#1A241D] mt-0.5">verified_user</span>
+<div class="space-y-1">
+<p class="text-xs font-bold text-[#1A241D]">Integrity Recommendation</p>
+<p class="text-[11px] text-[#484741] leading-relaxed">To ensure all skills are portable, please re-run <code class="bg-[#1A241D]/5 px-1 font-mono">skills.sh sync</code> on legacy components before finalizing the JSON export. This will append the required lock metadata to your catalog.</p>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+<!-- Visual Polish: Grainy Texture Overlay -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-multiply" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDbgwy9Fcp32q3O3LBPVfeP2hMio4uobE0HaKJdrPMYhKmqUuK_jLYXeL5PXyklxRLtIrT7v02rzlbg4gdbHr4Toysof6KyoRX-SBYy1NSskeqPqcFMb-0mk2_2HYfSl3tMInsDXApdasNDcnOOzNN8Q5QFJXgnWxL06EZbMBT3Fgdcwer2ZbBn7SfjjOH_M5tZkltR4T87c-hyui5WdouIKHZuDyebbnv_176nj32CCenNQprST5M4UpiDh2GSUsUf29pRdEkjfVF8');"></div>
+</body></html>

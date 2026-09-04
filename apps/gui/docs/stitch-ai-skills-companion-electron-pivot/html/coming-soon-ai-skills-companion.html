@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Coming Soon - AI Skills Companion</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline": "#747873",
+                    "on-tertiary-fixed-variant": "#484741",
+                    "surface-container-low": "#f5f3ed",
+                    "on-primary-fixed-variant": "#3e4941",
+                    "primary": "#1a241d",
+                    "on-secondary": "#ffffff",
+                    "inverse-surface": "#30312d",
+                    "primary-fixed": "#d9e6da",
+                    "on-secondary-fixed-variant": "#4c463d",
+                    "surface-container": "#f0eee8",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed": "#e6e2da",
+                    "on-tertiary-container": "#a3a099",
+                    "on-secondary-fixed": "#1f1b13",
+                    "surface-bright": "#fbf9f3",
+                    "error": "#ba1a1a",
+                    "on-tertiary-fixed": "#1c1c17",
+                    "on-primary-fixed": "#131e17",
+                    "secondary-fixed-dim": "#cfc5b9",
+                    "surface-container-highest": "#e4e2dd",
+                    "surface-variant": "#e4e2dd",
+                    "surface-dim": "#dcdad4",
+                    "on-error-container": "#93000a",
+                    "primary-fixed-dim": "#bdcabe",
+                    "tertiary-container": "#383732",
+                    "primary-container": "#2f3a32",
+                    "outline-variant": "#c3c8c2",
+                    "surface": "#fbf9f3",
+                    "surface-tint": "#566158",
+                    "on-surface-variant": "#434844",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed-dim": "#cac6bf",
+                    "on-secondary-container": "#6a6359",
+                    "on-background": "#1b1c18",
+                    "inverse-on-surface": "#f3f1eb",
+                    "background": "#fbf9f3",
+                    "on-surface": "#1b1c18",
+                    "secondary-fixed": "#ebe1d4",
+                    "on-primary-container": "#98a499",
+                    "secondary-container": "#ebe1d4",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#23221d",
+                    "surface-container-high": "#eae8e2",
+                    "on-tertiary": "#ffffff",
+                    "secondary": "#645d54",
+                    "inverse-primary": "#bdcabe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Inter", "sans-serif"],
+                    "display": ["Inter", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["Inter", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-primary selection:bg-primary-fixed antialiased">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col py-6 px-4 bg-[#F5F3ED] dark:bg-stone-900 h-screen w-64 flex-shrink-0 font-inter text-[0.875rem] leading-[1.4] z-50">
+<div class="flex items-center gap-3 mb-10 px-2">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[1.25rem]" data-icon="smart_toy">smart_toy</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-[#1A241D] dark:text-stone-50 leading-none">AI Skills</h1>
+<p class="text-[0.6875rem] uppercase tracking-wider text-[#6C655B] font-medium mt-1">Companion</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>Skill Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+<span>Hub</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+<span>Per Agent</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="public">public</span>
+<span>Global Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="backup">backup</span>
+<span>Catalog Backup</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-[#E4E2DD] dark:bg-stone-800 text-[#1A241D] dark:text-white font-semibold rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span>Coming Soon</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#6C655B] dark:text-stone-400 hover:text-[#1A241D] dark:hover:text-stone-200 hover:bg-[#E4E2DD]/50 dark:hover:bg-stone-800/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-outline-variant/10">
+<div class="p-4 bg-surface-container rounded-lg">
+<p class="text-[0.6875rem] font-bold text-primary mb-2 uppercase tracking-tight">Current Milestone</p>
+<p class="text-[0.75rem] text-secondary leading-normal">Electron replacement, feature parity, and local Catalog Backup export.</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen">
+<!-- TopAppBar (Shared Component) -->
+<header class="flex justify-between items-center px-10 py-6 ml-0">
+<div class="flex items-center gap-8">
+<h2 class="text-lg font-bold text-[#1A241D] dark:text-stone-100">Roadmap</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-secondary" data-icon="search">search</span>
+<input class="pl-10 pr-4 py-1.5 bg-surface-container-lowest border border-outline-variant/20 rounded-lg text-sm focus:outline-none focus:border-primary w-64" placeholder="Search roadmap..." type="text"/>
+</div>
+<div class="flex items-center gap-4 text-secondary">
+<button class="hover:text-primary transition-opacity"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button>
+<button class="hover:text-primary transition-opacity"><span class="material-symbols-outlined" data-icon="help_outline">help_outline</span></button>
+<button class="hover:text-primary transition-opacity"><span class="material-symbols-outlined" data-icon="account_circle">account_circle</span></button>
+</div>
+</div>
+</header>
+<!-- Roadmap Content -->
+<section class="px-10 py-8 max-w-5xl">
+<div class="mb-12">
+<h1 class="text-3xl font-extrabold text-primary mb-3 tracking-tight">Coming Soon</h1>
+<p class="text-secondary max-w-2xl leading-relaxed">Planned skill-management ideas beyond the first Electron replacement milestone. These features focus on organizational efficiency and advanced agent orchestration.</p>
+</div>
+<!-- Feature Table -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/10">
+<div class="grid grid-cols-12 px-6 py-4 border-b border-surface-container bg-surface-container-low text-[0.6875rem] font-bold text-secondary uppercase tracking-widest">
+<div class="col-span-5">Feature Area</div>
+<div class="col-span-5">Description &amp; Implementation</div>
+<div class="col-span-2 text-right">Status</div>
+</div>
+<!-- Row 1 -->
+<div class="grid grid-cols-12 px-6 py-6 hover:bg-surface-container-low transition-colors duration-200 border-b border-surface-container-low last:border-0 items-center">
+<div class="col-span-5 flex items-start gap-4">
+<div class="mt-1 w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[1.25rem]" data-icon="visibility_off">visibility_off</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">AI Companion discovery mode</p>
+<p class="text-xs text-secondary mt-1">Global isolation protocol</p>
+</div>
+</div>
+<div class="col-span-5 pr-8">
+<p class="text-sm text-secondary leading-normal">Hide active global skills, expose only ai-companion for agents to use skills.json taxonomy for strictly scoped interactions.</p>
+</div>
+<div class="col-span-2 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold uppercase tracking-wider bg-tertiary-fixed-dim text-on-tertiary-fixed">Research</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="grid grid-cols-12 px-6 py-6 hover:bg-surface-container-low transition-colors duration-200 border-b border-surface-container-low last:border-0 items-center">
+<div class="col-span-5 flex items-start gap-4">
+<div class="mt-1 w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[1.25rem]" data-icon="folder_zip">folder_zip</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">Nested skill folders</p>
+<p class="text-xs text-secondary mt-1">Hierarchical organization</p>
+</div>
+</div>
+<div class="col-span-5 pr-8">
+<p class="text-sm text-secondary leading-normal">Display grouped folders like <code class="bg-surface-container px-1 rounded font-mono text-[10px]">afk/</code> and <code class="bg-surface-container px-1 rounded font-mono text-[10px]">superpowers/</code> gracefully within the UI.</p>
+</div>
+<div class="col-span-2 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold uppercase tracking-wider bg-primary-fixed text-on-primary-fixed">Planned</span>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="grid grid-cols-12 px-6 py-6 hover:bg-surface-container-low transition-colors duration-200 border-b border-surface-container-low last:border-0 items-center">
+<div class="col-span-5 flex items-start gap-4">
+<div class="mt-1 w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[1.25rem]" data-icon="sell">sell</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">Tag filters</p>
+<p class="text-xs text-secondary mt-1">Dynamic metadata views</p>
+</div>
+</div>
+<div class="col-span-5 pr-8">
+<p class="text-sm text-secondary leading-normal">Use native tags from <code class="bg-surface-container px-1 rounded font-mono text-[10px]">skills.json</code> as robust sidebar filters and persistent saved views.</p>
+</div>
+<div class="col-span-2 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold uppercase tracking-wider bg-primary-fixed text-on-primary-fixed">Planned</span>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="grid grid-cols-12 px-6 py-6 hover:bg-surface-container-low transition-colors duration-200 border-b border-surface-container-low last:border-0 items-center">
+<div class="col-span-5 flex items-start gap-4">
+<div class="mt-1 w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[1.25rem]" data-icon="person_search">person_search</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">Skill profiles</p>
+<p class="text-xs text-secondary mt-1">Contextual activation</p>
+</div>
+</div>
+<div class="col-span-5 pr-8">
+<p class="text-sm text-secondary leading-normal">Activate curated sets of skills while hiding others safely to prevent token bloat and agent confusion during complex tasks.</p>
+</div>
+<div class="col-span-2 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold uppercase tracking-wider bg-surface-container text-secondary">Later</span>
+</div>
+</div>
+<!-- Row 5 -->
+<div class="grid grid-cols-12 px-6 py-6 hover:bg-surface-container-low transition-colors duration-200 border-b border-surface-container-low last:border-0 items-center">
+<div class="col-span-5 flex items-start gap-4">
+<div class="mt-1 w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[1.25rem]" data-icon="workspaces">workspaces</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">Project skill sets</p>
+<p class="text-xs text-secondary mt-1">Path-based automation</p>
+</div>
+</div>
+<div class="col-span-5 pr-8">
+<p class="text-sm text-secondary leading-normal">Automated project path inspection to suggest or add relevant skills based on the working directory context.</p>
+</div>
+<div class="col-span-2 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold uppercase tracking-wider bg-primary-fixed text-on-primary-fixed">Planned</span>
+</div>
+</div>
+<!-- Row 6 -->
+<div class="grid grid-cols-12 px-6 py-6 hover:bg-surface-container-low transition-colors duration-200 border-b border-surface-container-low last:border-0 items-center">
+<div class="col-span-5 flex items-start gap-4">
+<div class="mt-1 w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[1.25rem]" data-icon="terminal">terminal</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">Slash commands</p>
+<p class="text-xs text-secondary mt-1">CLI bridge interface</p>
+</div>
+</div>
+<div class="col-span-5 pr-8">
+<p class="text-sm text-secondary leading-normal">Dedicated tab for managing command lists parsed directly from agent-specific configuration folders.</p>
+</div>
+<div class="col-span-2 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold uppercase tracking-wider bg-tertiary-fixed-dim text-on-tertiary-fixed">Research</span>
+</div>
+</div>
+<!-- Row 7 -->
+<div class="grid grid-cols-12 px-6 py-6 hover:bg-surface-container-low transition-colors duration-200 border-b border-surface-container-low last:border-0 items-center">
+<div class="col-span-5 flex items-start gap-4">
+<div class="mt-1 w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[1.25rem]" data-icon="integration_instructions">integration_instructions</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">SDK categorization</p>
+<p class="text-xs text-secondary mt-1">Core architectural upgrade</p>
+</div>
+</div>
+<div class="col-span-5 pr-8">
+<p class="text-sm text-secondary leading-normal">Deep integration: Replace legacy CLI calls with native Codex and Claude SDK implementations for higher reliability.</p>
+</div>
+<div class="col-span-2 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold uppercase tracking-wider bg-surface-container text-secondary">Later</span>
+</div>
+</div>
+<!-- Row 8 -->
+<div class="grid grid-cols-12 px-6 py-6 hover:bg-surface-container-low transition-colors duration-200 border-b border-surface-container-low last:border-0 items-center">
+<div class="col-span-5 flex items-start gap-4">
+<div class="mt-1 w-8 h-8 rounded bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[1.25rem]" data-icon="sync">sync</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">GitHub-backed catalog sync</p>
+<p class="text-xs text-secondary mt-1">Portable ecosystem</p>
+</div>
+</div>
+<div class="col-span-5 pr-8">
+<p class="text-sm text-secondary leading-normal">Cloud-native extension of the portable JSON export/import system for seamless multi-device syncing.</p>
+</div>
+<div class="col-span-2 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold uppercase tracking-wider bg-surface-container text-secondary">Later</span>
+</div>
+</div>
+</div>
+<!-- Asymmetric Info Grid (Bottom) -->
+<div class="mt-10 grid grid-cols-3 gap-6">
+<div class="col-span-2 p-6 bg-primary-container text-on-primary-container rounded-xl flex items-center gap-6">
+<div class="flex-1">
+<h4 class="text-lg font-bold mb-1">Architecture Milestone Focus</h4>
+<p class="text-sm opacity-80 leading-relaxed">We are currently focused on providing a stable, high-performance base. This includes replacing the Electron shell and ensuring full feature parity with legacy versions.</p>
+</div>
+<div class="w-32 h-20 rounded-lg bg-white/5 flex items-center justify-center relative overflow-hidden shrink-0">
+<div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 10px 10px, white 2px, transparent 0); background-size: 20px 20px;"></div>
+<span class="material-symbols-outlined text-4xl" data-icon="architecture">architecture</span>
+</div>
+</div>
+<div class="p-6 bg-surface-container-highest rounded-xl border border-outline-variant/5">
+<p class="text-[0.6875rem] font-bold text-primary uppercase tracking-wider mb-3">Feedback Loop</p>
+<p class="text-xs text-secondary leading-normal mb-4">Are we missing a feature you need? Submit an issue to the roadmap repository.</p>
+<button class="w-full py-2 bg-primary text-white text-xs font-bold rounded hover:opacity-90 transition-opacity">Request Feature</button>
+</div>
+</div>
+<!-- Milestone Disclaimer -->
+<footer class="mt-16 pb-12 border-t border-outline-variant/10 pt-6">
+<div class="flex items-center gap-4 text-secondary">
+<span class="material-symbols-outlined text-sm" data-icon="info">info</span>
+<p class="text-[0.6875rem] font-medium uppercase tracking-widest">
+                        Milestone Note: Current milestone includes Electron replacement, feature parity, reduced menu bar open/close, and local Catalog Backup export.
+                    </p>
+</div>
+</footer>
+</section>
+</main>
+<!-- Visual Accents: Ghost Blobs for Depth -->
+<div class="fixed top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary-fixed/5 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+<div class="fixed bottom-[-5%] left-[20%] w-[30%] h-[30%] bg-secondary-fixed/5 blur-[100px] rounded-full pointer-events-none -z-10"></div>
+</body></html>
