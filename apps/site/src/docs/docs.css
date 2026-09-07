@@ -5,7 +5,7 @@
 .docs-header-label { border-left: 1px solid var(--verdigris); padding-left: 24px; font-size: .85rem; }
 .docs-header > a:last-child { margin-left: auto; font-size: .85rem; text-decoration: underline; text-underline-offset: 5px; }
 .docs-layout { display: grid; grid-template-columns: 230px minmax(0, 760px) 190px; gap: 44px; max-width: 1376px; margin: 0 auto; padding: 0 32px; }
-.docs-sidebar { position: sticky; top: 74px; align-self: start; height: calc(100svh - 74px); padding: 40px 24px 24px 0; border-right: 1px solid var(--rule); display: flex; flex-direction: column; overflow: auto; }
+.docs-sidebar { position: sticky; top: 74px; align-self: start; height: calc(100svh - 74px); margin-left: -6px; padding: 40px 24px 24px 6px; border-right: 1px solid var(--rule); display: flex; flex-direction: column; overflow: auto; }
 .docs-manual-title { font-weight: 600; margin-bottom: 24px; }
 .docs-filter { display: grid; gap: 8px; color: var(--muted); font-size: .75rem; }
 .docs-filter input { width: 100%; min-height: 42px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); padding: 8px 10px; font: inherit; font-size: .8rem; color: var(--ink); caret-color: var(--verdigris); }
