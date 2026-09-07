@@ -51,18 +51,67 @@ typography:
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "0"
+  docs-headline:
+    fontFamily: "Poppins, system-ui, sans-serif"
+    fontSize: "2.6rem"
+    fontWeight: 600
+    lineHeight: 1.18
+    letterSpacing: "0"
+  docs-title:
+    fontFamily: "Poppins, system-ui, sans-serif"
+    fontSize: "1.45rem"
+    fontWeight: 600
+    lineHeight: 1.35
+    letterSpacing: "0"
+  docs-body:
+    fontFamily: "Poppins, system-ui, sans-serif"
+    fontSize: "0.95rem"
+    fontWeight: 400
+    lineHeight: 1.8
+    letterSpacing: "0"
+  docs-lead:
+    fontFamily: "Poppins, system-ui, sans-serif"
+    fontSize: "1.05rem"
+    fontWeight: 400
+    lineHeight: 1.8
+    letterSpacing: "0"
+  docs-code:
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
+    fontSize: "0.82rem"
+    fontWeight: 400
+    lineHeight: 1.7
+    letterSpacing: "0"
 rounded:
+  docs-small: "4px"
   icon: "5px"
   compact: "6px"
   control: "8px"
   panel: "12px"
   instrument: "16px"
 spacing:
+  docs-unit: "8px"
+  docs-inset: "16px"
+  docs-rhythm: "24px"
   compact: "10px"
   control: "12px 18px"
   card: "22px"
   section: "clamp(88px, 11vw, 148px)"
 components:
+  docs-chapter-current:
+    backgroundColor: "{colors.deep-ocean}"
+    textColor: "{colors.surface}"
+    rounded: "{rounded.docs-small}"
+    padding: "10px 12px"
+  docs-filter:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.compact}"
+    padding: "8px 10px"
+  docs-command:
+    backgroundColor: "{colors.deep-ocean}"
+    textColor: "{colors.lantern}"
+    typography: "{typography.docs-code}"
+    rounded: "{rounded.control}"
   button-primary:
     backgroundColor: "{colors.deep-ocean}"
     textColor: "{colors.surface}"
@@ -106,6 +155,12 @@ The hero is the system diagram: one AFK core sends four animated dashed routes t
 - Layouts use a route instrument, ledgers, manifests, and layer stacks to explain composition.
 - Motion reveals route progression and readiness, then yields completely to reduced-motion preferences.
 
+### Docs Surface Extension
+
+The docs translate Composable Trail into a quiet field manual: an unframed reading column, chapter rail, lightweight heading links, and ocean command surfaces. They reuse the existing identity, not a new visual world. Homepage descriptions elsewhere in this document remain homepage-specific; the docs rules below do not replace them.
+
+Evidence: `apps/site/src/docs/Docs.jsx`, `docs.css`, and `GuideContent.jsx`, with inherited tokens and base styles in `apps/site/src/index.css` and font loading in `apps/site/index.html`. Direction is recorded in `docs/specs/afk-docs.md`; desktop and mobile captures are under `.impeccable/review/docs/`.
+
 ## Colors
 
 The shipped palette uses a warm paper foundation with ocean-led operational structure. The four Logbook anchors are semantic, not interchangeable decoration.
@@ -137,6 +192,10 @@ The shipped palette uses a warm paper foundation with ocean-led operational stru
 
 **The Accent Has a Job Rule.** Verdigris indicates focus or an available action; Rust indicates route/signal; Brass indicates an active instrument detail. Every one needs an accompanying structural or text cue where meaning matters.
 
+### Docs Color Application
+
+Docs reuse Surface as the opaque reading canvas, Ink for prose, Muted for supporting text, and Rule for separators. Deep Ocean anchors the header, current chapter, and command blocks; Lantern carries code. Field Paper marks inline code, table headers, and chapter hover. Verdigris carries focus, command-bar rules, copy borders, and article-link underlines. Rust Deep is limited to the sidebar narrative note and article-link hover; docs introduce no new color primitives.
+
 ## Typography
 
 **Display Font:** Poppins (with `system-ui` fallback)
@@ -163,6 +222,12 @@ The shipped palette uses a warm paper foundation with ocean-led operational stru
 
 **The One Scribble Rule.** Caveat appears once, beside the closing command. Do not repeat it elsewhere or use it to communicate information a user must perceive.
 
+### Docs Type Hierarchy
+
+Docs use the `docs-headline`, `docs-title`, `docs-body`, `docs-lead`, and `docs-code` roles above across chapters. Poppins normal 400 is explicitly loaded in `index.html`, alongside 500, 600, and 700. H1 is capped at `23ch`; paragraphs at `72ch`. At `760px` and below, H1 becomes `2rem`, H2 `1.3rem`, body `.9rem`, and lead `1rem`; line heights remain unchanged. Chapter links use `.85rem`/500, current chapter 700; the on-page navigation uses `.75rem`/400 with a 600 title. Command-bar labels and copy status use Poppins `.75rem`, not the homepage uppercase mono label role. Inline code is `.85em`. Literata remains sparse in the sidebar note and footer attribution; docs do not use Caveat.
+
+**The Reading Measure Rule.** Docs use fixed-size Poppins headings, generous 1.8 body leading, and a bounded reading column; the homepage hero scale does not transfer to articles.
+
 ## Layout
 
 The desktop content measure is `min(1180px, calc(100vw - 72px))`; section rhythm is `clamp(88px, 11vw, 148px)`. The sticky header is a three-column grid at `74px` minimum height: brand left, navigation centered, and the install action right. It uses a lightly translucent field-paper backdrop with a 16px blur.
@@ -170,6 +235,15 @@ The desktop content measure is `min(1180px, calc(100vw - 72px))`; section rhythm
 The first viewport is a two-column trail: the copy uses `minmax(0, .84fr)` and the route instrument uses `minmax(500px, 1.16fr)`, separated by `clamp(48px, 7vw, 96px)`. The map is a `650px`-minimum framed instrument with an AFK core at center and four absolutely positioned agent nodes. Subsequent sections alternate ledger rows, a sticky three-layer stack beside a manual list, a dark install route, a stepped context stack, an agent band, and a rust closing action.
 
 At `980px` and below, the content measure becomes `min(100% - 44px, 760px)`. The header becomes a two-column first row with navigation centered beneath it; the hero, kit, context, and closing become one column; the route map lowers to `600px`; and the stack becomes a three-column static grid. At `700px` and below, the measure becomes `100% - 32px`, sections use `76px` rhythm, the header is `66px`, hero actions stack, command labels take a full first row, the route map is `500px`, ledgers become one column, install tabs become two columns, the install panel reserves room for a bottom-right copy action, the agent band becomes two columns, and both footer groups stack.
+
+### Docs Layout
+
+The docs shell is `min-height: 100svh`. Its opaque sticky header inherits `top: 0` and `z-index: 30`, uses a `74px` minimum height, `16px 32px` padding, and a `24px` gap without blur. The centered layout has `max-width: 1376px`, `0 32px` padding, `230px minmax(0, 760px) 190px` tracks, and `44px` gaps. The sidebar sticks at `74px`, reserves `calc(100svh - 74px)` height, scrolls independently, and has `40px 24px 24px 0` padding and a right Rule border. The on-page rail sticks at `114px`.
+
+Article padding is `48px 0 24px`. Repeated H2 sections use `40px 0 14px` margins and `110px` scroll margins; paragraphs use `12px 0 20px`; command blocks and tables use `24px 0`. Pagination has `48px` top margin and `24px 0` padding; the footer repeats `24px 0` padding and a top rule.
+
+At `1150px` and below, the on-page rail disappears and tracks become `210px minmax(0, 760px)` with `32px` gaps. At `760px` and below, the sidebar disappears, layout becomes a single block with `20px` gutters, and a labeled native select replaces chapter navigation. Its row uses `20px 0` padding, a `16px` gap, and a bottom Rule border; the select has a `44px` minimum height. The header becomes `66px` minimum height with `14px 20px` padding and `16px` gaps; the Documentation label disappears. Article top padding becomes `32px`. These are docs breakpoints, independent of homepage breakpoints.
+
 
 ## Elevation & Depth
 
@@ -183,9 +257,19 @@ Depth is border-led, with shadows reserved for the route instrument and selected
 - **Context layer** (`0 14px 28px rgba(72,47,28,.08)`): The stepped portable/personal/project stack.
 - **Toast** (`0 18px 44px rgba(23,32,30,.2)`): Transient status feedback only.
 
+### Docs Depth
+
+Docs add no shadows, reveals, or decorative grid layer. The opaque Surface canvas covers the inherited page background; tonal command blocks and 1px rules provide separation. Copy feedback remains in the command block instead of using the homepage floating toast. Global focus and reduced-motion scroll behavior remain inherited.
+
+
 ## Shapes
 
 Most controls, nodes, cards, and code surfaces use `8px` corners; compact copy and icon treatments use `6px` and `5px`. The install panel is `12px`; the route map and central AFK core are the only `16px` instrument frames. The fact list is deliberately pill-shaped (`999px`) and should remain a compact metadata treatment, not expand into a generic rounded-card language. Strong items retain `1px` Ink borders; quiet boundaries use Rule.
+
+### Docs Shapes
+
+Docs command blocks retain `8px` corners. Chapter links, copy buttons, and the mobile select use `4px`; the chapter filter uses `6px`; inline code uses `3px` with `2px 4px` padding. Article sections remain unframed. The existing `AfkMark` component is rendered at `32px` square in the docs header; this records component reuse, not an official stack-native logo claim.
+
 
 ## Components
 
@@ -223,9 +307,27 @@ The sticky header is a semantic `header` with labeled primary navigation. Its AF
 - **Motion:** Smooth page scroll is enabled. Buttons and toast use `180ms` transitions with `cubic-bezier(.16,1,.3,1)`. Route strokes animate over 8 seconds with a dashed offset; every even path reverses. `data-reveal` sections enter once at a 12% intersection threshold using opacity and `translateY(24px)` over 720ms.
 - **Reduced motion:** The React observer immediately marks reveal content visible when reduced motion is requested. The stylesheet removes animation and transition duration, restores normal scroll behavior, and leaves reveal content visible.
 
+### Docs Navigation and Fields
+
+Six chapters use ordinary `/docs?chapter=<id>` links: `start`, `setup`, `concepts`, `customize`, `reference`, and `troubleshooting`. Missing or unknown values resolve to the first chapter. The sidebar title filter trims input and matches chapter titles case-insensitively; it is not full-text search. No matches produces an inline `role="status"` message. The Surface filter has a 1px Rule border, `42px` minimum height, `8px 10px` padding, and a Verdigris caret.
+
+Chapter links use `10px 12px` padding with `4px` gaps, Field Paper hover, and Deep Ocean/Surface current state marked by `aria-current="page"`. The mobile select exposes all six chapters and navigates to the same query URLs. The on-page rail derives links from the current article's `h2[id]`, with `14px` gaps. Previous/next links use a ruled row, `.9rem` titles and `.7rem`/400 direction labels; absent neighbors are omitted. A skip link targets the focusable main landmark.
+
+### Docs Commands and Reference Content
+
+Commands are Deep Ocean/Lantern blocks with `8px` corners and clipped overflow. The label/copy bar uses `8px 16px` padding and a 1px Verdigris bottom rule. Copy has a `36px` minimum height, `4px 10px` padding, a 1px Verdigris border, and transparent fill; hover switches to Surface/Deep Ocean. It keeps the global 2px Verdigris focus outline with 4px offset. Code uses `20px 18px 28px` padding, `pre-wrap`, and `overflow-wrap: anywhere`.
+
+**The In-Place Command Feedback Rule.** Docs commands reserve an inline status region for copy success or a manual-selection fallback; feedback clears after three seconds without moving to a toast. The region reserves `28px` minimum height and uses `0 18px 8px` padding.
+
+Definition lists and native details use Rule top borders; terms and summaries are 600 weight. Tables sit in horizontal-overflow wrappers, use `.85rem` text, `12px 10px` cell padding, Rule row borders, and Field Paper headers. Article links are underlined with a `4px` offset, changing to Rust Deep on hover.
+
+
 ## Do's and Don'ts
 
 ### Do:
+
+- **Do** keep docs article sections unframed, code wrapping, chapter URLs stable, and copy feedback in place.
+- **Do** use the native mobile chapter selector and docs-specific breakpoints instead of compressing the desktop rails.
 
 - **Do** use the light field-paper base with Deep Ocean operational anchors and the exact semantic accents: Verdigris `#3f8580`, Signal Rust `#c94f35`, and Brass `#bd9348`.
 - **Do** make composition visible through routes, ledger rows, named layers, real commands, and explicit setup ownership.
@@ -234,6 +336,9 @@ The sticky header is a semantic `header` with labeled primary navigation. Its AF
 - **Do** keep the responsive route from desktop instrument to single-column mobile reading order.
 
 ### Don't:
+
+- **Don't** transfer the homepage hero scale, route animation, or raised instrument treatment into docs prose.
+- **Don't** describe the title filter as full-text search or the existing docs mark as an official stack-native logo.
 
 - **Don't** restore superseded typography, palette, or token names from the previous direction.
 - **Don't** turn the warm base into a brown-led beige page; the ocean semantic structure must remain visibly present.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-04T10:42:22-03:00",
+  "generatedAt": "2026-09-07T00:00:00-03:00",
   "title": "Design System: AI Field Kit",
   "extensions": {
     "colorMeta": {
@@ -78,6 +78,11 @@
       }
     },
     "typographyMeta": {
+      "docs-headline": { "displayName": "Docs Headline", "purpose": "Repeated chapter H1; 2rem at the docs mobile breakpoint, capped at 23ch." },
+      "docs-title": { "displayName": "Docs Section Title", "purpose": "Anchored H2 sections; 1.3rem at the docs mobile breakpoint." },
+      "docs-body": { "displayName": "Docs Reading Copy", "purpose": "Normal Poppins 400 loaded in index.html; paragraphs capped at 72ch, .9rem on mobile." },
+      "docs-lead": { "displayName": "Docs Lead", "purpose": "Muted chapter introduction; 1rem on mobile." },
+      "docs-code": { "displayName": "Docs Command", "purpose": "Wrapping IBM Plex Mono command text; command-bar labels remain Poppins." },
       "display": {
         "displayName": "Poppins Display",
         "purpose": "Section and closing headings with balanced wrapping."
@@ -159,6 +164,16 @@
     ],
     "breakpoints": [
       {
+        "name": "docs-two-column",
+        "value": "1150px",
+        "purpose": "Hide on-page rail; use 210px minmax(0, 760px) tracks and 32px gaps."
+      },
+      {
+        "name": "docs-mobile",
+        "value": "760px",
+        "purpose": "Replace sidebar with native chapter select; use 20px gutters, 66px minimum header, and 32px article top padding."
+      },
+      {
         "name": "tablet",
         "value": "980px",
         "purpose": "Header reflows; primary grids become one column; sticky kit stack becomes static."
@@ -171,6 +186,30 @@
     ]
   },
   "components": [
+    {
+      "name": "Docs Chapter Navigation",
+      "kind": "nav",
+      "refersTo": "docs-chapter-current",
+      "description": "Query-addressed chapters with current-page semantics; native select replaces the rail on mobile.",
+      "html": "<nav class=\"ds-docs-chapters\" aria-label=\"Chapters\"><a href=\"/docs?chapter=start\" aria-current=\"page\">Start here</a><a href=\"/docs?chapter=setup\">Set up AFK</a></nav>",
+      "css": ".ds-docs-chapters { display: grid; gap: 4px; font: 500 .85rem/1.6 Poppins, system-ui, sans-serif; color: var(--muted); } .ds-docs-chapters a { padding: 10px 12px; border: 0; border-radius: 4px; color: inherit; text-decoration: none; } .ds-docs-chapters a:hover { background: var(--paper); color: var(--ink); } .ds-docs-chapters a[aria-current=page] { background: var(--command); color: var(--surface); font-weight: 700; } .ds-docs-chapters a:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 4px; }"
+    },
+    {
+      "name": "Docs Chapter Filter",
+      "kind": "input",
+      "refersTo": "docs-filter",
+      "description": "Title-only, trimmed, case-insensitive filter with an inline no-results status in the app; not full-text search.",
+      "html": "<label class=\"ds-docs-filter\">Find a chapter<input type=\"search\" placeholder=\"Filter chapters\" /></label>",
+      "css": ".ds-docs-filter { display: grid; gap: 8px; color: var(--muted); font: 400 .75rem/1.6 Poppins, system-ui, sans-serif; } .ds-docs-filter input { width: 100%; min-height: 42px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); padding: 8px 10px; font: 400 .8rem/1.6 Poppins, system-ui, sans-serif; color: var(--ink); caret-color: var(--verdigris); } .ds-docs-filter input::placeholder { color: var(--muted); } .ds-docs-filter input:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 4px; }"
+    },
+    {
+      "name": "Docs Ocean Command",
+      "kind": "custom",
+      "refersTo": "docs-command",
+      "description": "Wrapping command with copy action and reserved inline status; app feedback clears after three seconds. Preview is static, without clipboard behavior.",
+      "html": "<div class=\"ds-docs-command\"><div class=\"ds-docs-command-bar\"><span>preview</span><button type=\"button\" aria-label=\"Copy preview command\">Copy</button></div><pre><code>npx @logbookfordevs/afk setup --dry-run</code></pre><span class=\"ds-docs-status\" role=\"status\"></span></div>",
+      "css": ".ds-docs-command { margin: 24px 0; background: var(--command); color: var(--code); border-radius: 8px; overflow: hidden; font: 400 .75rem/1.8 Poppins, system-ui, sans-serif; } .ds-docs-command-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--verdigris); } .ds-docs-command button { min-height: 36px; padding: 4px 10px; border-radius: 4px; cursor: pointer; background: transparent; border: 1px solid var(--verdigris); color: inherit; font: inherit; } .ds-docs-command button:hover { background: var(--surface); color: var(--command); } .ds-docs-command button:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 4px; } .ds-docs-command pre { margin: 0; padding: 20px 18px 28px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; } .ds-docs-command code { font-family: IBM Plex Mono, ui-monospace, monospace; font-size: .82rem; } .ds-docs-status { display: block; min-height: 28px; padding: 0 18px 8px; }"
+    },
     {
       "name": "Deep Ocean Primary Button",
       "kind": "button",
@@ -232,6 +271,16 @@
     ],
     "rules": [
       {
+        "name": "The Reading Measure Rule",
+        "body": "Docs use fixed-size Poppins headings, generous 1.8 body leading, and a bounded reading column; the homepage hero scale does not transfer to articles.",
+        "section": "typography"
+      },
+      {
+        "name": "The In-Place Command Feedback Rule",
+        "body": "Docs commands reserve an inline status region for copy success or a manual-selection fallback; feedback clears after three seconds without moving to a toast. The region reserves `28px` minimum height and uses `0 18px 8px` padding.",
+        "section": "components"
+      },
+      {
         "name": "The Ocean Carries Operations Rule",
         "body": "Deep Ocean carries the strongest action, code, and major operational surfaces. Signal Rust is not the ordinary CTA fill.",
         "section": "colors"
@@ -253,12 +302,16 @@
       }
     ],
     "dos": [
+      "Do keep docs article sections unframed, code wrapping, chapter URLs stable, and copy feedback in place.",
+      "Do use the native mobile chapter selector and docs-specific breakpoints instead of compressing the desktop rails.",
       "Do use the exact ocean semantic accents: Deep Ocean #102c2c, Verdigris #3f8580, Signal Rust #c94f35, and Brass #bd9348.",
       "Do preserve the current tab, copy, skip-link, focus, and reduced-motion contracts.",
       "Do keep Poppins for interface structure, Literata for sparse narrative emphasis, and Plex Mono for technical labels.",
       "Do keep the responsive route from desktop instrument to a single-column mobile reading order."
     ],
     "donts": [
+      "Don't transfer the homepage hero scale, route animation, or raised instrument treatment into docs prose.",
+      "Don't describe the title filter as full-text search or the existing docs mark as an official stack-native logo.",
       "Don't restore superseded typography, palette, or token claims.",
       "Don't turn the warm base into a brown-led beige identity; keep ocean semantics visibly present.",
       "Don't replace the route, ledger, and manifest structures with generic card walls.",

@@ -85,7 +85,7 @@ function App() {
     <a className="skip" href="#main">Skip to content</a>
     <header><div className="nav-shell">
       <a className="brand" href="#top" aria-label="AI Field Kit home"><span>AFK</span>AI Field Kit</a>
-      <nav aria-label="Primary navigation"><a href="#why">Why</a><a href="#kit">Kit</a><a href="#install">Install</a><a href="#agents">Agents</a></nav>
+      <nav aria-label="Primary navigation"><a href="#why">Why</a><a href="#kit">Kit</a><a href="#install">Install</a><a href="#agents">Agents</a><a href="/docs">Docs</a></nav>
       <a className="button button--small" href="#install">Try AFK</a>
     </div></header>
     <main id="main">
