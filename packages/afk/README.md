@@ -1080,8 +1080,10 @@ Codex is part of the always-installed universal skill target; its actions use
 AFK records copied file hashes in `~/.agents/afk/skill-post-install.json`
 (project scope: `./.agents/afk/skill-post-install.json`). Identical files are
 left unchanged. Updates replace copies that still match their recorded hash;
-conflicting user files and destination symlinks are preserved and reported as
-failures. Resolve a conflict or move the file aside, then rerun setup. Copy
+destination file symlinks resolving to the exact source file count as already
+installed and remain linked. Conflicting user files, links elsewhere, dangling
+links, and destination directory symlinks are preserved and reported as failures.
+Resolve a conflict or move the file aside, then rerun setup. Copy
 actions do not remove old files when upstream removes or renames them, or when
 the skill is disabled or deleted.
 

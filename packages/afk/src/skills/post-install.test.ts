@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, test, vi } from "vitest";
@@ -87,6 +87,40 @@ test("preflights conflicts before copying any file and preserves destination sym
   symlinkSync(outside, f.target);
   assert.equal(await runSkillPostInstall(f.runtime, [f.item], f.options), 1);
   assert.equal(readFileSync(outside, "utf8"), "outside");
+});
+
+test("accepts exact-source links, preserves them across updates, and copies missing agents", async () => {
+  const f = fixture();
+  f.install();
+  write(join(f.skillDir, "agents", "missing.toml"), "missing agent");
+  mkdirSync(dirname(f.target), { recursive: true });
+  const source = join(f.skillDir, "agents", "designer.toml");
+  symlinkSync(source, f.target);
+  assert.equal(await runSkillPostInstall(f.runtime, [f.item], f.options), 0);
+  assert.equal(readlinkSync(f.target), source);
+  assert.equal(readFileSync(join(dirname(f.target), "missing.toml"), "utf8"), "missing agent");
+  f.install(f.skillDir, "updated agent");
+  assert.equal(await runSkillPostInstall(f.runtime, [f.item], f.options), 0);
+  assert.ok(lstatSync(f.target).isSymbolicLink());
+  assert.equal(readFileSync(f.target, "utf8"), "updated agent");
+  const receipts = readFileSync(join(f.options.homeDir, ".agents", "afk", "skill-post-install.json"), "utf8");
+  assert.equal(receipts.includes("designer.toml"), false);
+});
+
+test("rejects unrelated links even with identical content, dangling links, and parent-directory links", async () => {
+  const f = fixture();
+  f.install();
+  mkdirSync(dirname(f.target), { recursive: true });
+  const outside = join(f.root, "outside.toml");
+  write(outside, readFileSync(join(f.skillDir, "agents", "designer.toml"), "utf8"));
+  symlinkSync(outside, f.target);
+  assert.equal(await runSkillPostInstall(f.runtime, [f.item], f.options), 1);
+  rmSync(outside);
+  assert.equal(await runSkillPostInstall(f.runtime, [f.item], f.options), 1);
+  assert.ok(lstatSync(f.target).isSymbolicLink());
+  rmSync(dirname(f.target), { recursive: true });
+  symlinkSync(join(f.skillDir, "agents"), dirname(f.target));
+  assert.equal(await runSkillPostInstall(f.runtime, [f.item], f.options), 1);
 });
 
 test("dry run describes actions without installed source, filesystem writes, or spawning", async () => {

@@ -107,18 +107,20 @@ function copySkillFiles(runtime: Runtime, item: SkillManifestItem, action: CopyA
   const receipts = readReceipts(receiptPath);
   const copies = files.map((name) => {
     const target = resolve(destination, name);
-    assertNoTargetSymlink(root, target);
+    const linked = checkTargetSymlinks(root, target, join(source, name));
     const content = readFileSync(join(source, name));
     const hash = digest(content);
+    if (linked) return { target, content, hash, changed: false, linked: true };
     const previous = receipts.get(target);
     const current = existsSync(target) ? digest(readFileSync(target)) : undefined;
     if (current !== undefined && current !== hash && (previous?.skill !== item.id || previous.hash !== current)) {
       throw new Error(`Preserved conflicting file: ${target}. Move it aside or reconcile it, then rerun setup.`);
     }
     if (previous && previous.skill !== item.id) throw new Error(`Copy target belongs to another skill: ${target}`);
-    return { target, content, hash, changed: current !== hash };
+    return { target, content, hash, changed: current !== hash, linked: false };
   });
   for (const copy of copies) {
+    if (copy.linked) continue;
     if (copy.changed) atomicWrite(copy.target, copy.content);
     receipts.set(copy.target, { destination: copy.target, skill: item.id, hash: copy.hash });
   }
@@ -126,16 +128,18 @@ function copySkillFiles(runtime: Runtime, item: SkillManifestItem, action: CopyA
   runtime.io.stdout(`  ${copies.filter((copy) => copy.changed).length} copied; ${copies.filter((copy) => !copy.changed).length} unchanged.`);
 }
 
-function assertNoTargetSymlink(root: string, target: string): void {
+function checkTargetSymlinks(root: string, target: string, source: string): boolean {
   const parts = relative(resolve(root), target).split(/[\\/]/);
   if (parts.includes("..") || isAbsolute(relative(resolve(root), target))) throw new Error(`Copy destination escapes the agent directory: ${target}`);
   let current = resolve(root);
   for (const part of parts) {
     current = join(current, part);
     if (lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink()) {
+      if (current === target && existsSync(target) && realpathSync(target) === realpathSync(source)) return true;
       throw new Error(`Preserved symbolic link at copy destination: ${current}`);
     }
   }
+  return false;
 }
 
 function readReceipts(path: string): Map<string, CopyReceipt> {

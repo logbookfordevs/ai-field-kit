@@ -13,7 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
-- `cli:` skill catalog items can run post-install copy or command actions during setup and updates. Impeccable now copies its bundled Codex agents into the harness's agents directory, refreshing managed copies while preserving user edits.
+- `cli:` skill catalog items can run post-install copy or command actions during setup and updates. Impeccable now copies its bundled Codex agents into the harness's agents directory, refreshing managed copies while preserving user edits and existing links to the exact source files.
 
 ### Changed
 
