@@ -2,6 +2,8 @@
 
 > *The rules, skills, setup catalog, and router powering a DX-first AI developer workflow.*
 
+[Website](https://ai-field-kit.logbookfordevs.com/) · [Documentation](https://ai-field-kit.logbookfordevs.com/docs)
+
 A curated, version-controlled collection for making AI coding agents useful in a real development environment.
 
 AI Field Kit treats frameworks like BMAD, Get Shit Done, Agent OS, Superpowers, and agent skills as reference material, not masters. The kit is a personal synthesis of patterns that keep proving useful in real work: standalone skills when you only need one tool, and an optional workflow when you want the pieces to move together.

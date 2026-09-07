@@ -1,5 +1,7 @@
 # AI Field Kit Page
 
+[Website](https://ai-field-kit.logbookfordevs.com/) · [Documentation](https://ai-field-kit.logbookfordevs.com/docs)
+
 A React + Vite homepage and documentation site for [AI Field Kit](https://github.com/logbookfordevs/ai-field-kit), the portable rules, skills, workflows, and MCP setup for multi-agent developers.
 
 ## Quick Start
