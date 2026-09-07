@@ -1,451 +1,145 @@
 import { useEffect, useRef, useState } from 'react';
+import { AfkMark } from '@/components/ui/svgs/afkMark.jsx';
 import { ClaudeAiIcon } from '@/components/ui/svgs/claudeAiIcon.jsx';
 import { CodexDark } from '@/components/ui/svgs/codexDark.jsx';
-import { CursorDark } from '@/components/ui/svgs/cursorDark.jsx';
-import { Gemini } from '@/components/ui/svgs/gemini.jsx';
-import { KilocodeDark } from '@/components/ui/svgs/kilocodeDark.jsx';
-import { Opencode } from '@/components/ui/svgs/opencode.jsx';
+import { OpencodeDark } from '@/components/ui/svgs/opencodeDark.jsx';
 
-const installCommand = 'npx skills add https://github.com/logbookfordevs/ai-field-kit';
-
-const fullSetupCommand = 'npm install -g @logbookfordevs/afk\nafk setup --dry-run';
-
-const kitLayers = [
-  {
-    index: '01',
-    title: 'Rules',
-    text: 'Shared AGENTS.md instructions for how your coding assistants should behave across projects and tools.',
-  },
-  {
-    index: '02',
-    title: 'Skills',
-    text: 'Reusable expertise modules for debugging, documentation, motion, design critique, and spec shaping.',
-  },
-  {
-    index: '03',
-    title: 'Workflows',
-    text: 'Slash-command playbooks for repeatable jobs like code review, PR descriptions, TypeScript checks, and landing page builds.',
-  },
-  {
-    index: '04',
-    title: 'MCP registry',
-    text: 'Recommended MCP entries that AFK previews, resolves locally, and delegates to the upstream installer.',
-  },
+const repo = 'https://github.com/logbookfordevs/ai-field-kit';
+const skillsCommand = `npx skills add ${repo}`;
+const setupCommand = 'npx @logbookfordevs/afk setup --dry-run';
+const paths = [
+  { id: 'try', label: 'Try the full kit', title: 'Preview everything. Write nothing.', text: 'Run AFK once with npx. The dry run shows the exact rule, skill, MCP, plugin, and hook actions before setup touches your machine.', command: setupCommand, facts: ['No global install', 'Guided selection', 'Dry run first'] },
+  { id: 'skills', label: 'Skills only', title: 'Start with portable expertise.', text: 'Install the authored AFK skills into the agents you choose. This path leaves rules, hooks, MCPs, plugins, and setup policy alone.', command: skillsCommand, facts: ['Smallest path', 'Agent picker', 'No setup policy'] },
+  { id: 'global', label: 'Daily CLI', title: 'Keep AFK on the workbench.', text: 'Install the CLI globally when setup, refresh, catalog import, and skill inspection become part of your regular local workflow.', command: 'npm install -g @logbookfordevs/afk\nafk setup --dry-run', facts: ['Reusable command', 'Refresh support', 'Full setup router'] },
+  { id: 'project', label: 'Project catalog', title: 'Commit the choices with the project.', text: 'Import the default AFK catalog through shadcn, then preview project-local setup. Distribution and setup ownership stay explicit.', command: 'pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-catalog\nafk setup --local --dry-run', facts: ['Repo-local catalog', 'Reviewable defaults', 'Explicit ownership'] },
 ];
-
-const flowSteps = [
-  {
-    label: 'Brainstorm',
-    title: 'Find options',
-    text: 'Generate directions before the work collapses into the obvious first idea.',
-  },
-  {
-    label: 'Interview',
-    title: 'Clarify scope',
-    text: 'Turn fuzzy requests into execution-ready boundaries and non-goals.',
-  },
-  {
-    label: 'Tradeoffs',
-    title: 'Choose deliberately',
-    text: 'Name the UX and implementation costs before code starts to harden.',
-  },
-  {
-    label: 'Elicit',
-    title: 'Refine the draft',
-    text: 'Pressure-test plans, docs, and answers with visible critique.',
-  },
+const pieces = [
+  ['rules', 'Shared working standards', 'Versioned instructions for behavior, safety boundaries, commands, and review expectations.'],
+  ['skills', 'Reusable expert routines', 'Focused capabilities for design, debugging, research, planning, reviews, and handoff.'],
+  ['workflows', 'Structure when the work needs it', 'Multi-step modes for discovery, decisions, artifacts, checkpoints, and verification.'],
+  ['hooks', 'Guardrails at the moment of action', 'Deterministic checks that run in the background without spending the context budget.'],
+  ['MCPs', 'Tool wiring, delegated honestly', 'A recommendation registry resolved by AFK and installed through the tools that own each ecosystem.'],
+  ['plugins', 'Companions for richer surfaces', 'Optional Codex-native capabilities that improve selected skills without becoming mandatory.'],
 ];
-
+const HarnessIcon = ({ className }) => <span className={`${className} harness-icon`} aria-hidden="true">+</span>;
 const agents = [
-  ['Gemini CLI / Antigravity', 'Yes', 'Yes', 'Yes'],
-  ['Codex', 'Yes', 'Yes', 'Yes'],
-  ['OpenCode', 'Yes', 'Yes', 'Yes'],
-  ['Claude', 'Yes', 'Partial', 'Yes'],
-  ['Cursor', 'Partial', 'Yes', 'Partial'],
-  ['KiloCode', 'Yes', 'Yes', 'Planned'],
+  { name: 'Codex', type: 'terminal', capability: 'rules + MCP', Icon: CodexDark, dark: true },
+  { name: 'Claude', type: 'code', capability: 'rules + MCP', Icon: ClaudeAiIcon },
+  { name: 'Other harness', type: 'custom path', capability: 'configured route', Icon: HarnessIcon },
+  { name: 'OpenCode', type: 'agent', capability: 'rules + MCP', Icon: OpencodeDark, dark: true },
 ];
 
-const agentIcons = [
-  { label: 'Gemini CLI', icon: Gemini, tone: 'light' },
-  { label: 'Codex', icon: CodexDark, tone: 'dark' },
-  { label: 'Claude', icon: ClaudeAiIcon, tone: 'light' },
-  { label: 'Cursor', icon: CursorDark, tone: 'light' },
-  { label: 'OpenCode', icon: Opencode, tone: 'light' },
-  { label: 'KiloCode', icon: KilocodeDark, tone: 'dark' },
-];
-
-const supportLinks = [
-  ['Ko-fi', 'https://ko-fi.com/logbookfordevs'],
-  ['Coffee', 'https://ko-fi.com/logbookfordevs?amount=5'],
-  ['Lunch', 'https://ko-fi.com/logbookfordevs?amount=15'],
-  ['Dinner', 'https://ko-fi.com/logbookfordevs?amount=30'],
-  ['Buy Me a Coffee', 'https://buymeacoffee.com/logbookfordevs'],
-];
-
-const tabs = [
-  {
-    id: 'skills',
-    label: 'Skills only',
-    text: 'No clone required. Install from GitHub with the skills CLI and choose the agents you want during the picker.',
-    command: installCommand,
-    copyLabel: 'Copy skills install command',
-  },
-  {
-    id: 'full',
-    label: 'Full setup',
-    text: 'Install the AFK CLI from npm, then preview detected rules, skills, MCP, utility, and hook targets before anything writes to your machine.',
-    command: fullSetupCommand,
-    copyLabel: 'Copy full setup commands',
-  },
-];
-
-function CopyButton({ value, label, children = 'Copy', variant = 'dark', size = 'default', onCopy }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={() => onCopy(value)}
-      className={[
-        'inline-flex items-center justify-center rounded-[8px] border font-extrabold transition duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9502f]',
-        size === 'compact' ? 'min-h-9 px-3 py-2 text-xs' : 'min-h-11 px-4 py-3 text-sm',
-        variant === 'light'
-          ? 'border-[#201a16] bg-transparent text-[#201a16] hover:border-[#b9502f] hover:text-[#7f351f]'
-          : 'border-[#fffaf06b] bg-[#fffaf014] text-[#fffaf0] hover:bg-[#fffaf026]',
-      ].join(' ')}
-    >
-      {children}
-    </button>
-  );
+function CopyButton({ value, onResult, compact = false }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      onResult('Command copied');
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch { onResult('Copy unavailable. Select the command manually.'); }
+  };
+  return <button className={`copy${compact ? ' copy--compact' : ''}`} type="button" onClick={copy} aria-label="Copy command">{copied ? 'Copied' : 'Copy'}</button>;
 }
 
-function copyWithSelectionFallback(value) {
-  const textarea = document.createElement('textarea');
-  textarea.value = value;
-  textarea.setAttribute('readonly', '');
-  textarea.style.position = 'fixed';
-  textarea.style.inset = '0 auto auto 0';
-  textarea.style.opacity = '0';
-  textarea.style.pointerEvents = 'none';
-
-  document.body.appendChild(textarea);
-  textarea.focus();
-  textarea.select();
-  textarea.setSelectionRange(0, textarea.value.length);
-
-  let copied = false;
-  try {
-    copied = document.execCommand('copy');
-  } finally {
-    document.body.removeChild(textarea);
-  }
-
-  return copied;
+function Command({ value, label, onResult }) {
+  return <div className="command"><span>{label}</span><code>{value}</code><CopyButton value={value} compact onResult={onResult} /></div>;
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState(tabs[0].id);
-  const [toast, setToast] = useState('');
-  const toastTimer = useRef(null);
+  const [active, setActive] = useState(paths[0].id);
+  const [status, setStatus] = useState('');
+  const timer = useRef(null);
+  const selected = paths.find((path) => path.id === active) ?? paths[0];
 
-  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
-
-  const copyToClipboard = async (value) => {
-    window.clearTimeout(toastTimer.current);
-
-    let copied = false;
-
-    try {
-      if (window.isSecureContext && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-        copied = true;
-      }
-    } catch {
-      copied = false;
+  useEffect(() => {
+    const items = document.querySelectorAll('[data-reveal]');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      items.forEach((item) => item.setAttribute('data-visible', 'true'));
+      return undefined;
     }
+    const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
+      if (entry.isIntersecting) { entry.target.setAttribute('data-visible', 'true'); observer.unobserve(entry.target); }
+    }), { threshold: 0.12 });
+    items.forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
-    if (!copied) {
-      copied = copyWithSelectionFallback(value);
-    }
-
-    setToast(copied ? 'Copied command' : 'Copy unavailable in this browser');
-    toastTimer.current = window.setTimeout(() => setToast(''), 1800);
+  const announce = (message) => {
+    window.clearTimeout(timer.current);
+    setStatus(message);
+    timer.current = window.setTimeout(() => setStatus(''), 2400);
   };
-
-  const selectTab = (tabId) => {
-    setActiveTab(tabId);
-  };
-
-  const handleTabKeyDown = (event, index) => {
+  const select = (id) => { setActive(id); announce(`${paths.find((item) => item.id === id)?.label} selected`); };
+  const handleKeys = (event, index) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-
     event.preventDefault();
-    const lastIndex = tabs.length - 1;
-    const nextIndex = {
-      ArrowLeft: index === 0 ? lastIndex : index - 1,
-      ArrowRight: index === lastIndex ? 0 : index + 1,
-      Home: 0,
-      End: lastIndex,
-    }[event.key];
-    const nextTab = tabs[nextIndex];
-    selectTab(nextTab.id);
-    document.getElementById(`${nextTab.id}-tab`)?.focus();
+    const last = paths.length - 1;
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? last : event.key === 'ArrowLeft' ? (index || last) - 1 : index === last ? 0 : index + 1;
+    select(paths[next].id);
+    document.getElementById(`path-${paths[next].id}`)?.focus();
   };
 
-  const activePanel = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
-  const isSingleLineInstall = !activePanel.command.includes('\n');
-
-  return (
-    <>
-      <header className="sticky top-0 z-10 mx-auto flex w-(--content) items-center justify-between bg-[#f7efe2e0] px-6 py-[18px] backdrop-blur-[14px] max-[720px]:flex-col max-[720px]:items-start max-[720px]:px-4">
-        <a href="#top" aria-label="AI Field Kit home" className="flex items-center gap-3 text-base font-extrabold tracking-[0.01em] no-underline">
-          <span className="grid size-9 place-items-center rounded-full border border-[#201a16] bg-[#18221f] font-mono text-[0.74rem] text-[#f7efe2]">AFK</span>
-          <span>AI Field Kit</span>
-        </a>
-        <nav className="flex items-center gap-3 max-[720px]:mt-2 max-[720px]:w-full max-[720px]:flex-wrap" aria-label="Primary navigation">
-          {[
-            ['Kit', '#kit'],
-            ['Flow', '#flow'],
-            ['Install', '#quick-start'],
-            ['Agents', '#agents'],
-          ].map(([label, href]) => (
-            <a key={label} href={href} className="text-sm font-bold text-[#6f6258] no-underline hover:text-[#b9502f]">
-              {label}
-            </a>
-          ))}
-        </nav>
-      </header>
-
-      <main id="top">
-        <section className="mx-auto grid min-h-[calc(100svh-78px)] w-(--content) grid-cols-[minmax(0,1fr)_minmax(360px,0.88fr)] items-center gap-[clamp(36px,6vw,80px)] py-[clamp(44px,7vw,92px)] pb-11 max-[940px]:min-h-0 max-[940px]:grid-cols-1" aria-labelledby="hero-title">
-          <div>
-            <p className="eyebrow">Logbook for Devs</p>
-            <h1 id="hero-title" className="mb-6 max-w-[860px] [overflow-wrap:anywhere] font-display text-[clamp(3.5rem,7.2vw,6.35rem)] leading-[0.98] font-bold max-[720px]:text-[clamp(2.75rem,13.4vw,3.55rem)]">
-              One field kit for every AI coding agent.
-            </h1>
-            <p className="mb-7 max-w-[720px] text-[clamp(1.05rem,1.8vw,1.32rem)] text-[#6f6258]">
-              Rules, skills, workflows, and MCP configs that stay versioned in one repo, then sync into Gemini, Codex, Claude, Cursor, and the rest of your local agent stack.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a className="button-primary" href="https://github.com/logbookfordevs/ai-field-kit" target="_blank" rel="noopener noreferrer">
-                Get the kit
-              </a>
-              <CopyButton value={installCommand} label="Copy install command" variant="light" onCopy={copyToClipboard}>
-                Copy install
-              </CopyButton>
-            </div>
-            <dl className="mt-10 grid max-w-[560px] grid-cols-3 gap-px border border-[#d8c7ad] bg-[#d8c7ad] max-[720px]:grid-cols-1">
-              {[
-                ['4', 'portable layers'],
-                ['auto', 'agent targets'],
-                ['30s', 'skills install'],
-              ].map(([value, label]) => (
-                <div key={label} className="bg-[#fffaf0c2] p-[18px]">
-                  <dt className="font-display text-[2.4rem] leading-none font-bold text-[#7f351f]">{value}</dt>
-                  <dd className="mt-1.5 ml-0 text-[0.82rem] font-bold text-[#6f6258] uppercase">{label}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div className="overflow-hidden rounded-[8px] border border-[#201a16] bg-[#fffaf0] shadow-[0_18px_45px_rgba(63,45,27,0.14)]" aria-label="Terminal-inspired sync map">
-            <div className="flex justify-between gap-3 bg-[#18221f] px-3.5 py-3 font-mono text-[0.78rem] text-[#f7efe2]">
-              <span>afk setup</span>
-              <span>status: ready</span>
-            </div>
-            <div className="p-[18px]">
-              <div className="mb-4 grid grid-cols-2 gap-2">
-                {['ai-field-kit', 'rules', 'skills', 'workflows', 'mcps'].map((item, index) => (
-                  <span
-                    key={item}
-                    className={[
-                      'rounded-[8px] border border-[#d8c7ad] px-2.5 py-2.5 font-mono text-[0.78rem]',
-                      index === 0 ? 'col-span-2 bg-[#b9502f] font-bold text-[#fffaf0]' : 'bg-[#fff6e6] text-[#18221f]',
-                    ].join(' ')}
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-              <div className="mb-4 grid grid-cols-6 gap-2 max-[1100px]:grid-cols-3 max-[940px]:grid-cols-2" aria-label="Supported agent harnesses">
-                {agentIcons.map(({ label, icon: Icon, tone }) => (
-                  <span key={label} className="flex min-h-[58px] items-center justify-center rounded-[8px] border border-[#d8c7ad] bg-[#fff6e6] px-2.5 py-2.5" title={label} aria-label={label}>
-                    <Icon aria-hidden="true" className={tone === 'dark' ? 'size-7 rounded-[6px] bg-[#18221f] p-1 text-white' : 'size-7'} />
-                  </span>
-                ))}
-              </div>
-              <pre className="overflow-x-auto rounded-[8px] bg-[#18221f] p-[18px] font-mono text-[0.82rem] leading-[1.75] whitespace-pre-wrap text-[#f9ecd4]"><code>{`$ npm install -g @logbookfordevs/afk
-$ afk setup --dry-run
-
-rules      -> linked
-skills     -> installed
-workflows  -> rendered
-mcps       -> secrets resolved`}</code></pre>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto grid w-(--content) grid-cols-[0.9fr_1.2fr] items-end gap-[clamp(24px,5vw,68px)] border-y border-[#d8c7ad] py-[clamp(46px,7vw,78px)] max-[940px]:grid-cols-1" aria-labelledby="problem-title">
-          <p className="eyebrow">The daily tax</p>
-          <div>
-            <h2 id="problem-title" className="heading-xl">Your agents do not share a memory for how you work.</h2>
-            <p className="max-w-[720px] text-lg text-[#6f6258]">
-              Claude knows your review ritual. Gemini knows your exploration prompts. Codex knows your repo habits. AI Field Kit turns those private tricks into portable project material instead of scattered tool settings.
-            </p>
-          </div>
-        </section>
-
-        <section id="kit" className="section-shell" aria-labelledby="kit-title">
-          <SectionHeading eyebrow="What ships in the kit" title="Four layers, one source of truth." id="kit-title" />
-          <div className="grid grid-cols-4 gap-3.5 max-[940px]:grid-cols-2 max-[720px]:grid-cols-1">
-            {kitLayers.map((layer) => (
-              <article key={layer.title} className="flex min-h-[260px] flex-col justify-between rounded-[8px] border border-[#d8c7ad] bg-[#fffaf0c7] p-[22px] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-                <span className="label">{layer.index}</span>
-                <div>
-                  <h3 className="mb-3 text-[1.18rem] leading-tight font-bold">{layer.title}</h3>
-                  <p className="text-[#6f6258]">{layer.text}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="flow" className="section-shell border-t border-[#d8c7ad]" aria-labelledby="flow-title">
-          <SectionHeading
-            eyebrow="Spec-driven when it matters"
-            title="Skills connect into a practical operating system."
-            id="flow-title"
-            text="Use the smallest useful slice for the moment: branch wide, clarify intent, lock trade-offs, then strengthen the artifact before implementation."
-          />
-          <div className="grid grid-cols-4 gap-px border border-[#d8c7ad] bg-[#d8c7ad] max-[940px]:grid-cols-2 max-[720px]:grid-cols-1">
-            {flowSteps.map((step) => (
-              <article key={step.label} className="min-h-[260px] bg-[#fffaf0] p-[22px]">
-                <span className="label">{step.label}</span>
-                <strong className="mt-[42px] mb-3 block font-display text-[1.9rem] leading-none">{step.title}</strong>
-                <p className="text-[#6f6258]">{step.text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="quick-start" className="section-shell border-y border-[#d8c7ad]" aria-labelledby="quick-title">
-          <SectionHeading eyebrow="Quick start" title="Install the useful part first." id="quick-title" />
-          <div className="grid grid-cols-[240px_minmax(0,1fr)] gap-[18px] max-[940px]:grid-cols-1">
-            <div className="grid content-start gap-2" role="tablist" aria-label="Install options">
-              {tabs.map((tab, index) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    id={`${tab.id}-tab`}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    aria-controls={`${tab.id}-panel`}
-                    tabIndex={isActive ? 0 : -1}
-                    onClick={() => selectTab(tab.id)}
-                    onKeyDown={(event) => handleTabKeyDown(event, index)}
-                    className={[
-                      'rounded-[8px] border px-4 py-3.5 text-left text-sm font-extrabold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9502f]',
-                      isActive ? 'border-[#201a16] bg-[#fffaf0] text-[#201a16]' : 'border-[#d8c7ad] bg-[#fffaf0a6] text-[#6f6258] hover:border-[#201a16] hover:text-[#201a16]',
-                    ].join(' ')}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div id={`${activePanel.id}-panel`} role="tabpanel" aria-labelledby={`${activePanel.id}-tab`} className="rounded-[8px] border border-[#d8c7ad] bg-[#fffaf0] p-[clamp(20px,3vw,32px)] shadow-[0_18px_45px_rgba(63,45,27,0.14)]">
-              <p className="text-[#6f6258]">{activePanel.text}</p>
-              <div className="relative mt-[18px]">
-                <pre className="overflow-x-auto rounded-[8px] bg-[#18221f] py-5 pr-[86px] pl-5 font-mono text-[0.82rem] leading-[1.75] whitespace-pre-wrap text-[#f9ecd4]"><code>{activePanel.command}</code></pre>
-                <div className={['absolute right-3', isSingleLineInstall ? 'top-1/2 -translate-y-1/2' : 'top-3'].join(' ')}>
-                  <CopyButton value={activePanel.command} label={activePanel.copyLabel} size="compact" onCopy={copyToClipboard}>
-                    Copy
-                  </CopyButton>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="agents" className="section-shell" aria-labelledby="agents-title">
-          <SectionHeading eyebrow="Compatibility" title="Built for multi-agent developers." id="agents-title" />
-          <div className="grid overflow-x-auto border border-[#d8c7ad] bg-[#fffaf0] shadow-[0_18px_45px_rgba(63,45,27,0.14)]" role="table" aria-label="Supported agent capabilities">
-            <div className="grid min-w-[620px] grid-cols-[minmax(190px,1.5fr)_repeat(3,minmax(92px,0.5fr))] bg-[#18221f] font-mono text-[0.78rem] text-[#fffaf0] uppercase" role="row">
-              {['Agent', 'Rules', 'Workflows', 'MCP'].map((heading) => (
-                <span key={heading} role="columnheader" className="border-l border-[#d8c7ad] p-4 first:border-l-0">
-                  {heading}
-                </span>
-              ))}
-            </div>
-            {agents.map(([agent, rules, workflows, mcp]) => (
-              <div key={agent} className="grid min-w-[620px] grid-cols-[minmax(190px,1.5fr)_repeat(3,minmax(92px,0.5fr))] border-t border-[#d8c7ad]" role="row">
-                {[agent, rules, workflows, mcp].map((value, index) => (
-                  <span key={`${agent}-${value}-${index}`} role="cell" className="border-l border-[#d8c7ad] p-4 first:border-l-0 first:font-extrabold">
-                    {value}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mx-auto flex w-(--content) items-center justify-between gap-8 rounded-[8px] border border-[#201a16] bg-[#eadbc6] p-[clamp(28px,5vw,46px)] shadow-[0_18px_45px_rgba(63,45,27,0.14)] max-[940px]:grid" aria-labelledby="support-title">
-          <div>
-            <p className="eyebrow">Sustain the work</p>
-            <h2 id="support-title" className="heading-xl">Useful local tooling should feel shareable.</h2>
-            <p className="mb-0 max-w-[680px] text-[#6f6258]">If AI Field Kit saves you setup time, support Logbook for Devs or open a pull request with the next useful skill.</p>
-          </div>
-          <div className="flex max-w-[360px] flex-wrap gap-3">
-            {supportLinks.map(([label, href]) => (
-              <a key={label} className={label === 'Ko-fi' ? 'button-primary' : 'button-secondary'} href={href} target="_blank" rel="noopener noreferrer">
-                {label}
-              </a>
-            ))}
-            <a className="button-secondary" href="https://github.com/logbookfordevs/ai-field-kit" target="_blank" rel="noopener noreferrer">Open GitHub</a>
-          </div>
-        </section>
-      </main>
-
-      <footer className="mx-auto flex w-(--content) justify-between gap-6 py-10 text-sm text-[#6f6258] max-[720px]:flex-col">
-        <div className="max-w-[440px]">
-          <p className="m-0">
-            A tool from the <a href="https://logbookfordevs.com/" target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">Logbook for Devs</a>.
-          </p>
-          <p className="mt-1 mb-0 font-display text-lg leading-tight text-[#201a16]">Charting the technical seas, one commit at a time.</p>
+  return <div className="app" data-lfd-recipe="ocean">
+    <a className="skip" href="#main">Skip to content</a>
+    <header><div className="nav-shell">
+      <a className="brand" href="#top" aria-label="AI Field Kit home"><span>AFK</span>AI Field Kit</a>
+      <nav aria-label="Primary navigation"><a href="#why">Why</a><a href="#kit">Kit</a><a href="#install">Install</a><a href="#agents">Agents</a></nav>
+      <a className="button button--small" href="#install">Try AFK</a>
+    </div></header>
+    <main id="main">
+      <section className="hero" id="top"><div className="hero__grid">
+        <div className="hero__copy" data-reveal>
+          <p className="brand-note">A field kit by Logbook for Devs</p>
+          <h1>One field kit.<br /><em>Every coding agent.</em></h1>
+          <p className="lead">Version your working standards once. AFK routes the right rules, skills, hooks, MCPs, and plugins into the local agents you already use.</p>
+          <div className="hero__actions"><a className="button" href="#install">Preview the setup</a><a className="text-link" href={repo} target="_blank" rel="noreferrer">Explore the repository<span className="sr-only"> (opens in a new tab)</span></a></div>
+          <Command value={setupCommand} label="dry run" onResult={announce} />
         </div>
-        <div className="flex flex-wrap gap-4">
-          <a href="https://github.com/logbookfordevs/ai-field-kit" target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">Repository</a>
-          <a href="https://github.com/logbookfordevs/ai-field-kit/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">Changelog</a>
-          <a href="#quick-start" className="underline-offset-4 hover:underline">Install</a>
+        <div className="route-map" data-reveal aria-label="AI Field Kit connects one shared source to Codex, Claude, OpenCode, and other configured harness paths">
+          <div className="route-meta"><span>afk / route map</span><span>04 targets detected</span></div>
+          <svg viewBox="0 0 720 660" aria-hidden="true"><path d="M360 330 C228 156 156 104 78 88"/><path d="M360 330 C490 152 560 102 646 86"/><path d="M360 330 C202 446 146 514 92 572"/><path d="M360 330 C500 452 568 516 642 574"/></svg>
+          {agents.map(({ name, type, Icon, dark }, index) => <div className={`agent-node agent-node--${index + 1}`} key={name}><Icon className={dark ? 'agent-icon agent-icon--dark' : 'agent-icon'} aria-hidden="true"/><span><strong>{name}</strong><small>{type}</small></span></div>)}
+          <div className="route-core"><div><AfkMark className="route-core__mark" /><span>shared field kit</span></div></div>
+          <div className="route-legend"><span>rules · skills · hooks · MCPs</span><span className="ready">ready</span></div>
         </div>
-      </footer>
+      </div></section>
 
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className={[
-          'pointer-events-none fixed right-[18px] bottom-[18px] z-20 max-w-[min(320px,calc(100vw-36px))] rounded-[8px] border border-[#201a16] bg-[#18221f] px-3.5 py-3 font-extrabold text-[#fffaf0] shadow-[0_18px_45px_rgba(63,45,27,0.14)] transition duration-200',
-          toast ? 'translate-y-0 opacity-100' : 'translate-y-2.5 opacity-0',
-        ].join(' ')}
-      >
-        {toast}
-      </div>
-    </>
-  );
-}
+      <section className="section" id="why"><div className="container">
+        <div className="intro" data-reveal><h2>Your agents change.<br />Your standards should not.</h2><p>Each tool has its own memory, config shape, and installation story. AFK gives them a shared operating layer without pretending to be another agent or mandatory methodology.</p></div>
+        <div className="ledger" data-reveal>
+          <article><span>Problem</span><h3>Good habits fragment by tool.</h3><p>A review ritual in Codex, a debugging routine in Claude, and project rules elsewhere quickly become four things to maintain.</p></article>
+          <article><span>Principle</span><h3>Context stays close to the work.</h3><p>Portable defaults travel across machines. Repository-specific choices stay versioned beside the code that depends on them.</p></article>
+          <article><span>Position</span><h3>AFK prepares the field.</h3><p>You keep choosing the agent. AFK makes the standards, capabilities, and setup boundaries legible before that agent starts.</p></article>
+        </div>
+      </div></section>
 
-function SectionHeading({ eyebrow, title, id, text }) {
-  return (
-    <div className="mb-9 grid grid-cols-[0.85fr_1fr] items-end gap-[clamp(20px,4vw,56px)] max-[940px]:grid-cols-1">
-      <div>
-        <p className="eyebrow">{eyebrow}</p>
-        <h2 id={id} className="heading-xl">{title}</h2>
-      </div>
-      {text ? <p className="max-w-[720px] text-lg text-[#6f6258]">{text}</p> : null}
-    </div>
-  );
+      <section className="section" id="kit"><div className="container kit">
+        <div className="stack" data-reveal><div><span>Always present</span><strong>Rules</strong><p>Shared repository doctrine.</p></div><div><span>Invoked on demand</span><strong>Skills</strong><p>Focused expert routines.</p></div><div><span>Deterministic + delegated</span><strong>Runtime</strong><p>Hooks, MCPs, plugins, setup.</p></div></div>
+        <div className="manual" data-reveal><h2>A field manual,<br />not a card wall.</h2><p className="section-copy">Every piece has one job. Install the layers you need without collapsing them into one opaque bundle.</p><div className="manual-list">{pieces.map(([key, title, text]) => <article key={key}><code>{key}</code><div><h3>{title}</h3><p>{text}</p></div></article>)}</div></div>
+      </div></section>
+
+      <section className="section install-section" id="install"><div className="container">
+        <div className="intro" data-reveal><h2>Choose the amount<br />of kit you want.</h2><p>Start with the smallest useful next step. Every route says what it owns, what it leaves alone, and what it will do before it writes.</p></div>
+        <div className="install" data-reveal>
+          <div className="tabs" role="tablist" aria-label="AFK install paths">{paths.map((path, index) => { const isActive = path.id === active; return <button id={`path-${path.id}`} key={path.id} type="button" role="tab" aria-selected={isActive} aria-controls="install-panel" tabIndex={isActive ? 0 : -1} onClick={() => select(path.id)} onKeyDown={(event) => handleKeys(event, index)}><span>{String(index + 1).padStart(2, '0')}</span>{path.label}</button>; })}</div>
+          <div className="install-panel" id="install-panel" role="tabpanel" aria-labelledby={`path-${selected.id}`}><p className="selection">Selected path / {selected.label}</p><h3>{selected.title}</h3><p>{selected.text}</p><pre><code>{selected.command}</code><CopyButton value={selected.command} onResult={announce}/></pre><ul>{selected.facts.map((fact) => <li key={fact}>{fact}</li>)}</ul></div>
+        </div>
+      </div></section>
+
+      <section className="section layers-section"><div className="container context">
+        <div className="context__visual" data-reveal><article><span>01</span><div><h3>Portable defaults</h3><p>Standards and skills that should follow you.</p></div></article><article><span>02</span><div><h3>Personal preferences</h3><p>Your agent habits and local tool choices.</p></div></article><article><span>03</span><div><h3>Project manifests</h3><p>The repository gets final say where it matters.</p></div></article></div>
+        <div data-reveal><h2>Defaults travel.<br />Context stays close.</h2><p className="section-copy">AFK keeps the common layer portable while letting each project own its architecture, commands, hooks, and handoff rules.</p></div>
+      </div></section>
+
+      <section className="section" id="agents"><div className="container"><div className="intro" data-reveal><h2>One kit across<br />many surfaces.</h2><p>Known harnesses get first-class routes. Configured local paths let supported targets live outside their standard locations, while skills and MCP installation remain delegated to their owning ecosystems.</p></div><div className="agent-band" data-reveal>{agents.map(({ name, type, capability, Icon, dark }) => <article key={name}><Icon className={dark ? 'band-icon band-icon--dark' : 'band-icon'} aria-hidden="true"/><div><strong>{name}</strong><span>{type}</span></div><small>{capability}</small></article>)}</div></div></section>
+
+      <section className="closing"><div className="container closing__grid" data-reveal><h2>See the route.<br />Then run it.</h2><div className="closing__action"><span className="hand-note" aria-hidden="true">ready when you are</span><Command value={setupCommand} label="start safely" onResult={announce}/><a className="button button--light" href={repo} target="_blank" rel="noreferrer">Open GitHub</a></div></div></section>
+    </main>
+    <footer><div className="container footer-grid"><span>A tool from the <a href="https://logbookfordevs.com/" target="_blank" rel="noreferrer">Logbook for Devs</a><em>Charting the technical seas, one commit at a time.</em></span><div><a href={repo} target="_blank" rel="noreferrer">Repository</a><a href={`${repo}/blob/main/CHANGELOG.md`} target="_blank" rel="noreferrer">Changelog</a><a href="#top">Back to top</a></div></div></footer>
+    <div className={`toast${status ? ' toast--visible' : ''}`} role="status" aria-live="polite">{status}</div>
+  </div>;
 }
 
 export default App;
