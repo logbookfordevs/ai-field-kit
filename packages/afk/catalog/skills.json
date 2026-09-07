@@ -81,7 +81,17 @@
             "default": true,
             "invocation": "auto",
             "role": "router",
-            "composes": []
+            "composes": [],
+            "postInstall": [
+                {
+                    "type": "copy",
+                    "label": "Impeccable / Codex agents",
+                    "agent": "codex",
+                    "from": "agents",
+                    "to": "agents",
+                    "extension": ".toml"
+                }
+            ]
         },
         {
             "id": "afk-create-agent",

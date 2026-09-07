@@ -96,7 +96,8 @@ export function buildSkillUpdateCommands(options: {
 export async function runSkillUpdateCommands(
   runtime: Runtime,
   commands: SkillUpdateCommand[],
-  afterSuccess?: (command: SkillUpdateCommand) => void,
+  afterSuccess?: (command: SkillUpdateCommand) => void | number | Promise<void | number>,
+  dryRun = false,
 ): Promise<number> {
   for (const command of commands) {
     runtime.io.stdout(renderSkillUpdateRoute({
@@ -104,13 +105,20 @@ export async function runSkillUpdateCommands(
       commandLine: `${command.command} ${command.args.map(quoteArg).join(" ")}`,
     }));
 
-    const result = await runtime.spawn(command.command, command.args, command.cwd);
-    if (result.code !== 0) {
-      return result.code;
+    if (!dryRun) {
+      const result = await runtime.spawn(command.command, command.args, command.cwd);
+      if (result.code !== 0) {
+        return result.code;
+      }
     }
-    afterSuccess?.(command);
+    const code = await afterSuccess?.(command);
+    if (code) return code;
   }
 
+  if (dryRun) {
+    runtime.io.stdout("Preview only. No skills updated or post-install actions run.");
+    return 0;
+  }
   runtime.io.stdout(renderSkillUpdateComplete({
     scopes: commands.map((command) => command.scope),
     skillNames: commands.flatMap((command) => command.skillNames),

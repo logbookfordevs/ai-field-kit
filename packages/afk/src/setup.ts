@@ -6,7 +6,8 @@ import { loadSetupSkillProfileCatalog, loadSkillProfileState, reconcileSkillProf
 import { mergeSetupSourceSkillsIntoCatalog, syncSkillCatalogFromManifest } from "./skills/catalog.js";
 import { planSetupSourceCatalogImport, planSkillCatalogRecovery, snapshotSetupSourceLockedSkillIds } from "./catalog-import.js";
 import { detectSetupTargets } from "./agent-detection.js";
-import { buildMcpCommands, buildSkillCommands, buildToolCommands, runDelegateCommands } from "./delegates.js";
+import { buildMcpCommands, buildToolCommands, runDelegateCommands } from "./delegates.js";
+import { runSkillInstalls } from "./skills/post-install.js";
 import { renderArchitectOutro, renderBanner, renderSetupOutro, sectionTitle, muted } from "./brand.js";
 import { confirmSkillProfileInstall, selectCustomAgentsInstall, selectDefaultsSource, selectHooksInstall, selectMcpsInstall, selectRecoverableProfileSkills, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectToolsInstall } from "./interactive.js";
 import { applyOperation, formatOperation, summarizeOperations } from "./fs-utils.js";
@@ -276,7 +277,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
             dryRun: selectedOptions.dryRun,
           })
         : [];
-      const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
+      const { installCode: code, postInstallCode } = await runSkillInstalls(runtime, selectedOptions);
       if (code === 0) {
         syncSkillInvocationPolicy(runtime, selectedOptions);
         syncSkillStartupStorage(runtime, selectedOptions, disabledBeforeInstall);
@@ -284,7 +285,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         reconcileEnabledSetupSkillProfiles(runtime, selectedOptions);
       }
 
-      return code;
+      return code || postInstallCode;
     }
     case "profiles": {
       if (prepared.options.yes || prepared.options.verbose) {
@@ -376,7 +377,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         manifestContents: { ...selectedOptions.manifestContents, "skills.json": JSON.stringify(packageManifest) },
         selectedSkillIds: packageSkillIds,
       } : undefined;
-      const code = await runDelegateCommands(runtime, buildSkillCommands(selectedOptions), selectedOptions);
+      const { installCode: code, postInstallCode } = await runSkillInstalls(runtime, selectedOptions);
       if (code === 0) {
         if (recoveryOperation && !selectedOptions.dryRun) {
           const verifiedRecovery = planSkillCatalogRecovery(prepared.options, recoveryIdsToVerify, catalog.skillAliases);
@@ -403,7 +404,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         }
         reconcileEnabledSetupSkillProfiles(runtime, selectedOptions);
       }
-      return code;
+      return code || postInstallCode;
     }
     case "agents": {
       const selectedOptions = await resolveCustomAgentOptions(prepared.options);

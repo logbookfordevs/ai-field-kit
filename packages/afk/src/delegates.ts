@@ -16,6 +16,10 @@ type DelegateRunOptions = Pick<CliOptions, "dryRun" | "repoDir" | "verbose"> & {
 };
 
 export function buildSkillCommands(options: CliOptions): DelegateCommand[] {
+  return buildSkillInstallPlans(options).map((plan) => plan.command);
+}
+
+export function buildSkillInstallPlans(options: CliOptions): Array<{ command: DelegateCommand; items: SkillManifestItem[] }> {
   const manifest = loadSkillManifest(options);
   const selected =
     options.selectedSkillIds.length > 0
@@ -235,7 +239,7 @@ function buildSkillSourceCommands(
   labelPrefix: string,
   targetArgs: string[],
   scope: "global" | "project",
-): DelegateCommand[] {
+): Array<{ command: DelegateCommand; items: SkillManifestItem[] }> {
   const bySource = new Map<string, SkillManifestItem[]>();
 
   for (const item of items) {
@@ -243,17 +247,20 @@ function buildSkillSourceCommands(
   }
 
   return [...bySource.entries()].map(([source, sourceItems]) => ({
-    label: `${labelPrefix} / ${sourceLabel(source)}`,
-    command: "npx",
-    args: [
-      "skills",
-      "add",
-      source,
-      ...(scope === "global" ? ["--global"] : []),
-      "--yes",
-      ...skillSelectionArgs(sourceItems),
-      ...targetArgs,
-    ],
+    items: sourceItems,
+    command: {
+      label: `${labelPrefix} / ${sourceLabel(source)}`,
+      command: "npx",
+      args: [
+        "skills",
+        "add",
+        source,
+        ...(scope === "global" ? ["--global"] : []),
+        "--yes",
+        ...skillSelectionArgs(sourceItems),
+        ...targetArgs,
+      ],
+    },
   }));
 }
 

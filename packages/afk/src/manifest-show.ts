@@ -300,6 +300,9 @@ function renderSkills(manifest: Record<string, unknown>): string {
         `invocation: ${skillInvocationPolicy(item)}`,
         `start-disabled: ${item.startDisabled === true ? "on" : "off"}`,
         ...stringListDetail("composes", item.composes),
+        ...(Array.isArray(item.postInstall) && item.postInstall.length > 0
+          ? [`post-install: ${item.postInstall.filter(isRecord).map((action) => action.label ?? `${action.type}${action.agent ? ` (${action.agent})` : ""}`).join(", ")}`]
+          : []),
         ...(args ? [`args: ${args}`] : []),
       ];
       return detailItemLine(`${labelFor(item)}${defaultSuffix(item.default)}`, details);

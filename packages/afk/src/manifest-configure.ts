@@ -541,6 +541,7 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
     startDisabled,
     role: existing?.role ?? "primitive",
     composes: existing?.composes ?? [],
+    ...(existing?.postInstall ? { postInstall: existing.postInstall } : {}),
   };
 }
 
@@ -797,6 +798,7 @@ function setupSkillSignature(item: SkillManifestItem): string {
     args: item.args,
     invocation: item.invocation ?? "source",
     startDisabled: item.startDisabled === true,
+    postInstall: item.postInstall,
   });
 }
 

@@ -1036,6 +1036,83 @@ catalog merge without applying the rules.
 depends on another setup helper, keep it `default: false` until the dependency
 is also installed by default.
 
+#### Skill post-install actions
+
+A skill item can declare an ordered `postInstall` array. AFK runs it after the
+source installs successfully through `afk setup skills` or `afk setup profiles`,
+and after successful `afk skills update` runs for that skill. `afk skills add`
+also runs catalog actions for newly installed skills and skills whose lock
+metadata changes. Actions require one explicit `--skill <name>` in the item's
+`args`; whole-source entries cannot declare them. Refreshing a catalog does not
+execute actions.
+
+Impeccable's catalog entry includes:
+
+```json
+{
+  "postInstall": [
+    {
+      "type": "copy",
+      "label": "Impeccable / Codex agents",
+      "agent": "codex",
+      "from": "agents",
+      "to": "agents",
+      "extension": ".toml"
+    }
+  ]
+}
+```
+
+`from` is a directory relative to the installed skill. `to` is a directory
+relative to the selected harness's configuration root. Copy actions support
+`codex`, `claude`, and `pi`, using the same roots as Custom Agent setup. Global
+Codex copies honor `CODEX_HOME`, falling back to `~/.codex`; project copies go
+under `./.codex`. Only immediate regular files are copied, optionally filtered
+by `extension`. Directories and symbolic-link files are excluded. Paths must
+be relative and cannot traverse outside their roots.
+
+Agent-specific actions use explicit setup `--agent` selections, falling back
+to harness detection when no applicable selection was supplied. Updates use
+harness detection.
+Codex is part of the always-installed universal skill target; its actions use
+`--agent codex` or Codex detection. Missing harnesses are reported as skipped.
+
+AFK records copied file hashes in `~/.agents/afk/skill-post-install.json`
+(project scope: `./.agents/afk/skill-post-install.json`). Identical files are
+left unchanged. Updates replace copies that still match their recorded hash;
+conflicting user files and destination symlinks are preserved and reported as
+failures. Resolve a conflict or move the file aside, then rerun setup. Copy
+actions do not remove old files when upstream removes or renames them, or when
+the skill is disabled or deleted.
+
+For setup that needs a script, use a command action:
+
+```json
+{
+  "postInstall": [
+    {
+      "type": "command",
+      "label": "Prepare skill helpers",
+      "command": "node",
+      "args": ["scripts/setup.mjs", "${SCOPE_DIR}"]
+    }
+  ]
+}
+```
+
+Commands run with the installed skill directory as their working directory.
+AFK substitutes `${SKILL_DIR}`, `${SCOPE_DIR}` (home or project directory), and
+`${HOME}` in the command and argument strings. An optional `agent` also enables
+`${AGENT_DIR}`. Commands receive separate arguments without an implicit shell;
+use an explicit shell command if required. Scripts must tolerate repeated runs.
+
+`--dry-run` on setup or update previews actions without executing them or
+requiring the skill to exist yet. A post-install failure returns a nonzero exit
+code and identifies the installed skill separately from its failed setup.
+Remaining actions for that item stop; successful skill installation and storage
+policy are retained. Edit actions directly in `skills.json`; the interactive
+skill editor preserves existing actions.
+
 `startDisabled: true` installs the skill, then places it in `.disabled` so it
 stays quiet until the user enables it directly or a skill profile keeps it
 active.
