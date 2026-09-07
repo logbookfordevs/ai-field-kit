@@ -1,0 +1,321 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-07T00:00:00-03:00",
+  "title": "Design System: AI Field Kit",
+  "extensions": {
+    "colorMeta": {
+      "field-paper": {
+        "role": "neutral",
+        "displayName": "Warm Field Paper",
+        "canonical": "#f3eddf",
+        "tonalRamp": ["#2b2721", "#4d463d", "#70675b", "#948a7c", "#b8ad9f", "#d8cdbd", "#ece3d3", "#f3eddf"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Paper Surface",
+        "canonical": "#fffaf0",
+        "tonalRamp": ["#2f2b25", "#514a40", "#746b5e", "#978d7d", "#bab0a0", "#dbd1c1", "#f0e7d8", "#fffaf0"]
+      },
+      "warm-paper": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "canonical": "#e9ddc9",
+        "tonalRamp": ["#2d261d", "#504536", "#746453", "#98836f", "#bca48f", "#dac8b2", "#eadcc8", "#f7efe3"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Field Ink",
+        "canonical": "#17201e",
+        "tonalRamp": ["#101615", "#1d2927", "#30413d", "#485d57", "#688078", "#94a69f", "#c6d0cb", "#f0f4f1"]
+      },
+      "deep-ocean": {
+        "role": "primary",
+        "displayName": "Deep Ocean",
+        "canonical": "#102c2c",
+        "tonalRamp": ["#081717", "#102c2c", "#214646", "#3b6462", "#5c8581", "#8aa7a3", "#bdd0cc", "#ecf2ef"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Chart Ink",
+        "canonical": "#5d6964",
+        "tonalRamp": ["#1e2523", "#34403c", "#4a5651", "#5d6964", "#7a8882", "#a1ada7", "#c9d0cc", "#eff1ef"]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Chart Rule",
+        "canonical": "#b9c0b7",
+        "tonalRamp": ["#26302c", "#46524d", "#67736d", "#89948d", "#aeb6ae", "#b9c0b7", "#d8dcd5", "#f0f1ec"]
+      },
+      "verdigris": {
+        "role": "secondary",
+        "displayName": "Verdigris",
+        "canonical": "#3f8580",
+        "tonalRamp": ["#12302e", "#20504d", "#2e6965", "#3f8580", "#5ca29d", "#86bcb7", "#b9d9d5", "#e9f3f1"]
+      },
+      "signal-rust": {
+        "role": "secondary",
+        "displayName": "Signal Rust",
+        "canonical": "#c94f35",
+        "tonalRamp": ["#35100a", "#642116", "#923523", "#c94f35", "#db765c", "#e9a18e", "#f3c9bb", "#fcebe5"]
+      },
+      "rust-deep": {
+        "role": "secondary",
+        "displayName": "Deep Rust",
+        "canonical": "#8f3f2d",
+        "tonalRamp": ["#2b0f09", "#4b1d14", "#6d2d20", "#8f3f2d", "#ad614d", "#ca8a79", "#e3b9ae", "#f7e8e4"]
+      },
+      "brass": {
+        "role": "tertiary",
+        "displayName": "Brass",
+        "canonical": "#bd9348",
+        "tonalRamp": ["#30240d", "#57431b", "#80632b", "#a87f3b", "#bd9348", "#d2b16d", "#e6cf9a", "#f8efd9"]
+      },
+      "lantern": {
+        "role": "neutral",
+        "displayName": "Lantern",
+        "canonical": "#f4efde",
+        "tonalRamp": ["#2c2a22", "#504c3e", "#736e5a", "#97907a", "#bab39b", "#d9d2bc", "#ece7d3", "#f4efde"]
+      }
+    },
+    "typographyMeta": {
+      "docs-headline": { "displayName": "Docs Headline", "purpose": "Repeated chapter H1; 2rem at the docs mobile breakpoint, capped at 23ch." },
+      "docs-title": { "displayName": "Docs Section Title", "purpose": "Anchored H2 sections; 1.3rem at the docs mobile breakpoint." },
+      "docs-body": { "displayName": "Docs Reading Copy", "purpose": "Normal Poppins 400 loaded in index.html; paragraphs capped at 72ch, .9rem on mobile." },
+      "docs-lead": { "displayName": "Docs Lead", "purpose": "Muted chapter introduction; 1rem on mobile." },
+      "docs-code": { "displayName": "Docs Command", "purpose": "Wrapping IBM Plex Mono command text; command-bar labels remain Poppins." },
+      "display": {
+        "displayName": "Poppins Display",
+        "purpose": "Section and closing headings with balanced wrapping."
+      },
+      "hero": {
+        "displayName": "Poppins Hero",
+        "purpose": "First-viewport AFK statement; the emphasized phrase uses Literata."
+      },
+      "body": {
+        "displayName": "Poppins UI Copy",
+        "purpose": "Short, scannable interface and explanatory copy."
+      },
+      "narrative": {
+        "displayName": "Literata Narrative",
+        "purpose": "Sparse italic brand notes, emphasis, and attribution."
+      },
+      "handwritten": {
+        "displayName": "Caveat Handwritten Accent",
+        "purpose": "One nonessential field-note flourish beside the closing command."
+      },
+      "label": {
+        "displayName": "IBM Plex Mono Label",
+        "purpose": "Commands, route coordinates, indexes, status, and selection state."
+      }
+    },
+    "shadows": [
+      {
+        "name": "route-instrument",
+        "value": "0 28px 72px rgba(72,47,28,.16)",
+        "purpose": "Hero route-map frame."
+      },
+      {
+        "name": "route-core",
+        "value": "0 24px 50px rgba(72,47,28,.14)",
+        "purpose": "Central AFK core."
+      },
+      {
+        "name": "agent-node",
+        "value": "0 8px 20px rgba(72,47,28,.08)",
+        "purpose": "Route-map destinations."
+      },
+      {
+        "name": "context-layer",
+        "value": "0 14px 28px rgba(72,47,28,.08)",
+        "purpose": "Stepped context cards."
+      },
+      {
+        "name": "status-toast",
+        "value": "0 18px 44px rgba(23,32,30,.2)",
+        "purpose": "Transient copy and tab-status feedback."
+      }
+    ],
+    "motion": [
+      {
+        "name": "field-ease",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "Button, reveal, and toast movement."
+      },
+      {
+        "name": "button-lift",
+        "value": "transform 180ms cubic-bezier(.16,1,.3,1), background 180ms",
+        "purpose": "Primary button hover lifts 2px and darkens."
+      },
+      {
+        "name": "route-dash",
+        "value": "route 8s linear infinite",
+        "purpose": "Dashed route paths move continuously; even paths reverse."
+      },
+      {
+        "name": "reveal",
+        "value": "opacity 720ms cubic-bezier(.16,1,.3,1), transform 720ms cubic-bezier(.16,1,.3,1)",
+        "purpose": "One-time section reveal after a 12% intersection."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation-duration: .01ms !important; transition-duration: .01ms !important",
+        "purpose": "Non-essential motion is removed while content remains visible."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "docs-two-column",
+        "value": "1150px",
+        "purpose": "Hide on-page rail; use 210px minmax(0, 760px) tracks and 32px gaps."
+      },
+      {
+        "name": "docs-mobile",
+        "value": "760px",
+        "purpose": "Replace sidebar with native chapter select; use 20px gutters, 66px minimum header, and 32px article top padding."
+      },
+      {
+        "name": "tablet",
+        "value": "980px",
+        "purpose": "Header reflows; primary grids become one column; sticky kit stack becomes static."
+      },
+      {
+        "name": "mobile",
+        "value": "700px",
+        "purpose": "Tighter page measure, stacked actions, one-column ledgers, two-column tabs and agent band."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Docs Chapter Navigation",
+      "kind": "nav",
+      "refersTo": "docs-chapter-current",
+      "description": "Query-addressed chapters with current-page semantics; native select replaces the rail on mobile.",
+      "html": "<nav class=\"ds-docs-chapters\" aria-label=\"Chapters\"><a href=\"/docs?chapter=start\" aria-current=\"page\">Start here</a><a href=\"/docs?chapter=setup\">Set up AFK</a></nav>",
+      "css": ".ds-docs-chapters { display: grid; gap: 4px; font: 500 .85rem/1.6 Poppins, system-ui, sans-serif; color: var(--muted); } .ds-docs-chapters a { padding: 10px 12px; border: 0; border-radius: 4px; color: inherit; text-decoration: none; } .ds-docs-chapters a:hover { background: var(--paper); color: var(--ink); } .ds-docs-chapters a[aria-current=page] { background: var(--command); color: var(--surface); font-weight: 700; } .ds-docs-chapters a:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 4px; }"
+    },
+    {
+      "name": "Docs Chapter Filter",
+      "kind": "input",
+      "refersTo": "docs-filter",
+      "description": "Title-only, trimmed, case-insensitive filter with an inline no-results status in the app; not full-text search.",
+      "html": "<label class=\"ds-docs-filter\">Find a chapter<input type=\"search\" placeholder=\"Filter chapters\" /></label>",
+      "css": ".ds-docs-filter { display: grid; gap: 8px; color: var(--muted); font: 400 .75rem/1.6 Poppins, system-ui, sans-serif; } .ds-docs-filter input { width: 100%; min-height: 42px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); padding: 8px 10px; font: 400 .8rem/1.6 Poppins, system-ui, sans-serif; color: var(--ink); caret-color: var(--verdigris); } .ds-docs-filter input::placeholder { color: var(--muted); } .ds-docs-filter input:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 4px; }"
+    },
+    {
+      "name": "Docs Ocean Command",
+      "kind": "custom",
+      "refersTo": "docs-command",
+      "description": "Wrapping command with copy action and reserved inline status; app feedback clears after three seconds. Preview is static, without clipboard behavior.",
+      "html": "<div class=\"ds-docs-command\"><div class=\"ds-docs-command-bar\"><span>preview</span><button type=\"button\" aria-label=\"Copy preview command\">Copy</button></div><pre><code>npx @logbookfordevs/afk setup --dry-run</code></pre><span class=\"ds-docs-status\" role=\"status\"></span></div>",
+      "css": ".ds-docs-command { margin: 24px 0; background: var(--command); color: var(--code); border-radius: 8px; overflow: hidden; font: 400 .75rem/1.8 Poppins, system-ui, sans-serif; } .ds-docs-command-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--verdigris); } .ds-docs-command button { min-height: 36px; padding: 4px 10px; border-radius: 4px; cursor: pointer; background: transparent; border: 1px solid var(--verdigris); color: inherit; font: inherit; } .ds-docs-command button:hover { background: var(--surface); color: var(--command); } .ds-docs-command button:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 4px; } .ds-docs-command pre { margin: 0; padding: 20px 18px 28px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; } .ds-docs-command code { font-family: IBM Plex Mono, ui-monospace, monospace; font-size: .82rem; } .ds-docs-status { display: block; min-height: 28px; padding: 0 18px 8px; }"
+    },
+    {
+      "name": "Deep Ocean Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary route action on light paper.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Preview the setup</button>",
+      "css": ".ds-btn-primary { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #102c2c; border-radius: 8px; background: #102c2c; color: #fffaf0; padding: 12px 18px; font: 700 .86rem/1.2 Poppins, system-ui, sans-serif; cursor: pointer; transition: transform 180ms cubic-bezier(.16,1,.3,1), background 180ms; } .ds-btn-primary:hover { background: #24302c; transform: translateY(-2px); } .ds-btn-primary:focus-visible { outline: 2px solid #3f8580; outline-offset: 4px; }"
+    },
+    {
+      "name": "Runnable Command Panel",
+      "kind": "custom",
+      "refersTo": "command-panel",
+      "description": "Runnable command with mono label and a compact copy action.",
+      "html": "<div class=\"ds-command\"><span>dry run</span><code>npx @logbookfordevs/afk setup --dry-run</code><button type=\"button\" aria-label=\"Copy command\">Copy</button></div>",
+      "css": ".ds-command { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 14px; min-width: 0; border: 1px solid #b9c0b7; border-radius: 8px; background: rgb(255 250 240 / 82%); padding: 10px; color: #102c2c; } .ds-command span { color: #8f3f2d; font: 600 .66rem/1.2 IBM Plex Mono, ui-monospace, monospace; text-transform: uppercase; white-space: nowrap; } .ds-command code { min-width: 0; overflow-wrap: anywhere; font: .76rem/1.45 IBM Plex Mono, ui-monospace, monospace; } .ds-command button { min-height: 38px; border: 1px solid #b9c0b7; border-radius: 6px; background: #fffaf0; padding: 8px 12px; color: #17201e; font: 700 .76rem/1.2 Poppins, system-ui, sans-serif; cursor: pointer; } .ds-command button:hover { border-color: #3f8580; color: #3f8580; } .ds-command button:focus-visible { outline: 2px solid #3f8580; outline-offset: 4px; }"
+    },
+    {
+      "name": "Route Instrument",
+      "kind": "custom",
+      "refersTo": "route-instrument",
+      "description": "Paper-grid route frame that maps a central AFK core to agent targets.",
+      "html": "<section class=\"ds-route\" aria-label=\"AI Field Kit route map\"><span class=\"ds-route-meta\">afk / route map</span><span class=\"ds-route-node ds-route-node-a\">Codex</span><span class=\"ds-route-node ds-route-node-b\">Claude</span><div class=\"ds-route-core\"><strong>AFK</strong><small>shared field kit</small></div><span class=\"ds-route-legend\">rules · skills · hooks · MCPs</span></section>",
+      "css": ".ds-route { position: relative; min-height: 360px; overflow: hidden; border-radius: 16px; background-color: #fffaf0; background-image: linear-gradient(rgb(32 26 22 / 5.5%) 1px, transparent 1px), linear-gradient(90deg, rgb(32 26 22 / 5.5%) 1px, transparent 1px); background-size: 52px 52px; box-shadow: 0 28px 72px rgba(72,47,28,.16); color: #17201e; font-family: Poppins, system-ui, sans-serif; } .ds-route:before, .ds-route:after { position: absolute; top: 50%; width: 42%; border-top: 1.5px dashed #c94f35; content: \"\"; } .ds-route:before { left: 7%; transform: rotate(28deg); } .ds-route:after { right: 7%; transform: rotate(-28deg); } .ds-route-meta, .ds-route-legend { position: absolute; left: 18px; color: #5d6964; font: .66rem/1.2 IBM Plex Mono, ui-monospace, monospace; text-transform: uppercase; } .ds-route-meta { top: 18px; } .ds-route-legend { bottom: 18px; } .ds-route-core { position: absolute; top: 50%; left: 50%; display: grid; width: 140px; aspect-ratio: 1; place-content: center; border: 1px solid #17201e; border-radius: 16px; background: #fffaf0; box-shadow: 0 24px 50px rgba(72,47,28,.14); text-align: center; transform: translate(-50%,-50%); } .ds-route-core strong { font: 600 3.4rem/.8 Poppins, system-ui, sans-serif; } .ds-route-core small { margin-top: 10px; color: #5d6964; font: .58rem/1.2 IBM Plex Mono, ui-monospace, monospace; text-transform: uppercase; } .ds-route-node { position: absolute; z-index: 1; border: 1px solid #b9c0b7; border-radius: 8px; background: #fffaf0; padding: 10px 12px; box-shadow: 0 8px 20px rgba(72,47,28,.08); font-weight: 700; } .ds-route-node-a { top: 22%; left: 8%; } .ds-route-node-b { right: 8%; bottom: 22%; }"
+    },
+    {
+      "name": "Install Path Tabs",
+      "kind": "nav",
+      "refersTo": "code-panel",
+      "description": "Semantic path selector; active state is a Brass inset rail, not a generic card.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\" aria-label=\"AFK install paths\"><button type=\"button\" role=\"tab\" aria-selected=\"true\"><span>01</span>Try the full kit</button><button type=\"button\" role=\"tab\" aria-selected=\"false\"><span>02</span>Skills only</button></div>",
+      "css": ".ds-tabs { display: grid; max-width: 320px; background: #102c2c; } .ds-tabs button { display: grid; grid-template-columns: 28px 1fr; gap: 10px; border: 0; border-bottom: 1px solid rgb(255 250 240 / 22%); background: transparent; padding: 16px 10px; color: rgb(244 239 222 / 34%); font: 700 .86rem/1.2 Poppins, system-ui, sans-serif; text-align: left; cursor: pointer; } .ds-tabs button span { font: .64rem/1.2 IBM Plex Mono, ui-monospace, monospace; } .ds-tabs button[aria-selected=\"true\"] { background: rgb(255 250 240 / 8%); box-shadow: inset 3px 0 0 #bd9348; color: #fffaf0; } .ds-tabs button:focus-visible { outline: 2px solid #3f8580; outline-offset: 4px; }"
+    },
+    {
+      "name": "Stepped Context Panel",
+      "kind": "card",
+      "refersTo": "command-panel",
+      "description": "Paper panel for a named layer in the portable-to-project context stack.",
+      "html": "<article class=\"ds-context-card\"><span>02</span><div><h3>Personal preferences</h3><p>Your agent habits and local tool choices.</p></div></article>",
+      "css": ".ds-context-card { display: grid; grid-template-columns: 46px 1fr; gap: 18px; align-items: center; border: 1px solid #b9c0b7; border-radius: 8px; background: #fffaf0; padding: 20px; box-shadow: 0 14px 28px rgba(72,47,28,.08); color: #17201e; font-family: Poppins, system-ui, sans-serif; } .ds-context-card > span { display: grid; width: 42px; aspect-ratio: 1; place-items: center; border-radius: 6px; background: #f3eddf; color: #8f3f2d; font: .7rem/1 IBM Plex Mono, ui-monospace, monospace; } .ds-context-card h3 { margin: 0; font-size: 1.45rem; line-height: 1.08; } .ds-context-card p { margin: 5px 0 0; color: #5d6964; font-size: .82rem; line-height: 1.4; }"
+    },
+    {
+      "name": "Polite Status Toast",
+      "kind": "custom",
+      "refersTo": "command-panel",
+      "description": "Lower-right live confirmation for a copy result or selected path.",
+      "html": "<div class=\"ds-toast\" role=\"status\" aria-live=\"polite\">Command copied</div>",
+      "css": ".ds-toast { max-width: calc(100vw - 40px); border-radius: 8px; background: #fffaf0; padding: 12px 15px; box-shadow: 0 18px 44px rgba(23,32,30,.2); color: #17201e; font: 700 .82rem/1.2 Poppins, system-ui, sans-serif; opacity: 1; transform: none; transition: opacity 180ms, transform 180ms cubic-bezier(.16,1,.3,1); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Composable Trail",
+    "overview": "AI Field Kit is a warm field-paper installation guide that makes a multi-agent setup legible as a route. The ocean structure comes from Logbook for Devs: Deep Ocean holds the decisive operational surfaces, Verdigris marks focus and confirmation, Signal Rust carries route energy, and Brass pinpoints an active installation choice.\n\nOne AFK core sends four dashed routes to named agent nodes. Ledger rows, a sticky layer stack, real install tabs, and runnable command panels turn that visual route into an operational decision trail. The light-only page remains a technical field journal instead of a generic AI landing page or a decorative card wall.",
+    "keyCharacteristics": [
+      "Poppins UI/display, Literata narrative emphasis, one Caveat field note, and IBM Plex Mono technical labels.",
+      "Warm field paper with a fixed, fading grid and clear ruled boundaries.",
+      "Deep Ocean operations, Verdigris focus, Signal Rust route signal, and Brass active detail.",
+      "Route-map, ledger, manual, and manifest structures make AFK composition visible.",
+      "Motion respects reduced-motion preferences without concealing information."
+    ],
+    "rules": [
+      {
+        "name": "The Reading Measure Rule",
+        "body": "Docs use fixed-size Poppins headings, generous 1.8 body leading, and a bounded reading column; the homepage hero scale does not transfer to articles.",
+        "section": "typography"
+      },
+      {
+        "name": "The In-Place Command Feedback Rule",
+        "body": "Docs commands reserve an inline status region for copy success or a manual-selection fallback; feedback clears after three seconds without moving to a toast. The region reserves `28px` minimum height and uses `0 18px 8px` padding.",
+        "section": "components"
+      },
+      {
+        "name": "The Ocean Carries Operations Rule",
+        "body": "Deep Ocean carries the strongest action, code, and major operational surfaces. Signal Rust is not the ordinary CTA fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The Accent Has a Job Rule",
+        "body": "Verdigris indicates focus or available action, Rust indicates route/signal, and Brass indicates active instrument detail.",
+        "section": "colors"
+      },
+      {
+        "name": "The Bottle Letter Rule",
+        "body": "Poppins is the durable interface, Literata is the rare human note, and IBM Plex Mono verifies the coordinates. Do not restore superseded font roles.",
+        "section": "typography"
+      },
+      {
+        "name": "The Route Explains Composition Rule",
+        "body": "Use routes, ledger rows, named layers, and real commands to explain setup ownership before adding decorative containers.",
+        "section": "layout"
+      }
+    ],
+    "dos": [
+      "Do keep docs article sections unframed, code wrapping, chapter URLs stable, and copy feedback in place.",
+      "Do use the native mobile chapter selector and docs-specific breakpoints instead of compressing the desktop rails.",
+      "Do use the exact ocean semantic accents: Deep Ocean #102c2c, Verdigris #3f8580, Signal Rust #c94f35, and Brass #bd9348.",
+      "Do preserve the current tab, copy, skip-link, focus, and reduced-motion contracts.",
+      "Do keep Poppins for interface structure, Literata for sparse narrative emphasis, and Plex Mono for technical labels.",
+      "Do keep the responsive route from desktop instrument to a single-column mobile reading order."
+    ],
+    "donts": [
+      "Don't transfer the homepage hero scale, route animation, or raised instrument treatment into docs prose.",
+      "Don't describe the title filter as full-text search or the existing docs mark as an official stack-native logo.",
+      "Don't restore superseded typography, palette, or token claims.",
+      "Don't turn the warm base into a brown-led beige identity; keep ocean semantics visibly present.",
+      "Don't replace the route, ledger, and manifest structures with generic card walls.",
+      "Don't make motion necessary to understand installation paths or hide content under reduced motion."
+    ]
+  }
+}

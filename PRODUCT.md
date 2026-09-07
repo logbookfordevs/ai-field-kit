@@ -6,28 +6,39 @@ brand
 
 ## Users
 
-AI-assisted developers, engineering leads, and workflow tinkerers who want coding agents to behave like useful collaborators in real projects instead of generic chatbots. They are usually configuring local agent surfaces, choosing skills, previewing setup actions, or studying AFK's workflow model before adopting it.
+AI-assisted developers, engineering leads, staff-level workflow maintainers, and local-tooling tinkerers who use more than one coding agent and need a coherent way to configure them. They arrive while choosing setup paths, comparing skill/workflow surfaces, previewing AFK CLI actions, or deciding whether AI Field Kit belongs in a team repository.
+
+These users are technical and skeptical. They want to see what will be installed, which tool owns which behavior, and where the boundaries are before they let automation touch their machine or project.
 
 ## Product Purpose
 
-AI Field Kit is a DX-first kit of rules, skills, manifests, hooks, and setup routing for practical AI development workflows. It helps people install only the pieces they need, keep agent behavior versioned, and understand AFK as a composable system rather than a monolithic methodology.
+AI Field Kit is the DX-first setup layer for practical AI development workflows. It packages rules, skills, workflows, hooks, MCP registry entries, setup routing, and companion plugin guidance so developers can install only the pieces they need and keep agent behavior versioned.
+
+AFK should make the system shape legible: authored skills can be installed directly, the AFK CLI can orchestrate broader setup, and workflow packages can coordinate heavier planning or execution when the job calls for it. Success means a developer understands the composition model quickly enough to choose a narrow install path with confidence instead of treating AFK as a monolithic methodology.
 
 ## Brand Personality
 
-Precise, practical, composable, and opinionated. AFK should feel like a field notebook for serious builders: calm enough to trust, sharp enough to challenge vague workflow thinking, and playful enough to make the architecture memorable.
+Precise, composable, field-tested, and opinionated. AFK should feel like a working field notebook for serious builders: calm enough to trust, concrete enough to run, and sharp enough to challenge vague agent-workflow thinking.
+
+The voice is practical rather than ceremonial. It can be playful in small flashes, but the product earns trust by naming boundaries, showing real commands, and avoiding inflated claims about AI productivity.
 
 ## Anti-references
 
-Avoid generic SaaS landing pages, decorative AI hype, over-explained framework worship, fake productivity theater, and visual systems that bury the actual setup model under ornamental cards. AFK should not feel like a marketplace clone or a prompt pack catalogue.
+Avoid generic AI SaaS landing pages, prompt-pack marketplaces, decorative automation hype, vague productivity theater, and framework worship that makes AFK look like another mandatory methodology.
+
+Avoid burying the setup model under ornamental cards or screenshots that do not explain ownership. AFK should not imply that every workflow is required, that every agent should be configured the same way, or that MCPs, CLIs, hooks, skills, apps, and plugins are interchangeable words for the same thing.
 
 ## Design Principles
 
 - Show the system shape before explaining every detail.
-- Treat composition as the product story: primitives, wrappers, flows, references, routers.
+- Treat composition as the product story: primitives, wrappers, flows, references, routers, and installers each have a clear job.
 - Prefer explicit setup semantics over magical automation.
-- Keep the tone expert and usable, with enough character to make the ideas stick.
-- Cut anything that does not help someone understand, choose, or install the right piece.
+- Keep install paths honest: direct skills install, AFK CLI setup, registry import, and companion plugin recommendations should remain distinct.
+- Make the smallest useful next step obvious.
+- Cut any visual or copy element that does not help someone understand, choose, or install the right piece.
 
 ## Accessibility & Inclusion
 
-Use readable contrast, keyboard-accessible controls, reduced-motion alternatives, responsive layouts, and plain language for setup concepts. Motion and visual metaphor should clarify relationships, not become required for comprehension.
+Use readable contrast, keyboard-accessible controls, reduced-motion alternatives, responsive layouts, semantic landmarks, clear focus states, and plain language for setup concepts. Motion and visual metaphor should clarify relationships, not become required for comprehension.
+
+Installation and compatibility information should not rely on color alone. Code blocks, copy buttons, tabs, tables, and support links should remain usable with keyboard navigation, narrow screens, and assistive technology.

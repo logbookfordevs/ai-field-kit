@@ -2,6 +2,10 @@
 
 These notes are for agents working on this repository. They are not AFK's exported user rules.
 
+## Design Context
+
+For AFK brand or site work, read `PRODUCT.md` for strategy and `DESIGN.md` for the visual system before changing `apps/site/`, `afk-skills.html`, or generated visual artifacts. `PRODUCT.md` owns audience, purpose, boundaries, and anti-references; `DESIGN.md` owns colors, type, components, and design guardrails.
+
 ## Skill Design
 
 If the skill changes posture, keep it tiny.

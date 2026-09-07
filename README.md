@@ -12,6 +12,7 @@
 
 <p align="center">
   <a href="https://ai-field-kit.logbookfordevs.com/">Website</a> ·
+  <a href="https://ai-field-kit.logbookfordevs.com/docs">Documentation</a> ·
   <a href="./packages/afk/README.md">CLI reference</a> ·
   <a href="./CHANGELOG.md">Changelog</a> ·
   <a href="https://logbookfordevs.com/">by Logbook for Devs</a>

@@ -47,6 +47,9 @@ jobs:
       - name: Validate registry
         run: pnpm registry:validate
 
+      - name: Test site navigation
+        run: node --test apps/site/src/docs/navigation.test.js
+
       - name: Build site
         run: pnpm site:build
 
