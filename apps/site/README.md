@@ -29,8 +29,10 @@ Open `/docs` for the preview-first field manual. Chapters use URLs such as
 `/docs?chapter=setup`; headings support ordinary fragment links. Content lives in
 `src/docs/GuideContent.jsx`, with layout and reading styles beside it.
 
-When hosting the production build, configure an SPA fallback to `index.html`
-for `/docs` and `/docs/`. Vite provides this during local development.
+For Vercel, set the project's Root Directory to `apps/site`. The included
+`vercel.json` rewrites `/docs` and `/docs/` to `index.html`, preserving chapter
+query parameters. Redeploy after changing this configuration. Other hosts need
+the same SPA fallback; Vite provides it during local development.
 
 Check command examples against `packages/afk/src/cli.ts` and setup behavior
 before updating the guide. Website validation does not require running setup
