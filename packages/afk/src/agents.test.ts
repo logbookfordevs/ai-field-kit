@@ -22,3 +22,8 @@ test("Cursor local is only in hook agent choices", () => {
 test("addMcpAgentNames uses the Antigravity add-mcp target", () => {
   assert.equal(addMcpAgentNames.antigravity, "antigravity");
 });
+
+test("Pi is available as a rules agent but not a hook target", () => {
+  assert.ok(agentIds.includes("pi"));
+  assert.ok(!hookAgentIds.includes("pi"));
+});

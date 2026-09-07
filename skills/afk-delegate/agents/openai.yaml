@@ -1,4 +1,0 @@
-interface:
-  display_name: "AFK Delegate"
-  short_description: "Delegate work to another local agent with live or background supervision."
-  default_prompt: "Delegate this work to another local agent."

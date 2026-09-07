@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ManagedSkillAgent, SkillsListScope } from "../types.js";
+import type { ManagedSkillAgent, SkillAgentFilter, SkillsInvocationFilter, SkillsListScope, SkillsListStorage } from "../types.js";
 import { loadSkillManifest, localManifestDir, type SkillManifest, type SkillManifestItem } from "../manifest.js";
 
 export const skillCatalogFileName = "skills.json";
@@ -9,7 +9,8 @@ export const legacySkillCatalogFileName = "afk-skills.json";
 
 export type SkillStorage = "active" | "disabled";
 export type SkillRootKind = "global-library" | "project-agent" | "agent-library";
-export type SkillAutoInvocationState = "enabled" | "disabled" | "mixed" | "default";
+export type SkillInvocationState = SkillsInvocationFilter;
+export type SkillCatalogOrigin = "native" | "imported" | "untracked";
 
 export type SkillRecord = {
   folder: string;
@@ -22,13 +23,14 @@ export type SkillRecord = {
   storage: SkillStorage;
   rootKind: SkillRootKind;
   readOnly: boolean;
-  agent: ManagedSkillAgent | undefined;
+  agent: SkillAgentFilter | undefined;
   category: string | undefined;
   categoryId: string | undefined;
+  catalogOrigin: SkillCatalogOrigin;
   tags: string[];
-  autoInvocation: SkillAutoInvocationState;
-  autoInvocationSources: string[];
-  autoInvocationDetails: string[];
+  invocation: SkillInvocationState;
+  invocationSources: string[];
+  invocationDetails: string[];
 };
 
 export type SkillCatalogScope = {
@@ -80,13 +82,23 @@ export type SkillCatalogManifestSyncResult = {
   added: string[];
 };
 
+export type SetupSourceSkillCatalogMergeResult = {
+  path: string;
+  merged: string[];
+};
+
+export type SkillCatalogStartDisabledResult = {
+  path: string;
+  updated: string[];
+};
+
 type SkillRoot = {
   kind: SkillRootKind;
   label: string;
   path: string;
   storage: SkillStorage;
   readOnly: boolean;
-  agent?: ManagedSkillAgent;
+  agent?: SkillAgentFilter;
 };
 
 type FrontmatterMetadata = {
@@ -99,14 +111,19 @@ export function loadSkillCatalog(options: {
   homeDir: string;
   cwd: string;
   scope: SkillsListScope;
-  agent: ManagedSkillAgent | undefined;
+  agent: SkillAgentFilter | undefined;
+  agentPath?: string | undefined;
 }): SkillCatalogSnapshot {
   const categorization = loadCategorizationState(options.homeDir);
-  const roots = skillRoots(options.homeDir, options.cwd)
+  const roots = skillRoots(options.homeDir, options.cwd, options.agentPath)
     .filter((root) => rootMatchesScope(root, options.scope))
-    .filter((root) => !options.agent || root.agent === options.agent);
+    .filter((root) => rootMatchesAgent(root, options.agent));
 
-  const records = roots.flatMap((root) => loadRootSkills(root, categorization));
+  const manifestItemsById = new Map(
+    (categorization.state === "loaded" ? categorization.definition.items ?? [] : [])
+      .map((item) => [item.id.toLowerCase(), item]),
+  );
+  const records = roots.flatMap((root) => loadRootSkills(root, categorization, manifestItemsById));
   return {
     records: sortSkillRecords(records),
     categorization,
@@ -114,13 +131,23 @@ export function loadSkillCatalog(options: {
 }
 
 export type SkillListFilters = {
+  invocation?: SkillInvocationState | undefined;
   category?: string | undefined;
   tag?: string | undefined;
   uncategorized?: boolean | undefined;
+  storage?: SkillsListStorage | undefined;
 };
 
 export function filterSkillRecords(records: SkillRecord[], filters: SkillListFilters): SkillRecord[] {
   return records.filter((record) => {
+    if (filters.invocation && record.invocation !== filters.invocation) {
+      return false;
+    }
+
+    if (filters.storage && record.storage !== filters.storage) {
+      return false;
+    }
+
     if (filters.uncategorized && record.categoryId) {
       return false;
     }
@@ -411,11 +438,8 @@ export function syncSkillCatalogFromManifest(options: {
   const uncategorized = ensureUncategorizedScope(definition);
   const existingFolders = new Set(definition.skills.map((skill) => skill.folder.toLowerCase()));
   const added = folders.filter((folder) => !existingFolders.has(folder.toLowerCase()));
-  const syncedFolders = new Set(folders);
-  const shouldMarkImported = (definition.items ?? manifest.items)
-    .some((item) => syncedFolders.has(item.id) && item.imported !== true);
 
-  if (added.length === 0 && !shouldMarkImported) {
+  if (added.length === 0) {
     return { path, added };
   }
 
@@ -434,11 +458,84 @@ export function syncSkillCatalogFromManifest(options: {
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, `${JSON.stringify({
       ...nextManifest,
-      items: nextManifest.items.map((item) => syncedFolders.has(item.id) ? { ...item, imported: true } : item),
     }, null, 2)}\n`);
   }
 
   return { path, added };
+}
+
+export function mergeSetupSourceSkillsIntoCatalog(options: {
+  homeDir: string;
+  manifestContents: NonNullable<Parameters<typeof loadSkillManifest>[0]["manifestContents"]>;
+  selectedSkillIds: string[];
+  allSkills: boolean;
+  dryRun: boolean;
+}): SetupSourceSkillCatalogMergeResult {
+  const sourceManifest = loadSkillManifest(options);
+  const selectedIds = new Set(options.selectedSkillIds.map((id) => id.toLowerCase()));
+  const selected = sourceManifest.items.filter((item) => (
+    selectedIds.size > 0 ? selectedIds.has(item.id.toLowerCase()) : item.default || options.allSkills
+  ));
+  const path = skillCatalogPath(options.homeDir);
+  if (selected.length === 0) {
+    return { path, merged: [] };
+  }
+
+  const cachedManifest = existsSync(path)
+    ? loadSkillManifest({ homeDir: options.homeDir })
+    : { version: sourceManifest.version, defaultSource: "", scopes: [], items: [] };
+  const selectedById = new Map(selected.map((item) => [item.id.toLowerCase(), { ...item, imported: true }]));
+  const cachedIds = new Set(cachedManifest.items.map((item) => item.id.toLowerCase()));
+  const referencedScopeIds = new Set(selected.map((item) => item.catalog?.scope).filter((id): id is string => Boolean(id)));
+  const cachedScopeIds = new Set((cachedManifest.scopes ?? []).map((scope) => scope.id));
+  const scopes = [
+    ...(cachedManifest.scopes ?? []),
+    ...(sourceManifest.scopes ?? []).filter((scope) => referencedScopeIds.has(scope.id) && !cachedScopeIds.has(scope.id)),
+  ];
+  const nextManifest: SkillManifest = {
+    ...cachedManifest,
+    scopes,
+    items: [
+      ...cachedManifest.items.map((item) => selectedById.get(item.id.toLowerCase()) ?? item),
+      ...selected.filter((item) => !cachedIds.has(item.id.toLowerCase())).map((item) => ({ ...item, imported: true })),
+    ],
+  };
+
+  if (!options.dryRun) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(nextManifest, null, 2)}\n`);
+  }
+
+  return { path, merged: selected.map((item) => item.id) };
+}
+
+export function markSkillCatalogItemsStartDisabled(options: {
+  homeDir: string;
+  skillIds: string[];
+  dryRun: boolean;
+}): SkillCatalogStartDisabledResult {
+  const manifest = loadSkillManifest(options);
+  const selectedIds = new Set(options.skillIds.map((id) => id.toLowerCase()));
+  const updated = manifest.items
+    .filter((item) => selectedIds.has(item.id.toLowerCase()) && item.startDisabled !== true)
+    .map((item) => item.id);
+  const path = skillCatalogPath(options.homeDir);
+
+  if (updated.length === 0) {
+    return { path, updated };
+  }
+
+  if (!options.dryRun) {
+    const updatedIds = new Set(updated.map((id) => id.toLowerCase()));
+    const nextManifest: SkillManifest = {
+      ...manifest,
+      items: manifest.items.map((item) => updatedIds.has(item.id.toLowerCase()) ? { ...item, startDisabled: true } : item),
+    };
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(nextManifest, null, 2)}\n`);
+  }
+
+  return { path, updated };
 }
 
 export function parseOpenAiImplicitInvocation(contents: string): boolean | undefined {
@@ -509,7 +606,11 @@ export function sortSkillRecords(records: SkillRecord[]): SkillRecord[] {
   });
 }
 
-function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationState): SkillRecord[] {
+function loadRootSkills(
+  root: SkillRoot,
+  categorization: SkillCategorizationState,
+  manifestItemsById: Map<string, SkillManifestItem>,
+): SkillRecord[] {
   if (!existsSync(root.path)) {
     return [];
   }
@@ -531,13 +632,17 @@ function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationStat
       }
 
       const metadata = parseSkillFile(readFileSync(skillFilePath, "utf8"), entry.name);
-      const autoInvocation = resolveAutoInvocation({
+      const invocation = resolveInvocation({
         skillFile: metadata.disableModelInvocation === undefined ? undefined : !metadata.disableModelInvocation,
         openAi: readOpenAiImplicitInvocation(root.path, entry.name),
       });
       const taxonomyEntry = root.kind === "global-library" ? entriesByFolder.get(entry.name) : undefined;
       const scope = taxonomyEntry ? scopesById.get(taxonomyEntry.scope) : undefined;
       const originalName = metadata.name ?? entry.name;
+      const catalogItem = [entry.name, originalName, taxonomyEntry?.name]
+        .filter((value): value is string => Boolean(value))
+        .map((value) => manifestItemsById.get(value.toLowerCase()))
+        .find((item): item is SkillManifestItem => Boolean(item));
 
       return [{
         folder: entry.name,
@@ -553,12 +658,21 @@ function loadRootSkills(root: SkillRoot, categorization: SkillCategorizationStat
         agent: root.agent,
         category: scope?.label,
         categoryId: scope?.id,
+        catalogOrigin: resolveCatalogOrigin(catalogItem),
         tags: taxonomyEntry?.tags ?? [],
-        autoInvocation: autoInvocation.state,
-        autoInvocationSources: autoInvocation.sources,
-        autoInvocationDetails: autoInvocation.details,
+        invocation: invocation.state,
+        invocationSources: invocation.sources,
+        invocationDetails: invocation.details,
       } satisfies SkillRecord];
     });
+}
+
+function resolveCatalogOrigin(item: SkillManifestItem | undefined): SkillCatalogOrigin {
+  if (!item) {
+    return "untracked";
+  }
+
+  return item.imported === true ? "imported" : "native";
 }
 
 function readOpenAiImplicitInvocation(rootPath: string, folder: string): boolean | undefined {
@@ -570,10 +684,10 @@ function readOpenAiImplicitInvocation(rootPath: string, folder: string): boolean
   return parseOpenAiImplicitInvocation(readFileSync(path, "utf8"));
 }
 
-function resolveAutoInvocation(input: {
+function resolveInvocation(input: {
   skillFile?: boolean | undefined;
   openAi?: boolean | undefined;
-}): { state: SkillAutoInvocationState; sources: string[]; details: string[] } {
+}): { state: SkillInvocationState; sources: string[]; details: string[] } {
   const signals = [
     input.skillFile === undefined
       ? undefined
@@ -592,12 +706,12 @@ function resolveAutoInvocation(input: {
   ].filter((signal): signal is { source: string; enabled: boolean; detail: string } => Boolean(signal));
 
   if (signals.length === 0) {
-    return { state: "default", sources: [], details: [] };
+    return { state: "auto", sources: [], details: [] };
   }
 
   const first = signals[0];
   const state = signals.every((signal) => signal.enabled === first?.enabled)
-    ? first?.enabled ? "enabled" : "disabled"
+    ? first?.enabled ? "auto" : "manual"
     : "mixed";
 
   return {
@@ -731,9 +845,8 @@ function skillCatalogEntryToManifestItem(entry: SkillCategorizationEntry): Skill
     source: "",
     args: ["--skill", entry.folder],
     default: false,
-    autoInvocation: true,
+    invocation: "auto",
     role: "utility",
-    profiles: [],
     catalog: {
       scope: entry.scope,
       ...(entry.tags ? { tags: entry.tags } : {}),
@@ -749,7 +862,7 @@ function humanizeSkillId(id: string): string {
     .join(" ");
 }
 
-function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
+function skillRoots(homeDir: string, cwd: string, customAgentPath?: string): SkillRoot[] {
   return [
     {
       kind: "global-library",
@@ -798,11 +911,12 @@ function skillRoots(homeDir: string, cwd: string): SkillRoot[] {
       agent: "claude",
     },
     ...agentSkillRoots(homeDir),
+    ...(customAgentPath ? customAgentRoots(customAgentPath) : []),
   ];
 }
 
-export function managedSkillAgents(): ManagedSkillAgent[] {
-  return knownAgentRoots.map((root) => root.agent);
+export function managedSkillAgents(): SkillAgentFilter[] {
+  return [...knownAgentRoots.map((root) => root.agent), "custom"];
 }
 
 const knownAgentRoots: Array<{
@@ -849,6 +963,27 @@ function agentSkillRoots(homeDir: string): SkillRoot[] {
   ] satisfies SkillRoot[]);
 }
 
+function customAgentRoots(path: string): SkillRoot[] {
+  return [
+    {
+      kind: "agent-library",
+      label: "Custom Agent",
+      path,
+      storage: "active",
+      readOnly: false,
+      agent: "custom",
+    },
+    {
+      kind: "agent-library",
+      label: "Custom Agent / Disabled",
+      path: join(path, ".disabled"),
+      storage: "disabled",
+      readOnly: false,
+      agent: "custom",
+    },
+  ];
+}
+
 function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
   if (scope === "all") {
     return true;
@@ -859,6 +994,14 @@ function rootMatchesScope(root: SkillRoot, scope: SkillsListScope): boolean {
   }
 
   return root.kind === "project-agent";
+}
+
+function rootMatchesAgent(root: SkillRoot, agent: SkillAgentFilter | undefined): boolean {
+  if (!agent) {
+    return root.kind === "global-library";
+  }
+
+  return root.agent === agent;
 }
 
 function globalSkillsRoot(homeDir: string): string {

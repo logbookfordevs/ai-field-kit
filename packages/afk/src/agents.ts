@@ -5,6 +5,7 @@ export const agentIds: AgentId[] = [
   "claude",
   "codex",
   "opencode",
+  "pi",
 ];
 
 export const universalSkillAgentLabels = [

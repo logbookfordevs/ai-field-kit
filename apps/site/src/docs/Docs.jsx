@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import GuideContent, { chapters } from '@/docs/GuideContent.jsx';
 import { AfkMark } from '@/components/ui/svgs/afkMark.jsx';
 import '@/docs/docs.css';
-
-const chapterUrl = (id) => `/docs?chapter=${id}`;
+import { chapterUrl } from '@/docs/navigation.js';
 
 function Command({ value, label = 'Terminal' }) {
   const [message, setMessage] = useState('');

@@ -1,4 +1,0 @@
-interface:
-  display_name: "AFK Sprint"
-  short_description: "Fast goal execution with Markdown checkpoint tracking"
-  default_prompt: "Run AFK Sprint for this goal."

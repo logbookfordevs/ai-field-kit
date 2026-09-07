@@ -1,0 +1,6 @@
+interface:
+  display_name: "Update Forked Skills"
+  short_description: "Audit and selectively update skill forks"
+  default_prompt: "Use $update-forked-skills to audit repository-owned skill forks against their official upstream packages."
+policy:
+  allow_implicit_invocation: false

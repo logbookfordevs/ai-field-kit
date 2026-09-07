@@ -1,76 +1,99 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { emitKeypressEvents } from "node:readline";
-import { confirm, input, select } from "@inquirer/prompts";
+import { confirm, input, search, select } from "@inquirer/prompts";
 import {
   addManifestItem,
+  addRulesLayer,
   emptyEditableManifest,
   isItemManifestArea,
   itemLabel,
   manifestFilename,
   removeManifestItem,
+  removeRulesLayer,
   serializeEditableManifest,
   setManifestItemDefaultValues,
   setSkillAutoInvocationValues,
   updateManifestItem,
+  updateRulesLayer,
   validateEditableManifest,
   type EditableManifest,
+  type EditableManifestArea,
   type EditableManifestItem,
 } from "./manifest-editor.js";
 import {
   isHookManifest,
+  isRulesManifest,
   loadDefaultManifestContent,
   localManifestDir,
+  rulesManifestLayers,
   type HookManifest,
   type HookManifestItem,
+  type CustomAgentManifestItem,
   type McpManifestItem,
   type RulesManifest,
+  type RulesManifestLayer,
   type SkillManifest,
   type SkillManifestItem,
-  type PluginManifestItem,
-  type PluginPostInstallCommand,
+  type ToolManifestItem,
+  type ToolPostInstallCommand,
+  type ToolUpdateCommand,
 } from "./manifest.js";
-import { afkPromptTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
-import type { Area, CliOptions, Runtime } from "./types.js";
+import type { SkillProfileCatalog } from "./skills/profiles.js";
+import { isPromptExit } from "./menu.js";
+import { muted, sectionTitle } from "./brand.js";
+import { afkPromptTheme, afkSearchTheme, afkSelectTheme, renderPromptStep, resetPromptSteps } from "./prompt-ui.js";
+import { searchableCheckbox } from "./searchable-checkbox.js";
+import { paint, strong, terminalPalette } from "./terminal-theme.js";
+import type { CliOptions, Runtime, SkillProfileMode } from "./types.js";
+import { runArea } from "./setup.js";
 
-type ManifestArea = Area;
+export type ManifestArea = EditableManifestArea | "profiles";
 type ManifestAreaChoice = ManifestArea | "finish";
-export type ManifestAction = "add" | "edit" | "remove" | "toggle-default" | "toggle-auto" | "edit-rules" | "back";
-type Drafts = Record<ManifestArea, EditableManifest>;
+export type ManifestAction = "add" | "edit" | "bulk-edit" | "remove" | "toggle-default" | "toggle-auto" | "toggle-always-on" | "set-profile-mode" | "finish" | "back";
+type BulkSkillSetting = "on" | "off" | "unchanged";
+type EditableDraft = EditableManifest | SkillProfileCatalog;
+type Drafts = Record<ManifestArea, EditableDraft>;
 type SerializedDrafts = Partial<Record<`${ManifestArea}.json`, string>>;
 type SelectChoice<Value extends string> = {
   name: string;
   value: Value;
   description?: string;
+  searchAliases?: string[];
 };
 type InputConfig = {
   message: string;
   default?: string;
   required?: boolean;
 };
-type BooleanToggleChoice = {
+type MultiSelectChoice = {
   name: string;
   value: string;
-  enabled: boolean;
   description?: string;
+  searchAliases?: string[];
 };
+type BooleanToggleChoice = MultiSelectChoice & { enabled: boolean };
 
 export type ManifestConfigurePrompts = {
   selectArea: (choices: Array<SelectChoice<ManifestAreaChoice>>) => Promise<ManifestAreaChoice>;
   selectAction: (area: ManifestArea, choices: Array<SelectChoice<ManifestAction>>) => Promise<ManifestAction>;
   selectItem: (area: ManifestArea, choices: Array<SelectChoice<string>>, message: string) => Promise<string>;
+  selectItems: (area: ManifestArea, choices: MultiSelectChoice[], message: string) => Promise<string[]>;
+  selectBulkSkillSetting: (message: string, onLabel: string, offLabel: string) => Promise<BulkSkillSetting>;
+  selectProfileMode: (current: SkillProfileMode) => Promise<SkillProfileMode>;
   toggleBooleans: (area: ManifestArea, choices: BooleanToggleChoice[], message: string) => Promise<Record<string, boolean>>;
   input: (config: InputConfig) => Promise<string>;
   confirm: (message: string, defaultValue: boolean) => Promise<boolean>;
 };
 
-const manifestAreas: ManifestArea[] = ["rules", "skills", "mcps", "plugins", "hooks"];
+const manifestAreas: ManifestArea[] = ["rules", "skills", "profiles", "agents", "mcps", "tools", "hooks"];
 
 const areaDescriptions: Record<ManifestArea, string> = {
-  rules: "Point rules sync at one AGENTS.md source.",
+  rules: "Compose ordered, independently owned rules layers.",
   skills: "Add, edit, remove, and toggle skills.",
+  profiles: "Edit profile-level always-on skills.",
+  agents: "Add, edit, and remove portable Custom Agent sources.",
   mcps: "Add, edit, remove, and toggle MCP recommendations.",
-  plugins: "Add, edit, remove, and toggle plugin installers.",
+  tools: "Add, edit, remove, and toggle tool installers.",
   hooks: "Add, edit, remove, and toggle lifecycle hooks.",
 };
 
@@ -78,24 +101,60 @@ export async function runManifestConfigure(runtime: Runtime, options: CliOptions
   return runManifestConfigureWithPrompts(runtime, options, inquirerPrompts());
 }
 
-export async function runManifestConfigureWithPrompts(runtime: Runtime, options: CliOptions, prompts: ManifestConfigurePrompts): Promise<number> {
+export async function runManifestConfigureArea(runtime: Runtime, options: CliOptions, area: ManifestArea): Promise<number> {
+  return runManifestConfigureWithPrompts(runtime, options, inquirerPrompts(), { area });
+}
+
+export async function runManifestConfigureAreaAction(runtime: Runtime, options: CliOptions, area: ManifestArea, action: ManifestAction): Promise<number> {
+  return runManifestConfigureWithPrompts(runtime, options, inquirerPrompts(), { area, action });
+}
+
+export async function runManifestConfigureWithPrompts(
+  runtime: Runtime,
+  options: CliOptions,
+  prompts: ManifestConfigurePrompts,
+  initial?: { area: ManifestArea; action?: ManifestAction },
+): Promise<number> {
   const outputDir = options.manifestConfigureLocal ? join(options.cwd, "afk", "catalog") : localManifestDir(options.homeDir);
   const original = readEditableManifests(outputDir);
   const drafts = cloneDrafts(original);
   const touched = new Set<ManifestArea>();
+  const setupEligibleSkillActions = new Set<"edit" | "bulk-edit">();
 
   resetPromptSteps();
-  runtime.io.stdout("\nAFK configure");
-  runtime.io.stdout(`Writing to: ${outputDir}`);
-  runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
+  runtime.io.stdout(`\n${sectionTitle("AFK catalog")}`);
+  runtime.io.stdout(muted(`Writing to: ${outputDir}`));
+  try {
+    if (initial) {
+      runtime.io.stdout(renderPromptStep("Catalog editor", `Editing ${catalogFilename(initial.area)}.`));
+      await editManifestArea(runtime, prompts, drafts, touched, setupEligibleSkillActions, initial.area, options, initial.action);
+    } else {
+      runtime.io.stdout(renderPromptStep("Catalog editor", "Choose a catalog file, make changes, and finish to review the JSON before writing."));
 
-  while (true) {
-    const area = await prompts.selectArea(areaChoices(drafts));
-    if (area === "finish") {
-      break;
+      while (true) {
+        const area = await prompts.selectArea(areaChoices(drafts));
+        if (area === "finish") {
+          break;
+        }
+
+        const navigation = await editManifestArea(runtime, prompts, drafts, touched, setupEligibleSkillActions, area, options);
+        if (navigation === "finish") {
+          break;
+        }
+      }
+    }
+  } catch (error) {
+    const hasUnsavedChanges = Object.keys(changedDrafts(original, drafts, touched)).length > 0;
+    if (!isPromptExit(error) || !hasUnsavedChanges) {
+      throw error;
     }
 
-    await editManifestArea(runtime, prompts, drafts, touched, area, options);
+    runtime.io.stdout("\nYou have unsaved catalog changes.");
+    const shouldReview = await prompts.confirm("Finish and review changes before exiting?", true);
+    if (!shouldReview) {
+      runtime.io.stdout("\nDiscarded unsaved catalog changes.");
+      return 130;
+    }
   }
 
   const validationErrors = validationErrorsFor(drafts, touched);
@@ -113,9 +172,17 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
     return 0;
   }
 
-  runtime.io.stdout("\nCatalog preview");
-  for (const [filename, content] of Object.entries(serialized)) {
-    runtime.io.stdout(`\n--- ${filename} ---\n${content.trimEnd()}`);
+  runtime.io.stdout(`\n${sectionTitle("Catalog changes")}`);
+  for (const filename of Object.keys(serialized) as Array<keyof SerializedDrafts>) {
+    const area = filename.slice(0, -5) as ManifestArea;
+    runtime.io.stdout(`- ${filename}: ${summarizeDraftChange(area, original[area], drafts[area])}`);
+  }
+
+  if (options.verbose) {
+    runtime.io.stdout(`\n${sectionTitle("Catalog preview")}`);
+    for (const [filename, content] of Object.entries(serialized)) {
+      runtime.io.stdout(`\n--- ${filename} ---\n${content.trimEnd()}`);
+    }
   }
 
   if (options.dryRun) {
@@ -123,7 +190,8 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
     return 0;
   }
 
-  runtime.io.stdout(renderPromptStep("Write catalog", "Review the preview above, then confirm whether AFK should write the files."));
+  const reviewLabel = options.verbose ? "preview" : "summary";
+  runtime.io.stdout(renderPromptStep("Write catalog", `Review the ${reviewLabel} above, then confirm whether AFK should write the files.`));
   const shouldWrite = await prompts.confirm(`Write ${Object.keys(serialized).length} catalog file(s)?`, true);
   if (!shouldWrite) {
     runtime.io.stdout("\nCancelled. No catalog files written.");
@@ -136,6 +204,30 @@ export async function runManifestConfigureWithPrompts(runtime: Runtime, options:
   }
 
   runtime.io.stdout(`\nWrote ${Object.keys(serialized).length} catalog file(s) to ${outputDir}.`);
+  const affectedSkillIds = changedSkillIds(original, drafts, setupEligibleSkillActions);
+  if (!options.manifestConfigureLocal && affectedSkillIds.length > 0) {
+    runtime.io.stdout(renderPromptStep("Apply skill changes", "Run setup only for the skills changed in this catalog edit."));
+    const skillLabel = affectedSkillIds.length === 1 ? "skill" : "skills";
+    const shouldRunSetup = await prompts.confirm(
+      `Run setup for ${affectedSkillIds.length} affected ${skillLabel} now?`,
+      true,
+    );
+    if (shouldRunSetup) {
+      return runArea("skills", runtime, {
+        ...options,
+        setupScope: "global",
+        scopeExplicit: true,
+        setupManifestsPrepared: true,
+        selectedSkillIds: affectedSkillIds,
+        selectedSkillAgentIds: [],
+        manifestContents: {
+          ...options.manifestContents,
+          "skills.json": rawSerialize(drafts.skills),
+        },
+      });
+    }
+  }
+
   return 0;
 }
 
@@ -144,40 +236,125 @@ async function editManifestArea(
   prompts: ManifestConfigurePrompts,
   drafts: Drafts,
   touched: Set<ManifestArea>,
+  setupEligibleSkillActions: Set<"edit" | "bulk-edit">,
   area: ManifestArea,
   options: CliOptions,
-): Promise<void> {
+  initialAction?: ManifestAction,
+): Promise<"back" | "finish"> {
   runtime.io.stdout(renderPromptStep(areaTitle(area), areaDescriptions[area]));
+  let action = initialAction;
 
   while (true) {
-    runtime.io.stdout(renderAreaSummary(area, drafts[area]));
-    const action = await prompts.selectAction(area, actionChoices(area, drafts[area]));
+    action = action ?? await prompts.selectAction(area, actionChoices(area, drafts[area]));
+    if (action === "finish") {
+      return "finish";
+    }
     if (action === "back") {
-      return;
+      return "back";
     }
 
     if (area === "rules") {
-      drafts.rules = await configureRules(prompts, drafts.rules);
-      touched.add("rules");
+      try {
+        drafts.rules = await applyRulesAction(prompts, drafts.rules, action);
+        touched.add("rules");
+        if (initialAction) {
+          return "back";
+        }
+      } catch (error) {
+        if (isPromptExit(error)) {
+          throw error;
+        }
+        runtime.io.stderr(`\n${error instanceof Error ? error.message : String(error)}`);
+        if (initialAction) {
+          return "back";
+        }
+      }
+      action = undefined;
+      continue;
+    }
+
+    if (area === "profiles") {
+      drafts.profiles = await applyProfileAction(prompts, drafts.profiles, drafts.skills, action);
+      touched.add("profiles");
+      if (initialAction) {
+        return "back";
+      }
+      action = undefined;
+      continue;
+    }
+
+    if (area === "skills" && action === "bulk-edit") {
+      const result = await applyBulkSkillEdit(prompts, drafts.skills as EditableManifest, drafts.profiles);
+      drafts.skills = result.skills;
+      drafts.profiles = result.profiles;
+      touched.add("skills");
+      touched.add("profiles");
+      setupEligibleSkillActions.add("bulk-edit");
+      if (initialAction) {
+        return "back";
+      }
+      action = undefined;
       continue;
     }
 
     if (!isItemManifestArea(area)) {
-      return;
+      return "back";
     }
 
     try {
-      drafts[area] = await applyItemAction(prompts, area, drafts[area], action, options);
+      drafts[area] = await applyItemAction(prompts, area, drafts[area] as EditableManifest, action, options);
       touched.add(area);
+      if (area === "skills" && action === "edit") {
+        setupEligibleSkillActions.add("edit");
+      }
+      if (initialAction) {
+        return "back";
+      }
     } catch (error) {
+      if (isPromptExit(error)) {
+        throw error;
+      }
       runtime.io.stderr(`\n${error instanceof Error ? error.message : String(error)}`);
+      if (initialAction) {
+        return "back";
+      }
     }
+    action = undefined;
   }
+}
+
+async function applyRulesAction(
+  prompts: ManifestConfigurePrompts,
+  manifest: EditableDraft,
+  action: ManifestAction,
+): Promise<RulesManifest> {
+  const rules = manifest as EditableManifest;
+  if (action === "add") {
+    return addRulesLayer(rules, await promptRulesLayer(prompts));
+  }
+
+  if (action === "edit") {
+    const selectedId = await prompts.selectItem("rules", rulesLayerChoices(rules), "Edit which rules layer?");
+    const existing = editableRulesLayers(rules).find((layer) => layer.id === selectedId);
+    if (!existing) {
+      throw new Error(`Missing rules layer id: ${selectedId}`);
+    }
+    return updateRulesLayer(rules, selectedId, await promptRulesLayer(prompts, existing));
+  }
+
+  if (action === "remove") {
+    const selectedId = await prompts.selectItem("rules", rulesLayerChoices(rules), "Remove which rules layer?");
+    const existing = editableRulesLayers(rules).find((layer) => layer.id === selectedId);
+    const shouldRemove = await prompts.confirm(`Remove ${existing?.label ?? selectedId} (${selectedId})?`, false);
+    return shouldRemove ? removeRulesLayer(rules, selectedId) : rules as RulesManifest;
+  }
+
+  return rules as RulesManifest;
 }
 
 async function applyItemAction(
   prompts: ManifestConfigurePrompts,
-  area: Exclude<ManifestArea, "rules">,
+  area: Exclude<EditableManifestArea, "rules">,
   manifest: EditableManifest,
   action: ManifestAction,
   options: CliOptions,
@@ -197,13 +374,13 @@ async function applyItemAction(
   }
 
   if (action === "remove") {
-    const selectedId = await prompts.selectItem(area, itemChoices(manifest), `${actionLabel(action)} which ${singularArea(area)}?`);
+    const selectedId = await prompts.selectItem(area, itemChoices(area, manifest), `${actionLabel(action)} which ${singularArea(area)}?`);
     const selected = findItem(manifest, selectedId);
     const shouldRemove = await prompts.confirm(`Remove ${selected ? itemLabel(selected) : selectedId}?`, false);
     return shouldRemove ? removeManifestItem(area, manifest, selectedId) : manifest;
   }
 
-  if (action === "toggle-default") {
+  if (action === "toggle-default" && area !== "agents") {
     return setManifestItemDefaultValues(
       area,
       manifest,
@@ -214,12 +391,12 @@ async function applyItemAction(
   if (action === "toggle-auto" && area === "skills") {
     return setSkillAutoInvocationValues(
       manifest,
-      await prompts.toggleBooleans(area, booleanToggleChoices(manifest, "autoInvocation"), "Toggle skill autoInvocation"),
+      await prompts.toggleBooleans(area, booleanToggleChoices(manifest, "invocation"), "Toggle skill invocation"),
     );
   }
 
   if (action === "edit") {
-    const selectedId = await prompts.selectItem(area, itemChoices(manifest), `${actionLabel(action)} which ${singularArea(area)}?`);
+    const selectedId = await prompts.selectItem(area, itemChoices(area, manifest), `${actionLabel(action)} which ${singularArea(area)}?`);
     const existing = findItem(manifest, selectedId);
     if (!existing) {
       throw new Error(`Missing ${area} id: ${selectedId}`);
@@ -232,32 +409,113 @@ async function applyItemAction(
   return manifest;
 }
 
-async function configureRules(prompts: ManifestConfigurePrompts, manifest: EditableManifest): Promise<RulesManifest> {
-  const existing = isRulesDraft(manifest) ? manifest : { version: 1, source: "github", url: "" };
-  const url = await prompts.input({
-    message: "Rules raw URL or local path",
-    default: existing.url,
-    required: true,
-  });
+async function applyBulkSkillEdit(
+  prompts: ManifestConfigurePrompts,
+  skillsManifest: EditableManifest,
+  profilesManifest: EditableDraft,
+): Promise<{ skills: SkillManifest; profiles: SkillProfileCatalog }> {
+  const profiles = normalizeProfileDraft(profilesManifest);
+  const selectedIds = await prompts.selectItems(
+    "skills",
+    bulkSkillChoices(skillsManifest, profiles),
+    "Select skills to bulk edit",
+  );
+
+  if (selectedIds.length === 0) {
+    return { skills: skillsManifest as SkillManifest, profiles };
+  }
+
+  const invocation = await prompts.selectBulkSkillSetting(
+    "Set invocation mode for selected skills",
+    "Auto",
+    "Manual",
+  );
+  const alwaysOn = await prompts.selectBulkSkillSetting(
+    "Set always-on for selected skills",
+    "On",
+    "Off",
+  );
+
+  const invocationValue = settingValue(invocation);
+  const skills = invocationValue === undefined
+    ? skillsManifest as SkillManifest
+    : setSkillAutoInvocationValues(
+      skillsManifest,
+      Object.fromEntries(selectedIds.map((id) => [id, invocationValue])),
+    );
+  const alwaysOnValue = settingValue(alwaysOn);
+  const nextAlwaysOn = alwaysOnValue === undefined
+    ? profiles.alwaysOn
+    : updateAlwaysOn(profiles.alwaysOn, selectedIds, alwaysOnValue);
 
   return {
-    version: 1,
-    source: inferSource(url),
-    url,
+    skills,
+    profiles: { ...profiles, alwaysOn: nextAlwaysOn },
   };
 }
 
-async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<ManifestArea, "rules">, existing?: EditableManifestItem): Promise<EditableManifestItem> {
+async function applyProfileAction(
+  prompts: ManifestConfigurePrompts,
+  manifest: EditableDraft,
+  skillsManifest: EditableDraft,
+  action: ManifestAction,
+): Promise<SkillProfileCatalog> {
+  const profileCatalog = normalizeProfileDraft(manifest);
+  if (action === "set-profile-mode") {
+    return {
+      ...profileCatalog,
+      mode: await prompts.selectProfileMode(profileCatalog.mode),
+    };
+  }
+
+  if (action !== "toggle-always-on") {
+    return profileCatalog;
+  }
+
+  const values = await prompts.toggleBooleans("profiles", alwaysOnToggleChoices(profileCatalog, skillsManifest), "Toggle always-on skills");
+  const alwaysOn = Object.entries(values)
+    .filter(([, enabled]) => enabled)
+    .map(([id]) => id)
+    .sort((left, right) => left.localeCompare(right));
+  return { ...profileCatalog, alwaysOn };
+}
+
+async function promptRulesLayer(prompts: ManifestConfigurePrompts, existing?: RulesManifestLayer): Promise<RulesManifestLayer> {
+  const source = await prompts.input({
+    message: "Rules source URL or local path",
+    default: existing?.source ?? "",
+    required: true,
+  });
+  const id = await prompts.input({ message: "Rules layer id", default: existing?.id ?? inferId(source), required: true });
+  const label = await prompts.input({ message: "Rules layer label", default: existing?.label ?? inferLabel(id), required: true });
+  return {
+    id,
+    label,
+    source,
+    ...(existing?.files === undefined ? {} : { files: existing.files.map((file) => ({ ...file })) }),
+  };
+}
+
+async function promptItem(prompts: ManifestConfigurePrompts, area: Exclude<EditableManifestArea, "rules">, existing?: EditableManifestItem): Promise<EditableManifestItem> {
   switch (area) {
     case "skills":
       return promptSkill(prompts, existing as SkillManifestItem | undefined);
+    case "agents":
+      return promptCustomAgent(prompts, existing as CustomAgentManifestItem | undefined);
     case "mcps":
       return promptMcp(prompts, existing as McpManifestItem | undefined);
-    case "plugins":
-      return promptPlugin(prompts, existing as PluginManifestItem | undefined);
+    case "tools":
+      return promptTool(prompts, existing as ToolManifestItem | undefined);
     case "hooks":
       return promptHook(prompts, existing as HookManifestItem | undefined);
   }
+}
+
+async function promptCustomAgent(prompts: ManifestConfigurePrompts, existing?: CustomAgentManifestItem): Promise<CustomAgentManifestItem> {
+  const source = await prompts.input({ message: "Portable Agent File URL or path", default: existing?.source ?? "", required: true });
+  const id = await prompts.input({ message: "Agent id (used for selection and installed filename)", default: existing?.id ?? inferId(source), required: true });
+  const label = await prompts.input({ message: "Agent label", default: existing?.label ?? inferLabel(id), required: true });
+  return { id, label, source };
 }
 
 async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillManifestItem): Promise<SkillManifestItem> {
@@ -267,9 +525,11 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
   const id = await prompts.input({ message: "Skill id", default: existing?.id ?? inferId(skill || source), required: true });
   const label = await prompts.input({ message: "Skill label", default: existing?.label ?? inferLabel(id), required: true });
   const defaultValue = existing?.default ?? true;
-  const autoInvocationValue = existing?.autoInvocation ?? true;
+  const autoInvocationValue = existing?.invocation === "auto";
+  const startDisabledValue = existing?.startDisabled ?? false;
   const isDefault = await prompts.confirm(booleanPrompt("Selected by default?", defaultValue, existing ? "current" : "default"), defaultValue);
-  const autoInvocation = await prompts.confirm(booleanPrompt("Allow automatic model invocation?", autoInvocationValue, existing ? "current" : "default"), autoInvocationValue);
+  const autoInvocation = await prompts.confirm(booleanPrompt("Use automatic model invocation?", autoInvocationValue, existing ? "current" : "default"), autoInvocationValue);
+  const startDisabled = await prompts.confirm(booleanPrompt("Start installed skill disabled?", startDisabledValue, existing ? "current" : "default"), startDisabledValue);
 
   return {
     id,
@@ -277,10 +537,11 @@ async function promptSkill(prompts: ManifestConfigurePrompts, existing?: SkillMa
     source,
     args: skillArgsFromInput(existing, skill),
     default: isDefault,
-    autoInvocation,
+    invocation: autoInvocation ? "auto" : "manual",
+    startDisabled,
     role: existing?.role ?? "primitive",
     composes: existing?.composes ?? [],
-    profiles: existing?.profiles ?? [],
+    ...(existing?.postInstall ? { postInstall: existing.postInstall } : {}),
   };
 }
 
@@ -301,14 +562,16 @@ async function promptMcp(prompts: ManifestConfigurePrompts, existing?: McpManife
   };
 }
 
-async function promptPlugin(prompts: ManifestConfigurePrompts, existing?: PluginManifestItem): Promise<PluginManifestItem> {
-  const installLine = installLineFromCommand(existing?.install);
-  const existingPostInstallLine = postInstallLine(existing?.postInstall);
-  const id = await prompts.input({ message: "Plugin id", default: existing?.id ?? inferId(installLine || "plugin"), required: true });
-  const label = await prompts.input({ message: "Plugin label", default: existing?.label ?? inferLabel(id), required: true });
-  const description = await prompts.input({ message: "Plugin description", default: existing?.description ?? `${label} install script.`, required: true });
-  const nextInstallLine = await prompts.input({ message: "Plugin install command", default: installLine, required: true });
+async function promptTool(prompts: ManifestConfigurePrompts, existing?: ToolManifestItem): Promise<ToolManifestItem> {
+  const installLine = commandLineFromCommand(existing?.install);
+  const existingPostInstallLine = commandLineFromCommand(existing?.postInstall);
+  const existingUpdateLine = commandLineFromCommand(existing?.update);
+  const id = await prompts.input({ message: "Tool id", default: existing?.id ?? inferId(installLine || "tool"), required: true });
+  const label = await prompts.input({ message: "Tool label", default: existing?.label ?? inferLabel(id), required: true });
+  const description = await prompts.input({ message: "Tool description", default: existing?.description ?? `${label} install script.`, required: true });
+  const nextInstallLine = await prompts.input({ message: "Tool install command", default: installLine, required: true });
   const nextPostInstallLine = await prompts.input({ message: "Post-install command (optional)", default: existingPostInstallLine });
+  const nextUpdateLine = await prompts.input({ message: "Update command (optional)", default: existingUpdateLine });
   const defaultValue = existing?.default ?? true;
   const isDefault = await prompts.confirm(booleanPrompt("Selected by default?", defaultValue, existing ? "current" : "default"), defaultValue);
 
@@ -319,6 +582,9 @@ async function promptPlugin(prompts: ManifestConfigurePrompts, existing?: Plugin
     install: installLine === nextInstallLine && existing?.install ? existing.install : { command: "sh", args: ["-c", nextInstallLine] },
     ...(nextPostInstallLine.trim()
       ? { postInstall: postInstallFromLine(nextPostInstallLine, existing?.postInstall) }
+      : {}),
+    ...(nextUpdateLine.trim()
+      ? { update: commandFromLine(nextUpdateLine, existing?.update) }
       : {}),
     default: isDefault,
   };
@@ -366,14 +632,16 @@ function readEditableManifests(outputDir: string): Drafts {
   return {
     rules: readManifestOrEmpty(outputDir, "rules"),
     skills: readManifestOrEmpty(outputDir, "skills"),
+    profiles: readProfilesOrEmpty(outputDir),
+    agents: readManifestOrEmpty(outputDir, "agents"),
     mcps: readManifestOrEmpty(outputDir, "mcps"),
-    plugins: readManifestOrEmpty(outputDir, "plugins"),
+    tools: readManifestOrEmpty(outputDir, "tools"),
     hooks: readManifestOrEmpty(outputDir, "hooks"),
   };
 }
 
-function readManifestOrEmpty(outputDir: string, area: ManifestArea): EditableManifest {
-  const path = join(outputDir, manifestFilename(area));
+function readManifestOrEmpty(outputDir: string, area: EditableManifestArea): EditableManifest {
+  const path = join(outputDir, catalogFilename(area));
   if (!existsSync(path)) {
     return emptyEditableManifest(area);
   }
@@ -381,12 +649,23 @@ function readManifestOrEmpty(outputDir: string, area: ManifestArea): EditableMan
   return JSON.parse(readFileSync(path, "utf8")) as EditableManifest;
 }
 
+function readProfilesOrEmpty(outputDir: string): SkillProfileCatalog {
+  const path = join(outputDir, catalogFilename("profiles"));
+  if (!existsSync(path)) {
+    return emptyProfileCatalog();
+  }
+
+  return normalizeProfileDraft(JSON.parse(readFileSync(path, "utf8")) as unknown);
+}
+
 function cloneDrafts(drafts: Drafts): Drafts {
   return {
     rules: cloneDraft(drafts.rules),
     skills: cloneDraft(drafts.skills),
+    profiles: cloneProfileDraft(drafts.profiles),
+    agents: cloneDraft(drafts.agents),
     mcps: cloneDraft(drafts.mcps),
-    plugins: cloneDraft(drafts.plugins),
+    tools: cloneDraft(drafts.tools),
     hooks: cloneDraft(drafts.hooks),
   };
 }
@@ -395,25 +674,140 @@ function cloneDraft(manifest: EditableManifest): EditableManifest {
   return JSON.parse(JSON.stringify(manifest)) as EditableManifest;
 }
 
+function cloneProfileDraft(manifest: EditableDraft): SkillProfileCatalog {
+  return normalizeProfileDraft(JSON.parse(JSON.stringify(manifest)) as unknown);
+}
+
 function changedDrafts(original: Drafts, drafts: Drafts, touched: Set<ManifestArea>): SerializedDrafts {
   const serialized: SerializedDrafts = {};
   for (const area of touched) {
     const originalContent = rawSerialize(original[area]);
-    const nextContent = serializeEditableManifest(area, drafts[area]);
+    const nextContent = serializeDraft(area, drafts[area]);
     if (originalContent !== nextContent) {
-      serialized[manifestFilename(area)] = nextContent;
+      serialized[catalogFilename(area)] = nextContent;
     }
   }
 
   return serialized;
 }
 
-function rawSerialize(manifest: EditableManifest): string {
+export function summarizeDraftChange(area: ManifestArea, original: EditableDraft, draft: EditableDraft): string {
+  const collectionKey = area === "rules" ? "layers" : "items";
+  const noun = catalogEntryNoun(area);
+  const previousEntries = identifiedEntries(area, original, collectionKey);
+  const nextEntries = identifiedEntries(area, draft, collectionKey);
+  const previousById = new Map(previousEntries.map((entry) => [entry.id, JSON.stringify(entry)]));
+  const nextById = new Map(nextEntries.map((entry) => [entry.id, JSON.stringify(entry)]));
+  const added = nextEntries.filter((entry) => !previousById.has(entry.id)).length;
+  const removed = previousEntries.filter((entry) => !nextById.has(entry.id)).length;
+  const updated = nextEntries.filter((entry) => {
+    const previous = previousById.get(entry.id);
+    return previous !== undefined && previous !== JSON.stringify(entry);
+  }).length;
+  const details = [
+    changeCount(added, noun, "added"),
+    changeCount(updated, noun, "updated"),
+    changeCount(removed, noun, "removed"),
+  ].filter((detail): detail is string => detail !== null);
+
+  if (hasNonCollectionChanges(area, original, draft, collectionKey)) {
+    details.push("settings updated");
+  }
+
+  const summary = details.length > 0 ? details.join(", ") : "updated";
+  return `${summary} (${previousEntries.length} → ${nextEntries.length})`;
+}
+
+function catalogEntryNoun(area: ManifestArea): "item" | "layer" | "profile" {
+  if (area === "rules") {
+    return "layer";
+  }
+  if (area === "profiles") {
+    return "profile";
+  }
+  return "item";
+}
+
+function identifiedEntries(area: ManifestArea, draft: EditableDraft, key: "items" | "layers"): Array<Record<string, unknown> & { id: string }> {
+  if (area === "rules" && isRulesManifest(draft)) {
+    return rulesManifestLayers(draft).map(({ legacy: _legacy, ...layer }) => layer);
+  }
+
+  const record = toRecord(draft);
+  const entries = record?.[key];
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+
+  return entries.filter((entry): entry is Record<string, unknown> & { id: string } => (
+    isRecord(entry) && typeof entry.id === "string"
+  ));
+}
+
+function changeCount(count: number, noun: string, action: string): string | null {
+  if (count === 0) {
+    return null;
+  }
+
+  return `${count} ${noun}${count === 1 ? "" : "s"} ${action}`;
+}
+
+function hasNonCollectionChanges(area: ManifestArea, original: EditableDraft, draft: EditableDraft, collectionKey: "items" | "layers"): boolean {
+  if (area === "rules") {
+    return false;
+  }
+  return JSON.stringify(withoutKey(original, collectionKey)) !== JSON.stringify(withoutKey(draft, collectionKey));
+}
+
+function withoutKey(draft: EditableDraft, key: "items" | "layers"): Record<string, unknown> {
+  const record = toRecord(draft) ?? {};
+  return Object.fromEntries(Object.entries(record).filter(([entryKey]) => entryKey !== key));
+}
+
+function changedSkillIds(
+  original: Drafts,
+  drafts: Drafts,
+  setupEligibleSkillActions: Set<"edit" | "bulk-edit">,
+): string[] {
+  if (setupEligibleSkillActions.size === 0) {
+    return [];
+  }
+
+  const previousSkills = original.skills as SkillManifest;
+  const nextSkills = drafts.skills as SkillManifest;
+  const previousItems = new Map(previousSkills.items.map((item) => [item.id, setupSkillSignature(item)]));
+  const affected = nextSkills.items
+    .filter((item) => previousItems.get(item.id) !== setupSkillSignature(item))
+    .map((item) => item.id);
+  const originalAlwaysOn = new Set(normalizeProfileDraft(original.profiles).alwaysOn);
+  const nextAlwaysOn = new Set(normalizeProfileDraft(drafts.profiles).alwaysOn);
+
+  for (const item of nextSkills.items) {
+    if (originalAlwaysOn.has(item.id) !== nextAlwaysOn.has(item.id)) {
+      affected.push(item.id);
+    }
+  }
+
+  return [...new Set(affected)];
+}
+
+function setupSkillSignature(item: SkillManifestItem): string {
+  return JSON.stringify({
+    id: item.id,
+    source: item.source,
+    args: item.args,
+    invocation: item.invocation ?? "source",
+    startDisabled: item.startDisabled === true,
+    postInstall: item.postInstall,
+  });
+}
+
+function rawSerialize(manifest: EditableDraft): string {
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
 function validationErrorsFor(drafts: Drafts, touched: Set<ManifestArea>): string[] {
-  return [...touched].flatMap((area) => validateEditableManifest(area, drafts[area]).map((error) => `${manifestFilename(area)}: ${error}`));
+  return [...touched].flatMap((area) => validateDraft(area, drafts[area]).map((error) => `${catalogFilename(area)}: ${error}`));
 }
 
 function areaChoices(drafts: Drafts): Array<SelectChoice<ManifestAreaChoice>> {
@@ -431,36 +825,78 @@ function areaChoices(drafts: Drafts): Array<SelectChoice<ManifestAreaChoice>> {
   ];
 }
 
-function actionChoices(area: ManifestArea, manifest: EditableManifest): Array<SelectChoice<ManifestAction>> {
+function actionChoices(area: ManifestArea, manifest: EditableDraft): Array<SelectChoice<ManifestAction>> {
   if (area === "rules") {
+    const hasLayers = entryCount(manifest) > 0;
     return [
-      { name: "Edit rules source", value: "edit-rules", description: "Change the rules URL/path and inferred source type." },
-      { name: "Back to catalog", value: "back" },
+      { name: "Add rules layer", value: "add", description: "Append an independently owned rules source." },
+      ...(hasLayers ? [{ name: "Edit rules layer", value: "edit" as const }] : []),
+      ...(hasLayers ? [{ name: "Remove rules layer", value: "remove" as const }] : []),
+      finishActionChoice(),
+      manageOtherCatalogsChoice(),
+    ];
+  }
+
+  if (area === "profiles") {
+    return [
+      { name: "Set profile mode", value: "set-profile-mode", description: "Choose strict availability or context-only filtering." },
+      { name: "Toggle alwaysOn", value: "toggle-always-on", description: "Choose skills that stay active across enabled profiles." },
+      finishActionChoice(),
+      manageOtherCatalogsChoice(),
     ];
   }
 
   const hasItems = entryCount(manifest) > 0;
   return [
     { name: `Add ${singularArea(area)}`, value: "add" },
+    ...(area === "skills" && hasItems ? [{ name: "Bulk edit skills", value: "bulk-edit" as const, description: "Set invocation and always-on policy for multiple skills." }] : []),
     ...(hasItems ? [{ name: `Edit ${singularArea(area)}`, value: "edit" as const }] : []),
     ...(hasItems ? [{ name: `Remove ${singularArea(area)}`, value: "remove" as const }] : []),
-    ...(hasItems ? [{ name: "Toggle default", value: "toggle-default" as const }] : []),
-    ...(area === "skills" && hasItems ? [{ name: "Toggle autoInvocation", value: "toggle-auto" as const }] : []),
-    { name: "Back to catalog", value: "back" },
+    ...(hasItems && area !== "agents" ? [{ name: "Toggle default", value: "toggle-default" as const }] : []),
+    ...(area === "skills" && hasItems ? [{ name: "Toggle invocation", value: "toggle-auto" as const }] : []),
+    finishActionChoice(),
+    manageOtherCatalogsChoice(),
   ];
 }
 
-function itemChoices(manifest: EditableManifest): Array<SelectChoice<string>> {
+function finishActionChoice(): SelectChoice<ManifestAction> {
+  return {
+    name: "Finish and review",
+    value: "finish",
+    description: "Preview changed catalog JSON before writing.",
+  };
+}
+
+function manageOtherCatalogsChoice(): SelectChoice<ManifestAction> {
+  return {
+    name: "Back to manage other catalogs",
+    value: "back",
+  };
+}
+
+function itemChoices(area: Exclude<EditableManifestArea, "rules">, manifest: EditableManifest): Array<SelectChoice<string>> {
   return itemsFromManifest(manifest).map((item) => ({
-    name: itemLabel(item),
+    name: area === "skills" ? brandedSkillId(item.id) : itemLabel(item),
     value: item.id,
-    description: itemDescription(item),
+    description: area === "skills" ? skillItemDescription(item) : itemDescription(item),
+    ...(area === "skills" ? { searchAliases: [item.id, item.label, itemDescription(item)] } : {}),
   }));
 }
 
-function booleanToggleChoices(manifest: EditableManifest, field: "default" | "autoInvocation"): BooleanToggleChoice[] {
+function brandedSkillId(id: string): string {
+  return strong(paint(terminalPalette.brass, id));
+}
+
+function skillItemDescription(item: EditableManifestItem): string {
+  return [
+    item.label !== item.id ? `label: ${item.label}` : undefined,
+    itemDescription(item),
+  ].filter((value): value is string => Boolean(value)).join(" · ");
+}
+
+function booleanToggleChoices(manifest: EditableManifest, field: "default" | "invocation"): BooleanToggleChoice[] {
   return itemsFromManifest(manifest).map((item) => {
-    const enabled = field === "default" ? item.default : autoInvocationValue(item);
+    const enabled = field === "default" ? item.default ?? false : autoInvocationValue(item);
     return {
       name: `${booleanSwitch(enabled)} ${itemLabel(item)}`,
       value: item.id,
@@ -470,22 +906,18 @@ function booleanToggleChoices(manifest: EditableManifest, field: "default" | "au
   });
 }
 
-function renderAreaSummary(area: ManifestArea, manifest: EditableManifest): string {
-  if (area === "rules") {
-    const rules = isRulesDraft(manifest) ? manifest : { version: 1, source: "github", url: "" };
-    return `\nCurrent rules source: ${rules.url || "(empty)"} [${rules.source}]`;
-  }
-
-  const items = itemsFromManifest(manifest);
-  if (items.length === 0) {
-    return `\nNo ${area} entries yet.`;
-  }
-
-  return [
-    "",
-    `${areaTitle(area)} entries`,
-    ...items.map((item) => `- ${itemLabel(item)}${item.default ? " [default]" : ""}`),
-  ].join("\n");
+function bulkSkillChoices(manifest: EditableManifest, profiles: SkillProfileCatalog): MultiSelectChoice[] {
+  const alwaysOnIds = new Set(profiles.alwaysOn);
+  return itemsFromManifest(manifest).map((item) => ({
+    name: brandedSkillId(item.id),
+    value: item.id,
+    description: [
+      `invocation: ${autoInvocationValue(item) ? "auto" : "manual"}`,
+      `always-on: ${alwaysOnIds.has(item.id) ? "on" : "off"}`,
+      skillItemDescription(item),
+    ].join(" · "),
+    searchAliases: alwaysOnSearchAliases(item),
+  }));
 }
 
 function itemsFromManifest(manifest: EditableManifest): EditableManifestItem[] {
@@ -501,12 +933,31 @@ function findItem(manifest: EditableManifest, id: string): EditableManifestItem 
   return itemsFromManifest(manifest).find((item) => item.id === id);
 }
 
-function entryCount(manifest: EditableManifest): number {
+function entryCount(manifest: EditableDraft): number {
+  if (isProfileCatalogDraft(manifest)) {
+    return manifest.alwaysOn.length + manifest.items.length;
+  }
+
   if (isRulesDraft(manifest)) {
-    return manifest.url ? 1 : 0;
+    return rulesManifestLayers(manifest).length;
   }
 
   return itemsFromManifest(manifest).length;
+}
+
+function editableRulesLayers(manifest: EditableManifest): RulesManifestLayer[] {
+  if (!isRulesManifest(manifest)) {
+    return [];
+  }
+  return rulesManifestLayers(manifest).map(({ legacy: _legacy, ...layer }) => layer);
+}
+
+function rulesLayerChoices(manifest: EditableManifest): Array<SelectChoice<string>> {
+  return editableRulesLayers(manifest).map((layer) => ({
+    name: `${layer.label} (${layer.id})`,
+    value: layer.id,
+    description: layer.source,
+  }));
 }
 
 function ensureSkillDefaultSource(manifest: SkillManifest, item: SkillManifestItem): SkillManifest {
@@ -518,9 +969,12 @@ function ensureSkillDefaultSource(manifest: SkillManifest, item: SkillManifestIt
 }
 
 function itemDescription(item: EditableManifestItem): string {
-  const states = [`default: ${booleanState(item.default)}`];
-  if ("autoInvocation" in item) {
-    states.push(`autoInvocation: ${booleanState(item.autoInvocation ?? true)}`);
+  const states = "default" in item ? [`default: ${booleanState(item.default)}`] : [];
+  if ("invocation" in item) {
+    states.push(`invocation: ${String(item.invocation)}`);
+  }
+  if ("startDisabled" in item) {
+    states.push(`startDisabled: ${booleanState(item.startDisabled ?? false)}`);
   }
 
   if ("description" in item) {
@@ -538,12 +992,18 @@ function actionLabel(action: ManifestAction): string {
   switch (action) {
     case "edit":
       return "Edit";
+    case "bulk-edit":
+      return "Bulk edit";
     case "remove":
       return "Remove";
     case "toggle-default":
       return "Toggle default for";
     case "toggle-auto":
-      return "Toggle autoInvocation for";
+      return "Toggle invocation for";
+    case "toggle-always-on":
+      return "Toggle alwaysOn for";
+    case "set-profile-mode":
+      return "Set profile mode for";
     default:
       return "Select";
   }
@@ -555,54 +1015,179 @@ function areaTitle(area: ManifestArea): string {
       return "Rules";
     case "skills":
       return "Skills";
+    case "profiles":
+      return "Profiles";
+    case "agents":
+      return "Custom Agents";
     case "mcps":
       return "MCPs";
-    case "plugins":
-      return "Plugins";
+    case "tools":
+      return "Tools";
     case "hooks":
       return "Hooks";
   }
 }
 
-function singularArea(area: Exclude<ManifestArea, "rules">): string {
+function singularArea(area: Exclude<EditableManifestArea, "rules"> | "profiles"): string {
   switch (area) {
     case "skills":
       return "skill";
+    case "profiles":
+      return "profile";
+    case "agents":
+      return "Custom Agent";
     case "mcps":
       return "MCP";
-    case "plugins":
-      return "plugin";
+    case "tools":
+      return "tool";
     case "hooks":
       return "hook";
   }
 }
 
-function installLineFromCommand(install?: PluginManifestItem["install"]): string {
-  if (!install) {
+function catalogFilename(area: ManifestArea): `${ManifestArea}.json` {
+  return area === "profiles" ? "profiles.json" : manifestFilename(area);
+}
+
+function serializeDraft(area: ManifestArea, manifest: EditableDraft): string {
+  if (area === "profiles") {
+    return `${JSON.stringify(normalizeProfileDraft(manifest), null, 2)}\n`;
+  }
+
+  return serializeEditableManifest(area, manifest as EditableManifest);
+}
+
+function validateDraft(area: ManifestArea, manifest: EditableDraft): string[] {
+  if (area === "profiles") {
+    return isProfileCatalogDraft(manifest) ? [] : ["Invalid profiles manifest shape"];
+  }
+
+  return validateEditableManifest(area, manifest as EditableManifest);
+}
+
+function alwaysOnToggleChoices(profiles: SkillProfileCatalog, skillsManifest: EditableDraft): BooleanToggleChoice[] {
+  const skillItems = itemsFromManifest(skillsManifest as EditableManifest);
+  const byId = new Map(skillItems.map((item) => [item.id, item]));
+  const ids = [...new Set([...skillItems.map((item) => item.id), ...profiles.alwaysOn])].sort((left, right) => left.localeCompare(right));
+  const enabledIds = new Set(profiles.alwaysOn);
+  return ids.map((id) => {
+    const item = byId.get(id);
+    const enabled = enabledIds.has(id);
+    return {
+      name: `${booleanSwitch(enabled)} ${item ? itemLabel(item) : id}`,
+      value: id,
+      enabled,
+      description: item ? itemDescription(item) : "Missing from skills catalog",
+      searchAliases: item ? alwaysOnSearchAliases(item) : ["missing:true"],
+    };
+  });
+}
+
+function alwaysOnSearchAliases(item: EditableManifestItem): string[] {
+  const aliases = [
+    `default:${booleanState(item.default ?? false)}`,
+  ];
+  if ("invocation" in item) {
+    aliases.push(`invocation:${String(item.invocation)}`);
+  }
+  if ("startDisabled" in item) {
+    aliases.push(`startDisabled:${booleanState(item.startDisabled ?? false)}`);
+    aliases.push(`start-disabled:${booleanState(item.startDisabled ?? false)}`);
+  }
+  return aliases;
+}
+
+function emptyProfileCatalog(): SkillProfileCatalog {
+  return { version: 2, mode: "strict", alwaysOn: [], items: [] };
+}
+
+function normalizeProfileDraft(value: unknown): SkillProfileCatalog {
+  if (!isProfileCatalogDraft(value)) {
+    return emptyProfileCatalog();
+  }
+
+  return {
+    version: Math.max(value.version, 2),
+    mode: value.mode === "context" ? "context" : "strict",
+    alwaysOn: uniqueStrings(value.alwaysOn),
+    items: value.items
+      .map((item) => ({
+        id: item.id.trim().toLowerCase(),
+        name: item.name.trim() || item.id.trim(),
+        catalogSkills: uniqueStrings(item.catalogSkills ?? (item as typeof item & { skills?: string[] }).skills ?? []),
+        packages: item.packages ?? [],
+      }))
+      .filter((item) => item.id)
+      .sort((left, right) => left.id.localeCompare(right.id)),
+  };
+}
+
+function isProfileCatalogDraft(value: unknown): value is SkillProfileCatalog {
+  return isRecord(value) &&
+    typeof value.version === "number" &&
+    (value.mode === undefined || value.mode === "strict" || value.mode === "context") &&
+    Array.isArray(value.alwaysOn) &&
+    value.alwaysOn.every((item) => typeof item === "string") &&
+    Array.isArray(value.items) &&
+    value.items.every((item) =>
+      isRecord(item) &&
+      typeof item.id === "string" &&
+      typeof item.name === "string" &&
+      ((value.version as number) >= 2
+        ? Array.isArray(item.catalogSkills) && item.catalogSkills.every((skill) => typeof skill === "string") &&
+          item.skills === undefined && (item.packages === undefined || (Array.isArray(item.packages) && item.packages.every((profilePackage) =>
+          isRecord(profilePackage) &&
+          typeof profilePackage.source === "string" &&
+          (profilePackage.skills === undefined || (
+            Array.isArray(profilePackage.skills) && profilePackage.skills.every((skill) => typeof skill === "string")
+          ))
+        )))
+        : Array.isArray(item.skills) && item.skills.every((skill) => typeof skill === "string") &&
+          item.catalogSkills === undefined && item.packages === undefined)
+    );
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))].sort((left, right) => left.localeCompare(right));
+}
+
+function settingValue(setting: BulkSkillSetting): boolean | undefined {
+  if (setting === "unchanged") {
+    return undefined;
+  }
+
+  return setting === "on";
+}
+
+function updateAlwaysOn(current: string[], selectedIds: string[], enabled: boolean): string[] {
+  const selected = new Set(selectedIds);
+  return uniqueStrings(enabled
+    ? [...current, ...selectedIds]
+    : current.filter((id) => !selected.has(id)));
+}
+
+function commandLineFromCommand(command?: ToolManifestItem["install"]): string {
+  if (!command) {
     return "";
   }
 
-  if ((install.command === "sh" || install.command === "bash") && install.args[0] === "-c" && install.args[1]) {
-    return install.args[1];
+  if ((command.command === "sh" || command.command === "bash") && command.args[0] === "-c" && command.args[1]) {
+    return command.args[1];
   }
 
-  return [install.command, ...install.args].join(" ");
+  return [command.command, ...command.args].join(" ");
 }
 
-function postInstallLine(postInstall?: PluginManifestItem["postInstall"]): string {
-  if (!postInstall) {
-    return "";
+function postInstallFromLine(line: string, existing?: ToolManifestItem["postInstall"]): ToolPostInstallCommand {
+  if (line === commandLineFromCommand(existing) && typeof existing === "object") {
+    return existing;
   }
 
-  if ((postInstall.command === "sh" || postInstall.command === "bash") && postInstall.args[0] === "-c" && postInstall.args[1]) {
-    return postInstall.args[1];
-  }
-
-  return [postInstall.command, ...postInstall.args].join(" ");
+  return { command: "sh", args: ["-c", line] };
 }
 
-function postInstallFromLine(line: string, existing?: PluginManifestItem["postInstall"]): PluginPostInstallCommand {
-  if (line === postInstallLine(existing) && typeof existing === "object") {
+function commandFromLine(line: string, existing?: ToolUpdateCommand): ToolUpdateCommand {
+  if (line === commandLineFromCommand(existing) && existing) {
     return existing;
   }
 
@@ -628,7 +1213,7 @@ function booleanSwitch(value: boolean): string {
 }
 
 function autoInvocationValue(item: EditableManifestItem): boolean {
-  return "autoInvocation" in item ? item.autoInvocation ?? true : false;
+  return "invocation" in item ? item.invocation !== "manual" : false;
 }
 
 function inquirerPrompts(): ManifestConfigurePrompts {
@@ -645,10 +1230,49 @@ function inquirerPrompts(): ManifestConfigurePrompts {
       pageSize: 8,
       theme: afkSelectTheme,
     }),
-    selectItem: async (_area, choices, message) => select<string>({
+    selectItem: async (area, choices, message) => area === "skills"
+      ? search<string>({
+        message,
+        source: async (term) => filterCatalogSelectChoices(choices, term),
+        pageSize: 12,
+        instructions: {
+          navigation: "Use arrow keys to move.",
+          pager: "Type to filter by id, label, source, or policy.",
+        },
+        theme: afkSearchTheme,
+      })
+      : select<string>({
+        message,
+        choices,
+        pageSize: 12,
+        theme: afkSelectTheme,
+      }),
+    selectItems: async (_area, choices, message) => selectItemsPrompt(message, choices),
+    selectBulkSkillSetting: async (message, onLabel, offLabel) => select<BulkSkillSetting>({
       message,
-      choices,
-      pageSize: 12,
+      choices: [
+        { name: "Leave unchanged", value: "unchanged" },
+        { name: onLabel, value: "on" },
+        { name: offLabel, value: "off" },
+      ],
+      default: "unchanged",
+      theme: afkSelectTheme,
+    }),
+    selectProfileMode: async (current) => select<SkillProfileMode>({
+      message: "Choose profile mode",
+      choices: [
+        {
+          name: "strict",
+          value: "strict",
+          description: "Only alwaysOn and enabled profile skills stay active.",
+        },
+        {
+          name: "context",
+          value: "context",
+          description: "Keep manual skills active; filter discoverable skills by profile.",
+        },
+      ],
+      default: current,
       theme: afkSelectTheme,
     }),
     toggleBooleans: async (_area, choices, message) => toggleBooleanPrompt(message, choices),
@@ -657,103 +1281,70 @@ function inquirerPrompts(): ManifestConfigurePrompts {
   };
 }
 
+export function filterCatalogSelectChoices<Value extends string>(
+  choices: Array<SelectChoice<Value>>,
+  term: string | undefined,
+): Array<SelectChoice<Value>> {
+  const tokens = term?.trim().toLowerCase().split(/\s+/).filter(Boolean) ?? [];
+  if (tokens.length === 0) {
+    return choices;
+  }
+
+  return choices.filter((choice) => {
+    const searchable = [choice.value, choice.description ?? "", ...(choice.searchAliases ?? [])].join(" ").toLowerCase();
+    return tokens.every((token) => searchable.includes(token));
+  });
+}
+
 async function toggleBooleanPrompt(message: string, choices: BooleanToggleChoice[]): Promise<Record<string, boolean>> {
   if (choices.length === 0) {
     return {};
   }
 
-  const stdin = process.stdin;
-  const stdout = process.stdout;
-  const values = choices.map((choice) => choice.enabled);
-
-  if (!stdin.isTTY || !stdout.isTTY) {
-    return booleanRecord(choices, values);
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return booleanRecord(choices, choices.map((choice) => choice.enabled));
   }
 
-  return new Promise<Record<string, boolean>>((resolve, reject) => {
-    let index = 0;
-    let renderedLines = 0;
-    const wasRaw = stdin.isRaw;
+  const selected = await searchableCheckbox<string>({
+    message,
+    choices: choices.map((choice) => ({
+      name: choice.name.replace(/^\[(?:on |off)\]\s+/, ""),
+      value: choice.value,
+      checked: choice.enabled,
+      short: choice.value,
+      ...(choice.description ? { description: choice.description } : {}),
+      searchAliases: choice.searchAliases ?? [],
+    })),
+    pageSize: 12,
+    instructions: "Use space to toggle, type to filter, enter to save.",
+    filterShortcuts: [
+      { key: "1", label: "auto on", term: "auto:on" },
+      { key: "2", label: "auto off", term: "auto:off" },
+      { key: "3", label: "default on", term: "default:on" },
+      { key: "4", label: "start disabled", term: "start-disabled:on" },
+    ],
+  });
+  const selectedIds = new Set(selected);
+  return Object.fromEntries(choices.map((choice) => [choice.value, selectedIds.has(choice.value)]));
+}
 
-    const cleanup = (): void => {
-      stdin.off("keypress", onKeypress);
-      if (typeof stdin.setRawMode === "function") {
-        stdin.setRawMode(wasRaw);
-      }
-      stdout.write("\x1b[?25h\n");
-    };
+async function selectItemsPrompt(message: string, choices: MultiSelectChoice[]): Promise<string[]> {
+  if (choices.length === 0 || !process.stdin.isTTY || !process.stdout.isTTY) {
+    return [];
+  }
 
-    const render = (): void => {
-      if (renderedLines > 0) {
-        stdout.write(`\x1b[${renderedLines}A`);
-      }
-
-      const lines = [
-        `◇ ${message}`,
-        "  ↑/↓ move · ← off · → on · space toggle · enter save",
-        ...choices.map((choice, choiceIndex) => {
-          const cursor = choiceIndex === index ? "◆" : " ";
-          const description = choice.description ? ` · ${choice.description}` : "";
-          return `${cursor} ${booleanSwitch(values[choiceIndex] ?? false)} ${choice.name.replace(/^\[(?:on |off)\]\s+/, "")}${description}`;
-        }),
-      ];
-
-      stdout.write(lines.map((line) => `\x1b[2K${line}`).join("\n"));
-      renderedLines = lines.length;
-    };
-
-    const onKeypress = (_input: string, key: KeypressInfo): void => {
-      if (key.ctrl && key.name === "c") {
-        cleanup();
-        const error = new Error("User force closed the prompt with SIGINT");
-        error.name = "ExitPromptError";
-        reject(error);
-        return;
-      }
-
-      if (key.name === "up") {
-        index = index === 0 ? choices.length - 1 : index - 1;
-        render();
-        return;
-      }
-
-      if (key.name === "down") {
-        index = index === choices.length - 1 ? 0 : index + 1;
-        render();
-        return;
-      }
-
-      if (key.name === "left") {
-        values[index] = false;
-        render();
-        return;
-      }
-
-      if (key.name === "right") {
-        values[index] = true;
-        render();
-        return;
-      }
-
-      if (key.name === "space") {
-        values[index] = !(values[index] ?? false);
-        render();
-        return;
-      }
-
-      if (key.name === "return" || key.name === "enter") {
-        cleanup();
-        resolve(booleanRecord(choices, values));
-      }
-    };
-
-    emitKeypressEvents(stdin);
-    if (typeof stdin.setRawMode === "function") {
-      stdin.setRawMode(true);
-    }
-    stdin.on("keypress", onKeypress);
-    stdout.write("\x1b[?25l");
-    render();
+  return searchableCheckbox<string>({
+    message,
+    choices: choices.map((choice) => ({
+      name: choice.name,
+      value: choice.value,
+      short: choice.value,
+      ...(choice.description ? { description: choice.description } : {}),
+      searchAliases: choice.searchAliases ?? [],
+    })),
+    pageSize: 12,
+    required: true,
+    instructions: "Use space to toggle, type to filter, enter to continue.",
   });
 }
 
@@ -768,11 +1359,6 @@ function booleanRecord(choices: BooleanToggleChoice[], values: boolean[]): Recor
 
   return record;
 }
-
-type KeypressInfo = {
-  name?: string;
-  ctrl?: boolean;
-};
 
 async function askInput(config: InputConfig): Promise<string> {
   return input({
@@ -823,10 +1409,6 @@ function filenameStem(value: string): string {
   }
 }
 
-function inferSource(value: string): "github" | "local" {
-  return /^https:\/\/(raw\.githubusercontent\.com|github\.com)\//.test(value) ? "github" : "local";
-}
-
 function skillIdFromArgs(args: string[]): string | null {
   const index = args.indexOf("--skill");
   return index >= 0 ? args[index + 1] ?? null : null;
@@ -846,12 +1428,11 @@ function splitArgs(value: string): string[] {
 }
 
 function isRulesDraft(value: EditableManifest): value is RulesManifest {
-  const record = toRecord(value);
-  return Boolean(record && typeof record.version === "number" && (record.source === "github" || record.source === "local") && typeof record.url === "string");
+  return isRulesManifest(value);
 }
 
 function isEditableItem(value: unknown): value is EditableManifestItem {
-  return isRecord(value) && typeof value.id === "string" && typeof value.label === "string" && typeof value.default === "boolean";
+  return isRecord(value) && typeof value.id === "string" && typeof value.label === "string";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

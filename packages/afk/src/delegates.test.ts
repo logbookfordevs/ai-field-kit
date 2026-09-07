@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "vitest";
-import { buildMcpCommands, buildSkillCommands, buildPluginCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
+import { test, vi } from "vitest";
+import { buildMcpCommands, buildSkillCommands, buildToolCommands, buildToolUpdateCommands, runDelegateCommands, type DelegateCommand } from "./delegates.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions, Runtime } from "./types.js";
 
@@ -18,7 +18,7 @@ const defaultHomeDir = localHomeWithManifests({
         source: "https://github.com/logbookfordevs/ai-field-kit",
         args: ["--skill", "afk-note", "--global"],
         default: true,
-        autoInvocation: true,
+        invocation: "auto",
       },
     ],
   },
@@ -34,7 +34,7 @@ const defaultHomeDir = localHomeWithManifests({
       },
     ],
   },
-  "plugins.json": {
+  "tools.json": {
     version: 1,
     items: [
       {
@@ -45,10 +45,10 @@ const defaultHomeDir = localHomeWithManifests({
         default: true,
       },
       {
-        id: "sample-plugin",
-        label: "Sample Plugin",
-        description: "Sample plugin install.",
-        install: { command: "sh", args: ["-c", "install-sample-plugin"] },
+        id: "sample-tool",
+        label: "Sample Tool",
+        description: "Sample tool install.",
+        install: { command: "sh", args: ["-c", "install-sample-tool"] },
         default: true,
       },
     ],
@@ -65,8 +65,12 @@ const options: CliOptions = {
   allSkills: false,
   selectedSkillIds: [],
   selectedSkillAgentIds: [],
+  skillAddArgs: [],
+  skillAddProfileIds: [],
+  skillAddProfileOnlyIds: [],
+  skillAddStartDisabled: false,
   selectedMcpIds: [],
-  selectedPluginIds: [],
+  selectedToolIds: [],
   selectedHookIds: [],
   rulesRef: "main",
   rulesSource: "local",
@@ -95,6 +99,10 @@ test("buildSkillCommands uses the official skills CLI", () => {
   assert.ok(commands[0]?.args.includes("--yes"));
   assert.ok(commands[0]?.args.includes("--skill"));
   assert.ok(commands[0]?.args.includes("afk-note"));
+  assert.deepEqual(
+    commands[0]?.args.filter((arg, index, args) => arg === "--agent" || args[index - 1] === "--agent"),
+    ["--agent", "universal"],
+  );
   assert.ok(!commands[0]?.args.includes("--copy"));
 });
 
@@ -126,7 +134,7 @@ test("buildSkillCommands omits skill filter for whole-source skill entries", () 
   )));
 });
 
-test("buildSkillCommands all installs default and non-default skills", () => {
+test("buildSkillCommands excludes imported skills by default and includes them with all", () => {
   const homeDir = localHomeWithManifest("skills.json", {
     version: 1,
     defaultSource: "",
@@ -151,9 +159,16 @@ test("buildSkillCommands all installs default and non-default skills", () => {
         source: "https://github.com/example/external",
         args: ["--skill", "external-helper", "--global"],
         default: false,
+        imported: true,
       },
     ],
   });
+
+  const defaultText = buildSkillCommands({ ...options, homeDir })
+    .map((command) => command.args.join(" "))
+    .join("\n");
+  assert.ok(defaultText.includes("afk-default"));
+  assert.ok(!defaultText.includes("external-helper"));
 
   const commands = buildSkillCommands({ ...options, homeDir, allSkills: true });
   const text = commands.map((command) => command.args.join(" ")).join("\n");
@@ -166,7 +181,6 @@ test("buildSkillCommands all installs default and non-default skills", () => {
 test("buildSkillCommands does not add a duplicate Claude-only install", () => {
   const commands = buildSkillCommands({ ...options, agents: ["codex", "claude"] });
   assert.equal(commands.length, 1);
-  assert.ok(!commands[0]?.args.includes("--agent"));
   assert.ok(!commands[0]?.args.includes("claude-code"));
 });
 
@@ -175,7 +189,10 @@ test("buildSkillCommands relies on the skills CLI default symlink fanout", () =>
   assert.equal(commands.length, 1);
   assert.ok(commands[0]?.args.includes("--yes"));
   assert.ok(!commands[0]?.args.includes("--copy"));
-  assert.ok(!commands[0]?.args.includes("--agent"));
+  assert.deepEqual(
+    commands[0]?.args.filter((arg, index, args) => arg === "--agent" || args[index - 1] === "--agent"),
+    ["--agent", "universal"],
+  );
 });
 
 test("buildSkillCommands passes additional skill agents to the skills CLI", () => {
@@ -183,7 +200,7 @@ test("buildSkillCommands passes additional skill agents to the skills CLI", () =
 
   assert.deepEqual(
     commands[0]?.args.filter((arg, index, args) => arg === "--agent" || args[index - 1] === "--agent"),
-    ["--agent", "claude-code", "--agent", "kiro-cli", "--agent", "kilo", "--agent", "pi", "--agent", "droid"],
+    ["--agent", "universal", "--agent", "claude-code", "--agent", "kiro-cli", "--agent", "kilo", "--agent", "pi", "--agent", "droid"],
   );
 });
 
@@ -236,8 +253,8 @@ test("buildMcpCommands does not expand yes mode to broad default agents", () => 
   assert.deepEqual(commands, []);
 });
 
-test("buildPluginCommands installs selected plugins", () => {
-  const commands = buildPluginCommands({ ...options, selectedPluginIds: ["plannotator"] });
+test("buildToolCommands installs selected tools", () => {
+  const commands = buildToolCommands({ ...options, selectedToolIds: ["plannotator"] });
   assert.equal(commands.length, 1);
   assert.equal(commands[0]?.command, "bash");
   assert.deepEqual(commands[0]?.args, ["-c", "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"]);
@@ -255,29 +272,60 @@ test("buildMcpCommands skips project-scoped Antigravity installs", () => {
   assert.deepEqual(commands, []);
 });
 
-test("buildPluginCommands supports generic post-install commands", () => {
-  const homeDir = localHomeWithManifest("plugins.json", {
+test("buildToolCommands supports generic post-install commands", () => {
+  const homeDir = localHomeWithManifest("tools.json", {
     version: 1,
     items: [
       {
         id: "custom-postinstall",
-        label: "Custom Plugin",
-        description: "Custom plugin.",
+        label: "Custom Tool",
+        description: "Custom tool.",
         install: { command: "sh", args: ["-c", "install-custom"] },
         postInstall: { command: "sh", args: ["-c", "custom init"] },
         default: true,
       },
     ],
   });
-  const commands = buildPluginCommands({ ...options, homeDir, selectedPluginIds: ["custom-postinstall"] });
+  const commands = buildToolCommands({ ...options, homeDir, selectedToolIds: ["custom-postinstall"] });
 
   assert.deepEqual(
     commands.map((command) => [command.label, command.command, command.args]),
     [
-      ["Custom Plugin / install", "sh", ["-c", "install-custom"]],
-      ["Custom Plugin / post-install", "sh", ["-c", "custom init"]],
+      ["Custom Tool / install", "sh", ["-c", "install-custom"]],
+      ["Custom Tool / post-install", "sh", ["-c", "custom init"]],
     ],
   );
+});
+
+test("buildToolUpdateCommands runs only selected tools with update commands", () => {
+  const homeDir = localHomeWithManifest("tools.json", {
+    version: 1,
+    items: [
+      {
+        id: "updateable",
+        label: "Updateable Tool",
+        description: "Can update itself.",
+        install: { command: "sh", args: ["-c", "install-updateable"] },
+        update: { command: "updateable", args: ["update"] },
+        default: true,
+      },
+      {
+        id: "install-only",
+        label: "Install-only Tool",
+        description: "Has no update command.",
+        install: { command: "install-only", args: [] },
+        default: true,
+      },
+    ],
+  });
+
+  const commands = buildToolUpdateCommands({ ...options, homeDir }, ["updateable", "install-only"]);
+
+  assert.deepEqual(commands, [{
+    label: "Updateable Tool / update",
+    command: "updateable",
+    args: ["update"],
+  }]);
 });
 
 test("runDelegateCommands fails fast by default", async () => {
@@ -312,6 +360,54 @@ test("runDelegateCommands hides delegated command details by default", async () 
   assert.equal(code, 0);
   assert.deepEqual(spawnBehaviors, [false]);
   assert.deepEqual(output, ["- First: preparing...", "- First: ready"]);
+});
+
+test("runDelegateCommands keeps animated status frames within the terminal width", async () => {
+  const stdoutDescriptor = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
+  const columnsDescriptor = Object.getOwnPropertyDescriptor(process.stdout, "columns");
+  const ci = process.env.CI;
+  const writes: string[] = [];
+  const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+    writes.push(String(chunk));
+    return true;
+  });
+
+  Object.defineProperty(process.stdout, "isTTY", { configurable: true, value: true });
+  Object.defineProperty(process.stdout, "columns", { configurable: true, value: 60 });
+  delete process.env.CI;
+
+  try {
+    const runtime: Runtime = {
+      io: {
+        stdout: () => undefined,
+        stderr: () => undefined,
+      },
+      spawn: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 90));
+        return { code: 0 };
+      },
+    };
+    const command: DelegateCommand = {
+      label: "Shared skills / https://github.com/jakubkrehel/make-interfaces-feel-better",
+      command: "skills",
+      args: [],
+    };
+
+    await runDelegateCommands(runtime, [command], { ...options, dryRun: false, verbose: false });
+
+    const animatedFrames = writes.filter((value) => !value.endsWith("\n"));
+    assert.ok(animatedFrames.length >= 2);
+    assert.ok(animatedFrames.every((value) => value.replace(/^\r/, "").length <= 60));
+  } finally {
+    write.mockRestore();
+    restoreProperty(process.stdout, "isTTY", stdoutDescriptor);
+    restoreProperty(process.stdout, "columns", columnsDescriptor);
+    if (ci === undefined) {
+      delete process.env.CI;
+    } else {
+      process.env.CI = ci;
+    }
+  }
 });
 
 test("runDelegateCommands shows delegated command details in verbose mode", async () => {
@@ -361,6 +457,15 @@ function sampleCommands(): DelegateCommand[] {
     { label: "First", command: "first", args: [] },
     { label: "Second", command: "second", args: [] },
   ];
+}
+
+function restoreProperty(target: NodeJS.WriteStream, property: "isTTY" | "columns", descriptor: PropertyDescriptor | undefined): void {
+  if (descriptor) {
+    Object.defineProperty(target, property, descriptor);
+    return;
+  }
+
+  delete (target as unknown as Record<string, unknown>)[property];
 }
 
 function fakeRuntime(calls: string[], codes: number[], warnings: string[] = []): Runtime {

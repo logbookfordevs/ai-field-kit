@@ -1,38 +1,57 @@
-# references/DIALS.md
+# Design Dials
 
-## Design Dials
+Set dials after writing the story spine. They tune one coherent direction; they do not compensate for a missing concept. Use a `1..5` scale to avoid false precision.
 
-Dials calibrate intensity without changing the chosen mode.
+## Motion intensity
 
-### Motion Intensity (1–10)
-1–3: mostly static. hover/press states only.
-4–6: fluid UI. entrance/exit, small layout transitions, staggered reveals.
-7–10: cinematic choreography. shared elements, scrolltelling (careful), richer physics.
+1. State changes are nearly immediate; motion confirms local actions.
+2. Short entrances, exits, and layout continuity.
+3. Visible choreography and stagger across a section.
+4. Authored transitions connect multiple beats.
+5. Motion dominates perception and requires its own performance budget.
 
-Guidance:
-- raise intensity only where it increases comprehension or memorability
-- never hide essential information behind motion
+Raise intensity only when it improves causality, focus, or emotional contrast.
 
-### Spatial Variance (1–10)
-1–3: symmetric, grid-stable, predictable layouts.
-4–6: offset compositions, asymmetry hints, layered sections.
-7–10: bold asymmetry, playful composition, strong visual rhythm.
+## Spatial variance
 
-Guidance:
-- always collapse complex variance to a stable single-column on mobile
-- variance should look intentional, not random
+1. Stable grid and predictable alignment.
+2. Small offsets within a clear structure.
+3. Layered or asymmetric composition with obvious reading order.
+4. Elements cross regions, overlap, or change depth.
+5. The frame behaves as a directed spatial scene.
 
-### Visual Density (1–10)
-1–3: gallery mode. lots of space, slow rhythm, premium minimal.
-4–6: standard app. balanced spacing, everyday UX.
-7–10: cockpit mode. dense information, faster scanning, strict hierarchy.
+Mobile may use a different composition. Preserve hierarchy and intent rather than squeezing the desktop arrangement.
 
-Guidance:
-- density increases require stronger typography hierarchy and spacing discipline
-- never use density to compensate for unclear information architecture
+## Input demand
 
-Suggested defaults (safe):
-- cinematic-clarity: variance 4–5, motion 4–6, density 4–6
-- playful-showcase: variance 6–8, motion 6–8, density 3–5
-- immersive-worldbuilding: variance 5–7, motion 5–7, density 3–6
-- full-spectrum: variance 6–9, motion 7–9, density 3–6
+1. Familiar click, tap, or scroll.
+2. Hover, focus, or short direct manipulation.
+3. Hold, drag, scrub, or simple gesture with visible instruction.
+4. Chained gates or spatial exploration.
+5. Learned interaction language central to the experience.
+
+Higher demand requires stronger invitation, feedback, cancellation, keyboard parity, and payoff.
+
+## Immersion
+
+1. Conventional interface with motion accents.
+2. Persistent atmosphere or a light visual metaphor.
+3. A scene with depth, continuity, and coordinated channels.
+4. The interface behaves as a place with authored rules.
+5. A continuously rendered world carries most of the experience.
+
+Immersion does not imply WebGL. Typography, sound, composition, and state continuity can create a world in the DOM.
+
+## Visual density
+
+1. Gallery-like: few objects, long pauses, generous negative space.
+2. Editorial: focused content with a measured rhythm.
+3. Product: balanced information and action density.
+4. Instrument: compact controls with strong grouping.
+5. Cockpit: high information density with strict hierarchy and quiet motion.
+
+As density rises, reduce simultaneous motion and reserve spectacle for transitions between tasks.
+
+## Calibration record
+
+Record the chosen values and one sentence for each value above `3`. If two high dials compete—for example density `5` and motion `5`—name the moments where one yields to the other.

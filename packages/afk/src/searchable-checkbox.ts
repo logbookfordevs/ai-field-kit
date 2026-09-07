@@ -17,9 +17,11 @@ import {
 export type SearchableCheckboxChoice<Value> = {
   value: Value;
   name: string;
+  group?: string;
   checkedName?: string;
   short?: string;
   description?: string;
+  searchAliases?: string[];
   disabled?: boolean | string;
   checked?: boolean;
 };
@@ -28,11 +30,19 @@ export type NormalizedSearchableCheckboxChoice<Value> = {
   id: number;
   value: Value;
   name: string;
+  group?: string;
   checkedName: string;
   short: string;
   description?: string;
+  searchAliases: string[];
   disabled: boolean | string;
   checked: boolean;
+};
+
+export type SearchableCheckboxFilterShortcut = {
+  key: string;
+  label: string;
+  term: string;
 };
 
 type SearchableCheckboxTheme = {
@@ -98,9 +108,11 @@ export function normalizeSearchableCheckboxChoices<Value>(
     id: index,
     value: choice.value,
     name: choice.name,
+    ...(choice.group ? { group: choice.group } : {}),
     checkedName: choice.checkedName ?? choice.name,
     short: choice.short ?? choice.name,
     ...(choice.description ? { description: choice.description } : {}),
+    searchAliases: choice.searchAliases ?? [],
     disabled: choice.disabled ?? false,
     checked: choice.checked ?? false,
   }));
@@ -110,7 +122,14 @@ export function filterSearchableCheckboxChoices<Value>(
   choices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>,
   term: string | undefined,
 ): Array<NormalizedSearchableCheckboxChoice<Value>> {
-  const tokens = term?.trim().toLowerCase().split(/\s+/).filter(Boolean) ?? [];
+  return filterSearchableCheckboxChoicesByTerms(choices, [term]);
+}
+
+export function filterSearchableCheckboxChoicesByTerms<Value>(
+  choices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>,
+  terms: ReadonlyArray<string | undefined>,
+): Array<NormalizedSearchableCheckboxChoice<Value>> {
+  const tokens = terms.flatMap((term) => term?.trim().toLowerCase().split(/\s+/).filter(Boolean) ?? []);
   if (tokens.length === 0) {
     return [...choices];
   }
@@ -118,9 +137,11 @@ export function filterSearchableCheckboxChoices<Value>(
   return choices.filter((choice) => {
     const searchable = [
       choice.name,
+      choice.group ?? "",
       choice.checkedName,
       choice.short,
       choice.description ?? "",
+      ...choice.searchAliases,
     ].join(" ").toLowerCase();
 
     return tokens.every((token) => searchable.includes(token));
@@ -140,6 +161,16 @@ export function toggleSearchableCheckboxChoice<Value>(
   });
 }
 
+export function toggleAllVisibleSearchableCheckboxChoices<Value>(
+  choices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>,
+  visibleChoices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>,
+): Array<NormalizedSearchableCheckboxChoice<Value>> {
+  const visibleIds = new Set(visibleChoices.filter((choice) => !choice.disabled).map((choice) => choice.id));
+  const shouldCheck = visibleChoices.some((choice) => !choice.disabled && !choice.checked);
+
+  return choices.map((choice) => visibleIds.has(choice.id) ? { ...choice, checked: shouldCheck } : choice);
+}
+
 export function selectedSearchableCheckboxValues<Value>(
   choices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>,
 ): Value[] {
@@ -148,36 +179,87 @@ export function selectedSearchableCheckboxValues<Value>(
     .map((choice) => choice.value);
 }
 
+export function renderSearchableCheckboxBody(parts: {
+  page: string;
+  description?: string | undefined;
+  filterLine?: string | undefined;
+  selectedLine?: string | undefined;
+  errorLine?: string | undefined;
+  helpLine?: string | undefined;
+}): string {
+  const trailingLines = [
+    parts.filterLine,
+    parts.selectedLine,
+    parts.errorLine,
+    parts.helpLine,
+  ].filter((line): line is string => Boolean(line));
+  const lines = [parts.page];
+
+  if (parts.description) {
+    lines.push("", parts.description);
+  }
+
+  if (trailingLines.length > 0) {
+    if (!parts.description) {
+      lines.push("");
+    }
+    lines.push(...trailingLines);
+  }
+
+  return lines.join("\n").trimEnd();
+}
+
 export const searchableCheckbox = createPrompt(<Value>(config: {
   message: string;
   choices: ReadonlyArray<SearchableCheckboxChoice<Value>>;
   pageSize?: number;
   required?: boolean;
   instructions?: string | false;
+  filterShortcuts?: SearchableCheckboxFilterShortcut[];
   theme?: SearchableCheckboxThemeConfig;
   validate?: (choices: ReadonlyArray<NormalizedSearchableCheckboxChoice<Value>>) => boolean | string | Promise<boolean | string>;
 }, done: (value: Value[]) => void) => {
-  const { pageSize = 10, required = false, validate = () => true } = config;
+  const { pageSize = 12, required = false, validate = () => true } = config;
   const theme = makeTheme<SearchableCheckboxTheme>(defaultTheme, config.theme);
   const [status, setStatus] = useState("idle");
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeShortcutKey, setActiveShortcutKey] = useState<string | undefined>();
   const [items, setItems] = useState(() => normalizeSearchableCheckboxChoices(config.choices));
   const [active, setActive] = useState(0);
   const [error, setError] = useState<string | undefined>();
   const prefix = usePrefix({ status, theme });
 
+  const activeShortcut = config.filterShortcuts?.find((shortcut) => shortcut.key === activeShortcutKey);
   const visibleItems = useMemo(
-    () => filterSearchableCheckboxChoices(items, searchTerm),
-    [items, searchTerm],
+    () => filterSearchableCheckboxChoicesByTerms(items, [searchTerm, activeShortcut?.term]),
+    [items, searchTerm, activeShortcut?.term],
   );
   const activeIndex = Math.min(active, Math.max(0, visibleItems.length - 1));
   const activeItem = visibleItems[activeIndex];
 
   useEffect(() => {
     setActive(0);
-  }, [searchTerm]);
+  }, [searchTerm, activeShortcutKey]);
 
   useKeypress(async (key, rl) => {
+    const keySequence = (key as { sequence?: string }).sequence;
+    const shortcut = config.filterShortcuts?.find((candidate) => candidate.key === key.name || candidate.key === keySequence);
+    if (shortcut) {
+      rl.clearLine(0);
+      rl.write(searchTerm);
+      setError(undefined);
+      setActiveShortcutKey(activeShortcutKey === shortcut.key ? undefined : shortcut.key);
+      return;
+    }
+
+    if (key.ctrl && key.name === "a") {
+      rl.clearLine(0);
+      rl.write(searchTerm);
+      setError(undefined);
+      setItems(toggleAllVisibleSearchableCheckboxChoices(items, visibleItems));
+      return;
+    }
+
     if (isEnterKey(key)) {
       const selected = items.filter((choice) => choice.checked && !choice.disabled);
       if (required && selected.length === 0) {
@@ -238,7 +320,12 @@ export const searchableCheckbox = createPrompt(<Value>(config: {
       const row = item.disabled
         ? theme.style.disabledChoice(`${checkbox} ${name}`)
         : `${isActive ? theme.icon.cursor : " "}${checkbox} ${name}`;
-      return isActive && !item.disabled ? theme.style.highlight(row) : row;
+      const renderedRow = isActive && !item.disabled ? theme.style.highlight(row) : row;
+      const itemIndex = visibleItems.findIndex((choice) => choice.id === item.id);
+      const previousGroup = itemIndex > 0 ? visibleItems[itemIndex - 1]?.group : undefined;
+      return item.group && item.group !== previousGroup
+        ? `${theme.style.description(item.group)}\n${renderedRow}`
+        : renderedRow;
     },
     pageSize,
     loop: false,
@@ -247,24 +334,30 @@ export const searchableCheckbox = createPrompt(<Value>(config: {
   const header = [prefix, message, search].filter(Boolean).join(" ").trimEnd();
   const description = activeItem?.description ? theme.style.description(activeItem.description) : "";
   const selectedLine = selectedChoices.length > 0 ? theme.style.selected(`${selectedChoices.length} selected`) : "";
+  const filterLine = activeShortcut ? theme.style.selected(`filter ${activeShortcut.key}: ${activeShortcut.label}`) : "";
+  const shortcutHelp = config.filterShortcuts && config.filterShortcuts.length > 0
+    ? `filters: ${config.filterShortcuts.map((shortcut) => `${shortcut.key} ${shortcut.label}`).join(" · ")}`
+    : "";
+  const bulkShortcutHelp = "ctrl+a select/unselect shown";
   const helpLine = config.instructions === false || theme.helpMode === "never"
     ? ""
     : typeof config.instructions === "string"
-      ? theme.style.help(config.instructions)
+      ? theme.style.help([config.instructions, bulkShortcutHelp, shortcutHelp].filter(Boolean).join(" · "))
       : theme.style.keysHelpTip([
         ["type", "filter"],
         ["↑↓", "navigate"],
         ["space", "toggle"],
+        ["ctrl+a", "select/unselect shown"],
         ["⏎", "submit"],
       ]);
-  const body = [
-    visibleItems.length > 0 ? page : theme.style.noMatches("No matches"),
-    " ",
+  const body = renderSearchableCheckboxBody({
+    page: visibleItems.length > 0 ? page : theme.style.noMatches("No matches"),
     description,
+    filterLine,
     selectedLine,
-    error ? theme.style.error(error) : "",
+    errorLine: error ? theme.style.error(error) : "",
     helpLine,
-  ].filter(Boolean).join("\n").trimEnd();
+  });
 
   return [header, body];
 });

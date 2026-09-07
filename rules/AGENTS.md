@@ -1,71 +1,57 @@
-# Documentation Instructions
-When the task is explicitly about writing, rewriting, restructuring, or reviewing docs, use the `afk-doc-craft` skill.
-Treat docs as reader-facing product work; let the skill provide the detailed writing doctrine.
-
-# Library Preferences
-
-## Motion (old Framer Motion)
-- Always import from:
-  - `motion` for framework-agnostic usage.
-  - `motion/react` for React-specific usage.
-- Never mix `framer-motion` and `motion` in the same codebase.
-- The package name for installation is `motion`.
-
-## Tailwind CSS v4
-- Tailwind CSS v4 is preferred library for CSS.
-- Default to Tailwind v4 zero-config setup; do NOT create `tailwind.config.js`/`tailwind.config.ts` unless explicitly required by the project.
-- When setting up Tailwind CSS, use the `tailwind-design-system` skill as initial reference.
-
-## Headless Components
-- Use the project’s existing headless foundation if one exists. Otherwise prefer Base UI.
-
-# Personal Preferences
+## Library Preferences
+- Import animation APIs from `motion` or `motion/react`.
+- Prefer the project's existing headless foundation; otherwise use Base UI.
+- Use Tailwind CSS v4 without a configuration file unless the project requires one.
+- When choosing a linter for a project without one, default to Biome.
 
 ## Skills
-Use `afk-compass` for broad, ambiguous, multi-phase, phase changes, execution-discipline routing, or any non-obvious skill selection.
-Whenever the agent decides to use a skill, it must explicitly state it in its response using direct phrasing, for example: "I will use the X skill."
-Treat explicit "AFK workflow" or "feature workflow" requests as composable AFK work: use `afk-compass` to choose the next useful skill, not to force a lifecycle. Treat explicit "AFK Sprint" or "AFK Turbo" requests as named execution packages.
+State "I will use the X skill" whenever using a skill.
+When the user or a handoff names a skill as required or governing, treat its unavailability as a blocker; stop and request its invocation or an explicitly approved fallback.
+
+## Artifacts
+Artifact location unresolved: read `{{AFK_RULES_DIR}}/artifacts.md`.
 
 ## Imports
-- Always prioritize absolute imports (e.g. `@/components/...`) over relative paths when available.
+- Prefer configured absolute imports such as `@/components/...`.
 
 ## TypeScript
-- Avoid `any` unless necessary or specifically instructed.
-- TypeScript changes must pass the repo typecheck before final handoff.
+- Avoid `any` unless necessary or specifically requested.
+- TypeScript changes must pass the repository typecheck before handoff.
+
+## Testing
+- Add regression tests when they protect meaningful behavior. Test observable behavior; tautological tests that merely restate the implementation are harmful. Trivial copy and other low-risk changes do not require coverage.
+
+## React
+- Name compound JSX conditions before the return with domain-specific booleans. JSX conditions should contain one named boolean, optionally negated.
+- For two mutually exclusive branches, name the deciding condition and use paired `&&` expressions, such as `{showsDetails && <Details />}` followed by `{!showsDetails && <Summary />}`.
+- For three or more mutually exclusive branches, both named `&&` branches and a local render function with early returns are acceptable. Invoke a local render function as a function from JSX. Extract a component when the rendered section has a meaningful interface or obscures the surrounding structure.
+- Keep short, flat ternaries for selecting non-JSX values such as strings, classes, or numbers. Hoist nested or hard-to-scan value expressions. Move repeated condition logic into a shared helper.
+
+## Browser Testing
+- Prefer `agent-browser` over Playwright CLI when available.
 
 ## Commands
-- Don't run dev server commands (like `npm run dev`) - assume it's already running.
+- Treat the development server as already running and use the existing instance.
 
 ## Worktrees
-- When creating or managing git worktrees, prefer the installed `yggtree` CLI; run `yggtree --help` before falling back to native git worktree commands.
+- Prefer `yggtree` for worktree operations when available; consult `yggtree --help` before using native Git worktree commands.
 
 ## Package Managers
-- Check and follow the current project's package manager. Always chose pnpm in new projects.
+- Use the project's existing package manager; use pnpm for new projects.
 
 ## Tech Stack
-For web applications or related React work, use: Tailwind V4, TypeScript, and my preferred libraries where necessary.
+- For new web applications, prefer React, TypeScript, and Tailwind CSS v4. Prototypes may use the stack that best fits the experiment.
 
 ## Frontend UX Defaults
-- UX quality beats avoiding setup. For standard app primitives in React/Tailwind, use the `afk-ui-registry-preferences` skill before choosing custom UI or a registry.
 - Prefer mature primitives or registry components when they materially improve UX, accessibility, responsiveness, or interaction quality.
-- Mobile is not degraded desktop; replace cramped, wrapped, clipped, or awkward controls with proper responsive patterns.
-
-## Coding Style Instructions
-Optimize code for onboarding and day-2 maintenance without downgrading user experience for developer convenience.
-When the task is a review/refactor guidance, prefer explicit review.
-When evaluating code and thinking between solutions, apply `Truss Evaluation` skill as criteria.
-Be a critical thinking partner: challenge weak product or implementation directions, and make the codebase pleasant enough to maintain ambitious UX well.
-
-## Browser
-- For browser automated tests, prefer `agent-browser` skill when no other option is specified.
+- Mobile is not degraded desktop; replace cramped, wrapped, clipped, or awkward controls with responsive patterns.
+- Push back when implementation convenience would materially degrade the user experience.
 
 ## Comments
-- Default to no code comments; prefer clearer names, structure, or types.
-- Never add glossary, dictionary, taxonomy, ticket-note, or line-by-line explanation blocks in implementation files.
-- Use a short comment only to preserve a non-obvious constraint, dangerous edge case, external contract, or trade-off.
+- Keep code comment-sparse. Use comments only to preserve enduring, non-obvious invariants, dangerous edge cases, external contracts, or trade-offs; describe lasting behavior rather than task history.
+
+## Sub-agents
+When spawning sub-agents, use the `afk-architect` skill as the coordination policy.
 
 ## Dictionary
-- Team of agents/multi agents = spawn sub-agents/child agents
-- Users/developers = people using the product or tooling being built; do not assume they are the agent reading the file or that they will read implementation code.
-- Just/focus just on = this is a hard scope limiter. Do the narrowed request only; do not widen into adjacent cleanup, refactors, docs, or “while I’m here” improvements unless asked.
-- CLI/MCP/hooks/plugins/agent config = different integration surfaces, not interchangeable names for “tool setup.” Before recommending one, compare capability, automation behavior, ownership, token/context overhead, and install friction.
+- **Quick win**: a small, obvious, low-risk change. Use proportionate local validation; reserve browser automation and agent review for changes whose UX or correctness risk warrants them.

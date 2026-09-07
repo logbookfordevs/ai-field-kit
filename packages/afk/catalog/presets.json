@@ -3,9 +3,19 @@
   "defaultsSource": "logbookfordevs/ai-field-kit",
   "presets": [
     {
-      "id": "baseline",
-      "label": "AFK baseline",
-      "areas": ["rules", "skills", "mcps", "plugins"]
+      "id": "afk-architect",
+      "label": "AFK Architect",
+      "areas": ["skills", "agents"],
+      "selections": {
+        "skills": ["afk-architect"],
+        "customAgents": ["afk-cartographer", "afk-builder", "afk-pathfinder"]
+      }
+    },
+    {
+      "id": "daily-routine",
+      "label": "Daily Routine",
+      "areas": ["rules", "skills", "tools", "agents"],
+      "all": true
     }
   ]
 }

@@ -13,10 +13,11 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
-            "role": "wrapper",
-            "composes": [],
-            "profiles": []
+            "invocation": "manual",
+            "role": "workflow",
+            "composes": [
+                "grilling"
+            ]
         },
         {
             "id": "afk-ask",
@@ -28,40 +29,9 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "utility",
-            "composes": [],
-            "profiles": []
-        },
-        {
-            "id": "afk-delegate",
-            "label": "AFK - Delegate",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-delegate",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
-            "role": "utility",
-            "composes": [],
-            "profiles": []
-        },
-        {
-            "id": "afk-brainstorming-facilitator",
-            "label": "AFK - Brainstorming Facilitator",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-brainstorming-facilitator",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
-            "role": "wrapper",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "afk-code-grill",
@@ -73,104 +43,128 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "wrapper",
             "composes": [
                 "grilling",
                 "truss-evaluation",
                 "codebase-design"
-            ],
-            "profiles": []
+            ]
         },
         {
-            "id": "afk-to-prd-spec",
-            "label": "AFK - To PRD Spec",
+            "id": "afk-design-grill",
+            "label": "AFK - Design Grill",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-to-prd-spec",
+                "afk-design-grill",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "wrapper",
-            "composes": [],
-            "profiles": []
+            "composes": [
+                "grilling",
+                "truss-evaluation",
+                "impeccable"
+            ]
         },
         {
-            "id": "afk-to-issues",
-            "label": "AFK - To Issues",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "id": "impeccable",
+            "label": "Impeccable",
+            "source": "https://github.com/pbakaus/impeccable",
             "args": [
                 "--skill",
-                "afk-to-issues",
+                "impeccable",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
-            "role": "wrapper",
+            "invocation": "auto",
+            "role": "router",
             "composes": [],
-            "profiles": []
+            "postInstall": [
+                {
+                    "type": "copy",
+                    "label": "Impeccable / Codex agents",
+                    "agent": "codex",
+                    "from": "agents",
+                    "to": "agents",
+                    "extension": ".toml"
+                }
+            ]
         },
         {
-            "id": "afk-doc-craft",
-            "label": "AFK - Doc Craft",
+            "id": "afk-create-agent",
+            "label": "AFK - Create Agent",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-doc-craft",
+                "afk-create-agent",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
-            "role": "primitive",
-            "composes": [],
-            "profiles": []
-        },
-        {
-            "id": "afk-execution-tracking",
-            "label": "AFK - Execution Tracking",
-            "source": "https://github.com/logbookfordevs/ai-field-kit",
-            "args": [
-                "--skill",
-                "afk-execution-tracking",
-                "--global"
-            ],
-            "default": true,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "workflow",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
-            "id": "afk-ui-registry-preferences",
-            "label": "AFK - UI Registry Preferences",
+            "id": "afk-to-spec",
+            "label": "AFK - To Spec",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-ui-registry-preferences",
+                "afk-to-spec",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
-            "role": "reference",
-            "composes": [],
-            "profiles": []
+            "invocation": "manual",
+            "role": "wrapper",
+            "composes": []
         },
         {
-            "id": "afk-pickup",
-            "label": "AFK - Pickup",
+            "id": "afk-to-tickets",
+            "label": "AFK - To Tickets",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-pickup",
+                "afk-to-tickets",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
-            "role": "utility",
-            "composes": [],
-            "profiles": []
+            "invocation": "manual",
+            "role": "wrapper",
+            "composes": []
+        },
+        {
+            "id": "afk-docs-for-humans",
+            "label": "AFK - Docs for Humans",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-docs-for-humans",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "manual",
+            "role": "primitive",
+            "composes": []
+        },
+        {
+            "id": "afk-implement-tickets",
+            "label": "AFK - Implement Tickets",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-implement-tickets",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "manual",
+            "role": "workflow",
+            "composes": [
+                "tdd",
+                "afk-code-review"
+            ]
         },
         {
             "id": "afk-compass",
@@ -182,47 +176,37 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
+            "invocation": "manual",
             "role": "router",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
-            "id": "afk-sprint",
-            "label": "AFK - Sprint",
+            "id": "afk-architect",
+            "label": "AFK - Architect",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-sprint",
+                "afk-architect",
                 "--global"
             ],
-            "default": true,
-            "autoInvocation": false,
+            "default": false,
+            "invocation": "auto",
             "role": "workflow",
-            "composes": [
-                "plannotator-setup-goal",
-                "afk-to-issues",
-                "afk-execution-tracking"
-            ],
-            "profiles": []
+            "composes": []
         },
         {
-            "id": "afk-turbo",
-            "label": "AFK - Turbo",
+            "id": "afk-profile-use",
+            "label": "AFK - Profile Use",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-turbo",
+                "afk-profile-use",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
-            "role": "workflow",
-            "composes": [
-                "grilling",
-                "plannotator-setup-goal"
-            ],
-            "profiles": []
+            "invocation": "manual",
+            "role": "router",
+            "composes": []
         },
         {
             "id": "truss-evaluation",
@@ -234,10 +218,9 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "diagnosing-bugs",
@@ -249,10 +232,9 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "plannotator-compound",
@@ -264,10 +246,23 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "utility",
-            "composes": [],
-            "profiles": []
+            "composes": []
+        },
+        {
+            "id": "plannotator-guide",
+            "label": "Plannotator Guide",
+            "source": "plannotator/guides",
+            "args": [
+                "--skill",
+                "plannotator-guide",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
         },
         {
             "id": "plannotator-setup-goal",
@@ -279,10 +274,9 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "plannotator-visual-explainer",
@@ -294,55 +288,139 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "utility",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
-            "id": "html",
-            "label": "Effective HTML",
-            "source": "https://github.com/plannotator/effective-html",
+            "id": "orchestrator",
+            "label": "Orchestrator",
+            "source": "backnotprop/orchestrator",
             "args": [
                 "--skill",
-                "html",
+                "orchestrator",
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "utility",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
-            "id": "html-plan",
-            "label": "Effective HTML Plan",
-            "source": "https://github.com/plannotator/effective-html",
+            "id": "bro",
+            "label": "Bro",
+            "source": "backnotprop/bro",
             "args": [
                 "--skill",
-                "html-plan",
+                "bro",
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "utility",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
-            "id": "html-diagram",
-            "label": "Effective HTML Diagram",
-            "source": "https://github.com/plannotator/effective-html",
+            "id": "facts",
+            "label": "Facts",
+            "source": "backnotprop/bro",
             "args": [
                 "--skill",
-                "html-diagram",
+                "facts",
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "utility",
-            "composes": [],
-            "profiles": []
+            "composes": []
+        },
+        {
+            "id": "readback",
+            "label": "Readback",
+            "source": "backnotprop/bro",
+            "args": [
+                "--skill",
+                "readback",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "recap",
+            "label": "Recap",
+            "source": "backnotprop/bro",
+            "args": [
+                "--skill",
+                "recap",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "clean-room",
+            "label": "Clean Room",
+            "source": "backnotprop/bro",
+            "args": [
+                "--skill",
+                "clean-room",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "workflow",
+            "composes": []
+        },
+        {
+            "id": "design-artifact",
+            "label": "Design Artifact",
+            "source": "https://github.com/plannotator/effective-html",
+            "args": [
+                "--skill",
+                "design-artifact",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "auto",
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "html-wireframe",
+            "label": "HTML Wireframe",
+            "source": "https://github.com/plannotator/effective-html",
+            "args": [
+                "--skill",
+                "html-wireframe",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": [
+                "design-artifact"
+            ]
+        },
+        {
+            "id": "html-prototype",
+            "label": "HTML Prototype",
+            "source": "https://github.com/plannotator/effective-html",
+            "args": [
+                "--skill",
+                "html-prototype",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": [
+                "design-artifact"
+            ]
         },
         {
             "id": "tdd",
@@ -354,12 +432,25 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
             "composes": [
                 "codebase-design"
+            ]
+        },
+        {
+            "id": "research",
+            "label": "Research",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "research",
+                "--global"
             ],
-            "profiles": []
+            "default": false,
+            "invocation": "auto",
+            "role": "utility",
+            "composes": []
         },
         {
             "id": "source-driven-development",
@@ -371,10 +462,9 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "doubt-driven-development",
@@ -386,10 +476,9 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "code-simplification",
@@ -401,25 +490,107 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
-            "id": "writing-great-skills",
-            "label": "Writing Great Skills",
+            "id": "review-animations",
+            "label": "Review Animations",
+            "source": "https://github.com/emilkowalski/skills",
+            "args": [
+                "--skill",
+                "review-animations",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "animate",
+            "label": "Animate",
+            "source": "https://github.com/emilkowalski/skills",
+            "args": [
+                "--skill",
+                "animate",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "auto",
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "apple-design",
+            "label": "Apple Design",
+            "source": "https://github.com/emilkowalski/skills",
+            "args": [
+                "--skill",
+                "apple-design",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "animate-text",
+            "label": "Animate Text",
+            "source": "pixel-point/animate-text",
+            "args": [
+                "--skill",
+                "animate-text",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "writing-for-agents",
+            "label": "Writing For Agents",
             "source": "https://github.com/mattpocock/skills",
             "args": [
                 "--skill",
-                "writing-great-skills",
+                "writing-for-agents",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "invocation": "auto",
             "role": "reference",
-            "composes": [],
-            "profiles": []
+            "composes": []
+        },
+        {
+            "id": "wizard",
+            "label": "Wizard",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "wizard",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "auto",
+            "role": "utility",
+            "composes": []
+        },
+        {
+            "id": "to-questionnaire",
+            "label": "To Questionnaire",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "to-questionnaire",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "wrapper",
+            "composes": []
         },
         {
             "id": "teach",
@@ -431,10 +602,9 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "wrapper",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "grill-with-docs",
@@ -446,13 +616,12 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "wrapper",
             "composes": [
                 "grilling",
                 "domain-modeling"
-            ],
-            "profiles": []
+            ]
         },
         {
             "id": "grill-me",
@@ -464,12 +633,11 @@
                 "--global"
             ],
             "default": false,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "wrapper",
             "composes": [
                 "grilling"
-            ],
-            "profiles": []
+            ]
         },
         {
             "id": "prototype",
@@ -481,10 +649,9 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "invocation": "auto",
             "role": "wrapper",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "handoff",
@@ -496,40 +663,72 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "invocation": "manual",
             "role": "utility",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
-            "id": "afk-interactive-code-review",
-            "label": "AFK - Interactive Code Review",
+            "id": "wayfinder",
+            "label": "Wayfinder",
+            "source": "https://github.com/mattpocock/skills",
+            "args": [
+                "--skill",
+                "wayfinder",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "workflow",
+            "composes": [
+                "grilling",
+                "domain-modeling",
+                "prototype",
+                "research"
+            ]
+        },
+        {
+            "id": "afk-code-review",
+            "label": "AFK - Code Review",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-interactive-code-review",
+                "afk-code-review",
                 "--global"
             ],
             "default": true,
-            "autoInvocation": false,
+            "invocation": "auto",
             "role": "wrapper",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
-            "id": "afk-pr-story-flow-mermaid",
-            "label": "AFK - PR Story Flow Mermaid",
+            "id": "afk-code-review-verdicts",
+            "label": "AFK - Code Review Verdicts",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-pr-story-flow-mermaid",
+                "afk-code-review-verdicts",
                 "--global"
             ],
-            "default": true,
-            "autoInvocation": false,
+            "default": false,
+            "invocation": "manual",
             "role": "wrapper",
-            "composes": [],
-            "profiles": []
+            "composes": [
+                "afk-code-review"
+            ]
+        },
+        {
+            "id": "afk-static-review",
+            "label": "AFK - Static Review",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-static-review",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
         },
         {
             "id": "grilling",
@@ -541,10 +740,9 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "domain-modeling",
@@ -556,10 +754,9 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
-            "composes": [],
-            "profiles": []
+            "composes": []
         },
         {
             "id": "codebase-design",
@@ -571,10 +768,9 @@
                 "--global"
             ],
             "default": true,
-            "autoInvocation": true,
+            "invocation": "auto",
             "role": "primitive",
-            "composes": [],
-            "profiles": []
+            "composes": []
         }
     ]
 }

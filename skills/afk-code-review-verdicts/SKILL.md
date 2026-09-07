@@ -1,0 +1,15 @@
+---
+name: afk-code-review-verdicts
+description: Run AFK Code Review, verify its findings against the code, and discuss the verdicts before changing code.
+disable-model-invocation: true
+---
+
+Run the `afk-code-review` skill to completion and capture its complete output.
+
+Present that complete output verbatim, preserving its axes and finding order. Then append `## Verified verdicts`.
+
+Treat those returned findings as unverified review input. Inspect every finding against the actual code; do not assume automated feedback is correct. For each finding, give a clear verdict (Confirmed / Partly / Not a bug / Intended) with concise code evidence. Say whether it was introduced by the current changes, was pre-existing, or reflects deliberate scope. For each Confirmed verdict, add `Suggested fix:` with a one-line summary of the smallest plausible solution.
+
+Review only the incoming findings. Do not independently review the rest of the diff or search for issues that were not submitted.
+
+Do not change any code until we have discussed the verdicts and validated findings.

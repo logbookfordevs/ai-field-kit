@@ -7,12 +7,22 @@
       "name": "afk-catalog",
       "type": "registry:item",
       "title": "AFK Catalog",
-      "description": "Project-local AFK setup catalog for rules, skills, MCPs, plugins, hooks, and presets.",
+      "description": "Project-local AFK setup catalog for rules, skills, profiles, Custom Agents, MCPs, tools, hooks, and presets.",
       "files": [
         {
           "path": "packages/afk/catalog/skills.json",
           "type": "registry:file",
           "target": "~/afk/catalog/skills.json"
+        },
+        {
+          "path": "packages/afk/catalog/profiles.json",
+          "type": "registry:file",
+          "target": "~/afk/catalog/profiles.json"
+        },
+        {
+          "path": "packages/afk/catalog/agents.json",
+          "type": "registry:file",
+          "target": "~/afk/catalog/agents.json"
         },
         {
           "path": "packages/afk/catalog/mcps.json",
@@ -25,9 +35,9 @@
           "target": "~/afk/catalog/rules.json"
         },
         {
-          "path": "packages/afk/catalog/plugins.json",
+          "path": "packages/afk/catalog/tools.json",
           "type": "registry:file",
-          "target": "~/afk/catalog/plugins.json"
+          "target": "~/afk/catalog/tools.json"
         },
         {
           "path": "packages/afk/catalog/hooks.json",
@@ -38,6 +48,21 @@
           "path": "packages/afk/catalog/presets.json",
           "type": "registry:file",
           "target": "~/afk/catalog/presets.json"
+        },
+        {
+          "path": "agents/afk-cartographer.md",
+          "type": "registry:file",
+          "target": "~/agents/afk-cartographer.md"
+        },
+        {
+          "path": "agents/afk-builder.md",
+          "type": "registry:file",
+          "target": "~/agents/afk-builder.md"
+        },
+        {
+          "path": "agents/afk-pathfinder.md",
+          "type": "registry:file",
+          "target": "~/agents/afk-pathfinder.md"
         }
       ]
     }

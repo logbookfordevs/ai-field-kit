@@ -1,0 +1,88 @@
+{
+    "version": 1,
+    "items": [
+        {
+            "id": "plannotator",
+            "label": "Plannotator",
+            "description": "Review and annotate plans before implementation, so agents get clearer feedback loops instead of vague handoff notes.",
+            "install": {
+                "command": "bash",
+                "args": [
+                    "-c",
+                    "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"
+                ]
+            },
+            "update": {
+                "command": "bash",
+                "args": [
+                    "-c",
+                    "curl -fsSL https://plannotator.ai/install.sh | bash -s -- --no-extras --model-invocable none"
+                ]
+            },
+            "default": true
+        },
+        {
+            "id": "plannotator-tot",
+            "label": "Plannotator Tot",
+            "description": "Install Tot's git-backed Markdown and HTML publishing CLI for living tot.page URLs with immutable snapshots.",
+            "install": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "@plannotator/tot"
+                ]
+            },
+            "update": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "@plannotator/tot@latest"
+                ]
+            },
+            "default": false
+        },
+        {
+            "id": "yggtree",
+            "label": "Yggtree",
+            "description": "Create and manage git worktrees with a focused CLI workflow for agent-friendly branch and workspace handling.",
+            "install": {
+                "command": "bash",
+                "args": [
+                    "-c",
+                    "curl -fsSL https://yggtree.logbookfordevs.com/install.sh | bash"
+                ]
+            },
+            "update": {
+                "command": "yggtree",
+                "args": [
+                    "update"
+                ]
+            },
+            "default": true
+        },
+        {
+            "id": "orchestrator",
+            "label": "Orchestrator",
+            "description": "Install Orchestrator's CLI for launching, coordinating, and supervising work across coding-agent runtimes.",
+            "install": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "@backnotprop/orchestrator-cli"
+                ]
+            },
+            "update": {
+                "command": "npm",
+                "args": [
+                    "install",
+                    "-g",
+                    "@backnotprop/orchestrator-cli@latest"
+                ]
+            },
+            "default": false
+        }
+    ]
+}

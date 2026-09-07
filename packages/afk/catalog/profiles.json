@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "mode": "context",
+  "alwaysOn": [
+    "grilling",
+    "code-simplification",
+    "design-artifact",
+    "diagnosing-bugs",
+    "truss-evaluation"
+  ],
+  "items": [
+    {
+      "id": "stitch",
+      "name": "Stitch",
+      "catalogSkills": [],
+      "packages": [
+        {
+          "source": "google-labs-code/stitch-skills",
+          "skills": [
+            "design-md",
+            "enhance-prompt",
+            "react:components",
+            "remotion",
+            "stitch-loop"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "html",
+      "name": "HTML",
+      "catalogSkills": [
+        "design-artifact"
+      ],
+      "packages": [
+        {
+          "source": "plannotator/effective-html"
+        }
+      ]
+    },
+    {
+      "id": "video",
+      "name": "Video",
+      "catalogSkills": [],
+      "packages": [
+        {
+          "source": "heygen-com/hyperframes"
+        }
+      ]
+    },
+    {
+      "id": "remotion",
+      "name": "Remotion",
+      "catalogSkills": [],
+      "packages": [
+        {
+          "source": "remotion-dev/skills"
+        }
+      ]
+    }
+  ]
+}

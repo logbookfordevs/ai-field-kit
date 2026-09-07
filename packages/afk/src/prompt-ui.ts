@@ -27,6 +27,32 @@ export function renderPromptStep(title: string, detail?: string): string {
   return lines.join("\n");
 }
 
+export function renderSkillProfileReview(input: {
+  profileNames: string[];
+  availableIds: string[];
+  unavailableIds: string[];
+}, terminalWidth = process.stdout.columns ?? 80): string {
+  const lines = [
+    `${signal("◆")} ${bold}Profile readiness${reset}`,
+    "",
+    `${bold}Profiles${reset}`,
+    ...wrapPromptValues(input.profileNames, terminalWidth),
+    "",
+    `${bold}Ready to install (${input.availableIds.length})${reset}`,
+    ...wrapPromptValues(input.availableIds, terminalWidth),
+  ];
+
+  if (input.unavailableIds.length > 0) {
+    lines.push(
+      "",
+      `${bold}Not included (${input.unavailableIds.length})${reset}`,
+      ...wrapPromptValues(input.unavailableIds, terminalWidth),
+    );
+  }
+
+  return lines.join("\n");
+}
+
 export const afkSelectTheme = {
   prefix: {
     idle: sea("◇"),
@@ -104,6 +130,22 @@ export const afkSearchableCheckboxTheme = {
   helpMode: "always",
 } as const;
 
+export const afkInvocationPolicyStyle = {
+  cursor: signal("◆"),
+  skill: (text: string, active: boolean) => active ? `${bold}${ink(text)}${reset}` : ink(text),
+  folder: (text: string) => muted(text),
+  policy: {
+    auto: (text: string) => sea(text),
+    manual: (text: string) => brass(text),
+    mixed: (text: string) => ember(text),
+    default: (text: string) => muted(text),
+  },
+  draft: (text: string) => signal(text),
+  scope: (text: string) => muted(text),
+  helpKey: (text: string) => sea(text),
+  helpText: (text: string) => muted(text),
+} as const;
+
 export const afkPromptTheme = {
   prefix: {
     idle: sea("◇"),
@@ -144,10 +186,46 @@ function muted(value: string): string {
   return paint(terminalPalette.driftwood, value);
 }
 
+function ink(value: string): string {
+  return paint(terminalPalette.lantern, value);
+}
+
 function ember(value: string): string {
   return paint(terminalPalette.ember, value);
 }
 
 function chartLine(value: string): string {
   return paint(terminalPalette.sienna, value);
+}
+
+function wrapPromptValues(values: string[], terminalWidth: number): string[] {
+  const indent = "  ";
+  const width = Math.min(78, Math.max(16, terminalWidth - 2));
+  const tokenWidth = width - indent.length;
+  const lines: string[] = [];
+  let line = indent;
+
+  values.forEach((value, index) => {
+    const token = `${value}${index === values.length - 1 ? "" : ","}`;
+    if (token.length > tokenWidth) {
+      if (line !== indent) {
+        lines.push(muted(line));
+        line = indent;
+      }
+      for (let offset = 0; offset < token.length; offset += tokenWidth) {
+        lines.push(muted(`${indent}${token.slice(offset, offset + tokenWidth)}`));
+      }
+      return;
+    }
+    const separator = line === indent ? "" : " ";
+    if (line !== indent && line.length + separator.length + token.length > width) {
+      lines.push(muted(line));
+      line = `${indent}${token}`;
+      return;
+    }
+
+    line += `${separator}${token}`;
+  });
+
+  return line === indent ? lines : [...lines, muted(line)];
 }

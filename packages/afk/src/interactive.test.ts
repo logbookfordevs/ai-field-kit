@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, vi } from "vitest";
-import { normalizeSetupSelection, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectPluginsInstall, selectSkillsInstall } from "./interactive.js";
+import { confirmSkillProfileInstall, normalizeSetupSelection, selectCustomAgentsInstall, selectDefaultsSource, selectMcpsInstall, selectRulesSync, selectSetup, selectSkillProfilesInstall, selectSkillsInstall, selectSource, selectToolsInstall } from "./interactive.js";
 import { localManifestDir } from "./manifest.js";
 import type { CliOptions } from "./types.js";
 
@@ -11,8 +11,23 @@ const promptState = vi.hoisted(() => ({
   checkboxMessages: [] as string[],
   checkboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string }>>,
   checkboxResponses: {} as Record<string, string[]>,
-  setupAreas: ["plugins"] as string[],
+  searchableCheckboxMessages: [] as string[],
+  searchableCheckboxChoices: {} as Record<string, Array<{ name?: string; value?: string; checked?: boolean; description?: string; searchAliases?: string[] }>>,
+  setupAreas: ["tools"] as string[],
+  presetId: "afk-architect",
+  selectChoices: {} as Record<string, Array<{ name?: string; value?: string; description?: string }>>,
+  selectResponses: {} as Record<string, string>,
+  inputResponse: undefined as string | undefined,
   inputCalls: [] as Array<{ default: string | undefined; required: boolean | undefined; validateResult: true | string }>,
+  confirmMessages: [] as string[],
+}));
+
+vi.mock("./searchable-checkbox.js", () => ({
+  searchableCheckbox: vi.fn(async ({ message, choices }: { message: string; choices?: Array<{ name?: string; value?: string; checked?: boolean; description?: string; searchAliases?: string[] }> }) => {
+    promptState.searchableCheckboxMessages.push(message);
+    promptState.searchableCheckboxChoices[message] = choices ?? [];
+    return promptState.checkboxResponses[message] ?? [];
+  }),
 }));
 
 vi.mock("@inquirer/prompts", () => ({
@@ -35,22 +50,38 @@ vi.mock("@inquirer/prompts", () => ({
       return ["stitch"];
     }
 
-    if (message === "Choose plugins to install") {
-      return ["sample-plugin"];
+    if (message === "Choose tools to install") {
+      return ["sample-tool"];
     }
 
     return [];
   }),
-  select: vi.fn(async () => "global"),
+  select: vi.fn(async ({ message, choices }: { message: string; choices?: Array<{ name?: string; value?: string; description?: string }> }) => {
+    promptState.selectChoices[message] = choices ?? [];
+    return promptState.selectResponses[message] ?? (message === "Choose an AFK preset" ? promptState.presetId : "global");
+  }),
+  confirm: vi.fn(async ({ message }: { message: string }) => {
+    promptState.confirmMessages.push(message);
+    return true;
+  }),
   input: vi.fn(async ({ default: defaultValue, required, validate }: { default?: string; required?: boolean; validate: (value: string) => true | string }) => {
     promptState.inputCalls.push({
       default: defaultValue,
       required,
       validateResult: validate(""),
     });
-    return defaultValue ?? "acme/dev-kit";
+    return promptState.inputResponse ?? defaultValue ?? "acme/dev-kit";
   }),
 }));
+
+test("profile install confirmation keeps dynamic skill lists out of the live prompt", async () => {
+  promptState.confirmMessages = [];
+
+  const accepted = await confirmSkillProfileInstall();
+
+  assert.equal(accepted, true);
+  assert.deepEqual(promptState.confirmMessages, ["Install available profile skills?"]);
+});
 
 test("normalizeSetupSelection removes item areas when every item is unselected", () => {
   const selection = normalizeSetupSelection({
@@ -61,7 +92,7 @@ test("normalizeSetupSelection removes item areas when every item is unselected",
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: [],
+    toolIds: [],
     hookIds: [],
   });
 
@@ -70,19 +101,86 @@ test("normalizeSetupSelection removes item areas when every item is unselected",
 
 test("normalizeSetupSelection keeps item areas when at least one item is selected", () => {
   const selection = normalizeSetupSelection({
-    areas: ["skills", "mcps", "plugins"],
+    areas: ["skills", "mcps", "tools"],
     agents: [],
     hookAgents: [],
     setupScope: "project",
     skillIds: ["afk-note"],
     skillAgents: ["kiro-cli"],
     mcpIds: ["stitch"],
-    pluginIds: ["sample-plugin"],
+    toolIds: ["sample-tool"],
     hookIds: [],
   });
 
-  assert.deepEqual(selection.areas, ["skills", "mcps", "plugins"]);
+  assert.deepEqual(selection.areas, ["skills", "mcps", "tools"]);
   assert.deepEqual(selection.skillAgents, ["kiro-cli"]);
+});
+
+test("normalizeSetupSelection keeps profile setup because it is catalog-level", () => {
+  const selection = normalizeSetupSelection({
+    areas: ["profiles"],
+    agents: [],
+    hookAgents: [],
+    setupScope: "project",
+    skillIds: [],
+    skillAgents: [],
+    mcpIds: [],
+    toolIds: [],
+    hookIds: [],
+  });
+
+  assert.deepEqual(selection.areas, ["profiles"]);
+});
+
+test("selectSkillProfilesInstall offers source profiles and returns the selected ids", async () => {
+  const homeDir = localHomeWithComposedSkillManifest();
+  writeFileSync(join(localManifestDir(homeDir), "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [
+      { id: "review", name: "Review", skills: ["afk-code-grill"] },
+      { id: "quiet", name: "Quiet", skills: ["grilling"] },
+    ],
+  })}\n`);
+  promptState.checkboxResponses["Choose skill profiles to install"] = ["review"];
+
+  const selection = await selectSkillProfilesInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.profileIds, ["review"]);
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose skill profiles to install"]?.map((choice) => choice.value),
+    ["quiet", "review"],
+  );
+});
+
+test("selectSkillProfilesInstall prefers prepared source profiles over the saved catalog", async () => {
+  const homeDir = localHomeWithComposedSkillManifest();
+  writeFileSync(join(localManifestDir(homeDir), "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "saved", name: "Saved", skills: ["grilling"] }],
+  })}\n`);
+  promptState.checkboxResponses["Choose skill profiles to install"] = ["remote"];
+
+  const selection = await selectSkillProfilesInstall({
+    ...defaultOptions(homeDir),
+    manifestContents: {
+      "profiles.json": JSON.stringify({
+        version: 1,
+        mode: "context",
+        alwaysOn: [],
+        items: [{ id: "remote", name: "Remote", skills: ["afk-code-grill"] }],
+      }),
+    },
+  });
+
+  assert.deepEqual(selection.profileIds, ["remote"]);
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose skill profiles to install"]?.map((choice) => choice.value),
+    ["remote"],
+  );
 });
 
 test("normalizeSetupSelection keeps hooks when at least one hook is selected", () => {
@@ -94,7 +192,7 @@ test("normalizeSetupSelection keeps hooks when at least one hook is selected", (
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: [],
+    toolIds: [],
     hookIds: ["afk-typescript-typecheck-stop-check"],
   });
 
@@ -110,7 +208,7 @@ test("normalizeSetupSelection removes hooks when every hook target is unselected
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: [],
+    toolIds: [],
     hookIds: ["afk-typescript-typecheck-stop-check"],
   });
 
@@ -126,7 +224,7 @@ test("normalizeSetupSelection filters hook-only Cursor from general agents", () 
     skillIds: [],
     skillAgents: [],
     mcpIds: [],
-    pluginIds: [],
+    toolIds: [],
     hookIds: ["afk-typescript-typecheck-stop-check"],
   });
 
@@ -134,38 +232,113 @@ test("normalizeSetupSelection filters hook-only Cursor from general agents", () 
   assert.deepEqual(selection.hookAgents, ["cursor-local"]);
 });
 
-test("selectSetup does not ask for agent targets when only plugins are selected", async () => {
+test("selectSetup does not ask for agent targets when only tools are selected", async () => {
   promptState.checkboxMessages = [];
-  promptState.setupAreas = ["plugins"];
-  const selection = await selectSetup(defaultOptions(localHomeWithPluginManifest()));
+  promptState.setupAreas = ["tools"];
+  const selection = await selectSetup(defaultOptions(localHomeWithToolManifest()));
 
-  assert.deepEqual(selection.areas, ["plugins"]);
-  assert.deepEqual(selection.pluginIds, ["sample-plugin"]);
+  assert.deepEqual(selection.areas, ["tools"]);
+  assert.deepEqual(selection.toolIds, ["sample-tool"]);
   assert.deepEqual(selection.agents, []);
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
 
-test("selectPluginsInstall does not ask for agent targets when installing plugins", async () => {
+test("selectSetup offers profiles as a setup area", async () => {
   promptState.checkboxMessages = [];
-  const selection = await selectPluginsInstall(defaultOptions(localHomeWithPluginManifest()));
+  promptState.checkboxChoices = {};
+  promptState.setupAreas = ["profiles"];
+  const homeDir = localHomeWithToolManifest();
+  writeFileSync(join(localManifestDir(homeDir), "profiles.json"), `${JSON.stringify({
+    version: 1,
+    mode: "context",
+    alwaysOn: [],
+    items: [{ id: "review", name: "Review", skills: [] }],
+  })}\n`);
+  const selection = await selectSetup(defaultOptions(homeDir));
 
-  assert.deepEqual(selection.pluginIds, ["sample-plugin"]);
+  assert.deepEqual(selection.areas, ["profiles"]);
+  assert.ok(promptState.checkboxChoices["Choose what AFK should prepare"]?.some((choice) => choice.name === "Profiles" && choice.value === "profiles"));
+});
+
+test("selectSetup presents available guided areas in daily-first order", async () => {
+  promptState.checkboxChoices = {};
+  promptState.setupAreas = [];
+
+  await selectSetup(defaultOptions(localHomeWithAllManifests()));
+
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose what AFK should prepare"]?.map((choice) => choice.value),
+    ["rules", "skills", "hooks"],
+  );
+});
+
+test("selectSetup only offers areas represented by actionable source catalog content", async () => {
+  promptState.checkboxChoices = {};
+  promptState.setupAreas = [];
+
+  await selectSetup({
+    ...defaultOptions(localHomeWithAllManifests()),
+    manifestContents: {
+      "rules.json": JSON.stringify({ version: 1, source: "local", url: "rules/AGENTS.md" }),
+      "skills.json": JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [{ id: "review", label: "Review", source: "skills/review", args: [], default: false }],
+      }),
+      "agents.json": JSON.stringify({
+        version: 1,
+        items: [{ id: "reviewer", label: "Reviewer", source: "agents/reviewer.md" }],
+      }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": JSON.stringify({ version: 1, items: [] }),
+    },
+  });
+
+  assert.deepEqual(
+    promptState.checkboxChoices["Choose what AFK should prepare"]?.map((choice) => choice.value),
+    ["rules", "skills", "agents"],
+  );
+});
+
+test("selectToolsInstall does not ask for agent targets when installing tools", async () => {
+  promptState.checkboxMessages = [];
+  const selection = await selectToolsInstall(defaultOptions(localHomeWithToolManifest()));
+
+  assert.deepEqual(selection.toolIds, ["sample-tool"]);
   assert.deepEqual(selection.agents, []);
   assert.ok(!promptState.checkboxMessages.includes("Choose agent targets"));
 });
 
-test("selectPluginsInstall returns no plugins when the catalog has no plugin choices", async () => {
+test("selectCustomAgentsInstall presents every catalog entry unchecked", async () => {
   promptState.checkboxMessages = [];
-  const selection = await selectPluginsInstall(defaultOptions(localHomeWithEmptyPluginManifest()));
+  promptState.checkboxChoices = {};
+  promptState.checkboxResponses = {
+    "Choose Custom Agents to provision": ["notion_assistant"],
+    "Choose harnesses for Custom Agents": ["codex"],
+  };
 
-  assert.deepEqual(selection.pluginIds, []);
+  const selection = await selectCustomAgentsInstall(defaultOptions(localHomeWithAgentManifest()));
+
+  assert.deepEqual(selection.customAgentIds, ["notion_assistant"]);
+  assert.deepEqual(selection.agents, ["codex"]);
+  assert.ok(promptState.checkboxChoices["Choose Custom Agents to provision"]?.every((choice) => choice.checked === false));
+  promptState.checkboxResponses = {};
+});
+
+test("selectToolsInstall returns no tools when the catalog has no tool choices", async () => {
+  promptState.checkboxMessages = [];
+  const selection = await selectToolsInstall(defaultOptions(localHomeWithEmptyToolManifest()));
+
+  assert.deepEqual(selection.toolIds, []);
   assert.deepEqual(selection.agents, []);
-  assert.ok(!promptState.checkboxMessages.includes("Choose plugins to install"));
+  assert.ok(!promptState.checkboxMessages.includes("Choose tools to install"));
 });
 
 test("selectRulesSync asks for rules-specific agent targets", async () => {
   promptState.checkboxMessages = [];
-  const selection = await selectRulesSync(defaultOptions(localHomeWithPluginManifest()));
+  const selection = await selectRulesSync(defaultOptions(localHomeWithToolManifest()));
 
   assert.deepEqual(selection.agents, ["codex"]);
   assert.ok(promptState.checkboxMessages.includes("Choose agents for rules"));
@@ -174,7 +347,7 @@ test("selectRulesSync asks for rules-specific agent targets", async () => {
 
 test("selectRulesSync uses detected targets without asking", async () => {
   promptState.checkboxMessages = [];
-  const homeDir = localHomeWithPluginManifest();
+  const homeDir = localHomeWithToolManifest();
   mkdirSync(join(homeDir, ".codex"), { recursive: true });
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
 
@@ -243,12 +416,101 @@ test("selectSetup yes mode uses detected targets", async () => {
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
   const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true });
 
+  assert.ok(!selection.areas.includes("profiles"));
   assert.deepEqual(selection.agents, ["codex"]);
   assert.deepEqual(selection.hookAgents, ["codex"]);
   assert.deepEqual(selection.skillIds, ["afk-default"]);
   assert.equal(selection.agentSource, "detected");
   assert.equal(selection.hookAgentSource, "detected");
   assert.ok(!promptState.checkboxMessages.includes("Choose agents for rules and MCPs"));
+});
+
+test("selectSetup resolves a preset to its exact required selections", async () => {
+  const homeDir = localHomeWithArchitectPreset();
+  const selection = await selectSetup({
+    ...defaultOptions(homeDir),
+    yes: true,
+    presetId: "afk-architect",
+    agents: ["codex"],
+  });
+
+  assert.deepEqual(selection.areas, ["skills", "agents"]);
+  assert.deepEqual(selection.skillIds, ["afk-architect"]);
+  assert.deepEqual(selection.customAgentIds, ["afk-cartographer", "afk-builder", "afk-pathfinder"]);
+  assert.deepEqual(selection.agents, ["codex"]);
+  assert.deepEqual(selection.mcpIds, []);
+  assert.deepEqual(selection.toolIds, []);
+  assert.deepEqual(selection.hookIds, []);
+});
+
+test("selectSetup prompts for a preset from the prepared source manifest", async () => {
+  promptState.presetId = "source-preset";
+  const homeDir = localHomeWithArchitectPreset();
+  const selection = await selectSetup({
+    ...defaultOptions(homeDir),
+    presetPrompt: true,
+    yes: true,
+    agents: ["codex"],
+    manifestContents: {
+      "presets.json": JSON.stringify({
+        version: 1,
+        defaultsSource: "acme/source-kit",
+        presets: [{
+          id: "source-preset",
+          label: "Source preset",
+          areas: ["skills"],
+          selections: { skills: ["afk-architect"] },
+        }],
+      }),
+    },
+  });
+
+  assert.deepEqual(selection.areas, ["skills"]);
+  assert.deepEqual(selection.skillIds, ["afk-architect"]);
+});
+
+test("selectSetup resolves an all-area preset to every item in its declared areas", async () => {
+  const homeDir = localHomeWithAllManifests();
+  writeFileSync(join(localManifestDir(homeDir), "presets.json"), `${JSON.stringify({
+    version: 1,
+    defaultsSource: "",
+    presets: [{
+      id: "daily-routine",
+      label: "Daily Routine",
+      areas: ["rules", "skills", "tools", "agents"],
+      all: true,
+    }],
+  }, null, 2)}\n`);
+  writeFileSync(join(localManifestDir(homeDir), "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "afk-cartographer", label: "AFK Cartographer", source: "agents/afk-cartographer.md" },
+      { id: "afk-builder", label: "AFK Builder", source: "agents/afk-builder.md" },
+      { id: "afk-pathfinder", label: "AFK Pathfinder", source: "agents/afk-pathfinder.md" },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(localManifestDir(homeDir), "tools.json"), `${JSON.stringify({
+    version: 1,
+    items: [{
+      id: "sample-tool",
+      label: "Sample Tool",
+      description: "Sample tool install.",
+      install: { command: "sample-tool", args: [] },
+      default: true,
+    }],
+  }, null, 2)}\n`);
+
+  const selection = await selectSetup({
+    ...defaultOptions(homeDir),
+    yes: true,
+    presetId: "daily-routine",
+    agents: ["codex"],
+  });
+
+  assert.deepEqual(selection.areas, ["rules", "skills", "tools", "agents"]);
+  assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
+  assert.deepEqual(selection.toolIds, ["sample-tool"]);
+  assert.deepEqual(selection.customAgentIds, ["afk-cartographer", "afk-builder", "afk-pathfinder"]);
 });
 
 test("selectSetup yes mode includes all skills when requested", async () => {
@@ -258,15 +520,45 @@ test("selectSetup yes mode includes all skills when requested", async () => {
   assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
 });
 
-test("selectSetup guided mode includes all skills when requested", async () => {
+test("selectSetup excludes imported skills by default", async () => {
+  const homeDir = localHomeWithAllManifests();
+  const selection = await selectSetup({ ...defaultOptions(homeDir), yes: true });
+
+  assert.deepEqual(selection.skillIds, ["afk-default"]);
+});
+
+test("selectSetup guided mode lists all skills without selecting them when requested", async () => {
   promptState.checkboxMessages = [];
-  promptState.checkboxResponses = {};
+  promptState.checkboxChoices = {};
+  promptState.searchableCheckboxMessages = [];
+  promptState.searchableCheckboxChoices = {};
+  promptState.checkboxResponses = { "Choose skills to install": [] };
   promptState.setupAreas = ["skills"];
   const homeDir = localHomeWithAllManifests();
   const selection = await selectSetup({ ...defaultOptions(homeDir), allSkills: true });
 
-  assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
-  assert.ok(!promptState.checkboxMessages.includes("Choose skills to install"));
+  assert.deepEqual(selection.skillIds, []);
+  assert.ok(promptState.searchableCheckboxMessages.includes("Choose skills to install"));
+  assert.deepEqual(
+    promptState.searchableCheckboxChoices["Choose skills to install"]?.map((choice) => [choice.value, choice.checked]),
+    [["afk-default", false], ["afk-spline", false], ["external-helper", false]],
+  );
+});
+
+test("selectSkillsInstall uses a searchable multi-select skill picker", async () => {
+  promptState.searchableCheckboxMessages = [];
+  promptState.searchableCheckboxChoices = {};
+  promptState.checkboxResponses = { "Choose skills to install": ["afk-spline"] };
+  const homeDir = localHomeWithAllManifests();
+
+  const selection = await selectSkillsInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(selection.skillIds, ["afk-spline"]);
+  assert.ok(promptState.searchableCheckboxMessages.includes("Choose skills to install"));
+  const aliases = promptState.searchableCheckboxChoices["Choose skills to install"]?.map((choice) => choice.searchAliases) ?? [];
+  assert.ok(aliases[0]?.includes("afk-default"));
+  assert.ok(aliases[0]?.includes("https://github.com/example/afk"));
+  assert.ok(aliases[1]?.includes("afk-spline"));
 });
 
 test("selectSkillsInstall presents composed skills for selected wrappers", async () => {
@@ -280,23 +572,40 @@ test("selectSkillsInstall presents composed skills for selected wrappers", async
   const selection = await selectSkillsInstall(defaultOptions(homeDir));
 
   assert.deepEqual(selection.skillIds, ["afk-code-grill", "grilling", "truss-evaluation"]);
-  assert.ok(promptState.checkboxMessages.includes("Choose composed skills to include"));
+  assert.ok(promptState.searchableCheckboxMessages.includes("Choose composed skills to include"));
   assert.deepEqual(
-    promptState.checkboxChoices["Choose composed skills to include"]?.map((choice) => [choice.value, choice.checked]),
+    promptState.searchableCheckboxChoices["Choose composed skills to include"]?.map((choice) => [choice.value, choice.checked]),
     [["grilling", true], ["truss-evaluation", true]],
   );
   assert.match(
-    promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
+    promptState.searchableCheckboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
     /Composed by AFK - Code Grill \(wrapper\)/,
   );
   assert.match(
-    promptState.checkboxChoices["Choose skills to install"]?.find((choice) => choice.value === "afk-code-grill")?.description ?? "",
-    /role: wrapper · auto-invocation: off/,
+    promptState.searchableCheckboxChoices["Choose skills to install"]?.find((choice) => choice.value === "afk-code-grill")?.description ?? "",
+    /role: wrapper · invocation: manual/,
   );
   assert.match(
-    promptState.checkboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
-    /role: primitive · auto-invocation: on/,
+    promptState.searchableCheckboxChoices["Choose composed skills to include"]?.find((choice) => choice.value === "grilling")?.description ?? "",
+    /role: primitive · invocation: auto/,
   );
+});
+
+test("selectSkillsInstall excludes imported skills unless all is requested", async () => {
+  promptState.checkboxMessages = [];
+  promptState.checkboxChoices = {};
+  promptState.checkboxResponses = { "Choose skills to install": [] };
+  const homeDir = localHomeWithAllManifests();
+
+  await selectSkillsInstall(defaultOptions(homeDir));
+
+  assert.deepEqual(
+    promptState.searchableCheckboxChoices["Choose skills to install"]?.map((choice) => choice.value),
+    ["afk-default", "afk-spline"],
+  );
+
+  const selection = await selectSkillsInstall({ ...defaultOptions(homeDir), yes: true, allSkills: true });
+  assert.deepEqual(selection.skillIds, ["afk-default", "afk-spline", "external-helper"]);
 });
 
 test("selectSetup yes mode includes composed skills for default wrappers", async () => {
@@ -317,7 +626,7 @@ test("selectSkillsInstall keeps the skill list flat", async () => {
   const homeDir = localHomeWithRepeatedComposedChildrenManifest();
   await selectSkillsInstall(defaultOptions(homeDir));
 
-  const names = promptState.checkboxChoices["Choose skills to install"]?.map((choice) => choice.name) ?? [];
+  const names = promptState.searchableCheckboxChoices["Choose skills to install"]?.map((choice) => choice.name) ?? [];
   assert.ok(!names.some((name) => name?.includes("->")));
   assert.equal(names.filter((name) => name === "Grilling").length, 1);
 });
@@ -336,6 +645,34 @@ test("selectDefaultsSource pre-fills the remembered source and requires input", 
   ]);
 });
 
+test("selectSource offers the default once, favorites in saved order, and another source", async () => {
+  promptState.selectChoices = {};
+  promptState.selectResponses = { "Choose a catalog source": "acme/second-kit" };
+
+  const source = await selectSource({
+    defaultSource: "acme/default-kit",
+    favoriteSources: ["acme/default-kit", "acme/first-kit", "acme/second-kit"],
+  });
+
+  assert.equal(source, "acme/second-kit");
+  assert.deepEqual(promptState.selectChoices["Choose a catalog source"], [
+    { name: "acme/default-kit", value: "acme/default-kit", description: "Default source" },
+    { name: "acme/first-kit", value: "acme/first-kit", description: "Favorite source" },
+    { name: "acme/second-kit", value: "acme/second-kit", description: "Favorite source" },
+    { name: "Enter another source", value: "__other_source__", description: "Use another source for this command" },
+  ]);
+});
+
+test("selectSource accepts another source without saving it", async () => {
+  promptState.selectResponses = { "Choose a catalog source": "__other_source__" };
+  promptState.inputResponse = "acme/one-off-kit";
+
+  const source = await selectSource({ defaultSource: "", favoriteSources: [] });
+
+  assert.equal(source, "acme/one-off-kit");
+  promptState.inputResponse = undefined;
+});
+
 function defaultOptions(homeDir: string): CliOptions {
   return {
     agents: [],
@@ -347,8 +684,12 @@ function defaultOptions(homeDir: string): CliOptions {
     allSkills: false,
     selectedSkillIds: [],
     selectedSkillAgentIds: [],
+    skillAddArgs: [],
+    skillAddProfileIds: [],
+    skillAddProfileOnlyIds: [],
+    skillAddStartDisabled: false,
     selectedMcpIds: [],
-    selectedPluginIds: [],
+    selectedToolIds: [],
     selectedHookIds: [],
     rulesRef: "main",
     rulesSource: "local",
@@ -370,20 +711,20 @@ function defaultOptions(homeDir: string): CliOptions {
   };
 }
 
-function localHomeWithPluginManifest(): string {
+function localHomeWithToolManifest(): string {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
   writeFileSync(
-    join(manifestDir, "plugins.json"),
+    join(manifestDir, "tools.json"),
     `${JSON.stringify({
       version: 1,
       items: [
         {
-          id: "sample-plugin",
-          label: "Sample Plugin",
-          description: "Sample plugin install.",
-          install: { command: "sh", args: ["-c", "install-sample-plugin"] },
+          id: "sample-tool",
+          label: "Sample Tool",
+          description: "Sample tool install.",
+          install: { command: "sh", args: ["-c", "install-sample-tool"] },
           default: true,
         },
       ],
@@ -392,11 +733,11 @@ function localHomeWithPluginManifest(): string {
   return homeDir;
 }
 
-function localHomeWithEmptyPluginManifest(): string {
+function localHomeWithEmptyToolManifest(): string {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
-  writeFileSync(join(manifestDir, "plugins.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "tools.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
   return homeDir;
 }
 
@@ -451,13 +792,14 @@ function localHomeWithAllManifests(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "external-helper", "--global"],
           default: false,
+          imported: true,
         },
       ],
     },
     "mcps.json": { version: 1, items: [] },
     "presets.json": { version: 1, defaultsSource: "", presets: [] },
     "rules.json": { version: 1, source: "local", url: "rules/AGENTS.md" },
-    "plugins.json": { version: 1, items: [] },
+    "tools.json": { version: 1, items: [] },
     "hooks.json": {
       version: 1,
       items: [
@@ -483,6 +825,55 @@ function localHomeWithAllManifests(): string {
   return homeDir;
 }
 
+function localHomeWithArchitectPreset(): string {
+  const homeDir = localHomeWithAllManifests();
+  const manifestDir = localManifestDir(homeDir);
+  writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      {
+        id: "afk-architect",
+        label: "AFK Architect",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "afk-architect", "--global"],
+        default: false,
+      },
+      {
+        id: "unrelated",
+        label: "Unrelated",
+        source: "https://github.com/example/afk",
+        args: ["--skill", "unrelated", "--global"],
+        default: true,
+      },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({
+    version: 1,
+    defaultsSource: "",
+    presets: [
+      {
+        id: "afk-architect",
+        label: "AFK Architect",
+        areas: ["skills", "agents"],
+        selections: {
+          skills: ["afk-architect"],
+          customAgents: ["afk-cartographer", "afk-builder", "afk-pathfinder"],
+        },
+      },
+    ],
+  }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "afk-cartographer", label: "AFK Cartographer", source: "agents/afk-cartographer.md" },
+      { id: "afk-builder", label: "AFK Builder", source: "agents/afk-builder.md" },
+      { id: "afk-pathfinder", label: "AFK Pathfinder", source: "agents/afk-pathfinder.md" },
+    ],
+  }, null, 2)}\n`);
+  return homeDir;
+}
+
 function localHomeWithComposedSkillManifest(): string {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-interactive-"));
   const manifestDir = localManifestDir(homeDir);
@@ -499,10 +890,9 @@ function localHomeWithComposedSkillManifest(): string {
           source: "https://github.com/example/afk",
           args: ["--skill", "afk-code-grill", "--global"],
           default: true,
-          autoInvocation: false,
+          invocation: "manual",
           role: "wrapper",
           composes: ["grilling", "truss-evaluation"],
-          profiles: [],
         },
         {
           id: "grilling",
@@ -510,10 +900,9 @@ function localHomeWithComposedSkillManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "grilling", "--global"],
           default: false,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
           composes: [],
-          profiles: [],
         },
         {
           id: "truss-evaluation",
@@ -521,19 +910,30 @@ function localHomeWithComposedSkillManifest(): string {
           source: "https://github.com/example/truss",
           args: ["--skill", "truss-evaluation", "--global"],
           default: false,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
           composes: [],
-          profiles: [],
         },
       ],
     }, null, 2)}\n`,
   );
   writeFileSync(join(manifestDir, "mcps.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
-  writeFileSync(join(manifestDir, "plugins.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
+  writeFileSync(join(manifestDir, "tools.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
   writeFileSync(join(manifestDir, "hooks.json"), `${JSON.stringify({ version: 1, items: [] }, null, 2)}\n`);
   writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({ version: 1, source: "local", url: "rules/AGENTS.md" }, null, 2)}\n`);
   writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "", presets: [] }, null, 2)}\n`);
+  return homeDir;
+}
+
+function localHomeWithAgentManifest(): string {
+  const homeDir = localHomeWithToolManifest();
+  writeFileSync(join(localManifestDir(homeDir), "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "notion_assistant", label: "Notion Assistant", source: "agents/notion-assistant.md" },
+      { id: "code_reviewer", label: "Code Reviewer", source: "agents/code-reviewer.md" },
+    ],
+  }, null, 2)}\n`);
   return homeDir;
 }
 
@@ -553,10 +953,9 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "grill-me", "--global"],
           default: false,
-          autoInvocation: false,
+          invocation: "manual",
           role: "wrapper",
           composes: ["grilling"],
-          profiles: [],
         },
         {
           id: "grill-with-docs",
@@ -564,10 +963,9 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "grill-with-docs", "--global"],
           default: false,
-          autoInvocation: false,
+          invocation: "manual",
           role: "wrapper",
           composes: ["grilling", "domain-modeling"],
-          profiles: [],
         },
         {
           id: "grilling",
@@ -575,10 +973,9 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "grilling", "--global"],
           default: false,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
           composes: [],
-          profiles: [],
         },
         {
           id: "domain-modeling",
@@ -586,10 +983,9 @@ function localHomeWithRepeatedComposedChildrenManifest(): string {
           source: "https://github.com/example/external",
           args: ["--skill", "domain-modeling", "--global"],
           default: false,
-          autoInvocation: true,
+          invocation: "auto",
           role: "primitive",
           composes: [],
-          profiles: [],
         },
       ],
     }, null, 2)}\n`,

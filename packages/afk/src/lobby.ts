@@ -2,6 +2,7 @@ import { input, select } from "@inquirer/prompts";
 import { renderBanner, muted, sectionTitle } from "./brand.js";
 import { afkPromptTheme, afkSelectTheme } from "./prompt-ui.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
+import { selectMenu, type MenuChoice } from "./menu.js";
 import type { Runtime } from "./types.js";
 
 export type LobbyChoiceValue =
@@ -9,9 +10,11 @@ export type LobbyChoiceValue =
   | "source"
   | "refresh"
   | "skills"
+  | "agents"
+  | "catalog-agents"
   | "skill-management"
   | "mcps"
-  | "plugins"
+  | "tools"
   | "hooks"
   | "inspect"
   | "skills-react"
@@ -22,38 +25,53 @@ export type LobbyChoiceValue =
 export type SkillsLobbyChoiceValue =
   | "skills-list"
   | "skills-show"
+  | "skills-get"
   | "skills-open"
+  | "skills-add"
   | "skills-disable"
   | "skills-enable"
+  | "skills-invocation"
   | "skills-delete"
-  | "skills-upgrade"
+  | "skills-update"
   | "skills-categorize"
   | "skills-catalog-import"
   | "skills-profiles"
   | "skills-profile-status";
 
 export type SkillProfilesLobbyChoiceValue =
+  | "profiles-use"
+  | "profiles-enable"
+  | "profiles-disable"
+  | "profiles-status"
+  | "profiles-manage-definitions";
+
+export type CatalogProfilesLobbyChoiceValue =
+  | "profiles-set-mode"
+  | "profiles-toggle-always-on"
   | "profiles-list"
   | "profiles-show"
   | "profiles-create"
   | "profiles-edit"
-  | "profiles-delete"
-  | "profiles-enable"
-  | "profiles-disable"
-  | "profiles-status";
+  | "profiles-delete";
+
+export type CatalogSkillsLobbyChoiceValue =
+  | "catalog-skills-add"
+  | "catalog-skills-edit"
+  | "catalog-skills-bulk-edit"
+  | "catalog-skills-remove"
+  | "catalog-skills-toggle-default"
+  | "catalog-skills-toggle-auto"
+  | "catalog-skills-import"
+  | "catalog-skills-status";
+
+type SkillAddMode = "normal" | "start-disabled" | "profile" | "profile-only";
 
 type TtyState = {
   stdin: boolean;
   stdout: boolean;
 };
 
-type LobbyChoice = {
-  name: string;
-  value: LobbyChoiceValue;
-  description: string;
-};
-
-export const compassLobbyChoices: LobbyChoice[] = [
+export const compassLobbyChoices: MenuChoice<LobbyChoiceValue>[] = [
   {
     name: "Prepare this machine for agent work",
     value: "setup",
@@ -77,7 +95,17 @@ export const compassLobbyChoices: LobbyChoice[] = [
   {
     name: "Manage installed skills",
     value: "skill-management",
-    description: "Open skill list, moves, upgrades, catalog import, and profiles",
+    description: "Open skill list, moves, updates, catalog import, and profiles",
+  },
+  {
+    name: "Provision Custom Agents",
+    value: "agents",
+    description: "Route: afk setup agents",
+  },
+  {
+    name: "Manage Custom Agent catalog",
+    value: "catalog-agents",
+    description: "Route: afk agents catalog",
   },
   {
     name: "Add MCP tools",
@@ -85,9 +113,9 @@ export const compassLobbyChoices: LobbyChoice[] = [
     description: "Route: afk setup mcps",
   },
   {
-    name: "Install optional plugins",
-    value: "plugins",
-    description: "Route: afk setup plugins",
+    name: "Install optional tools",
+    value: "tools",
+    description: "Route: afk setup tools",
   },
   {
     name: "Add lifecycle hooks",
@@ -112,7 +140,7 @@ export const compassLobbyChoices: LobbyChoice[] = [
   {
     name: "Import installed skills into a catalog",
     value: "catalog-import",
-    description: "Route: afk catalog import",
+    description: "Route: afk skills catalog import",
   },
   {
     name: "Show command help",
@@ -137,9 +165,19 @@ export const skillsLobbyChoices: Array<{
     description: "Route: afk skills show",
   },
   {
+    name: "Get skill instructions",
+    value: "skills-get",
+    description: "Route: afk skills get",
+  },
+  {
     name: "Open a skill file or folder",
     value: "skills-open",
     description: "Route: afk skills open",
+  },
+  {
+    name: "Add a skill",
+    value: "skills-add",
+    description: "Route: afk skills add",
   },
   {
     name: "Disable a skill",
@@ -152,14 +190,19 @@ export const skillsLobbyChoices: Array<{
     description: "Route: afk skills enable",
   },
   {
+    name: "Change invocation policy",
+    value: "skills-invocation",
+    description: "Route: afk skills invocation",
+  },
+  {
     name: "Delete skills",
     value: "skills-delete",
     description: "Route: afk skills delete",
   },
   {
-    name: "Upgrade tracked skills",
-    value: "skills-upgrade",
-    description: "Route: afk skills upgrade",
+    name: "Update tracked skills",
+    value: "skills-update",
+    description: "Route: afk skills update",
   },
   {
     name: "Categorize skills",
@@ -169,7 +212,7 @@ export const skillsLobbyChoices: Array<{
   {
     name: "Import installed skills into the catalog",
     value: "skills-catalog-import",
-    description: "Route: afk catalog import",
+    description: "Route: afk skills catalog import",
   },
   {
     name: "Manage skill profiles",
@@ -183,35 +226,58 @@ export const skillsLobbyChoices: Array<{
   },
 ];
 
+export const catalogSkillsLobbyChoices: MenuChoice<CatalogSkillsLobbyChoiceValue>[] = [
+  {
+    name: "Add a skill catalog item",
+    value: "catalog-skills-add",
+    description: "Route: afk skills catalog add",
+  },
+  {
+    name: "Bulk edit skill policies",
+    value: "catalog-skills-bulk-edit",
+    description: "Route: afk skills catalog bulk-edit",
+  },
+  {
+    name: "Edit a skill catalog item",
+    value: "catalog-skills-edit",
+    description: "Route: afk skills catalog edit",
+  },
+  {
+    name: "Remove a skill catalog item",
+    value: "catalog-skills-remove",
+    description: "Route: afk skills catalog remove",
+  },
+  {
+    name: "Toggle default skills",
+    value: "catalog-skills-toggle-default",
+    description: "Route: afk skills catalog toggle-default",
+  },
+  {
+    name: "Toggle skill invocation",
+    value: "catalog-skills-toggle-auto",
+    description: "Route: afk skills catalog toggle-auto",
+  },
+  {
+    name: "Import installed skills",
+    value: "catalog-skills-import",
+    description: "Route: afk skills catalog import",
+  },
+  {
+    name: "Check catalog status",
+    value: "catalog-skills-status",
+    description: "Route: afk skills catalog status",
+  },
+];
+
 export const skillProfilesLobbyChoices: Array<{
   name: string;
   value: SkillProfilesLobbyChoiceValue;
   description: string;
 }> = [
   {
-    name: "List profiles",
-    value: "profiles-list",
-    description: "Route: afk skills profiles list",
-  },
-  {
-    name: "Show a profile",
-    value: "profiles-show",
-    description: "Route: afk skills profiles show",
-  },
-  {
-    name: "Create a profile",
-    value: "profiles-create",
-    description: "Route: afk skills profiles create",
-  },
-  {
-    name: "Edit a profile",
-    value: "profiles-edit",
-    description: "Route: afk skills profiles edit",
-  },
-  {
-    name: "Delete a profile definition",
-    value: "profiles-delete",
-    description: "Route: afk skills profiles delete",
+    name: "Use a profile for this request",
+    value: "profiles-use",
+    description: "Route: afk skills profiles use",
   },
   {
     name: "Enable a profile",
@@ -227,6 +293,53 @@ export const skillProfilesLobbyChoices: Array<{
     name: "Show profile status",
     value: "profiles-status",
     description: "Route: afk skills profiles status",
+  },
+  {
+    name: "Manage profile definitions",
+    value: "profiles-manage-definitions",
+    description: "Route: afk profiles catalog",
+  },
+];
+
+export const catalogProfilesLobbyChoices: Array<{
+  name: string;
+  value: CatalogProfilesLobbyChoiceValue;
+  description: string;
+}> = [
+  {
+    name: "Set profile mode",
+    value: "profiles-set-mode",
+    description: "Route: afk profiles catalog set-mode",
+  },
+  {
+    name: "Toggle always-on skills",
+    value: "profiles-toggle-always-on",
+    description: "Route: afk profiles catalog toggle-always-on",
+  },
+  {
+    name: "List profile definitions",
+    value: "profiles-list",
+    description: "Route: afk profiles catalog list",
+  },
+  {
+    name: "Show a profile definition",
+    value: "profiles-show",
+    description: "Route: afk profiles catalog show",
+  },
+  {
+    name: "Create a profile definition",
+    value: "profiles-create",
+    description: "Route: afk profiles catalog create",
+  },
+  {
+    name: "Edit a profile definition",
+    value: "profiles-edit",
+    description: "Route: afk profiles catalog edit",
+  },
+  {
+    name: "Delete a profile definition",
+    value: "profiles-delete",
+    description: "Route: afk profiles catalog delete",
   },
 ];
 
@@ -247,53 +360,114 @@ export function renderCompassLobbyIntro(): string {
 }
 
 export async function selectCompassLobbyRoute(runtime: Runtime): Promise<string[]> {
-  runtime.io.stdout(renderCompassLobbyIntro());
-  const selected = await select<LobbyChoiceValue>({
-    message: "Pick an intent",
-    choices: compassLobbyChoices,
-    pageSize: compassLobbyChoices.length,
-    loop: false,
-    theme: afkSelectTheme,
-  });
-  if (selected === "skill-management") {
-    const route = await selectSkillsLobbyRoute(runtime);
+  while (true) {
+    runtime.io.stdout(renderCompassLobbyIntro());
+    const selected = await selectMenu<LobbyChoiceValue>({
+      message: "Pick an intent",
+      choices: compassLobbyChoices,
+      loop: false,
+      theme: afkSelectTheme,
+    });
+    if (selected === "skill-management") {
+      const route = await selectSkillsLobbyRoute(runtime, { canGoBack: true });
+      if (!route) {
+        continue;
+      }
+
+      runtime.io.stdout(renderRoutePreview(route));
+      return route;
+    }
+
+    if (!selected) {
+      continue;
+    }
+
+    const route = selected === "source"
+      ? routeForLobbyChoice(selected, await promptDefaultSource())
+      : routeForLobbyChoice(selected);
     runtime.io.stdout(renderRoutePreview(route));
     return route;
   }
-
-  const route = selected === "source"
-    ? routeForLobbyChoice(selected, await promptDefaultSource())
-    : routeForLobbyChoice(selected);
-  runtime.io.stdout(renderRoutePreview(route));
-  return route;
 }
 
-export async function selectSkillsLobbyRoute(runtime: Runtime): Promise<string[]> {
-  runtime.io.stdout(renderSkillsLobbyIntro());
-  const selected = await select<SkillsLobbyChoiceValue>({
-    message: "Pick a skill action",
-    choices: skillsLobbyChoices,
-    pageSize: skillsLobbyChoices.length,
-    loop: false,
-    theme: afkSelectTheme,
-  });
-  if (selected === "skills-profiles") {
-    return selectSkillProfilesLobbyRoute(runtime);
+export async function selectSkillsLobbyRoute(runtime: Runtime, options: { canGoBack?: boolean } = {}): Promise<string[] | null> {
+  while (true) {
+    runtime.io.stdout(renderSkillsLobbyIntro());
+    const selected = await selectMenu<SkillsLobbyChoiceValue>({
+      message: "Pick a skill action",
+      choices: skillsLobbyChoices,
+      loop: false,
+      theme: afkSelectTheme,
+      canGoBack: Boolean(options.canGoBack),
+    });
+    if (!selected) {
+      return null;
+    }
+
+    if (selected === "skills-profiles") {
+      const route = await selectSkillProfilesLobbyRoute(runtime, { canGoBack: true });
+      if (!route) {
+        continue;
+      }
+
+      return route;
+    }
+
+    const addOptions = selected === "skills-add" ? await promptSkillAddOptions() : undefined;
+    return routeForSkillsLobbyChoice(selected, addOptions);
   }
-
-  return routeForSkillsLobbyChoice(selected);
 }
 
-export async function selectSkillProfilesLobbyRoute(runtime: Runtime): Promise<string[]> {
+export async function selectSkillProfilesLobbyRoute(runtime: Runtime, options: { canGoBack?: boolean } = {}): Promise<string[] | null> {
   runtime.io.stdout(renderSkillProfilesLobbyIntro());
-  const selected = await select<SkillProfilesLobbyChoiceValue>({
+  const selected = await selectMenu<SkillProfilesLobbyChoiceValue>({
     message: "Pick a profile action",
     choices: skillProfilesLobbyChoices,
-    pageSize: skillProfilesLobbyChoices.length,
     loop: false,
     theme: afkSelectTheme,
+    canGoBack: Boolean(options.canGoBack),
   });
+  if (!selected) {
+    return null;
+  }
+
+  if (selected === "profiles-manage-definitions") {
+    return selectCatalogProfilesLobbyRoute(runtime, { canGoBack: true });
+  }
+
   return routeForSkillProfilesLobbyChoice(selected);
+}
+
+export async function selectCatalogProfilesLobbyRoute(runtime: Runtime, options: { canGoBack?: boolean } = {}): Promise<string[] | null> {
+  runtime.io.stdout(renderCatalogProfilesLobbyIntro());
+  const selected = await selectMenu<CatalogProfilesLobbyChoiceValue>({
+    message: "Pick a profile definition action",
+    choices: catalogProfilesLobbyChoices,
+    loop: false,
+    theme: afkSelectTheme,
+    canGoBack: Boolean(options.canGoBack),
+  });
+  if (!selected) {
+    return null;
+  }
+
+  return routeForCatalogProfilesLobbyChoice(selected);
+}
+
+export async function selectCatalogSkillsLobbyRoute(runtime: Runtime, options: { canGoBack?: boolean } = {}): Promise<string[] | null> {
+  runtime.io.stdout(renderCatalogSkillsLobbyIntro());
+  const selected = await selectMenu<CatalogSkillsLobbyChoiceValue>({
+    message: "Pick a skills catalog action",
+    choices: catalogSkillsLobbyChoices,
+    loop: false,
+    theme: afkSelectTheme,
+    canGoBack: Boolean(options.canGoBack),
+  });
+  if (!selected) {
+    return null;
+  }
+
+  return routeForCatalogSkillsLobbyChoice(selected);
 }
 
 export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: string): string[] {
@@ -308,10 +482,14 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
       return ["setup", "skills"];
     case "skill-management":
       return ["skills"];
+    case "agents":
+      return ["setup", "agents"];
+    case "catalog-agents":
+      return ["agents", "catalog"];
     case "mcps":
       return ["setup", "mcps"];
-    case "plugins":
-      return ["setup", "plugins"];
+    case "tools":
+      return ["setup", "tools"];
     case "hooks":
       return ["setup", "hooks"];
     case "inspect":
@@ -321,32 +499,42 @@ export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: str
     case "skills-visualize":
       return ["show", "skills", "--visualize"];
     case "catalog-import":
-      return ["catalog", "import"];
+      return ["skills", "catalog", "import"];
     case "help":
       return ["--help"];
   }
 }
 
-export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue): string[] {
+export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue, addOptions?: {
+  source?: string;
+  mode?: SkillAddMode;
+  profileId?: string;
+}): string[] {
   switch (value) {
     case "skills-list":
       return ["skills", "list"];
     case "skills-show":
       return ["skills", "show"];
+    case "skills-get":
+      return ["skills", "get"];
     case "skills-open":
       return ["skills", "open"];
+    case "skills-add":
+      return routeForSkillAdd(addOptions);
     case "skills-disable":
       return ["skills", "disable"];
     case "skills-enable":
       return ["skills", "enable"];
+    case "skills-invocation":
+      return ["skills", "invocation"];
     case "skills-delete":
       return ["skills", "delete"];
-    case "skills-upgrade":
-      return ["skills", "upgrade"];
+    case "skills-update":
+      return ["skills", "update"];
     case "skills-categorize":
       return ["skills", "categorize"];
     case "skills-catalog-import":
-      return ["catalog", "import"];
+      return ["skills", "catalog", "import"];
     case "skills-profiles":
       return ["skills", "profiles"];
     case "skills-profile-status":
@@ -356,23 +544,68 @@ export function routeForSkillsLobbyChoice(value: SkillsLobbyChoiceValue): string
 
 export function routeForSkillProfilesLobbyChoice(value: SkillProfilesLobbyChoiceValue): string[] {
   switch (value) {
-    case "profiles-list":
-      return ["skills", "profiles", "list"];
-    case "profiles-show":
-      return ["skills", "profiles", "show"];
-    case "profiles-create":
-      return ["skills", "profiles", "create"];
-    case "profiles-edit":
-      return ["skills", "profiles", "edit"];
-    case "profiles-delete":
-      return ["skills", "profiles", "delete"];
+    case "profiles-use":
+      return ["skills", "profiles", "use"];
     case "profiles-enable":
       return ["skills", "profiles", "enable"];
     case "profiles-disable":
       return ["skills", "profiles", "disable"];
     case "profiles-status":
       return ["skills", "profiles", "status"];
+    case "profiles-manage-definitions":
+      return ["profiles", "catalog"];
   }
+}
+
+export function routeForCatalogSkillsLobbyChoice(value: CatalogSkillsLobbyChoiceValue): string[] {
+  switch (value) {
+    case "catalog-skills-add":
+      return ["skills", "catalog", "add"];
+    case "catalog-skills-edit":
+      return ["skills", "catalog", "edit"];
+    case "catalog-skills-bulk-edit":
+      return ["skills", "catalog", "bulk-edit"];
+    case "catalog-skills-remove":
+      return ["skills", "catalog", "remove"];
+    case "catalog-skills-toggle-default":
+      return ["skills", "catalog", "toggle-default"];
+    case "catalog-skills-toggle-auto":
+      return ["skills", "catalog", "toggle-auto"];
+    case "catalog-skills-import":
+      return ["skills", "catalog", "import"];
+    case "catalog-skills-status":
+      return ["skills", "catalog", "status"];
+  }
+}
+
+export function routeForCatalogProfilesLobbyChoice(value: CatalogProfilesLobbyChoiceValue): string[] {
+  switch (value) {
+    case "profiles-set-mode":
+      return ["profiles", "catalog", "set-mode"];
+    case "profiles-toggle-always-on":
+      return ["profiles", "catalog", "toggle-always-on"];
+    case "profiles-list":
+      return ["profiles", "catalog", "list"];
+    case "profiles-show":
+      return ["profiles", "catalog", "show"];
+    case "profiles-create":
+      return ["profiles", "catalog", "create"];
+    case "profiles-edit":
+      return ["profiles", "catalog", "edit"];
+    case "profiles-delete":
+      return ["profiles", "catalog", "delete"];
+  }
+}
+
+function renderCatalogSkillsLobbyIntro(): string {
+  return [
+    "",
+    sectionTitle("Skill catalog"),
+    fieldLine("Mode", "Catalog skill management"),
+    fieldLine("Next step", "Pick how to sync skills.json."),
+    "",
+    sectionTitle("What skills catalog action do you want?"),
+  ].join("\n");
 }
 
 function renderSkillsLobbyIntro(): string {
@@ -390,10 +623,21 @@ function renderSkillProfilesLobbyIntro(): string {
   return [
     "",
     sectionTitle("Skill profiles"),
-    fieldLine("Mode", "Profile management"),
-    fieldLine("Next step", "Pick a profile action; AFK will route you there."),
+    fieldLine("Mode", "Runtime profile operations"),
+    fieldLine("Next step", "Pick how to apply profile definitions."),
     "",
-    sectionTitle("What do you want to do with profiles?"),
+    sectionTitle("What do you want to do with active profiles?"),
+  ].join("\n");
+}
+
+function renderCatalogProfilesLobbyIntro(): string {
+  return [
+    "",
+    sectionTitle("Profile definitions"),
+    fieldLine("Mode", "Catalog definition management"),
+    fieldLine("Next step", "Pick how to edit profiles.json."),
+    "",
+    sectionTitle("What profile definition do you want to manage?"),
   ].join("\n");
 }
 
@@ -403,6 +647,79 @@ async function promptDefaultSource(): Promise<string> {
     required: true,
     theme: afkPromptTheme,
   });
+}
+
+async function promptSkillSource(): Promise<string> {
+  return input({
+    message: "Skill source",
+    required: true,
+    theme: afkPromptTheme,
+  });
+}
+
+async function promptSkillAddOptions(): Promise<{ source: string; mode: SkillAddMode; profileId?: string }> {
+  const source = await promptSkillSource();
+  const mode = await select<SkillAddMode>({
+    message: "Add mode",
+    choices: [
+      {
+        name: "Add normally",
+        value: "normal",
+        description: "Route: afk skills add <source>",
+      },
+      {
+        name: "Start disabled",
+        value: "start-disabled",
+        description: "Route: afk skills add <source> --start-disabled",
+      },
+      {
+        name: "Add to profile",
+        value: "profile",
+        description: "Route: afk skills add <source> --profile <profile>",
+      },
+      {
+        name: "Add to profile only",
+        value: "profile-only",
+        description: "Route: afk skills add <source> --profile-only <profile>",
+      },
+    ],
+    theme: afkSelectTheme,
+  });
+  const profileId = mode === "profile" || mode === "profile-only"
+    ? await promptSkillProfileId()
+    : undefined;
+  return { source, mode, ...(profileId ? { profileId } : {}) };
+}
+
+async function promptSkillProfileId(): Promise<string> {
+  return input({
+    message: "Profile id",
+    required: true,
+    theme: afkPromptTheme,
+  });
+}
+
+function routeForSkillAdd(addOptions?: {
+  source?: string;
+  mode?: SkillAddMode;
+  profileId?: string;
+}): string[] {
+  const route = ["skills", "add"];
+  if (!addOptions?.source) {
+    return route;
+  }
+
+  route.push(addOptions.source);
+  if (addOptions.mode === "start-disabled") {
+    route.push("--start-disabled");
+  }
+  if (addOptions.mode === "profile" && addOptions.profileId) {
+    route.push("--profile", addOptions.profileId);
+  }
+  if (addOptions.mode === "profile-only" && addOptions.profileId) {
+    route.push("--profile-only", addOptions.profileId);
+  }
+  return route;
 }
 
 function renderRoutePreview(route: string[]): string {

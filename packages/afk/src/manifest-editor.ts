@@ -1,19 +1,27 @@
-import type {
-  HookManifest,
-  HookManifestItem,
-  McpManifest,
-  McpManifestItem,
-  RulesManifest,
-  SkillManifest,
-  SkillManifestItem,
-  PluginManifest,
-  PluginManifestItem,
+import {
+  isRulesManifest,
+  isSkillPostInstall,
+  rulesManifestLayers,
+  type HookManifest,
+  type HookManifestItem,
+  type LayeredRulesManifest,
+  type CustomAgentManifest,
+  type CustomAgentManifestItem,
+  type McpManifest,
+  type McpManifestItem,
+  type RulesManifest,
+  type RulesManifestLayer,
+  type SkillManifest,
+  type SkillManifestItem,
+  type ToolManifest,
+  type ToolManifestItem,
 } from "./manifest.js";
+import { validateRulesFileDestinations } from "./rules-file-destinations.js";
 import type { Area } from "./types.js";
 
-export type EditableManifestArea = Area;
-export type EditableManifest = RulesManifest | SkillManifest | McpManifest | PluginManifest | HookManifest | Record<string, unknown>;
-export type EditableManifestItem = SkillManifestItem | McpManifestItem | PluginManifestItem | HookManifestItem;
+export type EditableManifestArea = Exclude<Area, "profiles">;
+export type EditableManifest = RulesManifest | SkillManifest | CustomAgentManifest | McpManifest | ToolManifest | HookManifest | Record<string, unknown>;
+export type EditableManifestItem = SkillManifestItem | CustomAgentManifestItem | McpManifestItem | ToolManifestItem | HookManifestItem;
 
 type ItemManifest = {
   version: number;
@@ -21,19 +29,55 @@ type ItemManifest = {
   items: EditableManifestItem[];
 };
 
-export function emptyEditableManifest(area: EditableManifestArea): RulesManifest | SkillManifest | McpManifest | PluginManifest | HookManifest {
+type DefaultedManifestArea = Exclude<EditableManifestArea, "rules" | "agents">;
+type DefaultedManifestItem = Exclude<EditableManifestItem, CustomAgentManifestItem>;
+type DefaultedItemManifest = Omit<ItemManifest, "items"> & { items: DefaultedManifestItem[] };
+
+export function emptyEditableManifest(area: EditableManifestArea): RulesManifest | SkillManifest | CustomAgentManifest | McpManifest | ToolManifest | HookManifest {
   switch (area) {
     case "rules":
-      return { version: 1, source: "github", url: "" };
+      return { version: 2, layers: [] };
     case "skills":
       return { version: 1, defaultSource: "", items: [] };
+    case "agents":
+      return { version: 1, items: [] };
     case "mcps":
       return { version: 1, items: [] };
-    case "plugins":
+    case "tools":
       return { version: 1, items: [] };
     case "hooks":
       return { version: 1, items: [] };
   }
+}
+
+export function addRulesLayer(manifest: EditableManifest, layer: RulesManifestLayer): LayeredRulesManifest {
+  const layers = editableRulesLayers(manifest);
+  if (layers.some((existing) => existing.id === layer.id)) {
+    throw new Error(`Duplicate rules layer id: ${layer.id}`);
+  }
+  return { version: 2, layers: [...layers, cloneRulesLayer(layer)] };
+}
+
+export function updateRulesLayer(manifest: EditableManifest, id: string, layer: RulesManifestLayer): LayeredRulesManifest {
+  const layers = editableRulesLayers(manifest);
+  if (!layers.some((existing) => existing.id === id)) {
+    throw new Error(`Missing rules layer id: ${id}`);
+  }
+  if (layers.some((existing) => existing.id !== id && existing.id === layer.id)) {
+    throw new Error(`Duplicate rules layer id: ${layer.id}`);
+  }
+  return {
+    version: 2,
+    layers: layers.map((existing) => existing.id === id ? cloneRulesLayer(layer) : cloneRulesLayer(existing)),
+  };
+}
+
+export function removeRulesLayer(manifest: EditableManifest, id: string): LayeredRulesManifest {
+  const layers = editableRulesLayers(manifest);
+  if (!layers.some((layer) => layer.id === id)) {
+    throw new Error(`Missing rules layer id: ${id}`);
+  }
+  return { version: 2, layers: layers.filter((layer) => layer.id !== id).map(cloneRulesLayer) };
 }
 
 export function manifestFilename(area: EditableManifestArea): `${EditableManifestArea}.json` {
@@ -81,8 +125,8 @@ export function removeManifestItem(area: Exclude<EditableManifestArea, "rules">,
   return { ...draft, items: draft.items.filter((item) => item.id !== id).map(cloneItem) };
 }
 
-export function toggleManifestItemDefault(area: Exclude<EditableManifestArea, "rules">, manifest: EditableManifest, id: string): ItemManifest {
-  const draft = itemManifestOrThrow(area, manifest);
+export function toggleManifestItemDefault(area: DefaultedManifestArea, manifest: EditableManifest, id: string): ItemManifest {
+  const draft = defaultedItemManifestOrThrow(area, manifest);
   return {
     ...draft,
     items: draft.items.map((item) => {
@@ -90,22 +134,22 @@ export function toggleManifestItemDefault(area: Exclude<EditableManifestArea, "r
         return cloneItem(item);
       }
 
-      return { ...cloneItem(item), default: !item.default };
+      return { ...cloneItem(item), default: !(item.default ?? false) };
     }),
   };
 }
 
 export function setManifestItemDefaultValues(
-  area: Exclude<EditableManifestArea, "rules">,
+  area: DefaultedManifestArea,
   manifest: EditableManifest,
   values: Record<string, boolean>,
 ): ItemManifest {
-  const draft = itemManifestOrThrow(area, manifest);
+  const draft = defaultedItemManifestOrThrow(area, manifest);
   return {
     ...draft,
     items: draft.items.map((item) => {
       const nextValue = values[item.id];
-      return { ...cloneItem(item), default: nextValue ?? item.default };
+      return { ...cloneItem(item), default: nextValue ?? item.default ?? false };
     }),
   };
 }
@@ -121,7 +165,9 @@ export function toggleSkillAutoInvocation(manifest: EditableManifest, id: string
 
   return {
     ...manifest,
-    items: manifest.items.map((item) => item.id === id ? { ...item, autoInvocation: !item.autoInvocation } : { ...item }),
+    items: manifest.items.map((item) => item.id === id
+      ? { ...item, invocation: item.invocation === "auto" ? "manual" : "auto" }
+      : { ...item }),
   };
 }
 
@@ -134,7 +180,7 @@ export function setSkillAutoInvocationValues(manifest: EditableManifest, values:
     ...manifest,
     items: manifest.items.map((item) => {
       const nextValue = values[item.id];
-      return nextValue === undefined ? { ...item } : { ...item, autoInvocation: nextValue };
+      return nextValue === undefined ? { ...item } : { ...item, invocation: nextValue ? "auto" : "manual" };
     }),
   };
 }
@@ -148,6 +194,10 @@ export function validateEditableManifest(area: EditableManifestArea, manifest: E
   }
 
   if (area === "rules") {
+    const rules = manifest as RulesManifest;
+    for (const layer of rulesManifestLayers(rules)) {
+      errors.push(...validateRulesFileDestinations((layer.files ?? []).map((file) => file.destination)).errors);
+    }
     return errors;
   }
 
@@ -162,6 +212,17 @@ export function validateEditableManifest(area: EditableManifestArea, manifest: E
   }
 
   return errors;
+}
+
+function editableRulesLayers(manifest: EditableManifest): RulesManifestLayer[] {
+  if (!isRulesManifest(manifest)) {
+    throw new Error("Invalid rules catalog shape");
+  }
+  return rulesManifestLayers(manifest).map(({ legacy: _legacy, ...layer }) => cloneRulesLayer(layer));
+}
+
+function cloneRulesLayer(layer: RulesManifestLayer): RulesManifestLayer {
+  return JSON.parse(JSON.stringify(layer)) as RulesManifestLayer;
 }
 
 export function serializeEditableManifest(area: EditableManifestArea, manifest: EditableManifest): string {
@@ -193,16 +254,23 @@ function itemManifestOrThrow(area: Exclude<EditableManifestArea, "rules">, manif
   };
 }
 
+function defaultedItemManifestOrThrow(area: DefaultedManifestArea, manifest: EditableManifest): DefaultedItemManifest {
+  const draft = itemManifestOrThrow(area, manifest);
+  return { ...draft, items: draft.items as DefaultedManifestItem[] };
+}
+
 function isManifestForArea(area: EditableManifestArea, manifest: EditableManifest): boolean {
   switch (area) {
     case "rules":
       return isRulesManifest(manifest);
     case "skills":
       return isSkillManifest(manifest);
+    case "agents":
+      return isCustomAgentManifest(manifest);
     case "mcps":
       return isMcpManifest(manifest);
-    case "plugins":
-      return isPluginManifest(manifest);
+    case "tools":
+      return isToolManifest(manifest);
     case "hooks":
       return isHookManifest(manifest);
   }
@@ -221,11 +289,6 @@ function isItemRecord(value: unknown): value is EditableManifestItem {
   return isRecord(value) && typeof value.id === "string";
 }
 
-function isRulesManifest(value: EditableManifest): value is RulesManifest {
-  const record = toRecord(value);
-  return Boolean(record && typeof record.version === "number" && (record.source === "github" || record.source === "local") && typeof record.url === "string");
-}
-
 function isSkillManifest(value: EditableManifest): value is SkillManifest {
   const record = toRecord(value);
   return (
@@ -240,7 +303,9 @@ function isSkillManifest(value: EditableManifest): value is SkillManifest {
       typeof item.source === "string" &&
       isStringArray(item.args) &&
       typeof item.default === "boolean" &&
-      (item.autoInvocation === undefined || typeof item.autoInvocation === "boolean")
+      (item.invocation === undefined || item.invocation === "auto" || item.invocation === "manual" || item.invocation === "source") &&
+      (item.startDisabled === undefined || typeof item.startDisabled === "boolean") &&
+      (item.postInstall === undefined || isSkillPostInstall(item.postInstall, item.args))
     ))
   );
 }
@@ -262,7 +327,23 @@ function isMcpManifest(value: EditableManifest): value is McpManifest {
   );
 }
 
-function isPluginManifest(value: EditableManifest): value is PluginManifest {
+function isCustomAgentManifest(value: EditableManifest): value is CustomAgentManifest {
+  const record = toRecord(value);
+  return (
+    Boolean(record) &&
+    typeof record?.version === "number" &&
+    Array.isArray(record.items) &&
+    record.items.every((item: unknown) => (
+      isRecord(item) &&
+      typeof item.id === "string" &&
+      typeof item.label === "string" &&
+      typeof item.source === "string" &&
+      item.default === undefined
+    ))
+  );
+}
+
+function isToolManifest(value: EditableManifest): value is ToolManifest {
   const record = toRecord(value);
   return (
     Boolean(record) &&
@@ -276,16 +357,25 @@ function isPluginManifest(value: EditableManifest): value is PluginManifest {
       isRecord(item.install) &&
       typeof item.install.command === "string" &&
       isStringArray(item.install.args) &&
-      (item.postInstall === undefined || isPluginPostInstallCommand(item.postInstall)) &&
+      (item.postInstall === undefined || isToolPostInstallCommand(item.postInstall)) &&
+      (item.update === undefined || isToolCommand(item.update)) &&
       typeof item.default === "boolean"
     ))
   );
 }
 
-function isPluginPostInstallCommand(value: unknown): boolean {
+function isToolPostInstallCommand(value: unknown): boolean {
   return (
     isRecord(value) &&
     (value.label === undefined || typeof value.label === "string") &&
+    typeof value.command === "string" &&
+    isStringArray(value.args)
+  );
+}
+
+function isToolCommand(value: unknown): boolean {
+  return (
+    isRecord(value) &&
     typeof value.command === "string" &&
     isStringArray(value.args)
   );

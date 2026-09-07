@@ -1,4 +1,0 @@
-interface:
-  display_name: "Pickup"
-  short_description: "Resume from temp-directory handoff notes."
-  default_prompt: "Find and resume from the latest relevant temp-directory handoff."

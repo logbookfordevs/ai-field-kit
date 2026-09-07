@@ -4,12 +4,248 @@ This changelog tracks meaningful updates by version and date.
 
 ## How We Use This File
 
-- Keep unreleased work in `## TBD - TBD`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
+- Keep unreleased work in `## Next Release`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
 - Prefer reader-focused summaries over raw commit messages.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
-## TBD - TBD
+## Next Release
+
+### Added
+
+- `cli:` skill catalog items can run post-install copy or command actions during setup and updates. Impeccable now copies its bundled Codex agents into the harness's agents directory, refreshing managed copies while preserving user edits and existing links to the exact source files.
+
+### Changed
+
+- `skills:` rebuilt Animated-Driven Frontend as a co-directed cinematic production workflow with bounded Grilling for current-gate decisions and human greenlights for treatment, shot planning, tracer dailies, production batches, and final cut, while preserving its ZERO-derived narrative and rendering engineering.
+- `skills:` expanded AFK Compass from single-skill routing into authoritative crossroads guidance, including feature orientation before grilling, specialist-to-Wayfinder promotion, context and handoff boundaries, same-task spec and ticket grooming, fresh-context tracked implementation, and direct implementation when users intentionally decline ticket-level execution tracking.
+- `skills:` renamed `afk-code-review-check` to `afk-code-review-verdicts` and `afk-static-check` to `afk-static-review` so their names reflect reviewing and validating findings rather than merely running checks.
+- `skills:` renamed `afk-doc-craft` to `afk-docs-for-humans` and rebuilt it around evidence-grounded claims, an explicit reader contract, conditional PR and narrative guidance, and one acceptance gate.
+
+## v1.4.1 - 2026-08-26
+
+### Fixed
+
+- `cli:` made `afk setup profiles` safely reinstall whole-package profiles when their skills already exist in disabled storage, preserving catalog-owned overlap and avoiding duplicate-folder reconciliation failures.
+
+## v1.4.0 - 2026-08-26
+
+### Added
+
+- `cli:` added `afk profiles` as a shorter equivalent of `afk skills profiles` for profile runtime commands.
+
+### Changed
+
+- `skills:` taught AFK Compass to resolve close frontend choices across visual direction, in-project versus standalone prototypes, bounded versus surface-wide animation, and motion-led experiences without expanding its main manual route table.
+- `skills:` rebuilt Animated-Driven Frontend around story spines, interaction gates, deterministic progress, warm-path loading, adaptive fidelity, and real-device acceptance for motion-led and immersive experiences.
+- `cli:` made interactive profile enable and disable menus show only profiles whose state can change, with clear messages when every profile is already enabled or none are enabled.
+
+### Removed
+
+- `skills:` removed the optional `animation-vocabulary` and `make-interfaces-feel-better` utilities from the bundled catalog; their overlapping guidance remains covered by the existing frontend design and motion routes.
+
+## v1.3.2 - 2026-08-21
+
+### Added
+
+- `skills:` added Backnotprop's optional manual `clean-room` workflow for obtaining an independent decision from a fresh agent without inherited conversation bias.
+
+### Fixed
+
+- `cli:` stopped `afk setup profiles` from installing top-level `alwaysOn` skills; those skills now affect only profile activation and reconciliation.
+
+## v1.3.1 - 2026-08-19
+
+### Added
+
+- `skills:` added Backnotprop's optional manual `readback` and `recap` utilities for confirming complex requests before work and quickly resyncing on the current session.
+
+### Changed
+
+- `cli:` made guided and non-interactive `afk setup` include only setup areas with actionable content in the selected catalog source, so partial custom catalogs no longer offer empty Tools, Profiles, MCPs, or Hooks flows.
+- `cli:` grouped enabled and disabled entries under labeled sections in the interactive `afk skills update` and `afk skills delete` pickers while keeping both available for selection.
+
+### Removed
+
+- `skills:` retired `afk-pickup`; use the `handoff` skill to save and resume disposable session context.
+
+## v1.3.0 - 2026-08-18
+
+### Added
+
+- `cli:` added global favorite catalog sources with `afk sources list|add|remove`; bare `--source` now opens an on-demand picker containing the remembered default, saved favorites, and a one-off entry path, while normal commands continue directly with the default.
+- `cli:` added interactive `afk preset` and `afk setup preset` routes that choose named bundles from the cached catalog or a one-off `--source`, plus a source-aware `daily-routine` preset for every rule, skill, tool, and Custom Agent, while preserving `afk setup --preset <id>` for compatibility.
+- `cli:` added `afk refresh --override` to make the selected source authoritative for targeted catalog files after two confirmations, with dry-run preview support.
+- `cli:` added `--refresh` to setup commands so the matching global or project catalog scope refreshes before setup begins.
+- `skills:` added the optional manual `afk-code-review-check` wrapper for verifying AFK Code Review findings against the code and discussing verdicts before making changes.
+- `skills:` added Jakub Krehel's optional manual interface-detail review utility and the complete Effective HTML collection, keeping `design-artifact` always available while its five HTML specialists activate through a dedicated HTML profile.
+- `skills:` added Emil Kowalski's optional model-invoked `animate` utility for implementing purposeful interface motion.
+- `skills:` added Emil Kowalski's optional manual `apple-design` utility for shaping fluid, gesture-driven interfaces with Apple's interaction principles.
+
+### Changed
+
+- `cli:` renamed the Plugins catalog and command surface to Tools and added `afk tools update` for running declared update commands on selected tools.
+- `cli:` made `afk setup profiles` offer profiles from the selected source, recover lock-backed missing skills across renamed upstream IDs after verified installation, and present a grouped, wrapping-safe readiness review before installing available skills with always-on and transitive composed dependencies.
+- `cli:` moved catalog editing under each owning command family (`afk skills catalog`, `afk profiles catalog`, and their peers), removed the top-level `afk catalog` route, and made root help describe every command inline.
+- `cli:` reordered the guided setup areas around the daily path: Rules, Skills, Tools, and Custom Agents now appear before Profiles, MCPs, and Hooks.
+- `cli:` made `afk skills list` and `afk skills show` include only enabled skills by default, with `--disabled` required to inspect disabled entries.
+- `cli:` made `afk skills delete --profile` present the profile's installed skills as an all-selected checklist before deletion, while `--yes` keeps deleting the full installed set non-interactively.
+- `skills:` taught AFK To Spec to preserve the rationale, shaping constraints, accepted trade-offs, relevant rejected alternatives, and revisit conditions behind consequential implementation decisions.
+- `skills:` distilled Code Grill into a manual wrapper that composes Grilling, Truss Evaluation, and Codebase Design around the material technical frontier without duplicating their workflows.
+- `skills:` taught AFK Code Review to review an implementation ticket alongside its originating material, detect lost or distorted requirements, and substantiate the ticket's recorded implementation and verification claims.
+- `skills:` gave Implement Tickets bounded authority for green atomic local implementation commits, kept local tracking commits opt-in, added agreed TDD seams, focused and final validation, and automatic AFK Code Review while preserving the user's final code-gate decision.
+- `skills:` removed automatic Plannotator recommendations and ticket-annotation loops while retaining user-approved external review as a valid code-gate acceptance path.
+- `skills:` let `afk-implement-tickets` use either a local Markdown counterpart or an available remote mechanism as the ticket's durable tracking home, with an explicit user choice before remote-ticket implementation begins.
+- `skills:` renamed `afk-implement-tasks` to `afk-implement-tickets`, aligning the implementation workflow with the ticket files produced by `afk-to-tickets`.
+- `skills:` made AFK Architect announce the selected crew member before delegation.
+
+### Fixed
+
+- `skills:` made `afk-code-review-check` run AFK Code Review, preserve its complete findings verbatim, and append validation verdicts instead of asking for or summarizing the review input.
+- `rules:` made the bundled AFK rules layer fetch its files from the source repository and replaced missing-local-file stack traces with guidance to use a full URL or `--source <owner/repo>`.
+
+### Removed
+
+- `cli:` removed the bundled `baseline` preset; use the source-aware `daily-routine` preset or guided `afk setup` instead.
+
+## v1.2.2 - 2026-08-09
+
+### Added
+
+- `cli:` added exact catalog preset bundles through `afk setup --preset <id>`, with declared area order, visible membership, branded bundle summaries, continued setup after area failures, and a non-zero result when required provisioning is incomplete.
+- `skills:` added AFK Architect as a native-teammate coordination skill and an optimized preset with portable Cartographer, Builder, and Pathfinder role contracts for Codex, Claude Code, and Pi.
+- `skills:` added the optional manual `afk-static-check` utility for reporting lint and typecheck warnings and errors without applying fixes.
+- `cli:` added `afk open` to open the user AFK folder at `~/.agents/afk`, with `--code` for VS Code.
+- `cli:` added ordered, named rules layers with durable catalog merging, credential-aware private GitHub loading, per-layer dependency directories, visible provenance, version 1 compatibility, and `afk catalog rules add|edit|remove` authoring.
+- `skills:` added Pixel Point's optional manual `animate-text` utility to the bundled catalog.
+- `skills:` added Matt Pocock's optional `wizard` for model-invoked human setup guides and manual `to-questionnaire` workflow for collecting decisions from another person.
+
+### Changed
+
+- `agents:` separated stable catalog and installation IDs from harness-facing names, so the Architect crew is invoked as Cartographer, Builder, and Pathfinder while existing `afk-*` files continue to update in place.
+- `cli:` made `afk skills update` list and bulk-update only skills present in both AFK's catalog and the upstream skills lock, leaving non-cataloged lock entries to the official skills CLI.
+- `skills:` aligned Code Grill with `grilling`'s frontier-based rounds, bounded by the named coding slice rather than a numeric question or trade-off limit.
+- `skills:` updated the AFK Code Review fork to use the upstream spec terminology, replaced `writing-great-skills` with the model-invoked `writing-for-agents`, and taught Wayfinder to compose its new parallel research workflow.
+- `cli:` made bare `afk skills invocation` a searchable batch editor where left/right drafts manual or automatic policy and Enter applies all changes together, while explicit `enable|disable` commands remain available for one skill.
+- `docs:` gave the main README a branded AFK hero, clearer product headline, and direct links to the website, CLI reference, and changelog.
+- `cli:` renamed the read-only `afk catalog skills import-status` command to `afk catalog skills status`, without retaining a compatibility alias.
+- `cli:` made `setup skills --source` cache only successfully installed selections as imported entries and `setup rules --source` merge every applied layer by ID, while both commands preserve the remembered default source.
+- `cli:` made interactive `afk setup skills` selection searchable while preserving multi-select and non-interactive setup behavior.
+
+### Removed
+
+- `plugins:` removed GoalBuddy from the bundled installer catalog.
+- `skills:` retired AFK Turbo and its GoalBuddy-backed live-board workflow.
+- `skills:` retired AFK Sprint and its Plannotator-backed checkpoint workflow.
+- `skills:` retired AFK Brainstorming Facilitator and PR Story Flow Mermaid from the active catalog while preserving their implementations under `legacy/`.
+
+### Fixed
+
+- `cli:` made local repository setup sources search `packages/afk/catalog` as well as `afk/catalog`, matching GitHub-backed source discovery.
+
+## v1.2.1 - 2026-08-01
+
+### Added
+
+- `cli:` added an optional post-write setup handoff for global skill catalog `edit` and `bulk-edit`, limited to entries whose install or runtime policy changed.
+- `cli:` added portable Custom Agents as a first-class `agents.json` catalog area, with repository-relative sources, refresh merging, show/catalog menus, interactive and scripted setup, and AFK-owned adapters for Codex, Claude Code, and Pi through `pi-subagents`; the portable contract preserves per-harness model and effort pins, Codex display nicknames, and native per-agent skill configuration without taking over skill installation or validation.
+- `skills:` added the manual-only `afk-create-agent` workflow for authoring portable agent files, registering their catalog sources, and dry-running every requested harness adapter.
+- `cli:` added `afk catalog skills bulk-edit` for setting invocation and always-on policy across multiple selected skills in one reviewed change.
+- `cli:` added `Finish and review` to each catalog submenu so changes can be previewed and written without returning to the catalog list.
+
+### Changed
+
+- `cli:` renamed `afk skills upgrade` to `afk skills update` so AFK uses the same operation name as the official skills CLI.
+- `cli:` aligned catalog action menus with AFK's styled prompts, standardized single and bulk skill pickers on searchable ID-first identity with policy metadata, and removed the repeated full entry list before each action.
+- `cli:` made new skill catalog entries default automatic model invocation to off and renamed the submenu return action to `Back to manage other catalogs`.
+
+### Fixed
+
+- `cli:` made `afk skills invocation enable|disable` update matching shared `skills.json` policy together with installed skill metadata, preventing later setup runs from reversing the direct change.
+- `cli:` made GitHub-backed catalog sources fall back to existing Git credentials with visible fetch progress, so private repositories work with setup, refresh, and show commands.
+- `cli:` prompted before Ctrl-C discards unsaved catalog edits, offering to finish and review the changes first.
+- `install:` resolved the latest AFK release through GitHub's release redirect instead of the rate-limited unauthenticated REST API.
+
+## v1.2.0 - 2026-07-20
+
+### Added
+
+- `cli:` added global `afk skills upgrade --profile` selection for upgrading every tracked skill in a chosen profile without changing profile membership or activation.
+- `cli:` added `afk skills get <skill>` for printing local skill instructions and `afk skills profiles use <profile>` for on-demand profile context, with `--all` to include every profile skill in full.
+- `cli:` added `afk skills profiles enable <profile> --additive` to activate a profile on demand without filtering unrelated active skills, with activation-aware restoration when the profile is disabled.
+- `cli:` added `afk skills delete --profile` to delete installed skills referenced by a selected profile, with an extra warning that those skills may be shared by other profiles.
+- `skills:` added the manual-only `afk-profile-use` router for loading local profile members into the current request through the AFK CLI.
+- `skills:` added Matt Pocock's `wayfinder` workflow to the bundled catalog as an optional shared skill.
+
+### Changed
+
+- `cli:` made the shared global skills library the default across `afk skills`, with explicit preset-agent targeting, literal custom roots through `--agent custom --agent-path <folder>`, and shared-first installs before optional agent fanout.
+- `cli:` made catalog refresh preserve local profile definitions absent from the refreshed source while source definitions and top-level profile policy remain authoritative.
+- `cli:` made global skill setup reconcile newly installed skills against enabled focus profiles according to strict or context policy, while additive-only profiles continue to preserve unrelated active skills.
+- `cli:` made skill upgrades restore pre-upgrade disabled storage after the upstream content reinstall completes.
+- `cli:` made `afk skills add` offer preflight import only for existing installs tracked by the skills CLI, ignore plugin- or CLI-owned skills without lock metadata, treat source-cataloged first installs as new, apply add-time flags only to genuinely new skills, and refresh existing content without changing storage or profile membership.
+- `cli:` made skill setup consider source-owned catalog entries by default, with `afk setup --all` and `afk setup skills --all` including imported entries; interactive runs now show the expanded list for review, while `--yes --all` installs every listed skill.
+- `cli:` renamed the `afk skills delete --manifest-only` filter to `--catalog-only` so the flag matches its `skills.json` catalog behavior.
+- `skills:` made `afk-doc-craft` manually invoked by default, so documentation craft runs only when explicitly selected instead of sitting in automatic discovery.
+- `skills:` made Matt Pocock's optional `research` skill auto-invoked when installed.
+- `skills:` replaced `afk-interactive-code-review` with `afk-code-review`, an AFK-compatible fork of Matt Pocock's two-axis Standards/Spec review workflow.
+- `skills:` renamed `afk-to-tasks` to `afk-to-tickets` so AFK's fork keeps the same public shape as Matt Pocock's `to-tickets` skill.
+- `skills:` updated `afk-to-tickets` with fresh-context sizing and expand-contract guidance for wide refactors.
+- `docs:` explained when to use `grill-with-docs` versus `wayfinder`, and taught `afk-compass` the same routing distinction.
+
+### Fixed
+
+- `cli:` fixed interactive `afk skills add` profile modes so `--profile`, `--profile-only`, and `--start-disabled` apply as AFK post-install behavior instead of being forwarded to the upstream skills CLI.
+
+## v1.1.0 - 2026-07-06
+
+### Added
+
+- `cli:` added profile reconciliation modes in `profiles.json`, with `strict` preserving existing profile filtering and `context` keeping cataloged manual skills active while profiles filter discoverable skills.
+- `cli:` added `profiles.json` to the default catalog refresh/setup flow and `afk show profiles`, with bundled defaults for context mode, always-on profile skills, and the existing Stitch and Video profiles.
+- `cli:` added an `afk catalog skills` menu and made nested AFK lobbies use Ctrl/Cmd-C as a shared back action.
+- `cli:` added `afk skills add --profile-only <profile>` to add imported skills to a profile while importing them as `startDisabled: true` and moving their shared folders into `.disabled`.
+- `cli:` added `--profile-only` and the matching interactive prompt to `afk catalog profiles create|edit`, so profile members can start disabled outside that profile.
+- `skills:` added Emil Kowalski's optional `animation-vocabulary` utility to the bundled catalog with invocation off.
+
+### Changed
+
+- `cli:` replaced the `afk config` command surface with `afk catalog`, including direct area menus for rules, skills, profiles, MCPs, plugins, and hooks.
+- `skills:` renamed `afk-to-prd-spec` to `afk-to-spec` and `afk-to-issues` to `afk-to-tasks` across the bundled catalog and workflow routing.
+- `skills:` renamed `afk-execution-tracking` to `afk-implement-tasks` so the workflow command names the implementation job rather than the tracking mechanism.
+- `skills:` aligned `afk-to-spec` and `afk-to-tasks` with the upstream `to-prd`/`to-issues` structures while adapting them to AFK spec artifacts, checkpoint packets, optional tracker publication, and Plannotator review.
+- `skills:` clarified that `afk-to-spec` and `afk-to-tasks` must reopen the Plannotator annotation gate after feedback until the user approves or stops the loop.
+- `skills:` clarified that an approved `/plannotator-review` during `afk-implement-tasks` can mark the checkpoint packet's `code` review gate accepted.
+- `rules:` clarified that explicit skill-driven background-agent or fresh-context review instructions count as delegation approval for bounded sub-agent use.
+- `docs:` corrected the `grill-with-docs` companion-skill guidance to reflect its current `grilling` and `domain-modeling` composition.
+
+### Fixed
+
+- `cli:` fixed `afk setup skills --yes` so detected single-agent installs still create the shared `~/.agents/skills` library before adding agent-specific targets.
+
+## v1.0.3 - 2026-06-23
+
+### Added
+
+- `cli:` added `afk update` to update the AFK CLI through the hosted GitHub release installer, with `--dry-run` for previewing the installer command.
+- `cli:` added `afk skills invocation` to enable or disable skill auto-invocation metadata in both `SKILL.md` and Codex `agents/openai.yaml`.
+- `cli:` added `startDisabled` support for skills catalog items, so installed skills can start in `.disabled` until enabled directly or through profiles.
+- `cli:` added `afk skills add <source> [flags...]` as a thin wrapper around the official `skills add` command, followed by AFK catalog import for new shared skills plus AFK-owned `--start-disabled` and `--profile <profile>` options.
+- `cli:` restored `afk configure` for writable catalog edits, including profile `alwaysOn` editing.
+- `cli:` added `afk catalog profiles` for profile definition edits, while keeping runtime profile operations under `afk skills profiles`.
+- `cli:` added `afk skills add` and `afk skills invocation` to the skill-management lobby.
+
+### Changed
+
+- `install:` updated AFK update notices to suggest `afk update` and refreshed the website full-setup copy to use the hosted `install.sh` flow instead of npm install commands.
+- `cli:` removed skill-item `profiles` metadata from the skills catalog model so `profiles.json` stays the single source of truth for focus-profile membership.
+- `cli:` refreshed `afk catalog import` output with branded sections, path rows, and readable bullet summaries for imported and skipped skills.
+
+## v1.0.1 - 2026-06-19
+
+### Changed
+
+- `release:` made `install.sh` a GitHub release installer again, with checksum-verified release assets and a generated launcher that requires Node 20 or newer at runtime.
 
 ## v1.0.0 - 2026-06-19
 
@@ -23,7 +259,6 @@ This changelog tracks meaningful updates by version and date.
 - `cli:` added `afk show skills --visualize` to write a self-contained `afk-skills.html` composition page from the skills catalog and open it automatically in interactive terminals.
 - `cli:` added `afk catalog import` to backfill missing skills catalog entries from installed skills when the official `skills` CLI lockfile can recover the original source.
 - `skills:` added AFK Turbo review-gated mode, where each code-changing GoalBuddy task stages changes, suggests Plannotator Review, and waits for human approval before task completion.
-- `skills:` added a deterministic AFK Turbo goal launch gate that writes `goal-launch.html`, opens a localhost control surface, and returns whether the user chose current-chat execution, Codex delegation, Claude Code delegation, or close.
 
 ### Changed
 
@@ -46,9 +281,7 @@ This changelog tracks meaningful updates by version and date.
 - `docs:` made Quick Start lead with AFK CLI, clarified when to use `npx` versus a global AFK install, recommended companion plugins for the full skills experience, and kept `npx skills add` as the authored-skills-only path.
 - `docs:` documented Turbo and execution-tracking modes so review-gated and resume requests are discoverable without reading skill internals.
 - `docs:` refreshed the skill composition markdown and HTML companion so the current AFK tree no longer references the removed resume workflow and shows Turbo composing `grilling`.
-- `skills:` distilled the AFK Turbo launch page template so the launch action stays primary while goal package details sit behind a quiet disclosure.
-- `skills:` made AFK Turbo launch pages carry review-gated mode through the visible page, copied command, and delegated agent prompts.
-- `skills:` made AFK Turbo launch deep links explicitly invoke the manual Turbo skill in Codex and Claude Code sessions.
+- `skills:` simplified AFK Turbo launch behavior so the skill stops at the harness boundary and prints the exact user-triggered command instead of generating a launch page.
 - `skills:` folded workflow resume into Turbo and execution-tracking modes, removed `afk-resume-workflow` from the catalog, and let Turbo compose the `grilling` primitive before Plannotator setup.
 - `skills:` aligned Sprint and execution tracking with Turbo's preflight/review posture by adding short grilling before weak Plannotator setup context and recommending `/plannotator-review` at review gates.
 - `skills:` added a Plannotator annotation gate after `afk-to-prd-spec` writes local PRD/spec artifacts so user feedback is resolved before slicing or execution consumes the spec.
@@ -62,7 +295,6 @@ This changelog tracks meaningful updates by version and date.
 ### Fixed
 
 - `cli:` normalized skill description parsing so YAML block-scalar markers and leading blank descriptions no longer leak into `afk skills list` or `show` output.
-- `skills:` made AFK Turbo launch pages resilient on `file://` by adding clipboard fallback behavior and visible launch status messages for Codex and Claude Code buttons.
 
 ## v0.6.0 - 2026-06-16
 

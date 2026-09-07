@@ -5,14 +5,17 @@ export type AgentId =
   | "claude"
   | "codex"
   | "cursor-local"
-  | "opencode";
+  | "opencode"
+  | "pi";
 
 export type SkillAgentId = "claude-code" | "kiro-cli" | "kilo" | "pi" | "droid";
 
-export type Area = "rules" | "skills" | "mcps" | "plugins" | "hooks";
+export type Area = "rules" | "skills" | "profiles" | "agents" | "mcps" | "tools" | "hooks";
 export type SetupScope = "global" | "project";
 export type SkillsListScope = "global" | "project" | "all";
-export type SkillsUpgradeScope = "global" | "project" | "all";
+export type SkillsListStorage = "active" | "disabled";
+export type SkillsInvocationFilter = "auto" | "manual" | "mixed";
+export type SkillsUpdateScope = "global" | "project" | "all";
 export type ManagedSkillAgent =
   | "codex"
   | "claude"
@@ -30,11 +33,13 @@ export type ManagedSkillAgent =
   | "kiro"
   | "jules"
   | "openhands";
+export type SkillAgentFilter = ManagedSkillAgent | "custom";
 export type SkillCategorizationMode = "append-missing" | "recategorize-all";
 export type SkillCategorizationRunner = "codex-exec";
+export type SkillProfileMode = "strict" | "context";
 export type SkillOpenApp = "finder" | "code" | "cursor" | "zed" | "agy";
-export type ManifestCategory = "rules" | "skills" | "mcps" | "plugins" | "hooks" | "presets";
-export type ManifestFilename = "skills.json" | "mcps.json" | "presets.json" | "rules.json" | "plugins.json" | "hooks.json";
+export type ManifestCategory = "rules" | "skills" | "profiles" | "agents" | "mcps" | "tools" | "hooks" | "presets";
+export type ManifestFilename = "skills.json" | "profiles.json" | "agents.json" | "mcps.json" | "presets.json" | "rules.json" | "tools.json" | "hooks.json";
 
 export type CliOptions = {
   agents: AgentId[];
@@ -43,43 +48,67 @@ export type CliOptions = {
   dryRun: boolean;
   verbose: boolean;
   yes: boolean;
+  presetId?: string;
+  presetPrompt?: boolean;
   allSkills: boolean;
+  allCustomAgents?: boolean;
   selectedSkillIds: string[];
+  selectedSkillProfileIds?: string[];
+  selectedCustomAgentIds?: string[];
   selectedSkillAgentIds: SkillAgentId[];
+  skillAddArgs: string[];
+  skillAddProfileIds: string[];
+  skillAddProfileOnlyIds: string[];
+  skillAddStartDisabled: boolean;
   selectedMcpIds: string[];
-  selectedPluginIds: string[];
+  selectedToolIds: string[];
   selectedHookIds: string[];
   rulesRef: string;
   rulesSource: "manifest" | "github" | "local";
   initOnly: boolean;
   empty: boolean;
   refreshDefaults: boolean;
+  overrideRefresh?: boolean;
+  refreshBeforeSetup?: boolean;
   defaultsSource: string;
   defaultsSourceExplicit: boolean;
+  sourcePrompt?: boolean;
   defaultSourceUpdate: string;
   rememberDefaultsSource?: boolean;
   setupManifestsPrepared?: boolean;
+  setupSourceExplicit?: boolean;
   manifestContents?: Partial<Record<ManifestFilename, string>>;
   manifestLocal: boolean;
   manifestConfigureLocal: boolean;
   manifestConfigureFromCurrent: boolean;
   skillsListScope?: SkillsListScope;
-  skillsUpgradeAll?: boolean;
-  skillsUpgradeScope?: SkillsUpgradeScope;
-  skillsDeleteManifestOnly?: boolean;
-  skillsAgent?: ManagedSkillAgent | undefined;
+  skillsListStorage?: SkillsListStorage | undefined;
+  skillsInvocation?: SkillsInvocationFilter | undefined;
+  skillsUpdateAll?: boolean;
+  skillsUpdateScope?: SkillsUpdateScope;
+  skillsUpdateByProfile?: boolean;
+  skillsDeleteCatalogOnly?: boolean;
+  skillsDeleteByProfile?: boolean;
+  skillsAgent?: SkillAgentFilter | undefined;
+  skillsAgentPath?: string | undefined;
   skillsJson?: boolean;
   skillsCategory?: string;
   skillsTag?: string;
   skillsUncategorized?: boolean;
   skillOpenApp?: SkillOpenApp;
   skillOpenTarget?: "file" | "folder";
+  afkOpenApp?: "finder" | "code";
   skillCategorizationMode?: SkillCategorizationMode | undefined;
   skillCategorizationRunner?: SkillCategorizationRunner;
   skillCategorizationInstruction?: string;
   skillProfileName?: string | undefined;
   skillProfileSkills?: string[] | undefined;
   skillProfileAlwaysOn?: string[] | undefined;
+  skillProfileMode?: SkillProfileMode | undefined;
+  skillProfileAdditive?: boolean;
+  skillProfileFocus?: boolean;
+  skillProfileOnly?: boolean;
+  skillProfileUseAll?: boolean;
   uiCategory?: string;
   manifestShowReact: boolean;
   manifestShowVisualize: boolean;
@@ -133,6 +162,11 @@ export type PathOperation =
     }
   | {
       type: "backup";
+      source: string;
+      target: string;
+    }
+  | {
+      type: "move";
       source: string;
       target: string;
     }

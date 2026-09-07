@@ -10,9 +10,11 @@ test("detectSetupTargets returns installed compatible global targets", () => {
   mkdirSync(join(homeDir, ".codex"), { recursive: true });
   mkdirSync(join(homeDir, ".claude"), { recursive: true });
   mkdirSync(join(homeDir, ".cursor"), { recursive: true });
+  mkdirSync(join(homeDir, ".pi", "agent"), { recursive: true });
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
   writeFileSync(join(homeDir, ".claude", "settings.json"), "{}\n");
   writeFileSync(join(homeDir, ".cursor", "hooks.json"), "{}\n");
+  writeFileSync(join(homeDir, ".pi", "agent", "AGENTS.md"), "# Pi\n");
 
   const detected = detectSetupTargets({
     homeDir,
@@ -20,9 +22,9 @@ test("detectSetupTargets returns installed compatible global targets", () => {
     setupScope: "global",
   });
 
-  assert.deepEqual(detected.agents, ["claude", "codex"]);
+  assert.deepEqual(detected.agents, ["claude", "codex", "pi"]);
   assert.deepEqual(detected.hookAgents, ["codex", "claude", "cursor-local"]);
-  assert.deepEqual(detected.skillAgents, ["claude-code"]);
+  assert.deepEqual(detected.skillAgents, ["claude-code", "pi"]);
 });
 
 test("detectSetupTargets keeps project detection scoped to the project", () => {
@@ -30,7 +32,7 @@ test("detectSetupTargets keeps project detection scoped to the project", () => {
   const homeDir = join(root, "home");
   const cwd = join(root, "project");
   mkdirSync(join(homeDir, ".codex"), { recursive: true });
-  mkdirSync(cwd, { recursive: true });
+  mkdirSync(join(cwd, ".pi", "agents"), { recursive: true });
   writeFileSync(join(homeDir, ".codex", "config.toml"), "");
   writeFileSync(join(cwd, "AGENTS.md"), "# Project agents\n");
 
@@ -40,7 +42,7 @@ test("detectSetupTargets keeps project detection scoped to the project", () => {
     setupScope: "project",
   });
 
-  assert.deepEqual(detected.agents, ["codex", "opencode"]);
+  assert.deepEqual(detected.agents, ["codex", "opencode", "pi"]);
   assert.deepEqual(detected.hookAgents, []);
 });
 

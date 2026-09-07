@@ -18,7 +18,7 @@ This plan intentionally leaves official Hub search, source add/install delegatio
 ## Command Surface
 
 ```bash
-afk skills list [--scope global|project|all] [--agent <id>] [--category <id-or-label>] [--tag <tag>] [--uncategorized] [--json]
+afk skills list [--scope global|project|all] [--agent <id>|custom] [--agent-path <folder>] [--category <id-or-label>] [--tag <tag>] [--uncategorized] [--json]
 afk skills open [<folder>] [--file|--folder] [--app finder|code|cursor|zed|agy]
 afk skills trash [<folder>] [--dry-run] [--yes]
 ```
@@ -36,7 +36,7 @@ afk skills categorize ...
 
 ### `list --agent <id>`
 
-`--agent <id>` narrows list results to the selected agent inside the requested scope. For example, `--scope global --agent codex` lists Codex's global agent skill root, while `--scope project --agent codex` lists the current project's Codex skill root.
+Without `--agent`, list results come only from the shared global library. `--agent <id>` selects a preset agent inside the requested scope. For example, `--scope global --agent codex` lists Codex's global agent skill root, while `--scope project --agent codex` lists the current project's Codex skill root. `--agent custom --agent-path <folder>` selects one literal root and does not combine with `--scope`.
 
 Human output should be sectioned by agent/root, for example:
 
@@ -161,6 +161,8 @@ Category matching should accept category id or visible label case-insensitively.
 
 - `afk skills list --scope global --agent codex` shows Codex's read-only global agent-root skills.
 - `afk skills list --scope global --agent codex --json` returns a flat record array.
+- `afk skills list` shows only shared global skills unless an agent is explicit.
+- `afk skills list --agent custom --agent-path <folder>` reads that literal root.
 - `afk skills list` filters work for category, tag, and uncategorized records.
 - `afk skills open` can open a selected skill file or folder with Finder, Code, Cursor, Zed, or Antigravity.
 - `afk skills trash` never affects project or agent roots and never permanently deletes a skill.

@@ -1,6 +1,7 @@
 ---
 name: afk-ask
 description: Ask a local AI CLI advisor such as Kiro, OpenCode, Codex, or Agy and capture the result as a reusable artifact.
+disable-model-invocation: true
 metadata:
   short-description: Ask a local Kiro/OpenCode, Codex, or Agy CLI for a second opinion and preserve the answer.
 ---
@@ -8,8 +9,6 @@ metadata:
 # Ask
 
 Use this skill to route a focused prompt to another locally installed AI CLI and preserve the result as an artifact for later review or reuse.
-
-This is inspired by `omc ask`, but it is standalone AFK behavior. Do not require OMC, Claude-specific paths, or framework-specific wrappers.
 
 ## Invocation
 
@@ -57,7 +56,7 @@ Do not dump unrelated repo context into the advisor. Keep the prompt focused eno
 
 After local execution, save a markdown artifact.
 
-Follow the repo or user artifact convention. If none exists, follow the AFK artifact convention from `afk-compass/references/artifacts.md`.
+Follow the active repo or user artifact convention.
 
 Minimum artifact sections for substantial asks:
 

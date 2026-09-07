@@ -1,0 +1,7 @@
+interface:
+  display_name: "AFK Design Grill"
+  short_description: "Settle frontend design through visible alternatives"
+  default_prompt: "Use $afk-design-grill to settle this frontend's design choices and preserve the selected visual direction through handoff."
+
+policy:
+  allow_implicit_invocation: false

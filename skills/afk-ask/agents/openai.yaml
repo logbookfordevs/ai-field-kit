@@ -2,3 +2,5 @@ interface:
   display_name: "Ask"
   short_description: "Ask a local Kiro/OpenCode, Codex, or Agy CLI for a second opinion and preserve the answer."
   default_prompt: "Ask a local AI CLI advisor for a focused second opinion and save the result as an artifact."
+policy:
+  allow_implicit_invocation: false

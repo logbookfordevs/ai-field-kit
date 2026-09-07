@@ -1,0 +1,7 @@
+# Define profile skill ownership and activation
+
+Version 2 profiles distinguish skills by ownership rather than by installation history. `catalogSkills` references skills owned by the Skill Catalog, where `skills.json` remains authoritative for source, arguments, invocation, composition, categorization, and startup policy. `packages` declares profile-owned remote sources; their installed skills are cached in `skills.json` with imported provenance, remain profile-only, and start disabled until an owning profile is enabled.
+
+Ownership is resolved per skill ID. When a Profile Package overlaps a Catalog Skill, catalog ownership and policy win. A selective package may not repeat a Catalog Skill named by the same profile; whole-package overlap remains valid because package contents may not be known before installation. A user who needs durable custom configuration for a Package Skill promotes it by adding it to the Skill Catalog and referencing it through `catalogSkills`. The `imported` field records provenance and does not override ownership.
+
+Profile activation is additive by default: enabling a profile activates its skills without disabling unrelated active skills. Focus Activation is an explicit `--focus` operation and applies the configured strict or context filtering policy. `--additive` remains an explicit compatibility alias for the default. An enabled profile must be disabled before changing activation modes so restoration state remains deterministic.

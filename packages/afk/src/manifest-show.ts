@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sectionTitle, muted } from "./brand.js";
-import { loadDefaultManifestContent, localManifestDir, readRememberedDefaultsSource, type ManifestName } from "./manifest.js";
-import { skillProfileStatus, type SkillProfileApplyResult } from "./skills/profiles.js";
+import { loadDefaultManifestContent, localManifestDir, readRememberedDefaultsSource, skillInvocationPolicy, type ManifestName } from "./manifest.js";
+import { enabledSkillProfileIds, skillProfileStatus, type SkillProfileApplyResult } from "./skills/profiles.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, ManifestCategory, Runtime } from "./types.js";
 
@@ -15,8 +15,10 @@ type ManifestShowCategory = {
 const categories: ManifestShowCategory[] = [
   { id: "rules", label: "Rules", filename: "rules.json" },
   { id: "skills", label: "Skills", filename: "skills.json" },
+  { id: "profiles", label: "Profiles", filename: "profiles.json" },
+  { id: "agents", label: "Custom Agents", filename: "agents.json" },
   { id: "mcps", label: "MCPs", filename: "mcps.json" },
-  { id: "plugins", label: "Plugins", filename: "plugins.json" },
+  { id: "tools", label: "Tools", filename: "tools.json" },
   { id: "hooks", label: "Hooks", filename: "hooks.json" },
   { id: "presets", label: "Presets", filename: "presets.json" },
 ];
@@ -214,10 +216,14 @@ function renderManifestSummary(category: ManifestCategory, manifest: unknown, op
       return renderRules(manifest);
     case "skills":
       return options.manifestShowReact ? renderSkillsAsReact(manifest) : renderSkills(manifest);
+    case "profiles":
+      return renderProfiles(manifest);
+    case "agents":
+      return renderCustomAgents(manifest);
     case "mcps":
       return renderItems(manifest, "MCP");
-    case "plugins":
-      return renderPlugins(manifest);
+    case "tools":
+      return renderTools(manifest);
     case "hooks":
       return renderHooks(manifest);
     case "presets":
@@ -225,8 +231,45 @@ function renderManifestSummary(category: ManifestCategory, manifest: unknown, op
   }
 }
 
+function renderCustomAgents(manifest: Record<string, unknown>): string {
+  const items = Array.isArray(manifest.items) ? manifest.items : [];
+  const lines = [
+    summaryLine("version", valueOrUnknown(manifest.version)),
+    summaryLine("agents", items.length.toString()),
+  ];
+  for (const item of items) {
+    if (!isRecord(item)) {
+      continue;
+    }
+    lines.push(itemLine(`${String(item.label ?? item.id ?? "unnamed")} ${muted(String(item.source ?? "(no source)"))}`));
+  }
+  return lines.join("\n");
+}
+
+function renderProfiles(manifest: Record<string, unknown>): string {
+  const alwaysOn = Array.isArray(manifest.alwaysOn) ? manifest.alwaysOn.filter((item) => typeof item === "string") : [];
+  const items = Array.isArray(manifest.items) ? manifest.items : [];
+  return [
+    summaryLine("version", valueOrUnknown(manifest.version)),
+    summaryLine("mode", typeof manifest.mode === "string" ? manifest.mode : "strict"),
+    summaryLine("always-on", alwaysOn.length.toString()),
+    summaryLine("profiles", items.length.toString()),
+  ].join("\n");
+}
+
 function renderRules(manifest: Record<string, unknown>): string {
   const lines = [summaryLine("version", valueOrUnknown(manifest.version))];
+  if (Array.isArray(manifest.layers)) {
+    lines.push(summaryLine("layers", String(manifest.layers.length)));
+    for (const layer of manifest.layers) {
+      if (!isRecord(layer)) {
+        continue;
+      }
+      const files = Array.isArray(layer.files) ? ` · ${layer.files.length} file${layer.files.length === 1 ? "" : "s"}` : "";
+      lines.push(itemLine(`${String(layer.label ?? layer.id ?? "unnamed")} (${String(layer.id ?? "no id")}) ${muted(`${String(layer.source ?? "(no source)")}${files}`)}`));
+    }
+    return lines.join("\n");
+  }
   if (typeof manifest.source === "string") {
     lines.push(summaryLine("source", manifest.source));
   }
@@ -239,7 +282,7 @@ function renderRules(manifest: Record<string, unknown>): string {
       if (!isRecord(item)) {
         continue;
       }
-      lines.push(itemLine(`${String(item.id ?? "unnamed")} ${muted(String(item.path ?? item.url ?? "(no path)"))}${defaultSuffix(item.default)}`));
+      lines.push(itemLine(`${String(item.source ?? "(no source)")} ${muted(`→ ${String(item.destination ?? "(no destination)")}`)}`));
     }
   }
 
@@ -254,9 +297,12 @@ function renderSkills(manifest: Record<string, unknown>): string {
       const args = Array.isArray(item.args) && item.args.length > 0 ? item.args.filter((value) => typeof value === "string").join(" ") : "";
       const details = [
         `role: ${stringValue(item.role, "primitive")}`,
-        `auto-invocation: ${item.autoInvocation === false ? "off" : "on"}`,
+        `invocation: ${skillInvocationPolicy(item)}`,
+        `start-disabled: ${item.startDisabled === true ? "on" : "off"}`,
         ...stringListDetail("composes", item.composes),
-        ...stringListDetail("profiles", item.profiles),
+        ...(Array.isArray(item.postInstall) && item.postInstall.length > 0
+          ? [`post-install: ${item.postInstall.filter(isRecord).map((action) => action.label ?? `${action.type}${action.agent ? ` (${action.agent})` : ""}`).join(", ")}`]
+          : []),
         ...(args ? [`args: ${args}`] : []),
       ];
       return detailItemLine(`${labelFor(item)}${defaultSuffix(item.default)}`, details);
@@ -267,8 +313,8 @@ function renderSkills(manifest: Record<string, unknown>): string {
 function renderSkillsAsReact(manifest: Record<string, unknown>): string {
   const items = Array.isArray(manifest.items) ? manifest.items.filter(isRecord) : [];
   const byId = new Map(items.map((item) => [stringValue(item.id, "unnamed"), item]));
-  const modelDiscovered = items.filter((item) => item.autoInvocation !== false);
-  const userInvoked = items.filter((item) => item.autoInvocation === false);
+  const modelDiscovered = items.filter((item) => skillInvocationPolicy(item) !== "manual");
+  const userInvoked = items.filter((item) => skillInvocationPolicy(item) === "manual");
   const composed = items.filter((item) => stringList(item.composes).length > 0);
 
   if (items.length === 0) {
@@ -298,8 +344,8 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
   profiles: VisualizationProfiles | null;
 }): string {
   const items = skillItems(manifest);
-  const modelDiscovered = items.filter((item) => item.autoInvocation !== false);
-  const userInvoked = items.filter((item) => item.autoInvocation === false);
+  const modelDiscovered = items.filter((item) => skillInvocationPolicy(item) !== "manual");
+  const userInvoked = items.filter((item) => skillInvocationPolicy(item) === "manual");
   const composed = items.filter((item) => stringList(item.composes).length > 0);
   const roleCounts = roleSummary(items);
   const profileSummary = profileVisualizationSummary(context.profiles, items);
@@ -488,7 +534,7 @@ function renderSkillsVisualizationHtml(manifest: Record<string, unknown>, contex
     <section>
       <div class="section-head">
         <h2>React analogy.</h2>
-        <p>The tree below is not runtime code. It is a readable projection of <code>role</code>, <code>autoInvocation</code>, and <code>composes</code>.</p>
+        <p>The tree below is not runtime code. It is a readable projection of <code>role</code>, <code>invocation</code>, and <code>composes</code>.</p>
       </div>
       <pre class="code-window">${highlightJsxForHtml(reactTree)}</pre>
     </section>
@@ -538,9 +584,9 @@ function renderProfilesSectionHtml(profiles: VisualizationProfiles | null, items
     return `<div class="profile-empty">Could not load profiles: ${escapeHtml(profiles.error)}</div>`;
   }
 
-  const enabled = new Set(profiles.state.enabledProfileIds);
+  const activations = new Map(profiles.state.activations.map((activation) => [activation.profileId, activation.mode]));
   const itemIds = new Set(items.map((item) => stringValue(item.id, "unnamed")));
-  const cards = profiles.catalog.items.map((profile) => renderProfileCardHtml(profile, enabled.has(profile.id), itemIds));
+  const cards = profiles.catalog.items.map((profile) => renderProfileCardHtml(profile, activations.get(profile.id), itemIds));
   const alwaysOn = profiles.catalog.alwaysOn.length > 0 ? renderAlwaysOnProfileCardHtml(profiles.catalog.alwaysOn, itemIds) : "";
 
   if (cards.length === 0 && !alwaysOn) {
@@ -555,16 +601,23 @@ function renderProfilesSectionHtml(profiles: VisualizationProfiles | null, items
     alwaysOn,
     ...cards,
     `</div>`,
-    `<div class="profile-empty">${escapeHtml(profiles.catalog.items.length.toString())} profiles · ${escapeHtml(enabled.size.toString())} enabled · ${escapeHtml(profiles.catalog.alwaysOn.length.toString())} always-on · ${escapeHtml(profiles.paths.catalogPath)}</div>`,
+    `<div class="profile-empty">${escapeHtml(profiles.catalog.items.length.toString())} profiles · ${escapeHtml(activations.size.toString())} enabled · ${escapeHtml(profiles.catalog.alwaysOn.length.toString())} always-on · ${escapeHtml(profiles.paths.catalogPath)}</div>`,
   ].join("");
 }
 
-function renderProfileCardHtml(profile: { id: string; name: string; skills: string[] }, enabled: boolean, itemIds: Set<string>): string {
-  const missing = profile.skills.filter((skill) => !itemIds.has(skill));
-  const skills = profile.skills.length > 0
-    ? profile.skills.map((skill) => renderProfileSkillPill(skill, itemIds.has(skill))).join("")
+function renderProfileCardHtml(
+  profile: { id: string; name: string; catalogSkills: string[]; packages: Array<{ source: string }> },
+  activationMode: "focus" | "additive" | undefined,
+  itemIds: Set<string>,
+): string {
+  const missing = profile.catalogSkills.filter((skill) => !itemIds.has(skill));
+  const skills = profile.catalogSkills.length > 0
+    ? profile.catalogSkills.map((skill) => renderProfileSkillPill(skill, itemIds.has(skill))).join("")
     : `<span class="profile-skill missing">empty</span>`;
-  return `<article class="profile-card${enabled ? " enabled" : ""}"><b>${escapeHtml(profile.name)}</b><span class="profile-meta">${escapeHtml(profile.id)} · ${enabled ? "enabled" : "disabled"} · ${profile.skills.length} skill${profile.skills.length === 1 ? "" : "s"}${missing.length > 0 ? ` · ${missing.length} missing` : ""}</span><div class="profile-skills">${skills}</div></article>`;
+  const packages = profile.packages.map((item) => `<span class="profile-skill">package:${escapeHtml(item.source)}</span>`).join("");
+  const status = activationMode ? `enabled ${activationMode}` : "disabled";
+  const packageSummary = profile.packages.length > 0 ? ` · ${profile.packages.length} package${profile.packages.length === 1 ? "" : "s"}` : "";
+  return `<article class="profile-card${activationMode ? " enabled" : ""}"><b>${escapeHtml(profile.name)}</b><span class="profile-meta">${escapeHtml(profile.id)} · ${status} · ${profile.catalogSkills.length} skill${profile.catalogSkills.length === 1 ? "" : "s"}${packageSummary}${missing.length > 0 ? ` · ${missing.length} missing` : ""}</span><div class="profile-skills">${skills}${packages}</div></article>`;
 }
 
 function renderAlwaysOnProfileCardHtml(skills: string[], itemIds: Set<string>): string {
@@ -591,10 +644,10 @@ function profileVisualizationSummary(profiles: VisualizationProfiles | null, ite
   }
 
   const itemIds = new Set(items.map((item) => stringValue(item.id, "unnamed")));
-  const profileSkills = profiles.catalog.items.flatMap((profile) => profile.skills);
+  const profileSkills = profiles.catalog.items.flatMap((profile) => profile.catalogSkills);
   return {
     profileCount: profiles.catalog.items.length,
-    enabledCount: profiles.state.enabledProfileIds.length,
+    enabledCount: enabledSkillProfileIds(profiles.state).length,
     alwaysOnCount: profiles.catalog.alwaysOn.length,
     missingSkillCount: [...new Set([...profileSkills, ...profiles.catalog.alwaysOn])].filter((skill) => !itemIds.has(skill)).length,
   };
@@ -603,8 +656,8 @@ function profileVisualizationSummary(profiles: VisualizationProfiles | null, ite
 function renderSkillsAsReactPlain(manifest: Record<string, unknown>, profiles: VisualizationProfiles | null = null): string {
   const items = skillItems(manifest);
   const byId = new Map(items.map((item) => [stringValue(item.id, "unnamed"), item]));
-  const modelDiscovered = items.filter((item) => item.autoInvocation !== false);
-  const userInvoked = items.filter((item) => item.autoInvocation === false);
+  const modelDiscovered = items.filter((item) => skillInvocationPolicy(item) !== "manual");
+  const userInvoked = items.filter((item) => skillInvocationPolicy(item) === "manual");
   return [
     "<AFKSkillTree>",
     ...renderReactGroupPlain("ModelDiscovery", modelDiscovered, byId, 1),
@@ -621,7 +674,7 @@ function renderProfilesReactPlain(profiles: VisualizationProfiles | null, byId: 
 
   const indent = "  ".repeat(indentLevel);
   const childIndent = "  ".repeat(indentLevel + 1);
-  const enabled = new Set(profiles.state.enabledProfileIds);
+  const activations = new Map(profiles.state.activations.map((activation) => [activation.profileId, activation.mode]));
   return [
     `${indent}<FocusProfiles>`,
     ...(profiles.catalog.alwaysOn.length > 0
@@ -632,8 +685,9 @@ function renderProfilesReactPlain(profiles: VisualizationProfiles | null, byId: 
         ]
       : []),
     ...profiles.catalog.items.flatMap((profile) => [
-      `${childIndent}<SkillProfile id="${escapeJsxAttribute(profile.id)}"${enabled.has(profile.id) ? " enabled" : ""}>`,
-      ...profile.skills.map((skill) => renderSkillReferencePlain(skill, byId, indentLevel + 2)),
+      `${childIndent}<SkillProfile id="${escapeJsxAttribute(profile.id)}"${activations.has(profile.id) ? ` enabled activation="${activations.get(profile.id)}"` : ""}>`,
+      ...profile.catalogSkills.map((skill) => renderSkillReferencePlain(skill, byId, indentLevel + 2)),
+      ...profile.packages.map((item) => `${childIndent}  <SkillPackage source="${escapeJsxAttribute(item.source)}" />`),
       `${childIndent}</SkillProfile>`,
     ]),
     `${indent}</FocusProfiles>`,
@@ -680,7 +734,7 @@ function renderSkillReferencePlain(id: string, byId: Map<string, Record<string, 
 function skillAttributesPlain(item: Record<string, unknown>, idProp: "id" | "ref"): string {
   const attrs = [
     `${idProp}="${escapeJsxAttribute(stringValue(item.id, "unnamed"))}"`,
-    item.autoInvocation === false ? "autoDiscovery={false}" : "autoDiscovery",
+    skillInvocationPolicy(item) === "manual" ? "autoDiscovery={false}" : "autoDiscovery",
   ];
   if (item.default === true) {
     attrs.push("defaultInstalled");
@@ -821,7 +875,7 @@ function skillAttributes(item: Record<string, unknown>, idProp: "id" | "ref"): J
   const id = stringValue(item.id, "unnamed");
   const attrs: JsxAttribute[] = [
     { name: idProp, stringValue: id, tone: "identity" },
-    item.autoInvocation === false
+    skillInvocationPolicy(item) === "manual"
       ? { name: "autoDiscovery", expressionValue: "false", tone: "false" }
       : { name: "autoDiscovery", tone: "boolean" },
   ];
@@ -941,10 +995,10 @@ function componentTag(role: unknown): string {
   }
 }
 
-function renderPlugins(manifest: Record<string, unknown>): string {
+function renderTools(manifest: Record<string, unknown>): string {
   return [
     summaryLine("version", valueOrUnknown(manifest.version)),
-    ...renderItemList(manifest.items, "plugin", (item) => {
+    ...renderItemList(manifest.items, "tool", (item) => {
       const description = typeof item.description === "string" ? item.description : "";
       return sourceItemLine(`${labelFor(item)}${defaultSuffix(item.default)}`, description);
     }),
@@ -968,9 +1022,26 @@ function renderPresets(manifest: Record<string, unknown>): string {
     summaryLine("defaults source", typeof manifest.defaultsSource === "string" && manifest.defaultsSource ? manifest.defaultsSource : "(none)"),
     ...renderItemList(manifest.presets, "preset", (item) => {
       const areas = Array.isArray(item.areas) ? ` [${item.areas.filter((value) => typeof value === "string").join(", ")}]` : "";
-      return `${labelFor(item)}${areas}`;
+      const selections = isRecord(item.selections)
+        ? [
+            presetSelectionSummary("skills", item.selections.skills),
+            presetSelectionSummary("custom agents", item.selections.customAgents),
+            presetSelectionSummary("MCPs", item.selections.mcps),
+            presetSelectionSummary("tools", item.selections.tools),
+            presetSelectionSummary("hooks", item.selections.hooks),
+          ].filter((selection): selection is string => Boolean(selection))
+        : [];
+      const selectionSummary = item.all === true
+        ? " · all items in declared areas"
+        : selections.length > 0 ? ` · ${selections.join(" · ")}` : "";
+      return `${labelFor(item)}${areas}${selectionSummary}`;
     }),
   ].join("\n");
+}
+
+function presetSelectionSummary(label: string, value: unknown): string | null {
+  const ids = stringList(value);
+  return ids.length > 0 ? `${label}: ${ids.join(", ")}` : null;
 }
 
 function renderItems(manifest: Record<string, unknown>, singular: string): string {
@@ -1073,8 +1144,8 @@ function escapeHtml(value: string): string {
 }
 
 function pluralize(value: string): string {
-  if (value === "plugin") {
-    return "Plugins";
+  if (value === "tool") {
+    return "Tools";
   }
 
   return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}s`;

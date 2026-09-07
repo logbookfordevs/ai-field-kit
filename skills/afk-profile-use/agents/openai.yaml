@@ -1,0 +1,6 @@
+interface:
+  display_name: "AFK Profile Use"
+  short_description: "Load a local AFK skill profile for one request"
+  default_prompt: "Use an AFK skill profile for this request and load the relevant local skill instructions."
+policy:
+  allow_implicit_invocation: false

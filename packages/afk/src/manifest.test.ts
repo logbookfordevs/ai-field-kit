@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
@@ -7,14 +7,505 @@ import {
   defaultsManifestBaseUrl,
   defaultsManifestBaseUrls,
   ensureLocalManifests,
+  loadPresetsManifest,
+  loadToolManifest,
+  loadSourceManifestContents,
+  mergedCustomAgentManifestContent,
+  mergedRulesManifestContent,
   localManifestDir,
   planRememberedDefaultsSourceUpdate,
   projectManifestDir,
   readRememberedDefaultsSource,
+  resolvedRulesManifestContent,
+  resolvedCustomAgentManifestContent,
+  rulesManifestLayers,
   type SkillManifest,
 } from "./manifest.js";
 
-type PluginManifestFile = {
+test("loadPresetsManifest accepts area presets, all-area presets, and explicit required selections", () => {
+  const manifest = loadPresetsManifest({
+    homeDir: "/unused",
+    manifestContents: {
+      "presets.json": JSON.stringify({
+        version: 1,
+        defaultsSource: "logbookfordevs/ai-field-kit",
+        presets: [
+          { id: "baseline", label: "Baseline", areas: ["rules", "skills"] },
+          { id: "daily-routine", label: "Daily Routine", areas: ["rules", "skills", "tools", "agents"], all: true },
+          {
+            id: "afk-architect",
+            label: "AFK Architect",
+            areas: ["skills", "agents"],
+            selections: {
+              skills: ["afk-architect"],
+              customAgents: ["afk-cartographer", "afk-builder", "afk-pathfinder"],
+            },
+          },
+        ],
+      }),
+    },
+  });
+
+  assert.deepEqual(manifest.presets[0], { id: "baseline", label: "Baseline", areas: ["rules", "skills"] });
+  assert.deepEqual(manifest.presets[1], {
+    id: "daily-routine",
+    label: "Daily Routine",
+    areas: ["rules", "skills", "tools", "agents"],
+    all: true,
+  });
+  assert.deepEqual(manifest.presets[2]?.selections, {
+    skills: ["afk-architect"],
+    customAgents: ["afk-cartographer", "afk-builder", "afk-pathfinder"],
+  });
+});
+
+test("Custom Agent sources resolve relative to a local catalog repository", async () => {
+  const sourceRoot = mkdtempSync(join(tmpdir(), "afk-agent-source-"));
+  const cwd = mkdtempSync(join(tmpdir(), "afk-agent-cwd-"));
+  const catalogDir = join(sourceRoot, "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(join(catalogDir, "agents.json"), `${JSON.stringify({
+    version: 1,
+    items: [{ id: "notion_assistant", label: "Notion Assistant", source: "agents/notion_assistant.md" }],
+  })}\n`);
+
+  const contents = await loadSourceManifestContents({
+    homeDir: mkdtempSync(join(tmpdir(), "afk-agent-home-")),
+    repoDir: sourceRoot,
+    rulesRef: "main",
+    rulesSource: "github",
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: sourceRoot,
+    dryRun: true,
+    manifestLocal: false,
+    cwd,
+    selectedManifestCategories: ["agents"],
+  });
+  const agents = JSON.parse(contents["agents.json"] ?? "") as { items: Array<{ source: string }> };
+
+  assert.equal(agents.items[0]?.source, join(sourceRoot, "agents", "notion_assistant.md"));
+});
+
+test("Rules sources resolve relative to a local catalog repository while preserving URLs", async () => {
+  const sourceRoot = mkdtempSync(join(tmpdir(), "afk-rules-source-"));
+  const cwd = mkdtempSync(join(tmpdir(), "afk-rules-cwd-"));
+  const catalogDir = join(sourceRoot, "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(join(catalogDir, "rules.json"), `${JSON.stringify({
+    version: 1,
+    source: "github",
+    url: "rules/AGENTS.md",
+    files: [
+      { source: "rules/artifacts.md", destination: "artifacts.md" },
+      { source: "https://example.com/security.md", destination: "security.md" },
+    ],
+  })}\n`);
+
+  const contents = await loadSourceManifestContents({
+    homeDir: mkdtempSync(join(tmpdir(), "afk-rules-home-")),
+    repoDir: sourceRoot,
+    rulesRef: "main",
+    rulesSource: "github",
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: sourceRoot,
+    dryRun: true,
+    manifestLocal: false,
+    cwd,
+    selectedManifestCategories: ["rules"],
+  });
+  const rules = JSON.parse(contents["rules.json"] ?? "") as {
+    url: string;
+    files: Array<{ source: string; destination: string }>;
+  };
+
+  assert.equal(rules.url, join(sourceRoot, "rules", "AGENTS.md"));
+  assert.equal(rules.files[0]?.source, join(sourceRoot, "rules", "artifacts.md"));
+  assert.equal(rules.files[0]?.destination, "artifacts.md");
+  assert.equal(rules.files[1]?.source, "https://example.com/security.md");
+});
+
+test("Layered rules resolve every layer relative to the owning catalog", () => {
+  const content = `${JSON.stringify({
+    version: 2,
+    layers: [
+      {
+        id: "afk",
+        label: "AFK rules",
+        source: "rules/AGENTS.md",
+        files: [{ source: "rules/artifacts.md", destination: "artifacts.md" }],
+      },
+      {
+        id: "personal",
+        label: "Personal rules",
+        source: "https://example.com/personal.md",
+      },
+    ],
+  })}\n`;
+
+  const resolved = JSON.parse(resolvedRulesManifestContent(
+    content,
+    "acme/dev-kit",
+    "feature/layers",
+    "/tmp/project",
+  )) as {
+    layers: Array<{ source: string; files?: Array<{ source: string; destination: string }> }>;
+  };
+
+  assert.equal(
+    resolved.layers[0]?.source,
+    "https://raw.githubusercontent.com/acme/dev-kit/feature%2Flayers/rules/AGENTS.md",
+  );
+  assert.equal(
+    resolved.layers[0]?.files?.[0]?.source,
+    "https://raw.githubusercontent.com/acme/dev-kit/feature%2Flayers/rules/artifacts.md",
+  );
+  assert.equal(resolved.layers[0]?.files?.[0]?.destination, "artifacts.md");
+  assert.equal(resolved.layers[1]?.source, "https://example.com/personal.md");
+});
+
+test("Legacy rules normalize to one stable layer", () => {
+  const layers = rulesManifestLayers({
+    version: 1,
+    source: "github",
+    url: "https://example.com/AGENTS.md",
+    files: [{ source: "https://example.com/artifacts.md", destination: "artifacts.md" }],
+  });
+
+  assert.deepEqual(layers, [
+    {
+      id: "legacy",
+      label: "Rules",
+      source: "https://example.com/AGENTS.md",
+      files: [{ source: "https://example.com/artifacts.md", destination: "artifacts.md" }],
+      legacy: true,
+    },
+  ]);
+});
+
+test("Rules sources resolve from the repository root when the source points at its catalog directory", async () => {
+  const repositoryRoot = mkdtempSync(join(tmpdir(), "afk-rules-repository-"));
+  const catalogDir = join(repositoryRoot, "packages", "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  mkdirSync(join(repositoryRoot, ".git"));
+  writeFileSync(join(catalogDir, "rules.json"), `${JSON.stringify({
+    version: 1,
+    source: "github",
+    url: "rules/AGENTS.md",
+    files: [
+      { source: "rules/artifacts.md", destination: "artifacts.md" },
+    ],
+  })}\n`);
+
+  const contents = await loadSourceManifestContents({
+    homeDir: mkdtempSync(join(tmpdir(), "afk-rules-home-")),
+    repoDir: repositoryRoot,
+    rulesRef: "main",
+    rulesSource: "github",
+    empty: false,
+    refreshDefaults: false,
+    defaultsSource: catalogDir,
+    dryRun: true,
+    manifestLocal: false,
+    cwd: "/tmp/project",
+    selectedManifestCategories: ["rules"],
+  });
+  const rules = JSON.parse(contents["rules.json"] ?? "") as {
+    url: string;
+    files: Array<{ source: string }>;
+  };
+
+  assert.equal(rules.url, join(repositoryRoot, "rules", "AGENTS.md"));
+  assert.equal(rules.files[0]?.source, join(repositoryRoot, "rules", "artifacts.md"));
+});
+
+test("Rules sources resolve relative to a GitHub catalog repository", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    version: 1,
+    source: "github",
+    url: "rules/AGENTS.md",
+    files: [
+      { source: "rules/artifacts.md", destination: "artifacts.md" },
+      { source: "https://example.com/security.md", destination: "security.md" },
+    ],
+  }), { status: 200 });
+
+  try {
+    const contents = await loadSourceManifestContents({
+      homeDir: mkdtempSync(join(tmpdir(), "afk-rules-github-home-")),
+      repoDir: "/tmp/repo",
+      rulesRef: "feature/rules-files",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+      manifestLocal: false,
+      cwd: "/tmp/project",
+      selectedManifestCategories: ["rules"],
+    });
+    const rules = JSON.parse(contents["rules.json"] ?? "") as {
+      url: string;
+      files: Array<{ source: string; destination: string }>;
+    };
+
+    assert.equal(
+      rules.url,
+      "https://raw.githubusercontent.com/acme/dev-kit/feature%2Frules-files/rules/AGENTS.md",
+    );
+    assert.equal(
+      rules.files[0]?.source,
+      "https://raw.githubusercontent.com/acme/dev-kit/feature%2Frules-files/rules/artifacts.md",
+    );
+    assert.equal(rules.files[1]?.source, "https://example.com/security.md");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Custom Agent sources resolve relative to a GitHub catalog repository", () => {
+  const content = `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "relative", label: "Relative", source: "agents/relative.md" },
+      { id: "remote", label: "Remote", source: "https://example.com/remote.md" },
+      { id: "absolute", label: "Absolute", source: "/tmp/absolute.md" },
+    ],
+  })}\n`;
+
+  const resolved = JSON.parse(resolvedCustomAgentManifestContent(
+    content,
+    "leoreisdias/productivity-skills",
+    "feature/agents",
+    "/tmp/unrelated",
+  )) as { items: Array<{ source: string }> };
+
+  assert.equal(
+    resolved.items[0]?.source,
+    "https://raw.githubusercontent.com/leoreisdias/productivity-skills/feature%2Fagents/agents/relative.md",
+  );
+  assert.equal(resolved.items[1]?.source, "https://example.com/remote.md");
+  assert.equal(resolved.items[2]?.source, "/tmp/absolute.md");
+});
+
+test("Custom Agent refresh replaces matches, appends incoming entries, and preserves local-only entries", () => {
+  const directory = mkdtempSync(join(tmpdir(), "afk-agent-merge-"));
+  const target = join(directory, "agents.json");
+  writeFileSync(target, `${JSON.stringify({
+    version: 1,
+    items: [
+      { id: "existing", label: "Old label", source: "old.md" },
+      { id: "local-only", label: "Local only", source: "local.md" },
+    ],
+  }, null, 2)}\n`);
+
+  const merged = JSON.parse(mergedCustomAgentManifestContent(`${JSON.stringify({
+    version: 2,
+    items: [
+      { id: "existing", label: "New label", source: "new.md" },
+      { id: "incoming", label: "Incoming", source: "incoming.md" },
+    ],
+  })}\n`, target)) as { version: number; items: Array<{ id: string; label: string }> };
+
+  assert.equal(merged.version, 2);
+  assert.deepEqual(merged.items.map((item) => item.id), ["existing", "local-only", "incoming"]);
+  assert.equal(merged.items[0]?.label, "New label");
+});
+
+test("Custom Agent override discards local-only entries", () => {
+  const directory = mkdtempSync(join(tmpdir(), "afk-agent-override-"));
+  const target = join(directory, "agents.json");
+  writeFileSync(target, `${JSON.stringify({
+    version: 1,
+    items: [{ id: "local-only", label: "Local only", source: "local.md" }],
+  })}\n`);
+
+  const overridden = JSON.parse(mergedCustomAgentManifestContent(`${JSON.stringify({
+    version: 2,
+    items: [{ id: "incoming", label: "Incoming", source: "incoming.md" }],
+  })}\n`, target, false)) as { items: Array<{ id: string }> };
+
+  assert.deepEqual(overridden.items.map((item) => item.id), ["incoming"]);
+});
+
+test("Rules refresh updates layers in place, preserves absent layers, and appends new layers", () => {
+  const directory = mkdtempSync(join(tmpdir(), "afk-rules-merge-"));
+  const target = join(directory, "rules.json");
+  writeFileSync(target, `${JSON.stringify({
+    version: 2,
+    layers: [
+      { id: "afk", label: "Old AFK", source: "old-afk.md" },
+      { id: "personal", label: "Personal", source: "personal.md" },
+    ],
+  }, null, 2)}\n`);
+
+  const merged = JSON.parse(mergedRulesManifestContent(`${JSON.stringify({
+    version: 2,
+    layers: [
+      { id: "afk", label: "New AFK", source: "new-afk.md" },
+      { id: "organization", label: "Organization", source: "organization.md" },
+    ],
+  })}\n`, target)) as { layers: Array<{ id: string; label: string; source: string }> };
+
+  assert.deepEqual(merged.layers.map((layer) => layer.id), ["afk", "personal", "organization"]);
+  assert.equal(merged.layers[0]?.label, "New AFK");
+  assert.equal(merged.layers[0]?.source, "new-afk.md");
+});
+
+test("ensureLocalManifests durably merges targeted rules layers", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    version: 2,
+    layers: [
+      { id: "base", label: "Updated base", source: "rules/BASE.md" },
+      { id: "organization", label: "Organization", source: "rules/ORG.md" },
+    ],
+  }), { status: 200 });
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-rules-refresh-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({
+      version: 2,
+      layers: [
+        { id: "base", label: "Old base", source: "old.md" },
+        { id: "personal", label: "Personal", source: "personal.md" },
+      ],
+    }, null, 2)}\n`);
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/rules-kit",
+      defaultsSourceExplicit: true,
+      dryRun: true,
+      selectedManifestCategories: ["rules"],
+    });
+    const write = operations.find((operation) => operation.type === "write" && operation.path === join(manifestDir, "rules.json"));
+    assert.ok(write && write.type === "write");
+    const merged = JSON.parse(write.content) as { layers: Array<{ id: string; label: string }> };
+    assert.deepEqual(merged.layers.map((layer) => layer.id), ["base", "personal", "organization"]);
+    assert.equal(merged.layers[0]?.label, "Updated base");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests override discards local-only rules layers", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    version: 2,
+    layers: [
+      { id: "base", label: "Updated base", source: "rules/BASE.md" },
+    ],
+  }), { status: 200 });
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-rules-override-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "rules.json"), `${JSON.stringify({
+      version: 2,
+      layers: [
+        { id: "base", label: "Old base", source: "old.md" },
+        { id: "personal", label: "Personal", source: "personal.md" },
+      ],
+    }, null, 2)}\n`);
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      overrideRefresh: true,
+      manifestLocal: false,
+      defaultsSource: "acme/rules-kit",
+      defaultsSourceExplicit: true,
+      dryRun: true,
+      selectedManifestCategories: ["rules"],
+    });
+    const write = operations.find((operation) => operation.type === "write" && operation.path === join(manifestDir, "rules.json"));
+    assert.ok(write && write.type === "write");
+    const replaced = JSON.parse(write.content) as { layers: Array<{ id: string; label: string }> };
+    assert.deepEqual(replaced.layers.map((layer) => layer.id), ["base"]);
+    assert.equal(replaced.layers[0]?.label, "Updated base");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests override discards imported skills and local profiles", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({
+        version: 1,
+        defaultSource: "",
+        items: [{ id: "source-skill", label: "Source Skill", source: "acme/dev-kit", args: ["--skill", "source-skill"] }],
+      }),
+      "profiles.json": JSON.stringify({
+        version: 2,
+        mode: "context",
+        alwaysOn: [],
+        items: [{ id: "source", name: "Source", skills: ["source-skill"] }],
+      }),
+    };
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-skills-profiles-override-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "skills.json"), `${JSON.stringify({
+      version: 1,
+      defaultSource: "",
+      items: [{ id: "local-skill", label: "Local Skill", source: "local", args: ["--skill", "local-skill"], imported: true }],
+    })}\n`);
+    writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
+      version: 1,
+      mode: "strict",
+      alwaysOn: [],
+      items: [{ id: "local", name: "Local", skills: ["local-skill"] }],
+    })}\n`);
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      overrideRefresh: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      defaultsSourceExplicit: true,
+      dryRun: true,
+      selectedManifestCategories: ["skills", "profiles"],
+    });
+    const skillsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("skills.json"));
+    const profilesWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("profiles.json"));
+    assert.ok(skillsWrite && skillsWrite.type === "write");
+    assert.ok(profilesWrite && profilesWrite.type === "write");
+    assert.deepEqual((JSON.parse(skillsWrite.content) as SkillManifest).items.map((item) => item.id), ["source-skill"]);
+    assert.deepEqual((JSON.parse(profilesWrite.content) as { items: Array<{ id: string }> }).items.map((item) => item.id), ["source"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+type ToolManifestFile = {
   items: Array<{
     id: string;
     install: {
@@ -72,7 +563,7 @@ test("ensureLocalManifests migrates the old Stitch header default", async () => 
   assert.deepEqual(next.items[0]?.args, ["--name", "stitchmcp"]);
 });
 
-test("ensureLocalManifests migrates existing skills to invocation policy metadata", async () => {
+test("ensureLocalManifests preserves omitted invocation policy metadata", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-skills-manifest-"));
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
@@ -112,18 +603,118 @@ test("ensureLocalManifests migrates existing skills to invocation policy metadat
 
   const write = operations.find((operation) => operation.type === "write" && operation.path === manifestPath);
   assert.ok(write && write.type === "write");
-  const next = JSON.parse(write.content) as { items: Array<{ id: string; autoInvocation?: boolean }> };
-  assert.equal(next.items.find((item) => item.id === "afk-note")?.autoInvocation, true);
+  const next = JSON.parse(write.content) as { items: Array<{ id: string; invocation?: string }> };
+  assert.equal(next.items.find((item) => item.id === "afk-note")?.invocation, undefined);
   assert.equal(next.items.some((item) => item.id === "afk-typecheck"), false);
 });
 
-test("packaged plugin manifests keep npx installs non-interactive", () => {
-  const manifest = JSON.parse(readFileSync(new URL("../catalog/plugins.json", import.meta.url), "utf8")) as PluginManifestFile;
+test("ensureLocalManifests migrates legacy autoInvocation policy during refresh", async () => {
+  const homeDir = mkdtempSync(join(tmpdir(), "afk-skills-invocation-migration-"));
+  const manifestDir = localManifestDir(homeDir);
+  mkdirSync(manifestDir, { recursive: true });
+  const manifestPath = join(manifestDir, "skills.json");
+  writeFileSync(manifestPath, `${JSON.stringify({
+    version: 1,
+    defaultSource: "",
+    items: [
+      { id: "auto", label: "Auto", source: "owner/skills", args: ["--skill", "auto"], default: true, autoInvocation: true },
+      { id: "manual", label: "Manual", source: "owner/skills", args: ["--skill", "manual"], default: false, autoInvocation: false },
+    ],
+  }, null, 2)}\n`);
+
+  const operations = await ensureLocalManifests({
+    homeDir,
+    repoDir: "/tmp/repo",
+    rulesRef: "main",
+    rulesSource: "local",
+    empty: false,
+    refreshDefaults: false,
+    manifestLocal: false,
+    defaultsSource: "",
+    dryRun: false,
+  });
+
+  const write = operations.find((operation) => operation.type === "write" && operation.path === manifestPath);
+  assert.ok(write && write.type === "write");
+  const migrated = JSON.parse(write.content) as { items: Array<Record<string, unknown>> };
+  assert.deepEqual(migrated.items.map(({ id, invocation }) => ({ id, invocation })), [
+    { id: "auto", invocation: "auto" },
+    { id: "manual", invocation: "manual" },
+  ]);
+  assert.ok(migrated.items.every((item) => !("autoInvocation" in item)));
+});
+
+test("packaged tool manifests keep npx installs non-interactive", () => {
+  const manifest = JSON.parse(readFileSync(new URL("../catalog/tools.json", import.meta.url), "utf8")) as ToolManifestFile;
   const interactiveNpxItems = manifest.items
     .filter((item) => usesNpx(item.install.command, item.install.args) && !usesNonInteractiveNpx(item.install.command, item.install.args))
     .map((item) => item.id);
 
   assert.deepEqual(interactiveNpxItems, []);
+});
+
+test("packaged catalogs expose the AFK Architect required bundle", () => {
+  const presets = JSON.parse(readFileSync(new URL("../catalog/presets.json", import.meta.url), "utf8")) as {
+    presets: Array<{ id: string; areas: string[]; all?: boolean; selections?: { skills?: string[]; customAgents?: string[] } }>;
+  };
+  const skills = JSON.parse(readFileSync(new URL("../catalog/skills.json", import.meta.url), "utf8")) as {
+    items: Array<{ id: string }>;
+  };
+  const preset = presets.presets.find((item) => item.id === "afk-architect");
+
+  assert.ok(preset);
+  assert.deepEqual(preset.selections?.skills, ["afk-architect"]);
+  assert.deepEqual(preset.selections?.customAgents, ["afk-cartographer", "afk-builder", "afk-pathfinder"]);
+  assert.ok(skills.items.some((item) => item.id === "afk-architect"));
+
+  const dailyRoutine = presets.presets.find((item) => item.id === "daily-routine");
+  assert.deepEqual(dailyRoutine, {
+    id: "daily-routine",
+    label: "Daily Routine",
+    areas: ["rules", "skills", "tools", "agents"],
+    all: true,
+  });
+});
+
+test("tool manifests reject shell control tokens outside shell commands", () => {
+  assert.throws(
+    () => loadToolManifest({
+      homeDir: "/tmp/home",
+      manifestContents: {
+        "tools.json": JSON.stringify({
+          version: 1,
+          items: [
+            {
+              id: "bad-tool",
+              label: "Bad Tool",
+              description: "Invalid direct shell chaining.",
+              install: { command: "npx", args: ["--yes", "bad-tool", "&&", "npx", "--yes", "bad-tool", "update"] },
+              default: true,
+            },
+          ],
+        }),
+      },
+    }),
+    /Invalid AFK catalog file from setup source: tools\.json/,
+  );
+
+  assert.doesNotThrow(() => loadToolManifest({
+    homeDir: "/tmp/home",
+    manifestContents: {
+      "tools.json": JSON.stringify({
+        version: 1,
+        items: [
+          {
+            id: "shell-tool",
+            label: "Shell Tool",
+            description: "Valid explicit shell command.",
+            install: { command: "sh", args: ["-c", "install-tool && update-tool"] },
+            default: true,
+          },
+        ],
+      }),
+    },
+  }));
 });
 
 test("defaultsManifestBaseUrl resolves GitHub shorthand to the AFK manifest convention", () => {
@@ -148,6 +739,73 @@ test("defaultsManifestBaseUrl preserves GitHub tree paths as manifest directorie
     defaultsManifestBaseUrl("https://github.com/acme/dev-kit/tree/v1/custom/manifests", "main"),
     "https://raw.githubusercontent.com/acme/dev-kit/v1/custom/manifests",
   );
+});
+
+test("loadSourceManifestContents falls back to a credential-aware GitHub checkout", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("missing", { status: 404 });
+  const checkoutRoot = mkdtempSync(join(tmpdir(), "afk-private-source-"));
+  const catalogDir = join(checkoutRoot, "afk", "catalog");
+  mkdirSync(catalogDir, { recursive: true });
+  writeFileSync(
+    join(catalogDir, "skills.json"),
+    `${JSON.stringify({
+      version: 1,
+      defaultSource: "acme/private-kit",
+      items: [
+        {
+          id: "private-skill",
+          label: "Private Skill",
+          source: "acme/private-kit",
+          args: ["--skill", "private-skill"],
+          default: true,
+        },
+      ],
+    })}\n`,
+  );
+  let checkoutCount = 0;
+  let cleanupCount = 0;
+  let checkoutSource: { cloneUrl: string; ref: string; catalogDirs: string[] } | null = null;
+
+  try {
+    const options: Parameters<typeof loadSourceManifestContents>[0] = {
+      homeDir: mkdtempSync(join(tmpdir(), "afk-private-home-")),
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github" as const,
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/private-kit",
+      defaultsSourceExplicit: true,
+      dryRun: true,
+      selectedManifestCategories: ["skills" as const],
+      cloneGithubSource: async (source) => {
+        checkoutCount += 1;
+        checkoutSource = source;
+        return {
+          rootDir: checkoutRoot,
+          cleanup: () => {
+            cleanupCount += 1;
+          },
+        };
+      },
+    };
+
+    const contents = await loadSourceManifestContents(options);
+    const skills = JSON.parse(contents["skills.json"] ?? "{}") as SkillManifest;
+
+    assert.equal(skills.items[0]?.id, "private-skill");
+    assert.equal(checkoutCount, 1);
+    assert.equal(cleanupCount, 1);
+    assert.deepEqual(checkoutSource, {
+      cloneUrl: "https://github.com/acme/private-kit.git",
+      ref: "main",
+      catalogDirs: ["afk/catalog", "packages/afk/catalog"],
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("readRememberedDefaultsSource reads global and project-local presets", () => {
@@ -200,10 +858,11 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     const name = String(input).split("/").pop();
     const bodies: Record<string, string> = {
       "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": hookManifest,
     };
 
@@ -225,11 +884,13 @@ test("ensureLocalManifests can refresh defaults from a custom source", async () 
     });
 
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("skills.json")));
+    assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("profiles.json")));
     const presetsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("presets.json"));
     assert.ok(presetsWrite && presetsWrite.type === "write");
     assert.ok(presetsWrite.content.includes("\"defaultsSource\": \"acme/dev-kit\""));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/rules.json")));
+    assert.ok(requestedUrls.some((url) => url.endsWith("/profiles.json")));
     assert.ok(requestedUrls.some((url) => url.endsWith("/hooks.json")));
     assert.ok(!requestedUrls.some((url) => url.endsWith("/workflows.json")));
   } finally {
@@ -246,10 +907,11 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
     const name = String(input).split("/").pop();
     const bodies: Record<string, string> = {
       "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": hookManifest,
     };
 
@@ -260,9 +922,14 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
     const homeDir = mkdtempSync(join(tmpdir(), "afk-remembered-defaults-"));
     const manifestDir = localManifestDir(homeDir);
     mkdirSync(manifestDir, { recursive: true });
-    writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({ version: 1, defaultsSource: "acme/dev-kit", presets: [] }, null, 2)}\n`);
+    writeFileSync(join(manifestDir, "presets.json"), `${JSON.stringify({
+      version: 1,
+      defaultsSource: "acme/dev-kit",
+      favoriteSources: ["acme/favorite-kit"],
+      presets: [],
+    }, null, 2)}\n`);
 
-    await ensureLocalManifests({
+    const operations = await ensureLocalManifests({
       homeDir,
       repoDir: "/tmp/repo",
       rulesRef: "main",
@@ -275,6 +942,9 @@ test("ensureLocalManifests reuses remembered defaults source during refresh", as
     });
 
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
+    const presetsWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("presets.json"));
+    assert.ok(presetsWrite && presetsWrite.type === "write");
+    assert.deepEqual((JSON.parse(presetsWrite.content) as { favoriteSources: string[] }).favoriteSources, ["acme/favorite-kit"]);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -288,10 +958,11 @@ test("ensureLocalManifests can refresh project-local catalog", async () => {
     const name = String(input).split("/").pop();
     const bodies: Record<string, string> = {
       "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -316,6 +987,7 @@ test("ensureLocalManifests can refresh project-local catalog", async () => {
 
     assert.ok(operations.some((operation) => operation.type === "mkdir" && operation.path === manifestDir));
     assert.ok(operations.some((operation) => operation.type === "write" && operation.path === join(manifestDir, "skills.json")));
+    assert.ok(operations.some((operation) => operation.type === "write" && operation.path === join(manifestDir, "profiles.json")));
     assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/acme/dev-kit/main/afk/catalog/")));
   } finally {
     globalThis.fetch = originalFetch;
@@ -340,10 +1012,11 @@ test("ensureLocalManifests preserves imported skills that are absent from refres
           },
         ],
       }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -366,6 +1039,7 @@ test("ensureLocalManifests preserves imported skills that are absent from refres
             source: "acme/local-kit",
             args: ["--skill", "local-skill"],
             default: false,
+            autoInvocation: true,
             imported: true,
           },
         ],
@@ -389,6 +1063,75 @@ test("ensureLocalManifests preserves imported skills that are absent from refres
     const next = JSON.parse(skillsWrite.content) as SkillManifest;
     assert.equal(next.items.find((item) => item.id === "source-skill")?.imported, false);
     assert.equal(next.items.find((item) => item.id === "local-skill")?.imported, true);
+    assert.equal(next.items.find((item) => item.id === "local-skill")?.invocation, "auto");
+    assert.ok(next.items.every((item) => !("autoInvocation" in item)));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests preserves local profiles absent from refreshed source", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const name = String(input).split("/").pop();
+    const bodies: Record<string, string> = {
+      "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "profiles.json": JSON.stringify({
+        version: 2,
+        mode: "context",
+        alwaysOn: ["source-always"],
+        items: [{ id: "source", name: "Fresh Source", catalogSkills: ["source-skill"], packages: [] }],
+      }),
+      "mcps.json": JSON.stringify({ version: 1, items: [] }),
+      "presets.json": JSON.stringify({ version: 1, presets: [] }),
+      "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://example.com/rules" }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
+      "hooks.json": JSON.stringify({ version: 1, items: [] }),
+    };
+    return new Response(bodies[name ?? ""] ?? "{}", { status: 200 });
+  };
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-preserve-profiles-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "profiles.json"), `${JSON.stringify({
+      version: 1,
+      mode: "strict",
+      alwaysOn: ["local-always"],
+      items: [
+        { id: "source", name: "Stale Source", skills: ["old-skill"] },
+        { id: "local", name: "Local", skills: ["local-skill"] },
+      ],
+    }, null, 2)}\n`);
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+    });
+
+    const profilesWrite = operations.find((operation) => operation.type === "write" && operation.path.endsWith("profiles.json"));
+    assert.ok(profilesWrite && profilesWrite.type === "write");
+    const next = JSON.parse(profilesWrite.content) as {
+      version: number;
+      mode: string;
+      alwaysOn: string[];
+      items: Array<{ id: string; name: string; catalogSkills: string[]; packages: unknown[] }>;
+    };
+    assert.equal(next.version, 2);
+    assert.equal(next.mode, "context");
+    assert.deepEqual(next.alwaysOn, ["source-always"]);
+    assert.deepEqual(next.items, [
+      { id: "source", name: "Fresh Source", catalogSkills: ["source-skill"], packages: [] },
+      { id: "local", name: "Local", catalogSkills: ["local-skill"], packages: [] },
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -412,10 +1155,11 @@ test("ensureLocalManifests turns imported skills into source skills when refresh
           },
         ],
       }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": JSON.stringify({ version: 1, items: [] }),
     };
 
@@ -475,17 +1219,18 @@ test("ensureLocalManifests falls back to remote package manifest convention when
   globalThis.fetch = async (input) => {
     const url = String(input);
     requestedUrls.push(url);
-    if (url.includes("/afk/catalog/")) {
+    if (url.includes("/main/afk/catalog/")) {
       return new Response("missing", { status: 404 });
     }
 
     const name = url.split("/").pop();
     const bodies: Record<string, string> = {
       "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: [] }),
+      "profiles.json": JSON.stringify({ version: 1, mode: "context", alwaysOn: [], items: [] }),
       "mcps.json": JSON.stringify({ version: 1, items: [] }),
       "presets.json": JSON.stringify({ version: 1, presets: [] }),
       "rules.json": JSON.stringify({ version: 1, source: "github", url: "https://raw.githubusercontent.com/acme/dev-kit/main/rules/AGENTS.md" }),
-      "plugins.json": JSON.stringify({ version: 1, items: [] }),
+      "tools.json": JSON.stringify({ version: 1, items: [] }),
       "hooks.json": hookManifest,
     };
 
@@ -506,7 +1251,7 @@ test("ensureLocalManifests falls back to remote package manifest convention when
       dryRun: true,
     });
 
-    assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("plugins.json")));
+    assert.ok(operations.some((operation) => operation.type === "write" && operation.path.endsWith("tools.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/afk/catalog/skills.json")));
     assert.ok(requestedUrls.some((url) => url.includes("/packages/afk/catalog/skills.json")));
   } finally {
@@ -523,7 +1268,7 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
     const manifestDir = localManifestDir(homeDir);
     mkdirSync(manifestDir, { recursive: true });
     writeFileSync(
-      join(manifestDir, "plugins.json"),
+      join(manifestDir, "tools.json"),
       `${JSON.stringify(
         {
           version: 1,
@@ -531,7 +1276,7 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
             {
               id: "keep-me",
               label: "Keep Me",
-              description: "Keep existing plugin manifest.",
+              description: "Keep existing tool manifest.",
               install: { command: "sh", args: ["-c", "keep-me"] },
               default: true,
             },
@@ -552,11 +1297,48 @@ test("ensureLocalManifests keeps existing files when a custom source omits a man
       manifestLocal: false,
       defaultsSource: "acme/dev-kit",
       dryRun: true,
+      cloneGithubSource: emptyGithubCheckout,
     });
 
-    const pluginOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("plugins.json"));
-    assert.equal(pluginOperation?.type, "skip");
-    assert.equal(readFileSync(join(manifestDir, "plugins.json"), "utf8").includes("keep-me"), true);
+    const toolOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("tools.json"));
+    assert.equal(toolOperation?.type, "skip");
+    assert.equal(readFileSync(join(manifestDir, "tools.json"), "utf8").includes("keep-me"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ensureLocalManifests override clears a targeted manifest omitted by the source", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("missing", { status: 404 });
+
+  try {
+    const homeDir = mkdtempSync(join(tmpdir(), "afk-omitted-override-"));
+    const manifestDir = localManifestDir(homeDir);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(join(manifestDir, "tools.json"), `${JSON.stringify({
+      version: 1,
+      items: [{ id: "local-only", label: "Local only", install: { command: "true", args: [] } }],
+    })}\n`);
+
+    const operations = await ensureLocalManifests({
+      homeDir,
+      repoDir: "/tmp/repo",
+      rulesRef: "main",
+      rulesSource: "github",
+      empty: false,
+      refreshDefaults: true,
+      overrideRefresh: true,
+      manifestLocal: false,
+      defaultsSource: "acme/dev-kit",
+      dryRun: true,
+      selectedManifestCategories: ["tools"],
+      cloneGithubSource: emptyGithubCheckout,
+    });
+
+    const toolOperation = operations.find((operation) => "path" in operation && operation.path.endsWith("tools.json"));
+    assert.ok(toolOperation && toolOperation.type === "write");
+    assert.deepEqual((JSON.parse(toolOperation.content) as { items: unknown[] }).items, []);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -576,4 +1358,14 @@ function usesNonInteractiveNpx(command: string, args: string[]): boolean {
 
 function commandLineIncludesNpx(commandLine: string): boolean {
   return /(^|[\s;&|()])npx(\s|$)/.test(commandLine);
+}
+
+async function emptyGithubCheckout(): Promise<{ rootDir: string; cleanup: () => void }> {
+  const rootDir = mkdtempSync(join(tmpdir(), "afk-empty-source-"));
+  return {
+    rootDir,
+    cleanup: () => {
+      rmSync(rootDir, { recursive: true, force: true });
+    },
+  };
 }
