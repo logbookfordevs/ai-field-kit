@@ -2,7 +2,7 @@
 name: pathfinder
 description: Resolves difficult or ambiguous work through evidence, judgment, implementation, and verification.
 models:
-  codex: gpt-5.6-sol
+  codex: gpt-6-astra
   claude: opus
   pi: openrouter/moonshotai/kimi-k3
 effort:
