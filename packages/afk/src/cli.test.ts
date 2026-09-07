@@ -932,6 +932,24 @@ test("runCli setup skills help uses skills CLI agent names", async () => {
   assert.equal(/^  afk setup skills --local --agent claude$/m.test(text), false);
 });
 
+test("runCli setup skills accepts Codex for post-install actions while installing universal skills", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "local", presets: [] },
+    "skills.json": { version: 1, defaultSource: "", items: [{
+      id: "design", label: "Design", source: "https://github.com/example/design", args: ["--skill", "design"], default: true,
+      postInstall: [{ type: "copy", agent: "codex", from: "agents", to: "agents", extension: ".toml" }],
+    }] },
+  });
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli([
+    "setup", "skills", "--dry-run", "--yes", "--agent", "codex",
+  ], { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) }));
+  assert.equal(code, 0, output.join("\n"));
+  assert.match(output.join("\n"), /--agent universal/);
+  assert.match(output.join("\n"), /Design \/ post-install: copy/);
+  assert.equal(existsSync(join(homeDir, ".codex", "agents")), false);
+});
+
 test("runCli keeps old area command forms as aliases", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["setup", "mcps", "install", "--help"]));

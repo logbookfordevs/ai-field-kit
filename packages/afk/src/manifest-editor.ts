@@ -1,5 +1,6 @@
 import {
   isRulesManifest,
+  isSkillPostInstall,
   rulesManifestLayers,
   type HookManifest,
   type HookManifestItem,
@@ -303,7 +304,8 @@ function isSkillManifest(value: EditableManifest): value is SkillManifest {
       isStringArray(item.args) &&
       typeof item.default === "boolean" &&
       (item.invocation === undefined || item.invocation === "auto" || item.invocation === "manual" || item.invocation === "source") &&
-      (item.startDisabled === undefined || typeof item.startDisabled === "boolean")
+      (item.startDisabled === undefined || typeof item.startDisabled === "boolean") &&
+      (item.postInstall === undefined || isSkillPostInstall(item.postInstall, item.args))
     ))
   );
 }

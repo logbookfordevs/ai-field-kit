@@ -4,7 +4,7 @@ import { applyOperation, pathExists, readText, summarizeOperations } from "../fs
 import { afkPromptTheme, afkSearchableCheckboxTheme, afkSearchTheme, renderPromptStep } from "../prompt-ui.js";
 import { searchableCheckbox } from "../searchable-checkbox.js";
 import { bold, paint, reset, terminalPalette } from "../terminal-theme.js";
-import type { CliOptions, Runtime, SkillOpenApp } from "../types.js";
+import type { AgentId, CliOptions, Runtime, SkillOpenApp } from "../types.js";
 import { quoteArg } from "../delegates.js";
 import { selectCatalogProfilesLobbyRoute, selectSkillProfilesLobbyRoute, selectSkillsLobbyRoute } from "../lobby.js";
 import { loadSkillManifest } from "../manifest.js";
@@ -66,6 +66,7 @@ import {
   type LockedSkillRecord,
 } from "./update.js";
 import { applySkillReset, planSkillReset } from "./reset.js";
+import { runSkillPostInstall } from "./post-install.js";
 import {
   planSkillStartupStorageForItems,
   snapshotDisabledSkillIds,
@@ -202,6 +203,7 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
   const storageOptions = { homeDir: options.homeDir, cwd: options.cwd, setupScope: "global" as const };
   const installedBefore = planCatalogImportStatus({ ...effectiveOptions, manifestLocal: false }).installed;
   const installedBeforeIds = new Set(installedBefore);
+  const locksBefore = new Map(loadLockedSkills({ ...options, scope: "global" }).map((record) => [record.name, JSON.stringify(record)]));
   const disabledBefore = snapshotDisabledSkillIds(storageOptions, installedBefore);
 
   const upstreamArgs = ["skills", "add", source, ...effectiveOptions.skillAddArgs];
@@ -230,6 +232,20 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
   for (const operation of plan.operations) {
     applyOperation(operation);
   }
+
+  const changedSkillNames = new Set(loadLockedSkills({ ...options, scope: "global" })
+    .filter((record) => locksBefore.get(record.name) !== JSON.stringify(record) || newSkillIds.includes(record.name))
+    .map((record) => record.name));
+  const addedAgents = skillAddAgentValues(effectiveOptions.skillAddArgs).flatMap<AgentId>((agent) => {
+    if (agent === "codex" || agent === "pi") return [agent];
+    return agent === "claude-code" ? ["claude"] : [];
+  });
+  const postInstallCode = changedSkillNames.size > 0 && pathExists(skillCatalogPath(options.homeDir))
+    ? await runSkillPostInstall(runtime, loadSkillManifest({ homeDir: options.homeDir }).items.filter((item) => {
+        const index = item.args.indexOf("--skill");
+        return index >= 0 && changedSkillNames.has(item.args[index + 1] ?? "");
+      }), { ...effectiveOptions, agents: [...effectiveOptions.agents, ...addedAgents], setupScope: "global", dryRun: false })
+    : 0;
 
   const catalogStorage = startNewSkillsDisabled
     ? markSkillCatalogItemsStartDisabled({ homeDir: options.homeDir, skillIds: newSkillIds, dryRun: false })
@@ -268,7 +284,7 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
       ? `${accent("Installed")} ${newSkillIds.join(", ")}`
       : muted("No new shared skills installed; existing storage and profile state were preserved."),
   ].filter(Boolean).join("\n"));
-  return 0;
+  return postInstallCode;
 }
 
 async function ensureSkillsAddCatalogReady(runtime: Runtime, options: CliOptions): Promise<number | undefined> {
@@ -752,7 +768,15 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
     return [command.scope, snapshotDisabledSkillIds(storageOptions, names)] as const;
   }));
 
-  return runSkillUpdateCommands(runtime, commands, (command) => {
+  return runSkillUpdateCommands(runtime, commands, async (command) => {
+    const hasCatalog = options.manifestContents?.["skills.json"] || pathExists(skillCatalogPath(options.homeDir));
+    const postInstallCode = hasCatalog
+      ? await runSkillPostInstall(runtime, loadSkillManifest(options).items.filter((item) => {
+          const name = item.args[item.args.indexOf("--skill") + 1];
+          return name && command.skillNames.some((selected) => selected.toLowerCase() === name.toLowerCase());
+        }), { ...options, setupScope: command.scope })
+      : 0;
+    if (options.dryRun) return postInstallCode;
     if (options.manifestContents?.["skills.json"] || pathExists(skillCatalogPath(options.homeDir))) {
       syncSkillInvocationPolicy(runtime, {
         ...options,
@@ -766,7 +790,8 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
       setupScope: command.scope,
       dryRun: false,
     }, disabledByScope.get(command.scope) ?? []);
-  });
+    return postInstallCode;
+  }, options.dryRun);
 }
 
 function filterLockedSkillsToCatalog(records: LockedSkillRecord[], catalogSkillIds: string[]): LockedSkillRecord[] {

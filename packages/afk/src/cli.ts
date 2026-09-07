@@ -919,6 +919,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--all                             Update every cataloged tracked skill in scope",
       "--profile                         Update cataloged tracked skills in a global profile",
       "--yes, -y                         Forward non-interactive confirmation to skills update",
+      "--dry-run                         Preview updates and catalog post-install actions",
     ],
     examples: [
       "afk skills update",
@@ -1715,6 +1716,10 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         }
 
         for (const value of values) {
+          if (value === "codex") {
+            agents.push("codex");
+            continue;
+          }
           if (!isSkillAgentId(value)) {
             return { help: false, kind: "error", error: `Invalid --agent value for skills: ${value}` };
           }

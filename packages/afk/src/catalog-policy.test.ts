@@ -69,6 +69,7 @@ describe("source skill invocation policy", () => {
     });
 
     expect(catalog.items.find(({ id }) => id === "impeccable")).toMatchObject({
+      postInstall: [{ type: "copy", agent: "codex", from: "agents", to: "agents", extension: ".toml" }],
       default: true,
       invocation: "auto",
       role: "router",

@@ -41,7 +41,50 @@ export type SkillManifestItem = {
   composes?: string[];
   catalog?: SkillManifestItemCatalog;
   imported?: boolean;
+  postInstall?: SkillPostInstallAction[];
 };
+
+export type SkillPostInstallAgent = "codex" | "claude" | "pi";
+
+export type SkillPostInstallAction = {
+  label?: string;
+} & ({
+  type: "copy";
+  agent: SkillPostInstallAgent;
+  from: string;
+  to: string;
+  extension?: string;
+} | {
+  type: "command";
+  agent?: SkillPostInstallAgent;
+  command: string;
+  args: string[];
+});
+
+export function isSkillPostInstall(value: unknown, args: string[]): value is SkillPostInstallAction[] {
+  if (!Array.isArray(value)) return false;
+  if (value.length === 0) return true;
+  const index = args.indexOf("--skill");
+  const skill = args[index + 1];
+  if (index < 0 || args.filter((arg) => arg === "--skill").length !== 1 || !skill || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(skill)) return false;
+  if (args[index + 2] && !args[index + 2]?.startsWith("--")) return false;
+  return value.every((action: unknown) => {
+    if (!isRecord(action) || (action.label !== undefined && typeof action.label !== "string")) return false;
+    const hasAgent = action.agent === "codex" || action.agent === "claude" || action.agent === "pi";
+    if (action.type === "command") {
+      return (action.agent === undefined || hasAgent) &&
+        typeof action.command === "string" && action.command.trim().length > 0 && isStringArray(action.args);
+    }
+    return action.type === "copy" && hasAgent &&
+      isSkillActionRelativePath(action.from) && isSkillActionRelativePath(action.to) &&
+      (action.extension === undefined || (typeof action.extension === "string" && /^\.[A-Za-z0-9]+$/.test(action.extension)));
+  });
+}
+
+function isSkillActionRelativePath(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 &&
+    value.split("/").every((part) => /^[A-Za-z0-9_-][A-Za-z0-9._-]*$/.test(part));
+}
 
 export type SkillInvocationPolicy = "auto" | "manual" | "source";
 
@@ -1476,6 +1519,7 @@ function isSkillManifest(value: unknown): value is SkillManifest {
       (item.role === undefined || isSkillManifestItemRole(item.role)) &&
       (item.composes === undefined || isStringArray(item.composes)) &&
       (item.catalog === undefined || isSkillManifestItemCatalog(item.catalog)) &&
+      (item.postInstall === undefined || isSkillPostInstall(item.postInstall, item.args)) &&
       (item.imported === undefined || typeof item.imported === "boolean")
     );
   });
