@@ -2,11 +2,11 @@
 name: builder
 description: Implements bounded, well-owned changes and verifies the behavior within its assigned scope.
 models:
-  codex: gpt-5.6-terra
+  codex: gpt-5.6-sol
   claude: sonnet
   pi: openrouter/xai/grok-4.5
 effort:
-  codex: high
+  codex: low
   claude: medium
   pi: medium
 nicknames:
