@@ -391,6 +391,20 @@
             "composes": []
         },
         {
+            "id": "show-me",
+            "label": "Show Me",
+            "source": "https://github.com/humanlayer/skills",
+            "args": [
+                "--skill",
+                "show-me",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "auto",
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "html-wireframe",
             "label": "HTML Wireframe",
             "source": "https://github.com/plannotator/effective-html",
