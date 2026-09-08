@@ -14,6 +14,7 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `cli:` skill catalog items can run post-install copy or command actions during setup and updates. Impeccable now copies its bundled Codex agents into the harness's agents directory, refreshing managed copies while preserving user edits and existing links to the exact source files.
+- `cli:` added `--enabled` and `--disabled` filters to `afk skills update`, while keeping all tracked skills as the default.
 
 ### Changed
 

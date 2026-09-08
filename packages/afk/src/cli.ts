@@ -918,12 +918,15 @@ const commandHelps: Record<string, CommandHelp> = {
       "--scope global|project|all        Choose cataloged tracked skills (default: global)",
       "--all                             Update every cataloged tracked skill in scope",
       "--profile                         Update cataloged tracked skills in a global profile",
+      "--enabled                         Update enabled skills only",
+      "--disabled                        Update disabled skills only",
       "--yes, -y                         Forward non-interactive confirmation to skills update",
       "--dry-run                         Preview updates and catalog post-install actions",
     ],
     examples: [
       "afk skills update",
       "afk skills update --all",
+      "afk skills update --all --disabled",
       "afk skills update --profile",
       "afk skills update video --profile",
       "afk skills update --scope project",
@@ -1372,7 +1375,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const isAfkSkillsProfilesCommand = commandPath[0] === "skills" && commandPath[1] === "profiles";
   const isAfkCatalogProfilesCommand = commandPath[0] === "profiles" && commandPath[1] === "catalog";
   const acceptsSkillStorageFilter =
-    (isAfkSkillsCommand && ["list", "show", "open", "delete", "invocation"].includes(commandPath[1] ?? "")) ||
+    (isAfkSkillsCommand && ["list", "show", "open", "delete", "invocation", "update"].includes(commandPath[1] ?? "")) ||
     (isAfkCatalogProfilesCommand && ["create", "edit"].includes(commandPath[2] ?? ""));
   const isAfkProfileCommand = isAfkSkillsProfilesCommand || isAfkCatalogProfilesCommand;
   const isAfkUiCommand = commandPath[0] === "ui";

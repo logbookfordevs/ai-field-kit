@@ -722,28 +722,49 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
       }, names).map((name) => `${candidateScope}:${name.toLowerCase()}`);
     }),
   );
+  const storageFilteredLockedSkills = catalogedLockedSkills.filter((record) =>
+    matchesLockedSkillStorage(record.scope, record.name, options.skillsListStorage, disabledLockedSkillKeys)
+  );
   const selectedNames = options.skillsUpdateByProfile
-    ? await updateSkillNamesForProfile(skillNames[0], catalogedLockedSkills, runtime, options)
+    ? await updateSkillNamesForProfile(
+        skillNames[0],
+        catalogedLockedSkills,
+        storageFilteredLockedSkills,
+        runtime,
+        options,
+      )
     : skillNames.length > 0
-      ? skillNames
+      ? skillNames.filter((name) =>
+          matchesLockedSkillStorage(scope, name, options.skillsListStorage, disabledLockedSkillKeys)
+        )
       : options.skillsUpdateAll
         ? []
-        : await promptLockedSkills(catalogedLockedSkills, scope, disabledLockedSkillKeys);
+        : await promptLockedSkills(storageFilteredLockedSkills, scope, disabledLockedSkillKeys);
 
   if (!options.skillsUpdateAll && selectedNames.length === 0) {
-    runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}tracked skills selected.`);
+    const storageLabel = options.skillsListStorage === "active"
+      ? "enabled "
+      : options.skillsListStorage === "disabled"
+        ? "disabled "
+        : "";
+    runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}${storageLabel}tracked skills selected.`);
     return 1;
   }
 
-  if (options.skillsUpdateAll && catalogedLockedSkills.length === 0) {
-    runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}cataloged tracked skills found.`);
+  if (options.skillsUpdateAll && storageFilteredLockedSkills.length === 0) {
+    const storageLabel = options.skillsListStorage === "active"
+      ? "enabled "
+      : options.skillsListStorage === "disabled"
+        ? "disabled "
+        : "";
+    runtime.io.stderr(`No ${scope === "all" ? "" : `${scope} `}${storageLabel}cataloged tracked skills found.`);
     return 1;
   }
 
   const commands = options.skillsUpdateAll
     ? (scope === "all" ? ["global", "project"] as const : [scope])
         .flatMap((candidateScope) => {
-          const names = catalogedLockedSkills
+          const names = storageFilteredLockedSkills
             .filter((record) => record.scope === candidateScope)
             .map((record) => record.name);
           return names.length > 0
@@ -759,7 +780,7 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
   const disabledByScope = new Map(commands.map((command) => {
     const names = selectedNames.length > 0
       ? selectedNames
-      : catalogedLockedSkills.filter((record) => record.scope === command.scope).map((record) => record.name);
+      : storageFilteredLockedSkills.filter((record) => record.scope === command.scope).map((record) => record.name);
     const storageOptions = {
       homeDir: options.homeDir,
       cwd: options.cwd,
@@ -794,6 +815,17 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
   }, options.dryRun);
 }
 
+function matchesLockedSkillStorage(
+  scope: string,
+  name: string,
+  storage: CliOptions["skillsListStorage"],
+  disabledSkillKeys: ReadonlySet<string>,
+): boolean {
+  if (!storage) return true;
+  const isDisabled = disabledSkillKeys.has(`${scope}:${name.toLowerCase()}`);
+  return storage === "disabled" ? isDisabled : !isDisabled;
+}
+
 function filterLockedSkillsToCatalog(records: LockedSkillRecord[], catalogSkillIds: string[]): LockedSkillRecord[] {
   const normalizedCatalogSkillIds = new Set(catalogSkillIds.map((id) => id.toLowerCase()));
   return records.filter((record) => normalizedCatalogSkillIds.has(record.name.toLowerCase()));
@@ -802,6 +834,7 @@ function filterLockedSkillsToCatalog(records: LockedSkillRecord[], catalogSkillI
 async function updateSkillNamesForProfile(
   profileId: string | undefined,
   lockedSkills: LockedSkillRecord[],
+  eligibleLockedSkills: LockedSkillRecord[],
   runtime: Runtime,
   options: CliOptions,
 ): Promise<string[]> {
@@ -815,14 +848,22 @@ async function updateSkillNamesForProfile(
   }
 
   const trackedByName = new Map(lockedSkills.map((record) => [record.name.toLowerCase(), record.name]));
+  const eligibleByName = new Map(eligibleLockedSkills.map((record) => [record.name.toLowerCase(), record.name]));
   const profileSkills = resolvedProfileSkillIds(profile, profileSnapshot.paths.catalogPath);
   const selected = profileSkills.flatMap((skill) => {
-    const tracked = trackedByName.get(skill.toLowerCase());
+    const tracked = eligibleByName.get(skill.toLowerCase());
     return tracked ? [tracked] : [];
   });
   const skipped = profileSkills.filter((skill) => !trackedByName.has(skill.toLowerCase()));
   if (skipped.length > 0) {
     runtime.io.stdout(`Skipped untracked profile skills: ${skipped.join(", ")}.`);
+  }
+  const storageFiltered = profileSkills.filter((skill) =>
+    trackedByName.has(skill.toLowerCase()) && !eligibleByName.has(skill.toLowerCase())
+  );
+  if (storageFiltered.length > 0 && options.skillsListStorage) {
+    const skippedStorage = options.skillsListStorage === "active" ? "disabled" : "enabled";
+    runtime.io.stdout(`Skipped ${skippedStorage} profile skills: ${storageFiltered.join(", ")}.`);
   }
   return selected;
 }

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { test, vi } from "vitest";
 import { localManifestDir } from "./manifest.js";
 import { runSkillsCommand } from "./skills/commands.js";
-import type { Runtime } from "./types.js";
+import type { CliOptions, Runtime } from "./types.js";
 
 const promptState = vi.hoisted(() => ({
   choices: [] as Array<{ value: string; group?: string }>,
@@ -83,7 +83,7 @@ test("afk skills update picker includes imported catalog skills with lock metada
   };
   vi.spyOn(console, "log").mockImplementation(() => undefined);
 
-  await runSkillsCommand(["skills", "update"], runtime, {
+  const options: CliOptions = {
     agents: [],
     setupScope: "global",
     scopeExplicit: false,
@@ -135,10 +135,18 @@ test("afk skills update picker includes imported catalog skills with lock metada
     homeDir,
     repoDir: root,
     cwd: join(root, "project"),
-  });
+  };
+
+  await runSkillsCommand(["skills", "update"], runtime, options);
 
   assert.deepEqual(promptState.choices.map((choice) => ({ value: choice.value, group: choice.group })), [
     { value: "cataloged", group: "Enabled skills" },
     { value: "disabled-cataloged", group: "Disabled skills" },
   ]);
+
+  await runSkillsCommand(["skills", "update"], runtime, { ...options, skillsListStorage: "active" });
+  assert.deepEqual(promptState.choices.map((choice) => choice.value), ["cataloged"]);
+
+  await runSkillsCommand(["skills", "update"], runtime, { ...options, skillsListStorage: "disabled" });
+  assert.deepEqual(promptState.choices.map((choice) => choice.value), ["disabled-cataloged"]);
 });
