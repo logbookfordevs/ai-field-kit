@@ -9,7 +9,9 @@ This changelog tracks meaningful updates by version and date.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
-## Next Release
+## TBD - TBD
+
+## v1.4.2 - 2026-09-08
 
 ### Added
 
