@@ -237,6 +237,20 @@
             "composes": []
         },
         {
+            "id": "shadcn",
+            "label": "shadcn/ui",
+            "source": "https://github.com/shadcn-ui/ui",
+            "args": [
+                "--skill",
+                "shadcn",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "auto",
+            "role": "primitive",
+            "composes": []
+        },
+        {
             "id": "plannotator-compound",
             "label": "Plannotator Compound",
             "source": "backnotprop/plannotator/apps/skills/extra",
