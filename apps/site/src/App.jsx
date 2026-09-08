@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AfkMark } from '@/components/ui/svgs/afkMark.jsx';
+import { AgentRouting } from '@/components/AgentRouting.jsx';
 import { ClaudeAiIcon } from '@/components/ui/svgs/claudeAiIcon.jsx';
 import { CodexDark } from '@/components/ui/svgs/codexDark.jsx';
 import { OpencodeDark } from '@/components/ui/svgs/opencodeDark.jsx';
@@ -97,13 +97,7 @@ function App() {
           <div className="hero__actions"><a className="button" href="#install">Preview the setup</a><a className="text-link" href={repo} target="_blank" rel="noreferrer">Explore the repository<span className="sr-only"> (opens in a new tab)</span></a></div>
           <Command value={setupCommand} label="dry run" onResult={announce} />
         </div>
-        <div className="route-map" data-reveal aria-label="AI Field Kit connects one shared source to Codex, Claude, OpenCode, and other configured harness paths">
-          <div className="route-meta"><span>afk / route map</span><span>04 targets detected</span></div>
-          <svg viewBox="0 0 720 660" aria-hidden="true"><path d="M360 330 C228 156 156 104 78 88"/><path d="M360 330 C490 152 560 102 646 86"/><path d="M360 330 C202 446 146 514 92 572"/><path d="M360 330 C500 452 568 516 642 574"/></svg>
-          {agents.map(({ name, type, Icon, dark }, index) => <div className={`agent-node agent-node--${index + 1}`} key={name}><Icon className={dark ? 'agent-icon agent-icon--dark' : 'agent-icon'} aria-hidden="true"/><span><strong>{name}</strong><small>{type}</small></span></div>)}
-          <div className="route-core"><div><AfkMark className="route-core__mark" /><span>shared field kit</span></div></div>
-          <div className="route-legend"><span>rules · skills · hooks · MCPs</span><span className="ready">ready</span></div>
-        </div>
+        <AgentRouting />
       </div></section>
 
       <section className="section" id="why"><div className="container">
