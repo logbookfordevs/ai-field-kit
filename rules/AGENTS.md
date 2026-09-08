@@ -6,17 +6,17 @@
 
 ## Skills
 State "I will use the X skill" whenever using a skill.
-When the user or a handoff names a skill as required or governing, treat its unavailability as a blocker; stop and request its invocation or an explicitly approved fallback.
+If a user-required skill is unavailable, search the configured skill roots and verify explicit aliases. Explain what is missing and request an approved fallback for dependent work. Continue independent authorized work.
 
 ## Artifacts
-Artifact location unresolved: read `{{AFK_RULES_DIR}}/artifacts.md`.
+When creating or resuming durable workflow artifacts, read `{{AFK_RULES_DIR}}/artifacts.md`; follow repository storage conventions first.
 
 ## Imports
 - Prefer configured absolute imports such as `@/components/...`.
 
 ## TypeScript
 - Avoid `any` unless necessary or specifically requested.
-- TypeScript changes must pass the repository typecheck before handoff.
+- Run the repository typecheck for TypeScript changes. Fix failures introduced by the change. If an unrelated baseline or environment failure prevents a clean result, report the evidence and verification gap; do not claim a pass.
 
 ## Testing
 - Add regression tests when they protect meaningful behavior. Test observable behavior; tautological tests that merely restate the implementation are harmful. Trivial copy and other low-risk changes do not require coverage.
@@ -31,7 +31,7 @@ Artifact location unresolved: read `{{AFK_RULES_DIR}}/artifacts.md`.
 - Prefer `agent-browser` over Playwright CLI when available.
 
 ## Commands
-- Treat the development server as already running and use the existing instance.
+- Reuse a suitable running development server. If none exists, start the documented local server when the task requires it and permissions allow.
 
 ## Worktrees
 - Prefer `yggtree` for worktree operations when available; consult `yggtree --help` before using native Git worktree commands.
