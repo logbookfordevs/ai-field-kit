@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f3eddf"/>
+  <path d="M0 70H1200M0 560H1200" stroke="#b9c0b7"/>
+  <rect x="72" y="116" width="96" height="72" rx="8" fill="#102c2c"/>
+  <text x="120" y="163" text-anchor="middle" font-family="monospace" font-size="30" font-weight="700" fill="#f3eddf">AFK</text>
+  <text x="192" y="160" font-family="sans-serif" font-size="22" fill="#5d6964">BY LOGBOOK FOR DEVS</text>
+  <text x="72" y="300" font-family="sans-serif" font-size="88" font-weight="700" fill="#102c2c">AI Field Kit</text>
+  <text x="76" y="377" font-family="sans-serif" font-size="34" fill="#17201e">Your setup. Every coding agent.</text>
+  <text x="76" y="439" font-family="sans-serif" font-size="25" fill="#5d6964">Portable rules, skills, workflows, and MCP setup.</text>
+  <circle cx="84" cy="515" r="7" fill="#c94f35"/>
+  <text x="107" y="523" font-family="monospace" font-size="21" fill="#102c2c">ai-field-kit.logbookfordevs.com</text>
+</svg>
