@@ -1,0 +1,6 @@
+interface:
+  display_name: "Writing for Humans"
+  short_description: "Craft substantial prose around author voice and reader experience"
+  default_prompt: "Use Writing for Humans to create, revise, or critique this piece. Preserve the author's meaning and voice, design the reader's progression, load only the relevant genre guidance, and inspect truth and the promised reader outcome. Run the bounded fresh-reader proxy only when I explicitly request it."
+policy:
+  allow_implicit_invocation: false
