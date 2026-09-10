@@ -40,21 +40,43 @@ describe("AFK workflow skill contracts", () => {
     expect(issueTemplate).toContain("**Source:**");
     expect(issueTemplate).not.toContain("## Source Material");
     expect(issueTemplate).not.toContain("## Authoritative Decisions");
-    expect(readRepositoryFile("skills/afk-implement-tickets/SKILL.md")).toContain(
+    expect(readRepositoryFile("skills/afk-implement/SKILL.md")).toContain(
       "source: <artifact-or-issue-reference>",
     );
   });
 
-  test("implementation authorizes discretionary atomic local commits without assuming local tracking commit permission", () => {
-    const skill = readRepositoryFile("skills/afk-implement-tickets/SKILL.md");
-    const reviewGuide = readRepositoryFile("skills/afk-implement-tickets/references/review-guides.md");
+  test("tickets and implementation records have separate local homes", () => {
+    const artifacts = readRepositoryFile("rules/artifacts.md");
+    const tickets = readRepositoryFile("skills/afk-to-tickets/SKILL.md");
+    const templates = readRepositoryFile("skills/afk-to-tickets/references/ticket-templates.md");
 
+    expect(artifacts).toContain("**Tickets**");
+    expect(artifacts).toContain("**Implementation records**");
+    expect(artifacts).toContain("tickets/      # <scope>/<NN>-<slug>.md");
+    expect(artifacts).toContain("tracking/     # <scope>/<slug>.md");
+    expect(tickets).toContain("scope's tickets folder");
+    expect(templates).not.toContain("## Implementation Notes");
+    expect(templates).not.toContain("## Changes");
+    expect(templates).not.toContain("## Review Gates");
+  });
+
+  test("implementation authorizes discretionary atomic local commits without assuming local tracking commit permission", () => {
+    const skill = readRepositoryFile("skills/afk-implement/SKILL.md");
+    const reviewGuide = readRepositoryFile("skills/afk-implement/references/review-guides.md");
+
+    expect(skill).toContain("Start with one Implementation Record");
+    expect(skill).toContain("independently owned, validated, or reviewed implementation slices");
+    expect(skill).toContain("ticket, spec, plan, prototype, prompt, or conversation");
+    expect(skill).not.toContain("Require an executable local or remote ticket");
+    expect(skill).not.toContain("## Active Ticket");
+    expect(skill).not.toContain("## Ticket State");
+    expect(skill).not.toContain("## Ticket Record");
     expect(skill).toContain("review_base");
     expect(skill).toContain("## Green Atomic Commits");
     expect(skill).toContain("Forward local commits are authorized, not mandatory.");
     expect(skill).toContain("durable checkpoint improves the work");
     expect(skill).toContain("pre-commit user review");
-    expect(skill).toContain("ticket-owned implementation");
+    expect(skill).toContain("implementation-owned changes");
     expect(skill).toContain(
       "outside agent-created commits unless the user or repository convention explicitly opts them in",
     );
@@ -99,8 +121,9 @@ describe("AFK workflow skill contracts", () => {
   });
 
   test("resumption preserves the original review range and durable gate state", () => {
-    const reference = readRepositoryFile("skills/afk-implement-tickets/references/resume.md");
+    const reference = readRepositoryFile("skills/afk-implement/references/resume.md");
 
+    expect(reference).toContain("Implementation Record");
     expect(reference).toContain("review_base");
     expect(reference).toContain("last green atomic commit");
     expect(reference).toContain("explicit opt-in");
@@ -119,12 +142,12 @@ describe("AFK workflow skill contracts", () => {
     expect(skill).not.toContain("Send a single message with two sub-agent calls.");
   });
 
-  test("Implement Tickets declares its required skill composition", () => {
+  test("AFK Implement declares its required skill composition", () => {
     const catalog = JSON.parse(
       readRepositoryFile("packages/afk/catalog/skills.json"),
     ) as { items: Array<{ id: string; composes: string[] }> };
 
-    expect(catalog.items.find(({ id }) => id === "afk-implement-tickets")?.composes).toEqual([
+    expect(catalog.items.find(({ id }) => id === "afk-implement")?.composes).toEqual([
       "tdd",
       "afk-code-review",
     ]);
@@ -158,7 +181,7 @@ describe("AFK workflow skill contracts", () => {
     expect(skill).toContain("Recording an approved decision does not require a second approval.");
     expect(skill).toContain("Tickets organize known production work; ADF explores creative unknowns through production.");
     expect(skill).toContain("Ticket only the approved production frontier.");
-    expect(skill).toContain("pair the resulting tickets with `afk-implement-tickets` by default");
+    expect(skill).toContain("pair the resulting tickets with `afk-implement` by default");
     expect(skill).toContain("**Screen the rough cut**");
     expect(skill).toContain("**Deliver the system**");
     expect(skill).not.toContain("afk-to-spec");

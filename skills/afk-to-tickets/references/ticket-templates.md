@@ -9,8 +9,6 @@ title: <Ticket title>
 status: pending
 blocked_by: []
 source: <artifact names or links; relevant sections, headings, or line ranges; omit when there is no source artifact>
-review_gates:
-  code: pending
 ---
 
 # <NN> — <Ticket title>
@@ -40,13 +38,6 @@ Use one of:
 
 ## Verification
 - [ ] Expected proof before review
-
-## Handoff Notes
-- Notes a later checkpoint or future agent must know
-
-## Implementation Notes
-## Changes
-## Review Gates
 </local-ticket-template>
 
 <issue-template>
