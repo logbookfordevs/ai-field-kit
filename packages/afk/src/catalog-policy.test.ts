@@ -46,6 +46,57 @@ describe("source skill invocation policy", () => {
     expect(missingRoutes).toEqual([]);
   });
 
+  test("keeps Writing for Humans broad and user-invoked", () => {
+    const repositoryRoot = resolve(import.meta.dirname, "../../..");
+    const catalog = JSON.parse(
+      readFileSync(resolve(repositoryRoot, "packages/afk/catalog/skills.json"), "utf8"),
+    ) as {
+      items: Array<{
+        id: string;
+        default: boolean;
+        invocation: "auto" | "manual" | "source";
+        role: string;
+        composes: string[];
+      }>;
+    };
+    const writingForHumansSource = readFileSync(
+      resolve(repositoryRoot, "skills/writing-for-humans/SKILL.md"),
+      "utf8",
+    );
+    const writingForHumansFrontmatter = writingForHumansSource.match(/^---\n([\s\S]*?)\n---/)?.[1];
+    expect(writingForHumansFrontmatter).toBeDefined();
+    const writingForHumans = parse(writingForHumansFrontmatter ?? "") as {
+      description?: string;
+      "disable-model-invocation"?: boolean;
+    };
+    const openAi = parse(
+      readFileSync(resolve(repositoryRoot, "skills/writing-for-humans/agents/openai.yaml"), "utf8"),
+    ) as { policy?: { allow_implicit_invocation?: boolean } };
+    const freshReaderPass = readFileSync(
+      resolve(repositoryRoot, "skills/writing-for-humans/references/fresh-reader-pass.md"),
+      "utf8",
+    );
+
+    expect(catalog.items.find(({ id }) => id === "writing-for-humans")).toMatchObject({
+      default: true,
+      invocation: "manual",
+      role: "primitive",
+      composes: [],
+    });
+    expect(catalog.items.find(({ id }) => id === "reader-journey")).toBeUndefined();
+    expect(catalog.items.find(({ id }) => id === "afk-docs-for-humans")).toBeUndefined();
+    expect(writingForHumans["disable-model-invocation"]).toBe(true);
+    expect(writingForHumans.description).toContain("articles, newsletters");
+    expect(openAi.policy?.allow_implicit_invocation).toBe(false);
+    expect(writingForHumansSource).toContain("references/reader-progression.md");
+    expect(writingForHumansSource).toContain("references/articles-and-newsletters.md");
+    expect(writingForHumansSource).toContain("references/fresh-reader-pass.md");
+    expect(freshReaderPass).toContain("Reader load");
+    expect(freshReaderPass).toContain("Reader questions");
+    expect(freshReaderPass).toContain("human validation");
+    expect(freshReaderPass).toContain("only when the user explicitly asks");
+  });
+
   test("keeps prototype instruments outside Design Grill's primary composition", () => {
     const repositoryRoot = resolve(import.meta.dirname, "../../..");
     const catalog = JSON.parse(

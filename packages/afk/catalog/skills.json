@@ -136,12 +136,12 @@
             "composes": []
         },
         {
-            "id": "afk-docs-for-humans",
-            "label": "AFK - Docs for Humans",
+            "id": "writing-for-humans",
+            "label": "Writing for Humans",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-docs-for-humans",
+                "writing-for-humans",
                 "--global"
             ],
             "default": true,
