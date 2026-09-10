@@ -104,6 +104,10 @@ History rewrites and remote or public actions still require approval. If local c
 ## Review Gate
 After final validation, run `afk-code-review` once automatically from `review_base`. If it reports findings, set `changes_requested`; judge each finding against the code and its cited source, fix warranted findings, record evidence for dismissals, revalidate, and commit. Do not rerun it automatically. Once the review is clean or warranted fixes are committed, set `awaiting_acceptance` and hand the gate to the user. The user decides whether fixes or later changes require another review; only the user's explicit acceptance, directly or through approval of an external review result such as Plannotator Review, sets `accepted`.
 
+When the gate first reaches `awaiting_acceptance`, run `plannotator review --base <review_base>` if Plannotator is available. Its UI lets the user annotate, approve, or dismiss the final implementation range. Approval sets `accepted`. Annotations set `changes_requested` and return to implementation. Closing or dismissing it leaves the gate at `awaiting_acceptance`.
+
+After resolving that session's outcome, run `plannotator annotate <implementation-record>` when the Tracking Home is a local file, and reconcile its feedback before final handoff. If Plannotator is unavailable, recommend installing it and continue the normal handoff.
+
 ## Implementation Record
 Keep task-local state in the Tracking Home. Preserve source-specific fields such as `Parent` and `User Stories Covered` when present. Keep `What To Build`, `Acceptance Criteria`, `Blocked By`, `Execution Bundle`, `Verification`, `Discipline Evidence`, `Implementation Notes`, `Changes`, `Review Gate`, `Review Guide`, `Code Review Findings`, and `Handoff Notes`, or equivalent fields, as they become relevant.
 

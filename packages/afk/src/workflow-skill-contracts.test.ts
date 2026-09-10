@@ -99,6 +99,11 @@ describe("AFK workflow skill contracts", () => {
     expect(skill).toContain("fixes or later changes require another review");
     expect(skill).toContain("only the user's explicit acceptance");
     expect(skill).toContain("Plannotator Review");
+    expect(skill).toContain("plannotator review --base <review_base>");
+    expect(skill).toContain("plannotator annotate <implementation-record>");
+    expect(skill).toContain("when the Tracking Home is a local file");
+    expect(skill).toContain("If Plannotator is unavailable, recommend installing it");
+    expect(skill).toContain("Closing or dismissing it leaves the gate at `awaiting_acceptance`");
     expect(skill).toContain("sets `accepted`");
     expect(skill).toContain("review_gate: pending");
     expect(skill).not.toContain("review_gates:");
@@ -111,7 +116,7 @@ describe("AFK workflow skill contracts", () => {
     expect(reviewGuide).toContain("### Design Review");
     expect(reviewGuide).toContain("visual fidelity to an explicit reference or approved visual direction");
     expect(reviewGuide).not.toContain("includes a `design` or `product` review gate");
-    expect(skill.match(/review_base/g)).toHaveLength(3);
+    expect(skill.match(/review_base/g)).toHaveLength(4);
     expect(skill).not.toContain("A user-approved external code review");
     expect(skill).not.toContain("tracking_commits");
     expect(skill).not.toContain("selected tracking policy");
