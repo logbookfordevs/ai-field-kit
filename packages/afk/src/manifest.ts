@@ -186,6 +186,7 @@ export type ToolManifestItem = {
     command: string;
     args: string[];
   };
+  executable?: string;
   postInstall?: ToolPostInstallCommand;
   update?: ToolUpdateCommand;
   default: boolean;
@@ -1641,6 +1642,7 @@ function isToolManifest(value: unknown): value is ToolManifest {
       typeof item.id === "string" &&
       typeof item.label === "string" &&
       typeof item.description === "string" &&
+      (item.executable === undefined || (typeof item.executable === "string" && item.executable.trim().length > 0)) &&
       isToolCommand(item.install) &&
       (item.postInstall === undefined || isToolPostInstallCommand(item.postInstall)) &&
       (item.update === undefined || isToolCommand(item.update)) &&

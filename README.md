@@ -125,7 +125,7 @@ install flow, and custom defaults workflow, read the
 |---|---|---|
 | Rules | `afk setup rules` | Composes ordered public, organization, personal, or project rules layers into managed instruction regions. |
 | Skills | `afk setup skills` | Delegates selected skill installs to the official `skills` CLI. |
-| Skills Profiles | `afk setup profiles` | Installs version 2 `catalogSkills` plus whole or selective remote `packages`; package-owned skills remain profile-only, while catalog overlap keeps catalog policy. |
+| Skills Profiles | `afk setup profiles` | Prepares profiles and installs their `catalogSkills`. Whole or selective remote `packages` install when the profile is enabled; catalog overlap keeps catalog policy. |
 | Custom Agents | `afk setup agents` | Provisions selected portable agent files into Codex, Claude Code, or Pi. |
 | MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `add-mcp`. |
 | Tools | `afk setup tools` | Runs curated tool installer commands and supported post-install setup. |
@@ -148,6 +148,8 @@ from those projects without AFK reimplementing their installers.
 | Preview the whole setup | `afk setup --dry-run` |
 | Apply the whole setup | `afk setup` |
 | Install every cataloged item for detected harnesses | `afk setup --all --yes` |
+| Update installed members of a preset | `afk sync --preset daily-routine --yes` |
+| Preview a preset update | `afk sync --preset daily-routine --dry-run` |
 | Choose a preset from the cached catalog | `afk preset` |
 | Choose a preset from another source | `afk preset --source <source>` |
 | Install every rule, skill, tool, and Custom Agent | `afk preset daily-routine` |

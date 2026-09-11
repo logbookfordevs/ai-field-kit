@@ -2,17 +2,24 @@
   "version": 1,
   "items": [
     {
+      "id": "logbook-waypoint",
+      "label": "Waypoint MCP",
+      "source": "http://127.0.0.1:3846/mcp",
+      "args": [
+        "--name",
+        "logbook-waypoint",
+        "--global"
+      ],
+      "default": false
+    },
+    {
       "id": "stitch",
       "label": "Stitch MCP",
       "source": "https://stitch.googleapis.com/mcp",
-      "args": ["--name", "stitchmcp"],
-      "default": true
-    },
-    {
-      "id": "shadcn",
-      "label": "shadcn MCP",
-      "source": "npx shadcn@latest mcp",
-      "args": ["--name", "shadcn"],
+      "args": [
+        "--name",
+        "stitchmcp"
+      ],
       "default": true
     }
   ]
