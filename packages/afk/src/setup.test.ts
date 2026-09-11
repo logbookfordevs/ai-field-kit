@@ -12,6 +12,7 @@ import type { CliOptions, Runtime } from "./types.js";
 
 const promptState = vi.hoisted(() => ({
   selection: undefined as SetupSelection | undefined,
+  mcpPrompts: 0,
   defaultsSource: "local",
   rememberedSources: [] as string[],
   partialSkillProfileInstallAccepted: true,
@@ -24,6 +25,10 @@ vi.mock("./interactive.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./interactive.js")>();
   return {
     ...actual,
+    selectMcpsInstall: vi.fn(async (options: CliOptions) => {
+      promptState.mcpPrompts += 1;
+      return { agents: options.agents.length ? options.agents : ["codex"], mcpIds: ["stitch"] };
+    }),
     selectSetup: vi.fn(async () => {
       if (!promptState.selection) {
         throw new Error("Missing mocked setup selection");
@@ -124,6 +129,44 @@ test("runSetup explains selected MCPs without targets", async () => {
   assert.ok(text.includes("MCPs"));
   assert.ok(text.includes("No MCP targets selected. Skipping MCP install."));
 });
+
+test("runArea mcps opens selection when an agent is already detected", async () => {
+  const homeDir = localHomeWithManifests();
+  const repoDir = localRepoWithRules();
+  mkdirSync(join(homeDir, ".codex"), { recursive: true });
+  writeFileSync(join(homeDir, ".codex", "config.toml"), "");
+  const output: string[] = [];
+  promptState.mcpPrompts = 0;
+
+  const code = await runArea("mcps", fakeRuntime(output), {
+    ...defaultOptions(homeDir, repoDir), defaultsSource: "local", defaultsSourceExplicit: true,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(promptState.mcpPrompts, 1);
+  assert.ok(!output.join("\n").includes("No MCPs selected"));
+  assert.ok(output.join("\n").includes("stitch"));
+});
+
+for (const yes of [false, true]) {
+  test(`runArea mcps preserves explicit selection with yes=${yes}`, async () => {
+    const homeDir = localHomeWithManifests();
+    const repoDir = localRepoWithRules();
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(join(homeDir, ".codex", "config.toml"), "");
+    const output: string[] = [];
+    promptState.mcpPrompts = 0;
+
+    const code = await runArea("mcps", fakeRuntime(output), {
+      ...defaultOptions(homeDir, repoDir), yes, selectedMcpIds: ["stitch"],
+      defaultsSource: "local", defaultsSourceExplicit: true,
+    });
+
+    assert.equal(code, 0);
+    assert.equal(promptState.mcpPrompts, 0);
+    assert.ok(output.join("\n").includes("stitch"));
+  });
+}
 
 test("runArea yes mode detects rule targets before syncing", async () => {
   const homeDir = localHomeWithManifests();

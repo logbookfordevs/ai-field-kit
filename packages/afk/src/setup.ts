@@ -657,7 +657,7 @@ async function resolveMcpOptions(options: CliOptions): Promise<CliOptions> {
   }
 
   const detected = detectSetupTargets(options);
-  if (detected.agents.length > 0 || options.yes) {
+  if (options.yes || (detected.agents.length > 0 && options.selectedMcpIds.length > 0)) {
     return {
       ...options,
       agents: detected.agents,
