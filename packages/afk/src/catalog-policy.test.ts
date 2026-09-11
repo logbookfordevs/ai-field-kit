@@ -27,6 +27,43 @@ describe("source skill invocation policy", () => {
     expect(openAi.policy?.allow_implicit_invocation).toBe(false);
   });
 
+  test("keeps Writing for Humans user-invoked across catalog and host metadata", () => {
+    const repositoryRoot = resolve(import.meta.dirname, "../../..");
+    const catalog = JSON.parse(
+      readFileSync(resolve(repositoryRoot, "packages/afk/catalog/skills.json"), "utf8"),
+    ) as {
+      items: Array<{
+        id: string;
+        default: boolean;
+        invocation: "auto" | "manual" | "source";
+        role: string;
+        composes: string[];
+      }>;
+    };
+    const writingForHumansSource = readFileSync(
+      resolve(repositoryRoot, "skills/writing-for-humans/SKILL.md"),
+      "utf8",
+    );
+    const writingForHumansFrontmatter = writingForHumansSource.match(/^---\n([\s\S]*?)\n---/)?.[1];
+    expect(writingForHumansFrontmatter).toBeDefined();
+    const writingForHumans = parse(writingForHumansFrontmatter ?? "") as {
+      description?: string;
+      "disable-model-invocation"?: boolean;
+    };
+    const openAi = parse(
+      readFileSync(resolve(repositoryRoot, "skills/writing-for-humans/agents/openai.yaml"), "utf8"),
+    ) as { policy?: { allow_implicit_invocation?: boolean } };
+    expect(catalog.items.find(({ id }) => id === "writing-for-humans")).toMatchObject({
+      default: true,
+      invocation: "manual",
+      role: "primitive",
+      composes: [],
+    });
+    expect(catalog.items.find(({ id }) => id === "reader-journey")).toBeUndefined();
+    expect(catalog.items.find(({ id }) => id === "afk-docs-for-humans")).toBeUndefined();
+    expect(writingForHumans["disable-model-invocation"]).toBe(true);
+    expect(openAi.policy?.allow_implicit_invocation).toBe(false);
+  });
   test("keeps prototype instruments outside Design Grill's primary composition", () => {
     const repositoryRoot = resolve(import.meta.dirname, "../../..");
     const catalog = JSON.parse(

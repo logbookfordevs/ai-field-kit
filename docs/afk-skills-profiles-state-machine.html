@@ -605,7 +605,7 @@ const SKILLS = [
   ["afk-create-agent","workflow",true,false,"ai-field-kit",[]],
   ["afk-to-spec","wrapper",true,false,"ai-field-kit",[]],
   ["afk-to-tickets","wrapper",true,false,"ai-field-kit",[]],
-  ["afk-docs-for-humans","primitive",true,false,"ai-field-kit",[]],
+  ["writing-for-humans","primitive",true,false,"ai-field-kit",[]],
   ["afk-implement","workflow",true,false,"ai-field-kit",["tdd","afk-code-review"]],
   ["afk-compass","router",true,false,"ai-field-kit",[]],
   ["afk-architect","workflow",false,true,"ai-field-kit",[]],
@@ -891,7 +891,7 @@ const WORKFLOW_MOMENTS = [
     {id:"teach",use:"transfer the understanding"}
   ]},
   {id:"ship",title:"SHIP",action:"leave a trustworthy trail",skills:[
-    {id:"afk-docs-for-humans",use:"write human-facing docs"},
+    {id:"writing-for-humans",use:"write substantial human-facing prose"},
     {id:"handoff",use:"compact context for the next agent"},
     {id:"plannotator-compound",use:"compound reviewed learnings"},
     {id:"writing-for-agents",use:"harden agent-facing instructions"}
@@ -1085,7 +1085,7 @@ function renderCatalog() {
   addText(catalogView,90,profileY+182,"zone-note","15 external members · may borrow disabled skills while active");
   addText(catalogView,1110,profileY+42,"skill-role-title","alwaysOn");
   addText(catalogView,1110,profileY+67,"zone-note","5 source-catalog members protected across every profile");
-  addText(catalogView,1110,profileY+105,"mono","grilling · afk-docs-for-humans · code-simplification · diagnosing-bugs · truss-evaluation");
+  addText(catalogView,1110,profileY+105,"mono","grilling · writing-for-humans · code-simplification · diagnosing-bugs · truss-evaluation");
   addText(catalogView,1110,profileY+157,"skill-role-title","mode = context");
   addText(catalogView,1110,profileY+182,"zone-note","manual cataloged outsiders stay active; discoverable or uncataloged outsiders filter out");
 
