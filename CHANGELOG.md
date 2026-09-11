@@ -13,6 +13,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `tools:` added `afk tools update --all` to update every cataloged tool with an update command without opening the picker.
+
 - `catalog:` added the Waypoint tool with `waypoint update` and its local MCP endpoint.
 
 - `cli:` skill catalog items can run post-install copy or command actions during setup and updates. Impeccable now copies its bundled Codex agents into the harness's agents directory, refreshing managed copies while preserving user edits and existing links to the exact source files.

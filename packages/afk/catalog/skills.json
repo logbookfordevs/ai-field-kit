@@ -251,20 +251,6 @@
             "composes": []
         },
         {
-            "id": "plannotator-visual-explainer",
-            "label": "Plannotator Visual Explainer",
-            "source": "backnotprop/plannotator/apps/skills/extra",
-            "args": [
-                "--skill",
-                "plannotator-visual-explainer",
-                "--global"
-            ],
-            "default": true,
-            "invocation": "manual",
-            "role": "utility",
-            "composes": []
-        },
-        {
             "id": "orchestrator",
             "label": "Orchestrator",
             "source": "backnotprop/orchestrator",
@@ -372,7 +358,7 @@
                 "--global"
             ],
             "default": false,
-            "invocation": "auto",
+            "invocation": "manual",
             "role": "utility",
             "composes": []
         },

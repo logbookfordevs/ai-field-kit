@@ -176,6 +176,31 @@ test("runCli exposes tool updates and delegates an explicitly selected tool", as
   assert.deepEqual(calls, [{ command: "sample-tool", args: ["update"] }]);
 });
 
+for (const dryRun of [false, true]) {
+  test(`tools update --all includes non-default tools and skips install-only tools (dryRun=${dryRun})`, async () => {
+    const homeDir = localHomeWithManifests({
+      "tools.json": { version: 1, items: [
+        { id: "first", label: "First", description: "Test tool", install: { command: "first", args: [] }, update: { command: "first", args: ["update"] }, default: true },
+        { id: "second", label: "Second", description: "Test tool", install: { command: "second", args: [] }, update: { command: "second", args: ["update"] }, default: false },
+        { id: "install-only", label: "Install only", description: "Test tool", install: { command: "install-only", args: [] }, default: true },
+      ] },
+    });
+    const calls: string[] = [];
+    const output: string[] = [];
+    const code = await runCliWithRuntime(["tools", "update", "--all", ...(dryRun ? ["--dry-run"] : [])], { HOME: homeDir }, {
+      io: { stdout: (message) => output.push(message), stderr: (message) => output.push(message) },
+      spawn: async (command) => { calls.push(command); return { code: command === "first" ? 1 : 0 }; },
+    });
+    assert.equal(code, 0);
+    assert.deepEqual(calls, dryRun ? [] : ["first", "second"]);
+    if (dryRun) {
+      assert.ok(output.join("\n").includes("first update"));
+      assert.ok(output.join("\n").includes("second update"));
+      assert.ok(!output.join("\n").includes("install-only"));
+    }
+  });
+}
+
 test("runCli rejects the renamed plugin command family", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(["setup", "plugins", "--help"]));
@@ -689,7 +714,7 @@ test("runCli prints contextual setup help", async () => {
   assert.ok(text.includes("Subcommands:"));
   assert.ok(!text.includes("afk setup refresh"));
   assert.ok(text.includes("afk setup profiles"));
-  assert.ok(text.includes("afk setup profiles                Install skills from Skills Profiles"));
+  assert.ok(text.includes("afk setup profiles                Prepare profiles and install catalog skills"));
   assert.ok(text.includes("afk setup mcps"));
   assert.ok(text.includes("afk setup tools"));
   assert.ok(text.includes("afk setup hooks"));
@@ -727,7 +752,7 @@ test("runCli prints contextual setup profiles help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK setup profiles"));
-  assert.ok(text.includes("Install skills from selected profiles in profiles.json."));
+  assert.ok(text.includes("Prepare selected profiles and install their catalog skills."));
   assert.ok(text.includes("automatically includes their composed dependencies"));
   assert.ok(text.includes("offers lock-backed recovery, then asks before installing the available skills"));
   assert.ok(text.includes("afk setup profiles --local"));

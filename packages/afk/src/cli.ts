@@ -1,3 +1,4 @@
+import { loadToolManifest } from "./manifest.js";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
@@ -171,9 +172,12 @@ export async function runCliWithRuntime(
 
   if (commandPath[0] === "tools" && commandPath[1] === "update") {
     const requestedToolIds = commandPath.slice(2);
-    const selectedToolIds = requestedToolIds.length > 0
-      ? requestedToolIds
-      : await selectToolUpdates(options);
+    let selectedToolIds: string[];
+    if (options.toolsUpdateAll) {
+      selectedToolIds = loadToolManifest(options).items.filter((item) => item.update).map((item) => item.id);
+    } else {
+      selectedToolIds = requestedToolIds.length > 0 ? requestedToolIds : await selectToolUpdates(options);
+    }
     const commands = buildToolUpdateCommands(options, selectedToolIds);
     if (commands.length === 0) {
       runtime.io.stdout("No updateable tools selected. No changes planned.");
@@ -425,9 +429,10 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Select cataloged tools and run their update commands.",
     usage: "afk tools update [tool...] [options]",
     notes: ["Only tools with an update command in tools.json are available."],
-    options: [setupOptions.dryRun, setupOptions.verbose],
+    options: ["--all                            Update every cataloged tool with an update command", setupOptions.dryRun, setupOptions.verbose],
     examples: [
       "afk tools update",
+      "afk tools update --all",
       "afk tools update --dry-run",
       "afk tools update plannotator yggtree",
     ],
@@ -1312,6 +1317,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
   let allSkills = false;
+  let toolsUpdateAll = false;
   let allCustomAgents = false;
   const selectedCustomAgentIds: string[] = [];
   let rulesRef = "main";
@@ -1547,6 +1553,10 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--all") {
+      if (key === "tools update") {
+        toolsUpdateAll = true;
+        continue;
+      }
       if (key === "setup agents") {
         allCustomAgents = true;
       } else if (isSetupSkillsCommand(key)) {
@@ -1985,6 +1995,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       ...(presetId ? { presetId } : {}),
       ...(presetPrompt ? { presetPrompt: true } : {}),
       allSkills,
+      toolsUpdateAll,
       allCustomAgents,
       selectedSkillIds: [],
       selectedCustomAgentIds,
