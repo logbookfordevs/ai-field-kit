@@ -1,0 +1,35 @@
+# How AFK works
+
+AFK prepares a field for agents; it is not an agent itself. Each piece keeps a distinct job and ownership boundary.
+
+<h2 id="concepts-pieces">The pieces</h2>
+
+<dl>
+<dt>Rules</dt>
+<dd>Standards that should be present while the agent works.</dd>
+<dt>Skills</dt>
+<dd>Focused routines invoked when a task calls for them.</dd>
+<dt>Hooks</dt>
+<dd>Deterministic lifecycle automation outside the conversation.</dd>
+<dt>Custom Agents</dt>
+<dd>Portable agent definitions provisioned for a supported harness.</dd>
+<dt>MCPs and tools</dt>
+<dd>Optional tool surfaces installed through their owning ecosystems.</dd>
+</dl>
+
+
+<h2 id="concepts-sources">Choosing an upstream source</h2>
+
+Ordinary setup uses a prepared cache. When a command needs an upstream source, AFK chooses it in this order:
+
+1.  An explicit `--source` applies to that command only.
+2.  Otherwise AFK uses the saved default source.
+3.  Without either, AFK offers its built-in `logbookfordevs/ai-field-kit` source.
+
+<h2 id="concepts-cache">Source, cache, and setup</h2>
+
+A source is the upstream catalog. The local catalog is a materialized cache. Setup reads the selected source or cache and prepares chosen agent surfaces. A cached catalog contains definitions; referenced content and installers may still need network access. These are related states, not synonyms.
+
+`afk show` inspects the global cache without updating it; `afk show --local` inspects `./afk/catalog`. `afk show --source …` inspects a source for one run. Setup may materialize a cache on first run, while `afk refresh` is the explicit command for updating cached catalog files.
+
+[Customize the catalog source](/docs?chapter=customize)

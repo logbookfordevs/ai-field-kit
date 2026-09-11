@@ -2,7 +2,7 @@
 - Import animation APIs from `motion` or `motion/react`.
 - Prefer the project's existing headless foundation; otherwise use Base UI.
 - Use Tailwind CSS v4 without a configuration file unless the project requires one.
-- When choosing a linter for a project without one, default to Biome.
+- Every code project MUST have linting; separate logical code sections with blank lines for readability.
 
 ## Skills
 State "I will use the X skill" whenever using a skill.
@@ -40,7 +40,9 @@ When creating or resuming durable workflow artifacts, read `{{AFK_RULES_DIR}}/ar
 - Use the project's existing package manager; use pnpm for new projects.
 
 ## Tech Stack
-- For new web applications, prefer React, TypeScript, and Tailwind CSS v4. Prototypes may use the stack that best fits the experiment.
+- Before implementing a new project, agree on the stack and core technical choices with the user; ask about unspecified choices and wait for their answer before implementation.
+- Web applications MUST use TypeScript and Tailwind CSS v4.
+- When a project has `components.json`, check its configured registries before building UI components and strongly prefer suitable registry components.
 
 ## Frontend UX Defaults
 - Prefer mature primitives or registry components when they materially improve UX, accessibility, responsiveness, or interaction quality.

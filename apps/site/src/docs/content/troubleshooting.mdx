@@ -1,0 +1,42 @@
+# Troubleshooting
+
+Start by separating catalog state, setup planning, and delegated installer output. Each points to a different fix.
+
+<h2 id="troubleshooting-missing">A catalog item is missing</h2>
+
+```bash inspect cache
+afk show
+```
+
+If the cache is stale, preview and then run `afk refresh`. Use `afk refresh --local` only for a repository-owned `./afk/catalog`.
+
+<h2 id="troubleshooting-preview">I cannot tell what setup will change</h2>
+
+```bash preview all
+afk setup --dry-run
+```
+
+Narrow the command to one area or add repeated `--agent` flags. Remember that `show` explains catalog inputs; dry run explains planned setup actions.
+
+<h2 id="troubleshooting-delegate">A delegated installer failed</h2>
+
+```bash show upstream output
+afk setup tools --verbose
+```
+
+**This is a real setup run and can apply changes.** Retry only the failed area after reviewing its dry run. AFK continues through the remaining selections within that area and returns a non-zero exit with a failure summary; verbose output exposes the owning installer's output.
+
+<h2 id="troubleshooting-version">The wrong AFK command runs</h2>
+
+```bash check path (macOS / Linux)
+command -v afk
+afk --version
+```
+
+A development symlink in `~/.local/bin` can shadow the npm-installed CLI. Inspect the resolved path before changing either installation.
+
+<details>
+<summary>Still stuck?</summary>
+<p>Run the failing command with <code>--help</code>, preserve its exact output, and compare your Node version, scope, source, and target agent with the command you intended to run.</p>
+</details>
+

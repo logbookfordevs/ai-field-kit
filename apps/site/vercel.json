@@ -1,7 +1,46 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/docs", "destination": "/index.html" },
-    { "source": "/docs/", "destination": "/index.html" }
+    {
+      "source": "/docs",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/docs/",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/docs/:chapter.md",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/llms.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/llms-full.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    }
   ]
 }

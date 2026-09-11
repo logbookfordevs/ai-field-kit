@@ -70,6 +70,20 @@
             ]
         },
         {
+            "id": "afk-setup-project",
+            "label": "AFK - Setup Project",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-setup-project",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "manual",
+            "role": "workflow",
+            "composes": []
+        },
+        {
             "id": "impeccable",
             "label": "Impeccable",
             "source": "https://github.com/pbakaus/impeccable",

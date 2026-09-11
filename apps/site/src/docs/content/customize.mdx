@@ -1,0 +1,43 @@
+# Customize your kit
+
+Customization starts with a catalog source: a repository or local directory containing AFK catalog manifests. Keep team defaults in that source and choose project scope when a repository should own the installed result.
+
+<h2 id="customize-inspect">Inspect before adopting</h2>
+
+The value below is a placeholder example, not a real package:
+
+```bash example source
+afk show --source your-org/dev-kit
+```
+
+Use categories such as `skills` or `hooks` to narrow the output. Inspection does not save the source or refresh your cache.
+
+<h2 id="customize-once">Use a source once</h2>
+
+```bash placeholder example
+afk setup --source your-org/dev-kit --dry-run
+```
+
+`--source` overrides the saved source for this run without changing the remembered default. Applied setup can merge source entries into the cache; read-only `show --source` does not.
+
+<h2 id="customize-default">Save a team default</h2>
+
+```bash preview change
+afk refresh --default-source your-org/dev-kit --dry-run
+```
+
+Review the planned cache and default-source writes, then remove `--dry-run` to save the source and refresh.
+
+<details>
+<summary>Catalog manifests</summary>
+<p>AFK catalogs cover rules, skills, profiles, Custom Agents, MCPs, tools, hooks, and presets. Use the <a href="https://github.com/logbookfordevs/ai-field-kit/blob/main/packages/afk/README.md">AFK package README</a> and <a href="https://github.com/logbookfordevs/ai-field-kit/tree/main/packages/afk/catalog">shipped catalog files</a> for the complete schema reference. The next chapter walks through a working catalog of your own.</p>
+</details>
+
+
+[Build and publish your own catalog, step by step](/docs?chapter=catalog)
+
+[Manage installed skills](/docs?chapter=skills)
+
+[Create and activate skill profiles](/docs?chapter=profiles)
+
+[Open the command reference](/docs?chapter=reference)
