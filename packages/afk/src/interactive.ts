@@ -175,7 +175,7 @@ function hasManifest(options: CliOptions, filename: ManifestFilename): boolean {
     || existsSync(join(localManifestDir(options.homeDir), filename));
 }
 
-async function selectPresetId(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string> {
+export async function selectPresetId(options: Pick<CliOptions, "homeDir" | "manifestContents">): Promise<string> {
   const presets = loadPresetsManifest(options).presets;
   if (presets.length === 0) {
     throw new Error("No AFK presets are available in the selected catalog.");

@@ -1,3 +1,4 @@
+import { runSync } from "./sync.js";
 import { loadToolManifest } from "./manifest.js";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
@@ -164,6 +165,14 @@ export async function runCliWithRuntime(
 
   if (key === "setup" || isPresetSetupCommand(commandPath)) {
     return runSetupCommand(commandPath, runtime, options);
+  }
+
+  if (key === "sync") {
+    if (!options.presetId && (!tty.stdin || !tty.stdout || env.CI === "true")) {
+      runtime.io.stderr("Sync needs --preset <id> outside an interactive terminal.");
+      return 1;
+    }
+    return runSync(runtime, options, env.PATH ?? process.env.PATH);
   }
 
   if (commandPath[0] === "skills") {
@@ -371,6 +380,14 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup preset afk-architect",
       "afk setup preset --source your-org/dev-kit",
     ],
+  },
+  sync: {
+    title: "AFK sync",
+    summary: "Refresh catalogs and update existing items in a selected preset.",
+    usage: "afk sync [--preset <id>] [options]",
+    notes: ["Global environment only. Without --preset, choose an existing preset interactively.", "Missing members are reported and skipped unless --install-missing is supplied.", "Local-only entries and installed items removed upstream are preserved.", "Inactive package skills remain deferred. AFK itself updates separately with afk update.", "Failures are reported together and return a nonzero exit code."],
+    options: ["--preset <id>                    Scope maintenance to an existing preset", "--install-missing                Also install missing preset items", setupOptions.yes, setupOptions.dryRun, setupOptions.verbose, "--agent <agent>                  Limit agent targets", "--source <source>                Refresh from an explicit catalog source"],
+    examples: ["afk sync", "afk sync --preset daily-routine --dry-run", "afk sync --preset daily-routine --yes"],
   },
   refresh: {
     title: "AFK refresh",
@@ -1318,6 +1335,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let scopeExplicit = false;
   let allSkills = false;
   let toolsUpdateAll = false;
+  let syncInstallMissing = false;
   let allCustomAgents = false;
   const selectedCustomAgentIds: string[] = [];
   let rulesRef = "main";
@@ -1568,9 +1586,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (arg === "--install-missing" && key === "sync") {
+      syncInstallMissing = true;
+      continue;
+    }
+
     if (arg === "--preset") {
-      if (key !== "setup") {
-        return { help: false, kind: "error", error: "--preset is only supported with afk setup" };
+      if (key !== "setup" && key !== "sync") {
+        return { help: false, kind: "error", error: "--preset is only supported with afk setup or afk sync" };
       }
       const value = args[index + 1]?.trim();
       if (!value) {
@@ -1996,6 +2019,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       ...(presetPrompt ? { presetPrompt: true } : {}),
       allSkills,
       toolsUpdateAll,
+      syncInstallMissing,
       allCustomAgents,
       selectedSkillIds: [],
       selectedCustomAgentIds,
@@ -2420,6 +2444,7 @@ Usage:
   afk open                    Open the user AFK folder
   afk doctor [options]        Validate every local AFK catalog file
   afk sources [command]       List and manage favorite catalog sources
+  afk sync [--preset <id>] [options]                Update a preset-scoped environment
   afk refresh [category...] [options]               Update the local catalog cache
   afk setup [options]         Prepare rules, skills, Custom Agents, MCPs, tools, and hooks
   afk setup preset [id] [options]                   Choose and apply a catalog preset

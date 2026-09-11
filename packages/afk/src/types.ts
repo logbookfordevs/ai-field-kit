@@ -53,6 +53,7 @@ export type CliOptions = {
   allSkills: boolean;
   allCustomAgents?: boolean;
   toolsUpdateAll?: boolean;
+  syncInstallMissing?: boolean;
   selectedSkillIds: string[];
   selectedSkillProfileIds?: string[];
   selectedCustomAgentIds?: string[];

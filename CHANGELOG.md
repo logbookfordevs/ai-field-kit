@@ -13,6 +13,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `sync:` added preset-scoped `afk sync` to refresh catalogs and update installed members, with dry-run previews, opt-in missing installs, preserved local entries, and a consolidated failure exit code.
+
 - `tools:` added `afk tools update --all` to update every cataloged tool with an update command without opening the picker.
 
 - `catalog:` added the Waypoint tool with `waypoint update` and its local MCP endpoint.

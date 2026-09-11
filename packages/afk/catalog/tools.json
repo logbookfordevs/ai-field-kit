@@ -42,6 +42,7 @@
         },
         {
             "id": "plannotator-tot",
+            "executable": "tot",
             "label": "Plannotator Tot",
             "description": "Install Tot's git-backed Markdown and HTML publishing CLI for living tot.page URLs with immutable snapshots.",
             "install": {

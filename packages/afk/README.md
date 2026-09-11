@@ -225,6 +225,45 @@ example, `afk preset afk-architect` installs the Architect skill before
 provisioning its three required portable Custom Agents. The existing
 `afk setup --preset <id>` form remains available for compatibility.
 
+### Keep a preset environment up to date
+
+```sh
+afk sync                                             # Choose an existing preset
+afk sync --preset daily-routine --dry-run              # Preview refreshed commands
+afk sync --preset daily-routine --yes                  # Update installed members
+afk sync --preset daily-routine --install-missing --yes
+```
+
+`sync` refreshes the catalog from the remembered source, then updates the selected
+preset's installed skills, Custom Agents, rules, MCP configurations, tools, and
+hooks. Use `--source <source>` for a one-run source override and `--agent <agent>`
+to limit agent targets. Version one supports the global environment only.
+
+Missing members are reported and skipped unless `--install-missing` is supplied.
+Local-only catalog entries are preserved, and sync does not uninstall entries
+removed upstream. Remote definitions win for matching IDs. Disabled skills retain
+their storage state; package skills belonging only to inactive profiles remain
+deferred, including with `--install-missing`. Profile definitions refresh without
+enabling profiles or installing their packages.
+
+Tool detection checks executable files on `PATH`. A tool can declare `executable`
+when its command differs from its catalog ID (for example, `tot`). Otherwise sync
+uses a direct update command, or the catalog ID for shell/package-manager update
+commands. Tools without an update command are reported and skipped. Skills must
+have a selective `--skill` argument; whole-source entries require that catalog
+change before sync can safely update them. MCP detection uses named entries in
+the target's global config; a server's registered name must match `--name` or the
+catalog ID. Config locations follow [add-mcp’s supported agents](https://github.com/neon-solutions/add-mcp#supported-agents); OpenCode JSONC is supported. AFK does not currently route MCP updates to Pi or Cursor.
+
+`--dry-run` fetches the catalog and previews work without changing the cached
+catalog or installed environment. Outside an interactive terminal, supply
+`--preset`; `--yes` runs without AFK prompts. Updater commands must themselves
+support unattended execution. Updates run independently: a failed member does
+not prevent later members from running, and the final report returns a nonzero
+exit code for failures. Invalid catalog or preset plans stop before applying
+changes. Missing members and unavailable update commands are reported as skips.
+AFK's own binary remains separate: use `afk update`.
+
 Use `afk preset daily-routine` to install every rule, skill, tool, and Custom
 Agent from the current cache or `--source`. Use `afk setup --all --yes` when the
 goal is broader: install every item in every catalog area for the detected

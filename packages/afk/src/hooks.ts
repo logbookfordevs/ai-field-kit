@@ -75,7 +75,7 @@ function planAgentHook(
   ];
 }
 
-function agentScriptPath(agent: HookAgentId, options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">, item: HookManifestItem): string {
+export function agentScriptPath(agent: HookAgentId, options: Pick<CliOptions, "homeDir" | "cwd" | "setupScope">, item: HookManifestItem): string {
   const base = options.setupScope === "project" ? options.cwd : options.homeDir;
   const filename = safeHookFilename(item);
 
