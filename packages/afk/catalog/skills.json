@@ -237,20 +237,6 @@
             "composes": []
         },
         {
-            "id": "plannotator-compound",
-            "label": "Plannotator Compound",
-            "source": "backnotprop/plannotator/apps/skills/extra",
-            "args": [
-                "--skill",
-                "plannotator-compound",
-                "--global"
-            ],
-            "default": true,
-            "invocation": "manual",
-            "role": "utility",
-            "composes": []
-        },
-        {
             "id": "plannotator-guide",
             "label": "Plannotator Guide",
             "source": "plannotator/guides",
@@ -262,20 +248,6 @@
             "default": true,
             "invocation": "manual",
             "role": "utility",
-            "composes": []
-        },
-        {
-            "id": "plannotator-setup-goal",
-            "label": "Plannotator Setup Goal",
-            "source": "backnotprop/plannotator/apps/skills/extra",
-            "args": [
-                "--skill",
-                "plannotator-setup-goal",
-                "--global"
-            ],
-            "default": true,
-            "invocation": "auto",
-            "role": "primitive",
             "composes": []
         },
         {
