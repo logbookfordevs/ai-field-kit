@@ -175,7 +175,7 @@ test("sync updates only MCP targets with an existing named configuration", async
   writeFileSync(join(f.home, ".codex", "config.toml"), '[mcp_servers."named-service"]\nurl = "https://old.test/mcp"\n');
   assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--agent", "codex", "--agent", "claude", "--yes"]), 0);
   assert.equal(f.calls.length, 1);
-  assert.ok(f.calls[0]?.args.includes("https://example.test/mcp"));
+  assert.equal(f.calls[0]?.args[1], "https://example.test/mcp");
   assert.ok(f.calls[0]?.args.includes("codex"));
   assert.ok(!f.calls[0]?.args.includes("claude-code"));
   assert.match(f.output.join("\n"), /service \(claude\): not detected/);
