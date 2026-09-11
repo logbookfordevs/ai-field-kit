@@ -2,6 +2,25 @@
     "version": 1,
     "items": [
         {
+            "id": "waypoint",
+            "label": "Waypoint",
+            "description": "Capture browser annotations and share actionable feedback with coding agents.",
+            "install": {
+                "command": "bash",
+                "args": [
+                    "-c",
+                    "curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash"
+                ]
+            },
+            "update": {
+                "command": "waypoint",
+                "args": [
+                    "update"
+                ]
+            },
+            "default": false
+        },
+        {
             "id": "plannotator",
             "label": "Plannotator",
             "description": "Review and annotate plans before implementation, so agents get clearer feedback loops instead of vague handoff notes.",
@@ -23,6 +42,7 @@
         },
         {
             "id": "plannotator-tot",
+            "executable": "tot",
             "label": "Plannotator Tot",
             "description": "Install Tot's git-backed Markdown and HTML publishing CLI for living tot.page URLs with immutable snapshots.",
             "install": {

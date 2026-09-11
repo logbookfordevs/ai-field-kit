@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURE_DIR="$(mktemp -d)"
-LINT_FIXTURE="$ROOT_DIR/apps/site/src/security-lint-fixture-$$.js"
+LINT_FIXTURE="$ROOT_DIR/apps/site/src/security-lint-fixture-$$.ts"
 
 cleanup() {
   rm -rf "$FIXTURE_DIR"
