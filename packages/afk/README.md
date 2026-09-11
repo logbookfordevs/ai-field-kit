@@ -399,7 +399,7 @@ can be selected with `--agent`; exact custom roots require both
 | `afk skills enable [folder]` | Move disabled skill folders back to active storage. | Omit the folder for an interactive picker; supports `--dry-run`. |
 | `afk skills invocation [disable|enable] [folder]` | Review or change skill invocation policy. | The bare command opens a searchable batch editor; explicit actions change one skill. Both update matching shared `skills.json` policy and installed host metadata; supports `--dry-run`. |
 | `afk skills delete [folder]` | Permanently remove selected skill folders. | `--invocation auto|manual|mixed`, `--catalog-only`, `--profile`, storage filters, `--yes`, and `--dry-run`; profile deletion mode deletes referenced folders, not the profile definition. |
-| `afk skills update [skills...]` | Select AFK-cataloged skills with lock metadata and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, and `--yes`; preserves active/disabled storage. |
+| `afk skills update [skills...]` | Select AFK-cataloged skills with lock metadata and delegate updates to `skills update`. | `--all`, `--scope` with `global`, `project`, or `all`, `--profile`, `--enabled` / `--disabled`, and `--yes`; preserves active/disabled storage. Without a storage filter, both enabled and disabled skills are included. |
 | `afk skills reset` | Reconcile the installed shared library with cached `skills.json`. | Applies `startDisabled` and invocation policy, disables uncataloged skills, clears runtime profile state, and reports missing catalog skills; supports `--dry-run` and `--yes`. |
 | `afk skills categorize` | Ask `codex exec` to create or update catalog categorization metadata. | `--mode` with `append-missing` or `recategorize-all`, `--instruction`, `--runner codex-exec`, `--dry-run`. |
 | `afk skills profiles <command>` | Read or apply profile runtime state. | Detailed below; `afk profiles <command>` is the shorter equivalent. |
@@ -1456,7 +1456,7 @@ afk skills open afk-note --folder --app cursor
 afk skills disable old-skill --dry-run
 afk skills enable old-skill
 afk skills invocation
-afk skills invocation disable afk-docs-for-humans --dry-run
+afk skills invocation disable writing-for-humans --dry-run
 afk skills delete old-skill --dry-run
 afk skills delete --catalog-only --dry-run
 afk skills delete --profile

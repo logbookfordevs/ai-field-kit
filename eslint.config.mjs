@@ -39,11 +39,11 @@ export default defineConfig(
     },
   },
   {
-    files: ["apps/site/**/*.{js,jsx}"],
-    extends: [js.configs.recommended, react.configs.flat.recommended, react.configs.flat["jsx-runtime"], reactHooks.configs.flat.recommended],
+    files: ["apps/site/**/*.{ts,tsx}"],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended, react.configs.flat.recommended, react.configs.flat["jsx-runtime"], reactHooks.configs.flat.recommended],
     languageOptions: {
       ecmaVersion: "latest",
-      globals: globals.browser,
+      globals: { ...globals.browser, ...globals.node },
       parserOptions: {
         ecmaFeatures: {
           jsx: true,

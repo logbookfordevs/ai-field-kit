@@ -1,0 +1,31 @@
+# Start with a preview
+
+AFK is a setup router for AI coding tools. It helps you choose and prepare shared rules, skills, Custom Agents, MCPs, tools, and hooks without turning them into one mandatory framework.
+
+<h2 id="start-requirements">Before you begin</h2>
+
+You need Node.js 20 or newer and a terminal. You do not need to install AFK globally for the first look.
+
+<h2 id="start-preview">Run the safe first command</h2>
+
+```bash preview
+npx @logbookfordevs/afk setup --dry-run
+```
+
+The guided flow starts with nothing selected. Choose an area and target, then inspect the planned file operations and delegated installer commands. Dry run does not apply catalog or configuration writes and does not run delegated installers.
+
+<h2 id="start-next">Apply only what you reviewed</h2>
+
+When the preview matches your intent, rerun the same command without `--dry-run`. Stay with the guided prompts for your first setup.
+
+```bash apply
+npx @logbookfordevs/afk setup
+```
+
+For ongoing use, install the CLI globally. This makes the shorter `afk …` commands used throughout the rest of this guide available in your shell.
+
+```bash optional global install
+npm install -g @logbookfordevs/afk
+```
+
+[Continue to the setup walkthrough](/docs?chapter=setup)

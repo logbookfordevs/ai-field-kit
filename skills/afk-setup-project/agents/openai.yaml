@@ -1,0 +1,6 @@
+interface:
+  display_name: "AFK Setup Project"
+  short_description: "Agree on a web stack and scaffold a new project"
+  default_prompt: "Use afk-setup-project to recommend a stack for my new web project, agree on unresolved choices with me, then scaffold and verify it."
+policy:
+  allow_implicit_invocation: false

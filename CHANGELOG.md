@@ -9,7 +9,13 @@ This changelog tracks meaningful updates by version and date.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
-## Next Release
+## TBD - TBD
+
+### Changed
+
+- `skills:` renamed Docs for Humans to the manual Writing for Humans skill and expanded it from documentation into substantial human-facing prose, adding research-grounded reader progression, dedicated genre guidance, and an opt-in fresh-reader proxy for reader load, momentum, ambiguity, and gaps.
+
+## v1.4.2 - 2026-09-08
 
 ### Added
 
@@ -20,6 +26,7 @@ This changelog tracks meaningful updates by version and date.
 - `catalog:` added the Waypoint tool with `waypoint update` and its local MCP endpoint.
 
 - `cli:` skill catalog items can run post-install copy or command actions during setup and updates. Impeccable now copies its bundled Codex agents into the harness's agents directory, refreshing managed copies while preserving user edits and existing links to the exact source files.
+- `cli:` added `--enabled` and `--disabled` filters to `afk skills update`, while keeping all tracked skills as the default.
 
 ### Changed
 

@@ -159,7 +159,7 @@ The hero is the system diagram: one AFK core sends four animated dashed routes t
 
 The docs translate Composable Trail into a quiet field manual: an unframed reading column, chapter rail, lightweight heading links, and ocean command surfaces. They reuse the existing identity, not a new visual world. Homepage descriptions elsewhere in this document remain homepage-specific; the docs rules below do not replace them.
 
-Evidence: `apps/site/src/docs/Docs.jsx`, `docs.css`, and `GuideContent.jsx`, with inherited tokens and base styles in `apps/site/src/index.css` and font loading in `apps/site/index.html`. Direction is recorded in `docs/specs/afk-docs.md`; desktop and mobile captures are under `.impeccable/review/docs/`.
+Evidence: `apps/site/src/docs/Docs.tsx`, `docs.css`, and `GuideContent.tsx`, with inherited tokens and base styles in `apps/site/src/index.css` and font loading in `apps/site/index.html`. Direction is recorded in `docs/specs/afk-docs.md`; desktop and mobile captures are under `.impeccable/review/docs/`.
 
 ## Colors
 

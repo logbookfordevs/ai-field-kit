@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -47,8 +47,8 @@ jobs:
       - name: Validate registry
         run: pnpm registry:validate
 
-      - name: Test site navigation
-        run: node --test apps/site/src/docs/navigation.test.js
+      - name: Test site documentation and navigation
+        run: pnpm site:test
 
       - name: Build site
         run: pnpm site:build

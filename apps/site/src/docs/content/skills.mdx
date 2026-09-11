@@ -1,0 +1,113 @@
+# Manage your skills
+
+Use setup to choose from a catalog, then use `afk skills` to inspect and maintain what is installed. The shared library at `~/.agents/skills` is the default destination for AFK’s skill-management commands.
+
+<h2 id="skills-install">Install from a catalog or directly</h2>
+
+```bash choose from your catalog
+afk setup skills --dry-run
+```
+
+Remove `--dry-run` to install selected entries through the official skills CLI. For a specific skill you found elsewhere, use a direct source instead. Replace the repository and skill name in this example:
+
+```bash direct install example
+afk skills add your-org/dev-kit --skill review-pr --yes
+```
+
+`add` always includes the shared global target. Explicit `--agent` values add supported upstream agent projections. Newly installed skills absent from the AFK catalog are added as imported entries when their source can be recovered from the skills lock metadata.
+
+To prepare a skill for later use, add `--start-disabled`. To assign new skills to a profile, add `--profile review`; use `--profile-only review` to also keep them disabled until needed. These flags apply only to skills introduced by this installation. Reinstalling an existing skill preserves its previous storage state and profile membership.
+
+<h2 id="skills-find">Find and read what is installed</h2>
+
+```bash inspect your library
+afk skills list
+afk skills list --disabled
+afk skills list --category Docs --tag writing
+afk skills show review-pr
+afk skills get review-pr
+afk skills open review-pr --folder --app code
+```
+
+`list` shows active folders by default. `show` summarizes metadata; omit the name for a picker. `get` prints the full local skill with its absolute root, including disabled skills, so an agent can resolve referenced files. `open` opens the file by default, or its directory with `--folder`. Add `--json` to list or show for structured output.
+
+Catalog inspection and library inspection answer different questions: `afk show skills` shows what your catalog describes; `afk skills list` shows installed folders.
+
+```bash inspect another root
+afk skills list --agent codex --scope project
+afk skills list --agent custom --agent-path /absolute/path/to/skills
+```
+
+For root-aware commands, `--agent` chooses an agent root and `--scope global|project|all` chooses its scope. Exact custom roots require both `--agent custom` and `--agent-path`, without `--scope`. Custom paths apply to AFK’s own inspection and folder operations, not the delegated add installer.
+
+<h2 id="skills-state">Separate storage from invocation</h2>
+
+<dl>
+<dt>Active or disabled storage</dt>
+<dd><code>disable</code> moves a skill folder into <code>.disabled</code>; <code>enable</code> moves it back. The skill remains on disk.</dd>
+<dt>Automatic or manual invocation</dt>
+<dd>Invocation policy controls model discovery while a skill is installed. Manual invocation keeps the skill available for explicit use. Catalog policy <code>source</code>, or an omitted policy, preserves the skill author’s metadata.</dd>
+</dl>
+
+
+```bash preview separate kinds of change
+afk skills disable review-pr --dry-run
+afk skills enable review-pr --dry-run
+afk skills invocation disable review-pr --dry-run
+```
+
+The last command makes invocation manual; it does not move the folder into disabled storage. `invocation enable` restores automatic invocation. For shared skills already in the catalog, these commands update both catalog policy and installed metadata. Agent-specific or uncataloged skills update installed metadata only.
+
+Run `afk skills invocation` for the batch editor: use up/down to navigate, left for manual, right for automatic, Enter to apply drafted changes, and Escape to discard. Existing states stay untouched until you change them.
+
+<h2 id="skills-maintain">Update content and recover drift</h2>
+
+```bash update installed content
+afk skills update --all
+afk skills update review --profile
+```
+
+These commands perform updates through the skills CLI. AFK selects skills present in both its catalog and the skills lock metadata, preserving active and disabled storage. Omit `--all` for a picker. Use `--profile` without a name to choose a profile. Skills outside that catalog-and-lock intersection are skipped; use their owning installer to update them.
+
+If installed skills are missing from AFK’s catalog, inspect and import their lock-backed definitions:
+
+```bash reconcile catalog coverage
+afk skills catalog status
+afk skills catalog import --dry-run
+```
+
+Remove `--dry-run` to add missing entries. Import preserves existing entries and skips skills without recoverable lock metadata. It does not install content.
+
+```bash preview a library reset
+afk skills reset --dry-run
+```
+
+Reset reapplies cached `startDisabled` and explicit invocation policy, disables uncataloged installed skills, and clears enabled profile state. It reports missing catalog skills but does not install, update, or delete them. Review the preview, then rerun without `--dry-run` to confirm the reset.
+
+<h2 id="skills-delete">Remove skills deliberately</h2>
+
+```bash preview permanent removal
+afk skills delete review-pr --dry-run
+afk skills delete --disabled --dry-run
+afk skills delete --profile review --dry-run
+```
+
+Deletion removes folders permanently. Omit the skill name for a picker, use `--disabled` to prune disabled folders, or add `--catalog-only` to limit candidates to cataloged skills. Profile deletion mode selects installed members of that profile, which may also serve other profiles. It does not delete the profile definition. With `--yes`, profile deletion selects every installed member.
+
+<h2 id="skills-catalog">Maintain the skill catalog</h2>
+
+`afk skills catalog` opens the editor. Use these actions when you already know what you want to change:
+
+| Action | Job |
+| --- | --- |
+| `add`, `edit`, `remove` | Maintain install definitions in `skills.json`. |
+| `bulk-edit` | Change invocation and always-on policy for a selection. |
+| `toggle-default` | Change selection for non-interactive setup. |
+| `toggle-auto` | Change catalog invocation policy. |
+| `status`, `import` | Compare installed skills with catalog coverage, then recover missing entries. |
+
+Catalog actions edit the global cache by default; add `--local` for `./afk/catalog`. After a global edit or bulk edit changes setup-relevant policy, AFK can offer setup for the affected entries. Declining saves the definitions without running setup.
+
+`afk skills categorize --dry-run` previews categorization through `codex exec`. The real command updates catalog classification metadata; it requires that runner. Use `--mode append-missing` or `--mode recategorize-all` to choose the scope.
+
+Next, [group skills into profiles](/docs?chapter=profiles) so you can prepare or activate a working set together.

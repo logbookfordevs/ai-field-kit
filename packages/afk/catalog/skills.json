@@ -70,6 +70,20 @@
             ]
         },
         {
+            "id": "afk-setup-project",
+            "label": "AFK - Setup Project",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-setup-project",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "manual",
+            "role": "workflow",
+            "composes": []
+        },
+        {
             "id": "impeccable",
             "label": "Impeccable",
             "source": "https://github.com/pbakaus/impeccable",
@@ -136,12 +150,12 @@
             "composes": []
         },
         {
-            "id": "afk-docs-for-humans",
-            "label": "AFK - Docs for Humans",
+            "id": "writing-for-humans",
+            "label": "Writing for Humans",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-docs-for-humans",
+                "writing-for-humans",
                 "--global"
             ],
             "default": true,
@@ -150,12 +164,12 @@
             "composes": []
         },
         {
-            "id": "afk-implement-tickets",
-            "label": "AFK - Implement Tickets",
+            "id": "afk-implement",
+            "label": "AFK - Implement",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
             "args": [
                 "--skill",
-                "afk-implement-tickets",
+                "afk-implement",
                 "--global"
             ],
             "default": true,
@@ -229,6 +243,20 @@
             "args": [
                 "--skill",
                 "diagnosing-bugs",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "auto",
+            "role": "primitive",
+            "composes": []
+        },
+        {
+            "id": "shadcn",
+            "label": "shadcn/ui",
+            "source": "https://github.com/shadcn-ui/ui",
+            "args": [
+                "--skill",
+                "shadcn",
                 "--global"
             ],
             "default": true,

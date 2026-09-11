@@ -1,0 +1,73 @@
+# Command reference
+
+Use these commands for the common setup loop. Run any command with `--help` for its complete current options.
+
+<h2 id="reference-core">Core commands</h2>
+
+| Command | Purpose |
+| --- | --- |
+| `afk setup` | Guided setup across selected areas. |
+| `afk setup <area>` | Run one area: rules, skills, profiles, agents, mcps, tools, or hooks. |
+| `afk show [category...]` | Inspect cached catalog data without changing it. |
+| `afk refresh [category...]` | Update cached catalog files. |
+| `afk sources list` | List the saved default and favorite sources. |
+| `afk doctor` | Validate all local catalog manifests. |
+| `afk preset [id]` | Choose or apply a catalog setup bundle. |
+| `afk skills list` | Inspect the shared global library; choose other roots with flags. |
+
+<h2 id="reference-flags">Setup flags</h2>
+
+<dl>
+<dt><code>--dry-run</code></dt>
+<dd>Print planned actions without applying them.</dd>
+<dt><code>--local</code></dt>
+<dd>Use project setup scope. On <code>refresh</code>, target <code>./afk/catalog</code>.</dd>
+<dt><code>--agent &lt;agent&gt;</code></dt>
+<dd>Override detected targets; repeat for more than one.</dd>
+<dt><code>--source &lt;source&gt;</code></dt>
+<dd>Use a catalog source for this command only.</dd>
+<dt><code>--yes</code></dt>
+<dd>Accept defaults and skip prompts; best after a source is saved.</dd>
+<dt><code>--verbose</code></dt>
+<dd>Show delegated installer output.</dd>
+</dl>
+
+
+<details>
+<summary>Skill library management</summary>
+<p><code>afk skills show</code>, <code>open</code>, <code>disable</code>, <code>enable</code>, <code>delete</code>, <code>update</code>, <code>profiles</code>, and <code>categorize</code> manage skills already represented on disk. They are separate from <code>afk setup skills</code>, which installs selected skills.</p>
+</details>
+
+
+<h2 id="reference-families">Go deeper by command family</h2>
+
+-   [Catalogs and sources](/docs?chapter=catalog): authoring, favorites, refresh behavior, and combining repositories.
+-   [Skills](/docs?chapter=skills): add, inspect, enable, disable, invocation, update, delete, reset, and catalog maintenance.
+-   [Profiles](/docs?chapter=profiles): definitions, packages, installation, context, activation, focus, and restoration.
+
+<h2 id="reference-catalog-editors">Edit other catalog families</h2>
+
+Run `afk rules catalog`, `afk agents catalog`, `afk mcps catalog`, `afk tools catalog`, or `afk hooks catalog` to open that family’s editor. Each supports `add`, `edit`, and `remove`; MCPs, tools, and hooks also support `toggle-default`. Edits target the global cache unless you add `--local`. Catalog removal changes a definition, not an existing installation.
+
+<h2 id="reference-presets">Apply a preset bundle</h2>
+
+```bash inspect and choose a preset
+afk show presets
+afk preset --dry-run
+```
+
+A preset groups setup areas and can select exact members or every item in its declared areas. `afk preset <id>` skips the preset menu; `afk setup preset` is the long form. Presets route installation, while skill profiles manage working sets after installation.
+
+<h2 id="reference-tool-updates">Update cataloged tools</h2>
+
+```bash preview tool updates
+afk tools update --dry-run
+```
+
+Select tools with cataloged update commands, or pass their IDs directly with `afk tools update <tool...>`. Remove `--dry-run` to run the selected commands. This updates those tools; `afk update` updates AFK itself.
+
+<h2 id="reference-utilities">Discover UI skills and maintain AFK</h2>
+
+`afk ui categories`, `afk ui list --category motion`, and `afk ui get <skill>` delegate to UI Skills. `get` prints skill content without installing it. `afk open` opens the user AFK folder; add `--code` for VS Code. `afk update --dry-run` previews the hosted release installer; `afk update` runs it.
+
+[Troubleshoot a setup](/docs?chapter=troubleshooting)

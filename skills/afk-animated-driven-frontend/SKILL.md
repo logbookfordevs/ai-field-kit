@@ -75,7 +75,7 @@ ADF discovers through production rather than finishing all discovery before impl
 
 Tickets organize known production work; ADF explores creative unknowns through production. Ticket only the approved production frontier. Keep unresolved scenes in the Director's Room, and add later tickets through rolling greenlights rather than converting uncertainty into implementation commitments. A long or difficult tracer remains a tracer; duration alone does not justify tickets.
 
-When the Director's Room recommends scheduling, recommend the user pair the resulting tickets with `afk-implement-tickets` by default while ADF remains governing specialist for cinematic dailies and creative acceptance. The user chooses whether work stays in the current room, moves through an ordinary or skill-assisted handoff, opens in a fresh session, or uses another executor. Venue changes do not change the production's binder, authority, or greenlights.
+When the Director's Room recommends scheduling, recommend the user pair the resulting tickets with `afk-implement` by default while ADF remains governing specialist for cinematic dailies and creative acceptance. The user chooses whether work stays in the current room, moves through an ordinary or skill-assisted handoff, opens in a fresh session, or uses another executor. Venue changes do not change the production's binder, authority, or greenlights.
 
 ## Production workflow
 

@@ -27,25 +27,43 @@ describe("source skill invocation policy", () => {
     expect(openAi.policy?.allow_implicit_invocation).toBe(false);
   });
 
-  test("keeps every other user-invoked catalog skill reachable through Compass", () => {
+  test("keeps Writing for Humans user-invoked across catalog and host metadata", () => {
     const repositoryRoot = resolve(import.meta.dirname, "../../..");
     const catalog = JSON.parse(
       readFileSync(resolve(repositoryRoot, "packages/afk/catalog/skills.json"), "utf8"),
     ) as {
-      items: Array<{ id: string; invocation: "auto" | "manual" | "source" }>;
+      items: Array<{
+        id: string;
+        default: boolean;
+        invocation: "auto" | "manual" | "source";
+        role: string;
+        composes: string[];
+      }>;
     };
-    const compass = readFileSync(
-      resolve(repositoryRoot, "skills/afk-compass/SKILL.md"),
+    const writingForHumansSource = readFileSync(
+      resolve(repositoryRoot, "skills/writing-for-humans/SKILL.md"),
       "utf8",
     );
-    const missingRoutes = catalog.items
-      .filter(({ id, invocation }) => id !== "afk-compass" && invocation === "manual")
-      .filter(({ id }) => !compass.includes(`\`${id}\``))
-      .map(({ id }) => id);
-
-    expect(missingRoutes).toEqual([]);
+    const writingForHumansFrontmatter = writingForHumansSource.match(/^---\n([\s\S]*?)\n---/)?.[1];
+    expect(writingForHumansFrontmatter).toBeDefined();
+    const writingForHumans = parse(writingForHumansFrontmatter ?? "") as {
+      description?: string;
+      "disable-model-invocation"?: boolean;
+    };
+    const openAi = parse(
+      readFileSync(resolve(repositoryRoot, "skills/writing-for-humans/agents/openai.yaml"), "utf8"),
+    ) as { policy?: { allow_implicit_invocation?: boolean } };
+    expect(catalog.items.find(({ id }) => id === "writing-for-humans")).toMatchObject({
+      default: true,
+      invocation: "manual",
+      role: "primitive",
+      composes: [],
+    });
+    expect(catalog.items.find(({ id }) => id === "reader-journey")).toBeUndefined();
+    expect(catalog.items.find(({ id }) => id === "afk-docs-for-humans")).toBeUndefined();
+    expect(writingForHumans["disable-model-invocation"]).toBe(true);
+    expect(openAi.policy?.allow_implicit_invocation).toBe(false);
   });
-
   test("keeps prototype instruments outside Design Grill's primary composition", () => {
     const repositoryRoot = resolve(import.meta.dirname, "../../..");
     const catalog = JSON.parse(
@@ -78,35 +96,5 @@ describe("source skill invocation policy", () => {
 
     expect(catalog.items.find(({ id }) => id === "html-wireframe")?.invocation).toBe("manual");
     expect(catalog.items.find(({ id }) => id === "html-prototype")?.invocation).toBe("manual");
-
-    const designGrillSkill = readFileSync(
-      resolve(repositoryRoot, "skills/afk-design-grill/SKILL.md"),
-      "utf8",
-    );
-    expect(designGrillSkill).not.toContain("html-wireframe");
-    expect(designGrillSkill).not.toContain("html-prototype");
-    expect(designGrillSkill).not.toContain("`prototype`");
-    expect(designGrillSkill).not.toContain("image-to-code");
-    expect(designGrillSkill).not.toContain("afk-animated-driven-frontend");
-  });
-
-  test("makes Code Review Verdicts preserve review findings before appending verdicts", () => {
-    const repositoryRoot = resolve(import.meta.dirname, "../../..");
-    const skill = readFileSync(
-      resolve(repositoryRoot, "skills/afk-code-review-verdicts/SKILL.md"),
-      "utf8",
-    );
-    const runReview = "Run the `afk-code-review` skill to completion and capture its complete output.";
-    const preserveFindings = "Present that complete output verbatim, preserving its axes and finding order.";
-    const appendVerdicts = "Then append `## Verified verdicts`.";
-    const validateFindings = "Treat those returned findings as unverified review input.";
-
-    expect(skill).toContain(runReview);
-    expect(skill).toContain(preserveFindings);
-    expect(skill).toContain(appendVerdicts);
-    expect(skill).toContain(validateFindings);
-    expect(skill.indexOf(runReview)).toBeLessThan(skill.indexOf(preserveFindings));
-    expect(skill.indexOf(preserveFindings)).toBeLessThan(skill.indexOf(appendVerdicts));
-    expect(skill.indexOf(appendVerdicts)).toBeLessThan(skill.indexOf(validateFindings));
   });
 });

@@ -8,8 +8,8 @@ Use these conventions when AFK work creates or resumes durable workflow artifact
 - **Spec** captures behavior and design decisions: flows, acceptance criteria, edge cases, constraints, and relevant references.
 - If the PRD or combined artifact lacks behavior needed for implementation, recommend the user to create/update a spec before writing the implementation plan.
 - **RFC** captures a proposed direction for review before executable slicing.
-- **Checkpoint packets** are execution artifacts: thin vertical slices, dependencies, acceptance criteria, execution bundle, verification, handoff notes, and review gates (a.k.a implementation plan fragmented)
-- **Tracking** updates checkpoint packets with status, validation, review, implementation notes, and handoff state.
+- **Tickets** are executable planning artifacts: tracer-bullet slices, dependencies, acceptance criteria, execution bundle, Test Seam, and expected verification.
+- **Implementation records** are execution artifacts: status, validation evidence, changes, review state, implementation notes, and handoff state for one implementation unit.
 
 Create or update the smallest artifact that removes the current ambiguity. If a PRD already covers behavior well enough, do not split out a separate spec just for ceremony.
 
@@ -22,9 +22,10 @@ Create or update the smallest artifact that removes the current ambiguity. If a 
 docs/
 ├── adr/          # <NNNN>-<slug>.md; centralized, numbered, durable
 ├── specs/        # <scope>.md, or <scope>/ for multiple files
+├── tickets/      # <scope>/<NN>-<slug>.md
 ├── research/     # usually <scope>/
 ├── references/   # <scope>/; replaceable external inputs
-└── tracking/     # <scope>/<NN>-<slug>.md
+└── tracking/     # <scope>/<slug>.md
 ```
 
 - Use a concise kebab-case scope slug and reuse it across artifact types for one effort.
@@ -34,7 +35,7 @@ Treat generated workflow artifacts as local working artifacts unless the repo co
 
 ## Notes
 
-- Record implementation notes in the relevant checkpoint packet.
+- Record implementation notes in the relevant Implementation Record.
 - Create standalone notes only when the user asks or the repo already has that convention.
 - Use ADRs for decisions that change architecture, ownership, integration contracts, data model, migration strategy, or long-term maintenance expectations.
 - Preserve execution-bundle evidence where it affects review or resume safety.

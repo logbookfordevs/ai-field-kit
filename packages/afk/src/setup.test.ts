@@ -749,13 +749,13 @@ test("runArea profiles prepares the profile catalog from the saved setup source"
     "skills.json": {
       version: 1,
       defaultSource: "",
-      items: [{ id: "afk-docs-for-humans", label: "AFK Docs for Humans", source: "example/kit", args: ["--skill", "afk-docs-for-humans"], default: false }],
+      items: [{ id: "writing-for-humans", label: "Writing for Humans", source: "example/kit", args: ["--skill", "writing-for-humans"], default: false }],
     },
     "profiles.json": {
       version: 1,
       mode: "context",
-      alwaysOn: ["afk-docs-for-humans"],
-      items: [{ id: "context", name: "Context", skills: ["afk-docs-for-humans"] }],
+      alwaysOn: ["writing-for-humans"],
+      items: [{ id: "context", name: "Context", skills: ["writing-for-humans"] }],
     },
   });
   const homeDir = localHomeWithManifests({
@@ -788,14 +788,14 @@ test("runArea profiles prepares the profile catalog from the saved setup source"
 
   assert.equal(code, 0);
   assert.equal(profiles.mode, "context");
-  assert.deepEqual(profiles.alwaysOn, ["afk-docs-for-humans"]);
+  assert.deepEqual(profiles.alwaysOn, ["writing-for-humans"]);
   assert.deepEqual(promptState.rememberedSources, []);
   assert.ok(text.includes("Profile catalog prepared."));
   assert.ok(text.includes(profilesPath));
   assert.ok(text.includes("Selected skill profiles: Context"));
   assert.deepEqual(spawned, [{
     command: "npx",
-    args: ["skills", "add", "example/kit", "--global", "--yes", "--skill", "afk-docs-for-humans", "--agent", "universal"],
+    args: ["skills", "add", "example/kit", "--global", "--yes", "--skill", "writing-for-humans", "--agent", "universal"],
   }]);
 });
 

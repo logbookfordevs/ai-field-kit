@@ -1229,6 +1229,8 @@ test("runCli prints contextual skills update help", async () => {
   assert.ok(text.includes("AFK skills update"));
   assert.ok(text.includes("--scope global|project|all"));
   assert.ok(text.includes("--all"));
+  assert.ok(text.includes("--enabled"));
+  assert.ok(text.includes("--disabled"));
   assert.ok(!text.includes("skills upgrade"));
   assert.ok(!text.includes("AFK skills check"));
 });
@@ -1613,6 +1615,14 @@ test("runCli rejects boolean values for skills storage filters", async () => {
 
   assert.equal(code, 1);
   assert.ok(output.join("\n").includes("Use --enabled or --disabled without a value"));
+});
+
+test("runCli rejects conflicting skills update storage filters", async () => {
+  const output: string[] = [];
+  const code = await withConsole(output, () => runCli(["skills", "update", "--enabled", "--disabled"]));
+
+  assert.equal(code, 1);
+  assert.ok(output.join("\n").includes("Use only one of --enabled or --disabled"));
 });
 
 test("runCli rejects skills enabled filter where it is not meaningful", async () => {
@@ -2179,7 +2189,7 @@ test("runCli shows profile catalog summaries", async () => {
     "profiles.json": {
       version: 1,
       mode: "context",
-      alwaysOn: ["afk-docs-for-humans"],
+      alwaysOn: ["writing-for-humans"],
       items: [{ id: "video", name: "Video", skills: ["hyperframes"] }],
     },
   });

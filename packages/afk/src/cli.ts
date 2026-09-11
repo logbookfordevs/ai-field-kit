@@ -674,7 +674,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills list --scope global --json",
       "afk skills list --disabled",
       "afk skills disable old-skill --dry-run",
-      "afk skills invocation disable afk-docs-for-humans",
+      "afk skills invocation disable writing-for-humans",
       "afk skills update --all",
       "afk skills reset --dry-run",
       "afk skills categorize --mode append-missing --dry-run",
@@ -882,8 +882,8 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk skills invocation",
-      "afk skills invocation disable afk-docs-for-humans",
-      "afk skills invocation enable afk-docs-for-humans --dry-run",
+      "afk skills invocation disable writing-for-humans",
+      "afk skills invocation enable writing-for-humans --dry-run",
       "afk skills invocation disable --scope global --agent codex",
     ],
   },
@@ -940,12 +940,15 @@ const commandHelps: Record<string, CommandHelp> = {
       "--scope global|project|all        Choose cataloged tracked skills (default: global)",
       "--all                             Update every cataloged tracked skill in scope",
       "--profile                         Update cataloged tracked skills in a global profile",
+      "--enabled                         Update enabled skills only",
+      "--disabled                        Update disabled skills only",
       "--yes, -y                         Forward non-interactive confirmation to skills update",
       "--dry-run                         Preview updates and catalog post-install actions",
     ],
     examples: [
       "afk skills update",
       "afk skills update --all",
+      "afk skills update --all --disabled",
       "afk skills update --profile",
       "afk skills update video --profile",
       "afk skills update --scope project",
@@ -1396,7 +1399,7 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   const isAfkSkillsProfilesCommand = commandPath[0] === "skills" && commandPath[1] === "profiles";
   const isAfkCatalogProfilesCommand = commandPath[0] === "profiles" && commandPath[1] === "catalog";
   const acceptsSkillStorageFilter =
-    (isAfkSkillsCommand && ["list", "show", "open", "delete", "invocation"].includes(commandPath[1] ?? "")) ||
+    (isAfkSkillsCommand && ["list", "show", "open", "delete", "invocation", "update"].includes(commandPath[1] ?? "")) ||
     (isAfkCatalogProfilesCommand && ["create", "edit"].includes(commandPath[2] ?? ""));
   const isAfkProfileCommand = isAfkSkillsProfilesCommand || isAfkCatalogProfilesCommand;
   const isAfkUiCommand = commandPath[0] === "ui";

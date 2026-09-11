@@ -1,0 +1,39 @@
+# Set up AFK
+
+Setup is a guided choice of scope, target agents, and kit areas. AFK detects supported targets, but you approve the selection before it acts.
+
+<h2 id="setup-scope">Choose a scope</h2>
+
+<dl>
+<dt>Global</dt>
+<dd>The default. Prepares user-level agent directories and passes global flags to delegated tools where supported.</dd>
+<dt>Project</dt>
+<dd>Use <code>--local</code> or <code>--scope project</code>. AFK writes its owned project files under the current repository and delegates without global flags.</dd>
+</dl>
+
+
+```bash project preview
+afk setup --local --dry-run
+```
+
+<h2 id="setup-areas">Choose only the areas you need</h2>
+
+-   **Rules** sync into managed regions of supported agent rule files.
+-   **Skills** delegate installation to the official `skills` CLI.
+-   **MCPs** delegate recommendations to `add-mcp`.
+-   **Profiles** install named groups of skills; activate them separately when needed.
+-   **Custom Agents** translate portable definitions into supported native agent files.
+-   **Tools** run their own installers and supported post-install setup.
+-   **Hooks** copy scripts and merge lifecycle commands into supported configs.
+
+<h2 id="setup-review">Review, then apply</h2>
+
+Preview one area when you want a smaller review surface, for example:
+
+```bash skills only
+afk setup skills --dry-run
+```
+
+Remove `--dry-run` only after the scope, targets, and delegated commands look right.
+
+[Learn the source and composition model](/docs?chapter=concepts)

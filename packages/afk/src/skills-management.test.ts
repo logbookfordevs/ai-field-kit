@@ -2168,6 +2168,80 @@ test("runSkillsCommand update --scope all delegates cataloged locked skills by s
   }]);
 });
 
+test("runSkillsCommand update --all filters skills by enabled storage", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-update-enabled-"));
+  const homeDir = join(root, "home");
+  writeGlobalSkillLock(homeDir, {
+    enabled: {
+      source: "owner/enabled",
+      sourceType: "github",
+      skillPath: "skills/enabled/SKILL.md",
+    },
+    disabled: {
+      source: "owner/disabled",
+      sourceType: "github",
+      skillPath: "skills/disabled/SKILL.md",
+    },
+  });
+  writeSkillManifest(homeDir, ["enabled", "disabled"]);
+  writeSkill(join(homeDir, ".agents", "skills"), "enabled", "Enabled");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled", "Disabled");
+  const spawned: Array<{ command: string; args: string[] }> = [];
+  const runtime: Runtime = {
+    io: { stdout: () => undefined, stderr: () => undefined },
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "update"], runtime, {
+    ...baseOptions(root),
+    skillsUpdateAll: true,
+    skillsListStorage: "active",
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned[0]?.args, ["--yes", "skills", "update", "enabled", "-g"]);
+});
+
+test("runSkillsCommand update --all filters skills by disabled storage", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-update-disabled-"));
+  const homeDir = join(root, "home");
+  writeGlobalSkillLock(homeDir, {
+    enabled: {
+      source: "owner/enabled",
+      sourceType: "github",
+      skillPath: "skills/enabled/SKILL.md",
+    },
+    disabled: {
+      source: "owner/disabled",
+      sourceType: "github",
+      skillPath: "skills/disabled/SKILL.md",
+    },
+  });
+  writeSkillManifest(homeDir, ["enabled", "disabled"]);
+  writeSkill(join(homeDir, ".agents", "skills"), "enabled", "Enabled");
+  writeSkill(join(homeDir, ".agents", "skills", ".disabled"), "disabled", "Disabled");
+  const spawned: Array<{ command: string; args: string[] }> = [];
+  const runtime: Runtime = {
+    io: { stdout: () => undefined, stderr: () => undefined },
+    spawn: async (command, args) => {
+      spawned.push({ command, args });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runSkillsCommand(["skills", "update"], runtime, {
+    ...baseOptions(root),
+    skillsUpdateAll: true,
+    skillsListStorage: "disabled",
+  });
+
+  assert.equal(code, 0);
+  assert.deepEqual(spawned[0]?.args, ["--yes", "skills", "update", "disabled", "-g"]);
+});
+
 test("runSkillsCommand update explicit names invokes global update by default", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-update-run-"));
   writeGlobalSkillLock(join(root, "home"), {

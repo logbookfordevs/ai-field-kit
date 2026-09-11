@@ -1,0 +1,200 @@
+# Build and share your catalog
+
+A catalog is your kit’s menu: JSON files that describe what AFK can install, where each piece comes from, and how pieces belong together. AFK’s catalog is one starting point. Your team can publish its own in a GitHub repository, use a local directory, or assemble a cache from several sources.
+
+<h2 id="catalog-model">Three places, three jobs</h2>
+
+<dl>
+<dt>Source repository</dt>
+<dd>The versioned catalog you author and share. It can contain the rules and skills themselves, or point to other repositories and installers.</dd>
+<dt>Local catalog cache</dt>
+<dd>The JSON AFK reads for ordinary setup: <code>~/.agents/afk/catalog</code> globally, or <code>./afk/catalog</code> for project-local catalog operations. Editing these files changes your local configuration; it does not push changes upstream.</dd>
+<dt>Installed agent files</dt>
+<dd>The rules, skill folders, hooks, and agent definitions prepared by setup. Refreshing the catalog does not update these installations. Run the relevant setup or skill update command afterward.</dd>
+</dl>
+
+
+The usual path is: edit and publish the source, refresh the cache, inspect it, then run setup. You can stop after inspection when you only want to explore.
+
+<h2 id="catalog-create">Start a catalog in your repository</h2>
+
+From the root of your own repository, generate empty manifests. This creates a starting structure without copying AFK’s recommendations. Preview first if `afk/catalog` already exists.
+
+```bash initialize your catalog
+afk refresh --local --empty --dry-run
+afk refresh --local --empty
+```
+
+```text
+dev-kit/
+├── afk/catalog/
+│   ├── rules.json
+│   ├── skills.json
+│   ├── profiles.json
+│   ├── agents.json
+│   ├── mcps.json
+│   ├── tools.json
+│   ├── hooks.json
+│   └── presets.json
+├── rules/AGENTS.md
+└── skills/review-pr/SKILL.md
+```
+
+The two content paths are examples you create yourself; initialization creates the catalog files. Keep empty manifests for areas you do not use. For a GitHub repository source, AFK searches `afk/catalog` and `packages/afk/catalog`. A tree URL can point directly to a different catalog directory.
+
+| Manifest | What you author |
+| --- | --- |
+| `rules.json` | Ordered rule layers and their dependency files. |
+| `skills.json` | Install sources, selection defaults, invocation policy, and composition. |
+| `profiles.json` | Named skill groups and shared activation policy. |
+| `agents.json` | Portable Custom Agent source references. |
+| `mcps.json` | MCP sources and arguments for the delegated installer. |
+| `tools.json` | Tool installer commands and optional post-install steps. |
+| `hooks.json` | Hook scripts, events, and supported targets. |
+| `presets.json` | Setup bundles; the cached copy also stores source preferences. |
+
+<h2 id="catalog-first-entry">Add your first rule and skill</h2>
+
+Put your team standards in `rules/AGENTS.md`, then replace the empty `rules.json` with this layer:
+
+```json afk/catalog/rules.json
+{
+  "version": 2,
+  "layers": [
+    {
+      "id": "team-base",
+      "label": "Team standards",
+      "source": "rules/AGENTS.md"
+    }
+  ]
+}
+```
+
+Rule layer paths are relative to the source repository root. AFK resolves them when loading that source and preserves user content outside its managed rule region. Portable Custom Agent sources use the same repository-relative convention.
+
+For a skill, create `skills/review-pr/SKILL.md` with a name, description, and instructions:
+
+```text skills/review-pr/SKILL.md
+---
+name: review-pr
+description: Review a pull request against the team’s engineering standards.
+---
+
+Read the diff, identify behavior changes, and report actionable findings with file references.
+```
+
+Replace `your-org/dev-kit` below with your actual GitHub repository. The skill entry tells the delegated skills installer which repository and skill to select; it is not a path relative to this JSON file.
+
+```json afk/catalog/skills.json
+{
+  "version": 1,
+  "defaultSource": "your-org/dev-kit",
+  "items": [
+    {
+      "id": "review-pr",
+      "label": "Review PR",
+      "source": "your-org/dev-kit",
+      "args": [
+        "--skill",
+        "review-pr"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "startDisabled": false
+    }
+  ]
+}
+```
+
+`default` controls selection during non-interactive setup. `invocation` controls automatic discovery versus explicit use. `startDisabled` controls initial storage. A manually invoked skill can still be installed and active.
+
+The singular `defaultSource` in `skills.json` is a fallback install source for skill entries. The plural `defaultsSource` in cached `presets.json` remembers the catalog source for AFK. They serve different jobs.
+
+<h2 id="catalog-validate">Validate locally, then publish</h2>
+
+```bash check your source
+afk doctor --local
+afk show rules skills --local
+afk show rules skills --source ./afk/catalog
+```
+
+`doctor` checks all eight local manifests for valid JSON and supported structure. It does not prove that remote content exists or that an installer will succeed. The last command loads the directory as a source, including resolution of repository-relative rule paths.
+
+Commit the catalog and its referenced content, then push to your GitHub repository. No AFK service registration is required. Public catalogs are read directly; when raw GitHub access is unavailable, AFK can fall back to Git using your existing credentials. The delegated installers still need access to the content they install.
+
+```bash inspect the published catalog
+afk show --source your-org/dev-kit
+afk setup skills --source your-org/dev-kit --dry-run
+```
+
+Remove `--dry-run` to install your selected skills. To adopt this repository as your continuing catalog source, preview and then apply:
+
+```bash save your default
+afk refresh --default-source your-org/dev-kit --dry-run
+afk refresh --default-source your-org/dev-kit
+```
+
+<h2 id="catalog-sources">Choose a source and save favorites</h2>
+
+Examples use placeholder repositories. Choose the form that matches where your catalog lives:
+
+| Source | Example |
+| --- | --- |
+| GitHub repository | `your-org/dev-kit` or `https://github.com/your-org/dev-kit` |
+| Specific catalog directory | `https://github.com/your-org/dev-kit/tree/main/team/catalog` |
+| Raw GitHub directory | `https://raw.githubusercontent.com/your-org/dev-kit/main/afk/catalog` |
+| Local directory | `./afk/catalog` or an absolute path to your catalog. |
+
+Repository shorthand uses `main` by default. Add `--ref` to select a branch, tag, or commit for catalog loading. This does not pin every installer or skill repository referenced inside the catalog.
+
+```bash choose from saved sources
+afk show skills --source your-org/dev-kit --ref main
+afk sources add your-org/dev-kit
+afk sources add your-org/platform-kit
+afk sources list
+afk show --source
+```
+
+Bare `--source` opens an interactive picker with your remembered default, favorites, and a way to enter another source. Scripts and `--yes` need an explicit value. Adding a favorite saves a global shortcut in `~/.agents/afk/catalog/presets.json`; it neither fetches nor validates the source and does not make it the default.
+
+```bash remove a shortcut
+afk sources remove your-org/platform-kit
+```
+
+Removing a favorite leaves the remembered default unchanged. Choosing or typing a one-off source does not automatically add it to favorites.
+
+<h2 id="catalog-effects">What each command does to the cache</h2>
+
+| Command | Effect |
+| --- | --- |
+| `afk show` | Reads the cache without fetching updates. |
+| `afk show --source …` | Reads that source without changing the cache or default. |
+| `afk refresh --source …` | Updates the cache from that source once; does not install or change the default. |
+| `afk refresh --default-source …` | Updates the cache and remembers the source. |
+| `afk setup` | Uses the prepared cache. First-run setup may seed it; `--refresh` explicitly refreshes before setup. |
+| `afk setup skills --source …` | Installs selected source skills and merges those entries into the cache as local imports. Unselected skills are not cached; the default stays unchanged. |
+| `afk skills catalog` | Edits cached definitions. Add `--local` to edit the repository’s `afk/catalog` instead. |
+
+A cached catalog lets you inspect and select without refreshing upstream. It is not an offline mirror of all referenced content: setup may still fetch rules, skills, hooks, or installers.
+
+<h2 id="catalog-refresh">Keep shared changes and local additions predictable</h2>
+
+Make lasting team changes in the source repository, then refresh. Normal refresh gives incoming entries priority on matching IDs. It preserves imported skills absent from the source, local-only profiles and Custom Agents, and absent version 2 rule layers. It does not preserve every local edit in every manifest; MCP, tool, hook, and preset content is replaced from the source.
+
+The source also owns top-level profile policy, including `mode` and `alwaysOn`. Use `afk refresh --override` only when the source should replace the targeted catalog completely, including local-only entries. It requires two confirmations; `--dry-run` previews the change.
+
+You can assemble different categories from different repositories:
+
+```bash compose a cache from multiple sources
+afk refresh --default-source your-org/base-kit
+afk refresh skills --source your-org/skills-kit
+afk refresh profiles --source your-org/profile-kit
+afk show skills profiles
+afk setup --dry-run
+```
+
+AFK remembers one default source, not a source per category. A later unrestricted `afk refresh` reads every category from that default. Keep using targeted refresh commands to maintain your mix, and ensure profile catalog IDs exist in the assembled skills catalog.
+
+For project-owned catalogs, `show --local`, `refresh --local`, and catalog editors with `--local` target `./afk/catalog`. On setup, `--local` selects project installation scope. Catalog location and installation destination are separate choices.
+
+Continue with [managing your installed skills](/docs?chapter=skills) or [building skill profiles](/docs?chapter=profiles). The [catalog reference](https://github.com/logbookfordevs/ai-field-kit/blob/main/packages/afk/README.md#catalog-examples) covers additional schemas and installer fields.

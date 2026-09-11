@@ -1,0 +1,137 @@
+# Work with skill profiles
+
+A profile names a group of skills for a kind of work: reviewing, writing, building UI, or maintaining infrastructure. Its definition lives in your catalog. You can install its members, read them as agent context, or activate them in your shared library.
+
+<h2 id="profiles-choose">Choose the action you need</h2>
+
+| Your task | Command family |
+| --- | --- |
+| Define or edit a group | `afk profiles catalog` |
+| Install a group’s skills | `afk setup profiles` |
+| Give an agent its local skill context | `afk skills profiles use` |
+| Activate, deactivate, or inspect the working set | `afk skills profiles enable\|disable\|status` |
+
+The shorter `afk profiles enable`, `disable`, `status`, and `use` forms are equivalent runtime commands. The examples below keep `skills profiles` visible to distinguish runtime actions from catalog editing.
+
+<h2 id="profiles-create">Create a profile</h2>
+
+After adding `review-pr` to your skills catalog, create a group around it. Names in these examples refer to the sample skill from the [catalog walkthrough](/docs?chapter=catalog); substitute your own installed skill IDs.
+
+```bash define your working set
+afk profiles catalog create review --name Review --skill review-pr --dry-run
+afk profiles catalog create review --name Review --skill review-pr
+afk profiles catalog show review
+```
+
+Repeat `--skill` to include more members. On `edit`, an explicit set of `--skill` flags replaces existing membership; omitting those flags preserves it. Use the interactive editor when you want to choose from discovered skills.
+
+| Catalog action | Effect |
+| --- | --- |
+| `list`, `show <id>` | Read definitions; add `--json` for structured output. |
+| `create`, `edit` | Write profile names and membership. |
+| `delete` | Remove a definition rather than deleting installed skill folders. |
+| `set-mode` | Choose catalog-wide `strict` or `context` filtering. |
+| `toggle-always-on` | Choose skills kept across active profiles. |
+
+`--mode` and `--always-on` on create or edit change shared catalog policy, not just that profile. `--profile-only` also marks selected skills as start-disabled and moves their active shared folders into `.disabled`. Preview these changes with `--dry-run`.
+
+<h2 id="profiles-packages">Share a definition with remote packages</h2>
+
+Version 2 `profiles.json` separates IDs in your skills catalog from packages installed directly from an upstream source. This example combines both; replace the placeholder package repository and skill ID before using it.
+
+```json afk/catalog/profiles.json
+{
+  "version": 2,
+  "mode": "context",
+  "alwaysOn": [],
+  "items": [
+    {
+      "id": "review",
+      "name": "Review",
+      "catalogSkills": [
+        "review-pr"
+      ],
+      "packages": [
+        {
+          "source": "your-org/security-skills",
+          "skills": [
+            "security-review"
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Every `catalogSkills` ID must exist in the selected `skills.json`. A package with `skills` selects those upstream skills; omit that field to install the whole source. Verified package skills are cached as imported, start-disabled entries and become runtime members. If a skill already belongs to the source catalog, that catalog keeps ownership of its policy.
+
+Older version 1 definitions with a `skills` list remain readable. Profile writes use version 2 with `catalogSkills`.
+
+<h2 id="profiles-install">Install first, then choose how to use it</h2>
+
+```bash select profiles to install
+afk setup profiles --dry-run
+afk setup profiles
+```
+
+Setup installs selected profiles’ available catalog skills, composed dependencies, and packages. It does not enable the profiles or install the catalog-wide `alwaysOn` set. Missing references require confirmation before a partial installation; `--yes` accepts that partial result.
+
+```bash read without activation
+afk skills profiles use review
+afk skills profiles use review --all
+```
+
+`use` prints locally available skill descriptions and matching `afk skills get` commands. Add `--all` for complete skill content. It reads active and disabled folders without installing anything, moving folders, or enabling the profile.
+
+<h2 id="profiles-enable">Activate additively or focus the library</h2>
+
+```bash activate additively
+afk skills profiles enable review --dry-run
+afk skills profiles enable review
+afk skills profiles status
+```
+
+Default activation is additive: it makes the profile’s skills available while leaving unrelated active skills alone. To filter the rest of the library, disable that activation first and enable with `--focus`:
+
+```bash preview focused activation
+afk skills profiles disable review
+afk skills profiles enable review --focus --dry-run
+```
+
+Remove `--dry-run` to apply focus. The kept set combines `alwaysOn` with the members of every enabled profile, including verified package skills. When any focus profile is enabled, the shared catalog mode decides what happens outside that set:
+
+| Mode | Outside the kept set |
+| --- | --- |
+| `strict` (default) | Active skills move into `.disabled`. |
+| `context` | Cataloged manual skills stay active; discoverable or uncataloged skills move into `.disabled`. |
+
+For example, enabling both Review and Writing keeps both groups’ skills. Disabling Review still keeps a skill that Writing needs. An additive profile joins the kept set even when another profile applies focus filtering.
+
+<h2 id="profiles-restore">Finish a session and restore state</h2>
+
+```bash leave the profile
+afk skills profiles disable review --dry-run
+afk skills profiles disable review
+afk skills profiles status
+```
+
+Disable removes that activation and reconciles the remaining profiles. AFK tracks prior storage so a skill borrowed from disabled storage can return there once no profile needs it, and skills hidden by focus can be restored when eligible. Disabling does not uninstall content. Disable an active profile before changing it between additive and focus behavior.
+
+Use `afk skills update review --profile` to update eligible installed members. To delete the group definition, use `afk profiles catalog delete`. To delete its actual skill folders, use `afk skills delete --profile review`, with a dry run first; other profiles may share those folders.
+
+<h2 id="profiles-storage">Know where definitions and state live</h2>
+
+<dl>
+<dt>Shared definitions</dt>
+<dd><code>~/.agents/afk/catalog/profiles.json</code> holds groups, mode, and always-on policy.</dd>
+<dt>Runtime restoration state</dt>
+<dd><code>~/.agents/afk/state/skill-profiles.json</code> records activations and restoration information separately from the shareable catalog.</dd>
+<dt>Project-local definitions and state</dt>
+<dd><code>--local</code> selects <code>./afk/catalog/profiles.json</code> and, for runtime commands, <code>./afk/state/skill-profiles.json</code>. Reconciliation still moves folders in the shared global library at <code>~/.agents/skills</code>; it is not an isolated project skill library.</dd>
+</dl>
+
+
+If the library has drifted from catalog policy, inspect `afk skills reset --dry-run`. Reset clears runtime profile state and reapplies skill catalog policy; it is broader than leaving one profile.
+
+Use the [command reference](/docs?chapter=reference) for the remaining setup and maintenance routes.
