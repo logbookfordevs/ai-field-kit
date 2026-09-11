@@ -4,7 +4,7 @@ description: "Review the changes since a fixed point (commit, branch, tag, or me
 disable-model-invocation: false
 ---
 
-Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
+Two-axis review of the requested branch, PR, commit, or working-tree changes:
 
 - **Standards** - does the code conform to this repo's documented coding standards?
 - **Spec** - does the code faithfully implement the originating issue, spec, or implementation ticket?
@@ -13,13 +13,15 @@ Both axes should run in parallel sub-agents or fresh contexts so they do not pol
 
 ## Process
 
-### 1. Pin the fixed point
+### 1. Pin the review scope
 
-Whatever the user said is the fixed point: a commit SHA, branch name, tag, `main`, `HEAD~5`, etc. If they did not specify one, ask for it.
+Resolve the requested scope before collecting evidence:
 
-Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
+- **Branch or PR:** use the supplied base or PR base and `git diff <base>...HEAD`; record commits with `git log <base>..HEAD --oneline`.
+- **Commit:** inspect the specified commit's change; resolve the intended parent comparison for a merge commit.
+- **Working tree:** include staged changes (`git diff --cached`), unstaged changes (`git diff`), and relevant untracked files (`git ls-files --others --exclude-standard`). Inspect untracked file contents directly; Git diffs omit them.
 
-Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside the two review axes.
+Reuse the scope supplied by the user or PR metadata. Ask only when multiple interpretations remain materially different. Verify refs resolve, record the exact comparison commands and file inventory, and report an empty scope without launching reviewers. An empty tracked diff alone does not establish an empty working-tree scope.
 
 ### 2. Identify the spec source
 
@@ -28,7 +30,7 @@ Look for the originating spec, in this order:
 1. Issue references in commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), PR metadata, branch names, or user-provided context.
 2. A path the user passed as an argument.
 3. A spec under the active artifact convention or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there is not one, the **Spec** axis will skip and report "no spec available".
+4. Use the user request as intent when available. If no spec or intent source can be found, complete Standards review and state the Spec coverage gap. Ask only when missing intent prevents a material judgment.
 
 When the reviewed change implements a tracked ticket, include its tracking home alongside the originating issue, spec, or user request. Follow the ticket's source references to the originating material when available.
 
@@ -62,17 +64,17 @@ Each smell reads *what it is* -> *how to fix*; match it against the diff:
 
 **Standards sub-agent prompt** - include:
 
-- The full diff command and commit list.
+- The exact comparison commands, applicable commit list, and file inventory, including relevant untracked files.
 - The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full; the reviewer has no other access to it.
 - The brief: "Report, per file/hunk where relevant: (a) every place the diff violates a documented standard, citing the standard file and rule; and (b) any baseline smell you spot, naming it and quoting the hunk. Distinguish hard violations from judgement calls. Documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words."
 
 **Spec sub-agent prompt** - include:
 
-- The diff command and commit list.
+- The exact comparison commands, applicable commit list, and file inventory, including relevant untracked files.
 - The path or fetched contents of the originating material and, when present, the implementation ticket and its tracking record.
 - The brief: "Report: (a) requirements the originating material or implementation ticket asked for that are missing or partial; (b) behavior in the diff that was not asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong; (d) relevant requirements lost or distorted between the originating material and the ticket, excluding requirements assigned to other tickets or deliberately outside this slice; and (e) implementation or evidence claims in `Changes`, `Verification`, `Discipline Evidence`, or material `Implementation Notes` that are unsupported, inaccurate, incomplete, or contradicted by the diff, code, or available evidence. Quote the source line or tracking-record section for each finding. Under 400 words."
 
-If the spec is missing, skip the Spec sub-agent and note this in the final report.
+If both the spec and other intent sources are missing, skip the Spec sub-agent and note this coverage gap in the final report.
 
 ### 5. Aggregate
 

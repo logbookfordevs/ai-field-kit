@@ -56,7 +56,7 @@ The route is complete when the response contains one exact invocation, an ordere
 | Review motion implementation | `review-animations` |
 | Animate text in a frontend | `animate-text` |
 | Create a general, plan, or architecture HTML artifact | `html`, `html-plan`, or `html-diagram` |
-| Create a Plannotator-themed visual explanation | `plannotator-visual-explainer` |
+| Create a visual explanation with Show Me | `show-me` |
 | Analyze accumulated Plannotator plan feedback | `plannotator-compound` |
 | Create a portable guided walkthrough of a diff | `plannotator-guide` |
 | Design or revise predictable agent instructions | `writing-for-agents` |

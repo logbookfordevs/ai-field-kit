@@ -7,6 +7,7 @@ import type { Runtime } from "./types.js";
 
 export type LobbyChoiceValue =
   | "setup"
+  | "sync"
   | "source"
   | "refresh"
   | "skills"
@@ -72,6 +73,7 @@ type TtyState = {
 };
 
 export const compassLobbyChoices: MenuChoice<LobbyChoiceValue>[] = [
+  { name: "Update a preset environment", value: "sync", description: "Route: afk sync" },
   {
     name: "Prepare this machine for agent work",
     value: "setup",
@@ -472,6 +474,8 @@ export async function selectCatalogSkillsLobbyRoute(runtime: Runtime, options: {
 
 export function routeForLobbyChoice(value: LobbyChoiceValue, defaultSource?: string): string[] {
   switch (value) {
+    case "sync":
+      return ["sync"];
     case "setup":
       return ["setup"];
     case "source":

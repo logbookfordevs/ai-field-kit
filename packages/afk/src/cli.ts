@@ -1,3 +1,5 @@
+import { runSync } from "./sync.js";
+import { loadToolManifest } from "./manifest.js";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { normalizeAgentId } from "./agents.js";
@@ -165,15 +167,26 @@ export async function runCliWithRuntime(
     return runSetupCommand(commandPath, runtime, options);
   }
 
+  if (key === "sync") {
+    if (!options.presetId && (!tty.stdin || !tty.stdout || env.CI === "true")) {
+      runtime.io.stderr("Sync needs --preset <id> outside an interactive terminal.");
+      return 1;
+    }
+    return runSync(runtime, options, env.PATH ?? process.env.PATH);
+  }
+
   if (commandPath[0] === "skills") {
     return runSkillsCommand(commandPath, runtime, options);
   }
 
   if (commandPath[0] === "tools" && commandPath[1] === "update") {
     const requestedToolIds = commandPath.slice(2);
-    const selectedToolIds = requestedToolIds.length > 0
-      ? requestedToolIds
-      : await selectToolUpdates(options);
+    let selectedToolIds: string[];
+    if (options.toolsUpdateAll) {
+      selectedToolIds = loadToolManifest(options).items.filter((item) => item.update).map((item) => item.id);
+    } else {
+      selectedToolIds = requestedToolIds.length > 0 ? requestedToolIds : await selectToolUpdates(options);
+    }
     const commands = buildToolUpdateCommands(options, selectedToolIds);
     if (commands.length === 0) {
       runtime.io.stdout("No updateable tools selected. No changes planned.");
@@ -321,7 +334,7 @@ const commandHelps: Record<string, CommandHelp> = {
     subcommands: [
       "afk setup rules                   Sync AFK rules into managed agent rule regions",
       "afk setup skills                  Delegate skill installation to the official skills CLI",
-      "afk setup profiles                Install skills from Skills Profiles",
+      "afk setup profiles                Prepare profiles and install catalog skills",
       "afk setup agents                  Provision portable Custom Agents",
       "afk setup mcps                    Delegate MCP installation to add-mcp",
       "afk setup tools                   Install optional developer tools",
@@ -367,6 +380,14 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk setup preset afk-architect",
       "afk setup preset --source your-org/dev-kit",
     ],
+  },
+  sync: {
+    title: "AFK sync",
+    summary: "Refresh catalogs and update existing items in a selected preset.",
+    usage: "afk sync [--preset <id>] [options]",
+    notes: ["Global environment only. Without --preset, choose an existing preset interactively.", "Missing members are reported and skipped unless --install-missing is supplied.", "Local-only entries and installed items removed upstream are preserved.", "Inactive package skills remain deferred. AFK itself updates separately with afk update.", "Failures are reported together and return a nonzero exit code."],
+    options: ["--preset <id>                    Scope maintenance to an existing preset", "--install-missing                Also install missing preset items", setupOptions.yes, setupOptions.dryRun, setupOptions.verbose, "--agent <agent>                  Limit agent targets", "--source <source>                Refresh from an explicit catalog source"],
+    examples: ["afk sync", "afk sync --preset daily-routine --dry-run", "afk sync --preset daily-routine --yes"],
   },
   refresh: {
     title: "AFK refresh",
@@ -425,9 +446,10 @@ const commandHelps: Record<string, CommandHelp> = {
     summary: "Select cataloged tools and run their update commands.",
     usage: "afk tools update [tool...] [options]",
     notes: ["Only tools with an update command in tools.json are available."],
-    options: [setupOptions.dryRun, setupOptions.verbose],
+    options: ["--all                            Update every cataloged tool with an update command", setupOptions.dryRun, setupOptions.verbose],
     examples: [
       "afk tools update",
+      "afk tools update --all",
       "afk tools update --dry-run",
       "afk tools update plannotator yggtree",
     ],
@@ -529,17 +551,17 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "setup profiles": {
     title: "AFK setup profiles",
-    summary: "Install skills from selected profiles in profiles.json.",
+    summary: "Prepare selected profiles and install their catalog skills.",
     usage: "afk setup profiles [options]",
     notes: [
-      "Setup refreshes profiles.json, offers its profiles for selection, and installs the selected profile skills.",
+      "Setup refreshes profiles.json, offers its profiles for selection, and installs their catalogSkills.",
       "Version 2 profiles use catalogSkills for skills.json references and packages for remote skills sources.",
-      "A package without skills installs its whole source; package skills select individual upstream skills.",
-      "Package-owned skills are cached as imported and start disabled; enabling the profile activates them.",
+      "Package skills are installed when the profile is enabled, not during setup.",
+      "Enabling a profile installs its packages and activates their skills; setup does not download packages.",
       "If a package overlaps a source-owned skills.json entry, the catalog keeps ownership and startup policy.",
       "When a selected skill composes other skills, setup warns and automatically includes their composed dependencies.",
       "If referenced skills are unavailable, setup offers lock-backed recovery, then asks before installing the available skills; --yes accepts.",
-      "Use afk skills profiles enable to apply an installed profile at runtime.",
+      "Use afk profiles enable <profile> to install its packages and activate the profile.",
     ],
     options: setupAreaOptions,
     examples: [
@@ -1315,6 +1337,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
   let allSkills = false;
+  let toolsUpdateAll = false;
+  let syncInstallMissing = false;
   let allCustomAgents = false;
   const selectedCustomAgentIds: string[] = [];
   let rulesRef = "main";
@@ -1550,6 +1574,10 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     }
 
     if (arg === "--all") {
+      if (key === "tools update") {
+        toolsUpdateAll = true;
+        continue;
+      }
       if (key === "setup agents") {
         allCustomAgents = true;
       } else if (isSetupSkillsCommand(key)) {
@@ -1561,9 +1589,14 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (arg === "--install-missing" && key === "sync") {
+      syncInstallMissing = true;
+      continue;
+    }
+
     if (arg === "--preset") {
-      if (key !== "setup") {
-        return { help: false, kind: "error", error: "--preset is only supported with afk setup" };
+      if (key !== "setup" && key !== "sync") {
+        return { help: false, kind: "error", error: "--preset is only supported with afk setup or afk sync" };
       }
       const value = args[index + 1]?.trim();
       if (!value) {
@@ -1988,6 +2021,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       ...(presetId ? { presetId } : {}),
       ...(presetPrompt ? { presetPrompt: true } : {}),
       allSkills,
+      toolsUpdateAll,
+      syncInstallMissing,
       allCustomAgents,
       selectedSkillIds: [],
       selectedCustomAgentIds,
@@ -2412,6 +2447,7 @@ Usage:
   afk open                    Open the user AFK folder
   afk doctor [options]        Validate every local AFK catalog file
   afk sources [command]       List and manage favorite catalog sources
+  afk sync [--preset <id>] [options]                Update a preset-scoped environment
   afk refresh [category...] [options]               Update the local catalog cache
   afk setup [options]         Prepare rules, skills, Custom Agents, MCPs, tools, and hooks
   afk setup preset [id] [options]                   Choose and apply a catalog preset

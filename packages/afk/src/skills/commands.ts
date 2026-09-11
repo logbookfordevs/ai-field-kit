@@ -1,3 +1,4 @@
+import { installEnabledProfileSkills } from "../setup.js";
 import { confirm, input, search } from "@inquirer/prompts";
 import { join } from "node:path";
 import { applyOperation, pathExists, readText, summarizeOperations } from "../fs-utils.js";
@@ -655,6 +656,14 @@ async function runSkillProfileRuntimeCommand(operands: string[], runtime: Runtim
         return 1;
       }
       const activationMode = options.skillProfileFocus ? "focus" : "additive";
+      const profile = profiles.catalog.items.find((item) => item.id === selectedId);
+      if (profile && profile.packages.length > 0) {
+        const installCode = await installEnabledProfileSkills(runtime, {
+          ...options,
+          selectedSkillProfileIds: [selectedId],
+        });
+        if (installCode !== 0) return installCode;
+      }
       runtime.io.stdout(renderSkillProfileApply(enableSkillProfile(context, selectedId, options.dryRun, activationMode)));
       return 0;
     }
