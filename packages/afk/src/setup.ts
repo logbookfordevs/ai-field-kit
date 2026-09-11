@@ -237,7 +237,11 @@ function sameTargets(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((value, index) => right[index] === value);
 }
 
-export async function runArea(area: Area, runtime: Runtime, options: CliOptions): Promise<number> {
+export async function installEnabledProfileSkills(runtime: Runtime, options: CliOptions): Promise<number> {
+  return runArea("profiles", runtime, { ...options, yes: true, setupManifestsPrepared: true }, { installProfilePackages: true });
+}
+
+export async function runArea(area: Area, runtime: Runtime, options: CliOptions, behavior: { installProfilePackages?: boolean } = {}): Promise<number> {
   const explicitSetupSource = options.setupSourceExplicit ?? options.defaultsSourceExplicit;
   const profileManifestCategory: ManifestCategory[] = ["profiles", "skills"];
   const areaOptions = area === "profiles" && options.selectedManifestCategories.length === 0
@@ -345,7 +349,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
           return 0;
         }
       }
-      const packageManifest = skillPackageManifest(selectedProfiles.flatMap((profile) => profile.packages));
+      const packageManifest = skillPackageManifest(behavior.installProfilePackages ? selectedProfiles.flatMap((profile) => profile.packages) : []);
       const packageSkillIds = packageManifest.items.map((item) => item.id);
       const installManifest: SkillManifest = {
         ...catalogManifest,
@@ -371,6 +375,10 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions)
         selectedSkillIds,
         selectedSkillAgentIds: selection.skillAgents,
       };
+      if (selectedSkillIds.length === 0) {
+        runtime.io.stdout("Profile setup complete. Package skills will be installed when the profile is enabled.");
+        return 0;
+      }
       const disabledBeforeInstall = snapshotDisabledStartupSkills(selectedOptions);
       const packageOptions = packageManifest.items.length > 0 ? {
         ...selectedOptions,

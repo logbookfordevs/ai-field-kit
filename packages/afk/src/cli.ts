@@ -321,7 +321,7 @@ const commandHelps: Record<string, CommandHelp> = {
     subcommands: [
       "afk setup rules                   Sync AFK rules into managed agent rule regions",
       "afk setup skills                  Delegate skill installation to the official skills CLI",
-      "afk setup profiles                Install skills from Skills Profiles",
+      "afk setup profiles                Prepare profiles and install catalog skills",
       "afk setup agents                  Provision portable Custom Agents",
       "afk setup mcps                    Delegate MCP installation to add-mcp",
       "afk setup tools                   Install optional developer tools",
@@ -529,17 +529,17 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "setup profiles": {
     title: "AFK setup profiles",
-    summary: "Install skills from selected profiles in profiles.json.",
+    summary: "Prepare selected profiles and install their catalog skills.",
     usage: "afk setup profiles [options]",
     notes: [
-      "Setup refreshes profiles.json, offers its profiles for selection, and installs the selected profile skills.",
+      "Setup refreshes profiles.json, offers its profiles for selection, and installs their catalogSkills.",
       "Version 2 profiles use catalogSkills for skills.json references and packages for remote skills sources.",
-      "A package without skills installs its whole source; package skills select individual upstream skills.",
-      "Package-owned skills are cached as imported and start disabled; enabling the profile activates them.",
+      "Package skills are installed when the profile is enabled, not during setup.",
+      "Enabling a profile installs its packages and activates their skills; setup does not download packages.",
       "If a package overlaps a source-owned skills.json entry, the catalog keeps ownership and startup policy.",
       "When a selected skill composes other skills, setup warns and automatically includes their composed dependencies.",
       "If referenced skills are unavailable, setup offers lock-backed recovery, then asks before installing the available skills; --yes accepts.",
-      "Use afk skills profiles enable to apply an installed profile at runtime.",
+      "Use afk profiles enable <profile> to install its packages and activate the profile.",
     ],
     options: setupAreaOptions,
     examples: [

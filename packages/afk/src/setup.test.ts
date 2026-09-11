@@ -836,7 +836,49 @@ test("runArea profiles installs transitive composed skills after warning", async
   assert.ok(text.includes("--skill wrapper dependency"));
 });
 
-test("runArea profiles installs whole packages and imports their discovered skills", async () => {
+for (const packageSkills of [undefined, ["captions"]]) {
+  test(`profile setup defers ${packageSkills ? "selective" : "whole"} packages`, async () => {
+    const manifests = {
+      "profiles.json": { version: 2, mode: "context", alwaysOn: [], items: [{
+        id: "video", name: "Video", catalogSkills: [],
+        packages: [{ source: "example/video", ...(packageSkills ? { skills: packageSkills } : {}) }],
+      }] },
+      "skills.json": { version: 1, defaultSource: "", items: [] },
+    };
+    const homeDir = localHomeWithManifests(manifests);
+    const output: string[] = [];
+    let spawns = 0;
+    const code = await runArea("profiles", {
+      ...fakeRuntime(output), spawn: async () => { spawns += 1; return { code: 0 }; },
+    }, {
+      ...defaultOptions(homeDir, localRepoWithRules()), yes: true, dryRun: false,
+      setupManifestsPrepared: true, selectedSkillProfileIds: ["video"],
+      manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+    });
+    assert.equal(code, 0);
+    assert.equal(spawns, 0);
+    assert.deepEqual(JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")).items, []);
+  });
+}
+
+test("profile enable leaves the profile disabled when package installation fails", async () => {
+  const homeDir = localHomeWithManifests({
+    "profiles.json": { version: 2, mode: "context", alwaysOn: [], items: [{
+      id: "video", name: "Video", catalogSkills: [], packages: [{ source: "example/video" }],
+    }] },
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+  });
+  const output: string[] = [];
+  const code = await runSkillsCommand(["skills", "profiles", "enable", "video"], {
+    ...fakeRuntime(output), spawn: async () => ({ code: 1 }),
+  }, { ...defaultOptions(homeDir, localRepoWithRules()), dryRun: false, yes: true });
+  assert.equal(code, 1);
+  const statePath = join(homeDir, ".agents", "afk", "state", "skill-profiles.json");
+  const state = existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf8")) : { activations: [] };
+  assert.deepEqual(state.activations, []);
+});
+
+test("profile enable installs whole packages and imports their discovered skills", async () => {
   const manifests = {
     "profiles.json": {
       version: 2,
@@ -856,7 +898,7 @@ test("runArea profiles installs whole packages and imports their discovered skil
   const output: string[] = [];
   const spawned: Array<{ command: string; args: string[] }> = [];
 
-  const code = await runArea("profiles", {
+  const code = await runSkillsCommand(["skills", "profiles", "enable", "remotion"], {
     ...fakeRuntime(output),
     spawn: async (command, args) => {
       spawned.push({ command, args });
@@ -889,11 +931,11 @@ test("runArea profiles installs whole packages and imports their discovered skil
     { id: "captions", source: "remotion-dev/skills", imported: true, startDisabled: true },
     { id: "remotion", source: "remotion-dev/skills", imported: true, startDisabled: true },
   ]);
-  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "captions")), true);
-  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "remotion")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "captions")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "remotion")), true);
 });
 
-test("runArea profiles reinstalls an enabled whole package without colliding with disabled copies", async () => {
+test("profile enable reinstalls an enabled whole package without colliding with disabled copies", async () => {
   const manifests = {
     "profiles.json": {
       version: 2,
@@ -926,7 +968,7 @@ test("runArea profiles reinstalls an enabled whole package without colliding wit
   }, null, 2)}\n`);
 
   const output: string[] = [];
-  const code = await runArea("profiles", {
+  const code = await runSkillsCommand(["skills", "profiles", "enable", "html"], {
     ...fakeRuntime(output),
     spawn: async () => {
       writeInstalledSkill(homeDir, "html", "fresh-html");
@@ -1010,13 +1052,10 @@ test("runArea profiles does not install always-on skills", async () => {
   });
 
   assert.equal(code, 0);
-  assert.deepEqual(spawned, [{
-    command: "npx",
-    args: ["skills", "add", "remotion-dev/skills", "--global", "--yes", "--agent", "universal"],
-  }]);
+  assert.deepEqual(spawned, []);
 });
 
-test("runArea profiles installs selective package skills", async () => {
+test("profile enable installs selective package skills", async () => {
   const manifests = {
     "profiles.json": {
       version: 2,
@@ -1039,7 +1078,7 @@ test("runArea profiles installs selective package skills", async () => {
   const repoDir = localRepoWithRules();
   const spawned: Array<{ command: string; args: string[] }> = [];
 
-  const code = await runArea("profiles", {
+  const code = await runSkillsCommand(["skills", "profiles", "enable", "video"], {
     ...fakeRuntime([]),
     spawn: async (command, args) => {
       spawned.push({ command, args });
@@ -1061,7 +1100,7 @@ test("runArea profiles installs selective package skills", async () => {
   ]);
 });
 
-test("runArea profiles preserves catalog ownership when a whole package overlaps skills.json", async () => {
+test("profile enable preserves catalog ownership when a whole package overlaps skills.json", async () => {
   const manifests = {
     "profiles.json": {
       version: 2,
@@ -1098,7 +1137,7 @@ test("runArea profiles preserves catalog ownership when a whole package overlaps
     preExistingDisabledSkills: [],
   }, null, 2)}\n`);
 
-  const code = await runArea("profiles", {
+  const code = await runSkillsCommand(["skills", "profiles", "enable", "video"], {
     ...fakeRuntime([]),
     spawn: async () => {
       writeInstalledSkill(homeDir, "remotion", "Remotion");
@@ -1141,7 +1180,7 @@ test("runArea profiles preserves catalog ownership when a whole package overlaps
   assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "captions")), true);
 });
 
-test("runArea profiles maps selective upstream package ids to installed folder ids", async () => {
+test("profile enable maps selective upstream package ids to installed folder ids", async () => {
   const manifests = {
     "profiles.json": {
       version: 2,
@@ -1159,7 +1198,7 @@ test("runArea profiles maps selective upstream package ids to installed folder i
   const homeDir = localHomeWithManifests(manifests);
   const repoDir = localRepoWithRules();
 
-  const code = await runArea("profiles", {
+  const code = await runSkillsCommand(["skills", "profiles", "enable", "stitch"], {
     ...fakeRuntime([]),
     spawn: async () => {
       writeInstalledSkill(homeDir, "react-components", "React Components");
@@ -1190,7 +1229,7 @@ test("runArea profiles maps selective upstream package ids to installed folder i
     imported: true,
     startDisabled: true,
   }]);
-  assert.equal(existsSync(join(homeDir, ".agents", "skills", ".disabled", "react-components")), true);
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "react-components")), true);
 });
 
 test("runArea profiles rejects catalogSkills missing from skills.json", async () => {
