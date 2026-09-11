@@ -15,6 +15,8 @@ If the skill compensates for model weakness or fragile tooling, use scripts/refe
 Prompts earn detail through observed failure, not anticipated failure.
 Do not spend context on instructions the model can already infer, and do not bury the trigger/behavior signal under prose.
 
+Do not test authored body content in skills, rules or `AGENTS.md` files, or custom-agent definitions. Test their parsing, discovery, installation, metadata, and runtime behavior without pinning prose, headings, examples, ordering, or required phrases.
+
 ## Glossary
 
 - **You / agent**: the AI agent reading these instructions and doing the work.

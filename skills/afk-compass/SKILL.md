@@ -34,7 +34,7 @@ The route is complete when the response contains one exact invocation, an ordere
 | Build a polished standalone frontend mockup or bounded interactive flow | `html-prototype` |
 | Synthesize the conversation into an agent-ready spec | `afk-to-spec` |
 | Slice a plan or spec into dependency-aware tickets | `afk-to-tickets` |
-| Implement existing checkpointed tickets | `afk-implement-tickets` |
+| Implement with durable tracking | `afk-implement` |
 | Review code, verify every finding, and discuss verdicts before fixes | `afk-code-review-verdicts` |
 | Review lint and typecheck findings without fixes | `afk-static-review` |
 | Save or resume disposable session context | `handoff` |

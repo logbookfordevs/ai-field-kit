@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 Break a plan, spec, or conversation into a set of **tickets** — tracer-bullet vertical slices, each declaring the tickets that **block** it.
 
-Tickets are written as local checkpoint files by default. They may be mirrored to an external tracker when requested, but the local files are the execution source of truth unless the user chooses another destination.
+Tickets are written as local ticket files by default. They may be mirrored to an external tracker when requested, but the local files are the planning source of truth unless the user chooses another destination.
 
 ## Process
 
@@ -70,11 +70,11 @@ Include approved prototypes or design references when they govern implementation
 
 After the user approves the breakdown and destination, read [ticket-templates.md](references/ticket-templates.md) completely and use the matching local or remote template.
 
-- **Local files** → write one file per ticket in the scope's tracking folder, numbered from `01` in dependency order (blockers first). Each file's "Blocked by" lists the numbers/titles it depends on. Use the per-ticket file template below — one ticket per file, never a single combined file.
+- **Local files** → write one file per ticket in the scope's tickets folder, numbered from `01` in dependency order (blockers first). Each file's "Blocked by" lists the numbers/titles it depends on. Use the per-ticket file template below — one ticket per file, never a single combined file.
 - **A real issue tracker (GitHub, Linear, …)** → publish one issue per ticket in dependency order (blockers first) so each ticket's blocking edges can reference real identifiers. Use the platform's native blocking / sub-issue relationship where it has one; otherwise set each ticket's "Blocked by" to the blocking issues.
 
 Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
 
-Publish new tracker issues only when the user requested tracker publication or existing project context clearly expects it. If writing both local packets and external issues, create local files first and add tracker links after publication.
+Publish new tracker issues only when the user requested tracker publication or existing project context clearly expects it. If writing both local tickets and external issues, create local files first and add tracker links after publication.
 
 Do NOT close or modify any parent issue.
