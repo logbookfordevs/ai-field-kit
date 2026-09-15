@@ -1,9 +1,3 @@
-## Library Preferences
-- Import animation APIs from `motion` or `motion/react`.
-- Prefer the project's existing headless foundation; otherwise use Base UI.
-- Use Tailwind CSS v4 without a configuration file unless the project requires one.
-- Every code project MUST have linting; separate logical code sections with blank lines for readability.
-
 ## Skills
 State "I will use the X skill" whenever using a skill.
 If a user-required skill is unavailable, search the configured skill roots and verify explicit aliases. Explain what is missing and request an approved fallback for dependent work. Continue independent authorized work.
@@ -36,20 +30,22 @@ When creating or resuming durable workflow artifacts, read `{{AFK_RULES_DIR}}/ar
 ## Worktrees
 - Prefer `yggtree` for worktree operations when available; consult `yggtree --help` before using native Git worktree commands.
 
-## Package Managers
-- Use the project's existing package manager; use pnpm for new projects.
-
 ## Tech Stack
-- Before implementing a new project, agree on the stack and core technical choices with the user; ask about unspecified choices and wait for their answer before implementation.
-- Web applications MUST use TypeScript and Tailwind CSS v4.
-- When a project has `components.json`, check its configured registries before building UI components and strongly prefer suitable registry components.
+- Before implementing a new project, agree on unresolved stack and core technical choices with the user; wait for their answer.
+- Web applications MUST use TypeScript and Tailwind CSS v4; omit Tailwind configuration files unless required.
+- Use the project's existing package manager; use pnpm for new projects.
+- Every code project MUST have linting.
+- Import animation APIs from `motion` or `motion/react`.
+- Prefer the project's existing headless foundation; otherwise use Base UI.
+- When `components.json` exists, check its configured registries before building UI components and strongly prefer suitable registry components.
 
 ## Frontend UX Defaults
 - Prefer mature primitives or registry components when they materially improve UX, accessibility, responsiveness, or interaction quality.
 - Mobile is not degraded desktop; replace cramped, wrapped, clipped, or awkward controls with responsive patterns.
 - Push back when implementation convenience would materially degrade the user experience.
 
-## Comments
+## Code Style
+- Separate logical code sections with blank lines for readability.
 - Keep code comment-sparse. Use comments only to preserve enduring, non-obvious invariants, dangerous edge cases, external contracts, or trade-offs; describe lasting behavior rather than task history.
 
 ## Sub-agents
