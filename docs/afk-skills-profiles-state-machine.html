@@ -19,7 +19,7 @@
     --surface-glass: rgba(255, 253, 248, 0.92);
     --ink: #1d1b20;
     --body: #4c4850;
-    --muted: #7c7780;
+    --muted: #706b74;
     --line: #cfc7b8;
     --line-soft: #e4ddcf;
     --grid: rgba(84, 77, 88, 0.07);
@@ -472,6 +472,59 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
   }
+
+  body.compass-view .machine-flows,
+  body.compass-view #diagram,
+  body.compass-view .corner-note,
+  body.compass-view .overlay,
+  body.compass-view #legend-button,
+  body.compass-view #reset-button { display: none; }
+  body.compass-view .stage { overflow-y: auto; background: var(--bg); }
+  body.compass-view .stage::before { display: none; }
+  #compass-view[hidden], #compass-answer[hidden] { display: none; }
+  #compass-view { max-width: 1240px; margin-inline: auto; padding: 36px 28px 48px; }
+  .compass-intro { display: grid; gap: 12px; max-width: 78ch; }
+  .compass-intro h2 { font: 500 clamp(26px, 3vw, 38px)/1.15 var(--serif); color: var(--ink); text-wrap: balance; margin: 0; }
+  .compass-intro p { font: 15px/1.65 var(--sans); max-width: 68ch; margin: 0; }
+  .compass-intro .compass-contract { font-size: 13px; }
+  .compass-groups { display: flex; flex-wrap: wrap; gap: 8px; padding-block: 26px 22px; }
+  .compass-groups button { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 10px 16px; cursor: pointer; }
+  .compass-groups button[aria-pressed="true"] { background: var(--plum-node); border-color: var(--plum); color: var(--ink); }
+  .compass-mobile-choice { display: none; }
+  .compass-layout { display: grid; grid-template-columns: minmax(250px, .85fr) minmax(0, 1.5fr); gap: 32px; align-items: start; }
+  #compass-branches { display: grid; gap: 0; }
+  .compass-branch { display: block; width: 100%; text-align: left; padding: 15px 12px; border: 0; border-bottom: 1px solid var(--line-soft); background: transparent; font: 14px/1.5 var(--sans); cursor: pointer; }
+  .compass-branch[aria-current="true"] { color: var(--ink); background: var(--plum-soft); font-weight: 600; }
+  .compass-branch:hover, .compass-groups button:hover { background: var(--plum-soft); }
+  #compass-answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 26px; display: grid; gap: 18px; min-width: 0; }
+  #compass-answer h3 { font: 500 26px/1.25 var(--serif); color: var(--ink); margin: 0; text-wrap: balance; }
+  #compass-answer h4 { font: 600 14px/1.4 var(--sans); color: var(--ink); margin: 0; }
+  #compass-answer p { font: 14px/1.7 var(--sans); max-width: 65ch; margin: 0; }
+  .compass-route { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  .compass-route li { display: grid; gap: 4px; padding-block-end: 12px; border-bottom: 1px solid var(--line-soft); }
+  .compass-route strong { font: 600 14px/1.5 var(--mono); color: var(--teal); overflow-wrap: anywhere; }
+  .compass-route span { font: 14px/1.6 var(--sans); }
+  .compass-prompt { display: grid; gap: 10px; }
+  .compass-prompt pre { margin: 0; padding: 16px; background: var(--surface-2); border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.65 var(--mono); }
+  .compass-prompt button { justify-self: start; padding: 9px 13px; border: 1px solid var(--teal); border-radius: 6px; background: var(--teal-soft); cursor: pointer; }
+  .compass-related { display: grid; gap: 8px; }
+  .compass-related button { text-align: left; background: transparent; border: 0; padding: 4px 0; color: var(--plum); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font: 14px/1.5 var(--sans); }
+  #compass-view a { color: var(--teal); text-underline-offset: 3px; }
+  #compass-view :focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+  .compass-footnote { padding-top: 28px; font: 13px/1.7 var(--sans); max-width: 90ch; }
+  #compass-copy-status { min-height: 20px; font: 13px/1.5 var(--sans); }
+  @media (max-width: 1400px) { .topbar { flex-wrap: wrap; } }
+  @media (max-width: 760px) {
+    #compass-view { padding: 24px 16px 36px; }
+    .compass-layout { grid-template-columns: 1fr; gap: 24px; }
+    #compass-branches { display: none; }
+    .compass-mobile-choice { display: grid; gap: 8px; padding-bottom: 20px; font: 14px/1.5 var(--sans); }
+    #compass-choice { width: 100%; min-width: 0; padding: 12px 8px; border: 1px solid var(--plum); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
+    #compass-answer { padding: 20px; }
+    .segmented { flex-wrap: wrap; }
+    .segmented .view-button { flex: 1 1 45%; }
+    .compass-groups button { flex: 1 1 42%; }
+  }
 </style>
 </head>
 <body>
@@ -479,13 +532,14 @@
   <header class="topbar">
     <div class="brand">
       <h1>AFK skills &amp; profiles switchyard</h1>
-      <p>43 catalog skills · 30 command surfaces · reversible profile focus</p>
+      <p id="catalog-summary">Current catalog · reversible profile focus</p>
     </div>
 
     <div class="segmented" aria-label="Diagram view">
       <button class="view-button on" data-view="machine">State machine</button>
       <button class="view-button" data-view="catalog">Skill constellation</button>
       <button class="view-button" data-view="moment">Workflow moments</button>
+      <button class="view-button" data-view="compass">Compass crossroads</button>
     </div>
 
     <div class="toolbar grow">
@@ -507,13 +561,15 @@
     <button class="flow-chip" data-flow="focus">Focus profile</button>
     <button class="flow-chip" data-flow="additive">Additive profile</button>
     <button class="flow-chip" data-flow="restore">Disable &amp; restore</button>
+    <button class="flow-chip" data-flow="sync">Sync preset</button>
+    <button class="flow-chip" data-flow="reset">Reset policy</button>
     <button class="flow-chip" data-flow="update">Update safely</button>
     <button class="flow-chip" data-flow="refresh">Refresh &amp; merge</button>
   </nav>
 
   <nav class="subbar catalog-filters" aria-label="Skill constellation filters">
     <span class="label">Filter catalog</span>
-    <button class="flow-chip on" data-skill-filter="all">All 43</button>
+    <button class="flow-chip on" data-skill-filter="all">All skills</button>
     <button class="flow-chip" data-skill-filter="auto">Auto · 15</button>
     <button class="flow-chip" data-skill-filter="manual">Manual · 28</button>
     <button class="flow-chip" data-skill-filter="default">Default · 28</button>
@@ -522,7 +578,7 @@
 
   <nav class="subbar moment-filters" aria-label="Workflow moment filters">
     <span class="label">Follow the lifecycle</span>
-    <button class="flow-chip on" data-moment-filter="all">All 43</button>
+    <button class="flow-chip on" data-moment-filter="all">All skills</button>
     <button class="flow-chip" data-moment-filter="define">Define</button>
     <button class="flow-chip" data-moment-filter="plan">Plan</button>
     <button class="flow-chip" data-moment-filter="build">Build</button>
@@ -532,6 +588,26 @@
   </nav>
 
   <main class="stage" id="stage">
+    <section id="compass-view" hidden aria-labelledby="compass-heading">
+      <header class="compass-intro">
+        <h2 id="compass-heading">Choose the next useful move.</h2>
+        <p>Compass routes by the decision still open. Explore the branches below to see what fits, why it fits, and where to stop.</p>
+        <p class="compass-contract"><strong>A recommendation, not an automatic launch.</strong> A skill you name wins. Compass asks one question when a missing distinction changes the route, recommends only what your host can use, and stops for you to choose.</p>
+      </header>
+      <nav class="compass-groups" aria-label="Crossroads topics">
+        <button type="button" data-crossroad-group="workflow" aria-pressed="true">Workflow</button>
+        <button type="button" data-crossroad-group="frontend" aria-pressed="false">Frontend</button>
+        <button type="button" data-crossroad-group="motion" aria-pressed="false">Motion</button>
+        <button type="button" data-crossroad-group="context" aria-pressed="false">Context &amp; handoffs</button>
+      </nav>
+      <div class="compass-mobile-choice"><label for="compass-choice">Your open question</label><select id="compass-choice" aria-controls="compass-answer"></select></div>
+      <div class="compass-layout">
+        <nav id="compass-branches" aria-label="Choose your open question"></nav>
+        <article id="compass-answer" aria-labelledby="compass-question"></article>
+      </div>
+      <footer class="compass-footnote">These branches explain Compass’s current references. They do not detect your installed skills. HTML specialists may need <code>afk-profile-use</code>. If a route is unavailable, Compass names the gap and recommends the closest available option. <a href="https://github.com/logbookfordevs/ai-field-kit/blob/main/skills/afk-compass/SKILL.md" target="_blank" rel="noopener noreferrer">Read Compass’s instructions</a>.</footer>
+      <p class="compass-footnote"><strong>Optional in Codex:</strong> If the Product Design plugin is installed, it offers an alternative for image-based exploration and faithful image-to-code work. This is a host-specific option, separate from Compass’s portable routes.</p>
+    </section>
     <svg id="diagram" viewBox="0 0 2400 1500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Interactive AFK skills and profiles state machine">
       <defs>
         <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -593,67 +669,862 @@
   </main>
 </div>
 
+<!-- Refresh snapshot: node scripts/sync-switchyard.mjs --write; validate: node scripts/sync-switchyard.mjs. Review prose and update reviewedAt only after a CLI/workflow audit. -->
 <script>
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-const SKILLS = [
-  ["afk-animated-driven-frontend","workflow",true,false,"ai-field-kit",["grilling"]],
-  ["afk-ask","utility",true,false,"ai-field-kit",[]],
-  ["afk-code-grill","wrapper",true,false,"ai-field-kit",["grilling","truss-evaluation","codebase-design"]],
-  ["afk-design-grill","wrapper",true,false,"ai-field-kit",["grilling","truss-evaluation","impeccable"]],
-  ["impeccable","router",true,true,"pbakaus/impeccable",[]],
-  ["afk-create-agent","workflow",true,false,"ai-field-kit",[]],
-  ["afk-to-spec","wrapper",true,false,"ai-field-kit",[]],
-  ["afk-to-tickets","wrapper",true,false,"ai-field-kit",[]],
-  ["writing-for-humans","primitive",true,false,"ai-field-kit",[]],
-  ["afk-implement","workflow",true,false,"ai-field-kit",["tdd","afk-code-review"]],
-  ["afk-compass","router",true,false,"ai-field-kit",[]],
-  ["afk-architect","workflow",false,true,"ai-field-kit",[]],
-  ["afk-profile-use","router",true,false,"ai-field-kit",[]],
-  ["truss-evaluation","primitive",true,true,"truss-framework",[]],
-  ["diagnosing-bugs","primitive",true,true,"mattpocock/skills",[]],
-  ["plannotator-compound","utility",true,false,"plannotator",[]],
-  ["plannotator-setup-goal","primitive",true,true,"plannotator",[]],
-  ["plannotator-visual-explainer","utility",true,false,"plannotator",[]],
-  ["orchestrator","utility",false,false,"orchestrator",[]],
-  ["bro","utility",false,false,"backnotprop/bro",[]],
-  ["facts","utility",false,false,"backnotprop/bro",[]],
-  ["readback","utility",false,false,"backnotprop/bro",[]],
-  ["recap","utility",false,false,"backnotprop/bro",[]],
-  ["clean-room","workflow",false,false,"backnotprop/bro",[]],
-  ["design-artifact","utility",true,true,"design-artifact",[]],
-  ["html","utility",false,false,"effective-html",[]],
-  ["html-plan","utility",false,false,"effective-html",[]],
-  ["html-diagram","utility",false,false,"effective-html",[]],
-  ["html-wireframe","utility",false,false,"effective-html",["design-artifact"]],
-  ["html-prototype","utility",false,false,"effective-html",["design-artifact"]],
-  ["tdd","primitive",false,true,"mattpocock/skills",["codebase-design"]],
-  ["research","utility",false,true,"mattpocock/skills",[]],
-  ["source-driven-development","primitive",false,true,"agent-skills",[]],
-  ["doubt-driven-development","primitive",false,true,"agent-skills",[]],
-  ["code-simplification","primitive",false,true,"agent-skills",[]],
-  ["review-animations","utility",false,false,"emilkowalski/skills",[]],
-  ["animate","utility",false,true,"emilkowalski/skills",[]],
-  ["apple-design","utility",false,false,"emilkowalski/skills",[]],
-  ["animate-text","utility",false,false,"pixel-point/animate-text",[]],
-  ["writing-for-agents","reference",true,true,"mattpocock/skills",[]],
-  ["wizard","utility",false,true,"mattpocock/skills",[]],
-  ["to-questionnaire","wrapper",false,false,"mattpocock/skills",[]],
-  ["teach","wrapper",false,false,"mattpocock/skills",[]],
-  ["grill-with-docs","wrapper",false,false,"mattpocock/skills",["grilling","domain-modeling"]],
-  ["grill-me","wrapper",false,false,"mattpocock/skills",["grilling"]],
-  ["prototype","wrapper",true,false,"mattpocock/skills",[]],
-  ["handoff","utility",true,false,"mattpocock/skills",[]],
-  ["wayfinder","workflow",false,false,"mattpocock/skills",["grilling","domain-modeling","prototype","research"]],
-  ["afk-code-review","wrapper",true,true,"ai-field-kit",[]],
-  ["afk-code-review-verdicts","wrapper",false,false,"ai-field-kit",["afk-code-review"]],
-  ["afk-static-review","utility",false,false,"ai-field-kit",[]],
-  ["grilling","primitive",true,true,"mattpocock/skills",[]],
-  ["domain-modeling","primitive",true,true,"mattpocock/skills",[]],
-  ["codebase-design","primitive",true,true,"mattpocock/skills",[]]
-].map(([id, role, isDefault, auto, source, composes]) => ({ id, role, isDefault, auto, source, composes }));
+const CATALOG_SNAPSHOT = {
+  "reviewedAt": "2026-09-15",
+  "skills": [
+    {
+      "id": "afk-cli",
+      "label": "AFK - CLI",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-cli",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "afk-animated-driven-frontend",
+      "label": "AFK - Animated Driven Frontend",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-animated-driven-frontend",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "workflow",
+      "composes": [
+        "grilling"
+      ]
+    },
+    {
+      "id": "afk-ask",
+      "label": "AFK - Ask",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-ask",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "afk-code-grill",
+      "label": "AFK - Code Grill",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-code-grill",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "wrapper",
+      "composes": [
+        "grilling",
+        "truss-evaluation",
+        "codebase-design"
+      ]
+    },
+    {
+      "id": "afk-design-grill",
+      "label": "AFK - Design Grill",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-design-grill",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "wrapper",
+      "composes": [
+        "grilling",
+        "truss-evaluation",
+        "impeccable"
+      ]
+    },
+    {
+      "id": "impeccable",
+      "label": "Impeccable",
+      "source": "https://github.com/pbakaus/impeccable",
+      "args": [
+        "--skill",
+        "impeccable",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "router",
+      "composes": [],
+      "postInstall": [
+        {
+          "type": "copy",
+          "label": "Impeccable / Codex agents",
+          "agent": "codex",
+          "from": "agents",
+          "to": "agents",
+          "extension": ".toml"
+        }
+      ]
+    },
+    {
+      "id": "afk-create-agent",
+      "label": "AFK - Create Agent",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-create-agent",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "workflow",
+      "composes": []
+    },
+    {
+      "id": "afk-to-spec",
+      "label": "AFK - To Spec",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-to-spec",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "wrapper",
+      "composes": []
+    },
+    {
+      "id": "afk-to-tickets",
+      "label": "AFK - To Tickets",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-to-tickets",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "wrapper",
+      "composes": []
+    },
+    {
+      "id": "writing-for-humans",
+      "label": "Writing for Humans",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "writing-for-humans",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "primitive",
+      "composes": []
+    },
+    {
+      "id": "afk-implement",
+      "label": "AFK - Implement",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-implement",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "workflow",
+      "composes": [
+        "tdd",
+        "afk-code-review"
+      ]
+    },
+    {
+      "id": "afk-compass",
+      "label": "AFK - Compass",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-compass",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "router",
+      "composes": []
+    },
+    {
+      "id": "afk-architect",
+      "label": "AFK - Architect",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-architect",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "auto",
+      "role": "workflow",
+      "composes": []
+    },
+    {
+      "id": "afk-profile-use",
+      "label": "AFK - Profile Use",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-profile-use",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "router",
+      "composes": []
+    },
+    {
+      "id": "truss-evaluation",
+      "label": "Truss Evaluation",
+      "source": "https://github.com/leoreisdias/truss-framework",
+      "args": [
+        "--skill",
+        "truss-evaluation",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": []
+    },
+    {
+      "id": "diagnosing-bugs",
+      "label": "Diagnosing Bugs",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "diagnosing-bugs",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": []
+    },
+    {
+      "id": "shadcn",
+      "label": "shadcn/ui",
+      "source": "https://github.com/shadcn-ui/ui",
+      "args": [
+        "--skill",
+        "shadcn",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": []
+    },
+    {
+      "id": "plannotator-guide",
+      "label": "Plannotator Guide",
+      "source": "plannotator/guides",
+      "args": [
+        "--skill",
+        "plannotator-guide",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "orchestrator",
+      "label": "Orchestrator",
+      "source": "backnotprop/orchestrator",
+      "args": [
+        "--skill",
+        "orchestrator",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "bro",
+      "label": "Bro",
+      "source": "backnotprop/bro",
+      "args": [
+        "--skill",
+        "bro",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "facts",
+      "label": "Facts",
+      "source": "backnotprop/bro",
+      "args": [
+        "--skill",
+        "facts",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "readback",
+      "label": "Readback",
+      "source": "backnotprop/bro",
+      "args": [
+        "--skill",
+        "readback",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "recap",
+      "label": "Recap",
+      "source": "backnotprop/bro",
+      "args": [
+        "--skill",
+        "recap",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "clean-room",
+      "label": "Clean Room",
+      "source": "backnotprop/bro",
+      "args": [
+        "--skill",
+        "clean-room",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "workflow",
+      "composes": []
+    },
+    {
+      "id": "design-artifact",
+      "label": "Design Artifact",
+      "source": "https://github.com/plannotator/effective-html",
+      "args": [
+        "--skill",
+        "design-artifact",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "show-me",
+      "label": "Show Me",
+      "source": "https://github.com/humanlayer/skills",
+      "args": [
+        "--skill",
+        "show-me",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "html-wireframe",
+      "label": "HTML Wireframe",
+      "source": "https://github.com/plannotator/effective-html",
+      "args": [
+        "--skill",
+        "html-wireframe",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": [
+        "design-artifact"
+      ]
+    },
+    {
+      "id": "html-prototype",
+      "label": "HTML Prototype",
+      "source": "https://github.com/plannotator/effective-html",
+      "args": [
+        "--skill",
+        "html-prototype",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": [
+        "design-artifact"
+      ]
+    },
+    {
+      "id": "tdd",
+      "label": "TDD",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "tdd",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": [
+        "codebase-design"
+      ]
+    },
+    {
+      "id": "research",
+      "label": "Research",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "research",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "auto",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "source-driven-development",
+      "label": "Source Driven Development",
+      "source": "https://github.com/addyosmani/agent-skills.git",
+      "args": [
+        "--skill",
+        "source-driven-development",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": []
+    },
+    {
+      "id": "doubt-driven-development",
+      "label": "Doubt Driven Development",
+      "source": "https://github.com/addyosmani/agent-skills.git",
+      "args": [
+        "--skill",
+        "doubt-driven-development",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": []
+    },
+    {
+      "id": "code-simplification",
+      "label": "Code Simplification",
+      "source": "https://github.com/addyosmani/agent-skills.git",
+      "args": [
+        "--skill",
+        "code-simplification",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": []
+    },
+    {
+      "id": "review-animations",
+      "label": "Review Animations",
+      "source": "https://github.com/emilkowalski/skills",
+      "args": [
+        "--skill",
+        "review-animations",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "animate",
+      "label": "Animate",
+      "source": "https://github.com/emilkowalski/skills",
+      "args": [
+        "--skill",
+        "animate",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "auto",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "apple-design",
+      "label": "Apple Design",
+      "source": "https://github.com/emilkowalski/skills",
+      "args": [
+        "--skill",
+        "apple-design",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "animate-text",
+      "label": "Animate Text",
+      "source": "pixel-point/animate-text",
+      "args": [
+        "--skill",
+        "animate-text",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "writing-for-agents",
+      "label": "Writing For Agents",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "writing-for-agents",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "reference",
+      "composes": []
+    },
+    {
+      "id": "wizard",
+      "label": "Wizard",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "wizard",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "auto",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "to-questionnaire",
+      "label": "To Questionnaire",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "to-questionnaire",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "wrapper",
+      "composes": []
+    },
+    {
+      "id": "teach",
+      "label": "Teach",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "teach",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "wrapper",
+      "composes": []
+    },
+    {
+      "id": "grill-with-docs",
+      "label": "Grill With Docs",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "grill-with-docs",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "wrapper",
+      "composes": [
+        "grilling",
+        "domain-modeling"
+      ]
+    },
+    {
+      "id": "grill-me",
+      "label": "Grill Me",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "grill-me",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "wrapper",
+      "composes": [
+        "grilling"
+      ]
+    },
+    {
+      "id": "prototype",
+      "label": "Prototype",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "prototype",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "wrapper",
+      "composes": []
+    },
+    {
+      "id": "handoff",
+      "label": "Handoff",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "handoff",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "wayfinder",
+      "label": "Wayfinder",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "wayfinder",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "workflow",
+      "composes": [
+        "grilling",
+        "domain-modeling",
+        "prototype",
+        "research"
+      ]
+    },
+    {
+      "id": "afk-code-review",
+      "label": "AFK - Code Review",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-code-review",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "wrapper",
+      "composes": []
+    },
+    {
+      "id": "afk-code-review-verdicts",
+      "label": "AFK - Code Review Verdicts",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-code-review-verdicts",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "wrapper",
+      "composes": [
+        "afk-code-review"
+      ]
+    },
+    {
+      "id": "afk-static-review",
+      "label": "AFK - Static Review",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-static-review",
+        "--global"
+      ],
+      "default": false,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
+      "id": "grilling",
+      "label": "Grilling",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "grilling",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": []
+    },
+    {
+      "id": "domain-modeling",
+      "label": "Domain Modeling",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "domain-modeling",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": []
+    },
+    {
+      "id": "codebase-design",
+      "label": "Codebase Design",
+      "source": "https://github.com/mattpocock/skills",
+      "args": [
+        "--skill",
+        "codebase-design",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "auto",
+      "role": "primitive",
+      "composes": []
+    }
+  ],
+  "profiles": {
+    "version": 2,
+    "mode": "context",
+    "alwaysOn": [
+      "grilling",
+      "code-simplification",
+      "design-artifact",
+      "diagnosing-bugs",
+      "truss-evaluation"
+    ],
+    "items": [
+      {
+        "id": "stitch",
+        "name": "Stitch",
+        "catalogSkills": [],
+        "packages": [
+          {
+            "source": "google-labs-code/stitch-skills",
+            "skills": [
+              "design-md",
+              "enhance-prompt",
+              "react:components",
+              "remotion",
+              "stitch-loop"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "html",
+        "name": "HTML",
+        "catalogSkills": [
+          "design-artifact"
+        ],
+        "packages": [
+          {
+            "source": "plannotator/effective-html"
+          }
+        ]
+      },
+      {
+        "id": "video",
+        "name": "Video",
+        "catalogSkills": [],
+        "packages": [
+          {
+            "source": "heygen-com/hyperframes"
+          }
+        ]
+      },
+      {
+        "id": "remotion",
+        "name": "Remotion",
+        "catalogSkills": [],
+        "packages": [
+          {
+            "source": "remotion-dev/skills"
+          }
+        ]
+      }
+    ]
+  }
+};
+const SKILLS = CATALOG_SNAPSHOT.skills.map(item => ({
+  id: item.id, role: item.role, isDefault: item.default, auto: item.invocation === "auto",
+  source: item.source, composes: item.composes ?? []
+}));
+const SKILL_COUNTS = {
+  all: SKILLS.length, auto: SKILLS.filter(skill => skill.auto).length,
+  manual: SKILLS.filter(skill => !skill.auto).length,
+  default: SKILLS.filter(skill => skill.isDefault).length,
+  composes: SKILLS.filter(skill => skill.composes.length).length
+};
 
 const DETAILS = {
+  "cmd-sync": {"title": "afk sync --preset <id>", "meta": "refresh + preset-scoped maintenance", "body": "Refreshes catalog definitions, then updates detected members of a selected preset in the global environment. Skills use <code>npx skills add</code> with the refreshed catalog source; <code>skills update</code> instead follows installed lock metadata.", "bullets": ["Preview with <code>--dry-run</code>. Missing members are skipped unless <code>--install-missing</code> is supplied.", "Inactive profile package skills stay deferred. Local-only definitions and installed items removed upstream are preserved.", "Tools use their declared update command; rules, hooks, MCPs, and Custom Agents reapply setup. Profiles refresh definitions only.", "Independent failures are collected; the command returns nonzero. Update the AFK CLI separately with <code>afk update</code>."], "tags": ["global only", "preset", "catalog source"]},
+  "cmd-reset": {"title": "afk skills reset", "meta": "restore cached policy", "body": "Reapplies cached <code>startDisabled</code> and explicit invocation policy to installed shared skills. Disables uncataloged skills and clears enabled profiles plus movement history.", "bullets": ["Preview with <code>--dry-run</code>.", "Does not install, update, or delete skills. Missing catalog skills remain missing.", "Source invocation policy preserves authored metadata. This is different from disabling one profile and restoring its recorded movements."], "tags": ["storage", "metadata", "clears profile state"]},
+  "cat-skill-bulk": {"title": "afk skills catalog bulk-edit", "meta": "edit several definitions", "body": "Sets invocation and always-on policy for selected skills. Global edits can offer setup for affected entries; declining keeps the saved definitions without installation.", "tags": ["batch policy", "optional setup"]},
+
   "cmd-setup": {
     title: "afk setup skills",
     meta: "catalog-driven install",
@@ -676,10 +1547,10 @@ const DETAILS = {
     tags: ["catalog", "lockfile", "preserves disabled state"]
   },
   "cmd-refresh": {
-    title: "afk refresh skills",
+    title: "afk refresh [skills profiles]",
     meta: "catalog cache refresh",
     body: "Refreshes catalog files from the selected or remembered source. Matching source IDs win, while AFK preserves locally imported skill entries that the source does not contain.",
-    bullets: ["Profiles use the parallel merge rule: source definitions win on matching IDs; locally created profile IDs survive.", "<code>--default-source</code> both remembers the source and refreshes.", "Refresh changes catalog cache, not installed skill folders."],
+    bullets: ["Profiles use the parallel merge rule: source definitions win on matching IDs; locally created profile IDs survive.", "<code>--default-source</code> both remembers the source and refreshes.", "Refresh changes catalog cache, not installed skill folders.", "Without --override, imported skills and local-only profiles survive; --override replaces targeted catalogs after confirmation."],
     tags: ["merge", "source wins", "local additions survive"]
   },
   "cmd-visualize": {
@@ -688,7 +1559,7 @@ const DETAILS = {
     body: "Writes the existing self-contained <code>afk-skills.html</code> composition view. It explains catalog composition; this switchyard adds command, storage, profile, and healing-state interactions.",
     tags: ["read only", "HTML"]
   },
-  "cmd-setup-profiles": { title:"afk setup profiles", meta:"install profile skills", body:"Prepares <code>profiles.json</code>, selects profiles, and installs their catalog skills, composed dependencies, and whole or selective remote packages. Package-owned skills are cached as imported and kept disabled until their profile is enabled; overlapping catalog-owned skills retain catalog startup policy. Setup does not activate profiles.", tags:["profile install","profile-only packages"] },
+  "cmd-setup-profiles": { title:"afk setup profiles", meta:"install profile skills", body:"Reads the profile catalog, selects profiles, and installs their catalog skills, composed dependencies, and whole or selective remote packages. Package-owned skills are cached as imported and kept disabled until their profile is enabled; overlapping catalog-owned skills retain catalog startup policy. Setup does not activate profiles.", tags:["profile install","profile-only packages"] },
   "cmd-show-catalog": { title:"afk show skills | profiles", meta:"inspect cached catalog", body:"Reads the cached skills or profiles catalog without installing, refreshing, or moving folders. <code>--source</code> inspects a source for one run; <code>--local</code> reads the project catalog.", tags:["read only","catalog"] },
   "cmd-list": { title:"afk skills list", meta:"inspect discovered roots", body:"Lists shared, project, and agent-specific skill roots with filters for scope, agent, active/disabled storage, invocation state, category, tag, and uncategorized entries. Supports JSON output.", tags:["read only","filters"] },
   "cmd-show": { title:"afk skills show", meta:"inspect one record", body:"Shows one discovered skill's metadata. Can filter by agent and active/disabled storage, and can emit the record as JSON.", tags:["read only"] },
@@ -696,32 +1567,32 @@ const DETAILS = {
   "cmd-open": { title:"afk skills open", meta:"open local source", body:"Opens <code>SKILL.md</code> or the folder in Finder, VS Code, Cursor, Zed, or Antigravity. Filters can choose an agent root and active/disabled storage.", tags:["read only","GUI handoff"] },
   "cmd-disable": { title:"afk skills disable", meta:"active → .disabled", body:"Moves one or more selected skill folders from the active root into its sibling <code>.disabled</code> folder. Defaults to the shared global library unless an agent root is explicit.", bullets:["<code>--dry-run</code> previews the move.", "Fails if the destination already exists."], tags:["reversible","filesystem"] },
   "cmd-enable": { title:"afk skills enable", meta:".disabled → active", body:"Moves a disabled skill folder back to its active root. This is a direct storage operation; profile reconciliation can later move it again if a focus profile excludes it.", tags:["reversible","filesystem"] },
-  "cmd-invocation": { title:"afk skills invocation", meta:"metadata policy", body:"Enables or disables auto invocation by synchronizing two installed metadata surfaces: <code>disable-model-invocation</code> in <code>SKILL.md</code> and <code>allow_implicit_invocation</code> in <code>agents/openai.yaml</code>.", bullets:["Without an explicit action, the command defaults to disable.", "This changes discovery policy, not active/disabled folder storage."], tags:["SKILL.md","openai.yaml"] },
+  "cmd-invocation": { title:"afk skills invocation", meta:"metadata policy", body:"Enables or disables auto invocation by synchronizing two installed metadata surfaces: <code>disable-model-invocation</code> in <code>SKILL.md</code> and <code>allow_implicit_invocation</code> in <code>agents/openai.yaml</code>.", bullets:["Without an action, opens a batch editor: left/right choose manual/auto, Enter applies, Escape discards.", "Shared cataloged skills update catalog policy and installed metadata together; other roots update installed metadata only.", "This changes discovery policy, not active/disabled folder storage."], tags:["SKILL.md","openai.yaml"] },
   "cmd-delete": { title:"afk skills delete", meta:"permanent removal", body:"Permanently removes selected skill folders and prunes matching imported catalog entries for shared global skills.", bullets:["<code>--catalog-only</code> limits candidates to installed skills represented in <code>skills.json</code>.", "<code>--profile</code> deletes installed members of a chosen profile and asks a second confirmation because other profiles may share them.", "Deleting profile skills does not delete the profile definition."], tags:["destructive","double confirm by profile"] },
   "cmd-categorize": { title:"afk skills categorize", meta:"Codex-assisted enrichment", body:"Uses <code>codex exec</code> to append missing categories or recategorize all discovered skills inside <code>skills.json</code>. Install fields stay separate from nested catalog enrichment.", tags:["catalog write","AI-assisted"] },
-  "cat-skills": { title:"afk skills catalog", meta:"skills.json definition editor", body:"Owns install metadata and catalog enrichment. Definition commands are <code>add</code>, <code>edit</code>, <code>remove</code>, <code>toggle-default</code>, and <code>toggle-auto</code>; recovery commands are <code>import</code> and <code>status</code>.", tags:["definitions","source of truth"] },
-  "cat-skill-add": { title:"skills catalog add", meta:"definition operation", body:"Adds a skill item to <code>skills.json</code>; it does not install the skill folder by itself.", tags:["catalog only"] },
-  "cat-skill-edit": { title:"skills catalog edit", meta:"definition operation", body:"Edits an existing catalog item, preserving the catalog schema and source fields.", tags:["catalog only"] },
+  "cat-skills": { title:"afk skills catalog", meta:"skills.json definition editor", body:"Owns install metadata and catalog enrichment. Definition commands are <code>add</code>, <code>edit</code>, <code>remove</code>, <code>toggle-default</code>, <code>toggle-auto</code>, and <code>bulk-edit</code>; recovery commands are <code>import</code> and <code>status</code>.", tags:["definitions","source of truth"] },
+  "cat-skill-add": { title:"skills catalog add", meta:"definition operation", body:"Adds a definition to <code>skills.json</code>. Any offered follow-up setup is a separate installation step.", tags:["catalog only"] },
+  "cat-skill-edit": { title:"skills catalog edit", meta:"definition operation", body:"Edits a catalog item. After global setup-relevant policy changes, AFK can offer setup for the affected entries; declining saves definitions only.", tags:["catalog only"] },
   "cat-skill-remove": { title:"skills catalog remove", meta:"definition operation", body:"Removes the catalog definition. This is distinct from <code>afk skills delete</code>, which removes installed folders.", tags:["catalog only"] },
   "cat-skill-default": { title:"skills catalog toggle-default", meta:"setup selection policy", body:"Controls which source-owned skills setup selects by default. Imported entries are still excluded from normal setup defaults.", tags:["setup policy"] },
-  "cat-skill-auto": { title:"skills catalog invocation", meta:"invocation source policy", body:"Changes catalog <code>invocation</code>. Setup later compiles that value into installed <code>SKILL.md</code> and OpenAI policy metadata.", tags:["policy input"] },
+  "cat-skill-auto": { title:"skills catalog toggle-auto", meta:"invocation source policy", body:"Changes catalog <code>invocation</code>. Setup later compiles that value into installed <code>SKILL.md</code> and OpenAI policy metadata.", tags:["policy input"] },
   "cat-skill-import": { title:"skills catalog import", meta:"recovery operation", body:"Backfills missing catalog entries from installed shared skills only when the official skills CLI lock can recover their source. Imported entries are marked <code>imported: true</code>.", tags:["healing","lock metadata required"] },
   "cat-skill-status": { title:"skills catalog status", meta:"drift inspection", body:"Compares installed shared skills with catalog entries so missing, catalog-only, active, and disabled states are visible without changing them.", tags:["read only","drift"] },
   "cat-profiles": { title:"afk profiles catalog", meta:"profiles.json definitions", body:"Creates and edits named profile membership, top-level mode, and global <code>alwaysOn</code> skills. These commands define desired state; they do not activate profiles.", tags:["definitions","desired state"] },
   "profile-list": { title:"profiles catalog list", meta:"definition operation", body:"Lists profile definitions and their current enabled state. Supports JSON.", tags:["read only"] },
   "profile-show": { title:"profiles catalog show", meta:"definition operation", body:"Shows one profile's name and skill membership, plus the surrounding catalog mode and runtime state.", tags:["read only"] },
   "profile-create": { title:"profiles catalog create", meta:"definition operation", body:"Creates a named group of skills. <code>--profile-only</code> also marks selected skills start-disabled and moves active folders into <code>.disabled</code>.", tags:["membership","optional storage change"] },
-  "profile-edit": { title:"profiles catalog edit", meta:"definition operation", body:"Replaces or updates a profile definition. A profile cannot be switched between focus and additive while active; runtime activation mode is handled separately.", tags:["membership"] },
+  "profile-edit": { title:"profiles catalog edit", meta:"definition operation", body:"Updates profile membership and package definitions. Focus/additive is runtime activation state, not a property of the profile definition.", tags:["membership"] },
   "profile-delete": { title:"profiles catalog delete", meta:"definition operation", body:"Deletes only the profile definition. It does not delete installed skill folders and does not automatically remove another profile's membership.", tags:["catalog only"] },
   "profile-mode": { title:"profiles catalog set-mode", meta:"strict | context", body:"Sets how focus profiles treat active skills outside the kept set. Strict disables all outsiders; context keeps cataloged manual skills active and disables discoverable or uncataloged outsiders.", tags:["reconciliation policy"] },
   "profile-always": { title:"profiles catalog toggle-always-on", meta:"global kept set", body:"Chooses skills that remain in the kept set across every enabled profile. The picker can filter by invocation, default, and start-disabled policy.", tags:["always kept"] },
   "profile-use": { title:"afk skills profiles use", meta:"context without activation", body:"Prints a compact profile skill list with descriptions and matching <code>afk skills get</code> commands. It reads active and disabled shared skills without moving folders or changing profile state.", bullets:["<code>--all</code> includes every member's complete <code>SKILL.md</code> content.", "Fails when the profile references missing local skills."], tags:["read only","agent context"] },
-  "profile-enable": { title:"afk skills profiles enable", meta:"apply desired state", body:"Adds a profile activation and reconciles the shared global library from the complete desired final state.", bullets:["Default activation is <code>additive</code>.", "<code>--focus</code> filters unrelated active skills.", "<code>--additive</code> remains a compatibility alias for the default.", "Disable before changing an active profile between focus and additive."], tags:["runtime","filesystem"] },
+  "profile-enable": { title:"afk skills profiles enable", meta:"apply desired state", body:"Installs declared profile packages when present, then records activation and reconciles the shared global library from the complete desired final state. Installation failures stop activation.", bullets:["Default activation is <code>additive</code>.", "<code>--focus</code> filters unrelated active skills.", "<code>--additive</code> remains a compatibility alias for the default.", "Disable before changing an active profile between focus and additive.", "--local changes catalog/state paths; the skill library remains shared and global."], tags:["runtime","filesystem"] },
   "profile-disable": { title:"afk skills profiles disable", meta:"restore eligible state", body:"Removes one activation, recomputes the kept set from every remaining profile, restores skills that profiles moved when eligible, and returns borrowed pre-disabled skills when no profile keeps them.", tags:["runtime","restoration"] },
   "profile-status": { title:"afk skills profiles status", meta:"inspect runtime state", body:"Shows activations, kept skills, profile-moved skills, pre-existing disabled skills, and the catalog/state paths without mutating folders.", tags:["read only","runtime"] },
   "upstream": { title:"Official skills CLI", meta:"npx skills add / update", body:"Owns the actual install and update operation plus lock metadata. AFK wraps it, then adds catalog, invocation, storage, and profile semantics.", tags:["upstream","lockfiles"] },
   "preflight": { title:"Catalog preflight", meta:"healing gate before add", body:"If lock-tracked installed skills are missing from AFK's catalog, direct add pauses to import them first. If import cannot catalog all recoverable entries, add stops instead of compounding drift.", tags:["healing","guard"] },
-  "skills-catalog": { title:"skills.json", meta:"catalog + setup metadata", body:"The single AFK catalog for install source, args, default selection, role, invocation policy, start-disabled policy, composition, import ownership, categories, and tags.", bullets:["Current source: 53 skills.", "18 allow auto invocation; 35 are manual.", "27 are selected by default."], tags:["catalog","53 items"] },
+  "skills-catalog": { title:"skills.json", meta:"catalog + setup metadata", body:"The skill catalog for install source, args, default selection, role, invocation policy, start-disabled policy, composition, import ownership, categories, and tags.", bullets:[`Current source: ${SKILLS.length} skills.`, `${SKILL_COUNTS.auto} allow auto invocation; ${SKILL_COUNTS.manual} are manual.`, `${SKILL_COUNTS.default} are selected by default.`], tags:["catalog",`${SKILLS.length} items`] },
   "policy-compiler": { title:"Invocation policy compiler", meta:"catalog → installed metadata", body:"Compiles catalog <code>invocation</code> into host-facing files after setup: inverse <code>disable-model-invocation</code> in <code>SKILL.md</code> and matching <code>allow_implicit_invocation</code> in OpenAI metadata.", tags:["synchronization"] },
   "startup-storage": { title:"Startup storage policy", meta:"startDisabled + preservation", body:"Moves installed skills marked <code>startDisabled</code> into <code>.disabled</code>. It snapshots disabled skills before setup/add/update so upstream reinstalls cannot accidentally reactivate them.", tags:["healing","storage"] },
   "refresh-merge": { title:"Refresh merge boundary", meta:"source wins; local additions survive", body:"For skills, refreshed source entries become source-owned and matching IDs win; imported entries absent from the source survive. For profiles, source IDs win while local-only profile IDs survive.", tags:["merge","non-destructive"] },
@@ -733,11 +1604,14 @@ const DETAILS = {
   "disabled-store": { title:"Disabled shared library", meta:"~/.agents/skills/.disabled/&lt;id&gt;", body:"A reversible holding area. Direct commands, start-disabled policy, and focus profiles all use folder movement rather than deleting content.", tags:["filesystem","reversible"] },
   "agent-roots": { title:"Project &amp; agent roots", meta:"Codex · Claude · Gemini · editors", body:"List/show/open can inspect shared, project, and installed-agent roots. Direct mutation defaults to the global shared library unless <code>--agent</code> and scope explicitly target another root.", tags:["fanout","multiple hosts"] },
   "heal-reconcile": { title:"Post-install profile healing", meta:"setup + add", body:"Whenever setup or direct add succeeds and profiles are already enabled, AFK immediately reconciles the new folder against the active desired state. A strict focus profile can therefore send a newly installed outsider straight to <code>.disabled</code>.", tags:["automatic","profile drift"] },
-  "heal-preserve": { title:"Disabled-state preservation", meta:"add + setup + update", body:"AFK snapshots disabled folders before upstream content changes, then moves any reinstalled folders back to disabled storage. Existing profile membership is preserved on reinstall.", tags:["automatic","storage drift"] },
+  "heal-preserve": { title:"Disabled-state preservation", meta:"add + setup + update + sync", body:"AFK snapshots disabled folders before upstream content changes, then moves any reinstalled folders back to disabled storage. Existing profile membership is preserved on reinstall.", tags:["automatic","storage drift"] },
   "heal-restore": { title:"Profile restoration memory", meta:"moved vs pre-existing", body:"The runtime ledger distinguishes skills profiles moved from skills already disabled beforehand. That lets AFK restore only what it borrowed or filtered, even across multiple active profiles.", tags:["automatic","reversible"] }
 };
 
 const MACHINE_NODES = [
+  {id:"cmd-sync",x:310,y:699,w:215,h:55,label:"sync --preset",sub:"refresh + update installed",kind:"command"},
+  {id:"cmd-reset",x:80,y:995,w:445,h:40,label:"skills reset",sub:"cached policy · clear activations",kind:"command"},
+  {id:"cat-skill-bulk",x:720,y:542,w:265,h:46,label:"bulk-edit",sub:"invocation + always-on",kind:"catalog"},
   {id:"cmd-list", x:80,y:225,w:215,h:55,label:"list",sub:"filter all roots",kind:"command"},
   {id:"cmd-show", x:310,y:225,w:215,h:55,label:"show",sub:"one metadata record",kind:"command"},
   {id:"cmd-get", x:80,y:295,w:215,h:55,label:"get",sub:"full agent context",kind:"command"},
@@ -747,13 +1621,13 @@ const MACHINE_NODES = [
   {id:"cmd-setup", x:80,y:545,w:215,h:62,label:"setup skills",sub:"catalog-driven install",kind:"command"},
   {id:"cmd-add", x:310,y:545,w:215,h:62,label:"skills add",sub:"one-off wrapper",kind:"command"},
   {id:"cmd-update", x:80,y:622,w:215,h:62,label:"skills update",sub:"tracked updates",kind:"command"},
-  {id:"cmd-refresh", x:310,y:622,w:215,h:62,label:"refresh skills",sub:"catalog cache",kind:"command"},
-  {id:"cmd-categorize", x:80,y:699,w:445,h:55,label:"skills categorize",sub:"Codex → catalog enrichment",kind:"command"},
+  {id:"cmd-refresh", x:310,y:622,w:215,h:62,label:"refresh catalog",sub:"catalog cache",kind:"command"},
+  {id:"cmd-categorize", x:80,y:699,w:215,h:55,label:"skills categorize",sub:"Codex → catalog enrichment",kind:"command"},
 
-  {id:"cmd-disable", x:80,y:865,w:215,h:58,label:"disable",sub:"active → .disabled",kind:"command"},
-  {id:"cmd-enable", x:310,y:865,w:215,h:58,label:"enable",sub:".disabled → active",kind:"command"},
-  {id:"cmd-invocation", x:80,y:938,w:215,h:58,label:"invocation",sub:"host policy metadata",kind:"command"},
-  {id:"cmd-delete", x:310,y:938,w:215,h:58,label:"delete",sub:"permanent + prune",kind:"danger"},
+  {id:"cmd-disable", x:80,y:865,w:215,h:50,label:"disable",sub:"active → .disabled",kind:"command"},
+  {id:"cmd-enable", x:310,y:865,w:215,h:50,label:"enable",sub:".disabled → active",kind:"command"},
+  {id:"cmd-invocation", x:80,y:930,w:215,h:50,label:"invocation",sub:"host policy metadata",kind:"command"},
+  {id:"cmd-delete", x:310,y:930,w:215,h:50,label:"delete",sub:"permanent + prune",kind:"danger"},
 
   {id:"cat-skills", x:705,y:225,w:300,h:70,label:"skills catalog",sub:"definitions + import",kind:"catalog"},
   {id:"cat-skill-add",x:720,y:310,w:125,h:46,label:"add",sub:"definition",kind:"catalog"},
@@ -766,7 +1640,7 @@ const MACHINE_NODES = [
 
   {id:"preflight",x:1080,y:230,w:285,h:70,label:"catalog preflight",sub:"missing lock-tracked installs?",kind:"heal"},
   {id:"upstream",x:1080,y:340,w:285,h:78,label:"official skills CLI",sub:"add · update · lockfiles",kind:"engine"},
-  {id:"skills-catalog",x:1080,y:465,w:285,h:90,label:"skills.json",sub:"45 items · policy + catalog",kind:"catalog"},
+  {id:"skills-catalog",x:1080,y:465,w:285,h:90,label:"skills.json",sub:`${SKILLS.length} items · policy + catalog`,kind:"catalog"},
   {id:"policy-compiler",x:1080,y:600,w:285,h:78,label:"invocation compiler",sub:"SKILL.md + openai.yaml",kind:"engine"},
   {id:"startup-storage",x:1080,y:720,w:285,h:78,label:"startup storage",sub:"startDisabled + snapshot",kind:"engine"},
   {id:"refresh-merge",x:1080,y:840,w:285,h:78,label:"refresh merge",sub:"source wins · locals survive",kind:"heal"},
@@ -784,7 +1658,7 @@ const MACHINE_NODES = [
   {id:"profile-enable",x:310,y:1135,w:215,h:58,label:"profiles enable",sub:"focus | additive",kind:"command"},
   {id:"profile-disable",x:80,y:1207,w:215,h:58,label:"profiles disable",sub:"remove activation",kind:"command"},
   {id:"profile-status",x:310,y:1207,w:215,h:58,label:"profiles status",sub:"runtime ledger",kind:"command readonly"},
-  {id:"cmd-setup-profiles",x:80,y:1280,w:215,h:48,label:"setup profiles",sub:"prepare definitions",kind:"command"},
+  {id:"cmd-setup-profiles",x:80,y:1280,w:215,h:48,label:"setup profiles",sub:"install profile members",kind:"command"},
   {id:"cmd-show-catalog",x:310,y:1280,w:215,h:48,label:"show skills | profiles",sub:"inspect cached catalog",kind:"command readonly"},
 
   {id:"profile-catalog",x:1080,y:1060,w:285,h:82,label:"profiles.json",sub:"mode · alwaysOn · items",kind:"profile"},
@@ -801,6 +1675,11 @@ const MACHINE_NODES = [
 ];
 
 const MACHINE_EDGES = [
+  ["e-sync-cat","cmd-sync","refresh-merge"],["e-sync-up","cmd-sync","upstream"],
+  ["e-reset-cat","skills-catalog","cmd-reset"],["e-reset-policy","cmd-reset","policy-compiler"],
+  ["e-reset-active","cmd-reset","active-store"],["e-reset-disabled","cmd-reset","disabled-store"],
+  ["e-reset-state","cmd-reset","profile-state"],["e-bulk-cat","cat-skill-bulk","skills-catalog"],
+  ["e-bulk-profile","cat-skill-bulk","profile-catalog"],
   ["e-setup-up","cmd-setup","upstream"],["e-add-pre","cmd-add","preflight"],["e-pre-up","preflight","upstream"],
   ["e-pre-import","preflight","cat-skill-import",true],["e-up-cat","upstream","skills-catalog"],["e-cat-policy","skills-catalog","policy-compiler"],
   ["e-policy-active","policy-compiler","active-store"],["e-up-start","upstream","startup-storage"],["e-start-active","startup-storage","active-store"],
@@ -813,7 +1692,7 @@ const MACHINE_EDGES = [
   ["e-cat-cat","cat-skills","skills-catalog"],["e-categorize-cat","cmd-categorize","skills-catalog"],
   ["e-catprofiles-def","cat-profiles","profile-catalog"],["e-use-cat","profile-use","profile-catalog"],["e-use-active","profile-use","active-store",true],
   ["e-setup-profiles","cmd-setup-profiles","profile-catalog"],["e-show-catalog","cmd-show-catalog","profile-catalog"],
-  ["e-enable-cat","profile-enable","profile-catalog"],["e-enable-state","profile-enable","profile-state"],["e-disable-state","profile-disable","profile-state"],
+  ["e-enable-up","profile-enable","upstream"],["e-enable-cat","profile-enable","profile-catalog"],["e-enable-state","profile-enable","profile-state"],["e-disable-state","profile-disable","profile-state"],
   ["e-status-state","profile-status","profile-state"],["e-cat-kept","profile-catalog","kept-set"],["e-state-kept","profile-state","kept-set"],
   ["e-kept-rec","kept-set","reconcile"],["e-state-rec","profile-state","reconcile"],["e-rec-active","reconcile","active-store"],
   ["e-rec-disabled","reconcile","disabled-store"],["e-rec-ledger","reconcile","heal-restore",true],["e-restore-active","heal-restore","active-store",true],
@@ -821,10 +1700,12 @@ const MACHINE_EDGES = [
 ];
 
 const FLOWS = {
+  sync: {"name": "Preset maintenance", "title": "Refresh the source, then update installed preset members", "nodes": ["cmd-sync", "refresh-merge", "skills-catalog", "profile-catalog", "upstream", "heal-preserve", "disabled-store"], "edges": ["e-sync-cat", "e-merge-cat", "e-merge-profile", "e-sync-up", "e-up-preserve", "e-preserve-disabled"], "steps": ["Choose a preset and preview with --dry-run; global environment only.", "Refresh catalogs, preserving local-only entries. Never uninstall removed members.", "Reinstall selected detected skills with add from the refreshed catalog source, preserving disabled state.", "Skip missing members unless --install-missing; inactive profile packages remain deferred. Other preset areas use their own update/setup path."]},
+  reset: {"name": "Policy reset", "title": "Return installed skills to cached policy", "nodes": ["cmd-reset", "skills-catalog", "policy-compiler", "active-store", "disabled-store", "profile-state"], "edges": ["e-reset-cat", "e-reset-policy", "e-reset-active", "e-reset-disabled", "e-reset-state"], "steps": ["Preview the shared global library with afk skills reset --dry-run.", "Reapply startDisabled and explicit invocation policy; disable uncataloged installed skills.", "Clear all profile activations and movement history.", "Leave missing skills uninstalled. No content updates or deletions occur."]},
   setup: { name:"Install route", title:"Catalog-driven setup", nodes:["cmd-setup","upstream","skills-catalog","policy-compiler","startup-storage","heal-preserve","heal-reconcile","reconcile","active-store","disabled-store"], edges:["e-setup-up","e-up-cat","e-cat-policy","e-policy-active","e-up-start","e-start-active","e-start-disabled","e-up-preserve","e-preserve-disabled","e-setup-heal","e-heal-rec","e-rec-active","e-rec-disabled"], steps:["Select source-owned defaults (or reviewed explicit choices).","Install through the official skills CLI into the shared universal root first.","Compile invocation metadata and apply start-disabled policy.","Restore anything disabled before the install, then reconcile new folders against enabled profiles."] },
   add: { name:"One-off install route", title:"Direct add with a healing preflight", nodes:["cmd-add","preflight","cat-skill-import","upstream","skills-catalog","startup-storage","profile-catalog","heal-preserve","heal-reconcile","reconcile","active-store","disabled-store"], edges:["e-add-pre","e-pre-import","e-pre-up","e-up-cat","e-up-start","e-start-active","e-start-disabled","e-up-preserve","e-preserve-disabled","e-add-heal","e-heal-rec","e-rec-active","e-rec-disabled"], steps:["Compare lock-tracked installed skills with AFK's catalog; import recoverable gaps first.","Run upstream add and diff storage before/after so only new skills receive add-time flags.","Import new shared skills into skills.json; optionally attach them to a profile or disabled storage.","Preserve prior storage and reconcile any already-enabled profile."] },
-  focus: { name:"Profile route", title:"Focus activation filters the library", nodes:["profile-enable","profile-catalog","profile-state","kept-set","reconcile","active-store","disabled-store","heal-restore"], edges:["e-enable-cat","e-enable-state","e-cat-kept","e-state-kept","e-kept-rec","e-state-rec","e-rec-active","e-rec-disabled","e-rec-ledger"], steps:["Record a focus activation.","Compute alwaysOn + skills from every active focus or additive profile.","Strict disables every outsider; context spares cataloged manual outsiders.","Record which folders profiles moved so later restoration is reversible."] },
-  additive: { name:"Profile route", title:"Additive activation grows the kept set", nodes:["profile-enable","profile-catalog","profile-state","kept-set","reconcile","active-store"], edges:["e-enable-cat","e-enable-state","e-cat-kept","e-state-kept","e-kept-rec","e-state-rec","e-rec-active"], steps:["Record the activation as additive.","Add its members to the same union kept set.","If every active profile is additive, unrelated active skills stay untouched.","If any focus profile remains active, its filtering still applies; additive members are simply protected by the kept set."] },
+  focus: { name:"Profile route", title:"Focus activation filters the library", nodes:["profile-enable","upstream","profile-catalog","profile-state","kept-set","reconcile","active-store","disabled-store","heal-restore"], edges:["e-enable-up","e-enable-cat","e-enable-state","e-cat-kept","e-state-kept","e-kept-rec","e-state-rec","e-rec-active","e-rec-disabled","e-rec-ledger"], steps:["Install declared packages when present, then record a focus activation.","Compute alwaysOn + skills from every active focus or additive profile.","Strict disables every outsider; context spares cataloged manual outsiders.","Record which folders profiles moved so later restoration is reversible."] },
+  additive: { name:"Profile route", title:"Additive activation grows the kept set", nodes:["profile-enable","upstream","profile-catalog","profile-state","kept-set","reconcile","active-store"], edges:["e-enable-up","e-enable-cat","e-enable-state","e-cat-kept","e-state-kept","e-kept-rec","e-state-rec","e-rec-active"], steps:["Install declared packages when present, then record additive activation.","Add its members to the same union kept set.","If every active profile is additive, unrelated active skills stay untouched.","If any focus profile remains active, its filtering still applies; additive members are simply protected by the kept set."] },
   restore: { name:"Restoration route", title:"Disable recomputes, then restores only eligible state", nodes:["profile-disable","profile-state","kept-set","reconcile","heal-restore","active-store","disabled-store"], edges:["e-disable-state","e-state-kept","e-kept-rec","e-state-rec","e-rec-ledger","e-restore-active","e-restore-disabled"], steps:["Remove one activation; do not toggle its behavior in place.","Recompute the kept set from every profile that is still active.","Restore profile-moved outsiders when filtering no longer applies.","Return borrowed pre-disabled members when no active profile keeps them."] },
   update: { name:"Maintenance route", title:"Update content without reactivating skills", nodes:["cmd-update","upstream","heal-preserve","disabled-store","active-store"], edges:["e-update-up","e-up-preserve","e-preserve-disabled"], steps:["Select explicit, all, or profile-tracked lock entries.","Snapshot which selected skills are disabled.","Run upstream update for global or project scope.","Move reinstalled disabled skills back into .disabled."] },
   refresh: { name:"Catalog route", title:"Refresh source truth without erasing local extensions", nodes:["cmd-refresh","refresh-merge","skills-catalog","profile-catalog"], edges:["e-refresh-merge","e-merge-cat","e-merge-profile"], steps:["Fetch the selected or remembered source catalog.","Source entries win on matching IDs.","Preserve imported skill entries absent from the source.","Preserve locally created profile IDs absent from the source; installed folders remain untouched."] }
@@ -840,67 +1721,889 @@ const ROLE_LAYOUT = {
 };
 
 const WORKFLOW_MOMENTS = [
-  {id:"define",title:"DEFINE",action:"find the right problem",skills:[
-    {id:"grill-me",use:"sharpen the plan"},
-    {id:"grill-with-docs",use:"interview + decision docs"},
-    {id:"grilling",use:"stress-test assumptions"},
-    {id:"domain-modeling",use:"name the domain"},
-    {id:"research",use:"gather primary evidence"},
-    {id:"afk-ask",use:"consult another CLI advisor"}
-  ]},
-  {id:"plan",title:"PLAN",action:"shape a path worth taking",skills:[
-    {id:"afk-to-spec",use:"preserve decisions across a phase or context boundary"},
-    {id:"afk-to-tickets",use:"slice multi-step or governed execution"},
-    {id:"plannotator-setup-goal",use:"package a reviewed goal"},
-    {id:"wayfinder",use:"map long-horizon work"},
-    {id:"html-plan",use:"make the plan visible"},
-    {id:"afk-design-grill",use:"settle visible frontend decisions and their fidelity contract"},
-    {id:"prototype",use:"probe structure in the real product"},
-    {id:"html-wireframe",use:"compare standalone structure"},
-    {id:"html-prototype",use:"approve standalone fidelity or a bounded flow"},
-    {id:"codebase-design",use:"choose deep module seams"},
-    {id:"afk-code-grill",use:"challenge pre-build trade-offs"}
-  ]},
-  {id:"build",title:"BUILD",action:"turn intent into working form",skills:[
-    {id:"afk-implement",use:"implement with durable tracking"},
-    {id:"tdd",use:"grow behavior test-first"},
-    {id:"source-driven-development",use:"ground choices in official docs"},
-    {id:"doubt-driven-development",use:"verify decisions as you go"},
-    {id:"codebase-design",use:"keep module boundaries deep"},
-    {id:"afk-animated-driven-frontend",use:"craft motion-led interfaces"},
-    {id:"design-artifact",use:"set the visual direction"},
-    {id:"html",use:"create a self-contained artifact"},
-    {id:"html-diagram",use:"make architecture click"},
-    {id:"orchestrator",use:"coordinate specialist agents"},
-    {id:"apple-design",use:"shape fluid gesture interactions"},
-    {id:"animate-text",use:"animate interface copy"},
-  ]},
-  {id:"verify",title:"VERIFY",action:"earn confidence in the result",skills:[
-    {id:"diagnosing-bugs",use:"isolate failures and regressions"},
-    {id:"tdd",use:"prove behavior stays intact"},
-    {id:"truss-evaluation",use:"score decision quality"},
-    {id:"doubt-driven-development",use:"adversarially check the work"},
-    {id:"source-driven-development",use:"recheck authoritative contracts"},
-    {id:"review-animations",use:"audit motion craft"}
-  ]},
-  {id:"review",title:"REVIEW",action:"make the change legible",skills:[
-    {id:"afk-code-review",use:"review standards + spec"},
-    {id:"code-simplification",use:"remove accidental complexity"},
-    {id:"truss-evaluation",use:"expose the trade-offs"},
-    {id:"plannotator-visual-explainer",use:"explain visually"},
-    {id:"teach",use:"transfer the understanding"}
-  ]},
-  {id:"ship",title:"SHIP",action:"leave a trustworthy trail",skills:[
-    {id:"writing-for-humans",use:"write substantial human-facing prose"},
-    {id:"handoff",use:"compact context for the next agent"},
-    {id:"plannotator-compound",use:"compound reviewed learnings"},
-    {id:"writing-for-agents",use:"harden agent-facing instructions"}
-  ]}
+  {
+    "id": "define",
+    "title": "DEFINE",
+    "action": "find the right problem",
+    "skills": [
+      {
+        "id": "readback",
+        "use": "confirm the request before starting"
+      },
+      {
+        "id": "grill-me",
+        "use": "sharpen the plan"
+      },
+      {
+        "id": "grill-with-docs",
+        "use": "interview + decision records"
+      },
+      {
+        "id": "grilling",
+        "use": "stress-test assumptions"
+      },
+      {
+        "id": "domain-modeling",
+        "use": "name the domain"
+      },
+      {
+        "id": "research",
+        "use": "gather primary evidence"
+      },
+      {
+        "id": "to-questionnaire",
+        "use": "collect decisions from someone else"
+      },
+      {
+        "id": "afk-ask",
+        "use": "ask another local CLI"
+      },
+      {
+        "id": "facts",
+        "use": "surface critical facts and implications"
+      },
+      {
+        "id": "recap",
+        "use": "recover the latest session context"
+      }
+    ]
+  },
+  {
+    "id": "plan",
+    "title": "PLAN",
+    "action": "settle decisions and preserve them",
+    "skills": [
+      {
+        "id": "wayfinder",
+        "use": "resolve a multi-session decision map"
+      },
+      {
+        "id": "afk-code-grill",
+        "use": "settle technical choices"
+      },
+      {
+        "id": "afk-design-grill",
+        "use": "select a visible design commitment"
+      },
+      {
+        "id": "impeccable",
+        "use": "shape the frontend direction"
+      },
+      {
+        "id": "prototype",
+        "use": "test one design or state question"
+      },
+      {
+        "id": "html-wireframe",
+        "use": "judge hierarchy and flow"
+      },
+      {
+        "id": "html-prototype",
+        "use": "approve a polished standalone flow"
+      },
+      {
+        "id": "codebase-design",
+        "use": "choose module and test boundaries"
+      },
+      {
+        "id": "truss-evaluation",
+        "use": "weigh consequential trade-offs"
+      },
+      {
+        "id": "clean-room",
+        "use": "seek an independent verdict"
+      },
+      {
+        "id": "afk-to-spec",
+        "use": "capture agreed behavior and decisions"
+      },
+      {
+        "id": "afk-to-tickets",
+        "use": "approve slices and blocking edges"
+      }
+    ]
+  },
+  {
+    "id": "build",
+    "title": "BUILD",
+    "action": "turn agreed intent into behavior",
+    "skills": [
+      {
+        "id": "afk-implement",
+        "use": "track execution, evidence, and acceptance"
+      },
+      {
+        "id": "tdd",
+        "use": "grow behavior test-first"
+      },
+      {
+        "id": "source-driven-development",
+        "use": "ground choices in official docs"
+      },
+      {
+        "id": "doubt-driven-development",
+        "use": "challenge consequential decisions"
+      },
+      {
+        "id": "afk-architect",
+        "use": "coordinate focused teammates"
+      },
+      {
+        "id": "orchestrator",
+        "use": "coordinate agent processes"
+      },
+      {
+        "id": "afk-create-agent",
+        "use": "define a portable agent role"
+      },
+      {
+        "id": "afk-animated-driven-frontend",
+        "use": "co-direct cinematic production"
+      },
+      {
+        "id": "design-artifact",
+        "use": "direct HTML artifact visuals"
+      },
+      {
+        "id": "shadcn",
+        "use": "use components and registries"
+      },
+      {
+        "id": "animate",
+        "use": "build purposeful motion"
+      },
+      {
+        "id": "apple-design",
+        "use": "shape fluid gesture interactions"
+      },
+      {
+        "id": "animate-text",
+        "use": "choose and implement text effects"
+      },
+      {
+        "id": "wizard",
+        "use": "guide human-only setup steps"
+      }
+    ]
+  },
+  {
+    "id": "verify",
+    "title": "VERIFY",
+    "action": "prove behavior and diagnose gaps",
+    "skills": [
+      {
+        "id": "diagnosing-bugs",
+        "use": "isolate failures and regressions"
+      },
+      {
+        "id": "tdd",
+        "use": "prove observable behavior"
+      },
+      {
+        "id": "afk-static-review",
+        "use": "assess lint and typecheck findings"
+      },
+      {
+        "id": "doubt-driven-development",
+        "use": "adversarially check decisions"
+      },
+      {
+        "id": "source-driven-development",
+        "use": "verify API and framework contracts"
+      },
+      {
+        "id": "review-animations",
+        "use": "review motion craft"
+      },
+      {
+        "id": "impeccable",
+        "use": "audit and refine the frontend"
+      },
+      {
+        "id": "afk-animated-driven-frontend",
+        "use": "screen cuts against greenlights"
+      },
+      {
+        "id": "clean-room",
+        "use": "check a decision independently"
+      }
+    ]
+  },
+  {
+    "id": "review",
+    "title": "REVIEW",
+    "action": "judge the change against intent",
+    "skills": [
+      {
+        "id": "afk-code-review",
+        "use": "review Standards and Spec separately"
+      },
+      {
+        "id": "afk-code-review-verdicts",
+        "use": "verify findings before fixing"
+      },
+      {
+        "id": "plannotator-guide",
+        "use": "guide reviewers through real diffs"
+      },
+      {
+        "id": "code-simplification",
+        "use": "clarify code without behavior changes"
+      },
+      {
+        "id": "truss-evaluation",
+        "use": "explain accepted trade-offs"
+      },
+      {
+        "id": "show-me",
+        "use": "make an explanation visual"
+      },
+      {
+        "id": "bro",
+        "use": "restate the last answer plainly"
+      },
+      {
+        "id": "facts",
+        "use": "explain the result and implications"
+      }
+    ]
+  },
+  {
+    "id": "ship",
+    "title": "SHIP",
+    "action": "accept and leave a useful handoff",
+    "skills": [
+      {
+        "id": "afk-implement",
+        "use": "record user acceptance before done"
+      },
+      {
+        "id": "writing-for-humans",
+        "use": "write for the reader\u2019s task"
+      },
+      {
+        "id": "writing-for-agents",
+        "use": "write reusable agent instructions"
+      },
+      {
+        "id": "afk-cli",
+        "use": "configure and maintain the AFK environment"
+      },
+      {
+        "id": "handoff",
+        "use": "preserve context for the next session"
+      },
+      {
+        "id": "teach",
+        "use": "transfer understanding"
+      },
+      {
+        "id": "recap",
+        "use": "summarize the latest work"
+      },
+      {
+        "id": "afk-animated-driven-frontend",
+        "use": "validate delivery and creative continuity"
+      }
+    ]
+  }
 ];
 
 const WORKFLOW_ROUTERS = [
   {id:"afk-compass",use:"recommends the smallest useful manual skill on request"},
   {id:"afk-profile-use",use:"loads the right skill profile for the current request"}
+];
+
+const COMPASS_ROUTES = [
+  {
+    "id": "orient",
+    "group": "workflow",
+    "question": "I am new to this feature. Where do I start?",
+    "why": "Get enough context to judge decisions before entering an interview. The agent understanding the feature is not enough.",
+    "steps": [
+      {
+        "skill": "research",
+        "purpose": "Inventory and reconcile the governing sources."
+      },
+      {
+        "skill": "facts",
+        "purpose": "Get a critical briefing you can understand."
+      },
+      {
+        "skill": "grill-with-docs",
+        "purpose": "Challenge decisions once you can participate."
+      }
+    ],
+    "boundary": "You should be able to explain the motivation, current behavior, active scope, adjacent work, and contradictions. Personal reading is also a valid route. If the later grilling reveals a larger decision graph, use “The work turned out bigger than expected” to reassess the route.",
+    "prompt": "Use research to orient me to this feature and its governing sources. Then use facts to brief me. Wait until I understand the feature before recommending grill-with-docs.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "outgrown",
+      "learn"
+    ]
+  },
+  {
+    "id": "learn",
+    "group": "workflow",
+    "question": "I want to learn the feature over several sessions.",
+    "why": "Use a durable learning workspace when a short briefing will not meet your learning goal.",
+    "steps": [
+      {
+        "skill": "research",
+        "purpose": "Collect primary evidence."
+      },
+      {
+        "skill": "teach",
+        "purpose": "Build understanding through lessons and retained records."
+      },
+      {
+        "skill": "facts",
+        "purpose": "Consolidate the critical facts."
+      },
+      {
+        "skill": "grill-with-docs",
+        "purpose": "Begin decision work when you are ready."
+      }
+    ],
+    "boundary": "Teach earns its place for sustained learning; a feature summary alone does not need it. If the later grilling reveals a larger decision graph, use “The work turned out bigger than expected” to reassess the route.",
+    "prompt": "Use research, then teach, to help me learn this feature across sessions. Give me a facts briefing before we begin grill-with-docs.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "outgrown",
+      "orient"
+    ]
+  },
+  {
+    "id": "bounded",
+    "group": "workflow",
+    "question": "One plan needs sharper questions.",
+    "why": "Stay with the smallest specialist that can own the connected uncertainty in one coherent session.",
+    "steps": [
+      {
+        "skill": "grill-me",
+        "purpose": "Pressure-test the evolving plan."
+      }
+    ],
+    "boundary": "Choose grill-with-docs when ADRs and domain vocabulary should be maintained during the interview. Technical scope can go to afk-code-grill; frontend choices can go to afk-design-grill.",
+    "prompt": "Use grill-me to sharpen this plan. Ask the questions that could materially change the direction.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "outgrown",
+      "technical",
+      "design",
+      "landscape"
+    ]
+  },
+  {
+    "id": "technical",
+    "group": "workflow",
+    "question": "The behavior is clear, but the technical choices are not.",
+    "why": "Use focused technical grilling for bounded architecture, implementation, risk, and trade-off decisions.",
+    "steps": [
+      {
+        "skill": "afk-code-grill",
+        "purpose": "Settle the technical frontier using Truss and codebase-design."
+      }
+    ],
+    "boundary": "An unresolved implementation choice does not automatically require a multi-session planning map.",
+    "prompt": "Use afk-code-grill to settle the implementation choices, risks, and trade-offs for this scope.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "outgrown",
+      "bounded",
+      "tracked"
+    ]
+  },
+  {
+    "id": "outgrown",
+    "group": "workflow",
+    "question": "The work turned out bigger than expected. Should we move to Wayfinder?",
+    "why": "You can start with orientation and grill-with-docs, then discover a larger decision landscape. Reassess what is unresolved before choosing how to continue.",
+    "steps": [
+      {
+        "skill": "Continue the current specialist",
+        "purpose": "One coherent problem still fits, even if answering it takes longer."
+      },
+      {
+        "skill": "Compact or hand off",
+        "purpose": "The problem still fits, but the current context needs more room."
+      },
+      {
+        "skill": "Promote to wayfinder",
+        "purpose": "Several substantial, interdependent decisions now need a durable map across sessions."
+      }
+    ],
+    "boundary": "These are alternative routes, not three required steps. Time or session count alone does not trigger Wayfinder. At promotion, preserve settled decisions, rejected alternatives, evidence, artifacts, and the unresolved decision graph. Name the governing specialist in the map; use handoff if the context changes. When the map converges, return to the specialist or synthesis route that owns the outcome.",
+    "prompt": "Reassess the scope we uncovered during this session. If it remains one coherent specialist problem, continue; if only context is constrained, compact or hand off. If several substantial, interdependent decisions now exceed one coherent session, recommend moving the unresolved graph to wayfinder. Carry our settled decisions, rejected alternatives, evidence, and open questions forward, and name the governing specialist. Stop after recommending the route.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "bounded",
+      "landscape",
+      "pressure",
+      "handover"
+    ]
+  },
+  {
+    "id": "landscape",
+    "group": "workflow",
+    "question": "Several major decisions depend on each other.",
+    "why": "Wayfinder fits a decision graph that is too large for one coherent specialist session. Enter directly when that landscape is already clear, or promote from grilling when it emerges.",
+    "steps": [
+      {
+        "skill": "wayfinder",
+        "purpose": "Map and resolve interdependent decisions across sessions."
+      }
+    ],
+    "boundary": "Uncertainty alone is not the trigger. Start with a specialist when it still fits; promote when the decision graph emerges. Preserve settled choices, rejected directions, evidence, and open branches. Wayfinder plans by default; its specialist work produces decisions or evidence.",
+    "prompt": "Use wayfinder to map this effort’s interdependent decisions. Name the governing specialist where it should constrain a branch.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "outgrown",
+      "bounded",
+      "cinematic",
+      "handover"
+    ]
+  },
+  {
+    "id": "spec",
+    "group": "workflow",
+    "question": "We agreed on the change. Should we capture it?",
+    "why": "A spec preserves settled behavior and decisions for implementation, review, or a context boundary.",
+    "steps": [
+      {
+        "skill": "afk-to-spec",
+        "purpose": "Synthesize the live decisions and testing approach."
+      }
+    ],
+    "boundary": "Keep synthesis in the same task while the reasoning is healthy. A spec is a durable brief; having one does not require execution tracking.",
+    "prompt": "Use afk-to-spec to capture the decisions we have agreed in this conversation.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "tracked",
+      "direct",
+      "pressure"
+    ]
+  },
+  {
+    "id": "tracked",
+    "group": "workflow",
+    "question": "I want status, recovery, and a review gate during implementation.",
+    "why": "Use durable implementation tracking when progress and evidence must survive interruptions, ownership changes, or later review.",
+    "steps": [
+      {
+        "skill": "afk-implement",
+        "purpose": "Implement from the agreed source with an Implementation Record."
+      }
+    ],
+    "boundary": "You can enter directly from a spec, ticket, plan, prototype, prompt, or conversation. Add afk-to-tickets only if dependency-aware slicing helps. If decisions are still open, grill first, then synthesize a spec.",
+    "prompt": "Use afk-implement for this agreed change. Read the supplied source and establish its Tracking Home before implementation.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "tickets",
+      "direct"
+    ]
+  },
+  {
+    "id": "tickets",
+    "group": "workflow",
+    "question": "The implementation needs several independently verifiable slices.",
+    "why": "Plan the slices and their blockers together so that each implementation task has a coherent source and acceptance criteria.",
+    "steps": [
+      {
+        "skill": "afk-to-tickets",
+        "purpose": "Propose and agree the complete dependency-aware breakdown."
+      },
+      {
+        "skill": "afk-implement",
+        "purpose": "Implement the next unblocked slice in its own task."
+      }
+    ],
+    "boundary": "Groom related tickets together before implementation. Start only when blockers meet their tracking contract. Parallel workers need exact ownership and separate worktrees when filesystem or Git work can overlap.",
+    "prompt": "Use afk-to-tickets to propose slices and blockers from the approved spec. After approval, use afk-implement for each unblocked unit in a fresh task.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "tracked",
+      "delegate"
+    ]
+  },
+  {
+    "id": "direct",
+    "group": "workflow",
+    "question": "Can we just implement the settled change?",
+    "why": "Ordinary agent implementation fits one run when durable execution tracking is unwanted and the project does not require it.",
+    "steps": [
+      {
+        "skill": "Ordinary implementation",
+        "purpose": "Implement directly from settled context or the approved spec."
+      }
+    ],
+    "boundary": "Use this only when dependencies do not need durable tracking, work is not distributed across tasks or people, and no project ticket requirement applies. This does not invoke afk-implement.",
+    "prompt": "Implement the settled change now without durable execution tracking. Use the approved spec if one is provided, and run the relevant project validation.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "tracked",
+      "spec"
+    ]
+  },
+  {
+    "id": "design",
+    "group": "frontend",
+    "question": "Several frontend design choices are still connected and open.",
+    "why": "Use a decision-and-handoff process when structure, visual identity, behavior, and motion need to be settled together.",
+    "steps": [
+      {
+        "skill": "afk-design-grill",
+        "purpose": "Compare visible alternatives and record the selected visual commitment."
+      }
+    ],
+    "boundary": "The commitment names the authoritative reference, must-preserve details, allowed adaptations, and acceptance evidence. It also fits when designs repeatedly lose identity between artifacts.",
+    "prompt": "Use afk-design-grill to settle this frontend’s open design choices and preserve the selected direction for implementation.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "outgrown",
+      "world",
+      "rough",
+      "polished"
+    ]
+  },
+  {
+    "id": "world",
+    "group": "frontend",
+    "question": "The interface needs a visual world or a substantial redesign.",
+    "why": "Impeccable owns the complete frontend experience and its visual direction.",
+    "steps": [
+      {
+        "skill": "impeccable",
+        "purpose": "Establish or reshape the visual world and interface."
+      }
+    ],
+    "boundary": "For a standalone HTML artifact with open direction, use design-artifact with the narrowest available HTML specialist.",
+    "prompt": "Use impeccable to establish the visual direction and complete interface experience for this surface.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "artifact",
+      "design"
+    ]
+  },
+  {
+    "id": "artifact",
+    "group": "frontend",
+    "question": "I need a standalone HTML artifact with a clear visual direction.",
+    "why": "Choose the specialist according to what the artifact must let a reader judge.",
+    "steps": [
+      {
+        "skill": "design-artifact",
+        "purpose": "Establish the artifact’s direction."
+      },
+      {
+        "skill": "HTML specialist",
+        "purpose": "Choose the narrowest available specialist for the deliverable."
+      }
+    ],
+    "boundary": "For structure, choose html-wireframe; for polished fidelity or a bounded flow, choose html-prototype. Load the HTML profile if the needed specialist is unavailable.",
+    "prompt": "Use design-artifact and the narrowest available HTML specialist for this deliverable. If needed, load the html profile with afk-profile-use first.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "wireframe",
+      "polished"
+    ]
+  },
+  {
+    "id": "wireframe",
+    "group": "frontend",
+    "question": "I need to compare hierarchy, navigation, or standalone structure.",
+    "why": "A low-fidelity wireframe lets you judge structure before visual polish distracts from the decision.",
+    "steps": [
+      {
+        "skill": "html-wireframe",
+        "purpose": "Compare low-fidelity standalone structures."
+      }
+    ],
+    "boundary": "This cannot approve final visual fidelity. The specialist belongs to the HTML profile; make it available before invocation.",
+    "prompt": "Use html-wireframe to compare the standalone structure and task flow. If unavailable, load the html profile with afk-profile-use first.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "rough",
+      "polished"
+    ]
+  },
+  {
+    "id": "rough",
+    "group": "frontend",
+    "question": "A real product surface or state model needs an experiment.",
+    "why": "Choose prototype when application context is material: a named host surface, real data or density, or a state model that benefits from free exploration.",
+    "steps": [
+      {
+        "skill": "prototype",
+        "purpose": "Test one structural, behavioral, or state-model question."
+      }
+    ],
+    "boundary": "A rough experiment can approve behavior or structure, not visual fidelity. Without a material need for real application context, use the standalone HTML route that matches the question.",
+    "prompt": "Use prototype to test this specific question in the existing product surface or state model. Keep the experiment focused on what we need to learn.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "wireframe",
+      "polished",
+      "design"
+    ]
+  },
+  {
+    "id": "polished",
+    "group": "frontend",
+    "question": "I need to approve a polished surface or one complete flow.",
+    "why": "A standalone prototype makes visual fidelity or a bounded responsive interaction credible enough to judge.",
+    "steps": [
+      {
+        "skill": "html-prototype",
+        "purpose": "Build a polished standalone mockup or interactive flow."
+      }
+    ],
+    "boundary": "The review job chooses the route, not whether the project is greenfield or which framework it uses. Load the HTML profile if needed.",
+    "prompt": "Use html-prototype to make this surface or bounded flow credible enough for visual approval. If unavailable, load the html profile with afk-profile-use first.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "rough",
+      "image-world"
+    ]
+  },
+  {
+    "id": "image-world",
+    "group": "frontend",
+    "question": "We chose an image for its style, not its exact composition.",
+    "why": "Preserve the approved visual identity, then choose the destination based on the review job.",
+    "steps": [
+      {
+        "skill": "html-prototype or real-app realization",
+        "purpose": "Use a standalone prototype, or realize it in the app when application context matters."
+      }
+    ],
+    "boundary": "Ask what the image selection actually approved. Preserve its visual identity; exact composition becomes binding only when it is approved as the implementation reference.",
+    "prompt": "Preserve the selected image’s visual world. Use html-prototype for standalone approval, or realize it in the real app if that context is material. Do not assume the exact composition was approved.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "image-exact",
+      "design"
+    ]
+  },
+  {
+    "id": "image-exact",
+    "group": "frontend",
+    "question": "The selected image is the exact implementation reference.",
+    "why": "Carry the approved source into implementation and compare the rendered result against it before acceptance.",
+    "steps": [
+      {
+        "skill": "Implementation from the approved reference",
+        "purpose": "Preserve the exact reference, required viewports and states, and must-preserve visual details."
+      }
+    ],
+    "boundary": "Choose afk-implement when durable tracking is wanted, or ordinary implementation when the change fits that path. Keep the approved reference authoritative; use afk-design-grill if the visual commitment is being lost between handoffs.",
+    "prompt": "Implement the approved visual reference using this project’s stack. Preserve its must-have details and required viewports and states, then compare the rendered result with the source before acceptance. Use afk-implement if we want durable execution tracking.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "image-world",
+      "tracked",
+      "direct",
+      "design"
+    ]
+  },
+  {
+    "id": "finish",
+    "group": "frontend",
+    "question": "The frontend exists. What kind of review does it need?",
+    "why": "Choose the review by the remaining question.",
+    "steps": [
+      {
+        "skill": "impeccable critique",
+        "purpose": "Identify the most important product-experience problems."
+      },
+      {
+        "skill": "impeccable audit",
+        "purpose": "Check measurable accessibility, performance, theming, and responsiveness."
+      },
+      {
+        "skill": "impeccable polish",
+        "purpose": "Refine the implemented interface into a coherent finish."
+      }
+    ],
+    "boundary": "These are alternatives, not a mandatory sequence. Ask for the one that matches the problem you need resolved.",
+    "prompt": "Use impeccable critique to identify the most important experience problems. Choose audit instead for measurable implementation quality, or polish when the direction is settled and the finish needs refinement.",
+    "source": "frontend-crossroads.md",
+    "related": []
+  },
+  {
+    "id": "motion-thesis",
+    "group": "motion",
+    "question": "Where should motion belong across this surface?",
+    "why": "Set purpose and coherence across the interface before constructing individual animations.",
+    "steps": [
+      {
+        "skill": "impeccable animate",
+        "purpose": "Define and implement the surface’s motion direction."
+      }
+    ],
+    "boundary": "Use animate for a single already-chosen transition. Combine them only when the surface-level and component-level responsibilities are explicit.",
+    "prompt": "Use impeccable animate to decide where and why motion belongs across this surface and make it coherent with the visual world.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "motion-one",
+      "cinematic"
+    ]
+  },
+  {
+    "id": "motion-one",
+    "group": "motion",
+    "question": "One chosen component animation needs implementation.",
+    "why": "This is a bounded construction problem, with a specific interaction or transition to make work.",
+    "steps": [
+      {
+        "skill": "animate",
+        "purpose": "Build the selected animation or transition."
+      }
+    ],
+    "boundary": "If purpose and placement across the whole surface are still open, begin with impeccable animate.",
+    "prompt": "Use animate to implement this chosen component transition, including interruption and reduced-motion behavior.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "motion-thesis",
+      "motion-review"
+    ]
+  },
+  {
+    "id": "motion-review",
+    "group": "motion",
+    "question": "Existing motion needs a craft review.",
+    "why": "Review the implementation’s rhythm, interruption, and interaction quality.",
+    "steps": [
+      {
+        "skill": "review-animations",
+        "purpose": "Inspect existing motion and identify warranted improvements."
+      }
+    ],
+    "boundary": "For fluid direct manipulation such as dragging, sheets, and gestures, apple-design may be the closer route.",
+    "prompt": "Use review-animations to review this existing motion implementation.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "gestures"
+    ]
+  },
+  {
+    "id": "gestures",
+    "group": "motion",
+    "question": "The interaction should feel fluid and physically direct.",
+    "why": "Use the gesture-oriented route for direct manipulation and Apple-style physical interaction principles.",
+    "steps": [
+      {
+        "skill": "apple-design",
+        "purpose": "Shape or review gesture-driven interaction."
+      }
+    ],
+    "boundary": "This fits the interaction model; a cinematic production process is unnecessary for an ordinary drag or sheet.",
+    "prompt": "Use apple-design to shape or review this gesture-driven interaction.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "motion-one",
+      "cinematic"
+    ]
+  },
+  {
+    "id": "cinematic",
+    "group": "motion",
+    "question": "Motion or immersion defines the product experience.",
+    "why": "Co-direct the experience through treatment, shots, tracers, production batches, and final-cut decisions.",
+    "steps": [
+      {
+        "skill": "afk-animated-driven-frontend",
+        "purpose": "Own cinematic production with human-approved greenlights."
+      }
+    ],
+    "boundary": "One connected creative problem can stay with ADF. Promote to Wayfinder only when several substantial interdependent unknowns exceed that specialist session. Resume the governing specialist after the map converges.",
+    "prompt": "Use afk-animated-driven-frontend to co-direct this cinematic experience. Preserve approved creative decisions and stop at the required greenlights.",
+    "source": "frontend-crossroads.md",
+    "related": [
+      "outgrown",
+      "landscape",
+      "tickets"
+    ]
+  },
+  {
+    "id": "continue",
+    "group": "context",
+    "question": "Should the next skill start a new task?",
+    "why": "Continue when the next phase benefits from the reasoning already in the window.",
+    "steps": [
+      {
+        "skill": "Continue in the same task",
+        "purpose": "Keep grilling, spec synthesis, and ticket grooming together while context is healthy."
+      }
+    ],
+    "boundary": "A new skill name alone is not a reason to change tasks. Independently owned implementation slices default to fresh contexts with their source and Implementation Record.",
+    "prompt": "Continue in this task from the settled decisions. Preserve the live context through spec synthesis and ticket grooming; start independently owned implementation units fresh.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "pressure",
+      "tickets"
+    ]
+  },
+  {
+    "id": "pressure",
+    "group": "context",
+    "question": "The context is filling up before the work is ready.",
+    "why": "Move at a natural phase boundary while decisions are still recoverable.",
+    "steps": [
+      {
+        "skill": "afk-to-spec or handoff",
+        "purpose": "If grilling is complete, synthesize first. If it remains open, preserve the settled branch and open questions."
+      }
+    ],
+    "boundary": "Compact safely when the host supports it. If it cannot, use handoff to a fresh task. Keep spec synthesis and ticket grooming unbroken when practical.",
+    "prompt": "At the nearest settled boundary, preserve decisions, vocabulary, and open questions. If grilling is complete, use afk-to-spec before compaction; otherwise use a safe compaction or handoff.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "handover",
+      "continue"
+    ]
+  },
+  {
+    "id": "handover",
+    "group": "context",
+    "question": "Curated context must travel to another task or person.",
+    "why": "Use an explicit handoff when the receiver needs selected context rather than the whole conversation.",
+    "steps": [
+      {
+        "skill": "handoff",
+        "purpose": "Save the decisions, sources, open questions, and next step."
+      },
+      {
+        "skill": "Receiving task",
+        "purpose": "Read the generated handoff and continue."
+      }
+    ],
+    "boundary": "A fork fits exploration that needs full inherited history. A short disposable side question can use a side conversation; bring decisions back. No extra pickup workflow is needed for an ordinary handoff.",
+    "prompt": "Use handoff to prepare context for the next task. Tell the receiver to read the generated file and continue from its next unresolved step.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "continue",
+      "delegate"
+    ]
+  },
+  {
+    "id": "delegate",
+    "group": "context",
+    "question": "A bounded activity can run independently and report back.",
+    "why": "Use native teammates when clear ownership and an explicit return path benefit the current task.",
+    "steps": [
+      {
+        "skill": "afk-architect",
+        "purpose": "Assign focused work and integrate the result."
+      }
+    ],
+    "boundary": "Use orchestrator when coordination requires separate processes or runtimes. For parallel implementation, define exact ownership and use separate worktrees where changes can overlap.",
+    "prompt": "Use afk-architect for this bounded independent activity. Give it clear ownership, the required evidence, and a return path to this task.",
+    "source": "workflow-crossroads.md",
+    "related": [
+      "tickets"
+    ]
+  }
 ];
 
 const stage = document.getElementById("stage");
@@ -988,9 +2691,9 @@ function renderMachine() {
   addText(machineView,60,98,"machine-sub","COMMANDS ENTER ON THE LEFT · CATALOG AND POLICY DECIDE IN THE MIDDLE · FOLDERS MOVE ON THE RIGHT");
   renderZone(machineView,{x:45,y:145,w:510,h:310,kicker:"01 · inspect",title:"Read the library",note:"No state changes"});
   renderZone(machineView,{x:45,y:475,w:510,h:300,kicker:"02 · acquire",title:"Install & maintain",note:"Upstream work, then AFK policy"});
-  renderZone(machineView,{x:45,y:800,w:510,h:220,kicker:"03 · mutate",title:"Direct local state",note:"Folders or invocation metadata"});
-  renderZone(machineView,{x:45,y:1040,w:510,h:300,kicker:"04 · apply",title:"Profile runtime",note:"Use is read-only; enable/disable reconcile"});
-  renderZone(machineView,{x:640,y:145,w:395,h:390,kicker:"05 · define",title:"Skill catalog commands",note:"Definition edits are not installs"});
+  renderZone(machineView,{x:45,y:800,w:510,h:240,kicker:"03 · mutate",title:"Direct local state",note:"Folders or invocation metadata"});
+  renderZone(machineView,{x:45,y:1045,w:510,h:300,kicker:"04 · apply",title:"Profile runtime",note:"Use is read-only; enable/disable reconcile"});
+  renderZone(machineView,{x:640,y:145,w:395,h:465,kicker:"05 · define",title:"Skill catalog commands",note:"Definition edits are not installs"});
   renderZone(machineView,{x:1045,y:145,w:355,h:790,kicker:"06 · decide",title:"Policy & healing engines",note:"The non-obvious behavior lives here"});
   renderZone(machineView,{x:640,y:980,w:395,h:385,kicker:"07 · define",title:"Profile catalog commands",note:"Definitions are separate from activation"});
   renderZone(machineView,{x:1045,y:980,w:730,h:360,kicker:"08 · reconcile",title:"Profile state machine",note:"Desired final state, recomputed every time"});
@@ -1015,9 +2718,9 @@ function renderMachine() {
 }
 
 function renderCatalog() {
-  addText(catalogView,60,72,"machine-heading","The 43-skill constellation");
+  addText(catalogView,60,72,"machine-heading",`The ${SKILLS.length}-skill constellation`);
   addText(catalogView,60,98,"machine-sub","GROUPED BY CATALOG ROLE · TEAL AUTO-INVOKES · PLUM IS MANUAL · GOLD LINES SHOW COMPOSITION");
-  addText(catalogView,2320,72,"machine-sub","15 AUTO · 28 MANUAL · 28 DEFAULT", "end");
+  addText(catalogView,2320,72,"machine-sub",`${SKILL_COUNTS.auto} AUTO · ${SKILL_COUNTS.manual} MANUAL · ${SKILL_COUNTS.default} DEFAULT`, "end");
   const roleGroups = {};
   Object.entries(ROLE_LAYOUT).forEach(([role, layout]) => {
     const group = el("g",{class:"skill-role"});
@@ -1076,20 +2779,17 @@ function renderCatalog() {
   catalogView.appendChild(skillLayer);
 
   const profileY = 1010;
-  addText(catalogView,60,profileY-28,"zone-kicker","CURRENT SOURCE PROFILE DEFINITIONS");
-  catalogView.appendChild(el("rect",{x:60,y:profileY,width:2280,height:205,class:"profile-band"}));
-  addText(catalogView,90,profileY+42,"skill-role-title","stitch");
-  addText(catalogView,90,profileY+67,"zone-note","5 external members · definition only until enabled");
-  addText(catalogView,90,profileY+105,"mono","design-md · enhance-prompt · react-components · stitch-loop · stitch-remotion");
-  addText(catalogView,90,profileY+157,"skill-role-title","video");
-  addText(catalogView,90,profileY+182,"zone-note","15 external members · may borrow disabled skills while active");
-  addText(catalogView,1110,profileY+42,"skill-role-title","alwaysOn");
-  addText(catalogView,1110,profileY+67,"zone-note","5 source-catalog members protected across every profile");
-  addText(catalogView,1110,profileY+105,"mono","grilling · writing-for-humans · code-simplification · diagnosing-bugs · truss-evaluation");
-  addText(catalogView,1110,profileY+157,"skill-role-title","mode = context");
-  addText(catalogView,1110,profileY+182,"zone-note","manual cataloged outsiders stay active; discoverable or uncataloged outsiders filter out");
-
-  addText(catalogView,60,1290,"machine-sub","SOURCE SNAPSHOT · packages/afk/catalog/skills.json + profiles.json · 2026-07-20");
+  addText(catalogView,60,profileY-28,"zone-kicker","CURRENT SOURCE PROFILE DEFINITIONS · PACKAGES EXTEND THE CATALOG");
+  catalogView.appendChild(el("rect",{x:60,y:profileY,width:2280,height:350,class:"profile-band"}));
+  CATALOG_SNAPSHOT.profiles.items.forEach((profile,index) => {
+    const y = profileY + 35 + index * 62;
+    const packages = profile.packages.map(pkg => `${pkg.source} (${pkg.skills ? pkg.skills.join(", ") : "whole package"})`).join(" · ");
+    addText(catalogView,90,y,"skill-role-title",profile.name);
+    addText(catalogView,90,y+22,"zone-note",[...profile.catalogSkills, packages].filter(Boolean).join(" + "));
+  });
+  addText(catalogView,90,profileY+295,"zone-note",`alwaysOn: ${CATALOG_SNAPSHOT.profiles.alwaysOn.join(" · ")}`);
+  addText(catalogView,90,profileY+322,"zone-note",`mode = ${CATALOG_SNAPSHOT.profiles.mode} · focus keeps manual cataloged outsiders; additive alone does not filter outsiders`);
+  addText(catalogView,60,1420,"machine-sub",`CATALOG SNAPSHOT · ${CATALOG_SNAPSHOT.reviewedAt} · WHOLE-PACKAGE MEMBERSHIP IS RESOLVED AT INSTALL TIME`);
 }
 
 function renderMomentSkill(parent, moment, entry, x, y, width) {
@@ -1110,8 +2810,8 @@ function renderMomentSkill(parent, moment, entry, x, y, width) {
 
 function renderMoments() {
   addText(momentView,45,48,"machine-heading","Every skill has a moment");
-  addText(momentView,45,73,"machine-sub","AN OPINIONATED LIFECYCLE MAP · REPEATED SKILLS CROSS PHASES ON PURPOSE · CLICK ANY TICKET FOR CATALOG DETAILS");
-  addText(momentView,2355,48,"machine-sub","43 UNIQUE SKILLS · 6 MOMENTS", "end");
+  addText(momentView,45,73,"machine-sub","ENTER AT YOUR UNRESOLVED MOMENT · SKIP SETTLED STEPS · REPEATED SKILLS CROSS PHASES · CLICK FOR PURPOSE AND SOURCE");
+  addText(momentView,2355,48,"machine-sub",`${SKILLS.length} CATALOG SKILLS · ${WORKFLOW_MOMENTS.length} MOMENTS`, "end");
 
   const uniqueIds = new Set([
     ...WORKFLOW_MOMENTS.flatMap(moment => moment.skills.map(entry => entry.id)),
@@ -1168,11 +2868,17 @@ function renderMoments() {
     momentView.appendChild(column);
   });
 
-  addText(momentView,45,1104,"machine-sub",`COVERAGE CHECK · ${uniqueIds.size} OF ${SKILLS.length} CATALOG SKILLS PLACED · SOURCE CONTRACTS REVIEWED 2026-07-20`);
+  addText(momentView,45,1104,"machine-sub",`COVERAGE CHECK · ${uniqueIds.size} OF ${SKILLS.length} CATALOG SKILLS PLACED · CATALOG + FLOW AUDIT ${CATALOG_SNAPSHOT.reviewedAt}`);
 }
 
 function attachNodeEvents() {
   document.querySelectorAll(".node").forEach(node => {
+    node.setAttribute("tabindex", "0");
+    node.setAttribute("role", "button");
+    node.setAttribute("aria-label", node.dataset.skill || DETAILS[node.dataset.k]?.title || node.dataset.k);
+    node.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); node.dispatchEvent(new MouseEvent("click", {bubbles:true})); }
+    });
     node.addEventListener("click", () => {
       document.querySelectorAll(".node.selected").forEach(item => item.classList.remove("selected"));
       node.classList.add("selected");
@@ -1195,8 +2901,11 @@ function showDetail(key, sourceNode) {
     const memberships = WORKFLOW_MOMENTS.filter(moment => moment.skills.some(entry => entry.id === skill.id));
     const routed = WORKFLOW_ROUTERS.some(entry => entry.id === skill.id);
     const moments = routed ? "routes across every moment" : memberships.length ? memberships.map(moment => moment.title.toLowerCase()).join(" · ") : "not placed";
+    const routerPurpose = WORKFLOW_ROUTERS.find(entry => entry.id === skill.id)?.use;
+    const purposes = memberships.map(moment => `<li><strong>${moment.title}:</strong> ${moment.skills.find(entry => entry.id === skill.id).use}</li>`).join("");
+    const sourceUrl = skill.source.startsWith("https://") ? skill.source : `https://github.com/${skill.source}`;
     const currentMoment = sourceNode?.dataset.moment && sourceNode.dataset.moment !== "all" ? `<span class="tag">viewing in ${sourceNode.dataset.moment}</span>` : "";
-    document.getElementById("detail-body").innerHTML = `<p><strong>Source:</strong> <code>${skill.source}</code></p><p><strong>Workflow moments:</strong> ${moments}</p>${composed}<div class="tagrow"><span class="tag">${skill.isDefault ? "setup default" : "opt-in"}</span><span class="tag">${skill.auto ? "plain-language discoverable" : "explicit/manual"}</span>${currentMoment}</div>`;
+    document.getElementById("detail-body").innerHTML = `<p><strong>Source:</strong> <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer">${skill.source}</a></p><p><strong>Workflow moments:</strong> ${moments}</p>${routerPurpose ? `<p>${routerPurpose}</p>` : ""}<ul>${purposes}</ul>${composed}<div class="tagrow"><span class="tag">${skill.isDefault ? "setup default" : "opt-in"}</span><span class="tag">${skill.auto ? "plain-language discoverable" : "explicit/manual"}</span>${currentMoment}</div>`;
     return;
   }
   const detail = DETAILS[key];
@@ -1227,21 +2936,142 @@ function applyViewBox() {
   svg.setAttribute("viewBox",window.innerWidth <= 760 ? "0 0 1450 1120" : "0 0 2400 1120");
 }
 
+
+let compassGroup = "workflow";
+let compassRouteId = "orient";
+function compassElement(tag, text, className) {
+  const element = document.createElement(tag);
+  if (text) element.textContent = text;
+  if (className) element.className = className;
+  return element;
+}
+function chooseCompassRoute(id, focus = false) {
+  const route = COMPASS_ROUTES.find(item => item.id === id);
+  compassRouteId = id;
+  compassGroup = route.group;
+  document.getElementById("search").value = "";
+  renderCompass();
+  if (focus) {
+    const heading = document.getElementById("compass-question");
+    heading.focus({preventScroll:true});
+    heading.scrollIntoView({block:"nearest"});
+  }
+}
+function renderCompass(term = "") {
+  const branches = document.getElementById("compass-branches");
+  const answer = document.getElementById("compass-answer");
+  const matches = COMPASS_ROUTES.filter(route => term
+    ? [route.question, route.why, route.boundary, ...route.steps.map(step => step.skill)].join(" ").toLowerCase().includes(term)
+    : route.group === compassGroup);
+  document.querySelectorAll("[data-crossroad-group]").forEach(button => button.setAttribute("aria-pressed", String(!term && button.dataset.crossroadGroup === compassGroup)));
+  branches.replaceChildren();
+  const choice = document.getElementById("compass-choice");
+  choice.replaceChildren();
+  choice.disabled = !matches.length;
+  if (!matches.length) choice.append(compassElement("option", "No matching crossroads"));
+  for (const route of matches) {
+    const option = compassElement("option", route.question);
+    option.value = route.id;
+    choice.append(option);
+  }
+  if (!matches.length) {
+    const empty = compassElement("p", "No matching crossroads. Try a skill name, “motion”, “spec”, or “context”.");
+    empty.setAttribute("role", "status");
+    branches.append(empty);
+    answer.hidden = true;
+    return;
+  }
+  answer.hidden = false;
+  const selected = matches.find(route => route.id === compassRouteId) || matches[0];
+  compassRouteId = selected.id;
+  choice.value = selected.id;
+  for (const route of matches) {
+    const button = compassElement("button", route.question, "compass-branch");
+    button.type = "button";
+    button.dataset.route = route.id;
+    button.setAttribute("aria-current", String(route.id === selected.id));
+    button.setAttribute("aria-controls", "compass-answer");
+    button.addEventListener("click", () => chooseCompassRoute(route.id, true));
+    branches.append(button);
+  }
+  answer.replaceChildren();
+  const heading = compassElement("h3", selected.question);
+  heading.id = "compass-question";
+  heading.tabIndex = -1;
+  answer.append(heading, compassElement("p", selected.why));
+  answer.append(compassElement("h4", selected.id === "finish" ? "Choose the matching review" : selected.id === "outgrown" ? "Choose what changed" : "Recommended route"));
+  const flow = compassElement("ol", "", "compass-route");
+  selected.steps.forEach((step,index) => {
+    const row = compassElement("li");
+    const prefix = selected.steps.length > 1 && !["finish", "outgrown"].includes(selected.id) ? `${index + 1}. ` : "";
+    row.append(compassElement("strong", prefix + step.skill), compassElement("span", step.purpose));
+    flow.append(row);
+  });
+  answer.append(flow, compassElement("h4", "What changes the route"), compassElement("p", selected.boundary));
+  const prompt = compassElement("div", "", "compass-prompt");
+  const pre = compassElement("pre", selected.prompt);
+  const copy = compassElement("button", "Copy this request");
+  copy.type = "button";
+  const status = compassElement("span");
+  status.id = "compass-copy-status";
+  status.setAttribute("role", "status");
+  copy.addEventListener("click", async () => {
+    status.textContent = "Copying… Allow clipboard access if your browser asks.";
+    try { await navigator.clipboard.writeText(selected.prompt); status.textContent = "Copied. Paste it into your agent when you are ready."; }
+    catch { status.textContent = "Copy is unavailable here. Select the request above and copy it manually."; }
+  });
+  prompt.append(compassElement("h4", "A request you can use"), pre, copy, status);
+  answer.append(prompt);
+  if (selected.related.length) {
+    const related = compassElement("div", "", "compass-related");
+    related.append(compassElement("h4", "Nearby branches"));
+    for (const id of selected.related) {
+      const route = COMPASS_ROUTES.find(item => item.id === id);
+      const button = compassElement("button", route.question);
+      button.type = "button";
+      button.addEventListener("click", () => chooseCompassRoute(id, true));
+      related.append(button);
+    }
+    answer.append(related);
+  }
+  const source = compassElement("a", "Read the governing Compass reference");
+  source.href = `https://github.com/logbookfordevs/ai-field-kit/blob/main/skills/afk-compass/references/${selected.source}`;
+  source.target = "_blank";
+  source.rel = "noopener noreferrer";
+  answer.append(source);
+}
+document.getElementById("compass-choice").addEventListener("change", event => chooseCompassRoute(event.target.value, true));
+document.querySelectorAll("[data-crossroad-group]").forEach(button => button.addEventListener("click", () => {
+  compassGroup = button.dataset.crossroadGroup;
+  document.getElementById("search").value = "";
+  renderCompass();
+}));
+
 function setView(view) {
   currentView = view;
+  stage.scrollTop = 0;
   document.body.classList.toggle("catalog-view", view === "catalog");
   document.body.classList.toggle("moment-view", view === "moment");
+  document.body.classList.toggle("compass-view", view === "compass");
+  document.getElementById("compass-view").hidden = view !== "compass";
+  document.getElementById("detail").hidden = true;
+  document.getElementById("legend").hidden = true;
   machineView.toggleAttribute("hidden", view !== "machine");
   catalogView.toggleAttribute("hidden", view !== "catalog");
   momentView.toggleAttribute("hidden", view !== "moment");
   applyViewBox();
-  document.querySelectorAll(".view-button").forEach(button => button.classList.toggle("on", button.dataset.view === view));
+  document.querySelectorAll(".view-button").forEach(button => {
+    button.classList.toggle("on", button.dataset.view === view);
+    button.setAttribute("aria-pressed", String(button.dataset.view === view));
+  });
   const placeholders = {
     machine:"Find command, state, or skill…",
     catalog:"Find skill, role, or source…",
-    moment:"Find skill, moment, or purpose…"
+    moment:"Find skill, moment, or purpose…",
+    compass:"Find a question or route…"
   };
   document.getElementById("search").placeholder = placeholders[view];
+  document.getElementById("search").setAttribute("aria-label", placeholders[view]);
   clearSearch();
   resetCamera();
   if (view === "machine") {
@@ -1250,10 +3080,14 @@ function setView(view) {
     stage.classList.remove("flowing");
     document.getElementById("flow-panel").hidden = true;
     setSkillFilter(currentSkillFilter);
-  } else {
+  } else if (view === "moment") {
     stage.classList.remove("flowing");
     document.getElementById("flow-panel").hidden = true;
     setMomentFilter(currentMomentFilter);
+  } else {
+    stage.classList.remove("flowing");
+    document.getElementById("flow-panel").hidden = true;
+    renderCompass();
   }
 }
 
@@ -1307,6 +3141,7 @@ function clearSearch() {
 
 document.getElementById("search").addEventListener("input", event => {
   const term = event.target.value.trim().toLowerCase();
+  if (currentView === "compass") { renderCompass(term); return; }
   if (!term && currentView === "catalog") {
     setSkillFilter(currentSkillFilter);
     return;
@@ -1426,11 +3261,20 @@ svg.addEventListener("wheel", event => {
 document.getElementById("reset-button").addEventListener("click", resetCamera);
 window.addEventListener("resize", applyViewBox);
 
+document.getElementById("catalog-summary").textContent = `${SKILLS.length} catalog skills · ${CATALOG_SNAPSHOT.profiles.items.length} profiles · audited ${CATALOG_SNAPSHOT.reviewedAt}`;
+document.querySelector('[data-moment-filter="all"]').textContent = `All ${SKILLS.length}`;
+const filterLabels = {all:"All",auto:"Auto",manual:"Manual",default:"Default",composes:"Composes others"};
+document.querySelectorAll("[data-skill-filter]").forEach(button => {
+  const key = button.dataset.skillFilter;
+  button.textContent = `${filterLabels[key]} · ${SKILL_COUNTS[key]}`;
+});
 renderMachine();
 renderCatalog();
 renderMoments();
 attachNodeEvents();
 updateTransform();
+const initialView = location.hash.slice(1);
+setView(["machine", "catalog", "moment", "compass"].includes(initialView) ? initialView : "machine");
 </script>
 </body>
 </html>

@@ -28,4 +28,20 @@ For ongoing use, install the CLI globally. This makes the shorter `afk …` comm
 npm install -g @logbookfordevs/afk
 ```
 
+<h2 id="start-agent">Let your agent handle it</h2>
+
+Prefer to describe what you want? Install the manual `afk-cli` skill to give your agent AFK workflows, command examples, and verification steps:
+
+```bash install the agent guide
+npx skills add logbookfordevs/ai-field-kit --skill afk-cli --global
+```
+
+Then select `afk-cli` in your agent’s skill picker or name it in your request:
+
+> Use afk-cli to set up AFK rules for Codex in this project. Show me the preview first.
+
+You can also ask it to create a skill profile, change a skill to manual invocation, or update an installed preset. Describe the outcome in your own words; the agent works out the commands, asks about missing choices, and checks the result. The skill is manually invoked and requires an agent that can run terminal commands.
+
+[Explore the skills included in AFK](/docs?chapter=kit).
+
 [Continue to the setup walkthrough](/docs?chapter=setup)

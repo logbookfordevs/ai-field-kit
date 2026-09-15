@@ -4,6 +4,20 @@ import { describe, expect, test } from "vitest";
 import { parse } from "yaml";
 
 describe("source skill invocation policy", () => {
+  test("keeps AFK CLI manually invoked across catalog and host metadata", () => {
+    const root = resolve(import.meta.dirname, "../../..");
+    const catalog = JSON.parse(readFileSync(resolve(root, "packages/afk/catalog/skills.json"), "utf8")) as {
+      items: Array<{ id: string; invocation: string; role: string }>;
+    };
+    const source = readFileSync(resolve(root, "skills/afk-cli/SKILL.md"), "utf8");
+    const metadata = parse(source.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "");
+    const host = parse(readFileSync(resolve(root, "skills/afk-cli/agents/openai.yaml"), "utf8"));
+
+    expect(catalog.items.find(item => item.id === "afk-cli")).toMatchObject({ invocation: "manual", role: "utility" });
+    expect(metadata["disable-model-invocation"]).toBe(true);
+    expect(host.policy.allow_implicit_invocation).toBe(false);
+  });
+
   test("keeps AFK Compass user-invoked across catalog and host metadata", () => {
     const repositoryRoot = resolve(import.meta.dirname, "../../..");
     const catalog = JSON.parse(

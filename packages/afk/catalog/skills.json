@@ -4,6 +4,20 @@
     "scopes": [],
     "items": [
         {
+            "id": "afk-cli",
+            "label": "AFK - CLI",
+            "source": "https://github.com/logbookfordevs/ai-field-kit",
+            "args": [
+                "--skill",
+                "afk-cli",
+                "--global"
+            ],
+            "default": true,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "afk-animated-driven-frontend",
             "label": "AFK - Animated Driven Frontend",
             "source": "https://github.com/logbookfordevs/ai-field-kit",

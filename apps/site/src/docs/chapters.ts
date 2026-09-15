@@ -18,6 +18,18 @@ export const chapters = [
     "description": "Understand the pieces, sources, and cached configuration."
   },
   {
+    "id": "kit",
+    "title": "Explore the AFK catalog",
+    "group": "Understand",
+    "description": "Choose skills by task and understand their sources and roles."
+  },
+  {
+    "id": "workflows",
+    "title": "Compose a workflow",
+    "group": "Understand",
+    "description": "Combine skills through examples, handoffs, and interactive maps."
+  },
+  {
     "id": "customize",
     "title": "Customize your kit",
     "group": "Understand",

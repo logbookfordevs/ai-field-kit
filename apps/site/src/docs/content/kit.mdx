@@ -1,0 +1,135 @@
+# Explore the AFK catalog
+
+Start with the job you need help with: settle a decision, implement a feature, review a change, or explain something. AFK combines skills maintained in this repository with selected community skills. You can install a small working set and add more when the work calls for it.
+
+For a first route, ask your agent: **“Use afk-compass to recommend the next skill for this task.”** Compass recommends a route and an invocation; it does not start the recommended workflow. If you already know the job, use the tables below.
+
+<h2 id="kit-how-skills-work">What happens when you use a skill?</h2>
+
+A skill is a package of instructions, usually a `SKILL.md` plus any supporting references or scripts. Your agent reads those instructions and applies them with the tools available in its host. A skill can shape a conversation, produce a document, run checks, or coordinate a longer process.
+
+Install first, then invoke by name through your agent's skill picker or a request such as “Use afk-to-spec to capture our decisions.” Invocation syntax varies by host. Many AFK workflows are deliberately manual so you choose when to enter an interview, planning process, or review gate. Other skills can be discovered automatically when their description matches the task. [Storage and invocation are separate settings](/docs?chapter=skills#skills-state).
+
+A skill's instructions do not provide missing tools, credentials, or host capabilities. For example, `afk-ask` needs a supported local AI CLI, and a workflow that delegates needs an available delegation mechanism. Check the selected skill's source for its prerequisites.
+
+<h2 id="kit-afk-skills">Skills maintained in AFK</h2>
+
+Each name links to its instructions. “What you get” describes the intended output or behavior, including where the skill stops.
+
+| Skill | When to use it | What you get |
+| --- | --- | --- |
+| [afk-cli](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-cli) | You want your agent to manage AFK setup, catalogs, or profiles. | Guided setup, catalog, skill, profile, and maintenance workflows, with applied changes checked afterward. Invoke manually, for example: “Use afk-cli to create a project skill profile.” |
+| [afk-compass](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-compass) | You know the task but are unsure which skill fits. | A recommended route, reason, and invocation. |
+| [afk-code-grill](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-code-grill) | Technical decisions need pressure before coding. | A focused grilling session using Truss trade-offs and deep-module design vocabulary. |
+| [afk-design-grill](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-design-grill) | Frontend work lacks an approved design. | Visible alternatives and a recorded visual commitment: selected references, what must survive, and what may adapt. |
+| [afk-to-spec](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-to-spec) | The conversation has enough decisions to capture. | A local spec with behavior, decisions, testing, and scope; tracker publication when requested or expected by the project. |
+| [afk-to-tickets](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-to-tickets) | Agreed work needs independently verifiable slices. | An approved breakdown with blockers, acceptance, and test seams, then local tickets or agreed tracker issues. |
+| [afk-implement](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-implement) | Implementation needs durable progress and recovery across sessions. | An Implementation Record with status, validation evidence, review findings, and a user acceptance gate. |
+| [afk-code-review](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-code-review) | A branch, commit, PR, or working tree needs review. | Separate Standards and Spec findings from independent review contexts. |
+| [afk-code-review-verdicts](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-code-review-verdicts) | You want review findings checked before fixes. | The full review plus evidence-backed verdicts; code changes wait for discussion. |
+| [afk-static-review](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-static-review) | You need lint and typecheck findings assessed for a change. | Scoped findings, including warnings, with new and pre-existing issues distinguished; no automatic fixes. |
+| [afk-animated-driven-frontend](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-animated-driven-frontend) | Motion and cinematic direction define the experience. | Co-directed production with visible cuts, explicit greenlights, and a durable production binder. |
+| [afk-architect](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-architect) | Substantive work benefits from separate contexts or parallel ownership. | Focused teammate assignments and integrated results while the lead agent stays available. |
+| [afk-ask](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-ask) | You want a second opinion from another local AI CLI. | A saved prompt, provider response, and assessment for reuse. |
+| [afk-create-agent](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-create-agent) | You need a reusable Custom Agent role. | A portable definition, catalog registration, and adapter dry-runs; provisioning only when requested. |
+| [afk-profile-use](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-profile-use) | A named skill working set fits the task. | The profile's relevant instructions loaded through AFK commands. |
+| [writing-for-humans](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/writing-for-humans) | Documentation, explanations, or other substantial prose needs writing or revision. | Prose organized around the reader's job, with supported claims and the author's voice preserved. |
+
+The source tree also contains [afk-structured-debugging](https://github.com/logbookfordevs/ai-field-kit/tree/main/skills/afk-structured-debugging), a root-cause investigation process. It is not currently an entry in the bundled skills catalog; that catalog selects `diagnosing-bugs`. A skill being present in the repository does not mean setup selects it.
+
+<h2 id="kit-community-skills">Community skills in the catalog</h2>
+
+These entries install from their linked upstream repositories. AFK supplies selection and installation policy; those projects own the skill instructions. The groups below cover the bundled entries, including optional ones.
+
+### Understand and plan
+
+| Skill | Use it when… |
+| --- | --- |
+| `grilling` | Assumptions and decisions need an interactive challenge. |
+| `grill-me` | You want a focused interview to sharpen a plan. |
+| `grill-with-docs` | The interview should also preserve terminology and architectural decisions. |
+| `wayfinder` | Several interdependent decisions exceed one session and need a shared tracker map. |
+| `domain-modeling` | Terms, domain boundaries, or architectural decisions need a common vocabulary. |
+| `codebase-design` | Module interfaces, implementation boundaries, and test seams need design attention. |
+| `prototype` | A throwaway experiment can answer one design or behavior question. |
+| `research` | A question needs primary-source investigation and recorded findings. |
+
+Source: [Matt Pocock's skills](https://github.com/mattpocock/skills).
+
+### Implement and verify
+
+| Skill | Use it when… | Source |
+| --- | --- | --- |
+| `tdd` | An observable behavior can be developed through a failing test, a passing implementation, and refactoring. | [Matt Pocock](https://github.com/mattpocock/skills) |
+| `diagnosing-bugs` | A bug or performance regression needs diagnosis before a fix. | [Matt Pocock](https://github.com/mattpocock/skills) |
+| `source-driven-development` | Framework or API decisions need grounding in official documentation. | [Addy Osmani](https://github.com/addyosmani/agent-skills) |
+| `doubt-driven-development` | Consequential decisions warrant fresh-context adversarial review. | [Addy Osmani](https://github.com/addyosmani/agent-skills) |
+| `code-simplification` | Working code needs clearer structure without changing behavior. | [Addy Osmani](https://github.com/addyosmani/agent-skills) |
+| `truss-evaluation` | A trade-off needs evaluation across Maintainability, Strategy, Clarity, and Performance. | [Truss Framework](https://github.com/leoreisdias/truss-framework) |
+
+### Design and motion
+
+| Skill | Use it when… | Source |
+| --- | --- | --- |
+| `impeccable` | A frontend needs design, critique, or refinement. | [Impeccable](https://github.com/pbakaus/impeccable) |
+| `shadcn` | Work uses shadcn components, registries, or project configuration. | [shadcn/ui](https://github.com/shadcn-ui/ui) |
+| `design-artifact` | An HTML deliverable needs a coherent visual direction. | [Effective HTML](https://github.com/plannotator/effective-html) |
+| `html-wireframe` | You need to judge hierarchy, navigation, and flow before visual polish. | [Effective HTML](https://github.com/plannotator/effective-html) |
+| `html-prototype` | A polished standalone mockup or interactive flow needs visual approval. | [Effective HTML](https://github.com/plannotator/effective-html) |
+| `animate` | You need to build an animation or transition. | [Emil Kowalski](https://github.com/emilkowalski/skills) |
+| `review-animations` | Existing motion needs a craft review. | [Emil Kowalski](https://github.com/emilkowalski/skills) |
+| `apple-design` | Fluid, physical, gesture-driven UI needs design guidance. | [Emil Kowalski](https://github.com/emilkowalski/skills) |
+| `animate-text` | You need to choose and translate a named text effect. | [Animate Text](https://github.com/pixel-point/animate-text) |
+
+### Explain, coordinate, and hand off
+
+| Skill | Use it when… | Source |
+| --- | --- | --- |
+| `writing-for-agents` | You are writing skills, rules, or other agent instructions. | [Matt Pocock](https://github.com/mattpocock/skills) |
+| `handoff` | Another session needs the current decisions and next steps. | [Matt Pocock](https://github.com/mattpocock/skills) |
+| `wizard` | A human must perform setup steps the agent cannot do. | [Matt Pocock](https://github.com/mattpocock/skills) |
+| `to-questionnaire` | Someone else holds decisions you need to collect. | [Matt Pocock](https://github.com/mattpocock/skills) |
+| `teach` | You want guided learning in the workspace. | [Matt Pocock](https://github.com/mattpocock/skills) |
+| `show-me` | A visual explanation would make the subject easier to understand. | [HumanLayer](https://github.com/humanlayer/skills) |
+| `plannotator-guide` | Reviewers need a portable, chaptered walkthrough of real diffs. | [Plannotator Guides](https://github.com/plannotator/guides) |
+| `orchestrator` | Work needs coordination across separate agent processes and runtimes. | [Orchestrator](https://github.com/backnotprop/orchestrator) |
+| `bro` | The last answer needs a plain-language restatement. | [Bro](https://github.com/backnotprop/bro) |
+| `readback` | You want your request restated before work starts. | [Bro](https://github.com/backnotprop/bro) |
+| `facts` | You need the critical facts and implications before or after implementation. | [Bro](https://github.com/backnotprop/bro) |
+| `recap` | You need a short reminder of the latest session activity. | [Bro](https://github.com/backnotprop/bro) |
+| `clean-room` | A decision needs an independent verdict without inherited conversation. | [Bro](https://github.com/backnotprop/bro) |
+
+<h2 id="kit-origins">What AFK builds on</h2>
+
+AFK uses three relationships worth distinguishing:
+
+- **Direct upstream entries** install the community skill itself, such as `tdd` or `impeccable`.
+- **Compositions** add a focused purpose around other skills. `afk-code-grill` combines `grilling`, `truss-evaluation`, and `codebase-design`; `afk-design-grill` combines `grilling`, `truss-evaluation`, and `impeccable`.
+- **Adapted forks** keep instructions in AFK. `afk-to-spec`, `afk-to-tickets`, and `afk-code-review` draw from [Matt Pocock's skills](https://github.com/mattpocock/skills), with AFK's artifact, tracking, and review conventions. Updating an upstream skill does not automatically rewrite an AFK fork.
+
+`afk-to-spec` synthesizes the conversation rather than starting another discovery interview, while still confirming the testing seam. It preserves constraints, trade-offs, and important rejected alternatives. Plannotator review is optional. `afk-to-tickets` retains the tracer-bullet approach: each ticket proves a narrow end-to-end behavior, with expand–contract sequencing for wide mechanical refactors. `afk-code-review` keeps Standards and Spec separate and uses a Fowler code-smell baseline as judgment guidance, subordinate to repository standards.
+
+Animated Driven Frontend borrows filmmaking's production model: treatment, preproduction, visible cuts, screening, and explicit greenlights. Its [production map](https://tot.page/BKxaG-aUkUFc5f180RsQ4Q) explains how those ideas translate to a frontend. This is a specialist workflow for an experience whose motion carries meaning; a single button transition usually needs only `animate`.
+
+The [project acknowledgements](https://github.com/logbookfordevs/ai-field-kit#acknowledgements) also credit broader influences, including OpenSpec, BMAD, Get Shit Done, and HumanLayer. Those acknowledgements describe influence; they do not mean AFK installs or reproduces each system.
+
+<h2 id="kit-beyond-skills">The rest of the kit</h2>
+
+| Catalog area | What it contributes |
+| --- | --- |
+| Rules | Shared agent standards and referenced guidance. |
+| Custom Agents | Cartographer, Builder, and Pathfinder roles for investigation, implementation, and difficult decisions. |
+| Tools | Install routes for Waypoint, Plannotator, Plannotator ToT, yggtree, and Orchestrator. |
+| MCPs | Configured connections for Waypoint and Stitch. |
+| Hooks | A TypeScript typecheck stop check for supported targets. |
+| Profiles | Working sets such as HTML, Stitch, Video, and Remotion; profiles can add packages beyond individual catalog entries. |
+| Presets | Selections across kit areas for setup and sync. |
+
+The [bundled manifests](https://github.com/logbookfordevs/ai-field-kit/tree/main/packages/afk/catalog) are the source of truth for membership and defaults. Explore them without installing:
+
+```bash inspect the published AFK catalog
+afk show --source logbookfordevs/ai-field-kit
+afk show skills --source logbookfordevs/ai-field-kit --react
+```
+
+Continue with [Compose a workflow](/docs?chapter=workflows) for examples, or [Manage your skills](/docs?chapter=skills) to install and maintain your selection.

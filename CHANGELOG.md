@@ -9,7 +9,11 @@ This changelog tracks meaningful updates by version and date.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
-## TBD - TBD
+## Next Release
+
+### Added
+
+- `skills:` added manual `afk-cli` so agents can manage AFK setup, catalogs, and profiles with task-specific workflow references, command examples, and verification alongside the installed CLI’s help.
 
 ### Changed
 
