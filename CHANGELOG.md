@@ -16,32 +16,14 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `skills:` added manual `afk-cli` so agents can manage AFK setup, catalogs, and profiles with task-specific workflow references, command examples, and verification alongside the installed CLI’s help.
+- `sync:` added preset-scoped `afk sync` to refresh catalogs and update installed members, with dry-run previews, opt-in missing installs, preserved local entries, and a consolidated failure exit code.
+- `tools:` added `afk tools update --all` to update every cataloged tool with an update command without opening the picker.
+- `catalog:` added the Waypoint tool with `waypoint update` and its local MCP endpoint.
 
 ### Changed
 
 - `skills:` renamed Docs for Humans to the manual Writing for Humans skill and expanded it from documentation into substantial human-facing prose, adding research-grounded reader progression, dedicated genre guidance with review-sized PR budgets, and an opt-in fresh-reader proxy for reader load, momentum, ambiguity, and gaps.
-
-## v1.4.2 - 2026-09-08
-
-### Added
-
-- `sync:` added preset-scoped `afk sync` to refresh catalogs and update installed members, with dry-run previews, opt-in missing installs, preserved local entries, and a consolidated failure exit code.
-
-- `tools:` added `afk tools update --all` to update every cataloged tool with an update command without opening the picker.
-
-- `catalog:` added the Waypoint tool with `waypoint update` and its local MCP endpoint.
-
-- `cli:` skill catalog items can run post-install copy or command actions during setup and updates. Impeccable now copies its bundled Codex agents into the harness's agents directory, refreshing managed copies while preserving user edits and existing links to the exact source files.
-- `cli:` added `--enabled` and `--disabled` filters to `afk skills update`, while keeping all tracked skills as the default.
-
-### Changed
-
 - `profiles:` setup now defers package skills until profile enablement; failed package installs leave the profile disabled.
-
-- `skills:` rebuilt Animated-Driven Frontend as a co-directed cinematic production workflow with bounded Grilling for current-gate decisions and human greenlights for treatment, shot planning, tracer dailies, production batches, and final cut, while preserving its ZERO-derived narrative and rendering engineering.
-- `skills:` expanded AFK Compass from single-skill routing into authoritative crossroads guidance, including feature orientation before grilling, specialist-to-Wayfinder promotion, context and handoff boundaries, same-task spec and ticket grooming, fresh-context tracked implementation, and direct implementation when users intentionally decline ticket-level execution tracking.
-- `skills:` renamed `afk-code-review-check` to `afk-code-review-verdicts` and `afk-static-check` to `afk-static-review` so their names reflect reviewing and validating findings rather than merely running checks.
-- `skills:` renamed `afk-doc-craft` to `afk-docs-for-humans` and rebuilt it around evidence-grounded claims, an explicit reader contract, conditional PR and narrative guidance, and one acceptance gate.
 
 ### Fixed
 
@@ -50,6 +32,20 @@ This changelog tracks meaningful updates by version and date.
 ### Removed
 
 - `catalog:` removed the shadcn MCP recommendation.
+
+## v1.4.2 - 2026-09-08
+
+### Added
+
+- `cli:` skill catalog items can run post-install copy or command actions during setup and updates. Impeccable now copies its bundled Codex agents into the harness's agents directory, refreshing managed copies while preserving user edits and existing links to the exact source files.
+- `cli:` added `--enabled` and `--disabled` filters to `afk skills update`, while keeping all tracked skills as the default.
+
+### Changed
+
+- `skills:` rebuilt Animated-Driven Frontend as a co-directed cinematic production workflow with bounded Grilling for current-gate decisions and human greenlights for treatment, shot planning, tracer dailies, production batches, and final cut, while preserving its ZERO-derived narrative and rendering engineering.
+- `skills:` expanded AFK Compass from single-skill routing into authoritative crossroads guidance, including feature orientation before grilling, specialist-to-Wayfinder promotion, context and handoff boundaries, same-task spec and ticket grooming, fresh-context tracked implementation, and direct implementation when users intentionally decline ticket-level execution tracking.
+- `skills:` renamed `afk-code-review-check` to `afk-code-review-verdicts` and `afk-static-check` to `afk-static-review` so their names reflect reviewing and validating findings rather than merely running checks.
+- `skills:` renamed `afk-doc-craft` to `afk-docs-for-humans` and rebuilt it around evidence-grounded claims, an explicit reader contract, conditional PR and narrative guidance, and one acceptance gate.
 
 ## v1.4.1 - 2026-08-26
 
