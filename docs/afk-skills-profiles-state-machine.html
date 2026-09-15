@@ -677,6 +677,20 @@ const CATALOG_SNAPSHOT = {
   "reviewedAt": "2026-09-15",
   "skills": [
     {
+      "id": "afk-cli",
+      "label": "AFK - CLI",
+      "source": "https://github.com/logbookfordevs/ai-field-kit",
+      "args": [
+        "--skill",
+        "afk-cli",
+        "--global"
+      ],
+      "default": true,
+      "invocation": "manual",
+      "role": "utility",
+      "composes": []
+    },
+    {
       "id": "afk-animated-driven-frontend",
       "label": "AFK - Animated Driven Frontend",
       "source": "https://github.com/logbookfordevs/ai-field-kit",
@@ -1970,6 +1984,10 @@ const WORKFLOW_MOMENTS = [
       {
         "id": "writing-for-agents",
         "use": "write reusable agent instructions"
+      },
+      {
+        "id": "afk-cli",
+        "use": "configure and maintain the AFK environment"
       },
       {
         "id": "handoff",
