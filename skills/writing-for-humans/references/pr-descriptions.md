@@ -21,6 +21,10 @@ Every non-trivial description should answer:
 
 Call out the smallest high-risk surface explicitly. Most of a diff may be mechanical while one function, ordering rule, fallback, migration boundary, or interaction carries the behavioral risk.
 
+## Length Budget
+
+Default to 150–300 words. Use roughly 80–150 for a small bounded change and 300–500 for a complex or high-risk change. Exceed 500 only when several independent review surfaces cannot be oriented more compactly. These ranges are ceilings, not quotas: stop as soon as the reviewer contract is satisfied.
+
 ## Choose a Shape
 
 Use headings that fit the review rather than forcing one template.

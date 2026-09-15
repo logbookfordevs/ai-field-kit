@@ -13,7 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
-- `skills:` renamed Docs for Humans to the manual Writing for Humans skill and expanded it from documentation into substantial human-facing prose, adding research-grounded reader progression, dedicated genre guidance, and an opt-in fresh-reader proxy for reader load, momentum, ambiguity, and gaps.
+- `skills:` renamed Docs for Humans to the manual Writing for Humans skill and expanded it from documentation into substantial human-facing prose, adding research-grounded reader progression, dedicated genre guidance with review-sized PR budgets, and an opt-in fresh-reader proxy for reader load, momentum, ambiguity, and gaps.
 
 ## v1.4.2 - 2026-09-08
 
