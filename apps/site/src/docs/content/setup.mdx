@@ -36,4 +36,10 @@ afk setup skills --dry-run
 
 Remove `--dry-run` only after the scope, targets, and delegated commands look right.
 
+<h2 id="setup-sync">Keep a preset up to date</h2>
+
+After setup, use `afk sync` to choose a preset and update its installed members. Preview a specific preset with `afk sync --preset <id> --dry-run`. Sync refreshes the catalog first and skips missing members unless you add `--install-missing`; it currently supports global environments only.
+
+[See what sync updates and how to apply it](/docs?chapter=reference#reference-sync)
+
 [Learn the source and composition model](/docs?chapter=concepts)

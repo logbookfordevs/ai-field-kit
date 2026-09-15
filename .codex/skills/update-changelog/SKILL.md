@@ -28,3 +28,4 @@ Before finishing:
 2. Remove stale implementation-only bullets.
 3. Verify the entry matches the actual current behavior in README/help/code.
 4. Keep the wording concise and concrete.
+5. Check whether the change affects documented commands, setup, configuration, or workflows in `apps/site/src/docs/content/`. Update affected pages within the task's scope; otherwise flag the specific documentation gap in the handoff. Internal changes and fixes that restore already-documented behavior usually need no website update.

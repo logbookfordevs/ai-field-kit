@@ -8,6 +8,7 @@ Use these commands for the common setup loop. Run any command with `--help` for 
 | --- | --- |
 | `afk setup` | Guided setup across selected areas. |
 | `afk setup <area>` | Run one area: rules, skills, profiles, agents, mcps, tools, or hooks. |
+| `afk sync --preset <id>` | Refresh the catalog and update installed members of a preset. |
 | `afk show [category...]` | Inspect cached catalog data without changing it. |
 | `afk refresh [category...]` | Update cached catalog files. |
 | `afk sources list` | List the saved default and favorite sources. |
@@ -57,6 +58,43 @@ afk preset --dry-run
 ```
 
 A preset groups setup areas and can select exact members or every item in its declared areas. `afk preset <id>` skips the preset menu; `afk setup preset` is the long form. Presets route installation, while skill profiles manage working sets after installation.
+
+<h2 id="reference-sync">Update a preset environment</h2>
+
+Use `afk sync` to keep an existing global environment aligned with a preset. It refreshes the catalog from your remembered source, then updates that preset's installed members. Run `afk sync` to choose a preset interactively, or name one directly:
+
+```bash preview and apply preset updates
+afk sync --preset <id> --dry-run
+afk sync --preset <id> --yes
+```
+
+Replace `<id>` with a preset ID from `afk show presets`. The preview fetches fresh definitions and shows planned work without writing the catalog cache or changing installed components. Supply `--preset` outside an interactive terminal. `--yes` skips AFK prompts; delegated updaters may still prompt.
+
+### What gets updated
+
+| Part | Update behavior |
+| --- | --- |
+| Skills | Reinstalls selected skills through `skills add` using the refreshed catalog source, preserving disabled status. `afk skills update` instead follows installed lock metadata. |
+| Tools | Runs each installed tool's cataloged update command. Tools without one are skipped. |
+| Rules | Uses the rules setup flow to refresh AFK-managed regions and declared reference files, preserving content outside those regions. |
+| MCPs | Reapplies named server configurations through `add-mcp`. Server software updates depend on the configured source or launcher. |
+| Hooks | Refreshes installed scripts and their registration. |
+| Custom Agents | Regenerates installed native agent definitions. |
+| Profiles | Refreshes definitions without enabling profiles or installing their packages. |
+
+### Missing members and source changes
+
+Missing members are reported and skipped. Add `--install-missing` to install them too:
+
+```bash include missing preset members
+afk sync --preset <id> --install-missing --yes
+```
+
+Package skills belonging only to inactive profiles remain deferred, even with `--install-missing`. Sync preserves local-only catalog entries and never uninstalls components removed upstream. Incoming definitions replace matching catalog IDs, so a skill's source can change on the next sync.
+
+Use `--source <source>` for a one-run catalog source override and `--agent <agent>` to limit agent targets. Sync currently supports global environments only. Tools are detected by executable availability on `PATH`; MCPs by named configuration entries. Selected skills need a selective `--skill` argument in their catalog entry; whole-source entries must be narrowed before sync can update them.
+
+If an update fails, independent updates continue and the final summary reports failures with a nonzero exit code. Review that summary before retrying. To update the AFK CLI itself, use `afk update`.
 
 <h2 id="reference-tool-updates">Update cataloged tools</h2>
 
