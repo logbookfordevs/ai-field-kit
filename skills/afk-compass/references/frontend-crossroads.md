@@ -21,16 +21,12 @@ A rough `prototype` may answer structure or behavior but cannot approve visual f
 
 ## Visual-source fidelity
 
-| Open decision | Route |
-|---|---|
-| Explore image-based visual alternatives before choosing a target | Product Design `ideate` |
-| Faithfully recreate a selected image whose visible composition is approved as the implementation reference | Product Design `image-to-code`, including its blocking `design-qa` gate |
+When an image or prototype is selected, establish what it approves:
 
-Impeccable may generate deliberately unfinished direction sketches while choosing a new or replacement visual world. Those sketches help select a world. Product Design owns the stricter image-source lane: alternatives, faithful realization, and source comparison.
+- **Visual world only:** preserve that identity and route by destination: `html-prototype` for a standalone artifact or real-app realization when application context is material.
+- **Visible composition as the implementation reference:** carry the exact reference, required viewports and states, and must-preserve details into implementation. Choose tracked or ordinary implementation through the workflow crossroads; compare the rendered result with the approved source before acceptance.
 
-When an image was selected during direction exploration, ask what the selection approves. If it approves the **visual world only**, preserve that identity and route by destination: `html-prototype` for a standalone artifact or real-app realization when application context is material. If it approves the **visible composition as the implementation reference**, route directly to `image-to-code`. Selection alone does not decide authority.
-
-When the user's problem is silent loss of identity-bearing color, typography, composition, imagery, illustration, SVG, texture, depth, perspective, or motion, route the whole decision-and-handoff problem to `afk-design-grill`. `design-qa` remains an internal gate owned by Product Design build workflows, not an independent Compass route.
+When identity-bearing color, typography, composition, imagery, illustration, texture, depth, perspective, or motion is lost across handoffs, route the decision-and-handoff problem to `afk-design-grill` to preserve the visual commitment.
 
 ## Finish and review
 
