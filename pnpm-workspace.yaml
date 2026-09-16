@@ -3,3 +3,6 @@ packages:
   - "packages/*"
 allowBuilds:
   esbuild: true
+overrides:
+  # GHSA-g7r4-m6w7-qqqr: Windows development-server path traversal.
+  esbuild: "^0.28.1"

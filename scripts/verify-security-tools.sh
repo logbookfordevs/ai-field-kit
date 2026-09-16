@@ -13,13 +13,21 @@ trap cleanup EXIT
 
 printf 'debugger;\n' > "$LINT_FIXTURE"
 set +e
-pnpm --dir "$ROOT_DIR" exec eslint "$LINT_FIXTURE" >/dev/null 2>&1
+pnpm --dir "$ROOT_DIR" exec eslint "$LINT_FIXTURE" >"$FIXTURE_DIR/eslint.log" 2>&1
 lint_status=$?
 set -e
-if [[ $lint_status -ne 1 ]]; then
-  printf 'eslint accepted a synthetic debugger statement\n' >&2
-  exit 1
-fi
+case "$lint_status" in
+  0)
+    printf 'eslint accepted a synthetic debugger statement\n' >&2
+    exit 1
+    ;;
+  1) ;;
+  *)
+    printf 'eslint failed to run (exit %s):\n' "$lint_status" >&2
+    cat "$FIXTURE_DIR/eslint.log" >&2
+    exit 1
+    ;;
+esac
 
 printf '%s\n' \
   '[[rules]]' \

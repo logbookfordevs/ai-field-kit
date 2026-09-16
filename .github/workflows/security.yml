@@ -42,6 +42,9 @@ jobs:
           ./scripts/install-security-tools.sh "$tool_dir"
           echo "$tool_dir" >> "$GITHUB_PATH"
 
+      - name: Test scanner failure diagnostics
+        run: ./scripts/verify-security-tools.test.sh
+
       - name: Prove scanners reject unsafe fixtures
         run: ./scripts/verify-security-tools.sh
 
