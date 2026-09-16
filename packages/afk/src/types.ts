@@ -51,9 +51,10 @@ export type CliOptions = {
   presetId?: string;
   presetPrompt?: boolean;
   allSkills: boolean;
+  excludeImportedSkills?: boolean;
   allCustomAgents?: boolean;
   toolsUpdateAll?: boolean;
-  syncInstallMissing?: boolean;
+  syncIncludeExtraSkills?: boolean;
   selectedSkillIds: string[];
   selectedSkillProfileIds?: string[];
   selectedCustomAgentIds?: string[];

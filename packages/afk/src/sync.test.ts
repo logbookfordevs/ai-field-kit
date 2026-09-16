@@ -59,13 +59,12 @@ test("sync requires a preset outside a terminal and rejects unknown presets with
   assert.equal(f.calls.length, 0);
 });
 
-test("sync refreshes commands, includes nondefault preset tools, preserves local-only entries, and skips missing tools", async () => {
+test("sync refreshes commands, includes nondefault preset tools, preserves local-only entries, and installs new tools", async () => {
   const f = fixture();
   f.install("first");
   f.write(join(localManifestDir(f.home), "tools.json"), { version: 1, items: [{ ...tool("first"), update: { command: "stale", args: [] } }, tool("local-only")] });
   assert.equal(await f.run(["--preset", "daily", "--yes"]), 0);
-  assert.deepEqual(f.calls, [{ command: "first", args: ["update"] }]);
-  assert.match(f.output.join("\n"), /second: not detected/);
+  assert.deepEqual(f.calls.map((call) => call.command), ["first", "install-second", "install-local-only"]);
   assert.match(readFileSync(join(localManifestDir(f.home), "tools.json"), "utf8"), /local-only/);
 });
 
@@ -81,9 +80,9 @@ test("sync dry-run previews refreshed commands without cache writes or subproces
   assert.match(f.output.join("\n"), /first update/);
 });
 
-test("sync only installs missing selected members with --install-missing", async () => {
+test("sync installs missing selected members by default", async () => {
   const f = fixture({ "presets.json": { version: 1, presets: [{ id: "daily", label: "Daily", areas: ["tools"], selections: { tools: ["second"] } }] } });
-  assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--install-missing", "--yes"]), 0);
+  assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--yes"]), 0);
   assert.deepEqual(f.calls.map((call) => call.command), ["install-second"]);
 });
 
@@ -117,13 +116,12 @@ test("sync refreshes profile definitions without bringing in inactive package sk
     "skills.json": { version: 1, defaultSource: "", items: [{ id: "package-skill", label: "Package skill", source: "owner/package", args: ["--skill", "package-skill"], default: false, imported: true }] },
   });
   f.write(join(f.source, "afk", "catalog", "skills.json"), { version: 1, defaultSource: "", items: [] });
-  assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--install-missing", "--yes"]), 0);
+  assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--yes"]), 0);
   assert.equal(f.calls.length, 0);
-  assert.match(f.output.join("\n"), /inactive package skill/);
   assert.equal(existsSync(join(f.home, ".agents", "skills", "package-skill")), false);
 });
 
-test("sync updates a disabled skill without enabling it or installing a missing dependency", async () => {
+test("sync updates a disabled skill without enabling it and includes a new dependency", async () => {
   const skill = (id: string) => ({ id, label: id, source: "owner/skills", args: ["--skill", id], default: false });
   const f = fixture({
     "presets.json": { version: 1, presets: [{ id: "daily", label: "Daily", areas: ["skills"], selections: { skills: ["quiet"] } }] },
@@ -144,7 +142,8 @@ test("sync updates a disabled skill without enabling it or installing a missing 
   assert.ok(f.calls[0]?.args.includes("quiet"));
   assert.match(readFileSync(disabled, "utf8"), /Updated/);
   assert.equal(existsSync(join(f.home, ".agents", "skills", "quiet")), false);
-  assert.match(f.output.join("\n"), /dependency: not detected/);
+  assert.ok(f.calls[0]?.args.includes("dependency"));
+  assert.ok(f.calls[0]?.args.includes("unselected"));
 });
 
 test("sync refreshes managed rules and installed hooks while preserving unrelated content", async () => {
@@ -166,7 +165,7 @@ test("sync refreshes managed rules and installed hooks while preserving unrelate
   assert.match(readFileSync(join(f.home, ".codex", "hooks", "check.js"), "utf8"), /Fresh hook/);
 });
 
-test("sync updates only MCP targets with an existing named configuration", async () => {
+test("sync updates existing MCP targets and installs new targets", async () => {
   const f = fixture({
     "presets.json": { version: 1, presets: [{ id: "daily", label: "Daily", areas: ["mcps"] }] },
     "mcps.json": { version: 1, items: [{ id: "service", label: "Service", source: "https://example.test/mcp", args: ["--name", "named-service"], default: false }] },
@@ -177,8 +176,7 @@ test("sync updates only MCP targets with an existing named configuration", async
   assert.equal(f.calls.length, 1);
   assert.equal(f.calls[0]?.args[1], "https://example.test/mcp");
   assert.ok(f.calls[0]?.args.includes("codex"));
-  assert.ok(!f.calls[0]?.args.includes("claude-code"));
-  assert.match(f.output.join("\n"), /service \(claude\): not detected/);
+  assert.ok(f.calls[0]?.args.includes("claude-code"));
 });
 
 
@@ -190,7 +188,7 @@ test("bare interactive sync opens the preset picker", async () => {
   assert.equal(f.calls.length, 0);
 });
 
-test("sync updates installed Custom Agents and skips missing definitions", async () => {
+test("sync updates installed Custom Agents and installs missing definitions", async () => {
   const f = fixture();
   const source = join(f.source, "helper.md");
   writeFileSync(source, "---\nname: helper\ndescription: Helps with a bounded task.\n---\nUpdated instructions.\n");
@@ -201,7 +199,7 @@ test("sync updates installed Custom Agents and skips missing definitions", async
   writeFileSync(target, "Old instructions.\n");
   assert.equal(await f.run(["--preset", "daily", "--agent", "claude", "--yes"]), 0, f.output.join("\n"));
   assert.match(readFileSync(target, "utf8"), /Updated instructions/);
-  assert.equal(existsSync(join(f.home, ".claude", "agents", "missing.md")), false);
+  assert.equal(existsSync(join(f.home, ".claude", "agents", "missing.md")), true);
 });
 
 test("sync rejects an invalid selection before writing the refreshed cache", async () => {
@@ -215,7 +213,7 @@ test("sync rejects an invalid selection before writing the refreshed cache", asy
 });
 
 
-test("sync detects OpenCode JSONC native server maps without treating comment-like strings as comments", async () => {
+test("sync reapplies MCP configuration when the target uses JSONC", async () => {
   const f = fixture({
     "presets.json": { version: 1, presets: [{ id: "daily", label: "Daily", areas: ["mcps"] }] },
     "mcps.json": { version: 1, items: [{ id: "service", label: "Service", source: "https://example.test/mcp", args: ["--name", "service"], default: false }] },
@@ -225,4 +223,81 @@ test("sync detects OpenCode JSONC native server maps without treating comment-li
   writeFileSync(file, '{ // MCP config\n"mcp": {"servers": {"service": {"url": "https://old.test/mcp",},},}, /* end */ }');
   assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--agent", "opencode", "--yes"]), 0);
   assert.equal(f.calls.length, 1);
+});
+
+
+test("sync batches new preset skills by source and excludes imported skills", async () => {
+  const skill = (id: string, imported = false) => ({ id, label: id, source: "owner/skills", args: ["--skill", id], default: true, imported });
+  const f = fixture({
+    "presets.json": { version: 1, presets: [{ id: "daily", label: "Daily", areas: ["skills"], all: true }] },
+    "skills.json": { version: 1, defaultSource: "", items: [skill("first"), skill("second"), skill("extra", true)] },
+  });
+  f.write(join(f.source, "afk", "catalog", "skills.json"), { version: 1, defaultSource: "", items: [skill("first"), skill("second")] });
+  assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--yes"]), 0, f.output.join("\n"));
+  assert.equal(f.calls.length, 1);
+  assert.ok(f.calls[0]?.args.includes("first"));
+  assert.ok(f.calls[0]?.args.includes("second"));
+  assert.ok(!f.calls[0]?.args.includes("extra"));
+});
+
+
+test("sync optionally includes imported catalog skills but never uncataloged skills", async () => {
+  const skill = (id: string, imported = false) => ({ id, label: id, source: "owner/skills", args: ["--skill", id], default: true, imported });
+  const f = fixture({
+    "presets.json": { version: 1, presets: [{ id: "daily", label: "Daily", areas: ["skills"], selections: { skills: ["first"] } }] },
+    "skills.json": { version: 1, defaultSource: "", items: [skill("first"), skill("unselected"), skill("imported", true)] },
+  });
+  f.write(join(f.source, "afk", "catalog", "skills.json"), { version: 1, defaultSource: "", items: [skill("first"), skill("unselected")] });
+  f.write(join(f.home, ".agents", ".skill-lock.json"), { version: 3, skills: Object.fromEntries(
+    ["first", "unselected", "imported", "uncataloged"].map((name) => [name, { source: "owner/skills", sourceType: "github", skillPath: `skills/${name}/SKILL.md` }])
+  ) });
+  assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--include-extra-skills", "--dry-run", "--yes"]), 0);
+  assert.equal(f.calls.length, 0);
+  assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--include-extra-skills", "--yes"]), 0, f.output.join("\n"));
+  assert.equal(f.calls.length, 1);
+  assert.ok(f.calls[0]?.args.includes("first"));
+  assert.ok(f.calls[0]?.args.includes("unselected"));
+  assert.ok(f.calls[0]?.args.includes("imported"));
+  assert.ok(!f.calls[0]?.args.includes("uncataloged"));
+  assert.ok(f.calls[0]?.args.includes("add"));
+});
+
+test("sync batches rules across targets and creates new managed rules", async () => {
+  const f = fixture();
+  const source = join(f.source, "rules.md");
+  writeFileSync(source, "Shared rule\n");
+  f.write(join(f.source, "afk", "catalog", "presets.json"), { version: 1, presets: [{ id: "daily", label: "Daily", areas: ["rules"] }] });
+  f.write(join(f.source, "afk", "catalog", "rules.json"), { version: 2, layers: [{ id: "shared", label: "Shared", source }] });
+  assert.equal(await f.run(["--preset", "daily", "--agent", "codex", "--agent", "claude", "--yes"]), 0, f.output.join("\n"));
+  assert.match(readFileSync(join(f.home, ".codex", "AGENTS.md"), "utf8"), /Shared rule/);
+  assert.match(readFileSync(join(f.home, ".claude", "CLAUDE.md"), "utf8"), /Shared rule/);
+  assert.equal(f.output.filter((line) => line.includes("Rules synced:")).length, 1);
+});
+
+test("sync continues another skill source after a batch fails", async () => {
+  const skill = (id: string, source: string) => ({ id, label: id, source, args: ["--skill", id], default: true });
+  const f = fixture({
+    "presets.json": { version: 1, presets: [{ id: "daily", label: "Daily", areas: ["skills"] }] },
+    "skills.json": { version: 1, defaultSource: "", items: [skill("first", "owner/a"), skill("second", "owner/a"), skill("third", "owner/b")] },
+  });
+  f.runtime.spawn = async (command, args) => {
+    f.calls.push({ command, args });
+    return { code: args.includes("owner/a") ? 1 : 0 };
+  };
+  assert.equal(await f.run(["--preset", "daily", "--source", f.source, "--yes"]), 1);
+  assert.equal(f.calls.length, 2);
+  assert.ok(f.calls[0]?.args.includes("first"));
+  assert.ok(f.calls[0]?.args.includes("second"));
+  assert.ok(f.calls[1]?.args.includes("third"));
+});
+
+test("setup accepts all with exclude-imported and installs nondefault catalog skills", async () => {
+  const skill = (id: string, imported = false) => ({ id, label: id, source: "owner/skills", args: ["--skill", id], default: false, imported });
+  const f = fixture({
+    "skills.json": { version: 1, defaultSource: "", items: [skill("optional"), skill("external", true)] },
+  });
+  assert.equal(await runCliWithRuntime(["setup", "skills", "--all", "--exclude-imported", "--yes", "--dry-run"], { HOME: f.home }, f.runtime, { stdin: false, stdout: false }), 0, f.output.join("\n"));
+  const route = f.output.find((line) => line.includes("npx skills add"));
+  assert.ok(route?.includes("optional"));
+  assert.ok(!route?.includes("external"));
 });

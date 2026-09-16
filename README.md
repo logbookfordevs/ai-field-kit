@@ -148,7 +148,7 @@ from those projects without AFK reimplementing their installers.
 | Preview the whole setup | `afk setup --dry-run` |
 | Apply the whole setup | `afk setup` |
 | Install every cataloged item for detected harnesses | `afk setup --all --yes` |
-| Update installed members of a preset | `afk sync --preset daily-routine --yes` |
+| Install new preset members and update existing ones | `afk sync --preset daily-routine --yes` |
 | Preview a preset update | `afk sync --preset daily-routine --dry-run` |
 | Choose a preset from the cached catalog | `afk preset` |
 | Choose a preset from another source | `afk preset --source <source>` |

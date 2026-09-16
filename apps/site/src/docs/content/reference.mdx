@@ -78,21 +78,23 @@ Replace `<id>` with a preset ID from `afk show presets`. The preview fetches fre
 | Tools | Runs each installed tool's cataloged update command. Tools without one are skipped. |
 | Rules | Uses the rules setup flow to refresh AFK-managed regions and declared reference files, preserving content outside those regions. |
 | MCPs | Reapplies named server configurations through `add-mcp`. Server software updates depend on the configured source or launcher. |
-| Hooks | Refreshes installed scripts and their registration. |
-| Custom Agents | Regenerates installed native agent definitions. |
+| Hooks | Installs or refreshes scripts and their registration. |
+| Custom Agents | Installs or regenerates native agent definitions. |
 | Profiles | Refreshes definitions without enabling profiles or installing their packages. |
 
 ### Missing members and source changes
 
-Missing members are reported and skipped. Add `--install-missing` to install them too:
+New preset members are installed automatically. When the preset includes skills, every catalog skill without `imported: true` is installed in batches by source, regardless of defaults or preset skill selections; existing disabled skills stay disabled. Rules sync once across selected harnesses.
 
-```bash include missing preset members
-afk sync --preset <id> --install-missing --yes
+To include imported catalog skills in the same installation batches:
+
+```bash include extra tracked skills
+afk sync --preset <id> --include-extra-skills --yes
 ```
 
-Package skills belonging only to inactive profiles remain deferred, even with `--install-missing`. Sync preserves local-only catalog entries and never uninstalls components removed upstream. Incoming definitions replace matching catalog IDs, so a skill's source can change on the next sync.
+Sync reuses the selection from `afk setup skills --all --exclude-imported --yes`; `--include-extra-skills` removes that exclusion. Uncataloged skills are untouched. Profile definitions refresh without enabling profiles or installing their packages. Sync preserves local-only catalog entries and never uninstalls components removed upstream. Incoming definitions replace matching catalog IDs, so a skill's source can change on the next sync.
 
-Use `--source <source>` for a one-run catalog source override and `--agent <agent>` to limit agent targets. Sync currently supports global environments only. Tools are detected by executable availability on `PATH`; MCPs by named configuration entries. Selected skills need a selective `--skill` argument in their catalog entry; whole-source entries must be narrowed before sync can update them.
+Use `--source <source>` for a one-run catalog source override and `--agent <agent>` to limit agent targets. Sync supports global environments only. Tools are detected by executable availability on `PATH`; missing tools are installed. Skill selection follows each catalog entry’s installer arguments, as in setup. The former `--install-missing` flag remains accepted for compatibility but is unnecessary.
 
 If an update fails, independent updates continue and the final summary reports failures with a nonzero exit code. Review that summary before retrying. To update the AFK CLI itself, use `afk update`.
 

@@ -230,30 +230,32 @@ provisioning its three required portable Custom Agents. The existing
 ```sh
 afk sync                                             # Choose an existing preset
 afk sync --preset daily-routine --dry-run              # Preview refreshed commands
-afk sync --preset daily-routine --yes                  # Update installed members
-afk sync --preset daily-routine --install-missing --yes
+afk sync --preset daily-routine --yes                  # Install new members and update existing ones
+afk sync --preset daily-routine --include-extra-skills --yes
 ```
 
 `sync` refreshes the catalog from the remembered source, then updates the selected
-preset's installed skills, Custom Agents, rules, MCP configurations, tools, and
+preset's skills, Custom Agents, rules, MCP configurations, tools, and
 hooks. Use `--source <source>` for a one-run source override and `--agent <agent>`
 to limit agent targets. Version one supports the global environment only.
 
-Missing members are reported and skipped unless `--install-missing` is supplied.
+New preset members are installed automatically. When the preset includes skills,
+sync uses the same selection as `afk setup skills --all --exclude-imported --yes`:
+every non-imported catalog entry, regardless of defaults or preset skill selections.
+Skills install in batches by source. Rules sync once across selected harnesses.
+Disabled skills retain their storage state. `--include-extra-skills` includes
+imported catalog entries in those same batches. Uncataloged skills are untouched.
 Local-only catalog entries are preserved, and sync does not uninstall entries
-removed upstream. Remote definitions win for matching IDs. Disabled skills retain
-their storage state; package skills belonging only to inactive profiles remain
-deferred, including with `--install-missing`. Profile definitions refresh without
-enabling profiles or installing their packages.
+removed upstream. Remote definitions win for matching IDs. Profile definitions
+refresh without enabling profiles or installing their packages.
+The old `--install-missing` flag is accepted for compatibility and is no longer needed.
 
 Tool detection checks executable files on `PATH`. A tool can declare `executable`
 when its command differs from its catalog ID (for example, `tot`). Otherwise sync
 uses a direct update command, or the catalog ID for shell/package-manager update
-commands. Tools without an update command are reported and skipped. Skills must
-have a selective `--skill` argument; whole-source entries require that catalog
-change before sync can safely update them. MCP detection uses named entries in
-the target's global config; a server's registered name must match `--name` or the
-catalog ID. Config locations follow [add-mcp’s supported agents](https://github.com/neon-solutions/add-mcp#supported-agents); OpenCode JSONC is supported. AFK does not currently route MCP updates to Pi or Cursor.
+commands. Tools without an update command are reported and skipped. Skill selection follows each catalog entry’s installer arguments, just as setup does. MCP configurations are reapplied to
+selected supported harnesses through `add-mcp`. AFK does not currently route MCP
+updates to Pi or Cursor.
 
 `--dry-run` fetches the catalog and previews work without changing the cached
 catalog or installed environment. Outside an interactive terminal, supply

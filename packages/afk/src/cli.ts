@@ -329,6 +329,7 @@ const commandHelps: Record<string, CommandHelp> = {
       setupOptions.initOnly,
       setupOptions.empty,
       setupOptions.allSkills,
+      "--exclude-imported               Exclude imported skills, including with --all",
       setupOptions.customAgent,
     ],
     subcommands: [
@@ -383,10 +384,10 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   sync: {
     title: "AFK sync",
-    summary: "Refresh catalogs and update existing items in a selected preset.",
+    summary: "Install new preset members and update existing ones from refreshed catalogs.",
     usage: "afk sync [--preset <id>] [options]",
-    notes: ["Global environment only. Without --preset, choose an existing preset interactively.", "Missing members are reported and skipped unless --install-missing is supplied.", "Local-only entries and installed items removed upstream are preserved.", "Inactive package skills remain deferred. AFK itself updates separately with afk update.", "Failures are reported together and return a nonzero exit code."],
-    options: ["--preset <id>                    Scope maintenance to an existing preset", "--install-missing                Also install missing preset items", setupOptions.yes, setupOptions.dryRun, setupOptions.verbose, "--agent <agent>                  Limit agent targets", "--source <source>                Refresh from an explicit catalog source"],
+    notes: ["Global environment only. Without --preset, choose an existing preset interactively.", "New preset members are installed and existing members are updated. The skills area syncs the entire catalog, regardless of preset skill selections.", "Local-only entries and installed items removed upstream are preserved.", "Skills exclude imported entries by default. Use --include-extra-skills to also install or update imported catalog skills. AFK itself updates separately with afk update.", "Failures are reported together and return a nonzero exit code."],
+    options: ["--preset <id>                    Scope maintenance to an existing preset", "--include-extra-skills           Also include imported catalog skills", setupOptions.yes, setupOptions.dryRun, setupOptions.verbose, "--agent <agent>                  Limit agent targets", "--source <source>                Refresh from an explicit catalog source"],
     examples: ["afk sync", "afk sync --preset daily-routine --dry-run", "afk sync --preset daily-routine --yes"],
   },
   refresh: {
@@ -528,6 +529,7 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       ...setupAreaOptions,
       setupOptions.allSkills,
+      "--exclude-imported               Exclude imported skills, including with --all",
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -542,6 +544,7 @@ const commandHelps: Record<string, CommandHelp> = {
     options: [
       ...setupAreaOptions,
       setupOptions.allSkills,
+      "--exclude-imported               Exclude imported skills, including with --all",
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -1337,8 +1340,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let setupScope: SetupScope = "global";
   let scopeExplicit = false;
   let allSkills = false;
+  let excludeImportedSkills = false;
   let toolsUpdateAll = false;
-  let syncInstallMissing = false;
+  let syncIncludeExtraSkills = false;
   let allCustomAgents = false;
   const selectedCustomAgentIds: string[] = [];
   let rulesRef = "main";
@@ -1589,8 +1593,17 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       continue;
     }
 
+    if (arg === "--exclude-imported" && (key === "setup" || key.startsWith("setup skills"))) {
+      excludeImportedSkills = true;
+      continue;
+    }
+
     if (arg === "--install-missing" && key === "sync") {
-      syncInstallMissing = true;
+      continue;
+    }
+
+    if (arg === "--include-extra-skills" && key === "sync") {
+      syncIncludeExtraSkills = true;
       continue;
     }
 
@@ -2021,8 +2034,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       ...(presetId ? { presetId } : {}),
       ...(presetPrompt ? { presetPrompt: true } : {}),
       allSkills,
+      excludeImportedSkills,
       toolsUpdateAll,
-      syncInstallMissing,
+      syncIncludeExtraSkills,
       allCustomAgents,
       selectedSkillIds: [],
       selectedCustomAgentIds,

@@ -5,7 +5,7 @@
 | Desired result | Operation | Boundary |
 | --- | --- | --- |
 | New catalog definitions | `afk refresh [category]` | Does not update installed content. |
-| Maintain an existing preset | `afk sync --preset <id>` | Global environment; refreshes catalogs and updates installed members. |
+| Maintain an existing preset | `afk sync --preset <id>` | Global environment; refreshes catalogs, installs new members, and updates existing ones. |
 | Update tracked skills from installed provenance | `afk skills update <id>` | Uses skills lock metadata. |
 | Update cataloged tools | `afk tools update <id>` | Runs the tool's declared update command. |
 | Reapply rules, hooks, MCPs, or Custom Agents | `afk setup <area>` | Applies selected definitions to target harnesses. |
@@ -20,7 +20,7 @@ afk sync --preset daily-routine --dry-run
 afk sync --preset daily-routine --yes
 ```
 
-Use the actual selected preset. Sync skips missing members unless `--install-missing` is requested. It preserves local-only entries and does not uninstall items removed upstream; inactive package skills remain deferred.
+Use the actual selected preset. Sync installs new members automatically and batches every non-imported catalog skill by source, regardless of defaults or preset skill selections. Add `--include-extra-skills` to include imported catalog skills too. Local-only entries are preserved and removed upstream items are not uninstalled; profile packages remain deferred to profile enablement.
 
 Sync installs skill updates through `skills add` using the refreshed catalog source. This allows a same-named skill to move sources. `afk skills update` instead follows installed lock provenance. Choose according to whether the user wants the catalog's current selection or an update from the installed source.
 

@@ -176,6 +176,11 @@ test("buildSkillCommands excludes imported skills by default and includes them w
   assert.ok(text.includes("afk-default"));
   assert.ok(text.includes("afk-spline"));
   assert.ok(text.includes("external-helper"));
+  const excluded = buildSkillCommands({ ...options, homeDir, allSkills: true, excludeImportedSkills: true });
+  const excludedText = excluded.map((command) => command.args.join(" ")).join("\n");
+  assert.ok(excludedText.includes("afk-default"));
+  assert.ok(excludedText.includes("afk-spline"));
+  assert.ok(!excludedText.includes("external-helper"));
 });
 
 test("buildSkillCommands does not add a duplicate Claude-only install", () => {

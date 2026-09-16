@@ -9,7 +9,16 @@ This changelog tracks meaningful updates by version and date.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
-## TBD - TBD
+## Next Release
+
+### Added
+
+- `skills:` added `afk setup skills --all --exclude-imported` to include every non-imported catalog skill, regardless of its default setting.
+
+### Changed
+
+- `sync:` now installs new preset members automatically and updates existing ones; `--install-missing` is no longer needed. When a preset includes skills, sync covers the entire non-imported catalog regardless of preset skill selections. `--include-extra-skills` also includes imported catalog entries; uncataloged skills remain untouched.
+- `sync:` batches skill installs by source and syncs rules once across selected harnesses, reducing repeated work and output.
 
 ## v1.4.3 - 2026-09-15
 

@@ -26,7 +26,7 @@ export function buildSkillInstallPlans(options: CliOptions): Array<{ command: De
       ? manifest.items.filter((item) => options.selectedSkillIds.includes(item.id))
       : manifest.items.filter((item) => (item.default && item.imported !== true) || options.allSkills);
 
-  return buildSkillSourceCommands(selected, "Shared skills", buildSkillsAgentArgs(["universal", ...options.selectedSkillAgentIds]), options.setupScope);
+  return buildSkillSourceCommands(selected.filter((item) => !options.excludeImportedSkills || item.imported !== true), "Shared skills", buildSkillsAgentArgs(["universal", ...options.selectedSkillAgentIds]), options.setupScope);
 }
 
 export function buildMcpCommands(options: Pick<CliOptions, "agents" | "yes" | "homeDir" | "selectedMcpIds" | "setupScope">): DelegateCommand[] {

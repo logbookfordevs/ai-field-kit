@@ -40,7 +40,7 @@ Remove `--dry-run` only after the scope, targets, and delegated commands look ri
 
 <h2 id="setup-sync">Keep a preset up to date</h2>
 
-After setup, use `afk sync` to choose a preset and update its installed members. Preview a specific preset with `afk sync --preset <id> --dry-run`. Sync refreshes the catalog first and skips missing members unless you add `--install-missing`; it currently supports global environments only.
+After setup, use `afk sync` to choose a preset and install new members and update existing ones. Preview a specific preset with `afk sync --preset <id> --dry-run`. Sync refreshes the catalog first and batches catalog skills by source. Add `--include-extra-skills` to also include imported catalog skills. Sync supports global environments only.
 
 [See what sync updates and how to apply it](/docs?chapter=reference#reference-sync)
 
