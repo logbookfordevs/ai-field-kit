@@ -53,5 +53,5 @@ jobs:
       - name: Build site
         run: pnpm site:build
 
-      - name: Audit production dependencies
-        run: pnpm audit --prod --audit-level high
+      - name: Audit all dependencies
+        run: pnpm audit --audit-level low
