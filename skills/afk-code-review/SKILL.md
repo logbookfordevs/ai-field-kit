@@ -62,6 +62,8 @@ Each smell reads *what it is* -> *how to fix*; match it against the diff:
 
 ### 4. Spawn both sub-agents in parallel
 
+Prefer `pathfinder` or a comparably capable native teammate with high reasoning effort for both axes. Choose by model capability and the judgment required; read-only access or a high effort setting alone does not establish review suitability. Reserve `cartographer` for evidence gathering or a narrow, straightforward Standards review. Spec review that requires tracing behavior, reconciling requirements, or judging implementation correctness should use the stronger reviewer.
+
 **Standards sub-agent prompt** - include:
 
 - The exact comparison commands, applicable commit list, and file inventory, including relevant untracked files.
