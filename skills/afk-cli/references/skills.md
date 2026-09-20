@@ -19,6 +19,8 @@ afk skills add <owner/repo> --skill <id> --yes
 
 `add` delegates to the skills installer, always includes the shared global target, and imports new shared entries into AFK's catalog. It is not a project-only install command. For project installation, inspect `afk setup skills --help` and select project scope and source.
 
+Add `--invocation auto` or `--invocation manual` to set the installed skill metadata and catalog policy during installation.
+
 For a newly imported skill intended only for a working set:
 
 ```bash
@@ -33,8 +35,8 @@ This associates it with the profile and disabled storage. `--profile <profile>` 
 | --- | --- | --- |
 | Keep installed but stop ordinary discovery | `afk skills disable <id>` | Moves the folder into `.disabled`. |
 | Restore availability | `afk skills enable <id>` | Moves it back to active storage. |
-| Require explicit invocation | `afk skills invocation disable <id>` | Changes invocation policy; does not disable storage. |
-| Allow automatic invocation | `afk skills invocation enable <id>` | Changes invocation policy; availability remains separate. |
+| Require explicit invocation | `afk skills invocation manual <id>` | Changes invocation policy; does not disable storage. |
+| Allow automatic invocation | `afk skills invocation auto <id>` | Changes invocation policy; availability remains separate. |
 | Read instructions for this task | `afk skills get <id>` | Prints local content, including disabled skills, without moving folders. |
 
 Preview mutations with `--dry-run`. Bare `afk skills invocation` opens a batch editor; explicit subcommands avoid that picker. Read requested instructions returned by `get` and apply them when context loading is the task.

@@ -13,9 +13,13 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `skills:` added `afk skills add --invocation auto|manual` to set invocation policy during installation.
+
 - `skills:` added `afk setup skills --all --exclude-imported` to include every non-imported catalog skill, regardless of its default setting.
 
 ### Changed
+
+- `skills:` `afk skills invocation auto|manual <skill>` replaces `enable|disable`; the bare command still opens the batch policy editor.
 
 - `sync:` now installs new preset members automatically and updates existing ones; `--install-missing` is no longer needed. When a preset includes skills, sync covers the entire non-imported catalog regardless of preset skill selections. `--include-extra-skills` also includes imported catalog entries; uncataloged skills remain untouched.
 - `sync:` batches skill installs by source and syncs rules once across selected harnesses, reducing repeated work and output.

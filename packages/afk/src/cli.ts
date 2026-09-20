@@ -664,7 +664,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "add <source> [flags...]           Delegate to skills add, then sync the AFK catalog",
       "disable <folder>                  Move a global skill into .disabled",
       "enable <folder>                   Move a disabled global skill back to active",
-      "invocation [disable|enable] [folder] Toggle auto invocation metadata",
+      "invocation [auto|manual] [folder] Set automatic or manual invocation policy",
       "delete [folder]                   Permanently delete one or more skills",
       "update [skills...]                Update selected or all cataloged tracked skills",
       "reset                             Reset shared skills to cached catalog policy",
@@ -677,7 +677,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk skills list --scope global --json",
       "afk skills list --disabled",
       "afk skills disable old-skill --dry-run",
-      "afk skills invocation disable writing-for-humans",
+      "afk skills invocation manual writing-for-humans",
       "afk skills update --all",
       "afk skills reset --dry-run",
       "afk skills categorize --mode append-missing --dry-run",
@@ -699,6 +699,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--agent <agent>                   Forwarded to skills add when supported upstream",
       "--profile <profile>               AFK: add imported skills to a new or existing profile",
       "--profile-only <profile>          AFK: add imported skills to a profile and disabled storage",
+      "--invocation auto|manual          AFK: set installed skills invocation policy",
       "--start-disabled                  AFK: import new skills as disabled and move shared folders into .disabled",
     ],
     examples: [
@@ -873,8 +874,8 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "skills invocation": {
     title: "AFK skills invocation",
-    summary: "Bare command opens the batch editor; enable or disable one skill explicitly.",
-    usage: "afk skills invocation [disable|enable] [folder] [options]",
+    summary: "Bare command opens the batch editor; set one skill to auto or manual explicitly.",
+    usage: "afk skills invocation [auto|manual] [folder] [options]",
     options: [
       "--scope global|project|all        Choose the target roots when --agent is set",
       "--agent <agent>|custom            Target one explicit agent root",
@@ -885,9 +886,9 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk skills invocation",
-      "afk skills invocation disable writing-for-humans",
-      "afk skills invocation enable writing-for-humans --dry-run",
-      "afk skills invocation disable --scope global --agent codex",
+      "afk skills invocation manual writing-for-humans",
+      "afk skills invocation auto writing-for-humans --dry-run",
+      "afk skills invocation manual --scope global --agent codex",
     ],
   },
   "skills delete": {
@@ -1429,6 +1430,16 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     for (let index = 0; index < args.length; index += 1) {
       const arg = args[index];
       if (!arg) {
+        continue;
+      }
+
+      if (arg === "--invocation") {
+        const value = args[index + 1];
+        if (value !== "auto" && value !== "manual") {
+          return { help: false, kind: "error", error: `Invalid --invocation value: ${value ?? "(missing)"}. Expected auto or manual.` };
+        }
+        skillAddArgs.push(arg, value);
+        index += 1;
         continue;
       }
 

@@ -81,13 +81,13 @@ export function renderSkillInvocationPolicy(input: {
   dryRun: boolean;
   operations: PathOperation[];
 }): string {
-  const verb = input.allowInvocation ? "enable" : "disable";
-  const title = input.dryRun ? "Auto Invocation Preview" : "Auto Invocation Complete";
+  const policy = input.allowInvocation ? "auto" : "manual";
+  const title = input.dryRun ? "Invocation Policy Preview" : "Invocation Policy Complete";
   return [
     sectionTitle(title),
     input.dryRun
-      ? `${muted("Would")} ${accent(verb)} ${muted("auto invocation for")} ${strong(input.folder)}`
-      : `${accent(input.allowInvocation ? "Enabled" : "Disabled")} ${muted("auto invocation for")} ${strong(input.folder)}`,
+      ? `${muted("Would set")} ${strong(input.folder)} ${muted("invocation to")} ${accent(policy)}`
+      : `${strong(input.folder)} ${muted("invocation set to")} ${accent(policy)}`,
     input.operations.length === 0 ? muted("No file changes needed.") : undefined,
     ...input.operations.map((operation) => `${paint(terminalPalette.sienna, "•")} ${muted(formatOperation(operation))}`),
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -98,7 +98,7 @@ export function renderSkillInvocationPolicyBatch(input: {
   dryRun: boolean;
   operations: PathOperation[];
 }): string {
-  const title = input.dryRun ? "Auto Invocation Preview" : "Auto Invocation Complete";
+  const title = input.dryRun ? "Invocation Policy Preview" : "Invocation Policy Complete";
   if (input.changes.length === 0) {
     return [sectionTitle(title), muted("No invocation policy changes selected.")].join("\n");
   }

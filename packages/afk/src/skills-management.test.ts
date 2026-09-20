@@ -1,3 +1,4 @@
+import { runCliWithRuntime } from "./cli.js";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -1699,10 +1700,10 @@ test("runSkillsCommand disables auto invocation metadata for one skill", async (
     openAiImplicitInvocation: true,
   });
 
-  const code = await runSkillsCommand(["skills", "invocation", "disable", "demo"], outputRuntime(output), baseOptions(root));
+  const code = await runSkillsCommand(["skills", "invocation", "manual", "demo"], outputRuntime(output), baseOptions(root));
 
   assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("Auto Invocation Complete"));
+  assert.ok(output.join("\n").includes("Invocation Policy Complete"));
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
@@ -1731,13 +1732,13 @@ test("runSkillsCommand previews auto invocation enable without writing metadata"
     openAiImplicitInvocation: false,
   });
 
-  const code = await runSkillsCommand(["skills", "invocation", "enable", "demo"], outputRuntime(output), {
+  const code = await runSkillsCommand(["skills", "invocation", "auto", "demo"], outputRuntime(output), {
     ...baseOptions(root),
     dryRun: true,
   });
 
   assert.equal(code, 0);
-  assert.ok(output.join("\n").includes("Auto Invocation Preview"));
+  assert.ok(output.join("\n").includes("Invocation Policy Preview"));
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "agents", "openai.yaml"), "utf8"), /allow_implicit_invocation: false/);
   const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
@@ -1766,7 +1767,7 @@ test("runSkillsCommand enables auto invocation in installed metadata and catalog
     openAiImplicitInvocation: false,
   });
 
-  const code = await runSkillsCommand(["skills", "invocation", "enable", "demo"], outputRuntime(output), baseOptions(root));
+  const code = await runSkillsCommand(["skills", "invocation", "auto", "demo"], outputRuntime(output), baseOptions(root));
 
   assert.equal(code, 0);
   assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: false/);
@@ -2706,3 +2707,74 @@ function skillRecord(input: { folder: string; rootPath: string }): SkillRecord {
     invocationDetails: [],
   };
 }
+
+for (const policy of ["auto", "manual"] as const) {
+  for (const reinstall of [false, true]) {
+    test(`skills add applies ${policy} policy, reinstall=${reinstall}`, async () => {
+      const root = mkdtempSync(join(tmpdir(), "afk-add-invocation-"));
+      const homeDir = join(root, "home");
+      const output: string[] = [];
+      const skillsRoot = join(homeDir, ".agents", "skills");
+      const lock = { demo: { source: "owner/skills", sourceType: "github" } };
+      if (reinstall) {
+        writeSkill(skillsRoot, "demo", "Demo");
+        writeGlobalSkillLock(homeDir, lock);
+      }
+      writeSkill(skillsRoot, "unrelated", "Unrelated", { disableModelInvocation: false });
+      const unrelatedBefore = readFileSync(join(skillsRoot, "unrelated", "SKILL.md"), "utf8");
+      const runtime: Runtime = {
+        ...outputRuntime(output),
+        spawn: async (_command, args) => {
+          assert.ok(!args.includes("--invocation"));
+          writeSkill(skillsRoot, "demo", "Demo", {
+            disableModelInvocation: policy === "auto",
+            openAiImplicitInvocation: policy !== "auto",
+          });
+          writeGlobalSkillLock(homeDir, lock);
+          return { code: 0 };
+        },
+      };
+      const code = reinstall
+        ? await runSkillsCommand(["skills", "add", "owner/skills"], runtime, {
+          ...baseOptions(root),
+          yes: true,
+          skillAddArgs: ["--skill", "demo", "--invocation", policy],
+        })
+        : await runCliWithRuntime([
+          "skills", "add", "owner/skills", "--skill", "demo", "--invocation", policy, "--start-disabled",
+        ], { HOME: homeDir }, runtime);
+      assert.equal(code, 0, output.join("\n"));
+      const target = join(skillsRoot, ...(!reinstall ? [".disabled"] : []), "demo");
+      assert.ok(readFileSync(join(target, "SKILL.md"), "utf8").includes(`disable-model-invocation: ${policy === "manual"}`));
+      assert.ok(readFileSync(join(target, "agents", "openai.yaml"), "utf8").includes(`allow_implicit_invocation: ${policy === "auto"}`));
+      const catalog = JSON.parse(readFileSync(skillCatalogPath(homeDir), "utf8")) as SkillManifest;
+      assert.equal(catalog.items.find((item) => item.id === "demo")?.invocation, policy);
+      assert.equal(readFileSync(join(skillsRoot, "unrelated", "SKILL.md"), "utf8"), unrelatedBefore);
+    });
+  }
+}
+
+for (const operands of [["enable", "demo"], ["disable", "demo"], ["demo"], ["auto", "demo", "extra"]]) {
+  test(`skills invocation rejects ambiguous syntax ${operands.join(" ")}`, async () => {
+    const root = mkdtempSync(join(tmpdir(), "afk-invocation-invalid-"));
+    const output: string[] = [];
+    const code = await runSkillsCommand(["skills", "invocation", ...operands], outputRuntime(output), baseOptions(root));
+    assert.equal(code, 1);
+    assert.ok(output.join("\n").includes("[auto|manual]"));
+  });
+}
+
+test("skills add leaves invocation unchanged when installation fails", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-add-invocation-failed-"));
+  const homeDir = join(root, "home");
+  const output: string[] = [];
+  const skillsRoot = join(homeDir, ".agents", "skills");
+  writeSkill(skillsRoot, "demo", "Demo", { disableModelInvocation: false });
+  const before = readFileSync(join(skillsRoot, "demo", "SKILL.md"), "utf8");
+  const code = await runSkillsCommand(["skills", "add", "owner/skills"], {
+    ...outputRuntime(output),
+    spawn: async () => ({ code: 1 }),
+  }, { ...baseOptions(root), skillAddArgs: ["--skill", "demo", "--invocation", "manual"] });
+  assert.equal(code, 1);
+  assert.equal(readFileSync(join(skillsRoot, "demo", "SKILL.md"), "utf8"), before);
+});

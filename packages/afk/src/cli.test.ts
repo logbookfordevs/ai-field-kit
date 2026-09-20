@@ -1274,7 +1274,7 @@ test("runCli prints contextual skills invocation help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK skills invocation"));
-  assert.ok(text.includes("invocation [disable|enable] [folder]"));
+  assert.ok(text.includes("invocation [auto|manual] [folder]"));
   assert.ok(text.includes("Bare command opens the batch editor"));
   assert.ok(text.includes("--agent <agent>|custom"));
   assert.ok(text.includes("--agent-path <folder>"));
@@ -2292,4 +2292,13 @@ function emptyCatalogResponse(input: string | URL | Request): Response {
     "hooks.json": { version: 1, items: [] },
   };
   return Response.json(manifests[name ?? ""] ?? {});
+}
+
+for (const value of [undefined, "mixed", "source", "enabled"]) {
+  test(`skills add rejects invalid invocation ${value}`, async () => {
+    const output: string[] = [];
+    const code = await withConsole(output, () => runCli(["skills", "add", "owner/skills", "--invocation", ...(value ? [value] : [])]));
+    assert.equal(code, 1);
+    assert.ok(output.join("\n").includes("Invalid --invocation value"));
+  });
 }

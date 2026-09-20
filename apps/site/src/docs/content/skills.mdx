@@ -18,6 +18,8 @@ afk skills add your-org/dev-kit --skill review-pr --yes
 
 `add` always includes the shared global target. Explicit `--agent` values add supported upstream agent projections. Newly installed skills absent from the AFK catalog are added as imported entries when their source can be recovered from the skills lock metadata.
 
+Add `--invocation manual` to require explicit invocation, or `--invocation auto` to allow automatic invocation. This updates installed metadata and the matching catalog policy, including when reinstalling a selected skill.
+
 To prepare a skill for later use, add `--start-disabled`. To assign new skills to a profile, add `--profile review`; use `--profile-only review` to also keep them disabled until needed. These flags apply only to skills introduced by this installation. Reinstalling an existing skill preserves its previous storage state and profile membership.
 
 <h2 id="skills-find">Find and read what is installed</h2>
@@ -55,10 +57,10 @@ For root-aware commands, `--agent` chooses an agent root and `--scope global|pro
 ```bash preview separate kinds of change
 afk skills disable review-pr --dry-run
 afk skills enable review-pr --dry-run
-afk skills invocation disable review-pr --dry-run
+afk skills invocation manual review-pr --dry-run
 ```
 
-The last command makes invocation manual; it does not move the folder into disabled storage. `invocation enable` restores automatic invocation. For shared skills already in the catalog, these commands update both catalog policy and installed metadata. Agent-specific or uncataloged skills update installed metadata only.
+The last command makes invocation manual; it does not move the folder into disabled storage. `invocation auto` restores automatic invocation. For shared skills already in the catalog, these commands update both catalog policy and installed metadata. Agent-specific or uncataloged skills update installed metadata only.
 
 Run `afk skills invocation` for the batch editor: use up/down to navigate, left for manual, right for automatic, Enter to apply drafted changes, and Escape to discard. Existing states stay untouched until you change them.
 

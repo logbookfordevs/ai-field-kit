@@ -248,6 +248,24 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
       }), { ...effectiveOptions, agents: [...effectiveOptions.agents, ...addedAgents], setupScope: "global", dryRun: false })
     : 0;
 
+  if (parsedAddOptions.invocation && !effectiveOptions.skillAddArgs.includes("--list") && !effectiveOptions.skillAddArgs.includes("-l")) {
+    const selectedNames = new Set<string>([...newSkillIds, ...changedSkillNames]);
+    for (let index = 0; index < effectiveOptions.skillAddArgs.length; index += 1) {
+      if (effectiveOptions.skillAddArgs[index] !== "--skill" && effectiveOptions.skillAddArgs[index] !== "-s") continue;
+      for (let next = index + 1; next < effectiveOptions.skillAddArgs.length; next += 1) {
+        const name = effectiveOptions.skillAddArgs[next];
+        if (!name || name.startsWith("-")) break;
+        if (name !== "*") selectedNames.add(name);
+      }
+    }
+    const changes = loadSkillCatalog({ homeDir: options.homeDir, cwd: options.cwd, scope: "global", agent: undefined }).records
+      .filter((record) => selectedNames.has(record.folder) || selectedNames.has(record.originalName))
+      .map((record) => ({ record, allowInvocation: parsedAddOptions.invocation === "auto" }));
+    const operations = buildSkillInvocationPolicyBatchOperations(options.homeDir, changes);
+    for (const operation of operations) applyOperation(operation);
+    runtime.io.stdout(renderSkillInvocationPolicyBatch({ changes, operations, dryRun: false }));
+  }
+
   const catalogStorage = startNewSkillsDisabled
     ? markSkillCatalogItemsStartDisabled({ homeDir: options.homeDir, skillIds: newSkillIds, dryRun: false })
     : undefined;
@@ -335,15 +353,26 @@ function parseSkillAddOperands(operands: string[]): {
   profileIds: string[];
   profileOnlyIds: string[];
   startDisabled: boolean;
+  invocation: "auto" | "manual" | undefined;
 } {
   const upstreamArgs: string[] = [];
   const profileIds: string[] = [];
   const profileOnlyIds: string[] = [];
   let startDisabled = false;
+  let invocation: "auto" | "manual" | undefined;
 
   for (let index = 0; index < operands.length; index += 1) {
     const arg = operands[index];
     if (!arg) {
+      continue;
+    }
+
+    if (arg === "--invocation") {
+      const value = operands[++index];
+      if (value !== "auto" && value !== "manual") {
+        throw new Error(`Invalid --invocation value: ${value ?? "(missing)"}. Expected auto or manual.`);
+      }
+      invocation = value;
       continue;
     }
 
@@ -377,6 +406,7 @@ function parseSkillAddOperands(operands: string[]): {
 
   return {
     upstreamArgs,
+    invocation,
     profileIds,
     profileOnlyIds,
     startDisabled,
@@ -1105,14 +1135,18 @@ async function runSkillsInvocation(operands: string[], runtime: Runtime, options
     return 0;
   }
 
-  const action = operands[0] === "enable" || operands[0] === "disable" ? operands[0] : "disable";
-  const folder = operands[0] === "enable" || operands[0] === "disable" ? operands[1] : operands[0];
-  const allowInvocation = action === "enable";
+  const policy = operands[0];
+  if ((policy !== "auto" && policy !== "manual") || operands.length > 2) {
+    runtime.io.stderr("Usage: afk skills invocation [auto|manual] [folder] [options]");
+    return 1;
+  }
+  const folder = operands[1];
+  const allowInvocation = policy === "auto";
   const record = folder
     ? findSkillRecord(candidates, folder)
     : await promptSkillRecord(candidates, allowInvocation
-      ? `Select ${mutationTargetLabel(options)} skill to enable auto invocation:`
-      : `Select ${mutationTargetLabel(options)} skill to disable auto invocation:`);
+      ? `Select ${mutationTargetLabel(options)} skill for automatic invocation:`
+      : `Select ${mutationTargetLabel(options)} skill for manual invocation:`);
 
   if (!record) {
     runtime.io.stderr(folder ? `Skill not found: ${folder}` : `No ${mutationTargetLabel(options)} skills found.`);
