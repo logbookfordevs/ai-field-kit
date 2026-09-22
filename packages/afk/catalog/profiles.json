@@ -57,6 +57,16 @@
           "source": "remotion-dev/skills"
         }
       ]
+    },
+    {
+      "id": "elevenlabs",
+      "name": "ElevenLabs",
+      "catalogSkills": [],
+      "packages": [
+        {
+          "source": "elevenlabs/skills"
+        }
+      ]
     }
   ]
 }
