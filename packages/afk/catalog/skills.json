@@ -150,6 +150,20 @@
             "composes": []
         },
         {
+            "id": "stop-slop",
+            "label": "Stop Slop",
+            "source": "https://github.com/hardikpandya/stop-slop",
+            "args": [
+                "--skill",
+                "stop-slop",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "writing-for-humans",
             "label": "Writing for Humans",
             "source": "https://github.com/logbookfordevs/ai-field-kit",
