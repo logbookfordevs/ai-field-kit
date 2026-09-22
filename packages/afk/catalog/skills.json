@@ -551,6 +551,20 @@
             "composes": []
         },
         {
+            "id": "hand-drawn-canvas-animation",
+            "label": "Hand Drawn Canvas Animation",
+            "source": "https://github.com/alesha-pro/tools",
+            "args": [
+                "--skill",
+                "hand-drawn-canvas-animation",
+                "--global"
+            ],
+            "default": false,
+            "invocation": "manual",
+            "role": "utility",
+            "composes": []
+        },
+        {
             "id": "writing-for-agents",
             "label": "Writing For Agents",
             "source": "https://github.com/mattpocock/skills",
