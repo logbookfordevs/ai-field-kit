@@ -1,3 +1,4 @@
+import { catalogFixture } from "./catalog-fixture.test-helper.js";
 import assert from "node:assert/strict";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -245,7 +246,7 @@ test("runCli doctor validates the global AFK catalog by default", async () => {
 test("runCli doctor accepts a valid global AFK catalog", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-cli-doctor-valid-"));
   const manifestDir = localManifestDir(homeDir);
-  cpSync(resolve(new URL("../catalog", import.meta.url).pathname), manifestDir, { recursive: true });
+  cpSync(join(catalogFixture(), "afk", "catalog"), manifestDir, { recursive: true });
   const output: string[] = [];
 
   const code = await withConsole(output, () => runCli(["doctor"], { HOME: homeDir }));
@@ -258,7 +259,7 @@ test("runCli doctor accepts a valid global AFK catalog", async () => {
 test("runCli doctor --local validates the project AFK catalog", async () => {
   const cwd = mkdtempSync(join(tmpdir(), "afk-cli-doctor-local-"));
   const projectCatalogDir = join(cwd, "afk", "catalog");
-  cpSync(resolve(new URL("../catalog", import.meta.url).pathname), projectCatalogDir, { recursive: true });
+  cpSync(join(catalogFixture(), "afk", "catalog"), projectCatalogDir, { recursive: true });
   writeFileSync(join(projectCatalogDir, "hooks.json"), JSON.stringify({ version: 1, items: [{ id: "broken" }] }));
   const originalCwd = process.cwd();
   const output: string[] = [];
@@ -338,7 +339,7 @@ test("runCli exposes the preset command family and setup preset routes", async (
 
 test("runCli accepts explicit preset ids through both new routes", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-preset-routes-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
 
   for (const route of [["preset", "afk-architect"], ["setup", "preset", "afk-architect"]]) {
     const output: string[] = [];
@@ -359,7 +360,7 @@ test("runCli accepts explicit preset ids through both new routes", async () => {
 
 test("runCli dry-runs the source-aware daily routine in declared area order", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-daily-routine-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
   const output: string[] = [];
   const code = await withConsole(output, () => runCli([
     "preset",
@@ -395,7 +396,7 @@ test("runCli documents the existing all-catalog setup path", async () => {
 
 test("runCli refreshes the full catalog before setup when --refresh is passed", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-refresh-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
   const output: string[] = [];
 
   const code = await withConsole(output, () => runCli([
@@ -416,7 +417,7 @@ test("runCli refreshes the full catalog before setup when --refresh is passed", 
 
 test("runCli setup init-only persists an explicit source for a new user", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-explicit-source-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
 
   const code = await runCli([
     "setup",
@@ -438,7 +439,7 @@ test("runCli setup init-only persists an explicit source for a new user", async 
 
 test("runCli setup repairs missing catalog files from the remembered source", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-partial-catalog-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
   const manifestDir = localManifestDir(homeDir);
   mkdirSync(manifestDir, { recursive: true });
   const rememberedPresets = `${JSON.stringify({
@@ -485,7 +486,7 @@ test("runCli area refresh init-only does not initialize unrelated catalog files"
 test("runCli limits project setup area refreshes to the matching local catalog category", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-setup-skills-refresh-"));
   const projectDir = mkdtempSync(join(tmpdir(), "afk-setup-skills-project-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
   const originalCwd = process.cwd();
 
   process.chdir(projectDir);
@@ -513,7 +514,7 @@ test("runCli limits project setup area refreshes to the matching local catalog c
 
 test("runCli dry-runs the AFK Architect required bundle in dependency order", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-architect-cli-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
   const output: string[] = [];
   const code = await withConsole(output, () => runCli([
     "setup",
@@ -553,7 +554,7 @@ test("runCli dry-runs the AFK Architect required bundle in dependency order", as
 
 test("runCli reports an unknown setup preset without throwing", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-unknown-preset-cli-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
   const output: string[] = [];
   const code = await withConsole(output, () => runCli([
     "setup",
@@ -571,7 +572,7 @@ test("runCli reports an unknown setup preset without throwing", async () => {
 
 test("runCli marks an optimized preset incomplete when a selected harness cannot provision its agents", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-incomplete-preset-cli-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
   const output: string[] = [];
   const code = await withConsole(output, () => runCli([
     "setup",
@@ -786,7 +787,7 @@ test("runCli accepts default-source aliases on refresh", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input) => emptyCatalogResponse(input);
   const homeDir = mkdtempSync(join(tmpdir(), "afk-default-source-alias-"));
-  const repoDir = resolve(new URL("../../..", import.meta.url).pathname);
+  const repoDir = catalogFixture();
 
   try {
     const output: string[] = [];
@@ -900,12 +901,12 @@ test("runCli keeps --source github mapped to the built-in AFK defaults source", 
     const output: string[] = [];
     const code = await withConsole(output, () => runCli(
       ["refresh", "--dry-run", "--source", "github"],
-      { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+      { HOME: homeDir, AI_RULES_REPO: catalogFixture() },
     ));
 
     assert.equal(code, 0);
     assert.ok(requestedUrls.length > 0);
-    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/logbookfordevs/ai-field-kit-catalog/main/")));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -936,7 +937,7 @@ test("runCli accepts skills CLI agent targets for noninteractive skill installs"
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(
     ["setup", "skills", "--dry-run", "--verbose", "--yes", "--agent", "claude-code"],
-    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    { HOME: homeDir, AI_RULES_REPO: catalogFixture() },
   ));
   const text = output.join("\n");
 
@@ -956,7 +957,7 @@ test("setup skills --profile installs only the named profile and rejects unknown
     ] },
   });
   const output: string[] = [];
-  const env = { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) };
+  const env = { HOME: homeDir, AI_RULES_REPO: catalogFixture() };
   const code = await withConsole(output, () => runCli(["setup", "skills", "--profile", "voice", "--yes", "--dry-run"], env));
   assert.equal(code, 0, output.join("\n"));
   assert.ok(output.join("\n").includes("example/voice"));
@@ -996,7 +997,7 @@ test("runCli setup skills accepts Codex for post-install actions while installin
   const output: string[] = [];
   const code = await withConsole(output, () => runCli([
     "setup", "skills", "--dry-run", "--yes", "--agent", "codex",
-  ], { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) }));
+  ], { HOME: homeDir, AI_RULES_REPO: catalogFixture() }));
   assert.equal(code, 0, output.join("\n"));
   assert.match(output.join("\n"), /--agent universal/);
   assert.match(output.join("\n"), /Design \/ post-install: copy/);
@@ -1554,7 +1555,7 @@ test("runCli creates local catalog profiles with repeated skill flags", async ()
         "--mode",
         "context",
       ],
-      { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+      { HOME: homeDir, AI_RULES_REPO: catalogFixture() },
     ));
 
     assert.equal(code, 0);
@@ -1585,7 +1586,7 @@ test("runCli accepts storage filters for catalog profile skill selection", async
 
   const code = await withConsole(output, () => runCli(
     ["profiles", "catalog", "create", "quiet", "--name", "Quiet", "--disabled", "--skill", "disabled-demo"],
-    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    { HOME: homeDir, AI_RULES_REPO: catalogFixture() },
   ));
 
   assert.equal(code, 0);
@@ -1630,7 +1631,7 @@ test("runCli accepts skills delete catalog-only flag", async () => {
 
   const code = await withConsole(output, () => runCli(
     ["skills", "delete", "beta", "--catalog-only", "--dry-run"],
-    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    { HOME: homeDir, AI_RULES_REPO: catalogFixture() },
   ));
 
   assert.equal(code, 1);
@@ -1666,7 +1667,7 @@ test("runCli rejects shared as an agent because shared is the default", async ()
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(
     ["skills", "list", "--agent", "shared"],
-    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    { HOME: homeDir, AI_RULES_REPO: catalogFixture() },
   ));
 
   assert.equal(code, 1);
@@ -1680,7 +1681,7 @@ test("runCli accepts a custom skill agent with a literal path", async () => {
   const output: string[] = [];
   const code = await withConsole(output, () => runCli(
     ["skills", "list", "--agent", "custom", "--agent-path", agentPath],
-    { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+    { HOME: homeDir, AI_RULES_REPO: catalogFixture() },
   ));
 
   assert.equal(code, 0);
@@ -1699,7 +1700,7 @@ test("runCli defaults an explicit preset agent to its global root", async () => 
     process.chdir(projectDir);
     const code = await withConsole(output, () => runCli(
       ["skills", "list", "--agent", "codex"],
-      { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) },
+      { HOME: homeDir, AI_RULES_REPO: catalogFixture() },
     ));
     const text = output.join("\n");
 
@@ -1829,7 +1830,7 @@ test("runCli prints contextual show skills help", async () => {
   assert.ok(text.includes("React-style composition tree"));
   assert.ok(text.includes("--react                          Show skills as a React-style composition tree"));
   assert.ok(text.includes("--visualize                      Write and open a skills composition HTML file"));
-  assert.ok(text.includes("afk show skills --source logbookfordevs/ai-field-kit --ref main"));
+  assert.ok(text.includes("afk show skills --source logbookfordevs/ai-field-kit-catalog --ref main"));
   assert.ok(!text.includes("afk show skills mcps"));
 });
 

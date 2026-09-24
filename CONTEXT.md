@@ -131,3 +131,7 @@ _Avoid_: Local agent, personal agent
 **Agent Orchestration**:
 Launching, coordinating, and supervising runtime agents after they have been provisioned.
 _Avoid_: Agent provisioning, agent setup
+
+## Default catalog ownership
+
+Logbook Atlas (`logbookfordevs/ai-field-kit-catalog`) maintains the default catalog and source packages. AFK is the catalog-agnostic CLI. Legacy built-in AFK sources migrate to Atlas; custom sources retain their identities.

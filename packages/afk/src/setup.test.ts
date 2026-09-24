@@ -1980,5 +1980,7 @@ function localRepoWithRules(): string {
   mkdirSync(join(repoDir, "rules"), { recursive: true });
   writeFileSync(join(repoDir, "rules", "AGENTS.md"), "# AFK rules\n");
   writeFileSync(join(repoDir, "rules", "artifacts.md"), "# Artifact conventions\n");
+  mkdirSync(join(repoDir, "afk", "catalog"), { recursive: true });
+  writeFileSync(join(repoDir, "afk", "catalog", "mcps.json"), JSON.stringify({ version: 1, items: [{ id: "stitch", label: "Stitch fixture", source: "https://example.com/stitch", args: [], default: true }] }));
   return repoDir;
 }

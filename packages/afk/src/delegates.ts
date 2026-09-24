@@ -279,8 +279,8 @@ function skillIdFromArgs(args: string[]): string | null {
 }
 
 function sourceLabel(source: string): string {
-  if (source.includes("logbookfordevs/ai-field-kit")) {
-    return "AI Field Kit";
+  if (source.includes("logbookfordevs/ai-field-kit-catalog")) {
+    return "Logbook Atlas";
   }
 
   if (source.includes("addyosmani/agent-skills")) {

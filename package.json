@@ -9,7 +9,6 @@
     "afk:typecheck": "pnpm --dir packages/afk typecheck",
     "lint": "eslint .",
     "afk:version": "./scripts/version-afk.sh",
-    "registry:validate": "pnpm dlx shadcn@4.16.2 registry validate registry.json",
     "site:build": "pnpm --dir apps/site build",
     "site:dev": "pnpm --dir apps/site dev",
     "site:preview": "pnpm --dir apps/site preview",

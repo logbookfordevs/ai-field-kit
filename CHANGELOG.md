@@ -19,6 +19,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `catalog:` Logbook Atlas now owns the default catalog, skills, rules, agents, and hooks. AFK fetches defaults from Atlas and migrates legacy AFK source references while preserving custom catalogs and selections. Catalog content and documentation now live in Atlas; the CLI no longer bundles them.
+
 - `profiles:` `afk setup profiles` now prepares only the cached profile catalog. Use `afk setup skills --profile [id]` to explicitly install profile members, with an interactive picker when the ID is omitted and `--local` for project scope. New package skills start disabled; catalog startup policy and existing disabled settings are preserved.
 - `catalog:` renamed the `video` profile to `hyperframe` (Hyperframe), keeping its `heygen-com/hyperframes` package.
 

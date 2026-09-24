@@ -850,6 +850,8 @@ afk show skills --source your-org/dev-kit
 
 ## Custom Defaults
 
+The built-in catalog is maintained in [Logbook Atlas](https://github.com/logbookfordevs/ai-field-kit-catalog), under `afk/catalog/`. CLI distributions contain no default catalog assets. Existing legacy AFK source references resolve to Atlas; `afk refresh` persists migrated references without replacing custom sources. Explicit pinned historical raw URLs remain pinned. Before `afk skills update` delegates to the skills CLI, selected legacy AFK lock entries migrate to Atlas with a `.before-atlas` backup; preview runs do not modify locks. Direct `npx skills update` users should reinstall the affected skills from Atlas to update their source metadata.
+
 You can make AFK a setup router for your own team or personal toolkit. Put
 convention-compatible catalog files in another repo, then point AFK at it:
 
@@ -981,7 +983,7 @@ shadcn-compatible registry item. This is a project-local distribution path for
 the catalog files; AFK still performs the actual setup work.
 
 ```bash
-pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-catalog
+pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit-catalog/afk-catalog
 afk setup --local --dry-run
 ```
 
@@ -1329,8 +1331,7 @@ scope.
 
 ### Tools
 
-The bundled tool catalog currently includes Plannotator, Plannotator Tot,
-Yggtree, Impeccable, and Orchestrator. Tool setup is
+See [Atlas’s tool catalog](https://github.com/logbookfordevs/ai-field-kit-catalog/blob/main/afk/catalog/tools.json) for current recommendations. Tool setup is
 best-effort because these installers are owned by their upstream tools.
 
 ### Profiles
@@ -1448,10 +1449,10 @@ afk skills list --scope global --agent codex
 afk skills list --scope project --agent claude
 afk skills list --agent custom --agent-path ~/.my-agent/skills
 afk skills list --category Docs --tag writing
-afk skills add logbookfordevs/ai-field-kit --skill afk-compass --yes
-afk skills add logbookfordevs/ai-field-kit --skill hyperframes --yes --profile video
-afk skills add logbookfordevs/ai-field-kit --skill hyperframes --yes --profile-only video
-afk skills add logbookfordevs/ai-field-kit --skill hyperframes --yes --start-disabled
+afk skills add logbookfordevs/ai-field-kit-catalog --skill afk-compass --yes
+afk skills add logbookfordevs/ai-field-kit-catalog --skill hyperframes --yes --profile video
+afk skills add logbookfordevs/ai-field-kit-catalog --skill hyperframes --yes --profile-only video
+afk skills add logbookfordevs/ai-field-kit-catalog --skill hyperframes --yes --start-disabled
 afk skills show afk-note
 afk skills get afk-note
 afk skills open afk-note --folder --app cursor

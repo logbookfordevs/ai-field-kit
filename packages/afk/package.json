@@ -15,10 +15,10 @@
     "afk": "dist/index.js"
   },
   "files": [
-    "catalog/**/*",
     "docs/**/*",
     "dist/**/*.js",
-    "!dist/**/*.test.js"
+    "!dist/**/*.test.js",
+    "!dist/**/*.test-helper.js"
   ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",

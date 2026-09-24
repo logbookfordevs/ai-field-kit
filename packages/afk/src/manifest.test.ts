@@ -505,16 +505,6 @@ test("ensureLocalManifests override discards imported skills and local profiles"
   }
 });
 
-type ToolManifestFile = {
-  items: Array<{
-    id: string;
-    install: {
-      command: string;
-      args: string[];
-    };
-  }>;
-};
-
 test("ensureLocalManifests migrates the old Stitch header default", async () => {
   const homeDir = mkdtempSync(join(tmpdir(), "afk-manifest-"));
   const manifestDir = localManifestDir(homeDir);
@@ -642,38 +632,6 @@ test("ensureLocalManifests migrates legacy autoInvocation policy during refresh"
     { id: "manual", invocation: "manual" },
   ]);
   assert.ok(migrated.items.every((item) => !("autoInvocation" in item)));
-});
-
-test("packaged tool manifests keep npx installs non-interactive", () => {
-  const manifest = JSON.parse(readFileSync(new URL("../catalog/tools.json", import.meta.url), "utf8")) as ToolManifestFile;
-  const interactiveNpxItems = manifest.items
-    .filter((item) => usesNpx(item.install.command, item.install.args) && !usesNonInteractiveNpx(item.install.command, item.install.args))
-    .map((item) => item.id);
-
-  assert.deepEqual(interactiveNpxItems, []);
-});
-
-test("packaged catalogs expose the AFK Architect required bundle", () => {
-  const presets = JSON.parse(readFileSync(new URL("../catalog/presets.json", import.meta.url), "utf8")) as {
-    presets: Array<{ id: string; areas: string[]; all?: boolean; selections?: { skills?: string[]; customAgents?: string[] } }>;
-  };
-  const skills = JSON.parse(readFileSync(new URL("../catalog/skills.json", import.meta.url), "utf8")) as {
-    items: Array<{ id: string }>;
-  };
-  const preset = presets.presets.find((item) => item.id === "afk-architect");
-
-  assert.ok(preset);
-  assert.deepEqual(preset.selections?.skills, ["afk-architect"]);
-  assert.deepEqual(preset.selections?.customAgents, ["afk-cartographer", "afk-builder", "afk-pathfinder"]);
-  assert.ok(skills.items.some((item) => item.id === "afk-architect"));
-
-  const dailyRoutine = presets.presets.find((item) => item.id === "daily-routine");
-  assert.deepEqual(dailyRoutine, {
-    id: "daily-routine",
-    label: "Daily Routine",
-    areas: ["rules", "skills", "tools", "agents"],
-    all: true,
-  });
 });
 
 test("tool manifests reject shell control tokens outside shell commands", () => {
@@ -1343,22 +1301,6 @@ test("ensureLocalManifests override clears a targeted manifest omitted by the so
     globalThis.fetch = originalFetch;
   }
 });
-
-function usesNpx(command: string, args: string[]): boolean {
-  return command === "npx" || commandLineIncludesNpx([command, ...args].join(" "));
-}
-
-function usesNonInteractiveNpx(command: string, args: string[]): boolean {
-  if (command === "npx") {
-    return args[0] === "--yes" || args[0] === "-y";
-  }
-
-  return /(^|[\s;&|()])npx\s+(--yes|-y)(\s|$)/.test([command, ...args].join(" "));
-}
-
-function commandLineIncludesNpx(commandLine: string): boolean {
-  return /(^|[\s;&|()])npx(\s|$)/.test(commandLine);
-}
 
 async function emptyGithubCheckout(): Promise<{ rootDir: string; cleanup: () => void }> {
   const rootDir = mkdtempSync(join(tmpdir(), "afk-empty-source-"));

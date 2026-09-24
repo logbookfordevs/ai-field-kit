@@ -12,7 +12,7 @@ These users are technical and skeptical. They want to see what will be installed
 
 ## Product Purpose
 
-AI Field Kit is the DX-first setup layer for practical AI development workflows. It packages rules, skills, workflows, hooks, MCP registry entries, setup routing, and companion plugin guidance so developers can install only the pieces they need and keep agent behavior versioned.
+AI Field Kit is the DX-first setup layer for practical AI development workflows. It installs and manages independently owned catalogs of rules, skills, hooks, agents, MCP entries, and tools so developers can install only the pieces they need and keep agent behavior versioned.
 
 AFK should make the system shape legible: authored skills can be installed directly, the AFK CLI can orchestrate broader setup, and workflow packages can coordinate heavier planning or execution when the job calls for it. Success means a developer understands the composition model quickly enough to choose a narrow install path with confidence instead of treating AFK as a monolithic methodology.
 
@@ -42,3 +42,7 @@ Avoid burying the setup model under ornamental cards or screenshots that do not 
 Use readable contrast, keyboard-accessible controls, reduced-motion alternatives, responsive layouts, semantic landmarks, clear focus states, and plain language for setup concepts. Motion and visual metaphor should clarify relationships, not become required for comprehension.
 
 Installation and compatibility information should not rely on color alone. Code blocks, copy buttons, tabs, tables, and support links should remain usable with keyboard navigation, narrow screens, and assistive technology.
+
+## Catalog ownership
+
+Logbook Atlas owns the default catalog, authored skill content, starter rules, hook implementations, and portable agent definitions. AFK owns the CLI, installation lifecycle, catalog schema support, and harness adapters. Catalog membership and workflow-method documentation live in Atlas; this repository links to them.

@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
+import { migratedCatalogSource } from "../manifest.js";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { quoteArg } from "../delegates.js";
 import type { Runtime } from "../types.js";
@@ -28,6 +29,7 @@ export type SkillUpdateCommand = {
 
 type LockEntry = {
   source?: unknown;
+  sourceUrl?: unknown;
   sourceType?: unknown;
   skillPath?: unknown;
   skillFolderHash?: unknown;
@@ -162,4 +164,27 @@ function projectLockPath(cwd: string): string {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+export function migrateLegacySkillLock(homeDir: string, command: SkillUpdateCommand): void {
+  const path = command.scope === "global" ? globalLockPath(homeDir) : projectLockPath(command.cwd);
+  if (!existsSync(path)) return;
+  const original = readFileSync(path, "utf8");
+  const lock = JSON.parse(original) as SkillLock;
+  if (!lock.skills || typeof lock.skills !== "object" || Array.isArray(lock.skills)) return;
+  let changed = false;
+  for (const [name, entry] of Object.entries(lock.skills as Record<string, LockEntry>)) {
+    if (command.skillNames.length && !command.skillNames.includes(name)) continue;
+    if (!entry || typeof entry.source !== "string" || entry.sourceType === "local") continue;
+    const source = migratedCatalogSource(entry.source);
+    if (source !== entry.source) {
+      entry.source = source;
+      if (typeof entry.sourceUrl === "string") entry.sourceUrl = migratedCatalogSource(entry.sourceUrl);
+      changed = true;
+    }
+  }
+  if (changed) {
+    if (!existsSync(`${path}.before-atlas`)) writeFileSync(`${path}.before-atlas`, original);
+    writeFileSync(path, `${JSON.stringify(lock, null, 2)}\n`);
+  }
 }

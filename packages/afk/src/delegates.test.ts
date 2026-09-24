@@ -10,12 +10,12 @@ import type { CliOptions, Runtime } from "./types.js";
 const defaultHomeDir = localHomeWithManifests({
   "skills.json": {
     version: 1,
-    defaultSource: "https://github.com/logbookfordevs/ai-field-kit",
+    defaultSource: "https://github.com/logbookfordevs/ai-field-kit-catalog",
     items: [
       {
         id: "afk-note",
         label: "AFK / Note",
-        source: "https://github.com/logbookfordevs/ai-field-kit",
+        source: "https://github.com/logbookfordevs/ai-field-kit-catalog",
         args: ["--skill", "afk-note", "--global"],
         default: true,
         invocation: "auto",
@@ -94,7 +94,7 @@ const options: CliOptions = {
 test("buildSkillCommands uses the official skills CLI", () => {
   const commands = buildSkillCommands(options);
   assert.equal(commands[0]?.command, "npx");
-  assert.deepEqual(commands[0]?.args.slice(0, 3), ["skills", "add", "https://github.com/logbookfordevs/ai-field-kit"]);
+  assert.deepEqual(commands[0]?.args.slice(0, 3), ["skills", "add", "https://github.com/logbookfordevs/ai-field-kit-catalog"]);
   assert.ok(commands[0]?.args.includes("--global"));
   assert.ok(commands[0]?.args.includes("--yes"));
   assert.ok(commands[0]?.args.includes("--skill"));

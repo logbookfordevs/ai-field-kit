@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sectionTitle, muted } from "./brand.js";
-import { loadDefaultManifestContent, localManifestDir, readRememberedDefaultsSource, skillInvocationPolicy, type ManifestName } from "./manifest.js";
+import { builtInDefaultsSource, loadDefaultManifestContent, localManifestDir, readRememberedDefaultsSource, skillInvocationPolicy, type ManifestName } from "./manifest.js";
 import { enabledSkillProfileIds, skillProfileStatus, type SkillProfileApplyResult } from "./skills/profiles.js";
 import { bold, paint, reset, terminalPalette } from "./terminal-theme.js";
 import type { CliOptions, ManifestCategory, Runtime } from "./types.js";
@@ -170,7 +170,7 @@ async function loadSourceManifest(filename: ManifestShowCategory["filename"], op
 }
 
 function manifestShowSourceLabel(options: CliOptions): string {
-  return options.defaultsSource || readRememberedDefaultsSource(options) || "logbookfordevs/ai-field-kit";
+  return options.defaultsSource || readRememberedDefaultsSource(options) || builtInDefaultsSource;
 }
 
 type LoadedManifest = {

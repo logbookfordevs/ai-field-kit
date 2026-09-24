@@ -63,6 +63,7 @@ import {
 import {
   buildSkillUpdateCommands,
   loadLockedSkills,
+  migrateLegacySkillLock,
   runSkillUpdateCommands,
   type LockedSkillRecord,
 } from "./update.js";
@@ -828,6 +829,9 @@ async function runSkillsUpdate(skillNames: string[], runtime: Runtime, options: 
     return [command.scope, snapshotDisabledSkillIds(storageOptions, names)] as const;
   }));
 
+  if (!options.dryRun) {
+    for (const command of commands) migrateLegacySkillLock(options.homeDir, command);
+  }
   return runSkillUpdateCommands(runtime, commands, async (command) => {
     const hasCatalog = options.manifestContents?.["skills.json"] || pathExists(skillCatalogPath(options.homeDir));
     const postInstallCode = hasCatalog

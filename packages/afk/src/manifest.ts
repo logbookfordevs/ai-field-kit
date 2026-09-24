@@ -2,12 +2,39 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
-import { manifestPath } from "./paths.js";
 import type { CliOptions, ManifestCategory, ManifestFilename, PathOperation } from "./types.js";
 
 export const manifestNames = ["skills.json", "profiles.json", "agents.json", "mcps.json", "presets.json", "rules.json", "tools.json", "hooks.json"] as const;
-const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit";
-export const builtInDefaultsSource = "logbookfordevs/ai-field-kit";
+const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit-catalog";
+export const builtInDefaultsSource = "logbookfordevs/ai-field-kit-catalog";
+
+export function migratedCatalogSource(source: string): string {
+  const normalized = source.trim().replace(/\/$/, "");
+  if (/^(?:https:\/\/github\.com\/|github\.com\/)?logbookfordevs\/ai-field-kit(?:\.git)?$/.test(normalized)) {
+    return normalized.replace(/ai-field-kit(?:\.git)?$/, "ai-field-kit-catalog");
+  }
+  const tree = normalized.match(/^https:\/\/github\.com\/logbookfordevs\/ai-field-kit\/tree\/main\/(?:packages\/afk\/catalog|afk\/catalog)$/);
+  if (tree) return "https://github.com/logbookfordevs/ai-field-kit-catalog/tree/main/afk/catalog";
+  return normalized.replace(
+    /^https:\/\/raw\.githubusercontent\.com\/logbookfordevs\/ai-field-kit\/main\/(rules|agents|hooks|skills|packages\/afk\/catalog)(?=\/|$)/,
+    (_, path: string) => `${rawBaseUrl}/main/${path === "packages/afk/catalog" ? "afk/catalog" : path}`,
+  );
+}
+
+export function migrateCatalogReferences(content: string): string {
+  const keys = new Set(["source", "url", "defaultSource", "defaultsSource", "favoriteSources"]);
+  const migrate = (value: unknown, key = ""): unknown => {
+    if (typeof value === "string") return keys.has(key) ? migratedCatalogSource(value) : value;
+    if (Array.isArray(value)) return value.map(item => migrate(item, key));
+    if (isRecord(value)) return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, migrate(item, name)]));
+    return value;
+  };
+  try {
+    const original: unknown = JSON.parse(content);
+    const next = migrate(original);
+    return JSON.stringify(original) === JSON.stringify(next) ? content : `${JSON.stringify(next, null, 2)}\n`;
+  } catch { return content; }
+}
 
 export type ManifestName = (typeof manifestNames)[number];
 
@@ -302,7 +329,7 @@ export function planRememberedDefaultsSourceUpdate(options: ManifestDirOptions, 
     operations.push({ type: "mkdir", path: manifestDir });
   }
 
-  const trimmedSource = defaultsSource.trim();
+  const trimmedSource = migratedCatalogSource(defaultsSource);
   const existing = readExistingPresetsManifest(presetsPath);
   const next = {
     version: existing.version,
@@ -318,8 +345,8 @@ export function planRememberedDefaultsSourceUpdate(options: ManifestDirOptions, 
 export function readSourcePreferences(options: ManifestDirOptions): { defaultSource: string; favoriteSources: string[] } {
   const manifest = readExistingPresetsManifest(join(manifestDirForOptions(options), "presets.json"));
   return {
-    defaultSource: manifest.defaultsSource.trim(),
-    favoriteSources: unique(manifest.favoriteSources ?? []),
+    defaultSource: migratedCatalogSource(manifest.defaultsSource),
+    favoriteSources: unique((manifest.favoriteSources ?? []).map(migratedCatalogSource)),
   };
 }
 
@@ -348,7 +375,7 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
   const operations: PathOperation[] = [];
   const manifestDir = manifestDirForOptions(options);
   const rememberedSource = rememberedDefaultsSource(manifestDir);
-  const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+  const effectiveDefaultsSource = migratedCatalogSource(options.defaultsSource || rememberedSource || builtInDefaultsSource);
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
   const favoriteSourcesForWrite = readExistingPresetsManifest(join(manifestDir, "presets.json")).favoriteSources ?? [];
   const shouldRefreshDefaults = options.refreshDefaults || options.defaultsSourceExplicit || Boolean(options.defaultsSource);
@@ -363,7 +390,9 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
     for (const name of selectedNames) {
       const target = join(manifestDir, name);
       if (!shouldRefreshDefaults && existsSync(target)) {
-        const migrated = migrateLocalManifest(name, readFileSync(target, "utf8"));
+        const original = readFileSync(target, "utf8");
+        const references = migrateCatalogReferences(original);
+        const migrated = migrateLocalManifest(name, references) ?? (references !== original ? references : null);
         if (migrated) {
           operations.push({ type: "write", path: target, content: migrated });
         }
@@ -375,7 +404,7 @@ export async function ensureLocalManifests(options: ManifestOptions): Promise<Pa
         : await defaultManifestContent(name, options, effectiveDefaultsSource, rememberedSourceForWrite, favoriteSourcesForWrite, sourceSession);
       const content = rawContent ? mergedManifestContent(name, rawContent, target, options.overrideRefresh) : rawContent;
       if (content) {
-        operations.push({ type: "write", path: target, content });
+        operations.push({ type: "write", path: target, content: migrateCatalogReferences(content) });
       } else if (options.overrideRefresh) {
         operations.push({ type: "write", path: target, content: emptyManifestContent(name, options, effectiveDefaultsSource) });
       } else if (existsSync(target)) {
@@ -414,7 +443,7 @@ function mergedManifestContent(name: ManifestName, content: string, targetPath: 
 export async function loadDefaultManifestContent(name: ManifestName, options: ManifestOptions): Promise<string | null> {
   const manifestDir = manifestDirForOptions(options);
   const rememberedSource = rememberedDefaultsSource(manifestDir);
-  const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+  const effectiveDefaultsSource = migratedCatalogSource(options.defaultsSource || rememberedSource || builtInDefaultsSource);
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
   const favoriteSourcesForWrite = readExistingPresetsManifest(join(manifestDir, "presets.json")).favoriteSources ?? [];
   const sourceSession = createManifestSourceSession(options, effectiveDefaultsSource);
@@ -429,7 +458,7 @@ export async function loadSourceManifestContents(options: ManifestOptions): Prom
   const contents: Partial<Record<ManifestFilename, string>> = {};
   const manifestDir = manifestDirForOptions(options);
   const rememberedSource = rememberedDefaultsSource(manifestDir);
-  const effectiveDefaultsSource = options.defaultsSource || rememberedSource || builtInDefaultsSource;
+  const effectiveDefaultsSource = migratedCatalogSource(options.defaultsSource || rememberedSource || builtInDefaultsSource);
   const rememberedSourceForWrite = options.rememberDefaultsSource === false ? rememberedSource : effectiveDefaultsSource;
   const favoriteSourcesForWrite = readExistingPresetsManifest(join(manifestDir, "presets.json")).favoriteSources ?? [];
   const sourceSession = createManifestSourceSession(options, effectiveDefaultsSource);
@@ -531,7 +560,7 @@ function parseManifest<T>(
 ): T {
   const content = options.manifestContents?.[name as ManifestFilename];
   if (content !== undefined) {
-    const parsed: unknown = JSON.parse(content);
+    const parsed: unknown = JSON.parse(migrateCatalogReferences(content));
     if (!guard(parsed)) {
       throw new Error(`Invalid AFK catalog file from setup source: ${name}`);
     }
@@ -544,7 +573,7 @@ function parseManifest<T>(
     throw new Error(`Missing AFK catalog file: ${path}. Run "afk refresh" to prepare the local catalog.`);
   }
 
-  const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+  const parsed: unknown = JSON.parse(migrateCatalogReferences(readFileSync(path, "utf8")));
 
   if (!guard(parsed)) {
     throw new Error(`Invalid AFK catalog file: ${path}`);
@@ -584,7 +613,7 @@ async function defaultManifestContent(
 export function resolvedCustomAgentManifestContent(content: string, sourceRoot: string, ref: string, cwd: string): string {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(migrateCatalogReferences(content));
   } catch {
     return content;
   }
@@ -603,7 +632,7 @@ export function resolvedCustomAgentManifestContent(content: string, sourceRoot: 
 export function resolvedRulesManifestContent(content: string, sourceRoot: string, ref: string, cwd: string): string {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(migrateCatalogReferences(content));
   } catch {
     return content;
   }
@@ -697,10 +726,11 @@ async function fetchDefaultManifest(
 function readLocalPackageManifest(name: ManifestName, options: ManifestOptions): string | null {
   const cwd = options.cwd ?? process.cwd();
   const candidates = [
+    join(cwd, "afk", "catalog", name),
     join(cwd, "packages", "afk", "catalog", name),
     join(cwd, "catalog", name),
+    join(options.repoDir, "afk", "catalog", name),
     join(options.repoDir, "packages", "afk", "catalog", name),
-    manifestPath(name),
   ];
 
   for (const candidate of unique(candidates)) {
@@ -773,7 +803,7 @@ function createManifestSourceSession(options: ManifestOptions, source: string): 
 }
 
 function githubSourceSpec(source: string, fallbackRef: string): GithubSourceSpec | null {
-  const normalized = source.trim().replace(/\/$/, "");
+  const normalized = migratedCatalogSource(source).replace(/\/$/, "");
   const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
   if (rawMatch) {
     const [, owner, repo, ref, path] = rawMatch;
@@ -911,7 +941,7 @@ function readExistingPresetsManifest(path: string): PresetsManifest {
   }
 
   try {
-    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    const parsed: unknown = JSON.parse(migrateCatalogReferences(readFileSync(path, "utf8")));
     if (isRecord(parsed)) {
       return {
         version: typeof parsed.version === "number" ? parsed.version : 1,
@@ -954,9 +984,9 @@ function rememberedDefaultsSource(manifestDir: string): string {
   }
 
   try {
-    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    const parsed: unknown = JSON.parse(migrateCatalogReferences(readFileSync(path, "utf8")));
     if (isRecord(parsed) && typeof parsed.defaultsSource === "string") {
-      return parsed.defaultsSource.trim();
+      return migratedCatalogSource(parsed.defaultsSource);
     }
   } catch {
     return "";
@@ -966,13 +996,13 @@ function rememberedDefaultsSource(manifestDir: string): string {
 }
 
 export function defaultsManifestBaseUrl(source: string, ref: string): string {
-  return defaultsManifestBaseUrls(source, ref)[0] ?? `${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/catalog`;
+  return defaultsManifestBaseUrls(source, ref)[0] ?? `${rawBaseUrl}/${encodeURIComponent(ref)}/afk/catalog`;
 }
 
 export function defaultsManifestBaseUrls(source: string, ref: string): string[] {
-  const normalized = source.trim().replace(/\/$/, "");
+  const normalized = migratedCatalogSource(source).replace(/\/$/, "");
   if (!normalized) {
-    return [`${rawBaseUrl}/${encodeURIComponent(ref)}/packages/afk/catalog`];
+    return [`${rawBaseUrl}/${encodeURIComponent(ref)}/afk/catalog`];
   }
 
   const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
@@ -1011,7 +1041,7 @@ function defaultRepoManifestUrls(owner: string, repo: string, ref: string): stri
 }
 
 function catalogSourceBase(source: string, ref: string, cwd: string): string {
-  const normalized = source.trim().replace(/\/$/, "");
+  const normalized = migratedCatalogSource(source).replace(/\/$/, "");
 
   const rawMatch = normalized.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)(?:\/(.*))?$/);
   if (rawMatch) {
@@ -1113,7 +1143,7 @@ function emptyManifestContent(name: ManifestName, options: Pick<CliOptions, "rul
 
 function withSourcePreferences(content: string, defaultsSource: string, favoriteSources: string[]): string {
   try {
-    const parsed: unknown = JSON.parse(content);
+    const parsed: unknown = JSON.parse(migrateCatalogReferences(content));
     if (isRecord(parsed)) {
       return `${JSON.stringify({
         ...parsed,
@@ -1147,7 +1177,7 @@ function migrateLocalManifest(name: ManifestName, content: string): string | nul
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(migrateCatalogReferences(content));
   } catch {
     return null;
   }
@@ -1181,7 +1211,7 @@ function migrateLocalManifest(name: ManifestName, content: string): string | nul
 function migrateSkillsManifest(content: string): string | null {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(migrateCatalogReferences(content));
   } catch {
     return null;
   }
@@ -1222,7 +1252,7 @@ function migrateSkillsManifest(content: string): string | null {
 function mergedSkillsManifestContent(content: string, targetPath: string, preserveImported = true): string {
   let refreshed: unknown;
   try {
-    refreshed = JSON.parse(content);
+    refreshed = JSON.parse(migrateCatalogReferences(content));
   } catch {
     return content;
   }
@@ -1246,7 +1276,7 @@ function mergedSkillsManifestContent(content: string, targetPath: string, preser
 export function mergedCustomAgentManifestContent(content: string, targetPath: string, mergeExisting = true): string {
   let refreshed: unknown;
   try {
-    refreshed = JSON.parse(content);
+    refreshed = JSON.parse(migrateCatalogReferences(content));
   } catch {
     return content;
   }
@@ -1272,7 +1302,7 @@ export function mergedCustomAgentManifestContent(content: string, targetPath: st
 export function mergedRulesManifestContent(content: string, targetPath: string, mergeExisting = true): string {
   let refreshed: unknown;
   try {
-    refreshed = JSON.parse(content);
+    refreshed = JSON.parse(migrateCatalogReferences(content));
   } catch {
     return content;
   }
@@ -1318,7 +1348,7 @@ function readExistingCustomAgentManifest(path: string): CustomAgentManifest | nu
   }
 
   try {
-    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    const parsed: unknown = JSON.parse(migrateCatalogReferences(readFileSync(path, "utf8")));
     return isCustomAgentManifest(parsed) ? parsed : null;
   } catch {
     return null;
@@ -1379,7 +1409,7 @@ function readProfilesManifest(path: string): ProfilesManifest | undefined {
 
 function parseProfilesManifest(content: string): ProfilesManifest | undefined {
   try {
-    const parsed: unknown = JSON.parse(content);
+    const parsed: unknown = JSON.parse(migrateCatalogReferences(content));
     if (!isProfilesManifest(parsed)) {
       return undefined;
     }
@@ -1437,7 +1467,7 @@ function readExistingImportedSkillItems(path: string): SkillManifestItem[] {
   }
 
   try {
-    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    const parsed: unknown = JSON.parse(migrateCatalogReferences(readFileSync(path, "utf8")));
     if (!isSkillManifest(parsed)) {
       return [];
     }
@@ -1451,7 +1481,7 @@ function readExistingImportedSkillItems(path: string): SkillManifestItem[] {
 function migratePresetsManifest(content: string): string | null {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(migrateCatalogReferences(content));
   } catch {
     return null;
   }

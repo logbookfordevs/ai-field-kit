@@ -228,11 +228,11 @@ test("setup reports post-install failure while retaining successful skill storag
   assert.equal(readFileSync(f.target, "utf8"), "user content");
 });
 
-test("profile installs run catalog-owned actions", async () => {
+test("selected profile skill installs run catalog-owned actions", async () => {
   const f = fixture();
   write(join(localManifestDir(f.options.homeDir), "profiles.json"), JSON.stringify({ version: 2, alwaysOn: [], items: [{ id: "design-profile", name: "Design Profile", catalogSkills: ["design"], packages: [] }] }));
   vi.mocked(f.runtime.spawn).mockImplementation(async () => { f.install(); return { code: 0 }; });
-  assert.equal(await runArea("profiles", f.runtime, { ...f.options, selectedSkillProfileIds: ["design-profile"] }), 0);
+  assert.equal(await runArea("skills", f.runtime, { ...f.options, selectedSkillProfileIds: ["design-profile"] }), 0);
   assert.ok(existsSync(f.target));
 });
 

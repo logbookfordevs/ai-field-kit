@@ -175,6 +175,8 @@ preferred command shape.
 
 ## Catalogs and Sources
 
+The built-in source is `logbookfordevs/ai-field-kit-catalog` (Logbook Atlas). Legacy AFK default-source references migrate automatically in the updated CLI; custom sources and local selections remain yours. Run `afk refresh` to persist updated cached references. The catalog is fetched from Atlas, not bundled with the CLI.
+
 AFK setup is catalog-driven. A catalog describes the recommended rules, skills,
 Custom Agents, MCPs, tools, hooks, profiles, and presets for a machine or
 project while keeping installation delegated to the right upstream tool.
@@ -228,13 +230,13 @@ Save a source as the default and refresh from it:
 afk refresh --default-source your-org/dev-kit
 ```
 
-AI Field Kit also publishes its default AFK catalog as a shadcn-compatible
+Logbook Atlas publishes the default AFK catalog as a shadcn-compatible
 registry item. Use this when you want to commit the current AFK defaults into a
 project before running project-local setup:
 
 ```bash
-pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit/afk-catalog
-# or npx shadcn@latest add logbookfordevs/ai-field-kit/afk-catalog
+pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit-catalog/afk-catalog
+# or npx shadcn@latest add logbookfordevs/ai-field-kit-catalog/afk-catalog
 afk setup --local --dry-run
 ```
 
@@ -342,60 +344,19 @@ mapping, and Pi setup, read [Portable Custom Agents](./packages/afk/docs/custom-
 
 ## Skills and Workflows
 
-Skills are still a core part of AI Field Kit, but they are no longer the front
-door of this README. Start with the CLI; use the skill docs when you want the
-composition model, available skills, or workflow guidance.
-
-Start here:
-
-- [Skill Composition](./packages/afk/docs/skill-composition.html) explains the
-  primitive, wrapper, workflow, utility, reference, and router model.
-- [Skill Composition Studio](https://tot.page/mhPWYwLnjw_yGzIs8FQOXg) is the
-  visual companion.
-- [ADF Cinematic Production Map](https://tot.page/BKxaG-aUkUFc5f180RsQ4Q)
-  shows how filmmaking stages, language, artifacts, and greenlights translate
-  into cinematic frontend production.
-- [`skills/`](./skills) contains the authored AFK skill packages.
-
-For planning, choose the smallest surface that fits the fog:
-
-- Use `grill-with-docs` for focused work that can be understood, pressured, and
-  planned inside one agent session. It is the direct path when the docs or code
-  need sharper questions before implementation.
-- Use `wayfinder` when the idea is too large for one session or the route is
-  still foggy. It creates a shared issue-tracker map, breaks the unknowns into
-  ticket-sized investigations, and lets multiple sessions clear the path one
-  decision at a time.
-
-If you only want the AFK-authored skill files, install directly from GitHub
-using the [`skills` CLI](https://skills.sh/):
-
-```bash
-npx skills add https://github.com/logbookfordevs/ai-field-kit
-```
-
-That is the lightest path, but it is not the full AFK experience. It installs
-skills from this repository only; it does not apply AFK rules, hooks, MCPs,
-tools, catalog composition, or setup policy.
-
----
+[Logbook Atlas](https://github.com/logbookfordevs/ai-field-kit-catalog) owns the default catalog and its skills, rules, agents, hooks, profiles, presets, and recommendations. Read the [catalog guide](https://github.com/logbookfordevs/ai-field-kit-catalog/blob/main/docs/catalog-guide.md) for skill behavior and composition. AFK owns installation, configuration, and harness adapters.
 
 ## Repository Map
 
 | Path | What it is |
 |---|---|
 | [`packages/afk/`](./packages/afk) | AFK CLI package, command reference, catalog model, and local development flow. |
-| [`packages/afk/catalog/`](./packages/afk/catalog) | Default setup catalog read by AFK. |
 | [`packages/afk/docs/custom-agents.md`](./packages/afk/docs/custom-agents.md) | Portable Custom Agent source format, adapters, and provisioning behavior. |
-| [`rules/`](./rules) | Shared AFK rules source for managed agent instruction regions. |
-| [`skills/`](./skills) | Authored AFK skills and workflow-style skill packages. |
-| [`packages/afk/catalog/mcps.json`](./packages/afk/catalog/mcps.json) | MCP server recommendations for delegated setup through official tooling. |
-| [`registry.json`](./registry.json) | shadcn-compatible registry entrypoint for project-local AFK catalog bundles. |
 | [`apps/site/`](./apps/site) | React/Vite site for AI Field Kit. |
 
 ### Global rules targets
 
-The bundled catalog exposes [`rules/AGENTS.md`](./rules/AGENTS.md) as an
+The Atlas catalog exposes [starter rules](https://github.com/logbookfordevs/ai-field-kit-catalog/blob/main/rules/AGENTS.md) as an
 opinionated starter layer. AFK can compose it with independently owned rules
 layers, then writes the ordered result into each supported global instruction
 host without replacing user-owned content in the rest of the file:
@@ -423,63 +384,12 @@ useful, open a PR.
 3. Add a product-facing note to [`CHANGELOG.md`](./CHANGELOG.md) for visible
    behavior changes.
 
-**Adding a skill:**
-
-Start lean: prompts earn detail through observed failure, not anticipated failure.
-
-1. Scaffold it with the CLI: `npx skills init my-skill`
-2. Fill in `my-skill/SKILL.md` following the existing patterns in
-   [`skills/`](./skills).
-3. Add or update the catalog entry that should install it.
-4. Open a PR with a short description of what the skill does and when to use it.
-
-For explicit multi-step procedures, use `invocation: "auto"` when normal
-language should discover the skill, reserve `invocation: "manual"` for
-slash-only or attached-only procedures, and omit the field to preserve the
-policy authored by the source skill.
-
-**Adding a Custom Agent:**
-
-1. Author one Portable Agent File with YAML frontmatter and a Markdown
-   instruction body.
-2. Add its `id`, `label`, and repository-relative source path to `agents.json`.
-   The catalog ID must match the portable file's `name`.
-3. Inspect it with `afk show agents --source <source>`.
-4. Preview each intended adapter with a dry run:
-
-   ```bash
-   afk setup agents --source <source> --custom-agent <id> --agent <harness> --dry-run
-   ```
-
-Keep runtime behavior in the portable source. AFK-owned adapters should only
-translate that behavior into the native harness formats.
-
-**Adding an MCP server:**
-
-Edit `mcps/mcp.json` and add a new entry under `"servers"`. Use
-`KEY_YOUR_NAME` as a placeholder for any API keys. Never commit real values:
-
-```json
-{
-  "servers": {
-    "my-server": {
-      "config": {
-        "command": "npx",
-        "args": ["-y", "my-mcp-package", "--api-key", "KEY_MY_SERVER"]
-      },
-      "targets": {
-        "antigravity": { "name": "my-server" },
-        "codex": { "name": "my-server", "enabled": true }
-      }
-    }
-  }
-}
-```
+**Catalog contributions:** submit skills, rules, agents, hooks, and catalog changes to [Atlas](https://github.com/logbookfordevs/ai-field-kit-catalog). Keep CLI behavior and catalog-format support in this repository.
 
 ## Common Issues
 
 **I only want the skills** - Use
-`npx skills add https://github.com/logbookfordevs/ai-field-kit`. Use AFK when
+`npx skills add https://github.com/logbookfordevs/ai-field-kit-catalog`. Use AFK when
 you also want rules, hooks, Custom Agents, MCPs, tools, profiles, and catalog
 policy.
 
