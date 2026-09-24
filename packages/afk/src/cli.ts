@@ -667,7 +667,7 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk skills list",
-      "afk skills add logbookfordevs/ai-field-kit-catalog --skill afk-compass --yes",
+      "afk skills add logbookfordevs/logbook-atlas --skill afk-compass --yes",
       "afk skills list --scope global --json",
       "afk skills list --disabled",
       "afk skills disable old-skill --dry-run",
@@ -697,7 +697,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--start-disabled                  AFK: import new skills as disabled and move shared folders into .disabled",
     ],
     examples: [
-      "afk skills add logbookfordevs/ai-field-kit-catalog --skill afk-compass --yes",
+      "afk skills add logbookfordevs/logbook-atlas --skill afk-compass --yes",
       "afk skills add https://github.com/mattpocock/skills --skill tdd --agent codex",
     ],
   },
@@ -1091,7 +1091,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "afk show skills",
       "afk show skills --react",
       "afk show skills --visualize",
-      "afk show skills --source logbookfordevs/ai-field-kit-catalog --ref main",
+      "afk show skills --source logbookfordevs/logbook-atlas --ref main",
       "afk show skills --local",
     ],
   },
@@ -1106,7 +1106,7 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk show rules",
-      "afk show rules --source logbookfordevs/ai-field-kit-catalog",
+      "afk show rules --source logbookfordevs/logbook-atlas",
       "afk show rules --local",
     ],
   },
@@ -1121,7 +1121,7 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk show mcps",
-      "afk show mcps --source logbookfordevs/ai-field-kit-catalog",
+      "afk show mcps --source logbookfordevs/logbook-atlas",
       "afk show mcps --local",
     ],
   },
@@ -1136,7 +1136,7 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk show agents",
-      "afk show agents --source logbookfordevs/ai-field-kit-catalog",
+      "afk show agents --source logbookfordevs/logbook-atlas",
       "afk show agents --local",
     ],
   },
@@ -1151,7 +1151,7 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk show tools",
-      "afk show tools --source logbookfordevs/ai-field-kit-catalog",
+      "afk show tools --source logbookfordevs/logbook-atlas",
       "afk show tools --local",
     ],
   },
@@ -1166,7 +1166,7 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk show hooks",
-      "afk show hooks --source logbookfordevs/ai-field-kit-catalog",
+      "afk show hooks --source logbookfordevs/logbook-atlas",
       "afk show hooks --local",
     ],
   },
@@ -1181,7 +1181,7 @@ const commandHelps: Record<string, CommandHelp> = {
     ],
     examples: [
       "afk show presets",
-      "afk show presets --source logbookfordevs/ai-field-kit-catalog",
+      "afk show presets --source logbookfordevs/logbook-atlas",
       "afk show presets --local",
     ],
   },

@@ -5,18 +5,18 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import type { CliOptions, ManifestCategory, ManifestFilename, PathOperation } from "./types.js";
 
 export const manifestNames = ["skills.json", "profiles.json", "agents.json", "mcps.json", "presets.json", "rules.json", "tools.json", "hooks.json"] as const;
-const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/ai-field-kit-catalog";
-export const builtInDefaultsSource = "logbookfordevs/ai-field-kit-catalog";
+const rawBaseUrl = "https://raw.githubusercontent.com/logbookfordevs/logbook-atlas";
+export const builtInDefaultsSource = "logbookfordevs/logbook-atlas";
 
 export function migratedCatalogSource(source: string): string {
   const normalized = source.trim().replace(/\/$/, "");
-  if (/^(?:https:\/\/github\.com\/|github\.com\/)?logbookfordevs\/ai-field-kit(?:\.git)?$/.test(normalized)) {
-    return normalized.replace(/ai-field-kit(?:\.git)?$/, "ai-field-kit-catalog");
+  if (/^(?:https:\/\/github\.com\/|github\.com\/)?logbookfordevs\/ai-field-kit(?:-catalog)?(?:\.git)?$/.test(normalized)) {
+    return normalized.replace(/ai-field-kit(?:-catalog)?(?:\.git)?$/, "logbook-atlas");
   }
-  const tree = normalized.match(/^https:\/\/github\.com\/logbookfordevs\/ai-field-kit\/tree\/main\/(?:packages\/afk\/catalog|afk\/catalog)$/);
-  if (tree) return "https://github.com/logbookfordevs/ai-field-kit-catalog/tree/main/afk/catalog";
+  const tree = normalized.match(/^https:\/\/github\.com\/logbookfordevs\/ai-field-kit(?:-catalog)?\/tree\/main\/(?:packages\/afk\/catalog|afk\/catalog)$/);
+  if (tree) return "https://github.com/logbookfordevs/logbook-atlas/tree/main/afk/catalog";
   return normalized.replace(
-    /^https:\/\/raw\.githubusercontent\.com\/logbookfordevs\/ai-field-kit\/main\/(rules|agents|hooks|skills|packages\/afk\/catalog)(?=\/|$)/,
+    /^https:\/\/raw\.githubusercontent\.com\/logbookfordevs\/ai-field-kit(?:-catalog)?\/main\/(rules|agents|hooks|skills|afk\/catalog|packages\/afk\/catalog)(?=\/|$)/,
     (_, path: string) => `${rawBaseUrl}/main/${path === "packages/afk/catalog" ? "afk/catalog" : path}`,
   );
 }

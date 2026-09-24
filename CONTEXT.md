@@ -134,4 +134,4 @@ _Avoid_: Agent provisioning, agent setup
 
 ## Default catalog ownership
 
-Logbook Atlas (`logbookfordevs/ai-field-kit-catalog`) maintains the default catalog and source packages. AFK is the catalog-agnostic CLI. Legacy built-in AFK sources migrate to Atlas; custom sources retain their identities.
+Logbook Atlas (`logbookfordevs/logbook-atlas`) maintains the default catalog and source packages. AFK is the catalog-agnostic CLI. Legacy built-in AFK sources migrate to Atlas; custom sources retain their identities.

@@ -279,7 +279,7 @@ function skillIdFromArgs(args: string[]): string | null {
 }
 
 function sourceLabel(source: string): string {
-  if (source.includes("logbookfordevs/ai-field-kit-catalog")) {
+  if (source.includes("logbookfordevs/logbook-atlas")) {
     return "Logbook Atlas";
   }
 

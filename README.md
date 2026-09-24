@@ -175,7 +175,7 @@ preferred command shape.
 
 ## Catalogs and Sources
 
-The built-in source is `logbookfordevs/ai-field-kit-catalog` (Logbook Atlas). Legacy AFK default-source references migrate automatically in the updated CLI; custom sources and local selections remain yours. Run `afk refresh` to persist updated cached references. The catalog is fetched from Atlas, not bundled with the CLI.
+The built-in source is `logbookfordevs/logbook-atlas` (Logbook Atlas). Legacy AFK default-source references migrate automatically in the updated CLI; custom sources and local selections remain yours. Run `afk refresh` to persist updated cached references. The catalog is fetched from Atlas, not bundled with the CLI.
 
 AFK setup is catalog-driven. A catalog describes the recommended rules, skills,
 Custom Agents, MCPs, tools, hooks, profiles, and presets for a machine or
@@ -235,8 +235,8 @@ registry item. Use this when you want to commit the current AFK defaults into a
 project before running project-local setup:
 
 ```bash
-pnpm dlx shadcn@latest add logbookfordevs/ai-field-kit-catalog/afk-catalog
-# or npx shadcn@latest add logbookfordevs/ai-field-kit-catalog/afk-catalog
+pnpm dlx shadcn@latest add logbookfordevs/logbook-atlas/afk-catalog
+# or npx shadcn@latest add logbookfordevs/logbook-atlas/afk-catalog
 afk setup --local --dry-run
 ```
 
@@ -344,7 +344,7 @@ mapping, and Pi setup, read [Portable Custom Agents](./packages/afk/docs/custom-
 
 ## Skills and Workflows
 
-[Logbook Atlas](https://github.com/logbookfordevs/ai-field-kit-catalog) owns the default catalog and its skills, rules, agents, hooks, profiles, presets, and recommendations. Read the [catalog guide](https://github.com/logbookfordevs/ai-field-kit-catalog/blob/main/docs/catalog-guide.md) for skill behavior and composition. AFK owns installation, configuration, and harness adapters.
+[Logbook Atlas](https://github.com/logbookfordevs/logbook-atlas) owns the default catalog and its skills, rules, agents, hooks, profiles, presets, and recommendations. Read the [catalog guide](https://github.com/logbookfordevs/logbook-atlas/blob/main/docs/catalog-guide.md) for skill behavior and composition. AFK owns installation, configuration, and harness adapters.
 
 ## Repository Map
 
@@ -356,7 +356,7 @@ mapping, and Pi setup, read [Portable Custom Agents](./packages/afk/docs/custom-
 
 ### Global rules targets
 
-The Atlas catalog exposes [starter rules](https://github.com/logbookfordevs/ai-field-kit-catalog/blob/main/rules/AGENTS.md) as an
+The Atlas catalog exposes [starter rules](https://github.com/logbookfordevs/logbook-atlas/blob/main/rules/AGENTS.md) as an
 opinionated starter layer. AFK can compose it with independently owned rules
 layers, then writes the ordered result into each supported global instruction
 host without replacing user-owned content in the rest of the file:
@@ -384,12 +384,12 @@ useful, open a PR.
 3. Add a product-facing note to [`CHANGELOG.md`](./CHANGELOG.md) for visible
    behavior changes.
 
-**Catalog contributions:** submit skills, rules, agents, hooks, and catalog changes to [Atlas](https://github.com/logbookfordevs/ai-field-kit-catalog). Keep CLI behavior and catalog-format support in this repository.
+**Catalog contributions:** submit skills, rules, agents, hooks, and catalog changes to [Atlas](https://github.com/logbookfordevs/logbook-atlas). Keep CLI behavior and catalog-format support in this repository.
 
 ## Common Issues
 
 **I only want the skills** - Use
-`npx skills add https://github.com/logbookfordevs/ai-field-kit-catalog`. Use AFK when
+`npx skills add https://github.com/logbookfordevs/logbook-atlas`. Use AFK when
 you also want rules, hooks, Custom Agents, MCPs, tools, profiles, and catalog
 policy.
 

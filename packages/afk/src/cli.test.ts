@@ -906,7 +906,7 @@ test("runCli keeps --source github mapped to the built-in AFK defaults source", 
 
     assert.equal(code, 0);
     assert.ok(requestedUrls.length > 0);
-    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/logbookfordevs/ai-field-kit-catalog/main/")));
+    assert.ok(requestedUrls.every((url) => url.startsWith("https://raw.githubusercontent.com/logbookfordevs/logbook-atlas/main/")));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -942,7 +942,7 @@ test("runCli accepts skills CLI agent targets for noninteractive skill installs"
   const text = output.join("\n");
 
   assert.equal(code, 0);
-  assert.ok(text.includes("$ npx skills add https://github.com/logbookfordevs/ai-field-kit"));
+  assert.ok(text.includes("$ npx skills add https://github.com/logbookfordevs/logbook-atlas"));
   assert.ok(text.includes("--agent universal"));
   assert.ok(text.includes("--agent claude-code"));
 });
@@ -1830,7 +1830,7 @@ test("runCli prints contextual show skills help", async () => {
   assert.ok(text.includes("React-style composition tree"));
   assert.ok(text.includes("--react                          Show skills as a React-style composition tree"));
   assert.ok(text.includes("--visualize                      Write and open a skills composition HTML file"));
-  assert.ok(text.includes("afk show skills --source logbookfordevs/ai-field-kit-catalog --ref main"));
+  assert.ok(text.includes("afk show skills --source logbookfordevs/logbook-atlas --ref main"));
   assert.ok(!text.includes("afk show skills mcps"));
 });
 
