@@ -9,7 +9,8 @@ Explore the [AFK skills and profiles switchyard](https://tot.page/13T7lSXk6SIhvG
 | Your task | Command family |
 | --- | --- |
 | Define or edit a group | `afk profiles catalog` |
-| Install a group’s skills | `afk setup profiles` |
+| Prepare profile definitions | `afk setup profiles` |
+| Install a group’s skills | `afk setup skills --profile <id>` |
 | Give an agent its local skill context | `afk skills profiles use` |
 | Activate, deactivate, or inspect the working set | `afk skills profiles enable\|disable\|status` |
 
@@ -66,18 +67,23 @@ Version 2 `profiles.json` separates IDs in your skills catalog from packages ins
 }
 ```
 
-Every `catalogSkills` ID must exist in the selected `skills.json`. A package with `skills` selects those upstream skills; omit that field to install the whole source. Verified package skills are cached as imported, start-disabled entries and become runtime members. If a skill already belongs to the source catalog, that catalog keeps ownership of its policy.
+Every `catalogSkills` ID must exist in the selected `skills.json`. A package with `skills` selects those upstream skills; omit that field to install the whole source. Verified package skills are cached as imported entries and become runtime members. New package skills start disabled in both project and global scope. If a skill already belongs to the source catalog, that catalog keeps ownership of its policy.
 
 Older version 1 definitions with a `skills` list remain readable. Profile writes use version 2 with `catalogSkills`.
 
 <h2 id="profiles-install">Install first, then choose how to use it</h2>
 
-```bash select profiles to install
-afk setup profiles --dry-run
-afk setup profiles
+`afk setup profiles` prepares the cached profile catalog only. It does not install skills, move skill folders, or activate profiles.
+
+```bash explicitly install profile skills
+afk setup skills --profile
+afk setup skills --profile html --dry-run
+afk setup skills --profile html --local
 ```
 
-Setup installs selected profiles’ available catalog skills, composed dependencies, and packages. It does not enable the profiles or install the catalog-wide `alwaysOn` set. Missing references require confirmation before a partial installation; `--yes` accepts that partial result.
+Omit the profile ID to choose profiles interactively. With `--yes`, provide an ID. Installation includes the selected profiles’ catalog skills, composed dependencies, and packages; it excludes the catalog-wide `alwaysOn` set. Missing references require confirmation before a partial installation; `--yes` accepts that partial result.
+
+New package skills remain disabled until enabled. Existing disabled skills and explicit catalog startup settings are preserved. `--local` confines installation to the project; profile activation still manages the global library.
 
 ```bash read without activation
 afk skills profiles use review

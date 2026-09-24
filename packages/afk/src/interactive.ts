@@ -64,7 +64,7 @@ const allSetupAreaChoices: Choice<Area>[] = [
     name: "Profiles",
     value: "profiles",
     checked: DEFAULT_CHECKED,
-    description: "Prepare AFK focus profiles and install their selected skills.",
+    description: "Prepare the cached profile catalog.",
   },
   {
     name: "MCPs",
@@ -104,7 +104,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
       hookAgents: hookAgentSelection.agents,
       setupScope: options.setupScope,
       skillIds: nonInteractiveSkillIds(options),
-      profileIds: loadSetupSkillProfileCatalog(options).items.map((profile) => profile.id),
+      profileIds: [],
       customAgentIds: nonInteractiveCustomAgentIds(options),
       skillAgents: skillAgentSelection.agents,
       mcpIds: loadMcpManifest(options).items.map((item) => item.id),
@@ -127,7 +127,7 @@ export async function selectSetup(options: CliOptions): Promise<SetupSelection> 
     ? await selectSetupAgents(options.agents, detected.agents, areas)
     : { agents: options.agents, source: options.agents.length > 0 ? "explicit" : "none" as TargetSelectionSource };
   const skillIds = areas.includes("skills") ? await selectSkills(options) : [];
-  const profileIds = areas.includes("profiles") ? await selectSkillProfiles(options) : [];
+  const profileIds: string[] = [];
   const customAgentIds = areas.includes("agents") ? await selectCustomAgents(options) : [];
   const skillAgentSelection = skillIds.length > 0
     ? selectSkillAgents(options, detected.skillAgents)

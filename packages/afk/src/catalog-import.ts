@@ -204,16 +204,17 @@ export function planSetupSourceCatalogImport(options: CatalogImportOptions & {
   allSkills: boolean;
   preexistingWholeSourceSkillIds?: string[];
   preserveCatalogOwnership?: boolean;
+  strictScope?: boolean;
 }): SetupSourceCatalogImportPlan {
   const sourceManifest = loadSkillManifest(options);
   const selectedIds = new Set(options.selectedSkillIds.map((id) => id.toLowerCase()));
   const selected = sourceManifest.items.filter((item) => (
     selectedIds.size > 0 ? selectedIds.has(item.id.toLowerCase()) : item.default || options.allSkills
   ));
-  const sourceSkillsDir = sourceSkillsDirForOptions(options);
+  const sourceSkillsDir = options.strictScope && options.manifestLocal ? join(options.cwd, ".agents", "skills") : sourceSkillsDirForOptions(options);
   const installed = installedSkillsForImport(sourceSkillsDir);
   const installedById = new Map(installed.map((skill) => [skill.id.toLowerCase(), skill]));
-  const lock = readSkillLock(sourceLockPathForOptions(options));
+  const lock = readSkillLock(options.strictScope && options.manifestLocal ? join(options.cwd, "skills-lock.json") : sourceLockPathForOptions(options));
   const importedById = new Map<string, SkillManifestItem>();
   const missingLock: string[] = [];
   const preexistingWholeSourceSkillIds = new Set(options.preexistingWholeSourceSkillIds ?? []);
@@ -236,10 +237,11 @@ export function planSetupSourceCatalogImport(options: CatalogImportOptions & {
         continue;
       }
       if (isCatalogOwned(installedSkill.id)) {
+        importedById.set(installedSkill.id.toLowerCase(), existingById.get(installedSkill.id.toLowerCase())!);
         continue;
       }
       const importedItem = options.preserveCatalogOwnership
-        ? skillManifestItemFromInstalledSkill(installedSkill.id, installedSkill.root, lockEntry.source, item.startDisabled === true || installedSkill.startDisabled, requestedId)
+        ? skillManifestItemFromInstalledSkill(installedSkill.id, installedSkill.root, lockEntry.source, item.startDisabled === true || existingById.get(installedSkill.id.toLowerCase())?.startDisabled === true || installedSkill.startDisabled, requestedId)
         : { ...item, id: requestedId, imported: true };
       importedById.set(importedItem.id.toLowerCase(), importedItem);
       continue;
@@ -257,13 +259,14 @@ export function planSetupSourceCatalogImport(options: CatalogImportOptions & {
       }
       sourceVerified = true;
       if (isCatalogOwned(installedSkill.id)) {
+        importedById.set(installedSkill.id.toLowerCase(), existingById.get(installedSkill.id.toLowerCase())!);
         continue;
       }
       importedById.set(installedSkill.id.toLowerCase(), skillManifestItemFromInstalledSkill(
         installedSkill.id,
         installedSkill.root,
         resolvedLock.entry.source,
-        item.startDisabled === true || installedSkill.startDisabled,
+        item.startDisabled === true || existingById.get(installedSkill.id.toLowerCase())?.startDisabled === true || installedSkill.startDisabled,
         resolvedLock.id,
       ));
     }

@@ -39,8 +39,8 @@
       ]
     },
     {
-      "id": "video",
-      "name": "Video",
+      "id": "hyperframe",
+      "name": "Hyperframe",
       "catalogSkills": [],
       "packages": [
         {

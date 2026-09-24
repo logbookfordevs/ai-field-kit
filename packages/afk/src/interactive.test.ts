@@ -257,6 +257,7 @@ test("selectSetup offers profiles as a setup area", async () => {
   const selection = await selectSetup(defaultOptions(homeDir));
 
   assert.deepEqual(selection.areas, ["profiles"]);
+  assert.ok(!promptState.checkboxMessages.includes("Choose skill profiles to install"));
   assert.ok(promptState.checkboxChoices["Choose what AFK should prepare"]?.some((choice) => choice.name === "Profiles" && choice.value === "profiles"));
 });
 

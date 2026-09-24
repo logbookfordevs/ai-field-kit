@@ -19,6 +19,9 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- `profiles:` `afk setup profiles` now prepares only the cached profile catalog. Use `afk setup skills --profile [id]` to explicitly install profile members, with an interactive picker when the ID is omitted and `--local` for project scope. New package skills start disabled; catalog startup policy and existing disabled settings are preserved.
+- `catalog:` renamed the `video` profile to `hyperframe` (Hyperframe), keeping its `heygen-com/hyperframes` package.
+
 - `skills:` `afk skills invocation auto|manual <skill>` replaces `enable|disable`; the bare command still opens the batch policy editor.
 
 - `sync:` now installs new preset members automatically and updates existing ones; `--install-missing` is no longer needed. When a preset includes skills, sync covers the entire non-imported catalog regardless of preset skill selections. `--include-extra-skills` also includes imported catalog entries; uncataloged skills remain untouched.

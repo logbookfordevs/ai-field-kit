@@ -714,7 +714,7 @@ test("runCli prints contextual setup help", async () => {
   assert.ok(text.includes("Subcommands:"));
   assert.ok(!text.includes("afk setup refresh"));
   assert.ok(text.includes("afk setup profiles"));
-  assert.ok(text.includes("afk setup profiles                Prepare profiles and install catalog skills"));
+  assert.ok(text.includes("afk setup profiles                Prepare the profile catalog"));
   assert.ok(text.includes("afk setup mcps"));
   assert.ok(text.includes("afk setup tools"));
   assert.ok(text.includes("afk setup hooks"));
@@ -752,9 +752,8 @@ test("runCli prints contextual setup profiles help", async () => {
 
   assert.equal(code, 0);
   assert.ok(text.includes("AFK setup profiles"));
-  assert.ok(text.includes("Prepare selected profiles and install their catalog skills."));
-  assert.ok(text.includes("automatically includes their composed dependencies"));
-  assert.ok(text.includes("offers lock-backed recovery, then asks before installing the available skills"));
+  assert.ok(text.includes("Prepare the cached profile catalog without installing or activating skills."));
+  assert.ok(text.includes("afk setup skills --profile [id]"));
   assert.ok(text.includes("afk setup profiles --local"));
   assert.ok(!text.includes("AFK setup skills"));
 });
@@ -946,6 +945,35 @@ test("runCli accepts skills CLI agent targets for noninteractive skill installs"
   assert.ok(text.includes("--agent universal"));
   assert.ok(text.includes("--agent claude-code"));
 });
+
+test("setup skills --profile installs only the named profile and rejects unknown ids", async () => {
+  const homeDir = localHomeWithManifests({
+    "presets.json": { version: 1, defaultsSource: "local", presets: [] },
+    "skills.json": { version: 1, defaultSource: "", items: [] },
+    "profiles.json": { version: 2, mode: "context", alwaysOn: [], items: [
+      { id: "voice", name: "Voice", catalogSkills: [], packages: [{ source: "example/voice" }] },
+      { id: "video", name: "Video", catalogSkills: [], packages: [{ source: "example/video" }] },
+    ] },
+  });
+  const output: string[] = [];
+  const env = { HOME: homeDir, AI_RULES_REPO: resolve(new URL("../../..", import.meta.url).pathname) };
+  const code = await withConsole(output, () => runCli(["setup", "skills", "--profile", "voice", "--yes", "--dry-run"], env));
+  assert.equal(code, 0, output.join("\n"));
+  assert.ok(output.join("\n").includes("example/voice"));
+  assert.ok(!output.join("\n").includes("example/video"));
+  output.length = 0;
+  assert.equal(await withConsole(output, () => runCli(["setup", "skills", "--profile", "missing", "--yes", "--dry-run"], env)), 1);
+  assert.ok(output.join("\n").includes("Unknown skill profiles: missing"));
+});
+
+for (const flags of [["--profile", "--yes"], ["--profile", "voice", "--all"]]) {
+  test(`setup skills rejects ambiguous profile selection ${flags.join(" ")}`, async () => {
+    const output: string[] = [];
+    const code = await withConsole(output, () => runCli(["setup", "skills", ...flags]));
+    assert.equal(code, 1);
+    assert.ok(output.join("\n").includes("--profile"));
+  });
+}
 
 test("runCli setup skills help uses skills CLI agent names", async () => {
   const output: string[] = [];

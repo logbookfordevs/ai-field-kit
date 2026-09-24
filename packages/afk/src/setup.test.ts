@@ -744,7 +744,7 @@ test("runArea prompts for a source only on first-run interactive setup areas", a
   }
 });
 
-test("runArea profiles prepares the profile catalog from the saved setup source", async () => {
+test("profile skill installation prepares the profile catalog from the saved setup source", async () => {
   const sourceDir = localDefaultsSource({
     "skills.json": {
       version: 1,
@@ -768,7 +768,7 @@ test("runArea profiles prepares the profile catalog from the saved setup source"
 
   promptState.rememberedSources = [];
   const spawned: Array<{ command: string; args: string[] }> = [];
-  const code = await runArea("profiles", {
+  const code = await installProfileSkills( {
     io: {
       stdout: (message) => output.push(message),
       stderr: (message) => output.push(message),
@@ -799,7 +799,7 @@ test("runArea profiles prepares the profile catalog from the saved setup source"
   }]);
 });
 
-test("runArea profiles installs transitive composed skills after warning", async () => {
+test("profile skill installation installs transitive composed skills after warning", async () => {
   const manifests = {
     "profiles.json": {
       version: 1,
@@ -820,7 +820,7 @@ test("runArea profiles installs transitive composed skills after warning", async
   const repoDir = localRepoWithRules();
   const output: string[] = [];
 
-  const code = await runArea("profiles", fakeRuntime(output), {
+  const code = await installProfileSkills( fakeRuntime(output), {
     ...defaultOptions(homeDir, repoDir),
     yes: true,
     setupManifestsPrepared: true,
@@ -836,28 +836,114 @@ test("runArea profiles installs transitive composed skills after warning", async
   assert.ok(text.includes("--skill wrapper dependency"));
 });
 
+for (const setupScope of ["project", "global"] as const) {
+  test(`profile setup only prepares the ${setupScope} catalog`, async () => {
+    const homeDir = localHomeWithManifests({
+      "profiles.json": { version: 2, mode: "context", alwaysOn: [], items: [{ id: "video", name: "Video", catalogSkills: [], packages: [{ source: "example/video" }] }] },
+    });
+    const cwd = localRepoWithRules();
+    const output: string[] = [];
+    let installs = 0;
+    const code = await runArea("profiles", {
+      ...fakeRuntime(output), spawn: async () => { installs += 1; return { code: 0 }; },
+    }, { ...defaultOptions(homeDir, cwd), cwd, setupScope, manifestLocal: setupScope === "project", dryRun: false, yes: true, defaultsSource: "local" });
+    assert.equal(code, 0, output.join("\n"));
+    assert.equal(installs, 0);
+    assert.ok(existsSync(join(setupScope === "project" ? join(cwd, "afk", "catalog") : localManifestDir(homeDir), "profiles.json")));
+    assert.equal(existsSync(join(cwd, ".agents", "skills")), false);
+    assert.equal(existsSync(join(homeDir, ".agents", "skills")), false);
+  });
+}
+
+for (const setupScope of ["project", "global"] as const) {
 for (const packageSkills of [undefined, ["captions"]]) {
-  test(`profile setup defers ${packageSkills ? "selective" : "whole"} packages`, async () => {
+  test(`profile skill installation installs ${packageSkills ? "selective" : "whole"} packages in ${setupScope} scope`, async () => {
     const manifests = {
       "profiles.json": { version: 2, mode: "context", alwaysOn: [], items: [{
         id: "video", name: "Video", catalogSkills: [],
         packages: [{ source: "example/video", ...(packageSkills ? { skills: packageSkills } : {}) }],
       }] },
-      "skills.json": { version: 1, defaultSource: "", items: [] },
+      "skills.json": { version: 1, defaultSource: "", items: [{ id: "unrelated", label: "Unrelated", source: "example/other", args: ["--skill", "unrelated"], default: true }] },
     };
     const homeDir = localHomeWithManifests(manifests);
+    const repoDir = localRepoWithRules();
+    const root = setupScope === "project" ? repoDir : homeDir;
+    const globalCatalog = readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8");
     const output: string[] = [];
-    let spawns = 0;
-    const code = await runArea("profiles", {
-      ...fakeRuntime(output), spawn: async () => { spawns += 1; return { code: 0 }; },
+    const calls: string[][] = [];
+    const code = await installProfileSkills( {
+      ...fakeRuntime(output), spawn: async (_command, args) => {
+        calls.push(args);
+        writeInstalledSkill(root, "captions", "Captions");
+        if (setupScope === "project") {
+          writeFileSync(join(root, "skills-lock.json"), JSON.stringify({ version: 1, skills: { captions: { source: "example/video", sourceType: "github", computedHash: "test-hash" } } }));
+        } else {
+          writeGlobalSkillLock(root, { captions: { source: "example/video" } });
+        }
+        return { code: 0 };
+      },
     }, {
-      ...defaultOptions(homeDir, localRepoWithRules()), yes: true, dryRun: false,
+      ...defaultOptions(homeDir, repoDir), cwd: repoDir, yes: true, dryRun: false,
+      setupScope, manifestLocal: setupScope === "project",
       setupManifestsPrepared: true, selectedSkillProfileIds: ["video"],
       manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
     });
-    assert.equal(code, 0);
-    assert.equal(spawns, 0);
-    assert.deepEqual(JSON.parse(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8")).items, []);
+    assert.equal(code, 0, output.join("\n"));
+    assert.ok(!output.join("\n").includes("Missing lock metadata"), output.join("\n"));
+    assert.equal(calls.length, 1);
+    assert.ok(calls[0]);
+    assert.equal(calls[0].includes("--global"), setupScope === "global");
+    assert.equal(calls[0].includes("--skill"), Boolean(packageSkills));
+    assert.equal(existsSync(join(root, ".agents", "skills", "captions")), false);
+    assert.equal(existsSync(join(root, ".agents", "skills", ".disabled", "captions")), true);
+    if (setupScope === "project") {
+      const imported = JSON.parse(readFileSync(join(repoDir, "afk", "catalog", "skills.json"), "utf8")) as { items: Array<{ id: string; source: string }> };
+      assert.deepEqual(imported.items.map(({ id, source }) => ({ id, source })), [{ id: "captions", source: "example/video" }]);
+      assert.equal(readFileSync(join(localManifestDir(homeDir), "skills.json"), "utf8"), globalCatalog);
+      assert.equal(existsSync(join(homeDir, ".agents", "skills", "captions")), false);
+      assert.equal(existsSync(join(homeDir, ".agents", "afk", "state", "skill-profiles.json")), false);
+    }
+  });
+}
+}
+
+for (const policy of ["disabled-folder", "catalog-policy"] as const) {
+  test(`local package setup preserves ${policy} without changing global state`, async () => {
+    const manifests = {
+      "profiles.json": { version: 2, mode: "context", alwaysOn: [], items: [{
+        id: "video", name: "Video", catalogSkills: [], packages: [{ source: "example/video" }],
+      }] },
+      "skills.json": { version: 1, defaultSource: "", items: policy === "catalog-policy" ? [{
+        id: "captions", label: "Captions", source: "example/video", args: ["--skill", "captions"], default: false, startDisabled: true,
+      }] : [] },
+    };
+    const homeDir = localHomeWithManifests(manifests);
+    const repoDir = localRepoWithRules();
+    const catalogDir = join(repoDir, "afk", "catalog");
+    mkdirSync(catalogDir, { recursive: true });
+    writeFileSync(join(catalogDir, "skills.json"), JSON.stringify(manifests["skills.json"]));
+    if (policy === "disabled-folder") {
+      const disabled = join(repoDir, ".agents", "skills", ".disabled", "captions");
+      mkdirSync(disabled, { recursive: true });
+      writeFileSync(join(disabled, "SKILL.md"), "old");
+    }
+    const output: string[] = [];
+    const code = await installProfileSkills( {
+      ...fakeRuntime(output), spawn: async () => {
+        writeInstalledSkill(repoDir, "captions", "Updated captions");
+        writeFileSync(join(repoDir, "skills-lock.json"), JSON.stringify({ version: 1, skills: { captions: { source: "example/video", sourceType: "github", computedHash: "test-hash" } } }));
+        return { code: 0 };
+      },
+    }, {
+      ...defaultOptions(homeDir, repoDir), cwd: repoDir, yes: true, dryRun: false,
+      setupScope: "project", manifestLocal: true, setupManifestsPrepared: true,
+      selectedSkillProfileIds: ["video"],
+      manifestContents: Object.fromEntries(Object.entries(manifests).map(([name, value]) => [name, JSON.stringify(value)])),
+    });
+    assert.equal(code, 0, output.join("\n"));
+    assert.equal(existsSync(join(repoDir, ".agents", "skills", "captions")), false, output.join("\n"));
+    assert.ok(readFileSync(join(repoDir, ".agents", "skills", ".disabled", "captions", "SKILL.md"), "utf8").includes("Updated captions"));
+    assert.equal(existsSync(join(homeDir, ".agents", "skills", "captions")), false);
   });
 }
 
@@ -999,7 +1085,7 @@ test("profile enable reinstalls an enabled whole package without colliding with 
   assert.ok(!output.join("\n").includes("Missing lock metadata"), output.join("\n"));
 });
 
-test("runArea profiles does not install always-on skills", async () => {
+test("profile skill installation does not install always-on skills", async () => {
   const manifests = {
     "profiles.json": {
       version: 2,
@@ -1030,7 +1116,7 @@ test("runArea profiles does not install always-on skills", async () => {
   const output: string[] = [];
   const spawned: Array<{ command: string; args: string[] }> = [];
 
-  const code = await runArea("profiles", {
+  const code = await installProfileSkills( {
     ...fakeRuntime(output),
     spawn: async (command, args) => {
       spawned.push({ command, args });
@@ -1052,7 +1138,10 @@ test("runArea profiles does not install always-on skills", async () => {
   });
 
   assert.equal(code, 0);
-  assert.deepEqual(spawned, []);
+  assert.equal(spawned.length, 1);
+  assert.ok(spawned[0]);
+  assert.ok(spawned[0].args.includes("remotion-dev/skills"));
+  assert.ok(!spawned[0].args.includes("quality-guardrail"));
 });
 
 test("profile enable installs selective package skills", async () => {
@@ -1232,7 +1321,7 @@ test("profile enable maps selective upstream package ids to installed folder ids
   assert.equal(existsSync(join(homeDir, ".agents", "skills", "react-components")), true);
 });
 
-test("runArea profiles rejects catalogSkills missing from skills.json", async () => {
+test("profile skill installation rejects catalogSkills missing from skills.json", async () => {
   const manifests = {
     "profiles.json": {
       version: 2,
@@ -1246,7 +1335,7 @@ test("runArea profiles rejects catalogSkills missing from skills.json", async ()
   const repoDir = localRepoWithRules();
   const output: string[] = [];
 
-  const code = await runArea("profiles", fakeRuntime(output), {
+  const code = await installProfileSkills( fakeRuntime(output), {
     ...defaultOptions(homeDir, repoDir),
     yes: true,
     selectedSkillProfileIds: ["video"],
@@ -1258,7 +1347,7 @@ test("runArea profiles rejects catalogSkills missing from skills.json", async ()
   assert.ok(output.join("\n").includes("Catalog skills missing from skills.json: missing"));
 });
 
-test("runArea profiles rejects selective package skills already declared in catalogSkills", async () => {
+test("profile skill installation rejects selective package skills already declared in catalogSkills", async () => {
   const manifests = {
     "profiles.json": {
       version: 2,
@@ -1281,7 +1370,7 @@ test("runArea profiles rejects selective package skills already declared in cata
   const repoDir = localRepoWithRules();
   const output: string[] = [];
 
-  const code = await runArea("profiles", fakeRuntime(output), {
+  const code = await installProfileSkills( fakeRuntime(output), {
     ...defaultOptions(homeDir, repoDir),
     yes: true,
     selectedSkillProfileIds: ["video"],
@@ -1293,7 +1382,7 @@ test("runArea profiles rejects selective package skills already declared in cata
   assert.ok(output.join("\n").includes("Profile video declares catalog skill remotion again in package remotion-dev/skills"));
 });
 
-test("runArea profiles warns and installs available skills when missing references are accepted", async () => {
+test("profile skill installation warns and installs available skills when missing references are accepted", async () => {
   const manifests = {
     "profiles.json": {
       version: 1,
@@ -1322,7 +1411,7 @@ test("runArea profiles warns and installs available skills when missing referenc
   promptState.partialSkillProfileInstallAccepted = true;
   promptState.partialSkillProfileInstallPrompts = 0;
 
-  const code = await runArea("profiles", fakeRuntime(output), {
+  const code = await installProfileSkills( fakeRuntime(output), {
     ...defaultOptions(homeDir, repoDir),
     selectedSkillProfileIds: ["stitch"],
     setupManifestsPrepared: true,
@@ -1340,7 +1429,7 @@ test("runArea profiles warns and installs available skills when missing referenc
   assert.ok(!text.includes("--skill design-md react-components"), text);
 });
 
-test("runArea profiles offers lock-backed missing skills for recovery and installs the confirmed set", async () => {
+test("profile skill installation offers lock-backed missing skills for recovery and installs the confirmed set", async () => {
   const manifests = {
     "profiles.json": {
       version: 1,
@@ -1376,7 +1465,7 @@ test("runArea profiles offers lock-backed missing skills for recovery and instal
     },
     spawn: async () => ({ code: 0 }),
   };
-  const code = await runArea("profiles", runtime, {
+  const code = await installProfileSkills( runtime, {
     ...defaultOptions(homeDir, repoDir),
     dryRun: false,
     verbose: true,
@@ -1407,7 +1496,7 @@ test("runArea profiles offers lock-backed missing skills for recovery and instal
   ]);
 });
 
-test("runArea profiles does not restore recovered catalog entries when installation fails", async () => {
+test("profile skill installation does not restore recovered catalog entries when installation fails", async () => {
   const manifests = {
     "profiles.json": {
       version: 1,
@@ -1438,7 +1527,7 @@ test("runArea profiles does not restore recovered catalog entries when installat
     spawn: async () => ({ code: 7 }),
   };
 
-  const code = await runArea("profiles", runtime, {
+  const code = await installProfileSkills( runtime, {
     ...defaultOptions(homeDir, repoDir),
     dryRun: false,
     selectedSkillProfileIds: ["stitch"],
@@ -1453,7 +1542,7 @@ test("runArea profiles does not restore recovered catalog entries when installat
   assert.deepEqual(cached.items.map((item) => item.id), ["design-md"]);
 });
 
-test("runArea profiles rejects catalog recovery when post-install metadata cannot be verified", async () => {
+test("profile skill installation rejects catalog recovery when post-install metadata cannot be verified", async () => {
   const manifests = {
     "profiles.json": {
       version: 1,
@@ -1487,7 +1576,7 @@ test("runArea profiles rejects catalog recovery when post-install metadata canno
     },
   };
 
-  const code = await runArea("profiles", runtime, {
+  const code = await installProfileSkills( runtime, {
     ...defaultOptions(homeDir, repoDir),
     dryRun: false,
     selectedSkillProfileIds: ["stitch"],
@@ -1771,6 +1860,10 @@ function fakeRuntime(output: string[]): Runtime {
       throw new Error("Dry-run setup should not spawn commands");
     },
   };
+}
+
+function installProfileSkills(runtime: Runtime, options: CliOptions): Promise<number> {
+  return runArea("skills", runtime, { ...options, setupSkillsByProfile: true });
 }
 
 function defaultOptions(homeDir: string, repoDir: string): CliOptions {

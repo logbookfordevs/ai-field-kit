@@ -335,7 +335,7 @@ const commandHelps: Record<string, CommandHelp> = {
     subcommands: [
       "afk setup rules                   Sync AFK rules into managed agent rule regions",
       "afk setup skills                  Delegate skill installation to the official skills CLI",
-      "afk setup profiles                Prepare profiles and install catalog skills",
+      "afk setup profiles                Prepare the profile catalog",
       "afk setup agents                  Provision portable Custom Agents",
       "afk setup mcps                    Delegate MCP installation to add-mcp",
       "afk setup tools                   Install optional developer tools",
@@ -530,6 +530,7 @@ const commandHelps: Record<string, CommandHelp> = {
       ...setupAreaOptions,
       setupOptions.allSkills,
       "--exclude-imported               Exclude imported skills, including with --all",
+      "--profile [id]                   Install a profile’s skills; omit id to choose profiles",
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -545,6 +546,7 @@ const commandHelps: Record<string, CommandHelp> = {
       ...setupAreaOptions,
       setupOptions.allSkills,
       "--exclude-imported               Exclude imported skills, including with --all",
+      "--profile [id]                   Install a profile’s skills; omit id to choose profiles",
     ],
     examples: [
       "afk setup skills --dry-run",
@@ -554,24 +556,16 @@ const commandHelps: Record<string, CommandHelp> = {
   },
   "setup profiles": {
     title: "AFK setup profiles",
-    summary: "Prepare selected profiles and install their catalog skills.",
+    summary: "Prepare the cached profile catalog without installing or activating skills.",
     usage: "afk setup profiles [options]",
     notes: [
-      "Setup refreshes profiles.json, offers its profiles for selection, and installs their catalogSkills.",
-      "Version 2 profiles use catalogSkills for skills.json references and packages for remote skills sources.",
-      "Package skills are installed when the profile is enabled, not during setup.",
-      "Enabling a profile installs its packages and activates their skills; setup does not download packages.",
-      "If a package overlaps a source-owned skills.json entry, the catalog keeps ownership and startup policy.",
-      "When a selected skill composes other skills, setup warns and automatically includes their composed dependencies.",
-      "If referenced skills are unavailable, setup offers lock-backed recovery, then asks before installing the available skills; --yes accepts.",
-      "Use afk profiles enable <profile> to install its packages and activate the profile.",
+      "Prepares profiles.json in the selected scope. Use --refresh to update an existing cache.",
+      "Use afk setup skills --profile [id] to install catalog skills, composed dependencies, and packages explicitly.",
+      "New package skills start disabled; existing catalog startup policy is preserved.",
+      "Use afk profiles enable <profile> to install missing members and activate a global profile.",
     ],
     options: setupAreaOptions,
-    examples: [
-      "afk setup profiles --dry-run",
-      "afk setup profiles --yes",
-      "afk setup profiles --local",
-    ],
+    examples: ["afk setup profiles --dry-run", "afk setup profiles --refresh", "afk setup profiles --local"],
   },
   "setup agents": {
     title: "AFK setup agents",
@@ -1342,6 +1336,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
   let scopeExplicit = false;
   let allSkills = false;
   let excludeImportedSkills = false;
+  let setupSkillsByProfile = false;
+  const selectedSkillProfileIds: string[] = [];
   let toolsUpdateAll = false;
   let syncIncludeExtraSkills = false;
   let allCustomAgents = false;
@@ -1649,6 +1645,16 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
         return { help: false, kind: "error", error: "Unknown option: --catalog-only" };
       }
       skillsDeleteCatalogOnly = true;
+      continue;
+    }
+
+    if (arg === "--profile" && (key === "setup skills" || key === "setup skills install")) {
+      setupSkillsByProfile = true;
+      const value = args[index + 1];
+      if (value && !value.startsWith("-")) {
+        selectedSkillProfileIds.push(value);
+        index += 1;
+      }
       continue;
     }
 
@@ -2016,6 +2022,13 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
     return { help: false, kind: "error", error: `Unknown option: ${arg}` };
   }
 
+  if (setupSkillsByProfile && (allSkills || excludeImportedSkills)) {
+    return { help: false, kind: "error", error: "Use --profile separately from --all and --exclude-imported" };
+  }
+  if (setupSkillsByProfile && yes && selectedSkillProfileIds.length === 0) {
+    return { help: false, kind: "error", error: "--profile requires a profile id when using --yes" };
+  }
+
   if (isAfkSkillsCommand && !isAfkSkillsAddCommand) {
     if (skillsAgent === "custom" && !skillsAgentPath) {
       return { help: false, kind: "error", error: "--agent custom requires --agent-path <folder>" };
@@ -2046,6 +2059,8 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): ParseResult {
       ...(presetPrompt ? { presetPrompt: true } : {}),
       allSkills,
       excludeImportedSkills,
+      setupSkillsByProfile,
+      selectedSkillProfileIds,
       toolsUpdateAll,
       syncIncludeExtraSkills,
       allCustomAgents,

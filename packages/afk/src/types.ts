@@ -57,6 +57,7 @@ export type CliOptions = {
   syncIncludeExtraSkills?: boolean;
   selectedSkillIds: string[];
   selectedSkillProfileIds?: string[];
+  setupSkillsByProfile?: boolean;
   selectedCustomAgentIds?: string[];
   selectedSkillAgentIds: SkillAgentId[];
   skillAddArgs: string[];

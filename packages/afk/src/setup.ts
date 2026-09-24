@@ -15,6 +15,7 @@ import { builtInDefaultsSource, ensureLocalManifests, expandComposedSkillIds, lo
 import { defaultCheckedDetail, renderSkillProfileReview } from "./prompt-ui.js";
 import { packageVersion, resolveUpdateNotice } from "./update-check.js";
 import type { SetupSelection } from "./interactive.js";
+import { existsSync, readdirSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { AgentId, Area, CliOptions, ManifestCategory, ManifestFilename, PathOperation, Runtime } from "./types.js";
 
@@ -238,16 +239,24 @@ function sameTargets(left: string[], right: string[]): boolean {
 }
 
 export async function installEnabledProfileSkills(runtime: Runtime, options: CliOptions): Promise<number> {
-  return runArea("profiles", runtime, { ...options, yes: true, setupManifestsPrepared: true }, { installProfilePackages: true });
+  return runArea("profiles", runtime, { ...options, yes: true, setupManifestsPrepared: true, setupSkillsByProfile: true });
 }
 
-export async function runArea(area: Area, runtime: Runtime, options: CliOptions, behavior: { installProfilePackages?: boolean } = {}): Promise<number> {
+export async function runArea(area: Area, runtime: Runtime, options: CliOptions): Promise<number> {
+  if (area === "skills" && options.setupSkillsByProfile) {
+    return runArea("profiles", runtime, options);
+  }
   const explicitSetupSource = options.setupSourceExplicit ?? options.defaultsSourceExplicit;
-  const profileManifestCategory: ManifestCategory[] = ["profiles", "skills"];
+  const profileManifestCategory: ManifestCategory[] = options.setupSkillsByProfile ? ["profiles", "skills"] : ["profiles"];
   const areaOptions = area === "profiles" && options.selectedManifestCategories.length === 0
     ? { ...options, selectedManifestCategories: profileManifestCategory }
     : options;
-  const prepared = areaOptions.setupManifestsPrepared ? { code: 0, options: areaOptions } : await prepareSetupManifests(runtime, areaOptions);
+  const preparesProfileCatalog = area === "profiles" && !options.setupSkillsByProfile;
+  const prepared = areaOptions.setupManifestsPrepared
+    ? { code: 0, options: areaOptions }
+    : preparesProfileCatalog && areaOptions.defaultsSourceExplicit
+      ? await prepareManifestFiles(runtime, { ...areaOptions, refreshDefaults: true, rememberDefaultsSource: false })
+      : await prepareSetupManifests(runtime, areaOptions);
   if (prepared.code !== 0 || prepared.options.initOnly) {
     return prepared.code;
   }
@@ -292,10 +301,11 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions,
       return code || postInstallCode;
     }
     case "profiles": {
-      if (prepared.options.yes || prepared.options.verbose) {
+      if (!prepared.options.setupSkillsByProfile || prepared.options.yes || prepared.options.verbose) {
         runtime.io.stdout("\nProfile catalog prepared.");
         runtime.io.stdout(`- ${profileCatalogPath(prepared.options)}`);
       }
+      if (!prepared.options.setupSkillsByProfile) return 0;
       const selection = await selectSkillProfilesInstall(prepared.options);
       if ((selection.profileIds?.length ?? 0) === 0) {
         runtime.io.stdout("\nNo skill profiles selected. No changes planned.");
@@ -303,6 +313,11 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions,
       }
 
       const catalog = loadSetupSkillProfileCatalog(prepared.options);
+      const unknownIds = (selection.profileIds ?? []).filter((id) => !catalog.items.some((profile) => profile.id === id));
+      if (unknownIds.length > 0) {
+        runtime.io.stderr(`Unknown skill profiles: ${unknownIds.join(", ")}`);
+        return 1;
+      }
       const selectedProfiles = catalog.items.filter((profile) => selection.profileIds?.includes(profile.id));
       const directSkillIds = [...new Set(selectedProfiles.flatMap((profile) => profile.catalogSkills))];
       let catalogManifest = loadSkillManifest(prepared.options);
@@ -349,7 +364,7 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions,
           return 0;
         }
       }
-      const packageManifest = skillPackageManifest(behavior.installProfilePackages ? selectedProfiles.flatMap((profile) => profile.packages) : []);
+      const packageManifest = skillPackageManifest(selectedProfiles.flatMap((profile) => profile.packages), true);
       const packageSkillIds = packageManifest.items.map((item) => item.id);
       const installManifest: SkillManifest = {
         ...catalogManifest,
@@ -376,10 +391,11 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions,
         selectedSkillAgentIds: selection.skillAgents,
       };
       if (selectedSkillIds.length === 0) {
-        runtime.io.stdout("Profile setup complete. Package skills will be installed when the profile is enabled.");
+        runtime.io.stdout("Profile setup complete. No skills selected for installation.");
         return 0;
       }
-      const disabledBeforeInstall = snapshotDisabledStartupSkills(selectedOptions);
+      const disabledRoot = join(selectedOptions.setupScope === "global" ? selectedOptions.homeDir : selectedOptions.cwd, ".agents", "skills", ".disabled");
+      const disabledBeforeInstall = existsSync(disabledRoot) ? readdirSync(disabledRoot) : [];
       const packageOptions = packageManifest.items.length > 0 ? {
         ...selectedOptions,
         manifestContents: { ...selectedOptions.manifestContents, "skills.json": JSON.stringify(packageManifest) },
@@ -399,13 +415,15 @@ export async function runArea(area: Area, runtime: Runtime, options: CliOptions,
         syncSkillInvocationPolicy(runtime, selectedOptions);
         syncSkillStartupStorage(runtime, selectedOptions, disabledBeforeInstall);
         const catalogOptions = { ...selectedOptions, manifestContents: prepared.options.manifestContents ?? {}, selectedSkillIds: catalogSkillIds };
-        syncSetupSkillCatalog(runtime, catalogOptions, explicitSetupSource, []);
+        if (catalogSkillIds.length > 0) {
+          syncSetupSkillCatalog(runtime, catalogOptions, explicitSetupSource, []);
+        }
         if (packageOptions) {
           const packageImports = syncSetupSkillCatalog(runtime, packageOptions, true, [], true);
           if (packageImports.length > 0) {
-            const { manifestContents: _manifestContents, ...cachedPackageOptions } = packageOptions;
             syncSkillStartupStorage(runtime, {
-              ...cachedPackageOptions,
+              ...packageOptions,
+              manifestContents: { "skills.json": JSON.stringify({ version: 1, defaultSource: "", items: packageImports }) },
               selectedSkillIds: packageImports.map((item) => item.id),
             }, disabledBeforeInstall);
           }
@@ -521,7 +539,7 @@ function syncSetupSkillCatalog(
 ): SkillManifestItem[] {
   try {
     let sourceMerge: ReturnType<typeof mergeSetupSourceSkillsIntoCatalog> | undefined;
-    if (options.dryRun && explicitSetupSource && options.manifestContents) {
+    if (options.dryRun && options.setupScope === "global" && explicitSetupSource && options.manifestContents) {
       sourceMerge = mergeSetupSourceSkillsIntoCatalog({
         homeDir: options.homeDir,
         manifestContents: options.manifestContents,
@@ -539,11 +557,12 @@ function syncSetupSkillCatalog(
       }
       return [];
     }
-    if (explicitSetupSource && options.manifestContents) {
+    if ((explicitSetupSource || options.setupScope === "project") && options.manifestContents) {
       const importPlan = planSetupSourceCatalogImport({
         homeDir: options.homeDir,
         cwd: options.cwd,
-        manifestLocal: options.manifestLocal,
+        manifestLocal: options.setupScope === "project",
+        strictScope: true,
         manifestContents: options.manifestContents,
         selectedSkillIds: options.selectedSkillIds,
         allSkills: options.allSkills,
@@ -559,6 +578,7 @@ function syncSetupSkillCatalog(
       }
       return importPlan.imported;
     }
+    if (options.setupScope === "project") return [];
     syncSkillCatalogFromManifest({
       homeDir: options.homeDir,
       selectedSkillIds: options.selectedSkillIds,
@@ -572,7 +592,7 @@ function syncSetupSkillCatalog(
   }
 }
 
-function skillPackageManifest(packages: SkillProfilePackage[]): SkillManifest {
+function skillPackageManifest(packages: SkillProfilePackage[], startDisabled: boolean): SkillManifest {
   const seen = new Set<string>();
   const items: SkillManifestItem[] = [];
   for (const profilePackage of packages) {
@@ -589,7 +609,7 @@ function skillPackageManifest(packages: SkillProfilePackage[]): SkillManifest {
         source,
         args: skill ? ["--skill", skill] : [],
         default: false,
-        startDisabled: true,
+        startDisabled,
       });
     }
   }
