@@ -14,6 +14,7 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - `skills:` added `afk skills add --invocation auto|manual` to set invocation policy during installation.
+- `skills:` interactive `afk skills add` now asks how new skills should start and whether invocation is automatic or manual; `--yes`, `--no-prompt`, and explicit policy flags support unattended installs.
 
 - `skills:` added `afk setup skills --all --exclude-imported` to include every non-imported catalog skill, regardless of its default setting.
 

@@ -396,7 +396,7 @@ can be selected with `--agent`; exact custom roots require both
 | `afk skills show [folder]` | Show one enabled skill's metadata, or open a selector when the folder is omitted. | The selector supports `--invocation`, `--category`, `--tag`, and `--uncategorized`; use `--disabled` for disabled skills and `--json` for the selected record. |
 | `afk skills get <folder>` | Print one skill as agent context, including disabled skills. | Read-only; includes the absolute skill root so referenced files remain resolvable. |
 | `afk skills open <folder>` | Open `SKILL.md` or its folder. | `--file` is the default; use `--folder` or select `finder`, `code`, `cursor`, `zed`, or `agy` with `--app`. |
-| `afk skills add <source> [flags...]` | Delegate installation to `skills add`, then synchronize AFK catalog and profile state. | Supports upstream `--skill`, `--agent`, `--global`, `--yes`; AFK adds `--invocation auto|manual`, `--profile`, `--profile-only`, and `--start-disabled`. |
+| `afk skills add <source> [flags...]` | Delegate installation to `skills add`, then synchronize AFK catalog and profile state. | Supports upstream `--skill`, `--agent`, `--global`, `--yes`; AFK adds `--invocation auto|manual`, `--profile`, `--profile-only`, `--start-disabled`, and `--no-prompt`. |
 | `afk skills disable [folder]` | Move active skill folders into `.disabled`. | Omit the folder for an interactive multi-select; supports `--dry-run`. |
 | `afk skills enable [folder]` | Move disabled skill folders back to active storage. | Omit the folder for an interactive picker; supports `--dry-run`. |
 | `afk skills invocation [auto|manual] [folder]` | Review or change skill invocation policy. | The bare command opens a searchable batch editor; explicit actions change one skill. Both update matching shared `skills.json` policy and installed host metadata; supports `--dry-run`. |
@@ -411,6 +411,11 @@ can be selected with `--agent`; exact custom roots require both
 current installation. `--profile-only` also records `startDisabled: true` and
 moves those new shared folders into `.disabled`. Reinstalling an existing skill
 refreshes its content while preserving its prior storage and profile membership.
+In an interactive terminal, add asks whether new skills should start enabled
+or disabled and whether invocation should be automatic or manual. `--start-disabled`
+and `--invocation auto|manual` answer their respective questions. `--yes` or
+`--no-prompt` skips both questions and uses enabled storage and source invocation
+policy unless explicit flags override them.
 
 Bare `afk skills invocation` opens a searchable policy editor. Use up/down to
 navigate, left to draft manual invocation, right to draft automatic invocation,

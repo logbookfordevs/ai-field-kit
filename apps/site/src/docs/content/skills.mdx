@@ -20,6 +20,8 @@ afk skills add your-org/dev-kit --skill review-pr --yes
 
 Add `--invocation manual` to require explicit invocation, or `--invocation auto` to allow automatic invocation. This updates installed metadata and the matching catalog policy, including when reinstalling a selected skill.
 
+In an interactive terminal, `add` asks whether new skills should start enabled or disabled and whether invocation should be automatic or manual. `--start-disabled` and `--invocation auto|manual` answer those questions. `--yes` or `--no-prompt` skips both, keeping new skills enabled and the source invocation policy unless explicit flags override them.
+
 To prepare a skill for later use, add `--start-disabled`. To assign new skills to a profile, add `--profile review`; use `--profile-only review` to also keep them disabled until needed. These flags apply only to skills introduced by this installation. Reinstalling an existing skill preserves its previous storage state and profile membership.
 
 <h2 id="skills-find">Find and read what is installed</h2>

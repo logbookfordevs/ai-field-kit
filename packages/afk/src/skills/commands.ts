@@ -1,5 +1,5 @@
 import { installEnabledProfileSkills } from "../setup.js";
-import { confirm, input, search } from "@inquirer/prompts";
+import { confirm, input, search, select } from "@inquirer/prompts";
 import { join } from "node:path";
 import { applyOperation, pathExists, readText, summarizeOperations } from "../fs-utils.js";
 import { afkPromptTheme, afkSearchableCheckboxTheme, afkSearchTheme, renderPromptStep } from "../prompt-ui.js";
@@ -221,7 +221,32 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
 
   const installedAfter = planCatalogImportStatus({ ...effectiveOptions, manifestLocal: false }).installed;
   const newSkillIds = installedAfter.filter((id) => !installedBeforeIds.has(id));
-  const startNewSkillsDisabled = effectiveOptions.skillAddStartDisabled || effectiveOptions.skillAddProfileOnlyIds.length > 0;
+  const canPrompt = !options.yes && !parsedAddOptions.noPrompt
+    && !effectiveOptions.skillAddArgs.includes("--yes") && !effectiveOptions.skillAddArgs.includes("-y")
+    && process.stdin.isTTY && process.stdout.isTTY;
+  const profileOnly = effectiveOptions.skillAddProfileOnlyIds.length > 0;
+  let startNewSkillsDisabled = effectiveOptions.skillAddStartDisabled || profileOnly;
+  if (newSkillIds.length > 0 && canPrompt && !startNewSkillsDisabled) {
+    startNewSkillsDisabled = await select({
+      message: `Start ${newSkillIds.length === 1 ? newSkillIds[0] : `${newSkillIds.length} new skills`} enabled or disabled?`,
+      choices: [
+        { name: "Enabled", value: false },
+        { name: "Disabled (keep installed for later)", value: true },
+      ],
+      theme: afkPromptTheme,
+    });
+  }
+  let invocation = parsedAddOptions.invocation;
+  if (newSkillIds.length > 0 && canPrompt && !invocation) {
+    invocation = await select({
+      message: `Allow automatic invocation for ${newSkillIds.length === 1 ? newSkillIds[0] : "the new skills"}?`,
+      choices: [
+        { name: "Auto (the agent can choose when to use them)", value: "auto" as const },
+        { name: "Manual (use only when explicitly invoked)", value: "manual" as const },
+      ],
+      theme: afkPromptTheme,
+    });
+  }
 
   const plan = planCatalogImport({
     homeDir: options.homeDir,
@@ -249,19 +274,21 @@ async function runSkillsAdd(operands: string[], runtime: Runtime, options: CliOp
       }), { ...effectiveOptions, agents: [...effectiveOptions.agents, ...addedAgents], setupScope: "global", dryRun: false })
     : 0;
 
-  if (parsedAddOptions.invocation && !effectiveOptions.skillAddArgs.includes("--list") && !effectiveOptions.skillAddArgs.includes("-l")) {
-    const selectedNames = new Set<string>([...newSkillIds, ...changedSkillNames]);
-    for (let index = 0; index < effectiveOptions.skillAddArgs.length; index += 1) {
-      if (effectiveOptions.skillAddArgs[index] !== "--skill" && effectiveOptions.skillAddArgs[index] !== "-s") continue;
-      for (let next = index + 1; next < effectiveOptions.skillAddArgs.length; next += 1) {
-        const name = effectiveOptions.skillAddArgs[next];
-        if (!name || name.startsWith("-")) break;
-        if (name !== "*") selectedNames.add(name);
+  if (invocation && !effectiveOptions.skillAddArgs.includes("--list") && !effectiveOptions.skillAddArgs.includes("-l")) {
+    const selectedNames = new Set<string>(parsedAddOptions.invocation ? [...newSkillIds, ...changedSkillNames] : newSkillIds);
+    if (parsedAddOptions.invocation) {
+      for (let index = 0; index < effectiveOptions.skillAddArgs.length; index += 1) {
+        if (effectiveOptions.skillAddArgs[index] !== "--skill" && effectiveOptions.skillAddArgs[index] !== "-s") continue;
+        for (let next = index + 1; next < effectiveOptions.skillAddArgs.length; next += 1) {
+          const name = effectiveOptions.skillAddArgs[next];
+          if (!name || name.startsWith("-")) break;
+          if (name !== "*") selectedNames.add(name);
+        }
       }
     }
     const changes = loadSkillCatalog({ homeDir: options.homeDir, cwd: options.cwd, scope: "global", agent: undefined }).records
       .filter((record) => selectedNames.has(record.folder) || selectedNames.has(record.originalName))
-      .map((record) => ({ record, allowInvocation: parsedAddOptions.invocation === "auto" }));
+      .map((record) => ({ record, allowInvocation: invocation === "auto" }));
     const operations = buildSkillInvocationPolicyBatchOperations(options.homeDir, changes);
     for (const operation of operations) applyOperation(operation);
     runtime.io.stdout(renderSkillInvocationPolicyBatch({ changes, operations, dryRun: false }));
@@ -355,12 +382,14 @@ function parseSkillAddOperands(operands: string[]): {
   profileOnlyIds: string[];
   startDisabled: boolean;
   invocation: "auto" | "manual" | undefined;
+  noPrompt: boolean;
 } {
   const upstreamArgs: string[] = [];
   const profileIds: string[] = [];
   const profileOnlyIds: string[] = [];
   let startDisabled = false;
   let invocation: "auto" | "manual" | undefined;
+  let noPrompt = false;
 
   for (let index = 0; index < operands.length; index += 1) {
     const arg = operands[index];
@@ -379,6 +408,11 @@ function parseSkillAddOperands(operands: string[]): {
 
     if (arg === "--start-disabled") {
       startDisabled = true;
+      continue;
+    }
+
+    if (arg === "--no-prompt") {
+      noPrompt = true;
       continue;
     }
 
@@ -411,6 +445,7 @@ function parseSkillAddOperands(operands: string[]): {
     profileIds,
     profileOnlyIds,
     startDisabled,
+    noPrompt,
   };
 }
 

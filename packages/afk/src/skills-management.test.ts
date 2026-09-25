@@ -1047,6 +1047,28 @@ test("runSkillsCommand add handles start-disabled as an AFK flag", async () => {
   assert.ok(output.join("\n").includes("Storage"));
 });
 
+test("skills add keeps --no-prompt in AFK and leaves source invocation policy intact", async () => {
+  const root = mkdtempSync(join(tmpdir(), "afk-skill-add-no-prompt-"));
+  const homeDir = join(root, "home");
+  const spawned: string[][] = [];
+  const runtime: Runtime = {
+    ...outputRuntime([]),
+    spawn: async (_command, args) => {
+      spawned.push(args);
+      writeSkill(join(homeDir, ".agents", "skills"), "demo", "Demo", { disableModelInvocation: true });
+      writeGlobalSkillLock(homeDir, { demo: { source: "owner/skills", sourceType: "github" } });
+      return { code: 0 };
+    },
+  };
+
+  const code = await runCliWithRuntime(["skills", "add", "owner/skills", "--skill", "demo", "--no-prompt"], { HOME: homeDir }, runtime);
+
+  assert.equal(code, 0);
+  assert.ok(spawned.every((args) => !args.includes("--no-prompt")));
+  assert.equal(existsSync(join(homeDir, ".agents", "skills", "demo")), true);
+  assert.match(readFileSync(join(homeDir, ".agents", "skills", "demo", "SKILL.md"), "utf8"), /disable-model-invocation: true/);
+});
+
 test("runSkillsCommand add rejects custom agent paths unsupported by the upstream installer", async () => {
   const root = mkdtempSync(join(tmpdir(), "afk-skill-add-custom-agent-"));
   const output: string[] = [];

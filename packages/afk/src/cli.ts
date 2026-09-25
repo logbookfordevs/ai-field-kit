@@ -695,6 +695,7 @@ const commandHelps: Record<string, CommandHelp> = {
       "--profile-only <profile>          AFK: add imported skills to a profile and disabled storage",
       "--invocation auto|manual          AFK: set installed skills invocation policy",
       "--start-disabled                  AFK: import new skills as disabled and move shared folders into .disabled",
+      "--no-prompt                       AFK: skip post-install choices and keep defaults",
     ],
     examples: [
       "afk skills add logbookfordevs/logbook-atlas --skill afk-compass --yes",
