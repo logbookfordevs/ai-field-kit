@@ -4,12 +4,14 @@ This changelog tracks meaningful updates by version and date.
 
 ## How We Use This File
 
-- Keep unreleased work in `## Next Release`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
+- Keep unreleased work in `## TBD - TBD`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
 - Prefer reader-focused summaries over raw commit messages.
 - Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
 - Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
 
-## Next Release
+## TBD - TBD
+
+## v1.4.4 - 2026-09-25
 
 ### Added
 
