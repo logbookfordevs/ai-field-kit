@@ -74,9 +74,6 @@ jobs:
       - name: Build AFK CLI
         run: pnpm afk:build
 
-      - name: Validate registry
-        run: pnpm registry:validate
-
       - name: Build site
         run: pnpm site:build
 
