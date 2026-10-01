@@ -4,12 +4,32 @@ This changelog tracks meaningful updates by version and date.
 
 ## How We Use This File
 
-- Keep unreleased work in `## TBD - TBD`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
+- Keep unreleased work in `## Next Release`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
 - Prefer reader-focused summaries over raw commit messages.
-- Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
-- Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
+- Group bullets by area when helpful: profiles, skills, sources, tools, settings, and docs.
+- Skip trivial noise. Record changes that affect how someone uses, configures, or trusts AFK.
 
-## TBD - TBD
+## Next Release
+
+### Added
+
+- A local web app with Profiles, Installed Skills, Favorite skill sources, Tools, and Settings, opened by `afk`.
+- Shared skill profiles prepared disabled, with additive Global/project activation and on-demand group reading.
+- Favorite repository bookmarks with copyable links, install commands, and an install-all script.
+- A selectable settings-file location, configuration import/export, folder-based project definitions, and an Exit AFK control.
+
+### Changed
+
+- Skill availability now uses shared stored copies and scoped links, preserving overlapping profiles and independent activation.
+- Invocation controls write supported native Claude and Codex metadata; project overrides are isolated and reset to shared inheritance.
+- Tools are always global, run saved commands explicitly, and retain session results. Empty update commands reuse install; removing an entry does not uninstall the tool.
+- Skill update controls copy Skills CLI commands for users to run. AFK does not execute updates.
+- Repository documentation now describes Fieldwork; obsolete setup/catalog plans and references have been removed.
+
+### Removed
+
+- Catalog, setup, sync, rules, hooks, MCP, custom-agent provisioning, and general setup-orchestration commands from the AFK CLI. Existing user files are not automatically removed or migrated.
+
 
 ## v1.4.4 - 2026-09-25
 

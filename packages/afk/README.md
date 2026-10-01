@@ -32,7 +32,8 @@ afk profiles enable <profile-id> 'Project name'
 afk profiles disable <profile-id> 'Project name'
 ```
 
-`use` prints every member's instructions and resource directory for an agent to
+Use the profile identifier shown in the app’s copied command; it is not necessarily
+the display name. `use` prints every member's instructions and resource directory for an agent to
 read. It does not enable skills, register a slash command, or inject another chat.
 
 ## Installed Skills
@@ -76,9 +77,14 @@ afk settings export /path/to/export.json
 ```
 
 Old setup/catalog/rules/hooks/MCP/custom-agent orchestration commands are outside
-this CLI's scope. Historical documentation is preserved in
-[the legacy reference](docs/legacy-cli.md); existing files are not automatically
-migrated or removed.
+this CLI's scope. Previous behavior remains in released changelog entries and Git history; existing
+user files are not automatically migrated or removed.
+
+## More documentation
+
+- [Settings and physical storage](../../docs/settings.md)
+- [Development and release boundaries](../../docs/development.md)
+- [Product specification](../../docs/specs/afk-pivot.md)
 
 ## Development
 
