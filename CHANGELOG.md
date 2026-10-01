@@ -25,6 +25,7 @@ This changelog tracks meaningful updates by version and date.
 - Tools are always global, run saved commands explicitly, and retain session results. Empty update commands reuse install; removing an entry does not uninstall the tool.
 - Skill update controls copy Skills CLI commands for users to run. AFK does not execute updates.
 - Repository documentation now describes Fieldwork; obsolete setup/catalog plans and references have been removed.
+- The website now introduces AFK 2.0 through profiles, with an interactive example and a ten-chapter field manual. Retired guide links explain how to keep using pre-2.0 releases.
 
 ### Removed
 

@@ -56,7 +56,9 @@ with text as well as color. Commands and paths should wrap on narrow screens.
 
 ## Current Delivery
 
-The local app is implemented and tested. Live discovery inside agent conversations
-still needs verification. Publication and the website rollout are separate work.
+The local app and the AFK 2.0 home and field manual are implemented and tested.
+Live discovery inside agent conversations still needs verification. Package
+publication and website deployment remain separate work.
 The behavior specification is `docs/specs/afk-pivot.md`; the local app's visual
-system is `packages/afk/web/DESIGN.md`. Root `DESIGN.md` retains the AFK brand.
+system is `packages/afk/web/DESIGN.md`. Root `DESIGN.md` describes the AFK website
+and shared brand. Website evidence is in `docs/specs/afk-website-v2/implementation.md`.

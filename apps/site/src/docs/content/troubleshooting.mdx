@@ -1,42 +1,41 @@
-# Troubleshooting
+# Find the problem at its source.
 
-Start by separating catalog state, setup planning, and delegated installer output. Each points to a different fix.
+Start with the affected profile, target, path, or command. AFK does not own every layer of your agent setup.
 
-<h2 id="troubleshooting-missing">A catalog item is missing</h2>
+<h2 id="members">A profile is missing members</h2>
 
-```bash inspect cache
-afk show
-```
+Prepare it in **Profiles** before enabling or reading. Invocation reads local copies and has no remote fallback.
 
-If the cache is stale, preview and then run `afk refresh`. Use `afk refresh --local` only for a repository-owned `./afk/catalog`.
+If preparation fails, inspect the error and retry. Already prepared copies remain available. Check source and selected names; two sources with the same member name share one storage identity.
 
-<h2 id="troubleshooting-preview">I cannot tell what setup will change</h2>
+<h2 id="links">A skill is still available after Disable</h2>
 
-```bash preview all
-afk setup --dry-run
-```
+Check other enabled profiles, independent availability and preexisting files. AFK keeps exposure another owner still needs. Global discovery may also remain visible to an agent working in a project.
 
-Narrow the command to one area or add repeated `--agent` flags. Remember that `show` explains catalog inputs; dry run explains planned setup actions.
+Inspect [physical storage and ownership](/docs?chapter=profiles#physical). The project inventory is not a combined effective inventory.
 
-<h2 id="troubleshooting-delegate">A delegated installer failed</h2>
+<h2 id="edits">A profile or path cannot be changed</h2>
 
-```bash show upstream output
-afk setup tools --verbose
-```
+Disable the profile in every target before editing or removing it. Disable a project’s profiles before changing its folder. Disable owning profiles before individually toggling a member.
 
-**This is a real setup run and can apply changes.** Retry only the failed area after reviewing its dry run. AFK continues through the remaining selections within that area and returns a non-zero exit with a failure summary; verbose output exposes the owning installer's output.
+<h2 id="imported">Imported activation is missing</h2>
 
-<h2 id="troubleshooting-version">The wrong AFK command runs</h2>
+Import deliberately starts profiles inactive and unprepared. Remap project folders, prepare members locally, and enable explicitly. It does not run tools or apply native invocation metadata automatically.
 
-```bash check path (macOS / Linux)
-command -v afk
-afk --version
-```
+<h2 id="agent">The agent cannot invoke a skill as expected</h2>
 
-A development symlink in `~/.local/bin` can shadow the npm-installed CLI. Inspect the resolved path before changing either installation.
+Check the actual native metadata, selected target, and that agent’s discovery behavior. AFK writes Claude Code and Codex invocation preferences; it does not guarantee every client uses the same controls.
 
-<details>
-<summary>Still stuck?</summary>
-<p>Run the failing command with <code>--help</code>, preserve its exact output, and compare your Node version, scope, source, and target agent with the command you intended to run.</p>
-</details>
+For on-demand reading, copy the actual profile ID. Ask the agent to execute the command and read its output rather than expecting the web app to inject a chat.
 
+<h2 id="clipboard">A copy button fails</h2>
+
+Keep the command visible. Use **Select command**, then your normal copy shortcut. For a page, use **View as Markdown** and copy from that document.
+
+<h2 id="server">The local app is closed</h2>
+
+Launch AFK again. Exit stops the server while preserving configuration and activation. A browser tab left open afterwards cannot talk to the closed process. Closing only the tab leaves the server running.
+
+<h2 id="old">An old command is missing</h2>
+
+Commands such as setup and catalog belong to the old product. Install or fork a [release before 2.0](/docs?chapter=legacy) if you need them.

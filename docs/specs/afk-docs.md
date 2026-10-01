@@ -1,5 +1,9 @@
 # AFK Docs
 
+Historical AFK 1.x design record. The approved 2.0 home and docs direction and
+current implementation are recorded in [AFK 2.0 website](afk-website-v2/implementation.md).
+The setup-router scope and validation below describe the previous site.
+
 ## Scope and Mode
 
 Read mode. Implement `/docs` within the existing AFK visual identity. The saved

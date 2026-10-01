@@ -1,0 +1,41 @@
+# Give guidance at the right moment.
+
+Let the agent decide how to approach an open-ended task before loading tool-specific instructions. Then ask it to read a prepared profile.
+
+<h2 id="task">Start with the task</h2>
+
+For example, tell your agent:
+
+> Create a demo video for this project. Choose the approach you think fits, then use the relevant AFK profile for guidance.
+
+You decide when to provide guidance. AFK does not make the agent’s tool choice or connect the website to your conversation.
+
+<h2 id="retrieve">Retrieve the chosen profile</h2>
+
+In the local app, open the profile and choose **Use with your agent**. Copy its actual command, then ask the agent to run it in its terminal:
+
+```bash Example syntax — replace with the actual copied ID
+afk profiles use <profile-id>
+```
+
+A profile’s display name is not necessarily its ID. Use the value AFK provides. If you run from a source checkout without installing the shortcut, substitute the source-build launcher described in [Start here](/docs?chapter=start#open).
+
+<h2 id="output">Read and apply the output</h2>
+
+| Step | Who does it |
+| --- | --- |
+| Return each member’s instructions and resource directory | AFK |
+| Read the output and any supporting files needed for the task | Your agent |
+| Decide how to apply that guidance | Your agent, following your request |
+
+The group’s skills may remain disabled throughout. No discovery links are created and no other conversation is modified.
+
+<div className="docs-callout"><strong>Prepared local members required</strong><p>Prepare a remote profile first. AFK does not fetch missing instructions during invocation. Recover missing members in Profiles.</p></div>
+
+<h2 id="web-action">What the web button does</h2>
+
+**Use with your agent** shows instructions and a command to copy. It does not run that command inside an agent, expose a built-in slash command, or silently inject context.
+
+<h2 id="context">Reading once does not erase context later</h2>
+
+Returned instructions remain in the conversation that read them. Later disabling the profile does not remove content already read. Live skill discovery inside different agent clients remains a separate compatibility check.
