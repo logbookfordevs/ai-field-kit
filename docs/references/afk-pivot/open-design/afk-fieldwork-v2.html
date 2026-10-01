@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AFK — Fieldwork proposal</title>
+<style>
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;src:url(assets/font-0.ttf) format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:600;src:url(assets/font-1.ttf) format('truetype')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:400;src:url(assets/font-2.ttf) format('truetype')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:500;src:url(assets/font-3.ttf) format('truetype')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:600;src:url(assets/font-4.ttf) format('truetype')}
+
+:root{
+  --bg:#f3eddf;--surface:#fffaf0;--fg:#17201e;--muted:#5d6964;--border:#b9c0b7;--accent:#102c2c;
+  --accent-hover:#24302c;--warm:#e9ddc9;--accent-fg:#f4efde;--control-border:#5d6964;--focus:#3f8580;--danger:#8f3f2d;
+  --code-bg:#102c2c;--code-fg:#f4efde;
+  --sunk:var(--warm);
+  --hover:var(--warm);
+  --row-hover:var(--surface);
+  --font-display:Poppins,'Avenir Next','Segoe UI',sans-serif;
+  --font-body:Poppins,'Avenir Next','Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',SFMono-Regular,Consolas,monospace;
+  --radius:6px;--radius-lg:8px;--ease:cubic-bezier(.32,.72,0,1);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 var(--font-body);-webkit-font-smoothing:antialiased}
+h1{font:600 32px/1.15 var(--font-display);letter-spacing:-.015em;margin:0 0 8px}
+h2{font:600 20px/1.35 var(--font-display);margin:0 0 6px}
+h3{font:600 16px/1.4 var(--font-display);margin:0}
+p{margin:0;max-width:65ch}
+a{color:var(--fg);text-underline-offset:4px}
+code,pre,kbd{font-family:var(--font-mono)}
+.sub{color:var(--muted);font-size:14px}
+.meta{color:var(--muted);font-size:13px}
+.hint{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+.eyebrow{font:500 11px/1.4 var(--font-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+button,input,select,textarea{font:inherit;color:inherit}
+button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);font-size:14px;font-weight:500;letter-spacing:.02em;line-height:1.2;cursor:pointer;transition:background-color .16s,border-color .16s,transform .16s}
+button:hover{background:var(--hover);border-color:var(--fg)}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+button:disabled:hover{background:var(--surface);border-color:var(--control-border)}
+.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);transform:translateY(-1px)}
+.primary:active{background:var(--accent)}
+.primary:disabled:hover{background:var(--accent);border-color:var(--accent)}
+.text{background:transparent;border-color:transparent;padding:0 6px;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}
+.text:hover,.text:disabled:hover{background:transparent;border-color:transparent;text-decoration-thickness:2px}
+.text.danger{color:var(--danger)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+
+input,select,textarea{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);font-size:14px;transition:border-color .16s}
+input:hover,select:hover,textarea:hover{border-color:var(--fg)}
+textarea{padding:10px 12px;min-height:88px;resize:vertical;font-family:var(--font-mono);font-size:13px;line-height:1.6}
+input[readonly]{background:var(--sunk);font-family:var(--font-mono);font-size:13px}
+input[aria-invalid=true]{border-color:var(--danger)}
+select{appearance:none;cursor:pointer;padding-right:36px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2317201e' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 14px center}
+input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;flex:none;accent-color:var(--fg)}
+input[type=search]::-webkit-search-cancel-button{display:none}
+label{display:grid;gap:6px;font-size:13px;font-weight:500}
+.field-error{color:var(--danger);font-size:12px;font-weight:500;min-height:18px}
+kbd{font-size:12px;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 6px;background:var(--surface);color:var(--muted)}
+
+.skip{position:fixed;top:-100px;left:12px;z-index:99;background:var(--surface);padding:12px;color:var(--fg)}
+.skip:focus{top:12px}
+
+.shell{display:grid;grid-template-columns:228px minmax(0,1fr);min-height:100vh}
+.rail{position:sticky;top:0;height:100vh;padding:28px 16px 24px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:32px;background:var(--bg)}
+.brand{display:flex;align-items:baseline;gap:10px;padding:0 12px}
+.brand b{font:600 28px/1 var(--font-display);letter-spacing:-.02em}
+.brand small{font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.nav{display:grid;gap:4px}
+.nav button{justify-content:space-between;padding:0 12px;border-color:transparent;background:transparent;text-align:left}
+.nav button:hover{background:var(--sunk);border-color:transparent}
+.nav button[aria-current=page]{background:var(--surface);border-color:var(--border);font-weight:600}
+.nav .count{font:12px var(--font-mono);color:var(--muted);letter-spacing:0}
+.nav button:hover .count,.nav button[aria-current=page] .count{color:var(--fg)}
+.nav .short{display:none}
+.rail-foot{margin-top:auto;padding:0 12px;font-size:12px;line-height:1.6;color:var(--muted)}
+
+main{padding:20px clamp(20px,4vw,56px) 40px;min-width:0;max-width:1320px;outline:none}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--border);padding-bottom:12px}
+.demo{min-height:40px;padding:0 12px;font-size:12px;border-color:var(--border);background:transparent}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:36px 0 28px}
+.page-head .sub{max-width:60ch}
+
+.ledger-label{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}
+.ledger{border-top:1px solid var(--fg)}
+.ledger-head{display:grid;gap:24px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.row{padding:22px 16px;border-bottom:1px solid var(--border);transition:background-color .16s}
+@media(hover:hover){.row:hover{background:var(--row-hover)}}
+
+.status{font:12px/1.5 var(--font-mono);color:var(--fg)}
+.status::before{content:'○ '}
+.status.on::before{content:'● '}
+.status.warn{color:var(--danger)}
+.status.warn::before{content:'△ '}
+
+.profile{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,1fr);gap:32px;padding:26px 16px}
+.profile-main{display:grid;gap:10px;align-content:start;justify-items:start}
+.profile-name{min-height:44px;padding:0;border:0;background:none;font:600 20px/1.3 var(--font-display);letter-spacing:-.005em;text-align:left;text-decoration:underline;text-decoration-color:var(--border);text-decoration-thickness:1px;text-underline-offset:6px}
+.profile-name:hover{background:none;text-decoration-color:var(--fg)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.tag{font:12px/1 var(--font-mono);padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface)}
+.tag.more{color:var(--muted)}
+.prep{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px}
+.profile-scope{display:grid;gap:10px;align-content:start;border-left:1px solid var(--border);padding-left:28px}
+.scope-control{display:flex;gap:8px;align-items:flex-end}
+.scope-control label{flex:1;min-width:0}
+.scope-control button{min-width:178px}
+.scope-state{font-size:14px}
+.scope-state strong{font-weight:600}
+
+.note{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:24px;margin-top:32px;padding-top:20px;border-top:1px solid var(--border)}
+.note p{font-size:13px;color:var(--muted)}
+.ledger+.note{border-top:0;padding-top:0}
+.note strong{color:var(--fg);font-weight:600}
+
+.toolbar{display:flex;gap:16px;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap}
+.toolbar>label:first-child{width:240px}
+.search{flex:1;min-width:200px;max-width:420px}
+.search-field{position:relative;display:block}
+.search-field input{padding-right:40px}
+.search-field kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none}
+@media(hover:none){.search-field kbd{display:none}}
+.path-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:14px}
+.path-line .eyebrow:last-child{margin-left:auto}
+.path{font:13px var(--font-mono);overflow-wrap:anywhere}
+
+.skills .ledger-head,.skill-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1.1fr) minmax(210px,240px) auto;grid-template-areas:'name avail invoc actions'}
+.skill-row{display:grid;gap:24px;align-items:center}
+.skill-name{grid-area:name;display:grid;gap:2px;min-width:0}
+.skill-name h3{overflow-wrap:anywhere}
+.skill-avail{grid-area:avail;display:grid;justify-items:start}
+.skill-invoc{grid-area:invoc;display:grid;gap:4px}
+.skill-actions{grid-area:actions;justify-self:end}
+.switch{min-height:44px;padding:0;gap:10px;border:0;background:none;font-size:14px}
+.switch:hover,.switch:disabled:hover{background:none}
+.switch .track{position:relative;flex:none;width:36px;height:20px;border:1px solid var(--control-border);border-radius:999px;background:var(--surface);transition:background-color .2s,border-color .2s}
+.switch .track::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--control-border);transition:transform .42s var(--ease),background-color .2s}
+.switch[aria-checked=true] .track{background:var(--fg);border-color:var(--fg)}
+.switch[aria-checked=true] .track::after{transform:translateX(16px);background:var(--surface)}
+.switch:hover:not(:disabled) .track{border-color:var(--fg)}
+.switch:active{transform:none}
+.switch:disabled{opacity:1}
+.switch:disabled .track{opacity:.55}
+
+.tools .ledger-head,.tool-row{grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr) auto;grid-template-areas:'name cmds run'}
+.tool-row{display:grid;gap:24px;align-items:start}
+.tool-name{grid-area:name;display:grid;gap:4px;justify-items:start}
+.links{display:flex;gap:4px;margin-left:-6px}
+.cmds{grid-area:cmds;display:grid;gap:10px;margin:0}
+.cmds div{display:grid;grid-template-columns:68px minmax(0,1fr);gap:12px;align-items:baseline}
+.cmds dt{font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cmds dd{margin:0;min-width:0}
+.cmd{display:block;font-size:13px;line-height:1.55;padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow-wrap:anywhere}
+.tool-run{grid-area:run;display:flex;gap:8px}
+
+pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code-bg);color:var(--code-fg);padding:18px 20px;border-radius:var(--radius-lg);font-size:13px;line-height:1.7}
+
+.settings-block{display:grid;grid-template-columns:minmax(200px,280px) minmax(0,1fr);gap:32px;padding:28px 0;border-top:1px solid var(--border)}
+.settings-block:first-of-type{border-top-color:var(--fg)}
+.settings-block .sub{font-size:13px}
+.settings-body{display:grid;gap:14px;align-content:start;min-width:0}
+.path-card{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 12px 12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.project-list{border-top:1px solid var(--border)}
+.project-row{display:grid;grid-template-columns:minmax(120px,.7fr) minmax(0,1.3fr) auto;gap:16px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.pref-list{margin:0;padding:0;list-style:none;border-top:1px solid var(--border)}
+.pref-list li{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inline input{flex:1;min-width:140px}
+
+.empty{display:grid;justify-items:center;gap:8px;padding:48px 24px;text-align:center;border:1px dashed var(--border);border-radius:var(--radius-lg)}
+.empty .sub{margin-bottom:8px}
+.error{color:var(--danger);border:1px solid var(--danger);background:var(--surface);padding:14px 16px;border-radius:var(--radius);font-size:14px}
+.error strong{font-weight:600}
+
+dialog{border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:var(--radius-lg);padding:0;width:min(640px,calc(100vw - 32px));max-height:min(88vh,860px);box-shadow:0 28px 64px -28px color-mix(in srgb,var(--fg) 55%,transparent)}
+dialog[open]{display:flex;flex-direction:column;animation:sheet-in .42s var(--ease)}
+dialog::backdrop{background:color-mix(in srgb,var(--fg) 38%,transparent);animation:fade-in .3s ease}
+#sheetContent{display:flex;flex-direction:column;min-height:0;flex:1}
+.dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 18px;border-bottom:1px solid var(--border)}
+.dialog-head h2{margin:2px 0 0;font-size:22px;letter-spacing:-.01em}
+.dialog-body{display:grid;gap:18px;padding:24px;overflow:auto;flex:1;min-height:0}
+.dialog-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:16px 24px;border-top:1px solid var(--border);background:var(--bg)}
+.dialog-foot .push{margin-right:auto}
+.close{min-height:40px;padding:0 12px;font-size:13px;border-color:var(--border)}
+@keyframes sheet-in{from{opacity:0;transform:translateY(14px)}}
+@keyframes fade-in{from{opacity:0}}
+
+.list{border-top:1px solid var(--border)}
+.check{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-weight:400;font-size:14px}
+.check>span{flex:1;min-width:0}
+.check strong{font-weight:600}
+.check small{display:block;color:var(--muted);font-size:12px;font-family:var(--font-mono);overflow-wrap:anywhere}
+label.check{cursor:pointer}
+.members-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.steps{list-style:none;margin:0;padding:0;counter-reset:step;border-top:1px solid var(--border)}
+.steps li{counter-increment:step;display:grid;grid-template-columns:36px minmax(0,1fr);padding:12px 0;border-bottom:1px solid var(--border);font-size:14px}
+.steps li::before{content:counter(step,decimal-leading-zero);grid-row:span 2;font:12px/1.7 var(--font-mono);color:var(--muted)}
+.steps strong{font-weight:600}
+.steps span{color:var(--muted);font-size:13px}
+details summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-weight:500;font-size:14px;text-decoration:underline;text-underline-offset:4px}
+details[open] summary{margin-bottom:8px}
+.file-tabs{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--control-border);border-radius:var(--radius);justify-self:start}
+.file-tabs button{border-color:transparent;background:transparent;font-family:var(--font-mono);font-size:13px;letter-spacing:0;border-radius:4px}
+.file-tabs button:hover{background:var(--hover);border-color:transparent}
+.file-tabs button[aria-pressed=true]{background:var(--code-bg);color:var(--code-fg)}
+.folder-path{display:flex;gap:8px;align-items:center}
+.folder-path .path{flex:1;padding:10px 12px;background:var(--sunk);border-radius:var(--radius)}
+.folder{width:100%;justify-content:space-between;border:0;border-bottom:1px solid var(--border);border-radius:0;background:none;font-weight:400}
+.folder:hover{background:var(--hover);border-color:var(--border)}
+.folder span:last-child{color:var(--muted)}
+
+.toast{position:fixed;bottom:20px;right:20px;z-index:9;display:flex;align-items:center;gap:14px;max-width:min(460px,calc(100vw - 40px));padding:10px 10px 10px 18px;background:var(--fg);color:var(--surface);border-radius:var(--radius-lg);font-size:14px;line-height:1.45;box-shadow:0 16px 40px -20px color-mix(in srgb,var(--fg) 70%,transparent);opacity:0;visibility:hidden;transform:translateY(12px);transition:opacity .25s,transform .42s var(--ease),visibility .25s}
+.toast.show{opacity:1;visibility:visible;transform:none}
+.toast span{padding:6px 0}
+.toast-action{flex:none;min-height:40px;background:transparent;color:var(--surface);border-color:color-mix(in srgb,var(--surface) 45%,transparent)}
+.toast-action:hover{background:var(--accent-hover);border-color:var(--surface)}
+
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+
+@media(max-width:1180px){
+  .skills .ledger-head,.tools .ledger-head{display:none}
+  .skill-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:'name actions' 'avail invoc';row-gap:12px}
+  .tool-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'name run' 'cmds cmds';row-gap:16px}
+}
+@media(max-width:1000px){
+  .shell{grid-template-columns:184px minmax(0,1fr)}
+  .rail{padding:24px 10px}
+  .profile{grid-template-columns:1fr;gap:18px}
+  .profile-scope{border-left:0;padding-left:0;padding-top:16px;border-top:1px solid var(--border)}
+  .settings-block,.note{grid-template-columns:1fr;gap:14px}
+}
+@media(max-width:760px){
+  .shell{display:block}
+  .rail{position:sticky;z-index:5;height:auto;gap:10px;padding:12px 16px 10px;border-right:0;border-bottom:1px solid var(--border)}
+  .brand{padding:0}
+  .brand b{font-size:22px}
+  .nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .nav button{justify-content:center;padding:0 4px;font-size:13px}
+  .nav .count,.nav .long,.rail-foot{display:none}
+  .nav .short{display:inline}
+  main{padding:14px 16px 32px}
+  .topline .eyebrow{font-size:10px}
+  .page-head{flex-direction:column;align-items:stretch;gap:16px;margin:24px 0 20px}
+  .page-head .primary{align-self:flex-start}
+  h1{font-size:26px}
+  .row,.profile{padding:20px 4px}
+  .scope-control{flex-wrap:wrap}
+  .scope-control label{flex:1 1 100%}
+  .scope-control button{flex:1}
+  .toolbar>label:first-child,.search{width:100%;max-width:none}
+  .path-line .eyebrow:last-child{margin-left:0}
+  .skill-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'name actions' 'avail avail' 'invoc invoc'}
+  .tool-row{grid-template-columns:1fr;grid-template-areas:'name' 'cmds' 'run'}
+  .tool-run button{flex:1}
+  .cmds div{grid-template-columns:1fr;gap:4px}
+  .project-row{grid-template-columns:minmax(0,1fr) auto;row-gap:0}
+  .project-row .path{grid-column:1;grid-row:2;font-size:12px}
+  .project-row button{grid-row:1/3;grid-column:2}
+  .path-card{flex-direction:column;align-items:stretch}
+  dialog{width:calc(100vw - 16px);max-height:92vh}
+  .dialog-head,.dialog-body{padding-left:18px;padding-right:18px}
+  .dialog-foot{padding:14px 18px}
+  .toast{left:12px;right:12px;bottom:12px;max-width:none}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  button:active{transform:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+  <aside class="rail" data-od-id="section-rail">
+    <div class="brand"><b>afk<span aria-hidden="true">.</span></b><small>AI Field Kit</small></div>
+    <nav aria-label="Main sections" class="nav" id="nav"></nav>
+    <div class="rail-foot">Personal workspace<br>One configuration.<br>Local skills.</div>
+  </aside>
+  <main id="main" tabindex="-1" data-od-id="workspace">
+    <div class="topline">
+      <span class="eyebrow">Fieldwork / Personal kit / <span id="crumb"></span></span>
+      <button type="button" class="demo" onclick="showNotes()" data-od-id="proposal-notes">Interactive demonstration · About</button>
+    </div>
+    <div id="view"></div>
+    <footer>A tool from Logbook for Devs · Charting the technical seas, one commit at a time.</footer>
+  </main>
+</div>
+<dialog id="sheet" aria-labelledby="sheetTitle"><div id="sheetContent"></div></dialog>
+<div class="toast" role="status" aria-live="polite" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const refocus=id=>document.querySelector(`[data-od-id="${id}"]`)?.focus();
+
+let section='Profiles',scope='Global',query='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
+let projects=[{name:'Demo Studio',path:'~/Projects/demo-studio'},{name:'Field Notes',path:'~/Projects/field-notes'}];
+let profiles=[
+  {id:'hyperframe',name:'Motion studio',source:'Illustrative source · hyperframe',skills:['composition','render-review','motion-timing'],enabled:['Demo Studio'],ready:true},
+  {id:'frontend',name:'Interface craft',source:'Illustrative source · frontend-kit',skills:['interface-design','accessibility','render-review'],enabled:['Global','Field Notes'],ready:true},
+  {id:'research',name:'Research desk',source:'Local skill selection',skills:['source-research','evidence-notes'],enabled:[],ready:true}
+];
+let tools=[
+  {id:1,name:'Skills CLI',install:'npx skills --help',update:'',last:null},
+  {id:2,name:'Project helper',install:'npm install -g example-project-helper',update:'npm update -g example-project-helper',last:null}
+];
+const independent={Global:['source-research'],'Demo Studio':['project-conventions'],'Field Notes':[]};
+let preferences={},individualOff={};
+const sections=[{id:'Profiles',short:'Profiles'},{id:'Installed Skills',short:'Skills'},{id:'Tools',short:'Tools'},{id:'Settings',short:'Settings'}];
+
+function toast(message,action){
+  const el=$('toast');
+  el.innerHTML=`<span>${esc(message)}</span>${action?`<button type="button" class="toast-action">${esc(action.label)}</button>`:''}`;
+  if(action)el.querySelector('button').onclick=()=>{action.run();hideToast()};
+  el.classList.add('show');
+  clearTimeout(window.toastTimer);
+  window.toastTimer=setTimeout(hideToast,action?7000:4500);
+}
+function hideToast(){$('toast').classList.remove('show')}
+
+function button(text,fn,cls='',attrs=''){return `<button type="button" class="${cls}" onclick="${fn}" ${attrs}>${text}</button>`}
+function scopeNames(){return ['Global',...projects.map(p=>p.name)]}
+function scopeOptions(value){return scopeNames().map(n=>`<option ${n===value?'selected':''}>${esc(n)}</option>`).join('')}
+function slug(s){return s.toLowerCase().replaceAll(' ','-')}
+
+function navCount(id){
+  if(id==='Profiles')return profiles.length;
+  if(id==='Installed Skills')return inventory().length;
+  if(id==='Tools')return tools.length;
+  return '';
+}
+
+function navigate(s){
+  section=s;query='';render();window.scrollTo(0,0);
+  document.querySelector('#nav [aria-current]')?.focus();
+}
+
+function render(){
+  $('nav').innerHTML=sections.map(s=>{
+    const count=navCount(s.id);
+    return `<button type="button" data-od-id="nav-${slug(s.id)}" ${s.id===section?'aria-current="page"':''} onclick="navigate('${s.id}')"><span class="long">${s.id}</span><span class="short">${s.short}</span>${count!==''?`<span class="count" aria-hidden="true">${count}</span>`:''}</button>`;
+  }).join('');
+  $('crumb').textContent=section;
+  ({Profiles:renderProfiles,'Installed Skills':renderSkills,Tools:renderTools,Settings:renderSettings})[section]();
+}
+
+function head(title,sub,action=''){return `<header class="page-head" data-od-id="page-heading"><div><h1>${title}</h1><p class="sub">${sub}</p></div>${action}</header>`}
+
+function renderProfiles(){
+  const active=profiles.filter(p=>p.enabled.length).length;
+  const list=profiles.length
+    ?`<div class="ledger">${profiles.map(profileRow).join('')}</div>`
+    :`<div class="empty"><h2>No profiles yet</h2><p class="sub">Create a group from a source repository or from skills already on this machine.</p></div>`;
+  $('view').innerHTML=head('Profiles','Shared skill groups. Enable one where you work, or read it once in a conversation.',button('Create profile','createProfile()','primary','data-od-id="create-profile"'))
+    +`<div class="ledger-label"><span class="eyebrow">Your reusable groups</span><span class="eyebrow">${profiles.length} groups · ${active} active</span></div>${list}`
+    +`<aside class="note" data-od-id="shared-storage-note"><span class="eyebrow">One copy, many routes</span><p>Definitions stay shared. Enabling a group creates exposure in the chosen scope; disabling it keeps its stored members and every other scope intact.</p></aside>`;
+}
+
+function profileRow(p){
+  const target=selectedTargets[p.id]||'Global',isGlobal=target==='Global',on=p.enabled.includes(target);
+  const alsoGlobal=!isGlobal&&p.enabled.includes('Global');
+  const where=isGlobal?'globally':'in '+esc(target);
+  const shown=p.skills.slice(0,4),extra=p.skills.length-shown.length;
+  const toggleLabel=`${on?'Disable':'Enable'} ${isGlobal?'globally':'in project'}`;
+  const prepAction=p.ready
+    ?button('Read group once',`invoke('${p.id}')`,'text',`data-od-id="profile-${p.id}-read"`)
+    :button('Retry preparation',`retryPreparation('${p.id}')`,'text',`data-od-id="profile-${p.id}-retry"`);
+  return `<article class="profile row" data-od-id="profile-${p.id}">
+    <div class="profile-main">
+      <button type="button" class="profile-name" onclick="inspectProfile('${p.id}')" aria-label="Inspect ${esc(p.name)}">${esc(p.name)}</button>
+      <p class="meta">${p.skills.length} member${p.skills.length===1?'':'s'} · ${esc(p.source)}</p>
+      <ul class="tags" aria-label="Members">${shown.map(s=>`<li class="tag">${esc(s)}</li>`).join('')}${extra>0?`<li class="tag more">+${extra} more</li>`:''}</ul>
+      <div class="prep"><span class="status ${p.ready?'on':'warn'}">${p.ready?'Prepared locally':'Preparation incomplete'}</span>${prepAction}</div>
+    </div>
+    <div class="profile-scope">
+      <div class="scope-control">
+        <label>Enable for<select data-od-id="profile-${p.id}-scope" aria-label="Scope for ${esc(p.name)}" onchange="setTarget('${p.id}',this.value)">${scopeOptions(target)}</select></label>
+        <button type="button" data-od-id="profile-${p.id}-toggle" ${p.ready?'':'disabled'} onclick="activate('${p.id}')">${toggleLabel}</button>
+      </div>
+      <p class="scope-state"><strong>${on?'Enabled':'Not enabled'} ${where}</strong>${alsoGlobal?'<span class="meta"> · also available globally</span>':''}</p>
+      <p class="meta">${p.enabled.length?'Active in '+p.enabled.map(esc).join(' · '):'No active scopes'}</p>
+      ${p.ready?'':'<p class="hint">Enabling unlocks once every member is prepared.</p>'}
+    </div>
+  </article>`;
+}
+
+function setTarget(id,value){selectedTargets[id]=value;renderProfiles();refocus(`profile-${id}-scope`)}
+
+function activate(id){
+  const p=profiles.find(p=>p.id===id),target=selectedTargets[id]||'Global';
+  p.enabled=p.enabled.includes(target)?p.enabled.filter(x=>x!==target):[...p.enabled,target];
+  render();refocus(`profile-${id}-toggle`);
+  toast(`${p.name}: ${p.enabled.includes(target)?'enabled':'disabled'} for ${target} · simulated`);
+}
+
+function modal(title,body,foot='',eyebrow=''){
+  $('sheetContent').innerHTML=`<header class="dialog-head"><div>${eyebrow?`<span class="eyebrow">${eyebrow}</span>`:''}<h2 id="sheetTitle">${title}</h2></div><button type="button" class="close" onclick="closeModal()">Close</button></header><div class="dialog-body">${body}</div>${foot?`<div class="dialog-foot">${foot}</div>`:''}`;
+  if(!$('sheet').open)$('sheet').showModal();
+  ($('sheet').querySelector('.dialog-body input:not([readonly]):not([type=checkbox]),.dialog-body textarea')||$('sheet').querySelector('.dialog-body button,.dialog-foot .primary'))?.focus();
+}
+function closeModal(){$('sheet').close()}
+
+function inspectProfile(id){
+  const p=profiles.find(p=>p.id===id),locked=p.enabled.length>0;
+  const members=p.skills.map(s=>`<div class="check"><span><strong>${esc(s)}</strong><small>~/.agents/skills/.disabled/${esc(s)}/</small></span>${button('Inspect',`inspectSkill('${s}','${id}')`,'text')}</div>`).join('');
+  const lockNote=locked
+    ?`Active in ${p.enabled.map(esc).join(', ')}. Membership edits and removal unlock after every scope is disabled.`
+    :'No scope enabled. Prepared members stay stored and ready.';
+  const foot=(p.ready?'':button('Retry preparation',`retryPreparation('${id}')`,'push'))
+    +button('Remove definition',`removeProfile('${id}')`,'text danger',locked?'disabled':'')
+    +button('Edit profile',`editProfile('${id}')`,'',locked?'disabled':'');
+  modal(esc(p.name),`<p class="sub">Shared definition · ${esc(p.source)}</p><div><div class="members-head"><span class="eyebrow">Members in local storage</span><span class="eyebrow">${p.skills.length}</span></div><div class="list">${members}</div></div><p class="sub">${lockNote}</p>`,foot,'Profile');
+}
+
+function retryPreparation(id){
+  const p=profiles.find(p=>p.id===id);p.ready=true;
+  if($('sheet').open)closeModal();
+  render();refocus(`profile-${id}-read`);toast('All members prepared disabled · simulated retry.');
+}
+
+function removeProfile(id){
+  const i=profiles.findIndex(p=>p.id===id),p=profiles[i];
+  if(p.enabled.length)return;
+  profiles.splice(i,1);closeModal();render();
+  toast(`${p.name} removed. Stored skills remain.`,{label:'Undo',run:()=>{profiles.splice(i,0,p);render()}});
+}
+
+function editProfile(id){const p=profiles.find(p=>p.id===id);if(!p.enabled.length)createProfile(p)}
+
+let editing=null;
+function createProfile(p=null){
+  editing=p;
+  modal(p?'Edit shared profile':'Create a shared profile',
+    `<label>Profile name<input id="profileName" value="${p?esc(p.name):''}" placeholder="e.g. Documentation desk" oninput="this.removeAttribute('aria-invalid');$('nameError').textContent=''" aria-describedby="nameError"><span class="field-error" id="nameError"></span></label>
+     <label>Source repository<input id="source" value="${p?esc(p.source):''}" placeholder="Repository URL or owner/repository"></label>
+     <div class="inline">${button('Discover members','discover()')}${button('Choose local skills','discover(true)','text')}</div>
+     <div id="discovery"><p class="sub">Choose members before saving. New source members are prepared disabled.</p></div>`,
+    button('Cancel','closeModal()','text')+`<button type="button" class="primary" id="saveProfile" disabled onclick="saveProfile()">Save &amp; prepare</button>`,
+    p?'Profile · membership':'New profile');
+  if(p)renderMembers(p.skills,'Current members',true,p.skills);
+}
+
+function renderMembers(names,title,local,checked=[]){
+  $('discovery').innerHTML=`<div class="members-head"><strong>${title}</strong>${button('Select all',"document.querySelectorAll('.member-check').forEach(x=>x.checked=true);memberChanged()",'text')}</div>
+    <div class="list">${names.map(s=>`<label class="check"><input class="member-check" type="checkbox" value="${s}" ${checked.includes(s)?'checked':''} onchange="memberChanged()"><span><strong>${s}</strong><small>${local?'Existing availability preserved':'New copy stored disabled'}</small></span></label>`).join('')}</div>
+    <p class="hint" id="memberCount"></p>`;
+  memberChanged();
+}
+
+function discover(local=false){
+  $('discovery').innerHTML='<p role="status" class="sub">Discovering available members…</p>';
+  $('saveProfile').disabled=true;
+  setTimeout(()=>{
+    const src=$('source').value.trim();
+    if(!local&&(!src||src.includes('fail'))){
+      $('discovery').innerHTML='<div class="error" role="alert"><strong>Error:</strong> source could not be discovered. Enter a repository reference and retry. A source containing “fail” demonstrates this state.</div>';
+      return;
+    }
+    renderMembers(local?['source-research','evidence-notes','project-conventions']:['interface-design','accessibility','render-review'],local?'Local skills':'Discovered package',local);
+  },650);
+}
+
+function memberChanged(){
+  const all=document.querySelectorAll('.member-check'),n=document.querySelectorAll('.member-check:checked').length;
+  $('saveProfile').disabled=!n;
+  if($('memberCount'))$('memberCount').textContent=`${n} of ${all.length} selected`;
+}
+
+function saveProfile(){
+  const name=$('profileName').value.trim();
+  if(!name){$('profileName').setAttribute('aria-invalid','true');$('nameError').textContent='Give this profile a name.';$('profileName').focus();return}
+  const skills=[...document.querySelectorAll('.member-check:checked')].map(x=>x.value),source=$('source').value.trim()||'Local skill selection';
+  $('saveProfile').disabled=true;$('saveProfile').textContent='Preparing…';
+  setTimeout(()=>{
+    const p=editing||{id:'profile-'+Date.now(),enabled:[]};
+    Object.assign(p,{name,source,skills,ready:!source.includes('partial')});
+    if(!editing)profiles.push(p);
+    closeModal();render();
+    toast(p.ready?'Profile saved. New members prepared disabled · simulated':'Partial preparation: this profile is not ready. Retry from its row.');
+  },650);
+}
+
+function invoke(id){
+  const p=profiles.find(p=>p.id===id);
+  if(!p.ready){toast('Prepare this group completely before reading it.');return}
+  const cmd='/afk-use '+p.id;
+  modal('Read '+esc(p.name)+' once',
+    `<p>Give this group to the agent in your current conversation. Its activation stays unchanged.</p>
+     <label>Proposed agent entry command<span class="inline"><input id="invocationCommand" readonly value="${cmd}">${button('Copy command','copyCommand()','primary')}</span></label>
+     <ol class="steps">
+       <li><strong>You paste the entry command</strong><span>Into a configured agent conversation.</span></li>
+       <li><strong>The agent requests the group</strong><span>Illustrative CLI: afk profiles use ${esc(p.id)}</span></li>
+       <li><strong>AFK returns local guidance</strong><span>${p.skills.length} members plus supporting resources; no discovery links.</span></li>
+     </ol>
+     <details><summary>Preview the group response</summary><pre>${esc(p.skills.map(s=>'READ '+s+'/SKILL.md\nResources: '+s+'/references/').join('\n\n'))}</pre></details>
+     <p class="hint">Integration is illustrative. This web app cannot inject instructions into another agent thread.</p>`,'','One-time reading');
+}
+
+async function copyCommand(){
+  try{await navigator.clipboard.writeText($('invocationCommand').value);toast('Entry command copied. Activation unchanged.')}
+  catch{$('invocationCommand').select();toast('Select and copy the proposed command.')}
+}
+
+function inventory(){
+  const entries=new Map();
+  if(scope==='Global'){
+    profiles.forEach(p=>p.skills.forEach(s=>{
+      if(!entries.has(s))entries.set(s,{name:s,owners:[],stored:true});
+      if(p.enabled.includes(scope))entries.get(s).owners.push(p.name);
+    }));
+  }else{
+    profiles.filter(p=>p.enabled.includes(scope)).forEach(p=>p.skills.forEach(s=>{
+      if(!entries.has(s))entries.set(s,{name:s,owners:[],stored:false});
+      entries.get(s).owners.push(p.name);
+    }));
+  }
+  (independent[scope]||[]).forEach(s=>{
+    if(!entries.has(s))entries.set(s,{name:s,owners:[],stored:false});
+    entries.get(s).independent=true;
+  });
+  return [...entries.values()];
+}
+
+function scopePath(){return scope==='Global'?'~/.agents/skills/':(projects.find(p=>p.name===scope)?.path||'')+'/.agents/skills/'}
+
+function renderSkills(){
+  $('view').innerHTML=head('Installed Skills','Every entry on one discovery path. Set availability and invocation per scope, right in the list.')
+    +`<div class="toolbar">
+        <label>Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>
+        <label class="search">Find a skill<span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
+      </div>
+      <p class="path-line"><span class="eyebrow">Discovery path</span><code class="path">${esc(scopePath())}</code><span class="eyebrow" id="skillCount"></span></p>
+      <div id="skillList"></div>`;
+  renderSkillList();
+}
+
+function setScope(value){scope=value;render();$('scopeSelect').focus()}
+
+function renderSkillList(){
+  const all=inventory(),list=all.filter(s=>s.name.includes(query.trim().toLowerCase()));
+  const available=all.filter(s=>isAvailable(s)).length;
+  $('skillCount').textContent=query?`${list.length} of ${all.length} shown`:`${all.length} entries · ${available} available`;
+  if(!list.length){
+    $('skillList').innerHTML=`<div class="empty"><h2>${query?'No matching skills':'No skill entries in this project'}</h2><p class="sub">${query?'Try a different skill name.':'Global-only skills are excluded. Enable a profile for this project to create its links.'}</p>${query?button('Clear search',"query='';renderSkills();$('skillSearch').focus()"):button('Go to Profiles',"navigate('Profiles')")}</div>`;
+    return;
+  }
+  $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row eyebrow" aria-hidden="true"><span>Skill</span><span>Availability</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>`;
+}
+
+function isAvailable(s){return s.owners.length>0||Boolean(s.independent&&!individualOff[scope+'|'+s.name])}
+
+function skillRow(s){
+  const held=s.owners.length>0,enabled=isAvailable(s);
+  const kind=scope==='Global'?'Shared local entry':'Project entry · '+(held?'symlink':'user-owned');
+  const note=held?'Held by '+s.owners.map(esc).join(', '):s.independent?'Individual entry':'Stored in library';
+  return `<article class="skill-row row" data-od-id="skill-${s.name}">
+    <div class="skill-name"><h3>${s.name}</h3><span class="meta">${kind}</span></div>
+    <div class="skill-avail">
+      <button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>
+      <span class="hint">${note}${held?' · change it in Profiles':''}</span>
+    </div>
+    <div class="skill-invoc">${preferenceSelect(s.name)}<span class="hint" data-hint="${s.name}">${preferenceHint(s.name)}</span></div>
+    <div class="skill-actions">${button('Inspect',`inspectSkill('${s.name}')`,'',`data-od-id="skill-${s.name}-inspect"`)}</div>
+  </article>`;
+}
+
+function preferenceSelect(name,attrs=''){
+  const current=preferences[scope+'|'+name]||'',first=scope==='Global'?'Skill default':'Inherit Global';
+  return `<select data-pref="${name}" aria-label="Invocation for ${name} in ${esc(scope)}" ${attrs} onchange="setPreference('${name}',this.value)"><option value="" ${current?'':'selected'}>${first}</option>${['Manual only','Automatic allowed'].map(v=>`<option ${current===v?'selected':''}>${v}</option>`).join('')}</select>`;
+}
+
+function preferenceHint(name){
+  if(preferences[scope+'|'+name])return scope==='Global'?'Override · projects inherit it':'Override · this project only';
+  if(scope==='Global')return 'Uses the setting in SKILL.md';
+  return 'Global: '+(preferences['Global|'+name]||'skill default').toLowerCase();
+}
+
+function setPreference(name,value){
+  const key=scope+'|'+name;
+  if(value)preferences[key]=value;else delete preferences[key];
+  document.querySelectorAll(`select[data-pref="${name}"]`).forEach(el=>el.value=value);
+  document.querySelectorAll(`[data-hint="${name}"]`).forEach(el=>el.textContent=preferenceHint(name));
+  toast(`${name}: ${value||(scope==='Global'?'skill default':'inherits Global')} · ${scope} only · simulated`);
+}
+
+function toggleSkill(name){
+  const s=inventory().find(s=>s.name===name);
+  if(s.owners.length)return;
+  const key=scope+'|'+name;
+  individualOff[key]=!individualOff[key];
+  if(!s.independent){(independent[scope]??=[]).push(name);individualOff[key]=false}
+  render();refocus(`skill-${name}-switch`);
+  toast(`${name}: ${individualOff[key]?'disabled':'available'} in ${scope} · simulated`);
+}
+
+function inspectSkill(name,fromProfile){
+  const back=fromProfile?button('Back to profile',`inspectProfile('${fromProfile}')`,'text push'):'';
+  const inheritNote=scope==='Global'?'Agent-native override support is assumed for this demonstration.':'Inherits Global unless overridden. This does not rewrite the shared skill.';
+  modal(name,
+    `<div class="file-tabs" role="group" aria-label="Skill files">${['SKILL.md','references/guide.md'].map((f,i)=>`<button type="button" aria-pressed="${i===0}" onclick="showFile(this,'${name}','${f}')">${f}</button>`).join('')}</div>
+     <pre id="fileContent">${esc(fileText(name,'SKILL.md'))}</pre>
+     <label>Invocation · ${esc(scope)}${preferenceSelect(name)}<span class="hint" data-hint="${name}">${preferenceHint(name)}</span></label>
+     <p class="hint">${inheritNote} Automatic selection permits agent choice; it does not guarantee execution.</p>`,
+    back,'Local skill inspection · '+esc(scope));
+}
+
+function fileText(name,file){
+  return file==='SKILL.md'
+    ?'# '+name+'\n\nIllustrative skill instructions.\nReview the task and its constraints before selecting an approach.\nRead supporting references when relevant.\nReport verified results and remaining limitations.'
+    :'# Supporting guide\n\nIllustrative local resource for '+name+'.\nResources are accessible during group reading.';
+}
+function showFile(el,name,file){
+  el.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===el));
+  $('fileContent').textContent=fileText(name,file);
+}
+
+function renderTools(){
+  const rows=tools.map(t=>`<article class="tool-row row" data-od-id="tool-${t.id}">
+    <div class="tool-name">
+      <h3>${esc(t.name)}</h3>
+      ${t.last?`<span class="status ${t.last.ok?'on':'warn'}">${esc(t.last.label)}</span>`:'<span class="meta">Not run this session</span>'}
+      <div class="links">${button('Edit',`editTool(${t.id})`,'text')}${button('Remove',`removeTool(${t.id})`,'text')}</div>
+    </div>
+    <dl class="cmds">
+      <div><dt>Install</dt><dd><code class="cmd">${esc(t.install)}</code></dd></div>
+      <div><dt>Update</dt><dd>${t.update?`<code class="cmd">${esc(t.update)}</code>`:'<span class="meta">Reuses the install command</span>'}</dd></div>
+    </dl>
+    <div class="tool-run">${button('Install',`runTool(${t.id},false)`,'',`data-od-id="tool-${t.id}-install"`)}${button('Update',`runTool(${t.id},true)`,'',`data-od-id="tool-${t.id}-update"`)}</div>
+  </article>`).join('');
+  const list=tools.length
+    ?`<div class="ledger tools"><div class="ledger-head tool-row eyebrow" aria-hidden="true"><span>Tool</span><span>Saved commands</span><span>Run</span></div>${rows}</div>`
+    :`<div class="empty"><h2>No saved commands</h2><p class="sub">Add a tool to keep its install and update commands together.</p></div>`;
+  $('view').innerHTML=head('Tools','Saved install and update commands. Each runs only when you choose, always in Global.',button('Add tool','editTool()','primary','data-od-id="add-tool"'))
+    +`<p class="path-line"><span class="eyebrow">Execution context</span><code class="path">Global · ~</code><span class="meta">Proposed fixed working folder</span></p>${list}`
+    +`<aside class="note"><span class="eyebrow">Explicit commands</span><p><strong>Visible results, no hidden runs.</strong> Removing an entry does not uninstall its tool, and a successful command is not proof of a usable installation.</p></aside>`;
+}
+
+function editTool(id){
+  const t=tools.find(t=>t.id===id);
+  modal(t?'Edit tool':'Add a global tool',
+    `<label>Name<input id="toolName" value="${t?esc(t.name):''}" placeholder="e.g. Skills CLI"></label>
+     <label>Install command<textarea id="installCmd" placeholder="npm install -g …">${t?esc(t.install):''}</textarea></label>
+     <label>Update command · optional<textarea id="updateCmd" placeholder="Leave empty to reuse the install command">${t?esc(t.update):''}</textarea></label>
+     <p class="field-error" id="toolError" role="alert"></p>
+     <p class="hint">Commands are saved data until you explicitly run them.</p>`,
+    button('Cancel','closeModal()','text')+button('Save tool',`saveTool(${id||0})`,'primary'),'Global tool');
+}
+
+function saveTool(id){
+  const name=$('toolName').value.trim(),install=$('installCmd').value.trim();
+  if(!name||!install){$('toolError').textContent=!name?'Name the tool.':'Add an install command.';(!name?$('toolName'):$('installCmd')).focus();return}
+  let t=tools.find(t=>t.id===id);
+  if(!t){t={id:Date.now(),last:null};tools.push(t)}
+  Object.assign(t,{name,install,update:$('updateCmd').value.trim()});
+  closeModal();render();toast('Tool entry saved. No command executed.');
+}
+
+function removeTool(id){
+  const i=tools.findIndex(t=>t.id===id),t=tools[i];
+  tools.splice(i,1);render();
+  toast(`${t.name} removed. No tool files were changed.`,{label:'Undo',run:()=>{tools.splice(i,0,t);render()}});
+}
+
+function runTool(id,update){
+  const t=tools.find(t=>t.id===id),cmd=update?(t.update||t.install):t.install;
+  window.simRun={id,update,cmd};
+  modal((update?'Update ':'Install ')+esc(t.name),
+    `<pre>$ ${esc(cmd)}</pre><div id="runOutput" role="status"><p class="sub">Ready to simulate this saved command in Global, working folder ~.</p></div>`,
+    button('Close','closeModal()','text')+button('Simulate run','executeDemo()','primary'),'Simulated execution');
+}
+
+function executeDemo(){
+  const {id,update,cmd}=window.simRun,t=tools.find(t=>t.id===id),b=$('sheetContent').querySelector('.primary'),mode=update?'update':'install';
+  $('runOutput').innerHTML='<p class="sub">Running simulation…</p>';
+  b.disabled=true;
+  setTimeout(()=>{
+    const ok=!cmd.includes('fail');
+    $('runOutput').innerHTML=ok
+      ?'<pre>Command accepted\nIllustrative output completed\nExit 0 · simulated</pre><p class="hint">Command success shown. Installation and usability remain unverified.</p>'
+      :'<div class="error"><strong>Error:</strong> command exited with an error · simulated.<br>No installation was performed. Edit the command and retry.</div>';
+    t.last={ok,label:ok?`Last ${mode} · exit 0 · simulated`:`Last ${mode} failed · simulated`};
+    window.toolsDirty=`tool-${id}-${mode}`;
+    b.disabled=false;b.textContent='Run again';
+  },800);
+}
+
+function renderSettings(){
+  const globalPrefs=Object.entries(preferences).filter(([k])=>k.startsWith('Global|'));
+  const prefs=globalPrefs.length
+    ?`<ul class="pref-list">${globalPrefs.map(([k,v])=>`<li><code>${esc(k.slice(7))}</code><span class="meta">${esc(v)}</span></li>`).join('')}</ul>`
+    :'<p class="sub">No Global overrides. Every skill uses the setting in its SKILL.md.</p>';
+  $('view').innerHTML=head('Settings','One portable configuration. Projects define folders, never activation.')
+    +`<section class="settings-block" data-od-id="settings-file">
+        <div><h2>Configuration file</h2><p class="sub">Local save only. If the folder is synced, its provider handles synchronization.</p></div>
+        <div class="settings-body">
+          <div class="path-card"><code class="path">${esc(settingsPath)}</code>${button('Choose location',"browse('settings')")}</div>
+          <div class="inline">${button('Export JSON','exportSettings()')}${button('Import file',"$('importFile').click()")}</div>
+          <input id="importFile" type="file" accept=".json,application/json" hidden onchange="importSettings(this.files[0])">
+        </div>
+      </section>
+      <section class="settings-block" data-od-id="projects-settings">
+        <div><h2>Projects</h2><p class="sub">Save the folder here; enable groups from Profiles.</p></div>
+        <div class="settings-body">
+          <div class="project-list">${projects.map((p,i)=>`<div class="project-row"><strong>${esc(p.name)}</strong><code class="path">${esc(p.path)}</code>${button('Edit',`editProject(${i})`,'text')}</div>`).join('')}</div>
+          <div>${button('Add project',"browse('project')")}</div>
+        </div>
+      </section>
+      <section class="settings-block" data-od-id="invocation-defaults">
+        <div><h2>Invocation defaults</h2><p class="sub">Global overrides apply to every project that inherits them.</p></div>
+        <div class="settings-body">${prefs}<div>${button('Adjust in Installed Skills',"scope='Global';navigate('Installed Skills')",'text')}</div></div>
+      </section>`;
+}
+
+let browseMode='',folder='~';
+const tree={'~':['Projects','Documents','Google Drive'],'~/Projects':['demo-studio','field-notes','new-project'],'~/Documents':['AFK'],'~/Google Drive':['Personal'],'~/Google Drive/Personal':['AFK']};
+function browse(mode){browseMode=mode;folder='~';folderModal()}
+function folderModal(){
+  const atRoot=folder==='~',subs=tree[folder]||[];
+  modal('Choose '+(browseMode==='project'?'project folder':'settings location'),
+    `<div class="folder-path">${button('Parent',"folder=folder.slice(0,folder.lastIndexOf('/'))||'~';folderModal()",'',atRoot?'disabled':'')}<code class="path">${esc(folder)}</code></div>
+     <div class="list">${subs.map(f=>`<button type="button" class="folder" onclick="folder+='/${f}';folderModal()"><span>${f}</span><span aria-hidden="true">›</span></button>`).join('')||'<p class="sub" style="padding:12px 0">This sample folder has no subfolders.</p>'}</div>`,
+    button('Cancel','closeModal()','text')+button('Use this folder','useFolder()','primary'),'Illustrative folder browser');
+}
+
+function useFolder(){
+  if(browseMode==='settings'){closeModal();settingsPath=folder+'/settings.json';render();toast('Location selected in demonstration. No file written.');return}
+  modal('Name this project',`<label>Project name<input id="projectName" value="${esc(folder.split('/').pop())}"></label><p class="path">${esc(folder)}</p><p class="hint">Adding a project does not enable any profile.</p>`,
+    button('Cancel','closeModal()','text')+button('Save project','saveProject()','primary'),'New project');
+}
+
+function saveProject(){
+  const name=$('projectName').value.trim();
+  if(!name||projects.some(p=>p.name===name)){toast('Choose a unique project name.');$('projectName').focus();return}
+  projects.push({name,path:folder});independent[name]=[];
+  closeModal();render();toast('Project defined. Profile activation unchanged.');
+}
+
+function editProject(i){
+  const p=projects[i];
+  modal('Edit project',`<label>Name<input id="projectName" value="${esc(p.name)}"></label><p class="path">${esc(p.path)}</p>`,
+    button('Cancel','closeModal()','text')+button('Save name',`renameProject(${i})`,'primary'),'Project');
+}
+
+function renameProject(i){
+  const old=projects[i].name,n=$('projectName').value.trim();
+  if(!n||projects.some((p,j)=>j!==i&&p.name===n)){toast('Choose a unique project name.');$('projectName').focus();return}
+  projects[i].name=n;
+  profiles.forEach(p=>p.enabled=p.enabled.map(v=>v===old?n:v));
+  independent[n]=independent[old]||[];
+  Object.keys(selectedTargets).forEach(k=>{if(selectedTargets[k]===old)selectedTargets[k]=n});
+  Object.keys(preferences).forEach(k=>{if(k.startsWith(old+'|')){preferences[n+k.slice(old.length)]=preferences[k];delete preferences[k]}});
+  if(scope===old)scope=n;
+  closeModal();render();toast('Project renamed. Activation preserved.');
+}
+
+function configuration(){
+  return {format:'afk-proposal-illustrative',profiles:profiles.map(p=>({...p,enabled:[]})),tools:tools.map(({last,...t})=>t),
+    global:{enabledProfiles:profiles.filter(p=>p.enabled.includes('Global')).map(p=>p.id),invocation:preferences},
+    projects:projects.map(p=>({...p,enabledProfiles:profiles.filter(x=>x.enabled.includes(p.name)).map(x=>x.id)}))};
+}
+
+function exportSettings(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(configuration(),null,2)],{type:'application/json'}));
+  a.download='afk-proposal-settings.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('Illustrative configuration exported.');
+}
+
+const safeId=v=>typeof v==='string'&&/^[-a-zA-Z0-9_]+$/.test(v);
+async function importSettings(file){
+  $('importFile').value='';
+  if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    const valid=Array.isArray(data.profiles)&&Array.isArray(data.projects)&&Array.isArray(data.tools)
+      &&data.profiles.every(p=>safeId(p.id)&&typeof p.name==='string'&&Array.isArray(p.skills)&&p.skills.every(safeId))
+      &&data.projects.every(p=>typeof p.name==='string'&&typeof p.path==='string')
+      &&data.tools.every(t=>typeof t.name==='string'&&typeof t.install==='string');
+    if(!valid)throw Error();
+    window.pendingImport=data;
+    modal('Review imported configuration',
+      `<p>${data.profiles.length} shared profiles · ${data.tools.length} global tool entries · ${data.projects.length} projects</p>
+       <p class="sub">Resolve local folders before applying. Imported activations are recorded intent; this demo leaves all scopes disabled.</p>
+       ${data.projects.map((p,i)=>`<label>${esc(p.name)} · remap path<input class="remap" data-index="${i}" value="${esc(p.path)}"></label>`).join('')}
+       <p class="hint">Local preparation will need reconciliation. Import never runs tool commands.</p>`,
+      button('Cancel','closeModal()','text')+button('Apply configuration','applyImport()','primary'),'Import');
+  }catch{
+    modal('Import could not be read','<div class="error" role="alert"><strong>Error:</strong> invalid configuration. Choose an AFK proposal JSON export. The previous configuration has been preserved.</div>','','Import');
+  }
+}
+
+function applyImport(){
+  const d=window.pendingImport,remaps=document.querySelectorAll('.remap');
+  projects=d.projects.map((p,i)=>({name:p.name,path:remaps[i].value}));
+  profiles=d.profiles.map(p=>({...p,enabled:[],ready:false}));
+  tools=d.tools.map((t,i)=>({name:t.name,install:t.install,update:typeof t.update==='string'?t.update:'',id:i+1,last:null}));
+  scope='Global';selectedTargets={};
+  closeModal();render();toast('Imported. Profiles need local preparation; no activation or commands applied.');
+}
+
+function showNotes(){
+  modal('About this proposal',
+    `<p>A task-led arrangement: a section rail, a full-width ledger per section, and focused dialogs for inspection and operations.</p>
+     <p class="sub">All skills, source contents, folders, preparation, exposure, command results, and preferences are illustrative in-memory state. No real filesystem or command execution occurs. JSON export/import and command copying use ordinary browser APIs.</p>
+     <p class="sub">Proposed group entry integration, agent-native overrides, ownership reconciliation, storage layout, and the fixed Global execution folder require implementation verification. Membership editing is locked while active as a demo simplification.</p>
+     <p class="sub">Failure examples: a discovery source containing “fail”; a source containing “partial” for incomplete preparation; a tool command containing “fail”. Navigation and scope changes never trigger operations.</p>`,'','Interactive demonstration');
+}
+
+$('sheet').addEventListener('close',()=>{
+  if(window.toolsDirty&&section==='Tools'){const target=window.toolsDirty;window.toolsDirty=null;render();refocus(target)}
+});
+
+document.addEventListener('keydown',e=>{
+  const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
+  if(e.key==='/'&&!typing&&!$('sheet').open&&section==='Installed Skills'){e.preventDefault();$('skillSearch').focus()}
+});
+
+render();
+
+function markInspectable(){
+  document.querySelectorAll('h1,h2,h3,button,input,select,textarea,section,article').forEach((el,i)=>{
+    if(!el.dataset.odId)el.dataset.odId='control-'+(el.id||el.tagName.toLowerCase()+'-'+i);
+  });
+}
+markInspectable();
+new MutationObserver(markInspectable).observe(document.body,{childList:true,subtree:true});
+</script>
+</body>
+</html>

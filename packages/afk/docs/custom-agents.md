@@ -33,23 +33,12 @@ Selecting a preset is a separate explicit selection: AFK installs exactly the
 members it declares and exits non-zero if a required agent cannot be
 provisioned, after attempting the remaining areas.
 
-## AFK Architect Bundle
+## AFK Architect
 
-`afk-architect` is usable by itself. It delegates through native teammate
-roles when the portable agents are unavailable. The optimized preset installs
-that skill and three reusable role contracts:
-
-| Agent | Stable responsibility |
-|---|---|
-| `cartographer` | Read-only discovery, evidence gathering, and change maps. |
-| `builder` | Bounded implementation with explicit file ownership. |
-| `pathfinder` | Difficult judgment, verification, and direct implementation when a handoff would add more cost than value. |
-
-These agents are the bones of a workflow, not one agent per stage. A
-coordinator can instantiate the same contract several times with distinct
-assignments. Create another permanent Custom Agent only when a role needs a
-different durable permission boundary, tool or skill attachment, or standing
-instruction set.
+The `afk-architect` preset installs only the coordination skill. It uses native
+teammates and chooses a fitting model for each assignment. Custom Agents remain
+available for roles that need durable permissions, attached skills, or standing
+instructions.
 
 ## Catalog
 
