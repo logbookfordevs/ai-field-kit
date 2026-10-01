@@ -1,113 +1,46 @@
-# Command reference
+# A small command surface.
 
-Use these commands for the common setup loop. Run any command with `--help` for its complete current options.
+The web app is the main interface. These commands let a terminal or agent read skills, activate profiles, and export settings.
 
-<h2 id="reference-core">Core commands</h2>
+<h2 id="launch">Open and close</h2>
 
-| Command | Purpose |
-| --- | --- |
-| `afk setup` | Guided setup across selected areas. |
-| `afk setup <area>` | Run one area: rules, skills, profiles, agents, mcps, tools, or hooks. |
-| `afk sync --preset <id>` | Refresh the catalog and update installed members of a preset. |
-| `afk show [category...]` | Inspect cached catalog data without changing it. |
-| `afk refresh [category...]` | Update cached catalog files. |
-| `afk sources list` | List the saved default and favorite sources. |
-| `afk doctor` | Validate all local catalog manifests. |
-| `afk preset [id]` | Choose or apply a catalog setup bundle. |
-| `afk skills list` | Inspect the shared global library; choose other roots with flags. |
-
-<h2 id="reference-flags">Setup flags</h2>
-
-<dl>
-<dt><code>--dry-run</code></dt>
-<dd>Print planned actions without applying them.</dd>
-<dt><code>--local</code></dt>
-<dd>Use project setup scope. On <code>refresh</code>, target <code>./afk/catalog</code>.</dd>
-<dt><code>--agent &lt;agent&gt;</code></dt>
-<dd>Override detected targets; repeat for more than one.</dd>
-<dt><code>--source &lt;source&gt;</code></dt>
-<dd>Use a catalog source for this command only.</dd>
-<dt><code>--yes</code></dt>
-<dd>Accept defaults and skip prompts; best after a source is saved.</dd>
-<dt><code>--verbose</code></dt>
-<dd>Show delegated installer output.</dd>
-</dl>
-
-
-<details>
-<summary>Skill library management</summary>
-<p><code>afk skills show</code>, <code>open</code>, <code>disable</code>, <code>enable</code>, <code>delete</code>, <code>update</code>, <code>profiles</code>, and <code>categorize</code> manage skills already represented on disk. They are separate from <code>afk setup skills</code>, which installs selected skills.</p>
-</details>
-
-
-<h2 id="reference-families">Go deeper by command family</h2>
-
--   [Catalogs and sources](/docs?chapter=catalog): authoring, favorites, refresh behavior, and combining repositories.
--   [Skills](/docs?chapter=skills): add, inspect, enable, disable, invocation, update, delete, reset, and catalog maintenance.
--   [Profiles](/docs?chapter=profiles): definitions, packages, installation, context, activation, focus, and restoration.
-
-<h2 id="reference-catalog-editors">Edit other catalog families</h2>
-
-Run `afk rules catalog`, `afk agents catalog`, `afk mcps catalog`, `afk tools catalog`, or `afk hooks catalog` to open that family’s editor. Each supports `add`, `edit`, and `remove`; MCPs, tools, and hooks also support `toggle-default`. Edits target the global cache unless you add `--local`. Catalog removal changes a definition, not an existing installation.
-
-<h2 id="reference-presets">Apply a preset bundle</h2>
-
-```bash inspect and choose a preset
-afk show presets
-afk preset --dry-run
+```bash Launch AFK
+afk
+afk ui --no-open
 ```
 
-A preset groups setup areas and can select exact members or every item in its declared areas. `afk preset <id>` skips the preset menu; `afk setup preset` is the long form. Presets route installation, while skill profiles manage working sets after installation.
+AFK opens a loopback web app. **Exit AFK** in the app header or **Ctrl+C** stops its server. The public website does not start your local app.
 
-<h2 id="reference-sync">Update a preset environment</h2>
+For an unpublished source build, [Start here](/docs?chapter=start#open) explains the local shortcut and direct launcher.
 
-Use `afk sync` to keep an existing global environment aligned with a preset. It refreshes the catalog from your remembered source, then updates that preset's installed members. Run `afk sync` to choose a preset interactively, or name one directly:
+<h2 id="reading">Read without activating</h2>
 
-```bash preview and apply preset updates
-afk sync --preset <id> --dry-run
-afk sync --preset <id> --yes
+```bash Reading commands
+afk profiles use <profile-id>
+afk skills get <skill-name> [scope]
 ```
 
-Replace `<id>` with a preset ID from `afk show presets`. The preview fetches fresh definitions and shows planned work without writing the catalog cache or changing installed components. Supply `--preset` outside an interactive terminal. `--yes` skips AFK prompts; delegated updaters may still prompt.
+Use the ID copied by the app. Profiles print prepared local member guidance and resource directories. Skill get prints SKILL.md from the selected scope.
 
-### What gets updated
+Square brackets describe optional arguments; do not type the brackets literally.
 
-| Part | Update behavior |
-| --- | --- |
-| Skills | Reinstalls selected skills through `skills add` using the refreshed catalog source, preserving disabled status. `afk skills update` instead follows installed lock metadata. |
-| Tools | Runs each installed tool's cataloged update command. Tools without one are skipped. |
-| Rules | Uses the rules setup flow to refresh AFK-managed regions and declared reference files, preserving content outside those regions. |
-| MCPs | Reapplies named server configurations through `add-mcp`. Server software updates depend on the configured source or launcher. |
-| Hooks | Installs or refreshes scripts and their registration. |
-| Custom Agents | Installs or regenerates native agent definitions. |
-| Profiles | Refreshes definitions without enabling profiles or installing their packages. |
+<h2 id="activation">Enable or disable one target</h2>
 
-### Missing members and source changes
-
-New preset members are installed automatically. When the preset includes skills, every catalog skill without `imported: true` is installed in batches by source, regardless of defaults or preset skill selections; existing disabled skills stay disabled. Rules sync once across selected harnesses.
-
-To include imported catalog skills in the same installation batches:
-
-```bash include extra tracked skills
-afk sync --preset <id> --include-extra-skills --yes
+```bash Example project target
+afk profiles enable <profile-id> 'Demo Studio'
+afk profiles disable <profile-id> 'Demo Studio'
 ```
 
-Sync reuses the selection from `afk setup skills --all --exclude-imported --yes`; `--include-extra-skills` removes that exclusion. Uncataloged skills are untouched. Profile definitions refresh without enabling profiles or installing their packages. Sync preserves local-only catalog entries and never uninstalls components removed upstream. Incoming definitions replace matching catalog IDs, so a skill's source can change on the next sync.
+Omit the target for Global. A project target must match its configured name. Disable affects only AFK-owned exposure in that target and preserves other owners.
 
-Use `--source <source>` for a one-run catalog source override and `--agent <agent>` to limit agent targets. Sync supports global environments only. Tools are detected by executable availability on `PATH`; missing tools are installed. Skill selection follows each catalog entry’s installer arguments, as in setup. The former `--install-missing` flag remains accepted for compatibility but is unnecessary.
+<h2 id="configuration">Export settings</h2>
 
-If an update fails, independent updates continue and the final summary reports failures with a nonzero exit code. Review that summary before retrying. To update the AFK CLI itself, use `afk update`.
-
-<h2 id="reference-tool-updates">Update cataloged tools</h2>
-
-```bash preview tool updates
-afk tools update --dry-run
+```bash Export to a new file
+afk settings export /path/to/export.json
 ```
 
-Select tools with cataloged update commands, or pass their IDs directly with `afk tools update <tool...>`. Remove `--dry-run` to run the selected commands. This updates those tools; `afk update` updates AFK itself.
+Import and file-location selection live in Settings. Export does not install skills or run saved commands.
 
-<h2 id="reference-utilities">Discover UI skills and maintain AFK</h2>
+<h2 id="legacy">Choose the right AFK version</h2>
 
-`afk ui categories`, `afk ui list --category motion`, and `afk ui get <skill>` delegate to UI Skills. `get` prints skill content without installing it. `afk open` opens the user AFK folder; add `--code` for VS Code. `afk update --dry-run` previews the hosted release installer; `afk update` runs it.
-
-[Troubleshoot a setup](/docs?chapter=troubleshooting)
+Catalogs, setup, sync, rules, hooks, MCP configuration and custom-agent provisioning are no longer AFK commands. Read [AFK 1.x releases](/docs?chapter=legacy) to install or fork the old behavior.

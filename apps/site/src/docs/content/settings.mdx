@@ -1,0 +1,50 @@
+# One file. Local paths.
+
+Definitions can travel between machines. Skill copies and project folders remain local.
+
+<h2 id="location">Choose where settings live</h2>
+
+Default: `~/.afk/settings.json`. In **Settings**, choose another file, including a folder synced by your storage provider. A local pointer at `~/.afk/settings-location.json` remembers that location.
+
+Relocation copies the configuration, preserves the old file, and refuses to overwrite an existing destination. A launch override takes precedence over the pointer:
+
+```bash Optional launch override
+AFK_SETTINGS=/path/to/settings.json afk
+```
+
+The JSON holds profile definitions and selected activation state, project paths, tool commands, source bookmarks, invocation preferences, individual activation and managed-link receipts. Use the UI for changes so settings and filesystem operations agree.
+
+<h2 id="projects">Add a project folder</h2>
+
+Choose **Add project**, navigate from your home folder, select **Use this folder**, then name the project. This defines a target; activation stays in **Profiles**.
+
+Renaming preserves its target relationships and preferences. Disable its profiles before changing the folder.
+
+<h2 id="import">Import intentionally</h2>
+
+1. Disable currently enabled profiles before replacing configuration.
+2. Choose the JSON file and review or remap project folders.
+3. Import. Profiles start unprepared and disabled; local link receipts and individual activation are cleared.
+4. Prepare the members for this machine, then enable each desired target explicitly.
+
+<div className="docs-callout"><strong>Import does not execute setup</strong><p>Saved tool commands do not run. Imported invocation preferences are stored but are not automatically written to native skill files.</p></div>
+
+Your provider owns sync and concurrent-file conflict handling. AFK does not automatically apply another machine’s activation or sync downloaded skill files.
+
+<h2 id="storage">Know what stays on disk</h2>
+
+New selected repository members are stored under `~/.agents/skills/.disabled/<skill>/`. Global and project activation expose them through owned links in `.agents/skills/` and `.claude/skills/`.
+
+A project invocation override uses `<project>/.agents/skills/.afk-overrides/<skill>/`. Reset reconnects owned links to the shared copy. Physical project-local skills keep their own original metadata.
+
+Existing available skills may remain in place. Profile disable removes only owned exposure, preserving other profiles, independent availability, and preexisting files.
+
+<h2 id="export">Export configuration</h2>
+
+**Export configuration** downloads JSON. The terminal alternative writes a new file and refuses to overwrite an existing export:
+
+```bash Export current configuration
+afk settings export /path/to/export.json
+```
+
+Exported paths, link receipts and readiness describe this machine; they do not become valid automatically on another one. Review mappings during import.

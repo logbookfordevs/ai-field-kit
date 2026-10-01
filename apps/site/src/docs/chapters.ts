@@ -1,71 +1,24 @@
 export const chapters = [
-  {
-    "id": "start",
-    "title": "Start here",
-    "group": "Get started",
-    "description": "Preview setup and install the CLI."
-  },
-  {
-    "id": "setup",
-    "title": "Set up AFK",
-    "group": "Get started",
-    "description": "Choose installation scope, agents, and kit areas."
-  },
-  {
-    "id": "concepts",
-    "title": "How AFK works",
-    "group": "Understand",
-    "description": "Understand the pieces, sources, and cached configuration."
-  },
-  {
-    "id": "kit",
-    "title": "Explore the AFK catalog",
-    "group": "Understand",
-    "description": "Choose skills by task and understand their sources and roles."
-  },
-  {
-    "id": "workflows",
-    "title": "Compose a workflow",
-    "group": "Understand",
-    "description": "Combine skills through examples, handoffs, and interactive maps."
-  },
-  {
-    "id": "customize",
-    "title": "Customize your kit",
-    "group": "Understand",
-    "description": "Try another catalog and save a team default."
-  },
-  {
-    "id": "catalog",
-    "title": "Build and share a catalog",
-    "group": "Guides",
-    "description": "Author, publish, validate, and combine your own catalog sources."
-  },
-  {
-    "id": "skills",
-    "title": "Manage your skills",
-    "group": "Guides",
-    "description": "Install, inspect, update, and manage skill storage and invocation."
-  },
-  {
-    "id": "profiles",
-    "title": "Work with skill profiles",
-    "group": "Guides",
-    "description": "Define, install, activate, and restore skill working sets."
-  },
-  {
-    "id": "reference",
-    "title": "Command reference",
-    "group": "Reference",
-    "description": "Find setup, catalog, and maintenance commands."
-  },
-  {
-    "id": "troubleshooting",
-    "title": "Troubleshooting",
-    "group": "Reference",
-    "description": "Diagnose catalog, preview, installer, and CLI path problems."
-  }
+  { id: 'start', title: 'Start here', description: 'Open the local app and create one useful skill group.' },
+  { id: 'skills', title: 'Skills & invocation', description: 'Inspect local skills, control availability and choose native invocation preferences.' },
+  { id: 'profiles', title: 'Profiles', description: 'Prepare shared skill groups and enable them by target.' },
+  { id: 'agent', title: 'Use with your agent', description: 'Read a prepared group without changing activation.' },
+  { id: 'sources', title: 'Favorite sources', description: 'Bookmark repositories and copy install commands.' },
+  { id: 'tools', title: 'Tools', description: 'Save and explicitly run global tool commands.' },
+  { id: 'settings', title: 'Settings & projects', description: 'Choose configuration storage and manage local project folders.' },
+  { id: 'reference', title: 'CLI reference', description: 'Find the focused reading, activation and export commands.' },
+  { id: 'troubleshooting', title: 'Troubleshooting', description: 'Resolve preparation, scope, path and local-server problems.' },
+  { id: 'legacy', title: 'AFK 1.x releases', description: 'Install or fork a release before AFK 2.0.' },
+] as const;
+
+export const retiredChapters = [
+  { id: 'setup', title: 'Set up AFK' },
+  { id: 'concepts', title: 'How AFK works' },
+  { id: 'kit', title: 'Explore the AFK catalog' },
+  { id: 'workflows', title: 'Compose a workflow' },
+  { id: 'customize', title: 'Customize your kit' },
+  { id: 'catalog', title: 'Build and share a catalog' },
 ] as const;
 
 export type Chapter = (typeof chapters)[number];
-export type ChapterId = Chapter["id"];
+export type ChapterId = Chapter['id'];

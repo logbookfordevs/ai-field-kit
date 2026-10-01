@@ -6,43 +6,59 @@ brand
 
 ## Users
 
-AI-assisted developers, engineering leads, staff-level workflow maintainers, and local-tooling tinkerers who use more than one coding agent and need a coherent way to configure them. They arrive while choosing setup paths, comparing skill/workflow surfaces, previewing AFK CLI actions, or deciding whether AI Field Kit belongs in a team repository.
-
-These users are technical and skeptical. They want to see what will be installed, which tool owns which behavior, and where the boundaries are before they let automation touch their machine or project.
+Developers who use coding agents and want a small personal workspace for skill
+availability, reusable skill groups, and saved tool commands. They need to see
+which scope an action affects and keep occasional skills ready without repeatedly
+installing and uninstalling them.
 
 ## Product Purpose
 
-AI Field Kit is the DX-first setup layer for practical AI development workflows. It installs and manages independently owned catalogs of rules, skills, hooks, agents, MCP entries, and tools so developers can install only the pieces they need and keep agent behavior versioned.
+AI Field Kit manages the skills and tools a developer actually uses. Its CLI opens
+a local web app and exposes a small set of reading and profile activation commands.
 
-AFK should make the system shape legible: authored skills can be installed directly, the AFK CLI can orchestrate broader setup, and workflow packages can coordinate heavier planning or execution when the job calls for it. Success means a developer understands the composition model quickly enough to choose a narrow install path with confidence instead of treating AFK as a monolithic methodology.
+The product has five sections: Profiles, Installed Skills, Favorite skill sources,
+Tools, and Settings. Profile definitions are shared; activation is global or
+project-specific. Tools are always global. Configuration lives in one file whose
+location the user chooses.
+
+Skills CLI owns repository preparation and external install/update behavior. AFK
+owns local availability, profile grouping, inspection, and supported invocation
+preferences. It does not own catalogs, rules, hooks, MCP setup, custom-agent
+provisioning, or a general extension framework.
 
 ## Brand Personality
 
-Precise, composable, field-tested, and opinionated. AFK should feel like a working field notebook for serious builders: calm enough to trust, concrete enough to run, and sharp enough to challenge vague agent-workflow thinking.
-
-The voice is practical rather than ceremonial. It can be playful in small flashes, but the product earns trust by naming boundaries, showing real commands, and avoiding inflated claims about AI productivity.
+Precise, calm, practical, and personal. AFK should feel like a working field
+notebook: clear about what an action changes, quiet enough for daily use, and
+concrete about files, scopes, and command execution.
 
 ## Anti-references
 
-Avoid generic AI SaaS landing pages, prompt-pack marketplaces, decorative automation hype, vague productivity theater, and framework worship that makes AFK look like another mandatory methodology.
-
-Avoid burying the setup model under ornamental cards or screenshots that do not explain ownership. AFK should not imply that every workflow is required, that every agent should be configured the same way, or that MCPs, CLIs, hooks, skills, apps, and plugins are interchangeable words for the same thing.
+Avoid generic AI SaaS dashboards, skill marketplaces, broad setup frameworks,
+configuration taxonomies, and productivity claims without evidence. Do not make
+simple bookmarks or skill groups feel like a package-management platform.
 
 ## Design Principles
 
-- Show the system shape before explaining every detail.
-- Treat composition as the product story: primitives, wrappers, flows, references, routers, and installers each have a clear job.
-- Prefer explicit setup semantics over magical automation.
-- Keep install paths honest: direct skills install, AFK CLI setup, registry import, and companion plugin recommendations should remain distinct.
-- Make the smallest useful next step obvious.
-- Cut any visual or copy element that does not help someone understand, choose, or install the right piece.
+- Put the activation target beside the action it controls.
+- Distinguish shared definitions from project-specific activation.
+- Make reading instructions distinct from enabling skills.
+- Label copied commands separately from commands that execute.
+- Keep tools visibly global and projects tied to folder paths.
+- Preserve user-owned files and independent availability.
+- Make errors recoverable without losing form input.
 
 ## Accessibility & Inclusion
 
-Use readable contrast, keyboard-accessible controls, reduced-motion alternatives, responsive layouts, semantic landmarks, clear focus states, and plain language for setup concepts. Motion and visual metaphor should clarify relationships, not become required for comprehension.
+Use keyboard-accessible controls, semantic landmarks, visible focus, readable
+contrast, reduced-motion support, and responsive layouts. Explain scope and state
+with text as well as color. Commands and paths should wrap on narrow screens.
 
-Installation and compatibility information should not rely on color alone. Code blocks, copy buttons, tabs, tables, and support links should remain usable with keyboard navigation, narrow screens, and assistive technology.
+## Current Delivery
 
-## Catalog ownership
-
-Logbook Atlas owns the default catalog, authored skill content, starter rules, hook implementations, and portable agent definitions. AFK owns the CLI, installation lifecycle, catalog schema support, and harness adapters. Catalog membership and workflow-method documentation live in Atlas; this repository links to them.
+The local app and the AFK 2.0 home and field manual are implemented and tested.
+Live discovery inside agent conversations still needs verification. Package
+publication and website deployment remain separate work.
+The behavior specification is `docs/specs/afk-pivot.md`; the local app's visual
+system is `packages/afk/web/DESIGN.md`. Root `DESIGN.md` describes the AFK website
+and shared brand. Website evidence is in `docs/specs/afk-website-v2/implementation.md`.
