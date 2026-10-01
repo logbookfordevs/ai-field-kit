@@ -1,4 +1,8 @@
-# AFK — Fieldwork
+# AFK 2.0 — Fieldwork
+
+> **This checkout contains AFK 2.0.** For the previous AFK behavior, install a
+> version before 2.0 or fork its tagged source from the
+> [pre-2.0 releases](https://github.com/logbookfordevs/ai-field-kit/releases).
 
 A local web workspace for the skills and tools you use with coding agents.
 

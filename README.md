@@ -1,4 +1,8 @@
-# AI Field Kit
+# AI Field Kit — AFK 2.0
+
+> **Welcome to AFK 2.0.** This is the new, focused AFK. Want the previous setup,
+> catalog, rules, hooks, or custom-agent behavior? Install a version before 2.0,
+> or fork its tagged source from the [pre-2.0 releases](https://github.com/logbookfordevs/ai-field-kit/releases).
 
 AFK is a local web workspace for the skills and tools you use with coding agents.
 Keep reusable skill profiles ready, enable them globally or for a project, and
