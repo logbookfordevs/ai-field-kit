@@ -11,6 +11,12 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.0.1 - 2026-10-06
+
+### Fixed
+
+- Restored `afk update` and `afk update --dry-run` for updating AFK itself through the release installer, independently of skill installation and configuration.
+
 ## v2.0.0 - 2026-10-06
 
 ### Added
