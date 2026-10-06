@@ -1,6 +1,6 @@
 {
   "name": "@logbookfordevs/afk",
-  "version": "1.4.4",
+  "version": "2.0.0",
   "description": "Local workspace for skills, shared profiles, favorite sources, tools, and agent rules.",
   "type": "module",
   "repository": {
