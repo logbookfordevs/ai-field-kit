@@ -3,7 +3,7 @@ export const chapters = [
   { id: 'skills', title: 'Skills & invocation', description: 'Inspect local skills, control availability and choose native invocation preferences.' },
   { id: 'profiles', title: 'Profiles', description: 'Prepare shared skill groups and enable them by target.' },
   { id: 'agent', title: 'Use with your agent', description: 'Read a prepared group without changing activation.' },
-  { id: 'sources', title: 'Favorite sources', description: 'Bookmark repositories and copy install commands.' },
+  { id: 'sources', title: 'Sources & Stacks', description: 'Save repository selections, share stacks and copy installation scripts.' },
   { id: 'tools', title: 'Tools', description: 'Save and explicitly run global tool commands.' },
   { id: 'settings', title: 'Settings & projects', description: 'Choose configuration storage and manage local project folders.' },
   { id: 'reference', title: 'CLI reference', description: 'Find the focused reading, activation and export commands.' },

@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+### Changed
+
+- The website’s Sources & Stacks guide now covers selected source bookmarks, stack creation and import, reviewed manifest refresh, JSON export, and copy-only installation scripts.
+
 ## v2.0.2 - 2026-10-06
 
 ### Added

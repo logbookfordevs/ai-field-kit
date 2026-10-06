@@ -1,27 +1,123 @@
-# Keep your favorite sources close.
+# Save sources. Share stacks.
 
-Favorite sources is a shared bookmark list. Store the skill repositories you return to without building a catalog.
+**Sources & Stacks** keeps the repositories and skill selections you want to reuse.
+A source bookmarks one repository. A stack combines selected skills from several
+original repositories into one named, portable install plan.
+
+Both are shared across your projects. Saving, importing, refreshing or removing
+one does not install skills or change profile activation.
 
 <h2 id="save">Save a source</h2>
 
-Add a name and a source reference, then save. Edit the entry when the link changes, or remove it when you no longer need the bookmark.
+1. Choose **Add source** and enter a name and repository reference. Repository URLs,
+   SSH URLs and `owner/repository` references are supported.
+2. Keep **All skills**, or choose **Choose skills → Find skills** to pick individual
+   members from that repository.
+3. Review the selection and choose **Save bookmark**.
 
-Saving or removing a bookmark does not install or uninstall skills.
+The picker supports search by skill name, description and repository folder.
+When discovery provides folder paths, expandable folders show where each skill
+comes from. Filtering keeps your selected members, even when they are hidden
+from the current search.
 
-<h2 id="copy">Choose what to copy</h2>
+**All skills** copies an installation command for the whole source. **Choose skills**
+keeps an explicit selection: new upstream members do not join it automatically.
+Changing the repository reference clears its old selection so you can choose again.
 
-- **Copy source link:** the reference alone.
-- **Copy install command:** a Skills CLI command for that source.
-- **Copy install-all script:** a sequential script for every saved source.
+Use **Edit** to change the bookmark or **Remove bookmark** to stop saving it.
+Removing a bookmark leaves installed skills alone. The source reference remains
+visible below its name for normal text selection and copying.
 
-Choose the destination and optional agent for the generated command. These choices affect the copied text; they do not activate profiles or change the global bookmark list.
+<h2 id="copy">Copy installation commands</h2>
 
-Run the command in your terminal when you are ready. A copied script does not claim installation succeeded.
+- **Copy install command:** one source, using its saved all-skills or explicit selection.
+- **Copy install-all script:** every saved source bookmark, in sequence, respecting
+  each bookmark's selection. This does not include saved stacks.
+- **Copy install script** on a stack: that stack's selected skills, grouped by source.
 
-<h2 id="group">Need a reusable group instead?</h2>
+Choose the installation destination and optional agent before copying. Those
+choices affect the generated commands, not where bookmarks or stacks are saved.
 
-Create a [profile](/docs?chapter=profiles) when you want a selected group prepared locally for enabling or agent reading. A favorite source is only a bookmark; it is not a profile and has no enabled state.
+Run the copied text in your terminal when you are ready. Skills CLI performs the
+installation; AFK does not execute these commands or report a copied script as
+an installed set of skills.
+
+<h2 id="stacks">Create a stack from selected sources</h2>
+
+A stack is useful when your preferred skill set spans several repositories.
+For example, you can keep a handful of design skills from one source and a few
+browser-testing skills from another, then share one install plan.
+
+1. Save each source with **Choose skills** and select the members you want.
+2. Choose **Create stack**. Enter a name, a stable identifier and an optional description.
+3. Select the saved source selections to include, then choose **Review stack**.
+4. Check the original repository references and selected skills before saving.
+
+All-skills bookmarks are excluded from stack creation. Each stack group needs an
+explicit skill list so the saved plan does not silently expand when upstream adds
+new skills. Saving a stack captures those choices; later bookmark edits do not
+rewrite the stack.
+
+Expand **Skills by source** to inspect a saved stack. Use **Edit** to change its
+manifest, **Export JSON** to share it, or **Remove stack** to remove the saved plan.
+None of those actions uninstalls skills.
+
+<h2 id="import">Import a shared stack</h2>
+
+Choose **Import stack**, then either paste the manifest JSON or enter a direct
+HTTPS URL to its JSON file. Choose **Review stack**, inspect its source groups and
+selected skills, and save the reviewed plan.
+
+For GitHub, use the raw JSON file URL rather than the repository's HTML file page.
+Use the final URL directly; redirects are not accepted. AFK fetches only the
+manifest at this step, not its skill repositories.
+
+A stack imported from a URL retains that URL as its origin. A pasted or locally
+created stack has no remote origin. Each source group still points to its original
+repository; the manifest URL does not replace those installation sources.
+
+<h2 id="refresh">Review manifest updates</h2>
+
+A stack with a saved origin offers **Refresh manifest**. This fetches a new proposed
+manifest and shows a comparison with your saved name, description, sources and
+skill selections. Review it before applying the replacement. Your current stack
+and local edits remain until you accept it.
+
+Refreshing a manifest does not update installed skills. Copy its installation
+script if you want to install the revised selection. Use Installed Skills for
+package updates.
+
+<h2 id="manifest">Publish a stack manifest</h2>
+
+**Export JSON** produces a versioned manifest you can store in a repository or
+share directly. Version 1 includes:
+
+- `version`: `1`.
+- `id` and `name`: a stable identifier and display name.
+- `description`: optional context for the selection.
+- `sources`: ordered groups, each with a `name`, original `source` reference and
+  nonempty `skills` list of explicit skill names.
+
+Stacks contain selections, not shell commands. Wildcards and unknown fields are
+rejected. Keep original source references intact, and review duplicate skill names
+across repositories because installation names may collide.
+
+For publisher details, see the [manifest contract](https://github.com/logbookfordevs/ai-field-kit/blob/main/docs/skill-stacks.md),
+[JSON Schema](https://github.com/logbookfordevs/ai-field-kit/blob/main/docs/schemas/skill-stack.v1.schema.json)
+and [example manifest](https://github.com/logbookfordevs/ai-field-kit/blob/main/docs/examples/skill-stack.v1.json).
+
+<h2 id="group">Choose a stack or a profile</h2>
+
+Use a **source** for one repository bookmark and a **stack** for a portable
+installation selection across repositories. Neither has an enabled state.
+
+Use a [profile](/docs?chapter=profiles) when you want a selected group prepared
+locally for enabling, disabling or reading with your agent. Saving a stack does
+not create a profile, and installing its skills does not activate a profile.
 
 <h2 id="updates">Update from Installed Skills</h2>
 
-Use **Copy update-all command** in [Installed Skills](/docs?chapter=skills#update). AFK copies the command and Skills CLI performs the update when you run it. This only updates installations Skills CLI tracks.
+Use **Copy update-all command** in [Installed Skills](/docs?chapter=skills#update).
+AFK copies the command and Skills CLI performs the update when you run it. This
+only updates installations Skills CLI tracks. Source discovery and manifest refresh
+are separate from installed-package updates.

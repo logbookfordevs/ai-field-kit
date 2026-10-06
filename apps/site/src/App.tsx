@@ -9,7 +9,7 @@ import { repository, sourceLaunch } from '@/site-config.ts';
 const sections = [
   { title: 'Profiles', description: 'Reusable skill groups. Shared definitions, separate activation for each target.', chapter: 'profiles' },
   { title: 'Installed Skills', description: 'Inspect real files. Control availability and supported invocation preferences.', chapter: 'skills' },
-  { title: 'Favorite sources', description: 'Save source links. Copy install commands for one source or every bookmark.', chapter: 'sources' },
+  { title: 'Sources & Stacks', description: 'Save repository selections, share multi-source stacks and copy install scripts.', chapter: 'sources' },
   { title: 'Tools', description: 'Your global command shelf. Run Install or Update explicitly and see the result.', chapter: 'tools' },
   { title: 'Settings', description: 'Choose one configuration file. Add project folders and import or export your setup.', chapter: 'settings' },
 ];
