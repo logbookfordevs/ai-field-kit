@@ -142,3 +142,9 @@ pnpm afk:test
 ```
 
 The server binds loopback and requires a per-session token for local APIs.
+
+## Update AFK itself
+
+Run `afk update` to rerun the hosted release installer and install the latest AFK
+release. `afk update --dry-run` prints the command without running it. This is
+separate from updating installed skills and works without reading AFK settings.

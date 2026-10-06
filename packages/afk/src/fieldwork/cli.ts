@@ -1,3 +1,4 @@
+import { updateAfk } from "./update.js";
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -14,6 +15,7 @@ const HELP = `AFK — local skills, tools, and agent rules
 
   afk                               Open the local web app
   afk ui --no-open                   Start without opening a browser
+  afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
   afk profiles use <id>              Read a group without enabling it
   afk profiles enable <id> [scope]
@@ -103,6 +105,7 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     const pkg = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
     console.log(pkg.version); return 0;
   }
+  if (command === "update") return updateAfk(argv.slice(1));
   if (command === "manage") return manage(argv.slice(1), store);
   if (command === "settings" && action === "schema") {
     if (id !== undefined) throw new Error("Use settings schema without additional arguments.");

@@ -91,3 +91,9 @@ The live website is [ai-field-kit.logbookfordevs.com](https://ai-field-kit.logbo
 Its current setup instructions are historical until the website rollout is completed.
 
 AFK is a tool from [Logbook for Devs](https://logbookfordevs.com/).
+
+## Update AFK itself
+
+Run `afk update` to rerun the hosted release installer and install the latest AFK
+release. `afk update --dry-run` prints the command without running it. This is
+separate from updating installed skills and works without reading AFK settings.
