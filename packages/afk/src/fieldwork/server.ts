@@ -68,7 +68,10 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
       response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Operation failed." }));
     });
   });
-  await new Promise<void>((accept, reject) => { server.once("error", reject); server.listen(port, "127.0.0.1", accept); });
+  await new Promise<void>((accept, reject) => { server.once("error", error => {
+    const code = (error as NodeJS.ErrnoException).code;
+    reject(code === "EADDRINUSE" ? new Error(`Port ${port} is already in use. Choose another --port or stop the server using it.`) : error);
+  }); server.listen(port, "127.0.0.1", accept); });
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("Could not start AFK.");
   closeApp = () => {

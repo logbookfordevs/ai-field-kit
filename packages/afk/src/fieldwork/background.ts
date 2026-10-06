@@ -51,8 +51,9 @@ export async function stopBackground(home: string): Promise<void> {
   throw new Error("AFK is shutting down; active operations may still be finishing. Check afk status again.");
 }
 
-export async function startBackground(store: SettingsStore): Promise<void> {
+export async function startBackground(store: SettingsStore, port = 0): Promise<void> {
   const existing = await running(store.home);
+  if (existing && port && new URL(existing.url).port !== String(port)) throw new Error(`AFK background is already running at ${existing.url}. Run afk stop before starting on port ${port}.`);
   if (existing) { console.log(`AFK background is already running at ${existing.url}`); return; }
   const location = paths(store.home);
   await mkdir(resolve(store.home, ".afk"), { recursive: true });
@@ -67,12 +68,17 @@ export async function startBackground(store: SettingsStore): Promise<void> {
   await writeFile(location.receipt, JSON.stringify({ pid: process.pid, url: "http://127.0.0.1:1", token: "starting" }), { mode: 0o600 });
   const log = await open(location.log, "a", 0o600);
   try {
-    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), store.home, store.path], { detached: true, stdio: ["ignore", log.fd, log.fd, "ipc"] });
+    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), store.home, store.path, String(port)], { detached: true, stdio: ["ignore", log.fd, log.fd, "ipc"] });
     await new Promise<void>((accept, reject) => {
       const timeout = setTimeout(() => { child.kill(); reject(new Error(`AFK did not start. See ${location.log}`)); }, 15000);
       child.once("error", error => { clearTimeout(timeout); reject(error); });
       child.once("exit", () => { clearTimeout(timeout); reject(new Error(`AFK failed to start. See ${location.log}`)); });
-      child.once("message", () => { clearTimeout(timeout); child.disconnect(); child.unref(); accept(); });
+      child.once("message", (message: unknown) => {
+        clearTimeout(timeout);
+        const result = message as { error?: string };
+        if (result?.error) { reject(new Error(result.error)); return; }
+        child.disconnect(); child.unref(); accept();
+      });
     });
     const record = await running(store.home);
     console.log(`AFK background is running at ${record?.url}\nLog: ${location.log}\nRun afk stop to close it.`);
@@ -82,9 +88,9 @@ export async function startBackground(store: SettingsStore): Promise<void> {
   } finally { await log.close(); }
 }
 
-async function serve(home: string, settingsPath: string): Promise<void> {
+async function serve(home: string, settingsPath: string, port: number): Promise<void> {
   const location = paths(home);
-  const app = await startFieldwork(new SettingsStore(home, settingsPath));
+  const app = await startFieldwork(new SettingsStore(home, settingsPath), port);
   await writeFile(location.receipt, JSON.stringify({ pid: process.pid, url: app.url, token: app.token }), { mode: 0o600 });
   const stop = () => { void app.close().catch(console.error); };
   process.once("SIGINT", stop);
@@ -93,7 +99,12 @@ async function serve(home: string, settingsPath: string): Promise<void> {
 }
 
 if (process.send && process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [, , home, settingsPath] = process.argv;
+  const [, , home, settingsPath, port] = process.argv;
   if (!home || !settingsPath) throw new Error("Missing background configuration.");
-  await serve(home, settingsPath);
+  try { await serve(home, settingsPath, Number(port ?? 0)); }
+  catch (error) {
+    process.send?.({ error: error instanceof Error ? error.message : "AFK could not start." });
+    process.disconnect?.();
+    process.exitCode = 1;
+  }
 }

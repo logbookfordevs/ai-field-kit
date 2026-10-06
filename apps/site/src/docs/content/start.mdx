@@ -48,6 +48,26 @@ when the terminal closes. Status shows its URL, process ID and log location.
 Starting again reuses the same background instance. Stop gracefully closes that
 instance; foreground sessions remain independent. `afk ui --background` is an alias.
 
+<h2 id="port">Choose a fixed port</h2>
+
+The next release adds `--port` for a URL you can bookmark. To try it before release,
+build this branch and substitute `node packages/afk/dist/index.js` for `afk`:
+
+```bash Fixed-port launch — next release
+afk --port 4310
+# Or keep it running in the background:
+afk --background --port 4310
+```
+
+Both use `http://127.0.0.1:4310`. Without `--port`, AFK picks an available port
+at startup. The number must be an integer from 1 to 65535. If it is occupied,
+AFK reports an error instead of silently selecting another port.
+
+If your background instance is already running on another port, run `afk stop`
+before starting it with the new port. `afk status` shows the current URL. The port
+is a launch option, not a saved preference; include it whenever you start AFK.
+`afk ui` accepts the same option.
+
 <h2 id="first-profile">Create one useful profile</h2>
 
 1. Open **Profiles → Create profile**. Paste a repository reference or select existing Global skills.

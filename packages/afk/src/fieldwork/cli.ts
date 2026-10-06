@@ -1,3 +1,4 @@
+import { parseUiOptions } from "./ui-options.js";
 import { startBackground, backgroundStatus, stopBackground } from "./background.js";
 import { updateAfk } from "./update.js";
 import { spawn } from "node:child_process";
@@ -16,7 +17,8 @@ const HELP = `AFK — local skills, tools, and agent rules
 
   afk                               Open the local web app
   afk ui --no-open                   Start without opening a browser
-  afk --background                   Run the app in the background
+  afk --background [--port <number>] Run the app in the background
+  afk --port <number>                Open the app on a fixed port
   afk status                         Show the background app URL and PID
   afk stop                           Stop the background app
   afk update [--dry-run]             Update AFK itself from the latest release
@@ -127,10 +129,6 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     return 0;
   }
   await store.initialize();
-  if (argv.includes("--background")) {
-    if (argv.some(arg => !["ui", "--background", "--no-open"].includes(arg))) throw new Error("Use afk --background or afk ui --background.");
-    await startBackground(store); return 0;
-  }
   const library = new SkillLibrary(store);
   if (command === "profiles") {
     if (!id || extra !== undefined || (action === "use" && target !== undefined)) throw new Error("Provide a profile identifier and optional scope for enable or disable.");
@@ -166,10 +164,11 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     }
     return report.ok ? 0 : 1;
   }
-  if ((command && command !== "ui") || argv.some(arg => !["ui", "--no-open"].includes(arg))) throw new Error("Run afk --help for supported commands.");
-  const app = await startFieldwork(store);
+  const options = parseUiOptions(argv);
+  if (options.background) { await startBackground(store, options.port); return 0; }
+  const app = await startFieldwork(store, options.port);
   console.log(`AFK is running at ${app.url}\nPress Ctrl+C to close it.`);
-  if (!argv.includes("--no-open")) {
+  if (options.open) {
     const [opener, args] = process.platform === "darwin" ? ["open", [app.url]] : process.platform === "win32" ? ["cmd", ["/c", "start", "", app.url]] : ["xdg-open", [app.url]];
     const child = spawn(opener!, args, { stdio: "ignore" });
     child.on("error", () => console.error("Open the AFK URL in your browser."));

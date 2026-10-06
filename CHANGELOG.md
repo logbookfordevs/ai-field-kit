@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+### Added
+
+- `afk --port <number>` selects a fixed loopback port in foreground or background mode. Occupied ports report an error; a background instance on a different port must be stopped before switching.
+
 ### Changed
 
 - The website’s Sources & Stacks guide now covers selected source bookmarks, stack creation and import, reviewed manifest refresh, JSON export, and copy-only installation scripts.

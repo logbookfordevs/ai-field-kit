@@ -17,7 +17,7 @@ Open the loopback URL printed in the terminal. The CLI normally opens a browser;
 Build first, then use the local executable:
 
 ```sh
-node packages/afk/dist/index.js --background
+node packages/afk/dist/index.js --background --port 4310
 node packages/afk/dist/index.js status
 node packages/afk/dist/index.js stop
 ```

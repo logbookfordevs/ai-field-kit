@@ -31,6 +31,10 @@ permissions. These files are separate from the selected AFK folder and its expor
 Do not copy them to another machine. `afk status` verifies the recorded server;
 `afk stop` requests shutdown only after verifying its identity.
 
+The server port is a launch option, not part of `settings.json`. Use
+`afk --background --port 4310` for a fixed URL; omit `--port` for an available
+port chosen at startup. A running instance on another port must be stopped first.
+
 A background server uses the configuration selected at startup. To launch with a
 different `AFK_SETTINGS` value, stop the current background instance first.
 

@@ -25,6 +25,23 @@ installer command without executing it. This is separate from skill updates.
 
 For a local source build, [Start here](/docs?chapter=start#open) explains the local shortcut and direct launcher.
 
+<h2 id="port">Fixed port — next release</h2>
+
+```bash Fixed-port commands
+afk --port 4310
+afk ui --no-open --port 4310
+afk --background --port 4310
+```
+
+`--port <number>` and `--port=<number>` are accepted. Choose an integer from 1 to
+65535. AFK binds to `127.0.0.1` and reports an occupied port as an error; there is
+no fallback to a different port. Without this flag it selects an available port.
+
+A running background instance is reused when the requested port matches. If it
+uses another port, stop it with `afk stop` before restarting. This launch option
+is not stored in settings. Fixed-port support is unreleased; use a source build
+until the next version is published.
+
 <h2 id="reading">Read without activating</h2>
 
 ```bash Reading commands
