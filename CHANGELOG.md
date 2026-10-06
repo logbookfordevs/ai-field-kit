@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.0.0 - 2026-10-06
+
 ### Added
 
 - Sources & Stacks: named multi-repository skill selections, JSON or HTTPS manifest import with review, explicit refresh, JSON export, and copy-only sequential install scripts. Existing source bookmarks remain compatible.
