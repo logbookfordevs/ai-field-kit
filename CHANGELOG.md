@@ -11,6 +11,13 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.0.2 - 2026-10-06
+
+### Added
+
+- `afk --background` starts the local app independently of the terminal. `afk status` shows its URL, process ID and log location; `afk stop` gracefully closes the background instance. Repeated starts reuse it, and foreground sessions remain independent.
+- Installed Skills filters by effective invocation mode: Manual only, Automatic allowed, Varies by agent, or Unknown. Filtering combines with name search and the selected inventory scope.
+
 ## v2.0.1 - 2026-10-06
 
 ### Fixed
