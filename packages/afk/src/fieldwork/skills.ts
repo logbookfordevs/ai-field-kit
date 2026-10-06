@@ -1,6 +1,7 @@
 import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, symlink } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { expandPath, skillName, type Settings, type SettingsStore } from "./settings.js";
+import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
 
 export interface SkillEntry {
   name: string;
@@ -10,6 +11,10 @@ export interface SkillEntry {
   independent: boolean;
   available: boolean;
   shared: boolean;
+  description: string;
+  invocation: SkillInvocation;
+  defaultInvocation: SkillInvocation;
+  invocationInherited: boolean;
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -37,18 +42,27 @@ export class SkillLibrary {
       const directory = disabled ? join(root, ".disabled") : root;
       let names: string[];
       try { names = await readdir(directory); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") continue; throw error; }
-      for (const name of names) {
-        if (!skillName(name) || name.startsWith(".")) continue;
-        if (result.some(entry => entry.name === name)) continue;
+      const entries = await Promise.all(names.filter(name => skillName(name) && !name.startsWith(".") && !result.some(entry => entry.name === name)).map(async name => {
         const path = join(directory, name);
-        if (!(await exists(join(path, "SKILL.md")))) continue;
+        if (!(await exists(join(path, "SKILL.md")))) return undefined;
         const owners = settings.profiles.filter(p => p.enabled.includes(scope) && p.skills.includes(name)).map(p => p.name);
-        let shared = scope === "Global" || Object.prototype.hasOwnProperty.call(settings.managedLinks, path);
-        if (!shared) {
-          try { shared = await realpath(path) === await realpath(await this.locate(settings, name)); } catch { shared = false; }
+        let globalPath: string | undefined;
+        let invocationInherited = false;
+        if (scope !== "Global") {
+          try {
+            globalPath = await this.locate(settings, name);
+            invocationInherited = await realpath(path) === await realpath(globalPath);
+          } catch { /* A project skill can exist without a Global copy. */ }
         }
-        result.push({ name, path, owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared });
-      }
+        const shared = scope === "Global" || Object.prototype.hasOwnProperty.call(settings.managedLinks, path) || invocationInherited;
+        const metadata = await readNativeMetadata(path);
+        const resetsToGlobal = scope !== "Global" && (await lstat(path)).isSymbolicLink();
+        const defaultInvocation = resetsToGlobal
+          ? globalPath ? (await readNativeMetadata(globalPath)).invocation : unknownInvocation()
+          : await readOriginalInvocation(path, metadata.invocation);
+        return { name, path, owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited };
+      }));
+      for (const entry of entries) if (entry) result.push(entry);
     }
     return result.sort((a, b) => a.name.localeCompare(b.name));
   }

@@ -7,11 +7,11 @@ Approved direction: 2026-10-01.
 
 AFK manages local skills, shared profiles, favorite source bookmarks, and tool
 commands. The CLI opens a local web app and exposes focused reading/activation
-operations. Catalogs, setup presets, rules, hooks, MCP configuration, custom-agent
+operations. Catalogs, setup presets, conditional rule layers, hooks, MCP configuration, custom-agent
 provisioning, and general setup orchestration are outside its scope.
 
-The five sections are Profiles, Installed Skills, Favorite skill sources, Tools,
-and Settings. Tools and Settings have no project picker. Profiles put the target
+The six sections are Profiles, Installed Skills, Favorite skill sources, Tools,
+Agent rules, and Settings. Tools, Agent rules and Settings have no project picker. Profiles put the target
 beside each activation action; Installed Skills uses a page-level inventory scope.
 
 ## Profiles
@@ -70,10 +70,50 @@ the project directory and runs `npx skills update -p`. It never executes the upd
 Skills CLI updates only installations it tracks; staged AFK copies are not a new
 upstream-update registry.
 
+## Agent management
+
+The `afk-cli` skill and its references ship with the CLI. `afk guide` prints the
+absolute entry-file path without opening the app or reading settings. CLI help
+instructs agents to read that file before management; skill installation is optional.
+
+The skill complements the app with a hybrid interface. Agents can edit
+favorite sources, saved tools, and inactive project definitions while preserving
+managed fields. Settings schema is editor guidance; validation checks structure,
+and read-only doctor reports schema and local filesystem drift.
+
+Headless `manage` operations use the same execution layer as the web app, accept
+JSON file/stdin payloads, and return JSON. Profiles, invocation changes, skill
+availability, rule regions, ownership, location changes, and imports use these
+operations. Rule sync requires an unchanged reviewed preview; explicit conflict
+replacement also requires its reviewed region and preview. A saved tool runs
+only through the explicit execution operation. External skill installation and
+updates remain Skills CLI's responsibility.
+
+These checks establish saved local state, not that a running agent has discovered
+new instructions. Concurrent processes and storage providers remain independent
+writers; the workflow rechecks original files before replacing simple definitions.
+
 ## Favorite skill sources
 
-Shared bookmarks store a name and source reference. Add, edit, remove, copy the
-source link, copy one install command, or copy a sequential install-all script.
+Shared bookmarks store a name, source reference and optional selected skill names.
+All skills is the default and omits `skills`; Choose skills saves a nonempty,
+unique list of names. Both modes support adding, editing, removing, copying one
+install command, and copying a sequential install-all script. The source reference
+remains visible below the name for text selection and copying. Each command uses
+the saved selection rather than expanding it to all.
+Changing the source link clears its previous selection. Discovery stages files in
+temporary storage, shows descriptions and supports search with retained selection;
+saving a bookmark does not prepare a profile or copy skills into user inventory.
+When Skills CLI reports original repository paths, the picker groups skills into
+expandable folders with selection counts. Search includes folder paths and opens
+matching branches. The same tree appears when choosing remote profile members.
+Sources without folder metadata retain a flat list; AFK does not infer folders
+from skill names. Folder paths are temporary discovery metadata, not bookmark
+configuration.
+Existing selected bookmarks can be edited without another discovery request.
+Their saved members appear without folder grouping until Find skills runs again.
+Names missing from a later scan stay selected and visibly marked until removed.
+New upstream skills do not join an explicit selection automatically.
 Command generation can select Global/project destination and an optional agent.
 These actions never execute installation or uninstall removed bookmarks.
 
@@ -86,6 +126,10 @@ the server session even if the dialog closes. Duplicate concurrent runs for the
 same entry are rejected. Removing an entry only removes it from management.
 
 ## Settings and projects
+
+Agent rules adds one canonical Markdown document with supporting references and
+explicit destination sync. The editor, managed regions, conflict handling and
+portable folder behavior are specified in [Agent rules](agent-rules.md).
 
 One settings file holds shared definitions, targets, preferences, and local link
 receipts. Default and custom locations, precedence, physical paths, and import
@@ -126,3 +170,16 @@ separate verification/delivery work.
 - [Storage decision](../adr/0009-shared-skill-storage-and-scoped-activation.md)
 - [Skills CLI](https://github.com/vercel-labs/skills)
 - [Claude Code skills](https://code.claude.com/docs/en/skills)
+
+## First access and interface guidance
+
+The local app opens a dismissible Welcome after its first successful load. It
+explains profile activation versus group reading and saved rules versus destination
+sync, with actions leading to the actual workflow. Dismissal is stored in settings
+and survives a server restart or port change. About AFK can reopen it.
+
+Profile creation has separate repository and local modes, searchable names and
+descriptions, and a selection count. Filtering retains chosen members. Installed
+Skills shows effective native invocation metadata and the behavior restored by
+clearing an override. Narrow screens keep a compact section selector and app
+utilities available while scrolling.

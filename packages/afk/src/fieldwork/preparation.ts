@@ -1,8 +1,20 @@
-import { mkdtemp, mkdir, readdir, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { containsControl, skillName } from "./settings.js";
+
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function repositoryDirectory(value: unknown): string | undefined {
+  if (typeof value !== "string" || containsControl(value)) return undefined;
+  const path = value.replace(/\\/g, "/").replace(/^\.\//, "");
+  const parts = path.split("/");
+  if (parts.at(-1) !== "SKILL.md" || parts.some(part => !part || part === "." || part === ".." || part.includes(":")) || parts[0]?.startsWith("~")) return undefined;
+  return parts.slice(0, -1).join("/") || ".";
+}
 
 export class SourcePreparation {
   private readonly sources = new Map<string, string>();
@@ -16,7 +28,7 @@ export class SourcePreparation {
       await mkdir(home);
       const result = await new Promise<{ code: number; output: string }>((accept, reject) => {
         const child = spawn("npx", ["--yes", "skills", "add", source, "--skill", "*", "--agent", "codex", "--yes", "--copy"], {
-          cwd: directory, env: { ...process.env, HOME: home, USERPROFILE: home }, stdio: ["ignore", "pipe", "pipe"],
+          cwd: directory, env: { ...process.env, HOME: home, USERPROFILE: home, XDG_STATE_HOME: join(home, ".local/state") }, stdio: ["ignore", "pipe", "pipe"],
         });
         let output = "";
         const append = (data: Buffer): void => { output = (output + data.toString()).slice(-30_000); };
@@ -33,6 +45,24 @@ export class SourcePreparation {
   async directory(source: string): Promise<string> {
     await this.discover(source);
     return join(this.sources.get(source)!, ".agents/skills");
+  }
+
+  async paths(source: string): Promise<Record<string, string>> {
+    const names = await this.discover(source);
+    let lock: unknown;
+    try {
+      lock = JSON.parse(await readFile(join(this.sources.get(source)!, "skills-lock.json"), "utf8"));
+    } catch { return {}; }
+    if (!record(lock) || lock.version !== 1 || !record(lock.skills)) return {};
+
+    const paths: [string, string][] = [];
+    for (const name of names) {
+      const entry = lock.skills[name];
+      if (!record(entry) || typeof entry.sourceType !== "string" || !["github", "gitlab", "git"].includes(entry.sourceType)) continue;
+      const directory = repositoryDirectory(entry.skillPath);
+      if (directory !== undefined) paths.push([name, directory]);
+    }
+    return Object.fromEntries(paths);
   }
 
   async close(): Promise<void> {

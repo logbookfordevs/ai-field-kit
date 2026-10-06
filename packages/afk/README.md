@@ -14,8 +14,8 @@ pnpm afk:build
 node packages/afk/dist/index.js
 ```
 
-AFK opens a local web app. Its five sections are Profiles, Installed Skills,
-Favorite skill sources, Tools, and Settings. Nothing is published online.
+AFK opens a local web app. Its six sections are Profiles, Installed Skills,
+Favorite skill sources, Tools, Agent rules, and Settings. Nothing is published online.
 Use **Exit AFK** in the header to stop the local server. Exiting preserves saved
 configuration and skill activation; the browser tab shows a closed screen.
 
@@ -53,8 +53,10 @@ Skills CLI owns update behavior and only updates installations it tracks.
 
 ## Favorite sources
 
-Save repository bookmarks. Copy a link, an install command, or a sequential
-install-all script. Choose a destination and agent when generating commands.
+Save repository bookmarks for all skills or use **Choose skills** to find and
+select specific names. Search retains your selections. Copy an install
+command or a sequential install-all script; each command respects the bookmark’s
+selection. Choose a destination and agent when generating commands.
 Adding and removing bookmarks do not install or uninstall skills.
 
 ## Tools
@@ -62,6 +64,18 @@ Adding and removing bookmarks do not install or uninstall skills.
 Tools are always global. Save a name, install command, and optional update command.
 An empty update command reuses install. Run explicitly from your home folder and
 inspect the exit status and output. Removing an entry does not uninstall the tool.
+
+## Agent rules
+
+Edit one `AGENTS.md` and supporting Markdown in your AFK folder. Type `{{` to
+insert a reference. Save keeps the local document; Sync previews and applies saved
+rules to Codex, Claude or custom file destinations. Existing instructions outside
+AFK's marked region are preserved. Backups, conflict review and explicit replacement
+protect edits made by other tools. Broken markers and missing references block sync.
+
+Git or your storage provider can transport the folder. AFK does not fetch remote
+rules or automatically apply changes. Running agents may need a new conversation
+to pick up changed instructions.
 
 ## Settings
 
@@ -72,13 +86,31 @@ chosen settings location.
 
 Add projects through folder browsing. Import reviews local folder mappings and
 leaves profiles inactive until explicitly prepared and enabled. Saved tool commands
-never run during import. Export downloads the configuration.
+never run during import. JSON export contains configuration only; AFK folder ZIP
+export includes saved rules and references. ZIP import reviews destination mappings
+and leaves agent files unchanged until an explicit sync.
 
 ```sh
 AFK_SETTINGS=/path/to/settings.json afk
 afk ui --no-open
 afk settings export /path/to/export.json
 ```
+
+## Manage from your agent
+
+The bundled `afk-cli` skill complements the web app. Run `afk guide` to retrieve
+its absolute `SKILL.md` path, then ask your agent to read it. The command works
+without a browser or configured settings; installing the skill separately is optional.
+
+Agents can edit simple definitions using `afk settings schema`, validate a
+candidate with `afk settings validate`, and inspect local consistency with
+`afk doctor --json`. Doctor never repairs files or runs commands automatically.
+
+`afk manage describe` lists the shared operations. Run a selected operation with
+`afk manage <operation> --input <JSON file|->` for profile preparation, activation,
+invocation, tools, rules preview/sync, and portable imports. These run without a
+browser and return JSON. See the [agent guide](../../docs/agents.md) for payloads,
+skill installation, and preservation rules.
 
 Old setup/catalog/rules/hooks/MCP/custom-agent orchestration commands are outside
 this CLI's scope. Previous behavior remains in released changelog entries and Git history; existing
@@ -87,6 +119,7 @@ user files are not automatically migrated or removed.
 ## More documentation
 
 - [Settings and physical storage](../../docs/settings.md)
+- [Agent management and CLI workflows](../../docs/agents.md)
 - [Development and release boundaries](../../docs/development.md)
 - [Product specification](../../docs/specs/afk-pivot.md)
 

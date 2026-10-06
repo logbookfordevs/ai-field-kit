@@ -11,6 +11,7 @@ async function refresh(){
   ({profiles,projects,tools,favoriteSources,preferences}=currentSettings);
   toolRuns=state.toolRuns||{};
   tools=tools.map(tool=>({...tool,last:toolRuns[tool.id]?{ok:toolRuns[tool.id].code===0,label:toolRuns[tool.id].pending?'Running…':'Last run · exit '+toolRuns[tool.id].code}:null}));
+  await loadRules();
   render();
 }
 async function operation(action){
@@ -79,22 +80,13 @@ executeDemo=async()=>{
   catch(error){toolRuns[run.id]={pending:false,code:1,output:error.message}}
   finally{showRun(run.id);await refresh()}
 };
-saveSource=index=>{
-  const name=$('sourceName').value.trim(),source=$('sourceLink').value.trim();
-  if(!name||!validSource(source)){$('sourceError').textContent='Name the source and enter a repository reference without control characters or a leading dash.';return}
-  const next=currentSettings.favoriteSources.map(entry=>({...entry}));
-  if(index<0)next.push({name,source});else next[index]={name,source};
-  return saveForm(()=>savePatch({favoriteSources:next}),'Bookmark saved. No skills installed.','sourceError');
-};
-removeSource=index=>operation(async()=>{await savePatch({favoriteSources:currentSettings.favoriteSources.filter((_,position)=>position!==index)});toast('Bookmark removed. Installed skills unchanged.')});
-
 browse=mode=>{browseMode=mode;folder=afkHome;folderModal()};
 folderModal=async()=>{
   try{
     const data=await request('folders',{path:folder});folder=data.path;
     const parts=folder.split('/').filter(Boolean);
     const ancestors=[{name:'/',path:'/'}];parts.forEach((name,index)=>ancestors.push({name,path:'/'+parts.slice(0,index+1).join('/')}));
-    modal('Choose '+(browseMode==='project'?'project folder':'settings location'),`<div class="folder-path">${button('Parent',`chooseFolder(${JSON.stringify(data.parent).replaceAll('"','&quot;')})`,'',data.parent===folder?'disabled':'')}<nav aria-label="Folder breadcrumbs" class="folder-crumbs">${ancestors.map((part,index)=>`<button type="button" class="text" data-ancestor="${index}" ${part.path===folder?'aria-current="location"':''}>${esc(part.name)}</button>`).join('<span aria-hidden="true">/</span>')}</nav></div><div class="list">${data.folders.map((name,index)=>`<button type="button" class="folder" data-folder-index="${index}"><span>${esc(name)}</span><span aria-hidden="true">›</span></button>`).join('')||'<p>No subfolders.</p>'}</div>`,button('Cancel','closeModal()','text')+button('Use this folder','useFolder()','primary'));
+    modal('Choose '+(browseMode==='project'?'project folder':'AFK folder'),`<div class="folder-path">${button('Parent',`chooseFolder(${JSON.stringify(data.parent).replaceAll('"','&quot;')})`,'',data.parent===folder?'disabled':'')}<nav aria-label="Folder breadcrumbs" class="folder-crumbs">${ancestors.map((part,index)=>`<button type="button" class="text" data-ancestor="${index}" ${part.path===folder?'aria-current="location"':''}>${esc(part.name)}</button>`).join('<span aria-hidden="true">/</span>')}</nav></div>${browseMode==='settings'?`<p class="hint">${data.settings?'Existing AFK folder · settings.json found. Select it to load its configuration.':'Navigate to your preferred folder. Move your AFK files here or create a dedicated subfolder.'}</p><ul class="folder-files">${(data.files||[]).filter(name=>name==='settings.json'||name==='AGENTS.md').map(name=>`<li><code>${esc(name)}</code></li>`).join('')}</ul>`:''}<div class="list">${data.folders.map((name,index)=>`<button type="button" class="folder" data-folder-index="${index}"><span>${esc(name)}</span><span aria-hidden="true">›</span></button>`).join('')||'<p>No subfolders.</p>'}</div>`,button('Cancel','closeModal()','text')+(browseMode==='settings'?(data.settings?button('Load this AFK folder',`workspaceReview('select',${esc(JSON.stringify(folder))})`,'primary'):button('Create AFK folder here','newWorkspaceFolder()')+button('Move into this folder',`workspaceReview('move',${esc(JSON.stringify(folder))})`,'primary')):button('Use this folder','useFolder()','primary')));
     document.querySelectorAll('[data-ancestor]').forEach(element=>element.onclick=()=>chooseFolder(ancestors[Number(element.dataset.ancestor)].path));
     document.querySelectorAll('[data-folder-index]').forEach(element=>element.onclick=()=>chooseFolder(folder+'/'+data.folders[Number(element.dataset.folderIndex)]));
   }catch(error){toast(error.message)}
@@ -102,7 +94,7 @@ folderModal=async()=>{
 function chooseFolder(path){folder=path;folderModal()}
 const originalUseFolder=useFolder;
 useFolder=()=>{
-  if(browseMode==='settings'){operation(async()=>{await request('location',{path:folder+'/settings.json'});closeModal()});return}
+  if(browseMode==='settings'){workspaceReview('move',folder);return}
   originalUseFolder();
 };
 saveProject=()=>{
@@ -114,21 +106,27 @@ configuration=()=>structuredClone(currentSettings);
 exportSettings=()=>{
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(configuration(),null,2)],{type:'application/json'}));a.download='settings.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
-showNotes=()=>modal('AFK — Fieldwork','<p>Your local workspace for skills, shared profiles, favorite sources, and global tool commands.</p><p class="sub">Settings are stored on this machine at the location you choose. Source and update controls copy commands for you to run.</p>');
-refresh().catch(error=>{$('view').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`});
-discover=async(local=false)=>{
-  $('discovery').textContent='Preparing a private preview through Skills CLI…';$('saveProfile').disabled=true;
-  try{const result=await request('discover',{local,source:$('source').value.trim()});if(local)$('source').value='Local skill selection';renderMembers(result.names,local?'Local skills':'Source members',local)}
-  catch(error){$('discovery').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`}
+showNotes=()=>modal('AFK — Fieldwork','<p>Your local workspace for skills, shared profiles, favorite sources, global tool commands, and shared agent rules.</p><p class="sub">Settings and rule files live together in the AFK folder you choose. Source and update controls copy commands for you to run.</p>',button('Show Welcome','showWelcome()'));
+refresh().then(maybeWelcome).catch(error=>{$('view').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`});
+discover=async()=>{
+  const picker=profilePicker,source=$('source').value.trim(),version=++picker.version;
+  const isCurrent=()=>profilePicker===picker&&version===picker.version&&$('sheet').open&&Boolean($('discoverMembers'));
+  if(!source){$('profileError').textContent='Enter a repository to find its skills.';$('source').focus();return}
+  $('profileError').textContent='';$('discovery').innerHTML='<p role="status">Finding skills in this repository…</p>';$('saveProfile').disabled=true;$('discoverMembers').disabled=true;
+  try{const result=await request('discover',{source});if(!isCurrent())return;renderMembers(result.names,'Repository skills',false,[],result.descriptions||{},picker,result.paths||{})}
+  catch(error){if(isCurrent())$('discovery').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`}
+  finally{if(isCurrent())$('discoverMembers').disabled=false}
 };
-saveProfile=()=>operation(async()=>{
-  const name=$('profileName').value.trim(),skills=[...document.querySelectorAll('.member-check:checked')].map(el=>el.value),source=$('source').value.trim()||'Local skill selection';
-  $('saveProfile').disabled=true;$('saveProfile').textContent='Preparing…';
-  try{await request('profile/save',{id:editing?.id,name,skills,source});closeModal()}
-  catch(error){$('saveProfile').disabled=false;$('saveProfile').textContent='Save & prepare';throw error}
-});
+saveProfile=async()=>{
+  const name=$('profileName').value.trim(),skills=[...profilePicker.selected],source=profilePicker.mode==='local'?'Local skill selection':$('source').value.trim();
+  if(!name){$('nameError').textContent='Name this profile.';$('profileName').setAttribute('aria-invalid','true');$('profileName').focus();return}
+  const form=$('sheetContent').firstElementChild,control=$('saveProfile');control.disabled=true;control.textContent=profilePicker.mode==='local'?'Saving…':'Preparing…';$('profileError').textContent='';
+  try{await request('profile/save',{id:editing?.id,name,skills,source});if(form.isConnected)closeModal();await refresh();toast('Profile saved. Activation stays unchanged.')}
+  catch(error){if(form.isConnected){$('profileError').textContent=error.message;control.disabled=false;control.textContent='Save profile'}else toast(error.message)}
+};
+
 removeProfile=id=>operation(async()=>{await request('profile/remove',{id});closeModal()});
-retryPreparation=id=>operation(async()=>{const profile=profiles.find(p=>p.id===id);await request('profile/save',profile)});
+retryPreparation=id=>operation(async()=>{const {name,source,skills}=profiles.find(p=>p.id===id);await request('profile/save',{id,name,source,skills})});
 setPreference=(name,mode)=>operation(()=>request('invocation',{name,scope,mode}));
 importSettings=async file=>{
   $('importFile').value='';if(!file)return;
@@ -152,17 +150,24 @@ renameProject=index=>operation(async()=>{
   await request('project/save',{previous:projects[index].name,name:$('projectName').value.trim(),path:$('projectPath').value.trim()});closeModal();
 });
 window.exitAfk=async()=>{
-  const exit=$('exitAfk');
-  exit.disabled=true;exit.textContent='Exiting…';
+  const exits=[...document.querySelectorAll('[data-exit]')];
+  exits.forEach(exit=>{exit.disabled=true;exit.textContent='Exiting…'});
   try{
     await request('exit',{});
+    savedRuleSnapshot=draftSnapshot();
     if($('sheet').open)closeModal();
     $('nav').replaceChildren();
     $('crumb').textContent='Closed';
     $('view').innerHTML='<h1 tabindex="-1" id="closedTitle">AFK is closed</h1><p>The local server has stopped accepting connections. Your configuration and enabled skills are unchanged.</p><p>You can close this tab. Start AFK from your terminal to open it again.</p>';
-    exit.textContent='Closed';
+    exits.forEach(exit=>exit.textContent='Closed');$('mobileSection').disabled=true;
     $('closedTitle').focus();
   }catch(error){
-    exit.disabled=false;exit.textContent='Exit AFK';toast(error.message);
+    exits.forEach(exit=>{exit.disabled=false;exit.textContent='Exit AFK'});toast(error.message);
   }
+};
+
+const stopAfkService=window.exitAfk;
+window.exitAfk=()=>{
+  if(!hasRuleEdits())return stopAfkService();
+  modal('Exit with unsaved rule drafts?', '<p>Your drafts have not been saved to the AFK folder. Save them before exiting to keep your changes.</p>',button('Keep AFK open','closeModal()','text')+button('Discard drafts &amp; exit','stopAfkService()','primary'));
 };

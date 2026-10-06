@@ -16,14 +16,15 @@ installing and uninstalling them.
 AI Field Kit manages the skills and tools a developer actually uses. Its CLI opens
 a local web app and exposes a small set of reading and profile activation commands.
 
-The product has five sections: Profiles, Installed Skills, Favorite skill sources,
-Tools, and Settings. Profile definitions are shared; activation is global or
+The product has six sections: Profiles, Installed Skills, Favorite skill sources,
+Tools, Agent rules, and Settings. Profile definitions are shared; activation is global or
 project-specific. Tools are always global. Configuration lives in one file whose
 location the user chooses.
 
 Skills CLI owns repository preparation and external install/update behavior. AFK
 owns local availability, profile grouping, inspection, and supported invocation
-preferences. It does not own catalogs, rules, hooks, MCP setup, custom-agent
+preferences. Agent rules owns one local canonical document, references, and explicit
+managed-region sync to chosen files. It does not own catalogs, rule layers, hooks, MCP setup, custom-agent
 provisioning, or a general extension framework.
 
 ## Brand Personality
