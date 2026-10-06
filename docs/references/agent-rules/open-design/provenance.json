@@ -1,0 +1,41 @@
+{
+  "project": "afk-alternative-app-proposal-d6f5",
+  "conversation": "3613ab25-f10e-4ebc-94d7-baee19a6214a",
+  "entry": "afk-agent-rules.html",
+  "source": "Open Design MCP get_artifact",
+  "purpose": "User-approved design snapshot; prototype state and filesystem actions are simulated.",
+  "bundleTruncated": false,
+  "files": [
+    {
+      "path": "afk-agent-rules.html",
+      "bytes": 137536
+    },
+    {
+      "path": "assets/font-0.ttf",
+      "bytes": 128812
+    },
+    {
+      "path": "assets/font-1.ttf",
+      "bytes": 133444
+    },
+    {
+      "path": "assets/font-2.ttf",
+      "bytes": 154628
+    },
+    {
+      "path": "assets/font-3.ttf",
+      "bytes": 152860
+    },
+    {
+      "path": "assets/font-4.ttf",
+      "bytes": 151516
+    }
+  ],
+  "reviewNotes": [
+    "Reference autocomplete uses {{reference.md}} keys expanded during sync.",
+    "First-use imports existing Codex/Claude text into a draft.",
+    "Broken-marker rebuild retains orphaned rule text and appends new rules, potentially duplicating instructions; behavior needs confirmation.",
+    "Missing references currently warn but do not block sync; behavior needs confirmation."
+  ],
+  "normalization": "Trailing blank lines and license line endings normalized; source content preserved."
+}

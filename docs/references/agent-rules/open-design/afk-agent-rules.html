@@ -1,0 +1,1730 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AFK — Fieldwork proposal · Agent rules</title>
+<style>
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;src:url(assets/font-0.ttf) format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:600;src:url(assets/font-1.ttf) format('truetype')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:400;src:url(assets/font-2.ttf) format('truetype')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:500;src:url(assets/font-3.ttf) format('truetype')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:600;src:url(assets/font-4.ttf) format('truetype')}
+
+:root{
+  --bg:#f3eddf;--surface:#fffaf0;--fg:#17201e;--muted:#5d6964;--border:#b9c0b7;--accent:#102c2c;
+  --accent-hover:#24302c;--warm:#e9ddc9;--accent-fg:#f4efde;--control-border:#5d6964;--focus:#3f8580;--danger:#8f3f2d;
+  --code-bg:#102c2c;--code-fg:#f4efde;--verdigris:#3f8580;--signal:#c94f35;--sea-light:#69aaa4;
+  --sunk:var(--warm);
+  --hover:var(--warm);
+  --row-hover:var(--surface);
+  --font-display:Poppins,'Avenir Next','Segoe UI',sans-serif;
+  --font-body:Poppins,'Avenir Next','Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',SFMono-Regular,Consolas,monospace;
+  --radius:6px;--radius-lg:8px;--ease:cubic-bezier(.32,.72,0,1);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 var(--font-body);-webkit-font-smoothing:antialiased}
+h1{font:600 32px/1.15 var(--font-display);letter-spacing:-.015em;margin:0 0 8px}
+h2{font:600 20px/1.35 var(--font-display);margin:0 0 6px}
+h3{font:600 16px/1.4 var(--font-display);margin:0}
+p{margin:0;max-width:65ch}
+a{color:var(--fg);text-underline-offset:4px}
+code,pre,kbd{font-family:var(--font-mono)}
+.sub{color:var(--muted);font-size:14px}
+.meta{color:var(--muted);font-size:13px}
+.hint{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+.eyebrow{font:500 11px/1.4 var(--font-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+button,input,select,textarea{font:inherit;color:inherit}
+button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);font-size:14px;font-weight:500;letter-spacing:.02em;line-height:1.2;cursor:pointer;transition:background-color .16s,border-color .16s,transform .16s}
+button:hover{background:var(--hover);border-color:var(--fg)}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+button:disabled:hover{background:var(--surface);border-color:var(--control-border)}
+.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);transform:translateY(-1px)}
+.primary:active{background:var(--accent)}
+.primary:disabled:hover{background:var(--accent);border-color:var(--accent)}
+.text{background:transparent;border-color:transparent;padding:0 6px;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}
+.text:hover,.text:disabled:hover{background:transparent;border-color:transparent;text-decoration-thickness:2px}
+.text.danger{color:var(--danger)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+
+input,select,textarea{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);font-size:14px;transition:border-color .16s}
+input:hover,select:hover,textarea:hover{border-color:var(--fg)}
+textarea{padding:10px 12px;min-height:88px;resize:vertical;font-family:var(--font-mono);font-size:13px;line-height:1.6}
+input[readonly]{background:var(--sunk);font-family:var(--font-mono);font-size:13px}
+input[aria-invalid=true]{border-color:var(--danger)}
+select{appearance:none;cursor:pointer;padding-right:36px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2317201e' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 14px center}
+input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;flex:none;accent-color:var(--fg)}
+input[type=search]::-webkit-search-cancel-button{display:none}
+label{display:grid;gap:6px;font-size:13px;font-weight:500}
+.field-error{color:var(--danger);font-size:12px;font-weight:500;min-height:18px}
+kbd{font-size:12px;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 6px;background:var(--surface);color:var(--muted)}
+
+.skip{position:fixed;top:-100px;left:12px;z-index:99;background:var(--surface);padding:12px;color:var(--fg)}
+.skip:focus{top:12px}
+
+.shell{display:grid;grid-template-columns:228px minmax(0,1fr);min-height:100vh}
+.rail{position:sticky;top:0;height:100vh;padding:28px 16px 24px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:32px;background:var(--bg)}
+.brand{display:flex;align-items:baseline;gap:10px;padding:0 12px}
+.brand b{font:600 28px/1 var(--font-display);letter-spacing:-.02em}
+.brand small{font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.nav{display:grid;gap:4px}
+.nav button{justify-content:space-between;padding:0 12px;border-color:transparent;background:transparent;text-align:left}
+.nav button:hover{background:var(--sunk);border-color:transparent}
+.nav button[aria-current=page]{background:var(--surface);border-color:var(--border);font-weight:600}
+.nav .count{font:12px var(--font-mono);color:var(--muted);letter-spacing:0}
+.nav button:hover .count,.nav button[aria-current=page] .count{color:var(--fg)}
+.nav .short{display:none}
+.rail-foot{margin-top:auto;padding:0 12px;font-size:12px;line-height:1.6;color:var(--muted)}
+
+main{padding:20px clamp(20px,4vw,56px) 40px;min-width:0;max-width:1320px;outline:none}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--border);padding-bottom:12px}
+.demo{min-height:40px;padding:0 12px;font-size:12px;border-color:var(--border);background:transparent}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:36px 0 28px}
+.page-head .sub{max-width:60ch}
+
+.ledger-label{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}
+.ledger{border-top:1px solid var(--fg)}
+.ledger-head{display:grid;gap:24px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.row{padding:22px 16px;border-bottom:1px solid var(--border);transition:background-color .16s}
+@media(hover:hover){.row:hover{background:var(--row-hover)}}
+
+.status{font:12px/1.5 var(--font-mono);color:var(--fg)}
+.status::before{content:'○ '}
+.status.on::before{content:'● '}
+.status.warn{color:var(--danger)}
+.status.warn::before{content:'△ '}
+
+.profile{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,1fr);gap:32px;padding:26px 16px}
+.profile-main{display:grid;gap:10px;align-content:start;justify-items:start}
+.profile-name{min-height:44px;padding:0;border:0;background:none;font:600 20px/1.3 var(--font-display);letter-spacing:-.005em;text-align:left;text-decoration:underline;text-decoration-color:var(--border);text-decoration-thickness:1px;text-underline-offset:6px}
+.profile-name:hover{background:none;text-decoration-color:var(--fg)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.tag{font:12px/1 var(--font-mono);padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface)}
+.tag.more{color:var(--muted)}
+.prep{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px}
+.profile-scope{display:grid;gap:10px;align-content:start;border-left:1px solid var(--border);padding-left:28px}
+.scope-control{display:flex;gap:8px;align-items:flex-end}
+.scope-control label{flex:1;min-width:0}
+.scope-control button{min-width:178px}
+.scope-state{font-size:14px}
+.scope-state strong{font-weight:600}
+
+.note{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:24px;margin-top:32px;padding-top:20px;border-top:1px solid var(--border)}
+.note p{font-size:13px;color:var(--muted)}
+.ledger+.note{border-top:0;padding-top:0}
+.note strong{color:var(--fg);font-weight:600}
+
+.toolbar{display:flex;gap:16px;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap}
+.toolbar>label:first-child{width:240px}
+.search{flex:1;min-width:200px;max-width:420px}
+.search-field{position:relative;display:block}
+.search-field input{padding-right:40px}
+.search-field kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none}
+@media(hover:none){.search-field kbd{display:none}}
+.path-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:14px}
+.path-line .eyebrow:last-child{margin-left:auto}
+.path{font:13px var(--font-mono);overflow-wrap:anywhere}
+
+.skills .ledger-head,.skill-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1.1fr) minmax(210px,240px) auto;grid-template-areas:'name avail invoc actions'}
+.skill-row{display:grid;gap:24px;align-items:center}
+.skill-name{grid-area:name;display:grid;gap:2px;min-width:0}
+.skill-name h3{overflow-wrap:anywhere}
+.skill-avail{grid-area:avail;display:grid;justify-items:start}
+.skill-invoc{grid-area:invoc;display:grid;gap:4px}
+.skill-actions{grid-area:actions;justify-self:end}
+.switch{min-height:44px;padding:0;gap:10px;border:0;background:none;font-size:14px}
+.switch:hover,.switch:disabled:hover{background:none}
+.switch .track{position:relative;flex:none;width:36px;height:20px;border:1px solid var(--control-border);border-radius:999px;background:var(--surface);transition:background-color .2s,border-color .2s}
+.switch .track::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--control-border);transition:transform .42s var(--ease),background-color .2s}
+.switch[aria-checked=true] .track{background:var(--fg);border-color:var(--fg)}
+.switch[aria-checked=true] .track::after{transform:translateX(16px);background:var(--surface)}
+.switch:hover:not(:disabled) .track{border-color:var(--fg)}
+.switch:active{transform:none}
+.switch:disabled{opacity:1}
+.switch:disabled .track{opacity:.55}
+
+.tools .ledger-head,.tool-row{grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr) auto;grid-template-areas:'name cmds run'}
+.tool-row{display:grid;gap:24px;align-items:start}
+.tool-name{grid-area:name;display:grid;gap:4px;justify-items:start}
+.links{display:flex;gap:4px;margin-left:-6px}
+.cmds{grid-area:cmds;display:grid;gap:10px;margin:0}
+.cmds div{display:grid;grid-template-columns:68px minmax(0,1fr);gap:12px;align-items:baseline}
+.cmds dt{font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cmds dd{margin:0;min-width:0}
+.cmd{display:block;font-size:13px;line-height:1.55;padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow-wrap:anywhere}
+.tool-run{grid-area:run;display:flex;gap:8px}
+
+pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code-bg);color:var(--code-fg);padding:18px 20px;border-radius:var(--radius-lg);font-size:13px;line-height:1.7}
+
+.settings-block{display:grid;grid-template-columns:minmax(200px,280px) minmax(0,1fr);gap:32px;padding:28px 0;border-top:1px solid var(--border)}
+.settings-block:first-of-type{border-top-color:var(--fg)}
+.settings-block .sub{font-size:13px}
+.settings-body{display:grid;gap:14px;align-content:start;min-width:0}
+.path-card{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 12px 12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.project-list{border-top:1px solid var(--border)}
+.project-row{display:grid;grid-template-columns:minmax(120px,.7fr) minmax(0,1.3fr) auto;gap:16px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.pref-list{margin:0;padding:0;list-style:none;border-top:1px solid var(--border)}
+.pref-list li{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inline input{flex:1;min-width:140px}
+
+.empty{display:grid;justify-items:center;gap:8px;padding:48px 24px;text-align:center;border:1px dashed var(--border);border-radius:var(--radius-lg)}
+.empty .sub{margin-bottom:8px}
+.error{color:var(--danger);border:1px solid var(--danger);background:var(--surface);padding:14px 16px;border-radius:var(--radius);font-size:14px}
+.error strong{font-weight:600}
+
+dialog{border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:var(--radius-lg);padding:0;width:min(640px,calc(100vw - 32px));max-height:min(88vh,860px);box-shadow:0 28px 64px -28px color-mix(in srgb,var(--fg) 55%,transparent)}
+dialog[open]{display:flex;flex-direction:column;animation:sheet-in .42s var(--ease)}
+dialog::backdrop{background:color-mix(in srgb,var(--fg) 38%,transparent);animation:fade-in .3s ease}
+#sheetContent{display:flex;flex-direction:column;min-height:0;flex:1}
+.dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 18px;border-bottom:1px solid var(--border)}
+.dialog-head h2{margin:2px 0 0;font-size:22px;letter-spacing:-.01em}
+.dialog-body{display:grid;gap:18px;padding:24px;overflow:auto;flex:1;min-height:0}
+.dialog-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:16px 24px;border-top:1px solid var(--border);background:var(--bg)}
+.dialog-foot .push{margin-right:auto}
+.close{min-height:40px;padding:0 12px;font-size:13px;border-color:var(--border)}
+@keyframes sheet-in{from{opacity:0;transform:translateY(14px)}}
+@keyframes fade-in{from{opacity:0}}
+
+.list{border-top:1px solid var(--border)}
+.check{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-weight:400;font-size:14px}
+.check>span{flex:1;min-width:0}
+.check strong{font-weight:600}
+.check small{display:block;color:var(--muted);font-size:12px;font-family:var(--font-mono);overflow-wrap:anywhere}
+label.check{cursor:pointer}
+.members-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.steps{list-style:none;margin:0;padding:0;counter-reset:step;border-top:1px solid var(--border)}
+.steps li{counter-increment:step;display:grid;grid-template-columns:36px minmax(0,1fr);padding:12px 0;border-bottom:1px solid var(--border);font-size:14px}
+.steps li::before{content:counter(step,decimal-leading-zero);grid-row:span 2;font:12px/1.7 var(--font-mono);color:var(--muted)}
+.steps strong{font-weight:600}
+.steps span{color:var(--muted);font-size:13px}
+details summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-weight:500;font-size:14px;text-decoration:underline;text-underline-offset:4px}
+details[open] summary{margin-bottom:8px}
+.file-tabs{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--control-border);border-radius:var(--radius);justify-self:start}
+.file-tabs button{border-color:transparent;background:transparent;font-family:var(--font-mono);font-size:13px;letter-spacing:0;border-radius:4px}
+.file-tabs button:hover{background:var(--hover);border-color:transparent}
+.file-tabs button[aria-pressed=true]{background:var(--code-bg);color:var(--code-fg)}
+.folder-path{display:flex;gap:8px;align-items:center}
+.folder-path .path{flex:1;padding:10px 12px;background:var(--sunk);border-radius:var(--radius)}
+.folder{width:100%;justify-content:space-between;border:0;border-bottom:1px solid var(--border);border-radius:0;background:none;font-weight:400}
+.folder:hover{background:var(--hover);border-color:var(--border)}
+.folder span:last-child{color:var(--muted)}
+
+.toast{position:fixed;bottom:20px;right:20px;z-index:9;display:flex;align-items:center;gap:14px;max-width:min(460px,calc(100vw - 40px));padding:10px 10px 10px 18px;background:var(--fg);color:var(--surface);border-radius:var(--radius-lg);font-size:14px;line-height:1.45;box-shadow:0 16px 40px -20px color-mix(in srgb,var(--fg) 70%,transparent);opacity:0;visibility:hidden;transform:translateY(12px);transition:opacity .25s,transform .42s var(--ease),visibility .25s}
+.toast.show{opacity:1;visibility:visible;transform:none}
+.toast span{padding:6px 0}
+.toast-action{flex:none;min-height:40px;background:transparent;color:var(--surface);border-color:color-mix(in srgb,var(--surface) 45%,transparent)}
+.toast-action:hover{background:var(--accent-hover);border-color:var(--surface)}
+
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+
+@media(max-width:1180px){
+  .skills .ledger-head,.tools .ledger-head{display:none}
+  .skill-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:'name actions' 'avail invoc';row-gap:12px}
+  .tool-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'name run' 'cmds cmds';row-gap:16px}
+}
+@media(max-width:1000px){
+  .shell{grid-template-columns:184px minmax(0,1fr)}
+  .rail{padding:24px 10px}
+  .profile{grid-template-columns:1fr;gap:18px}
+  .profile-scope{border-left:0;padding-left:0;padding-top:16px;border-top:1px solid var(--border)}
+  .settings-block,.note{grid-template-columns:1fr;gap:14px}
+}
+@media(max-width:760px){
+  .shell{display:block}
+  .rail{position:sticky;z-index:5;height:auto;gap:10px;padding:12px 16px 10px;border-right:0;border-bottom:1px solid var(--border)}
+  .brand{padding:0}
+  .brand b{font-size:22px}
+  .nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .nav button{justify-content:center;padding:0 4px;font-size:13px}
+  .nav .count,.nav .long,.rail-foot{display:none}
+  .nav .short{display:inline}
+  main{padding:14px 16px 32px}
+  .topline .eyebrow{font-size:10px}
+  .page-head{flex-direction:column;align-items:stretch;gap:16px;margin:24px 0 20px}
+  .page-head .primary{align-self:flex-start}
+  h1{font-size:26px}
+  .row,.profile{padding:20px 4px}
+  .scope-control{flex-wrap:wrap}
+  .scope-control label{flex:1 1 100%}
+  .scope-control button{flex:1}
+  .toolbar>label:first-child,.search{width:100%;max-width:none}
+  .path-line .eyebrow:last-child{margin-left:0}
+  .skill-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'name actions' 'avail avail' 'invoc invoc'}
+  .tool-row{grid-template-columns:1fr;grid-template-areas:'name' 'cmds' 'run'}
+  .tool-run button{flex:1}
+  .cmds div{grid-template-columns:1fr;gap:4px}
+  .project-row{grid-template-columns:minmax(0,1fr) auto;row-gap:0}
+  .project-row .path{grid-column:1;grid-row:2;font-size:12px}
+  .project-row button{grid-row:1/3;grid-column:2}
+  .path-card{flex-direction:column;align-items:stretch}
+  dialog{width:calc(100vw - 16px);max-height:92vh}
+  .dialog-head,.dialog-body{padding-left:18px;padding-right:18px}
+  .dialog-foot{padding:14px 18px}
+  .toast{left:12px;right:12px;bottom:12px;max-width:none}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  button:active{transform:none}
+}
+
+.source-destination{padding-bottom:24px;margin-bottom:8px;border-bottom:1px solid var(--border)}
+.source-destination .toolbar>label{flex:1;min-width:0;max-width:300px}
+.source-row{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.source-info{min-width:0}.source-info h2{overflow-wrap:anywhere}
+.nav .long{min-width:0;white-space:normal}.nav .count{flex:none}
+@media(max-width:760px){
+ .nav{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .nav button{font-size:12px;letter-spacing:0;min-width:0}
+ .source-destination .toolbar>label{flex-basis:100%;max-width:none}
+ .source-destination .toolbar>button{width:100%}
+ .source-row .inline{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ .source-row .inline button{padding:8px;font-size:12px;overflow-wrap:anywhere}
+}
+/* Agent rules */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.status.stale::before{content:'◐ '}
+.status.off{color:var(--muted)}
+.status.off::before{content:'– '}
+.workbench{display:grid;grid-template-columns:232px minmax(0,1fr);border-top:1px solid var(--fg);border-bottom:1px solid var(--border)}
+.files{display:flex;flex-direction:column;gap:2px;padding:14px 16px 18px 0;border-right:1px solid var(--border)}
+.files-label{padding:12px 10px 4px}
+.files-label:first-child{padding-top:2px}
+.file-btn{width:100%;justify-content:space-between;padding:0 10px;border-color:transparent;background:transparent;font:400 13px/1.3 var(--font-mono);letter-spacing:0;text-align:left}
+.file-btn>span:first-child{min-width:0;overflow-wrap:anywhere}
+.file-btn:hover{background:var(--sunk);border-color:transparent}
+.file-btn[aria-current=true]{background:var(--surface);border-color:var(--border);font-weight:600}
+.file-btn.ref{padding-left:22px}
+.edited{flex:none;font:500 11px/1 var(--font-mono);letter-spacing:.02em;color:var(--danger)}
+.files>.text{align-self:flex-start;margin-top:10px}
+.files>.hint{padding:2px 10px 2px 22px}
+.editor{display:flex;flex-direction:column;gap:12px;min-width:0;padding:14px 0 18px 24px}
+.editor-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 20px;flex-wrap:wrap}
+.editor-head h2{font:600 15px/1.4 var(--font-mono);margin:2px 0 0;overflow-wrap:anywhere}
+.editor-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.editor-actions .status{margin-right:6px}
+.editor textarea{min-height:420px;background:var(--surface);font-size:13px;line-height:1.7;padding:14px 16px}
+.editor-foot{display:flex;justify-content:space-between;gap:6px 20px;flex-wrap:wrap}
+.editor-foot code{font-size:12px}
+.editor-field{position:relative;display:grid}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.ref-menu{position:absolute;z-index:4;display:grid;gap:2px;width:min(340px,100%);padding:4px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);box-shadow:0 18px 36px -22px color-mix(in srgb,var(--fg) 55%,transparent);animation:fade-in .12s var(--ease)}
+.ref-menu[hidden]{display:none}
+.ref-menu .eyebrow{padding:8px 10px 4px}
+.ref-menu .hint{padding:0 10px 6px}
+.ref-opt{display:grid;align-content:center;gap:1px;min-width:0;min-height:44px;padding:6px 10px;border-radius:4px;font-size:13px;cursor:pointer}
+.ref-opt code{font-size:13px;font-weight:500;overflow-wrap:anywhere}
+.ref-opt .meta{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ref-opt:hover{background:var(--sunk)}
+.ref-opt[aria-selected=true]{background:var(--code-bg);color:var(--code-fg)}
+.ref-opt[aria-selected=true] .meta{color:var(--code-fg)}
+.ref-keys{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px;padding:8px 10px 6px;border-top:1px solid var(--border);color:var(--muted);font-size:11px;letter-spacing:.02em}
+.ref-keys kbd{font-size:11px}
+@media(hover:none){.ref-keys{display:none}}
+.link-warn{color:var(--danger);font-size:12px;font-weight:500;line-height:1.5}
+.stash{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;padding:6px 6px 6px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--sunk);font-size:13px}
+.rules-empty{justify-items:start;text-align:left;padding:32px clamp(20px,4vw,40px)}
+.rules-empty .inline{margin-top:4px}
+.tree-list{list-style:none;margin:4px 0 8px;padding:0;border-top:1px solid var(--border);width:min(100%,620px)}
+.tree-list li{display:grid;grid-template-columns:minmax(110px,150px) minmax(0,1fr) auto;gap:4px 14px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.tree-list code{font-size:13px;font-weight:600}
+.tree-list .meta{font-size:12px}
+.dest-section{margin-top:48px}
+.dest-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.dest-bar{display:flex;justify-content:space-between;align-items:center;gap:16px 32px;padding:12px 0 18px;flex-wrap:wrap}
+.dest-bar>div{flex:1 1 380px;display:grid;gap:4px}
+.dest-summary{font-size:14px;max-width:76ch}
+.dest-bar>button{min-width:200px}
+.dests .ledger-head,.dest-row{grid-template-columns:44px minmax(0,1.4fr) minmax(170px,.8fr) minmax(150px,.7fr) 264px;grid-template-areas:'sel name status last actions'}
+.dests .ledger-head{padding-left:4px}
+.dest-row{display:grid;gap:18px;align-items:center;padding:16px 16px 16px 4px}
+.dest-sel{grid-area:sel;display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;cursor:pointer}
+.dest-name{grid-area:name;display:grid;gap:2px;min-width:0}
+.dest-status{grid-area:status;display:grid;gap:2px}
+.dest-last{grid-area:last;display:grid;gap:2px}
+.dest-actions{grid-area:actions;display:flex;gap:2px;justify-content:flex-end;flex-wrap:wrap}
+.dest-row.off h3{color:var(--muted)}
+.dest-add{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;padding-top:16px}
+dialog.wide{width:min(900px,calc(100vw - 32px))}
+.plan{display:grid;gap:10px;padding-top:16px;border-top:1px solid var(--border)}
+.plan-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px 16px}
+.plan-head>div{display:grid;gap:2px;min-width:0}
+.facts{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:13px}
+.facts li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:4px}
+.facts li::before{content:'—';color:var(--muted)}
+.facts code,.options code{font-size:12px;overflow-wrap:anywhere}
+.diff{background:var(--code-bg);color:var(--code-fg);border-radius:var(--radius-lg);font:12.5px/1.65 var(--font-mono);padding:8px 0 10px;max-height:340px;overflow:auto}
+.diff>div{display:grid;grid-template-columns:30px minmax(0,1fr);padding-right:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+.diff .g{text-align:center;user-select:none}
+.diff .keep{color:color-mix(in srgb,var(--code-fg) 82%,var(--code-bg))}
+.diff .add{background:color-mix(in srgb,var(--verdigris) 42%,var(--code-bg))}
+.diff .del{background:color-mix(in srgb,var(--signal) 36%,var(--code-bg))}
+.diff .marker{font-weight:600}
+.diff .sep,.diff .fold{display:block;padding:8px 16px 3px 30px;font:500 10.5px/1.4 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--sea-light)}
+.diff .fold{padding:2px 16px 2px 30px;text-transform:none;letter-spacing:0;font-size:12px}
+.options{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+.options li{display:grid;gap:2px;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+.options strong{font-weight:600}
+.options span{color:var(--muted);font-size:13px}
+.path-check{font-size:13px;min-height:20px}
+.map-row{display:grid;gap:4px;padding:10px 0;border-bottom:1px solid var(--border)}
+.map-row .check{border-bottom:0;padding:4px 0}
+.folder-files{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.portable{display:grid;gap:4px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px}
+.portable strong{font-weight:600}
+.bundle-row{display:grid;gap:6px}
+@media(max-width:1000px){
+  .workbench{grid-template-columns:190px minmax(0,1fr)}
+  .dests .ledger-head{display:none}
+  .dest-row{grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:'sel name actions' '. status last';row-gap:10px}
+}
+@media(max-width:760px){
+  .nav{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .workbench{grid-template-columns:1fr}
+  .files{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 0;border-right:0;border-bottom:1px solid var(--border)}
+  .files-label,.files-label:first-child{flex-basis:100%;padding:4px 0 0}
+  .file-btn,.file-btn.ref{width:auto;padding:0 12px;border-color:var(--border)}
+  .files>.text{margin-top:0}
+  .files>.hint{padding:0}
+  .editor{padding:14px 0 16px}
+  .editor textarea{min-height:300px}
+  .editor-actions{width:100%}
+  .dest-bar>button{width:100%}
+  .dest-row{grid-template-columns:44px minmax(0,1fr);grid-template-areas:'sel name' '. status' '. last' '. actions';row-gap:8px;padding:16px 0}
+  .dest-actions{justify-content:flex-start;margin-left:-6px}
+  .tree-list li{grid-template-columns:minmax(0,1fr) auto}
+  .tree-list li>:nth-child(2){grid-column:1/-1;grid-row:2}
+  .plan-head{flex-direction:column}
+}
+@media(max-width:480px){
+  .rail{position:static}
+  .nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+</style>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+  <aside class="rail" data-od-id="section-rail">
+    <div class="brand"><b>afk<span aria-hidden="true">.</span></b><small>AI Field Kit</small></div>
+    <nav aria-label="Main sections" class="nav" id="nav"></nav>
+    <div class="rail-foot">Personal workspace<br>One configuration.<br>Local skills.</div>
+  </aside>
+  <main id="main" tabindex="-1" data-od-id="workspace">
+    <div class="topline">
+      <span class="eyebrow">Fieldwork / Personal kit / <span id="crumb"></span></span>
+      <button type="button" class="demo" onclick="showNotes()" data-od-id="proposal-notes">Interactive demonstration · About</button>
+    </div>
+    <div id="view"></div>
+    <footer>A tool from Logbook for Devs · Charting the technical seas, one commit at a time.</footer>
+  </main>
+</div>
+<dialog id="sheet" aria-labelledby="sheetTitle"><div id="sheetContent"></div></dialog>
+<div class="toast" role="status" aria-live="polite" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const refocus=id=>document.querySelector(`[data-od-id="${id}"]`)?.focus();
+
+let section='Profiles',scope='Global',query='',selectedTargets={},settingsPath='~/Projects/logbook-atlas/afk/settings.json',afkFolder='~/Projects/logbook-atlas/afk';
+let projects=[{name:'Demo Studio',path:'~/Projects/demo-studio'},{name:'Field Notes',path:'~/Projects/field-notes'}];
+let profiles=[
+  {id:'hyperframe',name:'Motion studio',source:'Illustrative source · hyperframe',skills:['composition','render-review','motion-timing'],enabled:['Demo Studio'],ready:true},
+  {id:'frontend',name:'Interface craft',source:'Illustrative source · frontend-kit',skills:['interface-design','accessibility','render-review'],enabled:['Global','Field Notes'],ready:true},
+  {id:'research',name:'Research desk',source:'Local skill selection',skills:['source-research','evidence-notes'],enabled:[],ready:true}
+];
+let tools=[
+  {id:1,name:'Skills CLI',install:'npx skills --help',update:'',last:null},
+  {id:2,name:'Project helper',install:'npm install -g example-project-helper',update:'npm update -g example-project-helper',last:null}
+];
+const independent={Global:['source-research'],'Demo Studio':['project-conventions'],'Field Notes':[]};
+let preferences={},individualOff={};
+let favoriteSources=[],installScope='Global',installAgent='interactive';
+const sections=[{id:'Profiles',short:'Profiles'},{id:'Installed Skills',short:'Skills'},{id:'Favorite skill sources',short:'Sources'},{id:'Tools',short:'Tools'},{id:'Agent rules',short:'Rules'},{id:'Settings',short:'Settings'}];
+
+function toast(message,action){
+  const el=$('toast');
+  el.innerHTML=`<span>${esc(message)}</span>${action?`<button type="button" class="toast-action">${esc(action.label)}</button>`:''}`;
+  if(action)el.querySelector('button').onclick=()=>{action.run();hideToast()};
+  el.classList.add('show');
+  clearTimeout(window.toastTimer);
+  window.toastTimer=setTimeout(hideToast,action?7000:4500);
+}
+function hideToast(){$('toast').classList.remove('show')}
+
+function button(text,fn,cls='',attrs=''){return `<button type="button" class="${cls}" onclick="${fn}" ${attrs}>${text}</button>`}
+function scopeNames(){return ['Global',...projects.map(p=>p.name)]}
+function scopeOptions(value){return scopeNames().map(n=>`<option ${n===value?'selected':''}>${esc(n)}</option>`).join('')}
+function slug(s){return s.toLowerCase().replaceAll(' ','-')}
+
+function navCount(id){
+  if(id==='Profiles')return profiles.length;
+  if(id==='Installed Skills')return inventory().length;
+  if(id==='Tools')return tools.length;
+  if(id==='Favorite skill sources')return favoriteSources.length;
+  if(id==='Agent rules')return rules.files.length;
+  return '';
+}
+
+function navigate(s){
+  section=s;query='';render();window.scrollTo(0,0);
+  document.querySelector('#nav [aria-current]')?.focus();
+}
+
+function render(){
+  $('nav').innerHTML=sections.map(s=>{
+    const count=navCount(s.id);
+    return `<button type="button" data-od-id="nav-${slug(s.id)}" ${s.id===section?'aria-current="page"':''} onclick="navigate('${s.id}')"><span class="long">${s.id}</span><span class="short">${s.short}</span>${count!==''?`<span class="count" aria-hidden="true">${count}</span>`:''}</button>`;
+  }).join('');
+  $('crumb').textContent=section;
+  ({Profiles:renderProfiles,'Installed Skills':renderSkills,'Favorite skill sources':renderSources,Tools:renderTools,'Agent rules':renderRules,Settings:renderSettings})[section]();
+}
+
+function head(title,sub,action=''){return `<header class="page-head" data-od-id="page-heading"><div><h1>${title}</h1><p class="sub">${sub}</p></div>${action}</header>`}
+
+function renderProfiles(){
+  const active=profiles.filter(p=>p.enabled.length).length;
+  const list=profiles.length
+    ?`<div class="ledger">${profiles.map(profileRow).join('')}</div>`
+    :`<div class="empty"><h2>No profiles yet</h2><p class="sub">Create a group from a source repository or from skills already on this machine.</p></div>`;
+  $('view').innerHTML=head('Profiles','Shared skill groups. Enable one where you work, or read it once in a conversation.',button('Create profile','createProfile()','primary','data-od-id="create-profile"'))
+    +`<div class="ledger-label"><span class="eyebrow">Your reusable groups</span><span class="eyebrow">${profiles.length} groups · ${active} active</span></div>${list}`
+    +`<aside class="note" data-od-id="shared-storage-note"><span class="eyebrow">One copy, many routes</span><p>Definitions stay shared. Enabling a group creates exposure in the chosen scope; disabling it keeps its stored members and every other scope intact.</p></aside>`;
+}
+
+function profileRow(p){
+  const target=selectedTargets[p.id]||'Global',isGlobal=target==='Global',on=p.enabled.includes(target);
+  const alsoGlobal=!isGlobal&&p.enabled.includes('Global');
+  const where=isGlobal?'globally':'in '+esc(target);
+  const shown=p.skills.slice(0,4),extra=p.skills.length-shown.length;
+  const toggleLabel=`${on?'Disable':'Enable'} ${isGlobal?'globally':'in project'}`;
+  const prepAction=p.ready
+    ?button('Read group once',`invoke('${p.id}')`,'text',`data-od-id="profile-${p.id}-read"`)
+    :button('Retry preparation',`retryPreparation('${p.id}')`,'text',`data-od-id="profile-${p.id}-retry"`);
+  return `<article class="profile row" data-od-id="profile-${p.id}">
+    <div class="profile-main">
+      <button type="button" class="profile-name" onclick="inspectProfile('${p.id}')" aria-label="Inspect ${esc(p.name)}">${esc(p.name)}</button>
+      <p class="meta">${p.skills.length} member${p.skills.length===1?'':'s'} · ${esc(p.source)}</p>
+      <ul class="tags" aria-label="Members">${shown.map(s=>`<li class="tag">${esc(s)}</li>`).join('')}${extra>0?`<li class="tag more">+${extra} more</li>`:''}</ul>
+      <div class="prep"><span class="status ${p.ready?'on':'warn'}">${p.ready?'Prepared locally':'Preparation incomplete'}</span>${prepAction}</div>
+    </div>
+    <div class="profile-scope">
+      <div class="scope-control">
+        <label>Enable for<select data-od-id="profile-${p.id}-scope" aria-label="Scope for ${esc(p.name)}" onchange="setTarget('${p.id}',this.value)">${scopeOptions(target)}</select></label>
+        <button type="button" data-od-id="profile-${p.id}-toggle" ${p.ready?'':'disabled'} onclick="activate('${p.id}')">${toggleLabel}</button>
+      </div>
+      <p class="scope-state"><strong>${on?'Enabled':'Not enabled'} ${where}</strong>${alsoGlobal?'<span class="meta"> · also available globally</span>':''}</p>
+      <p class="meta">${p.enabled.length?'Active in '+p.enabled.map(esc).join(' · '):'No active scopes'}</p>
+      ${p.ready?'':'<p class="hint">Enabling unlocks once every member is prepared.</p>'}
+    </div>
+  </article>`;
+}
+
+function setTarget(id,value){selectedTargets[id]=value;renderProfiles();refocus(`profile-${id}-scope`)}
+
+function activate(id){
+  const p=profiles.find(p=>p.id===id),target=selectedTargets[id]||'Global';
+  p.enabled=p.enabled.includes(target)?p.enabled.filter(x=>x!==target):[...p.enabled,target];
+  render();refocus(`profile-${id}-toggle`);
+  toast(`${p.name}: ${p.enabled.includes(target)?'enabled':'disabled'} for ${target} · simulated`);
+}
+
+function modal(title,body,foot='',eyebrow='',wide=false){
+  $('sheet').classList.toggle('wide',wide);
+  $('sheetContent').innerHTML=`<header class="dialog-head"><div>${eyebrow?`<span class="eyebrow">${eyebrow}</span>`:''}<h2 id="sheetTitle">${title}</h2></div><button type="button" class="close" onclick="closeModal()">Close</button></header><div class="dialog-body">${body}</div>${foot?`<div class="dialog-foot">${foot}</div>`:''}`;
+  if(!$('sheet').open)$('sheet').showModal();
+  ($('sheet').querySelector('.dialog-body input:not([readonly]):not([type=checkbox]),.dialog-body textarea')||$('sheet').querySelector('.dialog-body button,.dialog-foot .primary'))?.focus();
+}
+function closeModal(){$('sheet').close()}
+
+function inspectProfile(id){
+  const p=profiles.find(p=>p.id===id),locked=p.enabled.length>0;
+  const members=p.skills.map(s=>`<div class="check"><span><strong>${esc(s)}</strong><small>~/.agents/skills/.disabled/${esc(s)}/</small></span>${button('Inspect',`inspectSkill('${s}','${id}')`,'text')}</div>`).join('');
+  const lockNote=locked
+    ?`Active in ${p.enabled.map(esc).join(', ')}. Membership edits and removal unlock after every scope is disabled.`
+    :'No scope enabled. Prepared members stay stored and ready.';
+  const foot=(p.ready?'':button('Retry preparation',`retryPreparation('${id}')`,'push'))
+    +button('Remove definition',`removeProfile('${id}')`,'text danger',locked?'disabled':'')
+    +button('Edit profile',`editProfile('${id}')`,'',locked?'disabled':'');
+  modal(esc(p.name),`<p class="sub">Shared definition · ${esc(p.source)}</p><div><div class="members-head"><span class="eyebrow">Members in local storage</span><span class="eyebrow">${p.skills.length}</span></div><div class="list">${members}</div></div><p class="sub">${lockNote}</p>`,foot,'Profile');
+}
+
+function retryPreparation(id){
+  const p=profiles.find(p=>p.id===id);p.ready=true;
+  if($('sheet').open)closeModal();
+  render();refocus(`profile-${id}-read`);toast('All members prepared disabled · simulated retry.');
+}
+
+function removeProfile(id){
+  const i=profiles.findIndex(p=>p.id===id),p=profiles[i];
+  if(p.enabled.length)return;
+  profiles.splice(i,1);closeModal();render();
+  toast(`${p.name} removed. Stored skills remain.`,{label:'Undo',run:()=>{profiles.splice(i,0,p);render()}});
+}
+
+function editProfile(id){const p=profiles.find(p=>p.id===id);if(!p.enabled.length)createProfile(p)}
+
+let editing=null;
+function createProfile(p=null){
+  editing=p;
+  modal(p?'Edit shared profile':'Create a shared profile',
+    `<label>Profile name<input id="profileName" value="${p?esc(p.name):''}" placeholder="e.g. Documentation desk" oninput="this.removeAttribute('aria-invalid');$('nameError').textContent=''" aria-describedby="nameError"><span class="field-error" id="nameError"></span></label>
+     <label>Source repository<input id="source" value="${p?esc(p.source):''}" placeholder="Repository URL or owner/repository"></label>
+     <div class="inline">${button('Discover members','discover()')}${button('Choose local skills','discover(true)','text')}</div>
+     <div id="discovery"><p class="sub">Choose members before saving. New source members are prepared disabled.</p></div>`,
+    button('Cancel','closeModal()','text')+`<button type="button" class="primary" id="saveProfile" disabled onclick="saveProfile()">Save &amp; prepare</button>`,
+    p?'Profile · membership':'New profile');
+  if(p)renderMembers(p.skills,'Current members',true,p.skills);
+}
+
+function renderMembers(names,title,local,checked=[]){
+  $('discovery').innerHTML=`<div class="members-head"><strong>${title}</strong>${button('Select all',"document.querySelectorAll('.member-check').forEach(x=>x.checked=true);memberChanged()",'text')}</div>
+    <div class="list">${names.map(s=>`<label class="check"><input class="member-check" type="checkbox" value="${s}" ${checked.includes(s)?'checked':''} onchange="memberChanged()"><span><strong>${s}</strong><small>${local?'Existing availability preserved':'New copy stored disabled'}</small></span></label>`).join('')}</div>
+    <p class="hint" id="memberCount"></p>`;
+  memberChanged();
+}
+
+function discover(local=false){
+  $('discovery').innerHTML='<p role="status" class="sub">Discovering available members…</p>';
+  $('saveProfile').disabled=true;
+  setTimeout(()=>{
+    const src=$('source').value.trim();
+    if(!local&&(!src||src.includes('fail'))){
+      $('discovery').innerHTML='<div class="error" role="alert"><strong>Error:</strong> source could not be discovered. Enter a repository reference and retry. A source containing “fail” demonstrates this state.</div>';
+      return;
+    }
+    renderMembers(local?['source-research','evidence-notes','project-conventions']:['interface-design','accessibility','render-review'],local?'Local skills':'Discovered package',local);
+  },650);
+}
+
+function memberChanged(){
+  const all=document.querySelectorAll('.member-check'),n=document.querySelectorAll('.member-check:checked').length;
+  $('saveProfile').disabled=!n;
+  if($('memberCount'))$('memberCount').textContent=`${n} of ${all.length} selected`;
+}
+
+function saveProfile(){
+  const name=$('profileName').value.trim();
+  if(!name){$('profileName').setAttribute('aria-invalid','true');$('nameError').textContent='Give this profile a name.';$('profileName').focus();return}
+  const skills=[...document.querySelectorAll('.member-check:checked')].map(x=>x.value),source=$('source').value.trim()||'Local skill selection';
+  $('saveProfile').disabled=true;$('saveProfile').textContent='Preparing…';
+  setTimeout(()=>{
+    const p=editing||{id:'profile-'+Date.now(),enabled:[]};
+    Object.assign(p,{name,source,skills,ready:!source.includes('partial')});
+    if(!editing)profiles.push(p);
+    closeModal();render();
+    toast(p.ready?'Profile saved. New members prepared disabled · simulated':'Partial preparation: this profile is not ready. Retry from its row.');
+  },650);
+}
+
+function invoke(id){
+  const p=profiles.find(p=>p.id===id);
+  if(!p.ready){toast('Prepare this group completely before reading it.');return}
+  const cmd='/afk-use '+p.id;
+  modal('Read '+esc(p.name)+' once',
+    `<p>Give this group to the agent in your current conversation. Its activation stays unchanged.</p>
+     <label>Proposed agent entry command<span class="inline"><input id="invocationCommand" readonly value="${cmd}">${button('Copy command','copyCommand()','primary')}</span></label>
+     <ol class="steps">
+       <li><strong>You paste the entry command</strong><span>Into a configured agent conversation.</span></li>
+       <li><strong>The agent requests the group</strong><span>Illustrative CLI: afk profiles use ${esc(p.id)}</span></li>
+       <li><strong>AFK returns local guidance</strong><span>${p.skills.length} members plus supporting resources; no discovery links.</span></li>
+     </ol>
+     <details><summary>Preview the group response</summary><pre>${esc(p.skills.map(s=>'READ '+s+'/SKILL.md\nResources: '+s+'/references/').join('\n\n'))}</pre></details>
+     <p class="hint">Integration is illustrative. This web app cannot inject instructions into another agent thread.</p>`,'','One-time reading');
+}
+
+async function copyCommand(){
+  try{await navigator.clipboard.writeText($('invocationCommand').value);toast('Entry command copied. Activation unchanged.')}
+  catch{$('invocationCommand').select();toast('Select and copy the proposed command.')}
+}
+
+function inventory(){
+  const entries=new Map();
+  if(scope==='Global'){
+    profiles.forEach(p=>p.skills.forEach(s=>{
+      if(!entries.has(s))entries.set(s,{name:s,owners:[],stored:true});
+      if(p.enabled.includes(scope))entries.get(s).owners.push(p.name);
+    }));
+  }else{
+    profiles.filter(p=>p.enabled.includes(scope)).forEach(p=>p.skills.forEach(s=>{
+      if(!entries.has(s))entries.set(s,{name:s,owners:[],stored:false});
+      entries.get(s).owners.push(p.name);
+    }));
+  }
+  (independent[scope]||[]).forEach(s=>{
+    if(!entries.has(s))entries.set(s,{name:s,owners:[],stored:false});
+    entries.get(s).independent=true;
+  });
+  return [...entries.values()];
+}
+
+function scopePath(){return scope==='Global'?'~/.agents/skills/':(projects.find(p=>p.name===scope)?.path||'')+'/.agents/skills/'}
+
+function renderSkills(){
+  $('view').innerHTML=head('Installed Skills','Every entry on one discovery path. Set availability and invocation per scope, right in the list.')
+    +`<div class="toolbar">
+        <label>Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>
+        <label class="search">Find a skill<span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
+        ${button('Copy update-all command','copyUpdateAll()','','data-od-id="copy-update-all"')}
+      </div>
+      <p class="hint" style="margin-bottom:14px">Copies an update command for ${esc(scope)} only. Nothing runs here.</p>
+      <p class="path-line"><span class="eyebrow">Discovery path</span><code class="path">${esc(scopePath())}</code><span class="eyebrow" id="skillCount"></span></p>
+      <div id="skillList"></div>`;
+  renderSkillList();
+}
+
+function setScope(value){scope=value;render();$('scopeSelect').focus()}
+
+function renderSkillList(){
+  const all=inventory(),list=all.filter(s=>s.name.includes(query.trim().toLowerCase()));
+  const available=all.filter(s=>isAvailable(s)).length;
+  $('skillCount').textContent=query?`${list.length} of ${all.length} shown`:`${all.length} entries · ${available} available`;
+  if(!list.length){
+    $('skillList').innerHTML=`<div class="empty"><h2>${query?'No matching skills':'No skill entries in this project'}</h2><p class="sub">${query?'Try a different skill name.':'Global-only skills are excluded. Enable a profile for this project to create its links.'}</p>${query?button('Clear search',"query='';renderSkills();$('skillSearch').focus()"):button('Go to Profiles',"navigate('Profiles')")}</div>`;
+    return;
+  }
+  $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row eyebrow" aria-hidden="true"><span>Skill</span><span>Availability</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>`;
+}
+
+function isAvailable(s){return s.owners.length>0||Boolean(s.independent&&!individualOff[scope+'|'+s.name])}
+
+function skillRow(s){
+  const held=s.owners.length>0,enabled=isAvailable(s);
+  const kind=scope==='Global'?'Shared local entry':'Project entry · '+(held?'symlink':'user-owned');
+  const note=held?'Held by '+s.owners.map(esc).join(', '):s.independent?'Individual entry':'Stored in library';
+  return `<article class="skill-row row" data-od-id="skill-${s.name}">
+    <div class="skill-name"><h3>${s.name}</h3><span class="meta">${kind}</span></div>
+    <div class="skill-avail">
+      <button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>
+      <span class="hint">${note}${held?' · change it in Profiles':''}</span>
+    </div>
+    <div class="skill-invoc">${preferenceSelect(s.name)}<span class="hint" data-hint="${s.name}">${preferenceHint(s.name)}</span></div>
+    <div class="skill-actions">${button('Inspect',`inspectSkill('${s.name}')`,'',`data-od-id="skill-${s.name}-inspect"`)}</div>
+  </article>`;
+}
+
+function preferenceSelect(name,attrs=''){
+  const current=preferences[scope+'|'+name]||'',first=scope==='Global'?'Skill default':'Inherit Global';
+  return `<select data-pref="${name}" aria-label="Invocation for ${name} in ${esc(scope)}" ${attrs} onchange="setPreference('${name}',this.value)"><option value="" ${current?'':'selected'}>${first}</option>${['Manual only','Automatic allowed'].map(v=>`<option ${current===v?'selected':''}>${v}</option>`).join('')}</select>`;
+}
+
+function preferenceHint(name){
+  if(preferences[scope+'|'+name])return scope==='Global'?'Override · projects inherit it':'Override · this project only';
+  if(scope==='Global')return 'Uses the setting in SKILL.md';
+  return 'Global: '+(preferences['Global|'+name]||'skill default').toLowerCase();
+}
+
+function setPreference(name,value){
+  const key=scope+'|'+name;
+  if(value)preferences[key]=value;else delete preferences[key];
+  document.querySelectorAll(`select[data-pref="${name}"]`).forEach(el=>el.value=value);
+  document.querySelectorAll(`[data-hint="${name}"]`).forEach(el=>el.textContent=preferenceHint(name));
+  toast(`${name}: ${value||(scope==='Global'?'skill default':'inherits Global')} · ${scope} only · simulated`);
+}
+
+function toggleSkill(name){
+  const s=inventory().find(s=>s.name===name);
+  if(s.owners.length)return;
+  const key=scope+'|'+name;
+  individualOff[key]=!individualOff[key];
+  if(!s.independent){(independent[scope]??=[]).push(name);individualOff[key]=false}
+  render();refocus(`skill-${name}-switch`);
+  toast(`${name}: ${individualOff[key]?'disabled':'available'} in ${scope} · simulated`);
+}
+
+function inspectSkill(name,fromProfile){
+  const back=fromProfile?button('Back to profile',`inspectProfile('${fromProfile}')`,'text push'):'';
+  const inheritNote=scope==='Global'?'Agent-native override support is assumed for this demonstration.':'Inherits Global unless overridden. This does not rewrite the shared skill.';
+  modal(name,
+    `<div class="file-tabs" role="group" aria-label="Skill files">${['SKILL.md','references/guide.md'].map((f,i)=>`<button type="button" aria-pressed="${i===0}" onclick="showFile(this,'${name}','${f}')">${f}</button>`).join('')}</div>
+     <pre id="fileContent">${esc(fileText(name,'SKILL.md'))}</pre>
+     <label>Invocation · ${esc(scope)}${preferenceSelect(name)}<span class="hint" data-hint="${name}">${preferenceHint(name)}</span></label>
+     <p class="hint">${inheritNote} Automatic selection permits agent choice; it does not guarantee execution.</p>`,
+    back,'Local skill inspection · '+esc(scope));
+}
+
+function fileText(name,file){
+  return file==='SKILL.md'
+    ?'# '+name+'\n\nIllustrative skill instructions.\nReview the task and its constraints before selecting an approach.\nRead supporting references when relevant.\nReport verified results and remaining limitations.'
+    :'# Supporting guide\n\nIllustrative local resource for '+name+'.\nResources are accessible during group reading.';
+}
+function showFile(el,name,file){
+  el.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===el));
+  $('fileContent').textContent=fileText(name,file);
+}
+
+function renderTools(){
+  const rows=tools.map(t=>`<article class="tool-row row" data-od-id="tool-${t.id}">
+    <div class="tool-name">
+      <h3>${esc(t.name)}</h3>
+      ${t.last?`<span class="status ${t.last.ok?'on':'warn'}">${esc(t.last.label)}</span>`:'<span class="meta">Not run this session</span>'}
+      <div class="links">${button('Edit',`editTool(${t.id})`,'text')}${button('Remove',`removeTool(${t.id})`,'text')}</div>
+    </div>
+    <dl class="cmds">
+      <div><dt>Install</dt><dd><code class="cmd">${esc(t.install)}</code></dd></div>
+      <div><dt>Update</dt><dd>${t.update?`<code class="cmd">${esc(t.update)}</code>`:'<span class="meta">Reuses the install command</span>'}</dd></div>
+    </dl>
+    <div class="tool-run">${button('Install',`runTool(${t.id},false)`,'',`data-od-id="tool-${t.id}-install"`)}${button('Update',`runTool(${t.id},true)`,'',`data-od-id="tool-${t.id}-update"`)}</div>
+  </article>`).join('');
+  const list=tools.length
+    ?`<div class="ledger tools"><div class="ledger-head tool-row eyebrow" aria-hidden="true"><span>Tool</span><span>Saved commands</span><span>Run</span></div>${rows}</div>`
+    :`<div class="empty"><h2>No saved commands</h2><p class="sub">Add a tool to keep its install and update commands together.</p></div>`;
+  $('view').innerHTML=head('Tools','Saved install and update commands. Each runs only when you choose, always in Global.',button('Add tool','editTool()','primary','data-od-id="add-tool"'))
+    +`<p class="path-line"><span class="eyebrow">Execution context</span><code class="path">Global · ~</code><span class="meta">Proposed fixed working folder</span></p>${list}`
+    +`<aside class="note"><span class="eyebrow">Explicit commands</span><p><strong>Visible results, no hidden runs.</strong> Removing an entry does not uninstall its tool, and a successful command is not proof of a usable installation.</p></aside>`;
+}
+
+function editTool(id){
+  const t=tools.find(t=>t.id===id);
+  modal(t?'Edit tool':'Add a global tool',
+    `<label>Name<input id="toolName" value="${t?esc(t.name):''}" placeholder="e.g. Skills CLI"></label>
+     <label>Install command<textarea id="installCmd" placeholder="npm install -g …">${t?esc(t.install):''}</textarea></label>
+     <label>Update command · optional<textarea id="updateCmd" placeholder="Leave empty to reuse the install command">${t?esc(t.update):''}</textarea></label>
+     <p class="field-error" id="toolError" role="alert"></p>
+     <p class="hint">Commands are saved data until you explicitly run them.</p>`,
+    button('Cancel','closeModal()','text')+button('Save tool',`saveTool(${id||0})`,'primary'),'Global tool');
+}
+
+function saveTool(id){
+  const name=$('toolName').value.trim(),install=$('installCmd').value.trim();
+  if(!name||!install){$('toolError').textContent=!name?'Name the tool.':'Add an install command.';(!name?$('toolName'):$('installCmd')).focus();return}
+  let t=tools.find(t=>t.id===id);
+  if(!t){t={id:Date.now(),last:null};tools.push(t)}
+  Object.assign(t,{name,install,update:$('updateCmd').value.trim()});
+  closeModal();render();toast('Tool entry saved. No command executed.');
+}
+
+function removeTool(id){
+  const i=tools.findIndex(t=>t.id===id),t=tools[i];
+  tools.splice(i,1);render();
+  toast(`${t.name} removed. No tool files were changed.`,{label:'Undo',run:()=>{tools.splice(i,0,t);render()}});
+}
+
+function runTool(id,update){
+  const t=tools.find(t=>t.id===id),cmd=update?(t.update||t.install):t.install;
+  window.simRun={id,update,cmd};
+  modal((update?'Update ':'Install ')+esc(t.name),
+    `<pre>$ ${esc(cmd)}</pre><div id="runOutput" role="status"><p class="sub">Ready to simulate this saved command in Global, working folder ~.</p></div>`,
+    button('Close','closeModal()','text')+button('Simulate run','executeDemo()','primary'),'Simulated execution');
+}
+
+function executeDemo(){
+  const {id,update,cmd}=window.simRun,t=tools.find(t=>t.id===id),b=$('sheetContent').querySelector('.primary'),mode=update?'update':'install';
+  $('runOutput').innerHTML='<p class="sub">Running simulation…</p>';
+  b.disabled=true;
+  setTimeout(()=>{
+    const ok=!cmd.includes('fail');
+    $('runOutput').innerHTML=ok
+      ?'<pre>Command accepted\nIllustrative output completed\nExit 0 · simulated</pre><p class="hint">Command success shown. Installation and usability remain unverified.</p>'
+      :'<div class="error"><strong>Error:</strong> command exited with an error · simulated.<br>No installation was performed. Edit the command and retry.</div>';
+    t.last={ok,label:ok?`Last ${mode} · exit 0 · simulated`:`Last ${mode} failed · simulated`};
+    window.toolsDirty=`tool-${id}-${mode}`;
+    b.disabled=false;b.textContent='Run again';
+  },800);
+}
+
+
+function safeShellValue(value){
+  return typeof value==='string'&&value.trim().length>0&&!/[\u0000-\u001f\u007f-\u009f\ud800-\udfff]/u.test(value);
+}
+function shellQuote(value){
+  if(!safeShellValue(value))throw Error('Use a nonempty value without control characters or invalid Unicode.');
+  return "'"+value.replaceAll("'", "'\"'\"'")+"'";
+}
+function validSource(value){return safeShellValue(value)&&!value.startsWith('-')}
+function validSources(list){
+  return list===undefined||(Array.isArray(list)&&list.every(x=>x&&typeof x.name==='string'&&x.name.trim()&&validSource(x.source)));
+}
+function projectPrefix(target){
+  const path=projects.find(p=>p.name===target)?.path;
+  if(!safeShellValue(path))throw Error('Remap the local project directory before copying.');
+  const directory=path==='~'?'"$HOME"':path.startsWith('~/')?'"$HOME"/'+shellQuote(path.slice(2)):shellQuote(path);
+  return 'cd -- '+directory+' && ';
+}
+function installCommand(source,target=installScope,agent=installAgent){
+  if(!validSource(source))throw Error('Use a source without control characters or a leading dash.');
+  if(!['interactive','codex','claude-code','cursor','opencode'].includes(agent))throw Error('Choose a supported agent.');
+  const prefix=target==='Global'?'':projectPrefix(target);
+  return prefix+'npx skills add '+shellQuote(source)+" --skill '*'"+(target==='Global'?' -g':'')+(agent==='interactive'?'':' --agent '+shellQuote(agent));
+}
+function updateCommand(target){return target==='Global'?'npx skills update -g':projectPrefix(target)+'npx skills update -p'}
+function installScript(){
+  if(!favoriteSources.length)throw Error('Save a source before copying the script.');
+  return '#!/bin/sh\nset -e\n# Run manually. Each source is installed sequentially; prompts remain enabled.\n'+favoriteSources.map(x=>'('+installCommand(x.source)+')').join('\n')+'\n';
+}
+async function copyText(text,label){
+  try{
+    if(!navigator.clipboard?.writeText)throw Error();
+    await navigator.clipboard.writeText(text);
+    toast(label+' copied. Nothing executed; activation unchanged.');
+  }catch{
+    modal('Copy manually',`<p>Clipboard access is unavailable or was denied. Select the text below and use your device’s Copy action (Ctrl+C or ⌘C).</p><label>${esc(label)}<textarea id="manualCopy" readonly rows="8">${esc(text)}</textarea></label><p class="hint">Nothing executed. Profile activation and installed inventory are unchanged.</p>`,'','Clipboard recovery');
+    $('manualCopy').focus();$('manualCopy').select();
+  }
+}
+function copyGenerated(make,label,target){
+  try{return copyText(make(),label)}catch(error){
+    if(target&&target!=='Global'&&!safeShellValue(projects.find(p=>p.name===target)?.path)){remapProject(target);return}
+    toast(error.message);
+  }
+}
+function copyUpdateAll(){return copyGenerated(()=>updateCommand(scope),'Update-all command',scope)}
+function copySource(i){return copyText(favoriteSources[i].source,'Source link')}
+function copyInstall(i){return copyGenerated(()=>installCommand(favoriteSources[i].source),'Install command',installScope)}
+function copyInstallAll(){return copyGenerated(installScript,'Install-all script',installScope)}
+function remapProject(target){
+  const i=projects.findIndex(p=>p.name===target);
+  if(i<0){toast('Choose a defined project in Settings.');return}
+  modal('Remap project directory',`<p>${esc(target)} needs a local directory. No command has been copied.</p><label>Local project directory<input id="remapDirectory" value="${esc(projects[i].path||'')}" placeholder="~/Projects/my-project"></label><p class="hint">This changes the project definition only; activation is unchanged.</p>`,button('Cancel','closeModal()','text')+button('Save directory',`saveRemap(${i})`,'primary'),'Settings · project definition');
+}
+function saveRemap(i){
+  const path=$('remapDirectory').value.trim();
+  if(!safeShellValue(path)){toast('Enter a directory without control characters.');return}
+  projects[i].path=path;closeModal();render();toast('Directory remapped. Copy the command when ready.');
+}
+function renderSources(){
+  if(!scopeNames().includes(installScope))installScope='Global';
+  const list=favoriteSources.length?`<div class="ledger">${favoriteSources.map((x,i)=>`<article class="row source-row" data-od-id="favorite-source-${i}"><div class="source-info"><h2>${esc(x.name)}</h2><code class="path">${esc(x.source)}</code></div><div class="inline">${button('Copy source link',`copySource(${i})`)}${button('Copy install command',`copyInstall(${i})`)}${button('Edit',`editSource(${i})`,'text')}${button('Remove bookmark',`removeSource(${i})`,'text')}</div></article>`).join('')}</div>`:`<div class="empty" data-od-id="sources-empty"><h2>No favorite sources yet</h2><p class="sub">Save a name and repository link to keep it close. Bookmarks do not install or enable skills.</p></div>`;
+  $('view').innerHTML=head('Favorite skill sources','Simple repository bookmarks, shared across your configuration.',button('Add source','editSource()','primary'))+`<section class="source-destination" data-od-id="installation-destination"><div class="toolbar"><label>Installation destination<select onchange="installScope=this.value;renderSources()">${scopeOptions(installScope)}</select></label><label>Installation agent<select onchange="installAgent=this.value"><option value="interactive" ${installAgent==='interactive'?'selected':''}>Choose interactively in CLI</option>${['codex','claude-code','cursor','opencode'].map(a=>`<option value="${a}" ${installAgent===a?'selected':''}>${a}</option>`).join('')}</select></label>${button('Copy install-all script','copyInstallAll()','',favoriteSources.length?'':'disabled')}</div><p class="hint">Destination applies to copied commands, not bookmark ownership. Commands include all source skills; agent selection and confirmation stay interactive unless you choose an agent here. Nothing runs in this app.</p></section>`+list+`<aside class="note"><span class="eyebrow">Bookmarks, not inventory</span><p>Removing a bookmark never uninstalls anything. To update installed skills, use the selected scope in Installed Skills. Sources travel with Settings export and import.</p></aside>`;
+}
+function editSource(i){
+  const x=favoriteSources[i]||{name:'',source:''};
+  modal(i===undefined?'Add favorite source':'Edit favorite source',`<label>Name<input id="sourceName" value="${esc(x.name)}" maxlength="120"></label><label>Source repository link<input id="sourceLink" value="${esc(x.source)}" placeholder="https://github.com/owner/repository" aria-describedby="sourceHint sourceError"></label><p class="hint" id="sourceHint">Repository URL, SSH URL, or owner/repository. Shell metacharacters are quoted literally; control characters and leading dashes are rejected.</p><p id="sourceError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Save bookmark',`saveSource(${i===undefined?-1:i})`,'primary'),'Bookmark only');
+}
+function saveSource(i){
+  const name=$('sourceName').value.trim(),source=$('sourceLink').value.trim();
+  if(!name||!validSource(source)){$('sourceError').textContent='Enter a name and a safe repository source without control characters or a leading dash.';$('sourceLink').setAttribute('aria-invalid','true');return}
+  if(i<0)favoriteSources.push({name,source});else favoriteSources[i]={name,source};
+  closeModal();render();toast('Bookmark saved. No installation or activation.');
+}
+function removeSource(i){favoriteSources.splice(i,1);render();toast('Bookmark removed. Installed skills and activation unchanged.')}
+
+function renderSettings(){
+  const globalPrefs=Object.entries(preferences).filter(([k])=>k.startsWith('Global|'));
+  const prefs=globalPrefs.length
+    ?`<ul class="pref-list">${globalPrefs.map(([k,v])=>`<li><code>${esc(k.slice(7))}</code><span class="meta">${esc(v)}</span></li>`).join('')}</ul>`
+    :'<p class="sub">No Global overrides. Every skill uses the setting in its SKILL.md.</p>';
+  $('view').innerHTML=head('Settings','One portable configuration. Projects define folders, never activation.')
+    +`<section class="settings-block" data-od-id="afk-folder">
+        <div><h2>AFK folder</h2><p class="sub">One dedicated folder holds everything portable. Any name works; an existing ~/.afk stays valid.</p></div>
+        <div class="settings-body">
+          <div class="path-card"><code class="path">${esc(afkFolder)}</code>${button('Choose folder',"browse('afk')",'','data-od-id="choose-afk-folder"')}</div>
+          ${afkContents()}
+          <div class="portable" data-od-id="afk-folder-transport"><strong>Moving it between machines is your provider’s job.</strong><span class="meta">Keep this folder in a Git repository, Google Drive or iCloud Drive if you like. AFK never pushes, pulls or watches it. On each machine, Sync in Agent rules applies the saved rules to that machine’s agent files.</span></div>
+          <div class="bundle-row"><span class="eyebrow">Bundle</span><div class="inline">${button('Export AFK folder ZIP','exportBundle()','','data-od-id="export-bundle"')}${button('Import AFK folder ZIP',"$('bundleFile').click()",'','data-od-id="import-bundle"')}${button('Review a sample bundle','sampleBundle()','text')}</div><span class="hint">settings.json, AGENTS.md and references/ in one file. Destinations travel as suggestions you map on import; nothing is written to agent files.</span></div>
+          <div class="bundle-row"><span class="eyebrow">Configuration only</span><div class="inline">${button('Export settings JSON','exportSettings()','text')}${button('Import settings JSON',"$('importFile').click()",'text')}</div><span class="hint">settings.json alone. Excludes AGENTS.md and references.</span></div>
+          <input id="importFile" type="file" accept=".json,application/json" hidden onchange="importSettings(this.files[0])">
+          <input id="bundleFile" type="file" accept=".zip,application/zip" hidden onchange="importBundle(this.files[0])">
+        </div>
+      </section>
+      <section class="settings-block" data-od-id="projects-settings">
+        <div><h2>Projects</h2><p class="sub">Save the folder here; enable groups from Profiles.</p></div>
+        <div class="settings-body">
+          <div class="project-list">${projects.map((p,i)=>`<div class="project-row"><strong>${esc(p.name)}</strong><code class="path">${esc(p.path)}</code>${button('Edit',`editProject(${i})`,'text')}</div>`).join('')}</div>
+          <div>${button('Add project',"browse('project')")}</div>
+        </div>
+      </section>
+      <section class="settings-block" data-od-id="invocation-defaults">
+        <div><h2>Invocation defaults</h2><p class="sub">Global overrides apply to every project that inherits them.</p></div>
+        <div class="settings-body">${prefs}<div>${button('Adjust in Installed Skills',"scope='Global';navigate('Installed Skills')",'text')}</div></div>
+      </section>`;
+}
+
+let browseMode='',folder='~';
+const tree={'~':['.afk','Projects','Documents','Google Drive'],'~/Projects':['demo-studio','field-notes','logbook-atlas','new-project'],'~/Projects/logbook-atlas':['afk'],'~/Documents':['AFK'],'~/Google Drive':['Personal'],'~/Google Drive/Personal':['AFK']};
+const folderFiles={'~':['.zshrc'],'~/.afk':['settings.json'],'~/Projects/logbook-atlas':['README.md','package.json','src/'],'~/Projects/logbook-atlas/afk':['settings.json','AGENTS.md','references/'],
+  '~/Projects/demo-studio':['package.json','AGENTS.md','src/'],'~/Projects/field-notes':['AGENTS.md','docs/'],'~/Documents/AFK':['settings.json'],'~/Google Drive/Personal/AFK':['settings.json','AGENTS.md']};
+function browse(mode){browseMode=mode;folder=mode==='afk'?afkFolder:'~';folderModal()}
+function folderModal(){
+  const atRoot=folder==='~',subs=tree[folder]||[];
+  const afk=browseMode==='afk',kind=afk?classify(folder):'',files=folderFiles[folder]||[];
+  const info={afk:`<span class="status on">AFK folder · ${files.map(esc).join(', ')}</span><span class="hint">${files.includes('AGENTS.md')?'Settings and agent rules load from here.':'Settings load from here. Agent rules start empty until you create AGENTS.md.'}</span>`,
+    empty:'<span class="status">Empty folder</span><span class="hint">AFK creates settings.json here. AGENTS.md and references/ are added when you write rules.</span>',
+    other:`<span class="status warn">Not a dedicated folder</span><span class="hint">It already holds ${files.concat(subs.map(d=>d+'/')).slice(0,4).map(esc).join(', ')}. AFK needs a folder of its own so your sync provider and bundles carry only AFK content.</span><div>${button('Create an “afk” folder here','createAfkHere()','text')}</div>`}[kind];
+  modal('Choose '+(browseMode==='project'?'project folder':'AFK folder'),
+    `<div class="folder-path">${button('Parent',"folder=folder.slice(0,folder.lastIndexOf('/'))||'~';folderModal()",'',atRoot?'disabled':'')}<code class="path">${esc(folder)}</code></div>
+     <div class="list">${subs.map(f=>`<button type="button" class="folder" onclick="folder+='/${f}';folderModal()"><span>${f}</span><span aria-hidden="true">›</span></button>`).join('')||'<p class="sub" style="padding:12px 0">This sample folder has no subfolders.</p>'}</div>
+     ${afk?`<div class="portable" role="status">${info}</div>`:''}`,
+    button('Cancel','closeModal()','text')+button('Use this folder','useFolder()','primary',afk&&kind==='other'?'disabled':''),'Illustrative folder browser');
+}
+
+function useFolder(){
+  if(browseMode==='afk'){
+    if(folder===afkFolder){closeModal();return}
+    if(rulesDirty().length){toast('Save or revert your agent rules before switching folders.');return}
+    const files=folderFiles[folder]||[];
+    afkFolder=folder;settingsPath=folder+'/settings.json';
+    if(!files.includes('settings.json'))folderFiles[folder]=['settings.json'];
+    rules=folderRules[folder]??=files.includes('AGENTS.md')?(folder.includes('Google Drive')?{...emptyRules(),files:[file('AGENTS.md',AGENTS_V1)]}:sampleRules()):emptyRules();
+    closeModal();render();refocus('choose-afk-folder');
+    toast(`AFK folder set to ${folder}. The demo loads its contents; nothing is moved or written.`);return;
+  }
+  modal('Name this project',`<label>Project name<input id="projectName" value="${esc(folder.split('/').pop())}"></label><p class="path">${esc(folder)}</p><p class="hint">Adding a project does not enable any profile.</p>`,
+    button('Cancel','closeModal()','text')+button('Save project','saveProject()','primary'),'New project');
+}
+
+function saveProject(){
+  const name=$('projectName').value.trim();
+  if(!name||projects.some(p=>p.name===name)){toast('Choose a unique project name.');$('projectName').focus();return}
+  projects.push({name,path:folder});independent[name]=[];
+  closeModal();render();toast('Project defined. Profile activation unchanged.');
+}
+
+function editProject(i){
+  const p=projects[i];
+  modal('Edit project',`<label>Name<input id="projectName" value="${esc(p.name)}"></label><p class="path">${esc(p.path)}</p>`,
+    button('Cancel','closeModal()','text')+button('Save name',`renameProject(${i})`,'primary'),'Project');
+}
+
+function renameProject(i){
+  const old=projects[i].name,n=$('projectName').value.trim();
+  if(!n||projects.some((p,j)=>j!==i&&p.name===n)){toast('Choose a unique project name.');$('projectName').focus();return}
+  projects[i].name=n;
+  profiles.forEach(p=>p.enabled=p.enabled.map(v=>v===old?n:v));
+  independent[n]=independent[old]||[];
+  Object.keys(selectedTargets).forEach(k=>{if(selectedTargets[k]===old)selectedTargets[k]=n});
+  Object.keys(preferences).forEach(k=>{if(k.startsWith(old+'|')){preferences[n+k.slice(old.length)]=preferences[k];delete preferences[k]}});
+  if(scope===old)scope=n;
+  closeModal();render();toast('Project renamed. Activation preserved.');
+}
+
+function configuration(){
+  return {format:'afk-proposal-illustrative',favoriteSources:favoriteSources.map(x=>({...x})),settingsPath,profiles:profiles.map(p=>({...p,enabled:[]})),tools:tools.map(({last,...t})=>t),
+    global:{enabledProfiles:profiles.filter(p=>p.enabled.includes('Global')).map(p=>p.id),invocation:preferences},
+    projects:projects.map(p=>({...p,enabledProfiles:profiles.filter(x=>x.enabled.includes(p.name)).map(x=>x.id)}))};
+}
+
+function exportSettings(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(configuration(),null,2)],{type:'application/json'}));
+  a.download='afk-proposal-settings.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('settings.json exported · configuration only, no Markdown.');
+}
+
+function validConfig(data){
+  return Boolean(data)&&Array.isArray(data.profiles)&&Array.isArray(data.projects)&&Array.isArray(data.tools)
+    &&data.profiles.every(p=>safeId(p.id)&&typeof p.name==='string'&&Array.isArray(p.skills)&&p.skills.every(safeId))
+    &&data.projects.every(p=>typeof p.name==='string'&&typeof p.path==='string')
+    &&data.tools.every(t=>typeof t.name==='string'&&typeof t.install==='string')&&validSources(data.favoriteSources);
+}
+const safeId=v=>typeof v==='string'&&/^[-a-zA-Z0-9_]+$/.test(v);
+async function importSettings(file){
+  $('importFile').value='';
+  if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    if(!validConfig(data))throw Error();
+    window.pendingImport=data;
+    modal('Review imported configuration',
+      `<p>${data.profiles.length} shared profiles · ${data.tools.length} global tool entries · ${data.projects.length} projects</p>
+       <p class="sub">Resolve local folders before applying. Imported activations are recorded intent; this demo leaves all scopes disabled.</p>
+       ${data.projects.map((p,i)=>`<label>${esc(p.name)} · remap path<input class="remap" data-index="${i}" value="${esc(p.path)}"></label>`).join('')}
+       <p class="hint">Local preparation will need reconciliation. Import never runs tool commands.</p>`,
+      button('Cancel','closeModal()','text')+button('Apply configuration','applyImport()','primary'),'Import · settings.json only');
+  }catch{
+    modal('Import could not be read','<div class="error" role="alert"><strong>Error:</strong> invalid configuration. Choose an AFK proposal JSON export. The previous configuration has been preserved.</div>','','Import');
+  }
+}
+
+function applyImport(){
+  applyConfig(window.pendingImport,[...document.querySelectorAll('.remap')].map(x=>x.value));
+  closeModal();render();toast('Imported. Profiles need local preparation; no activation or commands applied.');
+}
+function applyConfig(d,remaps){
+  projects=d.projects.map((p,i)=>({name:p.name,path:remaps[i]??p.path}));
+  profiles=d.profiles.map(p=>({...p,enabled:[],ready:false}));
+  tools=d.tools.map((t,i)=>({name:t.name,install:t.install,update:typeof t.update==='string'?t.update:'',id:i+1,last:null}));
+  favoriteSources=(d.favoriteSources||[]).map(x=>({name:x.name,source:x.source}));
+  preferences=d.global?.invocation||{};
+  scope='Global';selectedTargets={};
+}
+
+/* ---------- Agent rules · simulated in memory ---------- */
+const START='<!-- AFK:RULES:START -->',END='<!-- AFK:RULES:END -->',NS='afk-rules';
+const MANAGED_NOTE='<!-- Managed by AFK. Edit AGENTS.md in your AFK folder, then sync. Edits made here are reported as conflicts. -->';
+const AGENTS_V1=`# Agent rules
+
+Shared rules for every coding agent on this machine. Keep them short; depth lives in references.
+
+## Working agreement
+- Read the task and the files you will touch before proposing changes.
+- Prefer small, reviewable diffs. Never rewrite unrelated code.
+- Run the project's own checks before reporting done; say what you did not verify.
+
+## Commits
+- Conventional commit subjects, imperative mood, 72 characters at most.
+- Never commit secrets, .env files or generated build output.
+
+## References
+- Development workflow: {{development.md}}`;
+const AGENTS_V2=AGENTS_V1.replace("say what you did not verify.","say what you did not verify.\n- Ask before destructive operations: deleting files, force-pushing, dropping data.")+'\n- Review checklist: {{review.md}}';
+const REF_DEV=`# Development workflow
+
+1. Restate the goal and the acceptance check before editing.
+2. Read the files you will change, plus their tests.
+3. Make the smallest change that satisfies the check.
+4. Run the formatter, linter and tests. Paste failures verbatim.
+5. Summarise what changed, what you verified and what you could not.`;
+const REF_REVIEW=`# Review checklist
+
+- Does the change do what the task asked, and nothing else?
+- Are new branches covered by a test or a stated reason?
+- Are names, comments and docs updated with the behaviour?
+- Could this break another caller? Search before answering.`;
+const OWN={
+  codex:'# Codex · this machine\n\nPersonal notes kept by hand. AFK never edits this part.\n- Sandbox: workspace-write.',
+  claude:'# Claude · personal\n\n- Keep answers short unless I ask for depth.',
+  claudeAfter:'## Scratch\nTemporary notes for this week. Not managed by AFK.',
+  field:'# Field Notes\n\nProject rules for this repository.\n- Long-form notes go in docs/.\n- Run `npm run check` before opening a pull request.'
+};
+const simFiles={'~/Projects/field-notes/AGENTS.md':OWN.field,'~/Projects/demo-studio/AGENTS.md':'# Demo Studio\n\nUse pnpm. Run `pnpm test` before committing.','~/.codex/AGENTS.md':OWN.codex,'~/.claude/CLAUDE.md':OWN.claude};
+const knownDirs=['~/.codex','~/.claude','~/.cursor','~/Projects/field-notes/docs'];
+let rules,dests=[],lastRun='',folderRules={};
+const isMac=/Mac|iPhone|iPad/.test(navigator.platform||'');
+
+function clock(){return 'Today '+new Date().toTimeString().slice(0,5)}
+function stamp(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`}
+function file(path,text){return {path,saved:text,draft:text}}
+function sampleRules(){return {files:[file('AGENTS.md',AGENTS_V2),file('references/development.md',REF_DEV),file('references/review.md',REF_REVIEW)],current:'AGENTS.md',savedAt:'Today 09:41',stash:null}}
+function emptyRules(){return {files:[],current:'AGENTS.md',savedAt:null,stash:null}}
+function rulesDirty(){return rules.files.filter(f=>f.draft!==f.saved)}
+function savedText(path){const f=rules.files.find(f=>f.path===path);return f&&f.saved!==null?f.saved:undefined}
+function savedRefs(){return rules.files.filter(f=>f.path!=='AGENTS.md'&&f.saved!==null)}
+function currentFile(){return rules.files.find(f=>f.path===rules.current)||rules.files[0]}
+function plural(n,w,ws=w+'s'){return n+' '+(n===1?w:ws)}
+function listText(a){return a.length<3?a.join(' and '):a.slice(0,-1).join(', ')+' and '+a.at(-1)}
+function refKey(path){return path.slice(11)}
+function escRe(x){return x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+const KEY_RE=/\{\{\s*([\w][\w.\-\/]*)\s*\}\}/g;
+function keyRe(k){return new RegExp('\\{\\{\\s*'+escRe(k)+'\\s*\\}\\}','g')}
+function refKeys(text){return [...new Set([...text.matchAll(KEY_RE)].map(m=>m[1]))]}
+function resolveKeys(text,d){const known=new Set(savedRefs().map(f=>refKey(f.path)));return text.replace(KEY_RE,(m,k)=>known.has(k)?nsDir(d)+'references/'+k:m)}
+function region(text,d){return [START,MANAGED_NOTE,resolveKeys(text.trim(),d).replace(/\]\((?:\.\/)?references\//g,`](${NS}/references/`),END].join('\n')}
+function unregion(reg,d){return reg.split('\n').filter(l=>l!==START&&l!==END&&!l.startsWith('<!-- Managed by AFK')).join('\n').replace(new RegExp(escRe(nsDir(d)+'references/')+'([\\w][\\w.\\-/]*?\\.md)','g'),'{{$1}}').replaceAll(`](${NS}/references/`,'](references/').trim()}
+function compose(...parts){const t=parts.map(x=>(x||'').trim()).filter(Boolean).join('\n\n');return t?t+'\n':''}
+function destText(d){const f=d.file;return f.exists?compose(f.before,f.region,f.after):''}
+function nsDir(d){return d.path.slice(0,d.path.lastIndexOf('/')+1)+NS+'/'}
+function lineCount(t){return t.trim()?t.trim().split('\n').length:0}
+
+function seed(kind='populated'){
+  rules=folderRules[afkFolder]=kind==='first'?emptyRules():sampleRules();
+  const v1=path=>region(AGENTS_V1,{path}),ext=v1('~/.claude/CLAUDE.md').replace('## Commits','- Prefer British spelling in prose and commit messages.\n\n## Commits');
+  const prev={when:'Yesterday 18:20',text:'Region updated · backup kept'};
+  dests=[
+    {id:'codex',name:'Codex',kind:'builtin',path:'~/.codex/AGENTS.md',selected:true,managed:true,unrelated:'config.toml, prompts/ and sessions/ in ~/.codex/',
+      file:{exists:true,before:OWN.codex,after:'',region:v1('~/.codex/AGENTS.md'),markers:'ok'},written:v1('~/.codex/AGENTS.md'),refs:{'references/development.md':REF_DEV},last:{...prev}},
+    {id:'claude',name:'Claude',kind:'builtin',path:'~/.claude/CLAUDE.md',selected:true,managed:true,unrelated:'settings.json, commands/ and agents/ in ~/.claude/',
+      file:{exists:true,before:OWN.claude,after:OWN.claudeAfter,region:ext,markers:'ok'},written:v1('~/.claude/CLAUDE.md'),refs:{'references/development.md':REF_DEV},last:{...prev}},
+    {id:'custom-1',name:'Field Notes repository',kind:'custom',path:'~/Projects/field-notes/AGENTS.md',selected:true,managed:true,unrelated:'everything else in ~/Projects/field-notes/',
+      file:{exists:true,before:OWN.field,after:'',region:null,markers:'ok'},written:null,refs:{},last:null}
+  ];
+  lastRun='Last sync · Yesterday 18:20 · Codex and Claude updated, backups kept';
+  if(kind==='first'){
+    dests=dests.slice(0,2);
+    dests.forEach(d=>Object.assign(d,{written:null,refs:{},last:null,file:{...d.file,region:null,after:''}}));
+    lastRun='No sync has run on this machine yet';
+  }
+  if(kind==='dirty'){const a=rules.files[0];a.draft=a.saved.replace('\n\n## Commits','\n- Leave TODO comments only with an owner and a reason.\n\n## Commits')}
+  if(kind==='synced'||kind==='broken'){
+    const refs={'references/development.md':REF_DEV,'references/review.md':REF_REVIEW},when=clock();
+    dests.forEach(d=>{const v2=region(AGENTS_V2,d);Object.assign(d,{written:v2,refs:{...refs},last:{when,text:d.file.region?'Region updated · backup kept':'Region added · backup kept'},file:{...d.file,region:v2}})});
+    lastRun=`Last sync · ${when} · 3 destinations current, backups kept`;
+  }
+  if(kind==='broken'){
+    const d=dests[2];d.file.region=d.written.split('\n').slice(0,-1).join('\n');d.file.after='## Local notes\nAdded by hand after the rules.';d.file.markers='broken';
+  }
+}
+
+function destStatus(d){
+  if(!d.managed)return 'off';
+  const f=d.file;
+  if(f.exists&&(f.markers==='broken'||(d.written&&f.region!==d.written)))return 'conflict';
+  if(!d.written)return 'never';
+  const a=savedText('AGENTS.md');
+  if(a===undefined||!f.exists||region(a,d)!==d.written)return 'outdated';
+  return refPlan(d).some(r=>r.op!=='same')?'outdated':'current';
+}
+const STATUS={current:['on','Current'],outdated:['stale','Out of date'],never:['','Never synced'],conflict:['warn','Conflict'],off:['off','Not connected']};
+function statusHint(d,st){
+  const f=d.file;
+  if(st==='current')return 'Matches saved rules';
+  if(st==='outdated')return savedText('AGENTS.md')===undefined?'This AFK folder has no AGENTS.md':f.exists?'Saved rules changed since last sync':'File missing · recreated on sync';
+  if(st==='never')return f.exists?'File exists · region will be added':'No file yet · created on sync';
+  if(st==='conflict')return f.markers==='broken'?'AFK end marker missing':'Managed region edited outside AFK';
+  return 'Not managed · file left as is';
+}
+function refPlan(d){
+  const out=savedRefs().map(r=>({path:r.path,op:d.refs[r.path]===undefined?'add':d.refs[r.path]===r.saved?'same':'update'}));
+  Object.keys(d.refs).forEach(p=>{if(savedText(p)===undefined)out.push({path:p,op:'remove'})});
+  return out;
+}
+function plan(d){
+  const st=destStatus(d),agents=savedText('AGENTS.md');
+  if(st==='off'||agents===undefined)return {st,action:'none',refs:[],refChanges:0};
+  const next=region(agents,d),refs=refPlan(d),refChanges=refs.filter(r=>r.op!=='same').length,f=d.file;
+  if(st==='conflict')return {st,action:'blocked',next,refs,refChanges};
+  const action=!f.exists?'create':f.region===null?'append':f.region!==next?'replace':refChanges?'refs':'none';
+  return {st,action,next,refs,refChanges,backup:f.exists&&action!=='none'?`${d.path}.afk-backup-${stamp()}`:null};
+}
+
+function diffLines(a,b){
+  const n=a.length,m=b.length,L=Array.from({length:n+1},()=>new Uint16Array(m+1));
+  for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)L[i][j]=a[i]===b[j]?L[i+1][j+1]+1:Math.max(L[i+1][j],L[i][j+1]);
+  const out=[];let i=0,j=0;
+  while(i<n&&j<m){if(a[i]===b[j]){out.push({t:'same',s:a[i]});i++;j++}else if(L[i+1][j]>=L[i][j+1])out.push({t:'del',s:a[i++]});else out.push({t:'add',s:b[j++]})}
+  while(i<n)out.push({t:'del',s:a[i++]});while(j<m)out.push({t:'add',s:b[j++]});
+  return out;
+}
+function keepRows(text,label){return text.trim()?[{t:'sep',s:label},...text.trim().split('\n').map(s=>({t:'keep',s}))]:[]}
+function previewRows(d,next){
+  const f=d.file,old=f.exists&&f.region?f.region.split('\n'):[];
+  const label=!f.exists?'New file · created on sync':f.region===null?'AFK region · appended at end':'AFK managed region';
+  return [...keepRows(f.exists?f.before:'','Outside AFK markers · untouched'),{t:'sep',s:label},...diffLines(old,next.split('\n')),...keepRows(f.exists?f.after:'','Outside AFK markers · untouched')];
+}
+function fold(rows){
+  const out=[];let run=[];
+  const flush=()=>{if(run.length>6)out.push(...run.slice(0,2),{t:'fold',s:`… ${run.length-4} unchanged lines`},...run.slice(-2));else out.push(...run);run=[]};
+  rows.forEach(r=>{if(r.t==='same')run.push(r);else{flush();out.push(r)}});flush();return out;
+}
+const GUT={keep:'',same:'',add:'+',del:'−'};
+function diffHtml(rows,label){
+  return `<div class="diff" role="region" tabindex="0" aria-label="${esc(label)}">${fold(rows).map(r=>r.t==='sep'||r.t==='fold'?`<div class="${r.t}">${esc(r.s)}</div>`
+    :`<div class="${r.t}${r.s===START||r.s===END?' marker':''}"><span class="g" aria-hidden="true">${GUT[r.t]}</span><span>${r.t==='add'?'<span class="sr">Added: </span>':r.t==='del'?'<span class="sr">Removed: </span>':''}${esc(r.s)||' '}</span></div>`).join('')}</div>`;
+}
+function counts(rows){return {add:rows.filter(r=>r.t==='add').length,del:rows.filter(r=>r.t==='del').length}}
+
+/* ---- page ---- */
+function renderRules(){
+  $('view').innerHTML=head('Agent rules','One shared AGENTS.md for every agent on this machine. Edit and save it here; Sync applies the saved rules to the destinations you choose.')
+    +`<p class="path-line"><span class="eyebrow">AFK folder</span><code class="path">${esc(afkFolder)}</code><span class="meta">Global · shared by every profile and project</span>${button('Change in Settings',"navigate('Settings')",'text')}</p>`
+    +(rules.files.length?`<section class="workbench" data-od-id="rules-workbench" aria-label="Rule files"><nav class="files" id="fileList" aria-label="Files in the AFK folder"></nav><div class="editor" id="editor"></div></section>`:firstUse())
+    +`<section class="dest-section" id="destSection" data-od-id="rule-destinations" aria-labelledby="destTitle"></section>`
+    +`<aside class="note" data-od-id="rules-note"><span class="eyebrow">Only between the markers</span><p><strong>AFK writes inside ${esc(START)} … ${esc(END)} and nowhere else.</strong> Text outside the markers, unrelated files and the destination file itself stay yours: no symlinks, no whole-file replacement, a backup before every change. Destinations are files on this machine; moving the AFK folder between machines is up to your Git, Drive or iCloud setup.</p></aside>`;
+  if(rules.files.length){renderFiles();renderEditor()}
+  renderDests();
+}
+function firstUse(){
+  return `<section class="empty rules-empty" data-od-id="rules-first-use"><span class="eyebrow">First use</span><h2>Write your rules once</h2>
+    <p class="sub">This AFK folder has no AGENTS.md yet. Start one here and it lives beside settings.json, ready to sync to Codex, Claude or any rules file you add.</p>
+    <ul class="tree-list" aria-label="AFK folder contents"><li><code>settings.json</code><span class="meta">Your configuration</span><span class="status on">Present</span></li><li><code>AGENTS.md</code><span class="meta">Canonical rules, edited here</span><span class="status">Created when you save</span></li><li><code>references/</code><span class="meta">Optional supporting Markdown</span><span class="status">Empty</span></li></ul>
+    <div class="inline">${button('Start AGENTS.md',"startRules()",'primary','data-od-id="start-rules"')}${button('Copy text from Codex’s AGENTS.md',"startRules('codex')")}${button('Copy from Claude’s CLAUDE.md',"startRules('claude')",'text')}</div>
+    <p class="hint">Copying starts an unsaved draft from the text you wrote yourself. Nothing is written until you save, and agent files change only when you sync. You can also paste existing rules straight into the editor.</p></section>`;
+}
+function startRules(from){
+  const text=from?(dests.find(d=>d.id===from)?.file.before||''):'# Agent rules\n\n';
+  rules.files=[{path:'AGENTS.md',saved:null,draft:text}];rules.current='AGENTS.md';
+  render();const t=$('ruleText');t.focus();t.setSelectionRange(t.value.length,t.value.length);
+  toast(from?'Draft started from your existing text. Save to create AGENTS.md.':'Draft started. Type or paste your rules, then save.');
+}
+
+function renderFiles(){
+  const refs=rules.files.filter(f=>f.path!=='AGENTS.md');
+  const btn=f=>{const i=rules.files.indexOf(f),ref=f.path!=='AGENTS.md',dirty=f.draft!==f.saved;
+    return `<button type="button" class="file-btn${ref?' ref':''}" aria-current="${f.path===rules.current}" data-file="${i}" data-od-id="rule-file-${slug(f.path.replace(/[^\w]+/g,'-'))}" onclick="openFile(${i})"><span>${esc(ref?f.path.slice(11):f.path)}</span>${dirty?`<span class="edited">${f.saved===null?'new':'edited'}</span>`:''}</button>`};
+  $('fileList').innerHTML=`<span class="eyebrow files-label">${esc(afkFolder.split('/').pop())}/</span>${btn(rules.files.find(f=>f.path==='AGENTS.md'))}<span class="eyebrow files-label">references/</span>${refs.map(btn).join('')||'<p class="hint">No supporting files yet.</p>'}${button('Add reference','addReference()','text','data-od-id="add-reference"')}`;
+}
+function openFile(i){rules.current=rules.files[i].path;renderFiles();renderEditor();$('fileList').querySelector(`[data-file="${i}"]`).focus()}
+
+function renderEditor(){
+  const f=currentFile();
+  $('editor').innerHTML=`<div id="stash"></div><div class="editor-head" id="editorHead"></div>
+    <div class="editor-field"><textarea id="ruleText" spellcheck="false" aria-label="Contents of ${esc(f.path)}" aria-describedby="editorFoot" aria-autocomplete="list" aria-controls="refMenu" data-od-id="rules-editor" oninput="editDraft(this.value);refSuggest()" onkeydown="refKeydown(event)" onkeyup="if(/^(Arrow(Left|Right)|Home|End)$/.test(event.key))refSuggest()" onclick="refSuggest()" onscroll="closeRefMenu()" onblur="setTimeout(closeRefMenu,150)">${esc(f.draft)}</textarea>
+      <div class="ref-menu" id="refMenu" role="listbox" aria-label="Insert a reference" data-od-id="reference-suggestions" onmousedown="event.preventDefault()" hidden></div><span class="sr-only" id="refLive" role="status"></span></div>
+    <div class="editor-foot" id="editorFoot"></div>`;
+  paintEditor();
+}
+function paintEditor(){
+  const f=currentFile(),dirty=rulesDirty(),canonical=f.path==='AGENTS.md',key=isMac?'⌘S':'Ctrl+S';
+  const state=dirty.length?`<span class="status warn" role="status">Unsaved · ${plural(dirty.length,'file')}</span>`:`<span class="status on" role="status">Saved${rules.savedAt?' · '+esc(rules.savedAt):''}</span>`;
+  $('editorHead').innerHTML=`<div><span class="eyebrow">${canonical?'Canonical rules':'Supporting reference'}</span><h2>${esc(f.path)}</h2></div>
+    <div class="editor-actions">${state}${canonical?'':button('Rename',`renameReference()`,'text','data-od-id="rename-reference"')+button('Remove',`removeReference()`,'text danger','data-od-id="remove-reference"')}${button('Revert',`revertFile()`,'text',f.draft===f.saved||f.saved===null?'disabled':'')}${button(`Save${dirty.length>1?' '+dirty.length+' files':''} <kbd aria-hidden="true">${key}</kbd>`,'saveRules()','',`data-od-id="save-rules" aria-keyshortcuts="${isMac?'Meta+S':'Control+S'}" ${dirty.length?'':'disabled'}`)}</div>`;
+  const links=[...f.draft.matchAll(/\]\((?:\.\/)?(references\/[^)\s]+)\)/g)].map(m=>m[1]);
+  const has=p=>rules.files.some(x=>x.path===p),keys=canonical?refKeys(f.draft):[],used=new Set([...links,...keys.map(k=>'references/'+k)]);
+  const missing=[...keys.filter(k=>!has('references/'+k)).map(k=>`{{${k}}}`),...[...new Set(links)].filter(p=>!has(p))];
+  $('editorFoot').innerHTML=`<span class="hint">Markdown · ${plural(lineCount(f.draft),'line')} · ${canonical?plural(used.size,'reference')+' used':`synced as ${NS}/${esc(f.path)} · key <code>{{${esc(refKey(f.path))}}}</code>`}</span>`
+    +(missing.length?`<span class="link-warn" role="status">No file in references/ for ${missing.map(esc).join(', ')} · left as written on sync</span>`:`<span class="hint">${canonical?'Type <kbd>{{</kbd> to insert a reference. Each destination gets its own path on sync':'Edits stay local until you save and sync'}</span>`);
+  $('stash').innerHTML=rules.stash?`<div class="stash" role="status"><span>Your previous draft was kept aside · ${esc(rules.stash.when)}</span><span class="inline">${button('Restore previous draft','restoreStash()','text')}${button('Discard it','rules.stash=null;paintEditor()','text')}</span></div>`:'';
+}
+function editDraft(v){
+  const f=currentFile(),was=f.draft===f.saved;f.draft=v;
+  paintEditor();renderDests();if(was!==(f.draft===f.saved))renderFiles();
+}
+function revertFile(){const f=currentFile();f.draft=f.saved;renderFiles();renderEditor();$('ruleText').focus();toast(`${f.path} reverted to the saved version.`)}
+function restoreStash(){const a=rules.files.find(f=>f.path==='AGENTS.md'),s=rules.stash;rules.stash={text:a.draft,when:clock()};a.draft=s.text;rules.current='AGENTS.md';render();toast('Previous draft restored. The other version is kept aside.')}
+
+function saveRules(thenSync){
+  const dirty=rulesDirty();
+  if(!dirty.length){if(thenSync)syncPreview();return}
+  dirty.forEach(f=>f.saved=f.draft);rules.savedAt=clock();
+  if(thenSync){render();syncPreview();return}
+  renderFiles();paintEditor();renderDests();
+  if(document.activeElement===document.body||document.activeElement?.disabled)refocus('rules-editor');
+  toast(`Saved ${plural(dirty.length,'file')} to the AFK folder · simulated. Agent files are unchanged until you sync.`);
+}
+
+/* ---- reference keys: {{ suggestions ---- */
+let refMenu={open:false,items:[],i:0,from:0,q:'',total:0};
+function caretXY(t,pos){
+  const cs=getComputedStyle(t),m=document.createElement('div'),s=document.createElement('span');
+  m.style.cssText=`position:absolute;visibility:hidden;top:0;left:0;white-space:pre-wrap;overflow-wrap:break-word;box-sizing:border-box;width:${t.clientWidth}px;font-family:${cs.fontFamily};font-size:${cs.fontSize};font-weight:${cs.fontWeight};line-height:${cs.lineHeight};letter-spacing:${cs.letterSpacing};padding:${cs.padding}`;
+  m.textContent=t.value.slice(0,pos);s.textContent='\u200b';m.append(s);t.parentNode.append(m);
+  const xy={x:s.offsetLeft+t.clientLeft,y:s.offsetTop+t.clientTop-t.scrollTop,h:s.offsetHeight};m.remove();return xy;
+}
+function refSuggest(){
+  const t=$('ruleText');if(!t||!$('refMenu'))return;
+  const hit=currentFile().path==='AGENTS.md'&&t.selectionStart===t.selectionEnd?t.value.slice(0,t.selectionStart).match(/\{\{([\w.\-\/]*)$/):null;
+  if(!hit)return closeRefMenu();
+  const q=hit[1].toLowerCase(),all=rules.files.filter(f=>f.path!=='AGENTS.md').map(f=>({key:refKey(f.path),note:f.saved===null?'New · not saved yet':(f.draft.match(/^#+\s*(.+)$/m)||[,'Supporting reference'])[1]}));
+  const items=all.filter(r=>r.key.toLowerCase().includes(q)).sort((a,b)=>a.key.toLowerCase().indexOf(q)-b.key.toLowerCase().indexOf(q));
+  if(!items.length)items.push({add:true});
+  refMenu={open:true,items,i:0,from:t.selectionStart-hit[1].length-2,q:hit[1],total:all.length};
+  paintRefMenu(true);
+}
+function paintRefMenu(announce){
+  const t=$('ruleText'),m=$('refMenu'),{items,i,q,total}=refMenu,found=items.filter(x=>!x.add).length;
+  m.innerHTML=`<span class="eyebrow">${found?'Insert reference':total?'No match':'No references yet'}</span>${found?'':`<p class="hint">${total?`Nothing in references/ matches “${esc(q)}”.`:'Supporting files in references/ appear here.'}</p>`}
+    ${items.map((x,n)=>`<div class="ref-opt" role="option" id="refOpt${n}" aria-selected="${n===i}" onclick="pickRef(${n})">${x.add?`<span>Add ${q?`<code>${esc(newRefName(q))}</code>`:'a reference'}…</span>`:`<code>{{${esc(x.key)}}}</code><span class="meta">${esc(x.note)}</span>`}</div>`).join('')}
+    <span class="ref-keys" aria-hidden="true"><kbd>↑</kbd><kbd>↓</kbd> choose <kbd>Enter</kbd> insert <kbd>Esc</kbd> close</span>`;
+  m.hidden=false;t.setAttribute('aria-activedescendant','refOpt'+i);
+  const c=caretXY(t,refMenu.from),box=t.parentNode,below=c.y+c.h+4;
+  m.style.left=Math.max(0,Math.min(c.x,box.clientWidth-m.offsetWidth))+'px';
+  m.style.top=(below+m.offsetHeight>box.clientHeight&&c.y-m.offsetHeight-4>=0?c.y-m.offsetHeight-4:below)+'px';
+  if(announce)$('refLive').textContent=found?`${plural(found,'reference')} available. Use arrow keys, Enter to insert.`:'No matching reference. Enter adds one.';
+}
+function closeRefMenu(){
+  if(!refMenu.open)return;refMenu.open=false;
+  const m=$('refMenu');if(m){m.hidden=true;$('ruleText').removeAttribute('aria-activedescendant');$('refLive').textContent=''}
+}
+function newRefName(q){return /\.md$/.test(q)?q:q.replace(/\.+$/,'')+'.md'}
+function refKeydown(e){
+  if(!refMenu.open)return;
+  const n=refMenu.items.length;
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeRefMenu()}
+  else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();refMenu.i=(refMenu.i+(e.key==='ArrowDown'?1:-1)+n)%n;paintRefMenu()}
+  else if((e.key==='Enter'||e.key==='Tab')&&!e.shiftKey){e.preventDefault();pickRef(refMenu.i)}
+}
+function pickRef(i){
+  const t=$('ruleText'),{from,q}=refMenu,it=refMenu.items[i],end=t.selectionStart,closed=t.value.slice(end,end+2)==='}}'?2:0;
+  const name=it.add?(q?newRefName(q):''):it.key,ins=name?`{{${name}}}`:'';
+  closeRefMenu();t.focus();t.setSelectionRange(from,end+closed);
+  if(!document.execCommand||!document.execCommand(ins?'insertText':'delete',false,ins)){t.setRangeText(ins,from,end+closed,'end');editDraft(t.value)}
+  if(!it.add)return;
+  addReference();
+  if(name){$('refPath').value=name;$('refLink').checked=false}
+}
+
+/* ---- references ---- */
+function refPathError(p,except){
+  if(!/^[\w][\w.\-\/]*\.md$/.test(p)||p.includes('..')||p.includes('//'))return 'Use a relative Markdown path such as testing.md or frontend/forms.md.';
+  if(rules.files.some(f=>f.path==='references/'+p&&f.path!==except))return 'A reference with this path already exists.';
+  return '';
+}
+function addReference(){
+  modal('Add a supporting reference',`<label>Path inside references/<span class="inline"><code class="path">references/</code><input id="refPath" placeholder="testing.md" aria-describedby="refHint refError" autocomplete="off"></span></label>
+    <p class="hint" id="refHint">Subfolders are kept: frontend/forms.md is copied to ${NS}/references/frontend/forms.md in each destination.</p>
+    <label>Markdown · optional<textarea id="refBody" rows="6" placeholder="Paste existing Markdown, or leave empty to start with a heading"></textarea></label>
+    <label class="check"><input type="checkbox" id="refLink" checked><span>Reference it in AGENTS.md<small>Appends its key to the draft, e.g. {{testing.md}}</small></span></label>
+    <p class="field-error" id="refError" role="alert"></p>`,
+    button('Cancel','closeModal()','text')+button('Add reference','saveReference()','primary'),'AFK folder · references/');
+}
+function saveReference(){
+  const p=$('refPath').value.trim().replace(/^references\//,''),err=refPathError(p);
+  if(err){$('refError').textContent=err;$('refPath').setAttribute('aria-invalid','true');$('refPath').focus();return}
+  const title=p.split('/').pop().replace(/\.md$/,'').replace(/[-_]/g,' '),path='references/'+p;
+  rules.files.push({path,saved:null,draft:$('refBody').value.trim()||`# ${title[0].toUpperCase()+title.slice(1)}\n\n`});
+  if($('refLink').checked){const a=rules.files.find(f=>f.path==='AGENTS.md');a.draft=a.draft.trimEnd()+`\n- ${title[0].toUpperCase()+title.slice(1)}: {{${p}}}`}
+  rules.current=path;closeModal();render();$('ruleText').focus();
+  toast(`${path} added as an unsaved draft. Save to write it to the AFK folder.`);
+}
+function renameReference(){
+  const f=currentFile(),a=rules.files.find(x=>x.path==='AGENTS.md').draft,n=a.split(`](${f.path})`).length-1+(a.match(keyRe(refKey(f.path)))||[]).length;
+  modal('Rename reference',`<label>Path inside references/<span class="inline"><code class="path">references/</code><input id="refPath" value="${esc(f.path.slice(11))}" aria-describedby="refError"></span></label>
+    ${n?`<label class="check"><input type="checkbox" id="refRelink" checked><span>Update ${plural(n,'mention')} in AGENTS.md<small>Changes the draft; save to keep it</small></span></label>`:'<p class="hint">AGENTS.md does not mention this file.</p>'}
+    <p class="hint">On the next sync, destinations get the copy at its new path and the old AFK copy is removed.</p><p class="field-error" id="refError" role="alert"></p>`,
+    button('Cancel','closeModal()','text')+button('Rename','doRename()','primary'),'AFK folder · references/');
+}
+function doRename(){
+  const f=currentFile(),p=$('refPath').value.trim().replace(/^references\//,''),err=refPathError(p,f.path);
+  if(err){$('refError').textContent=err;$('refPath').focus();return}
+  const old=f.path;f.path='references/'+p;rules.current=f.path;
+  if($('refRelink')?.checked){const a=rules.files.find(x=>x.path==='AGENTS.md');a.draft=a.draft.replace(keyRe(refKey(old)),`{{${p}}}`).replaceAll(`](${old})`,`](${f.path})`).replaceAll(`[${old}]`,`[${f.path}]`)}
+  closeModal();render();refocus('rename-reference');toast(`Renamed to ${f.path} · simulated.`);
+}
+function removeReference(){
+  const f=currentFile();
+  modal('Remove '+esc(f.path)+'?',`<p>Removes this file from your AFK folder.</p><ul class="facts"><li>Its key <code>{{${esc(refKey(f.path))}}}</code> stays in AGENTS.md, is flagged in the editor and is left as written on sync.</li><li>On the next sync, AFK deletes only the copy it wrote: <code>${NS}/${esc(f.path)}</code>.</li><li>Files AFK did not write are never touched.</li></ul>`,
+    button('Cancel','closeModal()','text')+button('Remove file','doRemoveReference()','primary'),'AFK folder · references/');
+}
+function doRemoveReference(){
+  const i=rules.files.indexOf(currentFile()),f=rules.files[i];
+  rules.files.splice(i,1);rules.current='AGENTS.md';closeModal();render();
+  toast(`${f.path} removed.`,{label:'Undo',run:()=>{rules.files.splice(i,0,f);rules.current=f.path;render()}});
+}
+
+/* ---- destinations ---- */
+function syncLabel(){return rulesDirty().length?'Save &amp; sync…':'Sync saved rules'}
+function summaryText(){
+  const hasSaved=savedText('AGENTS.md')!==undefined,dirty=rulesDirty().length,sel=dests.filter(d=>d.managed&&d.selected);
+  if(!rules.files.length)return 'Start AGENTS.md first. Destinations are already listed so you can choose them.';
+  if(!hasSaved)return 'AGENTS.md has not been saved yet. Save & sync saves it, then shows exactly what each destination receives.';
+  if(!sel.length)return 'Select at least one destination to sync.';
+  const ps=sel.map(d=>({d,p:plan(d)})),by=a=>ps.filter(x=>x.p.action===a).map(x=>x.d.name),parts=[];
+  if(by('replace').length)parts.push('update the managed region in '+listText(by('replace')));
+  if(by('append').length)parts.push('add a managed region to '+listText(by('append')));
+  if(by('create').length)parts.push('create the rules file for '+listText(by('create')));
+  if(by('refs').length)parts.push('refresh reference copies for '+listText(by('refs')));
+  let s=parts.length?'Sync will '+listText(parts)+'.':'Everything selected is current. Sync would write nothing.';
+  const refN=ps.filter(x=>!['blocked','none'].includes(x.p.action)).reduce((n,x)=>n+x.p.refChanges,0);
+  if(refN)s+=` ${plural(refN,'reference copy','reference copies')} change.`;
+  const bl=by('blocked');if(bl.length)s+=` ${listText(bl)} ${bl.length===1?'is':'are'} skipped until the conflict is resolved.`;
+  const none=by('none');if(none.length&&parts.length)s+=` ${listText(none)}: already current, no write.`;
+  if(dirty)s+=` Your ${plural(dirty,'unsaved file')} ${dirty===1?'is':'are'} not included until you save.`;
+  return s;
+}
+function renderDests(){
+  const el=$('destSection');if(!el)return;
+  const sel=dests.filter(d=>d.managed&&d.selected),ready=savedText('AGENTS.md')!==undefined||rulesDirty().length>0;
+  const attention=dests.filter(d=>['conflict','outdated','never'].includes(destStatus(d))).length;
+  el.innerHTML=`<div class="dest-head"><h2 id="destTitle">Destinations</h2><span class="eyebrow">${plural(dests.length,'file')} on this machine · ${attention?attention+' need attention':'all current'}</span></div>
+    <div class="dest-bar"><div><p class="dest-summary" id="syncSummary" aria-live="polite">${esc(summaryText())}</p><p class="meta">${esc(lastRun)}</p></div>${button(syncLabel(),'openSync()',ready&&rules.files.length?'primary':'',`data-od-id="sync-rules" ${sel.length&&ready?'':'disabled'}`)}</div>
+    <div class="ledger dests"><div class="ledger-head dest-row eyebrow" aria-hidden="true"><span></span><span>Destination file</span><span>Status</span><span>Last sync</span><span></span></div>${dests.map(destRow).join('')}</div>
+    <div class="dest-add">${button('Add custom destination','editDest()','','data-od-id="add-destination"')}<span class="hint">Any absolute file path, such as ~/Projects/field-notes/AGENTS.md</span></div>`;
+}
+function destRow(d){
+  const st=destStatus(d),[cls,label]=STATUS[st];
+  const actions=!d.managed?button('Reconnect',`reconnect('${d.id}')`,'text')
+    :(st==='conflict'?button('Review conflict',`reviewConflict('${d.id}')`,'',`data-od-id="destination-${d.id}-conflict"`):button('Preview',`previewDest('${d.id}')`,'text',`data-od-id="destination-${d.id}-preview"`))
+      +(d.kind==='custom'?button('Edit',`editDest('${d.id}')`,'text'):'')+button(d.kind==='custom'?'Remove':'Disconnect',`disconnectDest('${d.id}')`,'text',`data-od-id="destination-${d.id}-disconnect"`);
+  return `<article class="dest-row row${d.managed?'':' off'}" data-od-id="destination-${d.id}">
+    <label class="dest-sel"><input type="checkbox" ${d.selected&&d.managed?'checked':''} ${d.managed?'':'disabled'} onchange="selectDest('${d.id}',this.checked)" aria-label="Include ${esc(d.name)} in sync" data-od-id="destination-${d.id}-select"></label>
+    <div class="dest-name"><h3>${esc(d.name)}</h3><code class="path">${esc(d.path)}</code><span class="meta">${d.kind==='custom'?'Custom file':'Built-in · '+(d.id==='codex'?'Codex global rules':'Claude global memory')}</span></div>
+    <div class="dest-status"><span class="status ${cls}">${label}</span><span class="hint">${statusHint(d,st)}</span></div>
+    <div class="dest-last"><span class="meta">${d.last?esc(d.last.when):'Never'}</span><span class="hint">${d.last?esc(d.last.text):'No sync yet'}</span></div>
+    <div class="dest-actions">${actions}</div></article>`;
+}
+function selectDest(id,on){dests.find(d=>d.id===id).selected=on;renderDests();refocus(`destination-${id}-select`)}
+
+function planBlock(d,p,open){
+  const f=d.file,outside=lineCount(f.before||'')+lineCount(f.after||''),rows=p.action==='blocked'?[]:previewRows(d,p.next),c=counts(rows);
+  const what={replace:`Replace the lines between the AFK markers · +${c.add} −${c.del}. ${plural(outside,'line')} outside the markers stay exactly as they are.`,
+    append:`File exists without AFK markers. A managed region is added at the end; your ${plural(outside,'existing line')} stay.`,
+    create:'No file here yet. Create it containing only the managed region.',
+    refs:'Managed region already matches. Only reference copies change.',
+    none:'Managed region and references already match. No write, no backup.',
+    blocked:f.markers==='broken'?'Skipped. The END marker is missing, so AFK cannot tell where its region stops.':'Skipped. The managed region was edited outside AFK since the last sync.'}[p.action];
+  const [cls,label]=p.action==='blocked'?STATUS.conflict:p.action==='none'?STATUS.current:['stale',{replace:'Will update',append:'Will add region',create:'Will create file',refs:'Will refresh copies'}[p.action]];
+  const ops={add:'Copy',update:'Update copy',remove:'Remove AFK copy'};
+  const agents=savedText('AGENTS.md')||'',known=new Set(savedRefs().map(r=>refKey(r.path)));
+  const facts=[what,p.backup?`Backup first → <code>${esc(p.backup)}</code>`:'',
+    ...p.refs.filter(r=>r.op!=='same').map(r=>`${ops[r.op]} → <code>${esc(nsDir(d)+r.path)}</code>`),
+    ...(p.action==='blocked'?[]:refKeys(agents).map(k=>known.has(k)?`<code>{{${esc(k)}}}</code> is written as <code>${esc(nsDir(d)+'references/'+k)}</code>`:`<code>{{${esc(k)}}}</code> has no saved reference · left as written`)),
+    p.refs.length&&p.action!=='blocked'&&/\]\((?:\.\/)?references\//.test(agents)?`Markdown links to references/ become <code>${NS}/references/</code> in this file`:'',
+    `Not AFK-owned, never touched: ${esc(d.unrelated||'every other file beside it')}`].filter(Boolean);
+  return `<section class="plan" data-od-id="plan-${d.id}"><div class="plan-head"><div><h3>${esc(d.name)}</h3><code class="path">${esc(d.path)}</code></div><span class="status ${cls}">${label}</span></div>
+    <ul class="facts">${facts.map(x=>`<li><span>${x}</span></li>`).join('')}</ul>
+    ${p.action==='blocked'?`<div>${button('Review conflict',`reviewConflict('${d.id}')`)}</div>`:p.action==='none'?'':`<details ${open?'open':''}><summary>File preview · ${esc(d.path.split('/').pop())}</summary>${diffHtml(rows,'Preview of '+d.path)}</details>`}</section>`;
+}
+function openSync(){
+  const dirty=rulesDirty();
+  if(dirty.length)return modal('Save before syncing?',`<p>Sync applies the <strong>saved</strong> files in your AFK folder. You have unsaved edits in ${dirty.map(f=>`<code>${esc(f.path)}</code>`).join(', ')}.</p><p class="sub">Save &amp; sync writes them to the AFK folder first, then shows exactly what changes in each destination. Nothing reaches an agent file until you confirm.</p>`,
+    button('Keep editing','closeModal()','text push')+(savedText('AGENTS.md')!==undefined?button('Sync last saved version','syncPreview()'):'')+button('Save &amp; sync','saveRules(true)','primary','data-od-id="save-and-sync"'),'Unsaved edits');
+  syncPreview();
+}
+function syncPreview(){
+  const ps=dests.filter(d=>d.managed&&d.selected).map(d=>[d,plan(d)]),writes=ps.filter(([,p])=>!['none','blocked'].includes(p.action)).length;
+  const first=ps.findIndex(([,p])=>!['none','blocked'].includes(p.action));
+  modal('Sync saved rules',`<p>${esc(summaryText())}</p>${ps.map(([d,p],i)=>planBlock(d,p,i===first)).join('')}<p class="hint">Simulated. AFK writes regular files, never symlinks, and only the files listed above. Real agent files are not touched by this prototype.</p>`,
+    button('Cancel','closeModal()','text')+button(writes?`Sync ${plural(writes,'destination')}`:'Nothing to write','runSync()','primary',writes?'data-od-id="confirm-sync"':'disabled'),'Preview · nothing written yet',true);
+}
+function applyPlan(d,p,when){
+  const created=!d.file.exists;
+  if(p.action==='none'){d.last={when,text:'Checked · no write needed'};return 'Unchanged · nothing written'}
+  d.file={exists:true,before:d.file.before,after:d.file.after,region:p.next,markers:'ok'};
+  d.written=p.next;d.refs=Object.fromEntries(savedRefs().map(r=>[r.path,r.saved]));
+  const text=(created?'File created':{append:'Region added',refs:'Reference copies refreshed'}[p.action]||'Region updated')+(p.refChanges?` · ${plural(p.refChanges,'reference')}`:'')+(p.backup?' · backup kept':'');
+  d.last={when,text};return text;
+}
+function runSync(){
+  const b=$('sheetContent').querySelector('.dialog-foot .primary');b.disabled=true;b.textContent='Applying…';
+  setTimeout(()=>{
+    const when=clock(),results=[];
+    dests.filter(d=>d.managed&&d.selected).forEach(d=>{
+      const p=plan(d);
+      if(p.action==='blocked'){d.last={when,text:'Skipped · conflict'};results.push([d,'warn','Skipped · conflict needs review']);return}
+      results.push([d,p.action==='none'?'':'on',applyPlan(d,p,when)]);
+    });
+    const done=results.filter(r=>r[1]==='on').length,skipped=results.filter(r=>r[1]==='warn').length;
+    lastRun=`Last sync · ${when} · ${plural(done,'destination')} written${skipped?`, ${skipped} skipped`:''}${done?', backups kept':''}`;
+    render();
+    modal(skipped?'Sync finished with a skip':'Sync complete',`<div class="list">${results.map(([d,c,t])=>`<div class="check"><span><strong>${esc(d.name)}</strong><small>${esc(d.path)}</small></span><span class="status ${c}">${esc(t)}</span></div>`).join('')}</div>
+      <p class="sub">${skipped?'Resolve the conflict from its row, then sync again. Other destinations are already current.':'Every selected destination now matches your saved rules.'}</p>`,
+      button('Done','closeModal()','primary'),'Simulated · no real agent files touched');
+  },700);
+}
+function previewDest(id){
+  const d=dests.find(d=>d.id===id),p=plan(d);
+  if(savedText('AGENTS.md')===undefined){toast('Save AGENTS.md first to preview a destination.');return}
+  modal(esc(d.name)+' · sync preview',planBlock(d,p,true),button('Close','closeModal()'),'Preview · nothing written',true);
+}
+
+/* ---- conflicts ---- */
+function reviewConflict(id){
+  const d=dests.find(d=>d.id===id),f=d.file,draftDirty=rules.files.some(x=>x.path==='AGENTS.md'&&x.draft!==x.saved);
+  if(f.markers==='broken'){
+    const rows=[...keepRows(f.before,'Outside AFK markers'),{t:'sep',s:'From START marker to end of file · no END found'},...f.region.split('\n').map(s=>({t:'keep',s})),...(f.after.trim()?f.after.trim().split('\n').map(s=>({t:'keep',s})):[])];
+    return modal('Markers are broken',`<p><code>${esc(d.path)}</code> has ${esc(START)} but no matching ${esc(END)}. AFK will not guess where its region stops, so nothing was written.</p>
+      ${diffHtml(rows,'Current contents of '+d.path)}
+      <ul class="options"><li><strong>Fix it in your editor, then check again</strong><span>Restore the END marker where the AFK region ends. AFK re-reads the file and compares it with the last sync.</span></li>
+      <li><strong>Back up and rebuild</strong><span>AFK keeps a backup, deletes only the orphaned START line and its AFK note, leaves every other line as plain text and appends a fresh managed region.</span></li></ul>
+      <p class="hint">Your saved rules and editor draft are untouched either way.</p>`,
+      button('Decide later','closeModal()','text push')+button('Back up and rebuild',`rebuildRegion('${id}')`)+button('I fixed it · check again',`recheck('${id}')`,'primary'),'Conflict · '+esc(d.name),true);
+  }
+  const rows=diffLines(d.written.split('\n'),f.region.split('\n'));
+  modal('Edited outside AFK',`<p>The managed region in <code>${esc(d.path)}</code> no longer matches what AFK wrote ${esc((d.last?.when||'').toLowerCase())}. Someone, or another tool, edited it in place.</p>
+    <p class="sub">Showing last AFK write → current file. Text outside the markers is not part of the conflict.</p>${diffHtml(rows,'Last AFK write compared with the current managed region')}
+    <ul class="options"><li><strong>Replace with saved rules</strong><span>AFK backs up the file first, then rewrites only the managed region. The outside edits you see above are lost from this file but kept in the backup.</span></li>
+    <li><strong>Bring their edits into the editor</strong><span>Opens the current region as your AGENTS.md draft so you can keep what is useful, save and sync.${draftDirty?' Your unsaved draft is kept aside and can be restored.':''}</span></li></ul>`,
+    button('Decide later','closeModal()','text push')+button('Bring edits into editor',`adoptExternal('${id}')`)+button('Replace with saved rules',`overwriteRegion('${id}')`,'primary'),'Conflict · '+esc(d.name),true);
+}
+function overwriteRegion(id){
+  const d=dests.find(d=>d.id===id),agents=savedText('AGENTS.md');
+  if(agents===undefined){toast('Save AGENTS.md first.');return}
+  const backup=`${d.path}.afk-backup-${stamp()}`;d.written=d.file.region;
+  applyPlan(d,{...plan(d),backup},clock());d.last.text='Conflict resolved · region replaced · backup kept';
+  closeModal();render();refocus(`destination-${id}-preview`);toast(`${d.name}: managed region replaced. Backup at ${backup} · simulated.`);
+}
+function adoptExternal(id){
+  const d=dests.find(d=>d.id===id),a=rules.files.find(f=>f.path==='AGENTS.md');
+  if(a.draft!==a.saved)rules.stash={text:a.draft,when:clock()};
+  a.draft=unregion(d.file.region,d);d.written=d.file.region;rules.current='AGENTS.md';
+  closeModal();navigate('Agent rules');$('ruleText').focus();
+  toast(`${d.name}'s edits are now your AGENTS.md draft. Review, save, then sync.`);
+}
+function recheck(id){
+  const d=dests.find(d=>d.id===id);d.file.region+='\n'+END;d.file.markers='ok';
+  closeModal();render();refocus(`destination-${id}-preview`);
+  toast(`${d.name}: markers found again · ${STATUS[destStatus(d)][1].toLowerCase()} · simulated re-read.`);
+}
+function rebuildRegion(id){
+  const d=dests.find(d=>d.id===id),f=d.file;
+  if(savedText('AGENTS.md')===undefined){toast('Save AGENTS.md first.');return}
+  f.before=compose(f.before,f.region.split('\n').filter(l=>l!==START&&l!==MANAGED_NOTE).join('\n'),f.after).trim();f.after='';f.region=null;f.markers='ok';d.written=null;
+  applyPlan(d,plan(d),clock());d.last.text='Region rebuilt · backup kept';
+  closeModal();render();refocus(`destination-${id}-preview`);toast(`${d.name}: orphaned marker removed, fresh region appended, backup kept · simulated.`);
+}
+
+/* ---- custom destinations & disconnect ---- */
+function isKnownDir(p){p=p.replace(/\/+$/,'');return p in tree||knownDirs.includes(p)||Object.entries(tree).some(([k,v])=>v.some(c=>k+'/'+c===p))}
+function destPathError(p,id){
+  if(!/^(\/|~\/)/.test(p))return 'Use an absolute path that starts with / or ~/.';
+  if(p.endsWith('/')||isKnownDir(p))return 'That is a folder. Add the file name, for example '+p.replace(/\/+$/,'')+'/AGENTS.md.';
+  if(dests.some(d=>d.path===p&&d.id!==id))return 'Another destination already uses this file.';
+  if(!safeShellValue(p))return 'Remove control characters from the path.';
+  return '';
+}
+function checkDestPath(id){
+  const p=$('destPath').value.trim(),err=p?destPathError(p,id):'';
+  $('destPath').setAttribute('aria-invalid',err?'true':'false');
+  $('destPathCheck').innerHTML=!p?'':err?`<span class="status warn">${esc(err)}</span>`
+    :simFiles[p]!==undefined?`<span class="status on">File found · ${plural(lineCount(simFiles[p]),'line')}, no AFK markers. A managed region is added at the end; existing text stays.</span>`
+    :'<span class="status">No file here yet. AFK creates it on the first sync.</span>';
+}
+function editDest(id){
+  const d=dests.find(d=>d.id===id),locked=d&&d.written;
+  modal(d?'Edit destination':'Add a custom destination',`<label>Name<input id="destName" value="${d?esc(d.name):''}" placeholder="e.g. Cursor rules" maxlength="60"></label>
+    <label>Absolute file path<input id="destPath" value="${d?esc(d.path):''}" placeholder="~/Projects/field-notes/AGENTS.md" ${locked?'readonly':''} oninput="checkDestPath('${id||''}')" aria-describedby="destPathHint destPathCheck" autocomplete="off"></label>
+    <p class="hint" id="destPathHint">${locked?'Synced files keep their path. Remove this destination first; AFK cleans its region out of the old file.':'A file, not a folder. AFK writes only between its markers and keeps reference copies in '+NS+'/ beside the file.'}</p>
+    <p class="path-check" id="destPathCheck" role="status"></p><p class="field-error" id="destError" role="alert"></p>`,
+    button('Cancel','closeModal()','text')+button(d?'Save destination':'Add destination',`saveDest('${id||''}')`,'primary'),d?'Custom destination':'New destination');
+  if(d&&!locked)checkDestPath(id);
+}
+function saveDest(id){
+  const name=$('destName').value.trim(),path=$('destPath').value.trim(),d=dests.find(d=>d.id===id);
+  if(!name){$('destError').textContent='Name this destination.';$('destName').focus();return}
+  const err=d&&d.written?'':destPathError(path,id);
+  if(err){$('destError').textContent=err;$('destPath').focus();return}
+  if(d){d.name=name;if(!d.written){d.path=path;d.file={exists:simFiles[path]!==undefined,before:simFiles[path]||'',after:'',region:null,markers:'ok'}}}
+  else dests.push({id:'custom-'+Date.now(),name,kind:'custom',path,selected:true,managed:true,unrelated:'every other file in '+path.slice(0,path.lastIndexOf('/')+1),
+    file:{exists:simFiles[path]!==undefined,before:simFiles[path]||'',after:'',region:null,markers:'ok'},written:null,refs:{},last:null});
+  closeModal();render();refocus('add-destination');toast(d?'Destination updated. Nothing written.':`${name} added and selected. Nothing is written until you sync.`);
+}
+function disconnectDest(id){
+  const d=dests.find(d=>d.id===id),f=d.file,refs=Object.keys(d.refs),edited=destStatus(d)==='conflict';
+  const rows=f.region?[...keepRows(f.before,'Outside AFK markers · kept'),{t:'sep',s:'AFK managed region · removed'},...f.region.split('\n').map(s=>({t:'del',s})),...keepRows(f.after,'Outside AFK markers · kept')]:[];
+  modal((d.kind==='custom'?'Remove ':'Disconnect ')+esc(d.name)+'?',`<p>AFK stops managing <code>${esc(d.path)}</code>. The file stays yours and is never deleted.</p>
+    <ul class="facts">${f.region?`<li><span>Remove the managed region, markers included (${plural(lineCount(f.region),'line')})</span></li>`:'<li><span>No managed region in this file · its text is not edited</span></li>'}
+      <li><span>${refs.length?`Delete the ${plural(refs.length,'reference copy','reference copies')} AFK wrote in <code>${esc(nsDir(d))}</code>`:'No AFK reference copies to remove'}</span></li>
+      <li><span>Keep ${plural(lineCount(f.before)+lineCount(f.after),'line')} outside the markers and ${esc(d.unrelated||'every other file')}</span></li>
+      ${f.region?`<li><span>Backup first → <code>${esc(d.path)}.afk-backup-${stamp()}</code>${edited?' (the region was edited outside AFK)':''}</span></li>`:''}
+      ${d.kind==='custom'?'<li><span>Forget this destination in AFK</span></li>':'<li><span>Codex and Claude stay listed so you can reconnect</span></li>'}</ul>
+    ${rows.length?diffHtml(rows,'Preview of '+d.path+' after disconnect'):''}`,
+    button('Cancel','closeModal()','text push')+(f.region?button('Stop managing only',`doDisconnect('${id}',false)`):'')+button(f.region||refs.length?'Remove AFK content':'Disconnect',`doDisconnect('${id}',true)`,'primary'),'Disconnect · simulated',true);
+}
+function doDisconnect(id,clean){
+  const i=dests.findIndex(d=>d.id===id),d=dests[i],snap=JSON.parse(JSON.stringify(d));
+  if(clean){d.file={...d.file,region:null,markers:'ok'};d.refs={}}
+  Object.assign(d,{managed:false,selected:false,written:null,last:{when:clock(),text:clean?'Disconnected · AFK region removed':'Disconnected · file left as is'}});
+  if(d.kind==='custom')dests.splice(i,1);
+  closeModal();render();refocus('add-destination');
+  toast(`${d.name} disconnected. ${clean?'Only AFK-owned content was removed':'The file was not edited'} · simulated.`,{label:'Undo',run:()=>{if(d.kind==='custom')dests.splice(i,0,snap);else dests[i]=snap;render()}});
+}
+function reconnect(id){const d=dests.find(d=>d.id===id);Object.assign(d,{managed:true,selected:true});render();refocus(`destination-${id}-preview`);toast(`${d.name} reconnected · never synced. Preview before syncing.`)}
+function loadScenario(kind){seed(kind);closeModal();navigate('Agent rules');toast({populated:'Populated workbench loaded.',first:'First-use state loaded.',dirty:'Unsaved edits loaded.',synced:'All destinations current.',broken:'Broken markers loaded on Field Notes.'}[kind])}
+
+/* ---- AFK folder · bundle ---- */
+function afkContents(){
+  const a=savedText('AGENTS.md'),refs=savedRefs().length;
+  return `<ul class="tree-list" aria-label="Portable contents of the AFK folder">
+    <li><code>settings.json</code><span class="meta">Profiles, projects, tools, sources and preferences</span><span class="status on">Present</span></li>
+    <li><code>AGENTS.md</code><span class="meta">Shared agent rules · edited in Agent rules</span><span class="status ${a!==undefined?'on':''}">${a!==undefined?plural(lineCount(a),'line'):'Not created'}</span></li>
+    <li><code>references/</code><span class="meta">Supporting Markdown, copied with the rules</span><span class="status ${refs?'on':''}">${refs?plural(refs,'file'):'Empty'}</span></li></ul>`;
+}
+function classify(p){const files=folderFiles[p]||[],dirs=tree[p]||[];return files.includes('settings.json')?'afk':!files.length&&!dirs.length?'empty':'other'}
+function createAfkHere(){
+  let name='afk',n=2;while((tree[folder]||[]).includes(name))name='afk-'+n++;
+  tree[folder]=[...(tree[folder]||[]),name];folder+='/'+name;folderFiles[folder]=[];folderModal();
+}
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=~0;for(const x of b)c=CRC[(c^x)&255]^(c>>>8);return (~c)>>>0}
+function zipBlob(entries){
+  const enc=new TextEncoder(),parts=[],central=[];let off=0;
+  entries.forEach(([name,text])=>{
+    const n=enc.encode(name),d=enc.encode(text),crc=crc32(d),h=new DataView(new ArrayBuffer(30)),c=new DataView(new ArrayBuffer(46));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(12,0x21,true);
+    h.setUint32(14,crc,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);h.setUint16(26,n.length,true);
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(14,0x21,true);
+    c.setUint32(16,crc,true);c.setUint32(20,d.length,true);c.setUint32(24,d.length,true);c.setUint16(28,n.length,true);c.setUint32(42,off,true);
+    parts.push(h,n,d);central.push(c,n);off+=30+n.length+d.length;
+  });
+  const size=central.reduce((s,x)=>s+x.byteLength,0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,entries.length,true);e.setUint16(10,entries.length,true);e.setUint32(12,size,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...central,e],{type:'application/zip'});
+}
+async function readZip(buf){
+  const v=new DataView(buf),dec=new TextDecoder(),out={};let e=-1;
+  for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-65557);i--)if(v.getUint32(i,true)===0x06054b50){e=i;break}
+  if(e<0)throw Error('Not a ZIP');
+  let p=v.getUint32(e+16,true);
+  for(let k=v.getUint16(e+10,true);k>0;k--){
+    if(v.getUint32(p,true)!==0x02014b50)throw Error('Bad directory');
+    const method=v.getUint16(p+10,true),size=v.getUint32(p+20,true),nl=v.getUint16(p+28,true),lo=v.getUint32(p+42,true);
+    const name=dec.decode(new Uint8Array(buf,p+46,nl));p+=46+nl+v.getUint16(p+30,true)+v.getUint16(p+32,true);
+    if(name.endsWith('/')||name.startsWith('__MACOSX'))continue;
+    const raw=new Uint8Array(buf,lo+30+v.getUint16(lo+26,true)+v.getUint16(lo+28,true),size);
+    if(method===0)out[name]=dec.decode(raw);
+    else if(method===8&&'DecompressionStream' in window)out[name]=await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+    else throw Error('Unsupported compression');
+  }
+  return out;
+}
+function bundleSettings(){return {...configuration(),agentRules:{canonical:'AGENTS.md',references:savedRefs().map(r=>r.path),machine:'This Mac',
+  destinations:dests.filter(d=>d.managed).map(d=>({name:d.name,kind:d.kind==='builtin'?d.id:'custom',path:d.path}))}}}
+function exportBundle(){
+  const root=afkFolder.split('/').pop().replace(/^\./,'')||'afk',a=document.createElement('a'),entries=[[root+'/settings.json',JSON.stringify(bundleSettings(),null,2)]];
+  if(savedText('AGENTS.md')!==undefined)entries.push([root+'/AGENTS.md',savedText('AGENTS.md')]);
+  savedRefs().forEach(r=>entries.push([root+'/'+r.path,r.saved]));
+  a.href=URL.createObjectURL(zipBlob(entries));a.download=root+'-folder.zip';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast(`AFK folder ZIP exported · ${plural(entries.length,'file')}${rulesDirty().length?'. Unsaved edits were not included':''}.`);
+}
+async function importBundle(f){
+  $('bundleFile').value='';
+  if(!f)return;
+  if(rulesDirty().length){toast('Save or revert your agent rules before importing.');return}
+  try{
+    const files=await readZip(await f.arrayBuffer());
+    const key=Object.keys(files).filter(k=>/(^|\/)settings\.json$/.test(k)).sort((a,b)=>a.length-b.length)[0];
+    if(!key)throw Error();
+    const prefix=key.slice(0,-13),data=JSON.parse(files[key]),md={};
+    if(!validConfig(data))throw Error();
+    Object.entries(files).forEach(([k,v])=>{const r=k.slice(prefix.length);if(k.startsWith(prefix)&&(r==='AGENTS.md'||(/^references\/\w[\w.\-\/]*\.md$/.test(r)&&!r.includes('..'))))md[r]=v});
+    reviewBundle(data,md,f.name);
+  }catch{
+    modal('Bundle could not be read','<div class="error" role="alert"><strong>Error:</strong> choose a ZIP exported from an AFK folder, with settings.json at its root or inside one folder. Your current AFK folder is unchanged.</div>','','Import');
+  }
+}
+function sampleBundle(){
+  if(rulesDirty().length){toast('Save or revert your agent rules before importing.');return}
+  reviewBundle({...configuration(),agentRules:{machine:'Studio iMac · sample',destinations:[{name:'Codex',kind:'codex',path:'/Users/studio/.codex/AGENTS.md'},{name:'Claude',kind:'claude',path:'/Users/studio/.claude/CLAUDE.md'},{name:'Handbook repository',kind:'custom',path:'/Users/studio/Work/handbook/AGENTS.md'}]}},
+    {'AGENTS.md':AGENTS_V2,'references/development.md':REF_DEV,'references/review.md':REF_REVIEW},'Sample bundle');
+}
+function reviewBundle(data,md,label){
+  const ds=(Array.isArray(data.agentRules?.destinations)?data.agentRules.destinations:[]).filter(x=>typeof x?.name==='string'&&typeof x.path==='string');
+  const refs=Object.keys(md).filter(k=>k!=='AGENTS.md'),suggest=x=>({codex:'~/.codex/AGENTS.md',claude:'~/.claude/CLAUDE.md'})[x.kind]||'';
+  window.pendingBundle={data,md,ds};
+  modal('Review AFK folder bundle',`<p>${esc(label)} · from ${esc(data.agentRules?.machine||'another machine')}</p>
+    <ul class="tree-list"><li><code>settings.json</code><span class="meta">${plural(data.profiles.length,'profile')} · ${plural(data.projects.length,'project')} · ${plural(data.tools.length,'tool')}</span><span class="status on">Included</span></li>
+    <li><code>AGENTS.md</code><span class="meta">Canonical rules</span><span class="status ${md['AGENTS.md']!==undefined?'on':''}">${md['AGENTS.md']!==undefined?plural(lineCount(md['AGENTS.md']),'line'):'Not included'}</span></li>
+    <li><code>references/</code><span class="meta">${refs.map(r=>esc(r.slice(11))).join(', ')||'No supporting files'}</span><span class="status ${refs.length?'on':''}">${plural(refs.length,'file')}</span></li></ul>
+    <p class="sub">Replaces the contents of <code>${esc(afkFolder)}</code> after a backup · simulated.</p>
+    ${data.projects.length?`<h3>Project folders</h3>${data.projects.map((p,i)=>`<label>${esc(p.name)} · local folder<input class="remap" data-index="${i}" value="${esc(p.path)}"></label>`).join('')}`:''}
+    <h3>Destinations from that machine</h3>
+    <p class="sub">Agent file paths belong to one machine. Map each to a file here, or leave it unconnected. Importing writes nothing to agent files; preview and sync from Agent rules afterwards.</p>
+    <div class="list">${ds.map((x,i)=>`<div class="map-row"><label class="check"><input type="checkbox" class="map-on" data-i="${i}"><span><strong>Connect ${esc(x.name)} on this machine</strong><small>Was ${esc(x.path)}</small></span></label><label>Local file path<input class="map-path" data-i="${i}" value="${esc(suggest(x))}" placeholder="~/path/to/AGENTS.md" autocomplete="off"></label></div>`).join('')||'<p class="hint" style="padding:10px 0">No destinations recorded in this bundle.</p>'}</div>
+    <p class="field-error" id="bundleError" role="alert"></p>`,
+    button('Cancel','closeModal()','text')+button('Import bundle','applyBundle()','primary'),'Import · nothing applied yet',true);
+}
+function applyBundle(){
+  const {data,md,ds}=window.pendingBundle,maps=[];
+  for(const box of document.querySelectorAll('.map-on')){
+    if(!box.checked)continue;
+    const i=+box.dataset.i,input=document.querySelector(`.map-path[data-i="${i}"]`),path=input.value.trim(),err=destPathError(path,ds[i].kind==='custom'?'':ds[i].kind);
+    if(err){$('bundleError').textContent=`${ds[i].name}: ${err}`;input.setAttribute('aria-invalid','true');input.focus();return}
+    maps.push({x:ds[i],path});
+  }
+  applyConfig(data,[...document.querySelectorAll('.remap')].map(x=>x.value));
+  rules.files=Object.keys(md).sort((a,b)=>a==='AGENTS.md'?-1:b==='AGENTS.md'?1:a.localeCompare(b)).map(p=>file(p,md[p]));
+  Object.assign(rules,{current:'AGENTS.md',savedAt:clock(),stash:null});
+  maps.forEach(({x,path},k)=>{
+    const b=dests.find(d=>d.kind==='builtin'&&d.id===x.kind&&d.path===path);
+    if(b){Object.assign(b,{managed:true,selected:true});return}
+    dests.push({id:`custom-${Date.now()}-${k}`,name:x.name,kind:'custom',path,selected:true,managed:true,unrelated:'every other file in '+path.slice(0,path.lastIndexOf('/')+1),
+      file:{exists:simFiles[path]!==undefined,before:simFiles[path]||'',after:'',region:null,markers:'ok'},written:null,refs:{},last:null});
+  });
+  closeModal();render();
+  toast(`Bundle imported · ${plural(maps.length,'destination')} mapped, ${ds.length-maps.length} left unconnected. No agent file written.`);
+}
+
+function showNotes(){
+  modal('About this proposal',
+    `<p>A task-led arrangement: a section rail, a full-width ledger per section, and focused dialogs for inspection and operations.</p>
+     <p class="sub">All skills, source contents, folders, preparation, exposure, command results, and preferences are illustrative in-memory state. No real filesystem or command execution occurs. JSON export/import and command copying use ordinary browser APIs.</p>
+     <p class="sub">Proposed group entry integration, agent-native overrides, ownership reconciliation, storage layout, and the fixed Global execution folder require implementation verification. Membership editing is locked while active as a demo simplification.</p>
+     <p class="sub">Failure examples: a discovery source containing “fail”; a source containing “partial” for incomplete preparation; a tool command containing “fail”. Navigation and scope changes never trigger operations.</p>
+     <p class="sub">Agent rules: AGENTS.md, references, destination files, markers, backups and sync results are simulated in memory. No agent file on this machine is read or written. The AFK folder ZIP export and import use real browser download and upload.</p>
+     <div><span class="eyebrow">Agent rules states</span><div class="list">${[['populated','Populated workbench','Out of date, conflict and never-synced destinations'],['first','First use','Empty AFK folder, nothing synced yet'],['dirty','Unsaved edits','Try Save & sync'],['synced','After a successful sync','Every destination current'],['broken','Broken markers','END marker missing in a custom file']].map(([k,t,d])=>`<div class="check"><span><strong>${t}</strong><small>${d}</small></span>${button('Load',`loadScenario('${k}')`,'text',`data-od-id="scenario-${k}"`)}</div>`).join('')}</div></div>`,'','Interactive demonstration');
+}
+
+$('sheet').addEventListener('close',()=>{
+  if(window.toolsDirty&&section==='Tools'){const target=window.toolsDirty;window.toolsDirty=null;render();refocus(target)}
+});
+
+document.addEventListener('keydown',e=>{
+  const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
+  if(e.key==='/'&&!typing&&!$('sheet').open&&section==='Installed Skills'){e.preventDefault();$('skillSearch').focus()}
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'&&section==='Agent rules'&&!$('sheet').open&&rules.files.length){e.preventDefault();saveRules()}
+  if(['ArrowDown','ArrowUp'].includes(e.key)&&document.activeElement?.classList.contains('file-btn')){
+    const all=[...document.querySelectorAll('.file-btn')],i=all.indexOf(document.activeElement);
+    e.preventDefault();all[(i+(e.key==='ArrowDown'?1:-1)+all.length)%all.length].focus();
+  }
+});
+
+seed();
+render();
+
+function markInspectable(){
+  document.querySelectorAll('h1,h2,h3,button,input,select,textarea,section,article').forEach((el,i)=>{
+    if(!el.dataset.odId)el.dataset.odId='control-'+(el.id||el.tagName.toLowerCase()+'-'+i);
+  });
+}
+markInspectable();
+new MutationObserver(markInspectable).observe(document.body,{childList:true,subtree:true});
+</script>
+</body>
+</html>

@@ -1,47 +1,48 @@
-# Start with a preview
+# Open your local field kit.
 
-AFK is a setup router for AI coding tools. It helps you choose and prepare shared rules, skills, Custom Agents, MCPs, tools, and hooks without turning them into one mandatory framework.
+AFK 2.0 opens a local workspace for skills, profiles, favorite sources, tools, and settings. Start with one small skill group.
 
-<h2 id="start-requirements">Before you begin</h2>
+<div className="docs-callout"><strong>AFK 2.0 release status</strong><p>The new app is not published yet. Use the source build below. Published pre-2.0 packages still run the old CLI.</p></div>
 
-You need Node.js 20 or newer and a terminal. You do not need to install AFK globally for the first look.
+<h2 id="open">Open the app</h2>
 
-<h2 id="start-preview">Run the safe first command</h2>
+You need Node.js 20 or newer and the repository’s configured pnpm version. Clone, build and launch the current branch:
 
-```bash preview
-npx @logbookfordevs/afk setup --dry-run
+```bash Build from source
+git clone https://github.com/logbookfordevs/ai-field-kit.git
+cd ai-field-kit
+git switch feat/afk-fieldwork-pivot
+pnpm install
+pnpm afk:build
+node packages/afk/dist/index.js
 ```
 
-The guided flow starts with nothing selected. Choose an area and target, then inspect the planned file operations and delegated installer commands. Dry run does not apply catalog or configuration writes and does not run delegated installers.
+The command opens a local address in your browser. If your browser does not open, use the address printed in the terminal. The app stays on your machine.
 
-<h2 id="start-next">Apply only what you reviewed</h2>
+To make the shorter `afk` commands in this manual available, install the built local package:
 
-When the preview matches your intent, rerun the same command without `--dry-run`. Stay with the guided prompts for your first setup.
-
-```bash apply
-npx @logbookfordevs/afk setup
+```bash Optional command shortcut — from the repository
+npm install -g ./packages/afk
 ```
 
-For ongoing use, install the CLI globally. This makes the shorter `afk …` commands used throughout the rest of this guide available in your shell.
+This installs your source build, rather than downloading the published pre-2.0 package. You can also substitute `node packages/afk/dist/index.js` for `afk` while in the repository.
 
-```bash optional global install
-npm install -g @logbookfordevs/afk
-```
+<h2 id="first-profile">Create one useful profile</h2>
 
-<h2 id="start-agent">Let your agent handle it</h2>
+1. Open **Profiles → Create profile**. Paste a repository reference or select existing Global skills.
+2. Review the discovered members and select the ones you need.
+3. Save the profile. Selected missing copies are prepared disabled. Existing available skills keep their state.
 
-Prefer to describe what you want? Install the manual `afk-cli` skill to give your agent AFK workflows, command examples, and verification steps:
+A profile is a shared definition. Creating it does not enable it. Read the [profile guide](/docs?chapter=profiles) for storage and activation details.
 
-```bash install the agent guide
-npx skills add logbookfordevs/logbook-atlas --skill afk-cli --global
-```
+<h2 id="choose">Choose how to use it</h2>
 
-Then select `afk-cli` in your agent’s skill picker or name it in your request:
+Need the group available for ongoing work? Add your project folder in **Settings**, then choose that project beside the profile’s **Enable** action. Choose **Global** when you want global availability.
 
-> Use afk-cli to set up AFK rules for Codex in this project. Show me the preview first.
+Need its guidance once? Choose **Use with your agent** and give the copied command to your agent. It reads the group’s instructions without enabling them. [See the agent flow](/docs?chapter=agent).
 
-You can also ask it to create a skill profile, change a skill to manual invocation, or update an installed preset. Describe the outcome in your own words; the agent works out the commands, asks about missing choices, and checks the result. The skill is manually invoked and requires an agent that can run terminal commands.
+<h2 id="close">Close AFK</h2>
 
-[Explore the skills included in AFK](/docs?chapter=kit).
+Use **Exit AFK** in the app header, or press **Ctrl+C** in the terminal. The server closes; settings and enabled skills stay as they were. In-flight operations may finish while connections drain.
 
-[Continue to the setup walkthrough](/docs?chapter=setup)
+Closing the browser tab alone does not stop the server.

@@ -1,7 +1,7 @@
 {
   "name": "@logbookfordevs/afk",
   "version": "1.4.4",
-  "description": "AI Field Kit setup router CLI.",
+  "description": "Local workspace for skills, shared profiles, favorite sources, tools, and agent rules.",
   "type": "module",
   "repository": {
     "type": "git",
@@ -15,14 +15,16 @@
     "afk": "dist/index.js"
   },
   "files": [
+    "web/**/*",
     "docs/**/*",
+    "skills/afk-cli/**/*",
     "dist/**/*.js",
     "!dist/**/*.test.js",
     "!dist/**/*.test-helper.js"
   ],
   "scripts": {
-    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
-    "build": "pnpm run clean && tsc",
+    "clean": "node -e \"for (const path of ['dist', 'skills/afk-cli']) require('node:fs').rmSync(path, { recursive: true, force: true })\"",
+    "build": "pnpm run clean && tsc && node scripts/bundle-skill.mjs",
     "typecheck": "npx tsc --noEmit",
     "prepack": "pnpm run build",
     "release:pack": "../../scripts/package-afk-release.sh",
@@ -32,8 +34,6 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@inquirer/core": "^10.3.2",
-    "@inquirer/prompts": "^7.10.1",
     "yaml": "^2.9.0"
   },
   "devDependencies": {

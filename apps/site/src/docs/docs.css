@@ -108,3 +108,23 @@ html:has(.docs-app) { scroll-behavior: auto; }
   .docs-title-row + p { font-size: 1rem; }
 }
 .docs-loading { padding: 48px 32px; color: var(--ink); }
+
+.docs-header { position: sticky; top: 0; z-index: 30; }
+.docs-app { background: var(--paper); }
+.docs-layout { grid-template-columns: 210px minmax(0, 760px) 170px; gap: 40px; max-width: 1376px; }
+.docs-brand strong { font-size: 1.5rem; letter-spacing: -.025em; }
+.docs-header .version-tag { border-color: var(--verdigris); }
+.docs-content h1 { max-width: 26ch; }
+.docs-callout, .docs-legacy-notice { margin: 24px 0 32px; padding: 22px 24px; background: var(--warm); border-radius: 6px; font-size: .85rem; }
+.docs-callout p, .docs-legacy-notice p { margin: 8px 0 0; color: var(--ink); }
+.docs-content .command-panel pre { margin: 0; }
+.docs-content .command-panel code { background: transparent; font-size: .82rem; padding: 0; }
+.docs-markdown-link { display: inline-block; margin-top: 8px; font-size: .75rem; }
+.docs-page-feedback { max-width: 60ch; }
+.docs-empty button { display: block; margin-top: 8px; padding: 8px; background: transparent; border: 1px solid var(--rule); border-radius: 4px; min-height: 36px; }
+.docs-chapters a { transition: background 140ms, color 140ms; }
+.docs-copy-page, .docs-actions-trigger { transition: background 140ms; }
+.docs-actions-menu { transition: opacity 150ms, transform 180ms var(--ease); }
+.docs-actions-menu[data-starting-style], .docs-actions-menu[data-ending-style] { opacity: 0; transform: translateY(-4px); }
+@media (max-width: 1150px) { .docs-layout { grid-template-columns: 210px minmax(0, 760px); gap: 32px; } }
+@media (max-width: 760px) { .docs-layout { display: block; } .docs-brand .docs-mark { width: 26px; height: 26px; } .docs-header { gap: 12px; } .docs-callout, .docs-legacy-notice { padding: 18px; } }

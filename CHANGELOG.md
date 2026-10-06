@@ -4,12 +4,55 @@ This changelog tracks meaningful updates by version and date.
 
 ## How We Use This File
 
-- Keep unreleased work in `## TBD - TBD`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
+- Keep unreleased work in `## Next Release`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
 - Prefer reader-focused summaries over raw commit messages.
-- Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
-- Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
+- Group bullets by area when helpful: profiles, skills, sources, tools, settings, and docs.
+- Skip trivial noise. Record changes that affect how someone uses, configures, or trusts AFK.
 
-## TBD - TBD
+## Next Release
+
+### Added
+
+- Sources & Stacks: named multi-repository skill selections, JSON or HTTPS manifest import with review, explicit refresh, JSON export, and copy-only sequential install scripts. Existing source bookmarks remain compatible.
+
+- An AFK favicon for the local app, matching the website branding.
+- A dismissible Welcome for first access, with profile and rule starting points; reopen it from About AFK.
+
+- A local web app with Profiles, Installed Skills, Sources & Stacks, Tools, Agent rules, and Settings, opened by `afk`.
+- Shared skill profiles prepared disabled, with additive Global/project activation and on-demand group reading.
+- Favorite repository bookmarks with all skills or a searchable selection, install commands, and a combined script that honors each selection.
+- Expandable repository folders in remote skill pickers, with selection counts and search by folder, skill name, or description.
+- A selectable settings-file location, configuration import/export, folder-based project definitions, and an Exit AFK control.
+- An Agent rules editor with supporting references, reference completion, explicit destination sync, previews, backups, and conflict management that preserves existing instructions outside AFK's region.
+- AFK folder ZIP export/import for settings and Markdown, with local agent-path mapping before sync.
+- An AFK 2.0 agent skill, settings schema and validation commands, read-only doctor diagnostics, and headless management using the same operations as the local app.
+- The agent skill ships with AFK; `afk guide` prints its path, and CLI help directs agents to read it before management, without a separate skill installation.
+
+### Fixed
+
+- Reference autocomplete now replaces the whole existing key, preventing duplicated filename suffixes in synced agent rules.
+
+### Changed
+
+- The local app now has compact persistent mobile navigation, denser ledgers, and more readable labels.
+- Profile creation separates repository and local skills, with description search and selections retained across filters.
+- Conflict review explains both choices before the diff and requires a new review after a failed replacement.
+- Invocation controls show the native Claude/Codex behavior and the result of resetting an override; conditional details open from an information icon beside the selector.
+- Settings prioritize portable AFK folder ZIP transfer; JSON-only controls remain available under advanced disclosure.
+- Claude rule destinations now default to AGENTS.md, with equal-weight Codex and Claude copy controls. Existing configured paths retain their sync ownership.
+
+- Skill availability now uses shared stored copies and scoped links, preserving overlapping profiles and independent activation.
+- Invocation controls write supported native Claude and Codex metadata; project overrides are isolated and reset to shared inheritance.
+- Tools are always global, run saved commands explicitly, and retain session results. Empty update commands reuse install; removing an entry does not uninstall the tool.
+- Skill update controls copy Skills CLI commands for users to run. AFK does not execute updates.
+- Headless operations accept JSON files or stdin, reject malformed fields before applying changes, and preserve rule preview checks. Settings import requires individual skills to be disabled before their ownership is replaced.
+- Repository documentation now describes Fieldwork; obsolete setup/catalog plans and references have been removed.
+- The website now introduces AFK 2.0 through profiles, with an interactive example and a ten-chapter field manual. Retired guide links explain how to keep using pre-2.0 releases.
+
+### Removed
+
+- Catalog, setup, sync, rules, hooks, MCP, custom-agent provisioning, and general setup-orchestration commands from the AFK CLI. Existing user files are not automatically removed or migrated.
+
 
 ## v1.4.4 - 2026-09-25
 

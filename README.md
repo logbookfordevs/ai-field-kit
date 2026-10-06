@@ -1,476 +1,93 @@
-<p align="center">
-  <img src="./docs/assets/afk-readme-hero.webp" alt="A cartographic field instrument routing scattered AI development tools into one organized system" width="100%">
-</p>
+# AI Field Kit — AFK 2.0
 
-<h1 align="center">AI Field Kit</h1>
+> **Welcome to AFK 2.0.** This is the new, focused AFK. Want the previous setup,
+> catalog, layered rules, hooks, or custom-agent behavior? Install a version before 2.0,
+> or fork its tagged source from the [pre-2.0 releases](https://github.com/logbookfordevs/ai-field-kit/releases).
 
-<p align="center"><strong>One field kit for every coding agent.</strong></p>
+AFK is a local web workspace for the skills and tools you use with coding agents.
+Keep reusable skill profiles ready, enable them globally or for a project, and
+read a whole profile on demand without enabling it.
 
-<p align="center">
-  Portable rules, skills, Custom Agents, MCPs, tools, and hooks—composed once and carried across your AI tools.
-</p>
+The new app is implemented in this checkout. It is not yet a published release;
+the published package and website still describe the previous CLI.
 
-<p align="center">
-  <a href="https://ai-field-kit.logbookfordevs.com/">Website</a> ·
-  <a href="https://ai-field-kit.logbookfordevs.com/docs">Documentation</a> ·
-  <a href="./packages/afk/README.md">CLI reference</a> ·
-  <a href="./CHANGELOG.md">Changelog</a> ·
-  <a href="https://logbookfordevs.com/">by Logbook for Devs</a>
-</p>
+## Run the local build
 
----
+Requires Node.js 20 or newer and the repository's configured pnpm version.
 
-AI Field Kit starts with the `afk` command. The CLI previews and applies the
-parts of an AI development setup that should move together: shared rules,
-skills, Custom Agents, MCPs, tools, hooks, setup profiles, and project-local
-catalogs.
-
-The important bit: AFK is a router, not a replacement for every ecosystem tool.
-It owns AFK-specific rule and hook behavior, then delegates skills, MCPs, and
-tools to the tools that already own those surfaces. AFK provisions Custom
-Agents through its own harness adapters without orchestrating them.
-
-Repository history is tracked in [`CHANGELOG.md`](./CHANGELOG.md) using dated
-entries instead of release versions.
-
----
-
-## Index
-
-- [Quick Start](#quick-start)
-  - [Install the CLI](#install-the-cli)
-  - [Preview setup](#preview-setup)
-  - [Apply setup](#apply-setup)
-- [What AFK Sets Up](#what-afk-sets-up)
-- [Common CLI Paths](#common-cli-paths)
-- [Catalogs and Sources](#catalogs-and-sources)
-- [Portable Custom Agents](#portable-custom-agents)
-- [Skills and Workflows](#skills-and-workflows)
-- [Repository Map](#repository-map)
-- [Contributing](#contributing)
-- [Common Issues](#common-issues)
-- [Agents Supported](#agents-supported)
-- [Acknowledgements](#acknowledgements)
-- [Support This Work](#support-this-work)
-
----
-
-## Quick Start
-
-### Install the CLI
-
-Use `npx` for a first look or a one-off run:
-
-```bash
-npx @logbookfordevs/afk setup --dry-run
+```sh
+pnpm install
+pnpm afk:build
+node packages/afk/dist/index.js
 ```
 
-Install the latest release when AFK becomes a regular machine command:
-
-```bash
-curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
-```
-
-Working from this checkout? Build and link the local CLI:
-
-```bash
-./scripts/install.sh --local
-```
-
-### Preview setup
-
-Start with a dry run. AFK prints the exact actions it would take before writing
-rules, installing skills, provisioning Custom Agents, adding MCPs, installing
-tools, or merging hooks.
-
-```bash
-afk setup --dry-run
-```
-
-You can preview one area at a time:
-
-```bash
-afk setup rules --dry-run
-afk setup skills --dry-run
-afk setup agents --dry-run
-afk setup mcps --dry-run
-afk setup tools --dry-run
-afk setup hooks --dry-run
-```
-
-### Apply setup
-
-When the preview looks right, run the same command without `--dry-run`:
-
-```bash
-afk setup
-```
-
-Interactive setup starts with nothing selected. Choose only the areas and items
-you want. Scripted setup can use `--yes` after a catalog source has been saved:
-
-```bash
-afk setup --yes
-```
-
-For the complete command reference, flags, catalog format, local-development
-install flow, and custom defaults workflow, read the
-[AFK CLI README](./packages/afk/README.md).
-
----
-
-## What AFK Sets Up
-
-| Area | Command | What happens |
-|---|---|---|
-| Rules | `afk setup rules` | Composes ordered public, organization, personal, or project rules layers into managed instruction regions. |
-| Skills | `afk setup skills` | Delegates selected skill installs to the official `skills` CLI. |
-| Skills Profiles | `afk setup profiles` | Prepares the cached profile catalog without installing or activating skills. Use `afk setup skills --profile <id>` to install members explicitly; add `--local` for project scope. New package skills start disabled. |
-| Custom Agents | `afk setup agents` | Provisions selected portable agent files into Codex, Claude Code, or Pi. |
-| MCPs | `afk setup mcps` | Delegates selected MCP recommendations to `add-mcp`. |
-| Tools | `afk setup tools` | Runs curated tool installer commands and supported post-install setup. |
-| Hooks | `afk setup hooks` | Copies hook scripts and merges hook commands into supported agent configs. |
-
-`afk setup` can run all of those areas in one guided flow. Each area runs
-independently: if one delegated installer fails, AFK still tries the remaining
-selected areas, then exits non-zero with a failure summary.
-
-AFK-owned rules and Custom Agent adapters target a focused set. Skills and MCP
-installation are delegated to official CLIs, so broader tool support can come
-from those projects without AFK reimplementing their installers.
-
----
-
-## Common CLI Paths
-
-| Goal | Command |
-|---|---|
-| Preview the whole setup | `afk setup --dry-run` |
-| Apply the whole setup | `afk setup` |
-| Install every cataloged item for detected harnesses | `afk setup --all --yes` |
-| Install new preset members and update existing ones | `afk sync --preset daily-routine --yes` |
-| Preview a preset update | `afk sync --preset daily-routine --dry-run` |
-| Choose a preset from the cached catalog | `afk preset` |
-| Choose a preset from another source | `afk preset --source <source>` |
-| Install every rule, skill, tool, and Custom Agent | `afk preset daily-routine` |
-| Install the optimized AFK Architect bundle | `afk preset afk-architect` |
-| Run project-local setup | `afk setup --local` |
-| Refresh the global catalog cache | `afk refresh` |
-| Manage favorite catalog sources | `afk sources` |
-| Inspect the cached catalog | `afk show` |
-| Provision portable Custom Agents | `afk setup agents` |
-| Edit Custom Agent sources | `afk agents catalog` |
-| Inspect skills as a composition tree | `afk show skills --react` |
-| Generate the local skill composition page | `afk show skills --visualize` |
-| Backfill installed skills into the catalog | `afk skills catalog import --dry-run` |
-| Load one local skill into agent context | `afk skills get <skill>` |
-| Use a skill profile for the current request | `afk skills profiles use <profile>` |
-| Route UI work through UI Skills | `afk ui start` |
-
-Compatibility aliases such as `afk setup skills install` and
-`afk setup rules sync` still work, but the shorter forms above are the
-preferred command shape.
-
----
-
-## Catalogs and Sources
-
-The built-in source is `logbookfordevs/logbook-atlas` (Logbook Atlas). Legacy AFK default-source references migrate automatically in the updated CLI; custom sources and local selections remain yours. Run `afk refresh` to persist updated cached references. The catalog is fetched from Atlas, not bundled with the CLI.
-
-AFK setup is catalog-driven. A catalog describes the recommended rules, skills,
-Custom Agents, MCPs, tools, hooks, profiles, and presets for a machine or
-project while keeping installation delegated to the right upstream tool.
-
-The global catalog cache lives here:
-
-```text
-~/.agents/afk/catalog/
-```
-
-Project-local catalogs live here:
-
-```text
-./afk/catalog/
-```
-
-Merge and apply entries from another source without changing the remembered
-default source:
-
-```bash
-afk setup --source your-org/dev-kit
-afk show skills --source your-org/dev-kit
-```
-
-Run a source-aware command with bare `--source` to choose from the remembered
-default, saved favorites, or another one-off source. Without the flag, commands
-continue directly with the remembered default:
-
-```bash
-afk setup --source
-afk show skills --source
-```
-
-Favorite sources are global shortcuts stored in `presets.json`. Adding one is
-local and does not fetch or validate the catalog:
-
-```bash
-afk sources list
-afk sources add your-org/dev-kit
-afk sources remove your-org/dev-kit
-```
-
-Bare `--source` requires an interactive prompt. For scripts and `--yes`, pass
-the source explicitly as `--source <source>`.
-
-Setup caches only the entries it applies. Show remains read-only.
-
-Save a source as the default and refresh from it:
-
-```bash
-afk refresh --default-source your-org/dev-kit
-```
-
-Logbook Atlas publishes the default AFK catalog as a shadcn-compatible
-registry item. Use this when you want to commit the current AFK defaults into a
-project before running project-local setup:
-
-```bash
-pnpm dlx shadcn@latest add logbookfordevs/logbook-atlas/afk-catalog
-# or npx shadcn@latest add logbookfordevs/logbook-atlas/afk-catalog
-afk setup --local --dry-run
-```
-
-The registry item writes the same fragmented catalog files AFK already reads
-under `./afk/catalog/`. shadcn handles distribution; AFK still owns setup
-semantics such as defaults, scopes, managed rules, hooks, tools, and
-delegated skill/MCP installers. Custom Agent sources live in `agents.json` and
-are translated only when `afk setup agents` runs.
-
----
-
-## Portable Custom Agents
-
-Custom Agents let one agent definition travel across supported harnesses. You
-write its identity, instructions, model preferences, access, and capabilities
-once; AFK translates that source into the native format expected by Codex,
-Claude Code, or Pi. AFK provisions those files—it does not launch, coordinate,
-or replace the harness's own subagent runtime.
-
-AFK Architect builds on that boundary. Install `afk-architect` as a skill for
-an adaptive, skill-only baseline that uses the current harness's native
-teammates. For the optimized bundle, install the skill together with its three
-portable role contracts:
-
-```bash
-afk setup --preset afk-architect
-```
-
-The bundle provisions Cartographer for discovery, Builder for bounded writes,
-and Pathfinder for difficult judgment, verification, or direct implementation. The harness still
-owns execution and model availability. If any required agent cannot be
-provisioned, AFK attempts the remaining bundle areas but exits non-zero; the
-installed skill remains usable through its native-role fallback.
-
-The usual path is inspect, preview, then provision:
-
-```bash
-# See what is available
-afk show agents
-
-# Preview one agent in Codex
-afk setup agents --custom-agent notion_assistant --agent codex --dry-run
-
-# Provision it after reviewing the target file
-afk setup agents --custom-agent notion_assistant --agent codex --yes
-```
-
-Interactive setup opens a checkbox picker with every Custom Agent unchecked.
-For scripts, selection stays explicit: repeat `--custom-agent <id>` or use
-`--all`. `--yes` confirms the operation, but never selects agents on its own.
-Selecting a preset is also explicit and may select the exact agents declared
-by that preset.
-
-Catalog entries stay deliberately small. Each one gives AFK a stable ID, a
-human label, and a repository-relative path or direct location for a Portable
-Agent File:
-
-```json
-{
-  "version": 1,
-  "items": [
-    {
-      "id": "notion_assistant",
-      "label": "Notion Assistant",
-      "source": "agents/notion_assistant.md"
-    }
-  ]
-}
-```
-
-The Portable Agent File is Markdown with YAML frontmatter. It owns the agent's
-description and instructions, while optional `models` and `effort` fields can
-set exact values per harness. Omit either field to inherit that harness's
-current setting. An optional `skills` list attaches shared AFK skills through
-each harness's native agent configuration. AFK does not install or validate
-those skills; their availability remains under the user's control.
-
-| Harness | Personal target | Project target |
-|---|---|---|
-| Codex | `~/.codex/agents/<name>.toml` | `.codex/agents/<name>.toml` |
-| Claude Code | `~/.claude/agents/<name>.md` | `.claude/agents/<name>.md` |
-| Pi | `~/.pi/agent/agents/<name>.md` | `.pi/agents/<name>.md` |
-
-Generated targets are source-owned: running setup again replaces the selected
-native files with a fresh translation. Keep durable changes in the Portable
-Agent File rather than editing generated targets. Pi additionally needs the
-`pi-subagents` extension; if it is missing, AFK suggests the install command,
-skips Pi, and asks you to rerun setup afterward.
-
-Use `afk agents catalog` to add, edit, or remove cached catalog entries.
-`afk refresh` includes `agents.json` and merges entries by ID, so new source
-entries are added, matching source entries are updated, and unrelated local
-entries remain. Refresh changes catalog data only; provisioning happens during
-setup.
-
-When a custom source is a local or GitHub repository, AFK resolves relative
-agent paths from that repository root. A self-contained source can therefore
-keep `afk/catalog/agents.json` and `agents/notion_assistant.md` in the same
-repository without embedding machine-specific paths or raw GitHub URLs.
-
-For the complete Portable Agent File schema, capability behavior, adapter
-mapping, and Pi setup, read [Portable Custom Agents](./packages/afk/docs/custom-agents.md).
-
----
-
-## Skills and Workflows
-
-[Logbook Atlas](https://github.com/logbookfordevs/logbook-atlas) owns the default catalog and its skills, rules, agents, hooks, profiles, presets, and recommendations. Read the [catalog guide](https://github.com/logbookfordevs/logbook-atlas/blob/main/docs/catalog-guide.md) for skill behavior and composition. AFK owns installation, configuration, and harness adapters.
-
-## Repository Map
-
-| Path | What it is |
-|---|---|
-| [`packages/afk/`](./packages/afk) | AFK CLI package, command reference, catalog model, and local development flow. |
-| [`packages/afk/docs/custom-agents.md`](./packages/afk/docs/custom-agents.md) | Portable Custom Agent source format, adapters, and provisioning behavior. |
-| [`apps/site/`](./apps/site) | React/Vite site for AI Field Kit. |
-
-### Global rules targets
-
-The Atlas catalog exposes [starter rules](https://github.com/logbookfordevs/logbook-atlas/blob/main/rules/AGENTS.md) as an
-opinionated starter layer. AFK can compose it with independently owned rules
-layers, then writes the ordered result into each supported global instruction
-host without replacing user-owned content in the rest of the file:
-
-| Agent | Global rules path |
-|---|---|
-| Antigravity / Agy | `~/.gemini/GEMINI.md` |
-| Codex | `~/.codex/AGENTS.md` |
-| OpenCode | `~/.config/opencode/AGENTS.md` |
-| Claude | `~/.claude/CLAUDE.md` |
-
----
-
-## Contributing
-
-This kit grows with real-world use. If you have improved a setup catalog, skill,
-MCP recommendation, tool installer, or rule set that made an AI workflow more
-useful, open a PR.
-
-**Changing CLI behavior:**
-
-1. Update the relevant code under [`packages/afk/`](./packages/afk).
-2. Update [`packages/afk/README.md`](./packages/afk/README.md) when commands,
-   flags, setup semantics, or catalog behavior change.
-3. Add a product-facing note to [`CHANGELOG.md`](./CHANGELOG.md) for visible
-   behavior changes.
-
-**Catalog contributions:** submit skills, rules, agents, hooks, and catalog changes to [Atlas](https://github.com/logbookfordevs/logbook-atlas). Keep CLI behavior and catalog-format support in this repository.
-
-## Common Issues
-
-**I only want the skills** - Use
-`npx skills add https://github.com/logbookfordevs/logbook-atlas`. Use AFK when
-you also want rules, hooks, Custom Agents, MCPs, tools, profiles, and catalog
-policy.
-
-**I want to see what setup will do first** - Run `afk setup --dry-run` or a
-narrow command such as `afk setup hooks --dry-run`.
-
-**Skills are not discovered by my agent** - Make sure the skill lives at
-`~/.agents/skills/<name>/SKILL.md` and that your agent is configured to read
-from `~/.agents/skills/`.
-
-**A `KEY_*` placeholder fails during MCP setup** - Export the environment
-variable before running the delegated installer, or let that installer prompt
-when supported.
-
----
-
-## Agents Supported
-
-AFK-owned rules and Custom Agent adapters target a focused set. Skills and MCP
-installation are delegated to the official CLIs, so broader tool support can
-come from those projects without AFK reimplementing their installers.
-
-| Agent | Rules | Custom Agents | MCP delegation |
-|---|---|---|---|
-| Codex | via managed rules region | native subagents | via `add-mcp` |
-| Claude Code | via managed rules region | native subagents | via `add-mcp` |
-| Pi | — | via `pi-subagents` | — |
-| Antigravity / Agy | via managed rules region | — | via `add-mcp` |
-| OpenCode | via managed rules region | — | via `add-mcp` |
-
----
-
-## Acknowledgements
-
-AI Field Kit is heavily inspired by the open-source AI coding community and the
-people publishing their methods in public.
-
-Two upstream CLIs are part of AFK's core command surface:
-
-- The open [`skills` CLI](https://github.com/vercel-labs/skills) from Vercel
-  Labs provides the installation and update lifecycle behind the AFK setup,
-  add, and upgrade commands. AFK adds catalog policy, invocation metadata,
-  disabled storage, and profile reconciliation around that upstream lifecycle.
-- [UI Skills](https://github.com/ibelick/ui-skills) by Ibelick powers the
-  `afk ui` command family and remains the source of truth for its UI skill
-  registry and Markdown.
-
-This repo is its own opinionated kit, but it has also learned a lot from these
-projects:
-
-- [OpenSpec](https://github.com/Fission-AI/OpenSpec/)
-- [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex)
-- [Get Shit Done](https://github.com/gsd-build/get-shit-done?tab=readme-ov-file)
-- [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)
-- [agent-skills](https://github.com/addyosmani/agent-skills)
-- [matt-pocock](https://github.com/mattpocock/skills)
-- [HumanLayer skills](https://github.com/humanlayer/skills), including the
-  `show-me` skill that inspired AFK's visual-explanation guidance
-
-Thanks to the maintainers and contributors behind those repos for sharing ideas,
-workflows, and techniques in the open. AI Field Kit borrows selectively, adapts
-heavily, and tries to stay honest about that lineage.
-
----
-
-## Support This Work
-
-If this kit saves you time, consider buying me a coffee.
-
-| | |
-|---|---|
-| Ko-fi | [![Ko-fi](https://img.shields.io/badge/Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/logbookfordevs) |
-| Ko-fi $5 | [![Ko-fi $5](https://img.shields.io/badge/Ko--fi%20%245-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/logbookfordevs?amount=5) |
-| Ko-fi $15 | [![Ko-fi $15](https://img.shields.io/badge/Ko--fi%20%2415-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/logbookfordevs?amount=15) |
-| Ko-fi $30 | [![Ko-fi $30](https://img.shields.io/badge/Ko--fi%20%2430-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/logbookfordevs?amount=30) |
-| Buy Me a Coffee | [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/logbookfordevs) |
-
----
-
-<br/>
-
-> A tool from the [Logbook for Devs](https://logbookfordevs.com/)
->
-> *Charting the technical seas, one commit at a time.*
+AFK opens a browser on a loopback address. Use **Exit AFK** in the header or
+Ctrl+C in the terminal to stop it. Exiting preserves your configuration and
+skill activation.
+
+## What you can manage
+
+| Section | Purpose | Scope |
+| --- | --- | --- |
+| Profiles | Prepare selected skills once, enable a group, or read its instructions | Shared definitions; activation per target |
+| Installed Skills | Inspect local files, toggle availability, set invocation preferences | Global or a selected project |
+| Sources & Stacks | Save repository bookmarks or multi-source skill selections and copy install scripts | Shared definitions; copying never installs or activates |
+| Tools | Save and explicitly run install/update commands | Always global |
+| Agent rules | Edit shared rules and references, preview and sync managed regions | Shared document; explicit destination files |
+| Settings | Choose the AFK folder, import/export, define project folders | One configuration |
+
+Profiles prepare repository skills through Skills CLI in a private temporary
+workspace. Newly selected copies stay disabled under your home agents directory.
+Activation creates links in the selected discovery paths; disabling removes only
+AFK-owned exposure. Existing files and skills needed by another profile are preserved.
+
+**Use with your agent** shows instructions and a copyable command. AFK prints
+the group's instructions for the calling agent to read; it does not inject another
+chat or register a slash command.
+
+Sources, stack installation, and skill updates are copy-only. Tools run saved commands only
+when you choose Install or Update. Removing a tool entry does not uninstall it.
+
+Stack publishers can use the [versioned manifest contract](docs/skill-stacks.md) and
+[example](docs/examples/skill-stack.v1.json). Import pasted JSON or a direct HTTPS
+manifest URL, review it, and copy its sequential Skills CLI script.
+
+## Manage AFK through your agent
+
+The [afk-cli skill](skills/afk-cli/SKILL.md) gives agents the same management
+capabilities as the app. It ships with AFK: run `afk guide` and have your agent read
+the returned `SKILL.md` path. A separate skill installation is optional.
+Edit simple definitions with schema guidance, run
+`afk doctor --json` to check local consistency, and use headless AFK operations
+for changes to skill files, activation links, and managed rule regions.
+The [agent guide](docs/agents.md) explains installation and workflows.
+
+## Documentation
+
+- [App guide and CLI reference](packages/afk/README.md)
+- [Managing AFK with an agent](docs/agents.md)
+- [Settings, storage, and import/export](docs/settings.md)
+- [Agent rules and conflict handling](docs/specs/agent-rules.md)
+- [Development and verification](docs/development.md)
+- [Product specification](docs/specs/afk-pivot.md)
+- [Domain glossary](CONTEXT.md)
+- [Changelog](CHANGELOG.md)
+
+AFK no longer manages catalogs, conditional rule layers, hooks, MCP configuration, custom agents,
+setup presets, or general installation orchestration. Existing user files are not
+automatically migrated or removed. Historical releases remain documented in the
+changelog and Git history.
+
+## Repository
+
+- `packages/afk/src/fieldwork/`: CLI, settings, local APIs, skill preparation and activation.
+- `packages/afk/web/`: local app and its scoped design system.
+- `skills/afk-cli/`: agent management workflow and on-demand references.
+- `docs/`: current guides, decisions, specifications, and approved design references.
+- `apps/site/`: existing website, pending a separate update for this pivot.
+- `scripts/`: build, installation, and release support.
+
+The live website is [ai-field-kit.logbookfordevs.com](https://ai-field-kit.logbookfordevs.com/).
+Its current setup instructions are historical until the website rollout is completed.
+
+AFK is a tool from [Logbook for Devs](https://logbookfordevs.com/).

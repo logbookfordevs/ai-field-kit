@@ -1,0 +1,25 @@
+# Keep your tool commands in one place.
+
+Tools is your global command shelf. Save commands you actually use, run them explicitly, and see their output.
+
+<h2 id="add">Add a tool</h2>
+
+Save a name, an install command, and an optional update command. When update is empty, **Update** runs the install command again.
+
+Tools are always Global. Project selection does not change the list or the working directory.
+
+<h2 id="run">Install or update explicitly</h2>
+
+Click **Install** or **Update** to execute the saved command from your home directory. Unlike Favorite sources and skill-update copy controls, these buttons do run commands.
+
+The output dialog shows stdout, errors, and exit status. Results remain available during the server session if you close the dialog. A second concurrent run for the same entry is rejected.
+
+A saved command can do whatever that command ordinarily does. Review its text before running it; AFK does not reinterpret it as a package-specific operation.
+
+<h2 id="edit">Edit or remove an entry</h2>
+
+Edit its commands in the management view. Remove deletes the entry from AFK’s configuration; it does not uninstall the tool from your machine.
+
+<h2 id="portable">Take the shelf to another machine</h2>
+
+Tool definitions are included in [configuration export](/docs?chapter=settings#export). Importing them does not run installation or update commands. Choose each action intentionally on the destination machine.

@@ -1,0 +1,43 @@
+interface OperationDescription {
+  description: string;
+  input: Record<string, string>;
+}
+
+export const operationCatalog = {
+  state: { description: "Read settings, local inventories, settings path, and session tool results.", input: {} },
+  settings: { description: "Save definitions while preserving profile and ownership state. Prefer schema-guided configuration edits for favorites and tools.", input: { settings: "Full Settings object; profile definitions and link receipts must match current state." } },
+  "stack/script": { description: "Return a sequential Skills CLI script for a saved stack. Copies text only; nothing runs.", input: { id: "Saved stack ID.", scope: "Global (default) or configured project name.", agent: "interactive (default), codex, claude-code, cursor, or opencode." } },
+  "stack/preview": { description: "Validate pasted manifest JSON or fetch a direct HTTPS manifest, without saving or installing. Returns the proposal and current saved stack for review.", input: { manifest: "Manifest object or JSON string; mutually exclusive with origin.", origin: "Direct HTTPS JSON URL; mutually exclusive with manifest.", id: "Optional saved stack ID when refreshing or replacing." } },
+  "stack/save": { description: "Save a reviewed stack proposal without installing, preparing or activating skills. Rejects changes to the saved stack since review.", input: { stack: "Reviewed {manifest,origin?} proposal.", expected: "Exact saved stack from preview, or null when creating." } },
+  "stack/remove": { description: "Remove a saved stack without changing installed skills or profiles.", input: { id: "Saved stack ID.", expected: "Exact saved stack reviewed before removal." } },
+  discover: { description: "List local skills or stage repository skills in temporary storage, returning names and descriptions plus available original repository folder paths. No activation or user inventory installation.", input: { source: "Repository reference, unless local is true.", local: "Optional boolean; true reads the Global inventory." } },
+  "profile/save": { description: "Create or update a profile and prepare its selected skills. Disable all scopes before updating an existing profile.", input: { id: "Existing profile ID when editing; omit to create.", name: "Profile name.", source: "Repository reference or Local skill selection.", skills: "Nonempty array of unique skill names." } },
+  "profile/remove": { description: "Remove an inactive profile definition; stored skill files remain.", input: { id: "Inactive profile ID." } },
+  "profile/read": { description: "Read the group's instructions without enabling it.", input: { id: "Profile ID." } },
+  activation: { description: "Enable or disable a profile in a target while preserving other owners.", input: { id: "Profile ID.", scope: "Global or configured project name.", enabled: "Required boolean; true enables, false disables." } },
+  "project/save": { description: "Create or update a project definition; existing profile scopes follow a rename. Disable profiles before changing its folder.", input: { previous: "Existing project name when updating; omit to create.", name: "Unique project name, excluding Global.", path: "Local project folder." } },
+  invocation: { description: "Apply native invocation metadata; project overrides isolate shared copies.", input: { name: "Installed skill name.", scope: "Global or configured project name.", mode: "Manual only, Automatic allowed, or an empty string to restore the default." } },
+  "skill/availability": { description: "Set individual availability explicitly; repeated requests for the current state do nothing.", input: { name: "Installed skill name.", scope: "Global or configured project name.", enabled: "Required boolean." } },
+  "skill/toggle": { description: "Invert individual availability. Use skill/availability when the desired state is known.", input: { name: "Installed skill name.", scope: "Global or configured project name." } },
+  "skill/read": { description: "Inspect a skill file and its supporting file list.", input: { name: "Installed skill name.", scope: "Global or configured project name.", file: "Optional relative file inside the skill folder; defaults to SKILL.md." } },
+  "tool/run": { description: "Explicitly run a saved global tool command and return its output and exit code.", input: { id: "Numeric saved tool ID.", update: "Optional boolean; true uses update, falling back to install when empty." } },
+  "rules/state": { description: "Read canonical Markdown, references, their snapshot hash, and destination status.", input: {} },
+  "rules/save": { description: "Save canonical AGENTS.md and reference Markdown without syncing destinations.", input: { files: "Array of {path,content}; AGENTS.md plus optional references/*.md.", expectedHash: "Current filesHash from rules/state; supply when editing existing files." } },
+  "rules/destination": { description: "Create or update a rule destination definition without syncing.", input: { destination: "{name,kind,path} and optional existing id; kind is codex, claude, or custom." } },
+  "rules/preview": { description: "Review exact changes to selected destinations without writing them.", input: { ids: "Nonempty array of rule destination IDs." } },
+  "rules/sync": { description: "Apply a previously reviewed preview. Rejects changed sources or destinations.", input: { ids: "The same selected destination IDs.", preview: "Exact rules/preview result; preserve the entire object." } },
+  "rules/existing": { description: "Read a destination's text and current AFK region for review.", input: { id: "Rule destination ID." } },
+  "rules/adopt": { description: "Accept a destination's current region as ownership and return its content as a draft. Does not save that draft or sync.", input: { id: "Rule destination ID; requires a deliberate conflict decision." } },
+  "rules/overwrite": { description: "Replace a deliberately reviewed conflicting region with canonical rules, preserving surrounding text and making backups.", input: { id: "Rule destination ID.", expectedRegion: "Current region from the reviewed preview, or empty string if absent.", expectedPreview: "Exact rules/preview result for this destination." } },
+  "rules/disconnect": { description: "Disconnect a destination. Optional cleanup removes only unchanged owned content.", input: { id: "Rule destination ID.", clean: "Optional boolean; true removes unchanged owned region/reference copies." } },
+  workspace: { description: "Select an existing AFK folder, or move configuration and canonical Markdown into a new folder.", input: { mode: "select, move, or create.", folder: "Local folder; selecting requires settings.json there." } },
+  location: { description: "Relocate settings and canonical Markdown without overwriting existing destination files.", input: { path: "New settings.json file path." } },
+  folders: { description: "List local folders for choosing project or AFK paths.", input: { path: "Optional folder; defaults to the user's home." } },
+  import: { description: "Import configuration after disabling profiles and individual skills and resolving managed links. Imported profiles are inactive and unprepared; existing rule ownership remains.", input: { settings: "Full validated Settings object." } },
+  "bundle/export": { description: "Export an AFK-folder ZIP as base64 with settings and canonical Markdown.", input: {} },
+  "bundle/preview": { description: "Validate and inspect an AFK-folder ZIP before importing.", input: { base64: "Base64 ZIP contents." } },
+  "bundle/import": { description: "Import a reviewed AFK-folder ZIP with explicit local path mappings. Does not sync agent destinations.", input: { base64: "Reviewed base64 ZIP contents.", mappings: "Array of {id,path} for rule destinations.", projects: "Optional array of {name,path} for local project mappings." } },
+  welcome: { description: "Remember dismissal of the Welcome dialog.", input: {} },
+} satisfies Record<string, OperationDescription>;
+
+export type Operation = keyof typeof operationCatalog;

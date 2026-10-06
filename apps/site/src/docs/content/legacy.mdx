@@ -1,0 +1,25 @@
+# Looking for AFK before 2.0?
+
+AFK 2.0 is a different, smaller product. To keep the previous catalogs and setup behavior, install a release before 2.0 or fork its tagged source.
+
+<h2 id="what-changed">What changed in 2.0</h2>
+
+The CLI now opens a local web app for Profiles, Installed Skills, Favorite sources, Tools, and Settings. Catalog management and broad setup orchestration have been removed.
+
+Rules, hooks, MCP configuration and custom-agent provisioning are no longer managed by AFK. Existing files are not automatically purged or migrated.
+
+[Start with AFK 2.0](/docs?chapter=start) if you want the new workflow.
+
+<h2 id="install">Install the previous major version</h2>
+
+```bash AFK 1.x — previous product behavior
+npm install -g @logbookfordevs/afk@1
+```
+
+Use an exact published version if you need a particular historical release. The old and new packages use the same `afk` executable name; a global install replaces the version that name resolves to.
+
+<h2 id="fork">Fork the tagged source</h2>
+
+Open [GitHub Releases](https://github.com/logbookfordevs/ai-field-kit/releases), choose a release before 2.0, and use that tag as the source for your fork. Read the README and docs at that tag.
+
+The pre-2.0 workflow is historical guidance, not a list of supported AFK 2.0 commands.

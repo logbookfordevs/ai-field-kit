@@ -1,0 +1,94 @@
+{
+  "status": "approved proposal; AFK 2.0 home and docs implemented locally, not deployed",
+  "implementationRecord": "docs/specs/afk-website-v2/implementation.md",
+  "created": "2026-10-01",
+  "canvas": "AFK 2.0 — Website proposal",
+  "tool": "Brilliant MCP",
+  "productSource": [
+    "PRODUCT.md",
+    "docs/specs/afk-pivot.md",
+    "docs/settings.md",
+    "packages/afk/README.md"
+  ],
+  "visualSource": [
+    "DESIGN.md",
+    "apps/site/src/App.tsx",
+    "apps/site/src/docs/Docs.tsx",
+    "apps/site/src/index.css"
+  ],
+  "observedSite": [
+    "https://ai-field-kit.logbookfordevs.com/",
+    "https://ai-field-kit.logbookfordevs.com/docs"
+  ],
+  "frames": [
+    {
+      "file": "00-read-first",
+      "ref": "#decision-board",
+      "html": "00-read-first.html",
+      "png": "00-read-first.png"
+    },
+    {
+      "file": "01-home",
+      "ref": "#home-desktop",
+      "html": "01-home.html",
+      "png": "01-home.png"
+    },
+    {
+      "file": "02-start",
+      "ref": "#docs-start",
+      "html": "02-start.html",
+      "png": "02-start.png"
+    },
+    {
+      "file": "03-profiles",
+      "ref": "#docs-profiles",
+      "html": "03-profiles.html",
+      "png": "03-profiles.png"
+    },
+    {
+      "file": "04-settings",
+      "ref": "#docs-settings",
+      "html": "04-settings.html",
+      "png": "04-settings.png"
+    },
+    {
+      "file": "05-cli-legacy",
+      "ref": "#docs-cli",
+      "html": "05-cli-legacy.html",
+      "png": "05-cli-legacy.png"
+    },
+    {
+      "file": "06-agent-reading",
+      "ref": "#docs-agent",
+      "html": "06-agent-reading.html",
+      "png": "06-agent-reading.png"
+    },
+    {
+      "file": "07-home-mobile",
+      "ref": "#home-mobile",
+      "html": "07-home-mobile.html",
+      "png": "07-home-mobile.png"
+    },
+    {
+      "file": "08-docs-mobile",
+      "ref": "#docs-mobile",
+      "html": "08-docs-mobile.html",
+      "png": "08-docs-mobile.png"
+    },
+    {
+      "file": "09-navigation-states",
+      "ref": "#navigation-states",
+      "html": "09-navigation-states.html",
+      "png": "09-navigation-states.png"
+    }
+  ],
+  "notes": [
+    "Native editable visual frames, not a functional website.",
+    "HTML is a source record of the proposed layout; it does not embed fonts or wire controls.",
+    "Desktop frames are 1280px wide; mobile frames are 390px wide. PNG exports use 0.8 scale.",
+    "Some chapters have detailed page frames; all ten have a written content contract.",
+    "Existing brand tokens are retained. The draft text wordmark is illustrative; implementation should reuse AfkMark.",
+    "AFK 2.0 has not been published. Draft CTAs lead to current source-build instructions.",
+    "Rendered exports were inspected and corrected for code contrast, text wrapping, diagram layout, target labels and wordmark contrast."
+  ]
+}
