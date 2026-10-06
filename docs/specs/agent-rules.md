@@ -11,6 +11,9 @@ The workbench opens real saved files. Drafts survive section navigation; Save
 writes the canonical files and never changes agent files. Reference completion
 uses `{{file.md}}` keys, including nested paths. Renaming can update usages.
 Unresolved keys and missing local references block sync until fixed or removed.
+The canonical `AGENTS.md` keeps these keys for portability. Sync replaces them
+with absolute, destination-local paths in the agent's rules file and copied
+references; it does not replace the keys in the canonical source.
 
 Sync applies saved content to explicitly selected destinations. Unsaved edits
 offer Save & sync or syncing the last saved version. Preview lists region changes,

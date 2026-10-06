@@ -26,6 +26,10 @@ This changelog tracks meaningful updates by version and date.
 - An AFK 2.0 agent skill, settings schema and validation commands, read-only doctor diagnostics, and headless management using the same operations as the local app.
 - The agent skill ships with AFK; `afk guide` prints its path, and CLI help directs agents to read it before management, without a separate skill installation.
 
+### Fixed
+
+- Reference autocomplete now replaces the whole existing key, preventing duplicated filename suffixes in synced agent rules.
+
 ### Changed
 
 - The local app now has compact persistent mobile navigation, denser ledgers, and more readable labels.

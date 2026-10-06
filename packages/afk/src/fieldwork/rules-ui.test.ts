@@ -4,6 +4,35 @@ import { expect, it, vi } from "vitest";
 
 const script = readFileSync(new URL("../../web/rules.js", import.meta.url), "utf8");
 
+it.each([
+  ["Read {{artifacts.md}} next.", "Read {{artifacts".length],
+  ["Read {{old-name.md}} next.", "Read {{old".length],
+  ["Read {{frontend/forms.md}} next.", "Read {{front".length],
+  ["Read {{artifacts.md }} next.", "Read {{artifacts".length],
+  ["Read {{artifacts}} next.", "Read {{artifacts".length],
+  ["Read {{art next.", "Read {{art".length],
+] as const)("replaces the complete reference key when accepting a suggestion within %s", (value: string, caret: number) => {
+  const editor = {
+    value, selectionStart: caret, selectionEnd: caret, focus: vi.fn(),
+    removeAttribute: vi.fn(),
+    setSelectionRange(start: number, end: number) { this.selectionStart = start; this.selectionEnd = end; },
+    setRangeText(text: string, start: number, end: number) { this.value = this.value.slice(0, start) + text + this.value.slice(end); },
+  };
+  const nodes = new Map<string, unknown>([["ruleText", editor], ["refMenu", element()], ["refLive", element()], ["sheet", { addEventListener: vi.fn() }]]);
+  const editDraft = vi.fn();
+  const context = createContext({
+    $: (id: string) => nodes.get(id),
+    navigator: { platform: "MacIntel" },
+    document: { addEventListener: vi.fn(), execCommand: () => false },
+    window: { addEventListener: vi.fn() },
+  });
+  runInContext(script, context);
+  context.editDraft = editDraft;
+  runInContext(`refMenu = {open:true, from:5, q:'art', items:[{key:'artifacts.md'}]}; pickRef(0)`, context);
+  expect(editor.value).toBe("Read {{artifacts.md}} next.");
+  expect(editDraft).toHaveBeenCalledWith(editor.value);
+});
+
 function deferred() {
   let resolve!: (value: unknown) => void;
   let reject!: (reason: Error) => void;

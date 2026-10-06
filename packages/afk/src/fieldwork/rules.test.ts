@@ -69,6 +69,34 @@ describe("Agent rules managed regions", () => {
     await expect(readFile(target)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("repairs a previously synced completion suffix while preserving canonical keys and outside text", async () => {
+    const { home, rules, settings, target, store } = await fixture();
+    const outside = "# Existing instructions\n";
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, outside);
+    const reference = { path: "references/artifacts.md", content: "Supporting instructions\n" };
+    await rules.saveFiles([{ path: "AGENTS.md", content: "Read {{artifacts.md}}.md}} next.\n" }, reference]);
+    await rules.sync(settings, ["codex", "claude"]);
+
+    const canonical = "Read {{artifacts.md}} next.\n";
+    await rules.saveFiles([{ path: "AGENTS.md", content: canonical }, reference]);
+    const preview = await rules.preview(await store.read(), ["codex", "claude"]);
+    expect(preview.errors).toEqual([]);
+    expect(preview.targets.every(destination => destination.status === "outdated")).toBe(true);
+    await rules.sync(await store.read(), ["codex", "claude"], preview);
+
+    for (const path of [target, join(home, ".claude/AGENTS.md")]) {
+      const text = await readFile(path, "utf8");
+      const copied = join(dirname(path), "afk-rules", path === target ? "codex" : "claude", reference.path);
+      expect(text).toContain(`Read ${copied} next.`);
+      expect(text).not.toContain("{{");
+      expect(text).not.toContain(".md.md}}");
+      expect(await readFile(copied, "utf8")).toBe(reference.content);
+    }
+    expect((await readFile(target, "utf8")).startsWith(outside)).toBe(true);
+    expect(await readFile(join(rules.folder, "AGENTS.md"), "utf8")).toBe(canonical);
+  });
+
   it("resolves tokens inside Markdown links and nested reference links", async () => {
     const { rules, settings, target } = await fixture();
     await rules.saveFiles([{ path: "AGENTS.md", content: "[Guide]({{guide.md}})" }, { path: "references/guide.md", content: "[nested](nested/info.md)" }, { path: "references/nested/info.md", content: "[parent](../guide.md)" }]);

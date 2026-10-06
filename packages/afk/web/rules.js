@@ -113,10 +113,11 @@ function refKeydown(e){
   else if((e.key==='Enter'||e.key==='Tab')&&!e.shiftKey){e.preventDefault();pickRef(refMenu.i)}
 }
 function pickRef(i){
-  const t=$('ruleText'),{from,q}=refMenu,it=refMenu.items[i],end=t.selectionStart,closed=t.value.slice(end,end+2)==='}}'?2:0;
+  const t=$('ruleText'),{from,q}=refMenu,it=refMenu.items[i],caret=t.selectionStart;
+  const remaining=t.value.slice(caret).match(/^[\w.\-\/]*[ \t]*\}\}/),end=caret+(remaining?remaining[0].length:0);
   const name=it.add?(q?newRefName(q):''):it.key,ins=name?`{{${name}}}`:'';
-  closeRefMenu();t.focus();t.setSelectionRange(from,end+closed);
-  if(!document.execCommand||!document.execCommand(ins?'insertText':'delete',false,ins)){t.setRangeText(ins,from,end+closed,'end');editDraft(t.value)}
+  closeRefMenu();t.focus();t.setSelectionRange(from,end);
+  if(!document.execCommand||!document.execCommand(ins?'insertText':'delete',false,ins)){t.setRangeText(ins,from,end,'end');editDraft(t.value)}
   if(!it.add)return;
   addReference();
   if(name){$('refPath').value=name;$('refLink').checked=false}
