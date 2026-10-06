@@ -18,7 +18,7 @@ async function body(request: IncomingMessage): Promise<Record<string, unknown>> 
   return value as Record<string, unknown>;
 }
 
-export async function startFieldwork(store = new SettingsStore(), port = 0): Promise<{ url: string; close: () => Promise<void> }> {
+export async function startFieldwork(store = new SettingsStore(), port = 0): Promise<{ url: string; token: string; close: () => Promise<void> }> {
   let closeApp: (() => Promise<void>) | undefined;
   let shutdown: Promise<void> | undefined;
   await store.initialize();
@@ -40,6 +40,7 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
       if (url.pathname.startsWith("/api/")) {
         if (request.headers["x-afk-token"] !== token) { send({ error: "This session is not authorized. Reopen AFK from the CLI." }, 403); return; }
         const operation = url.pathname.slice("/api/".length);
+        if (operation === "status" && request.method === "GET") { send({ pid: process.pid }); return; }
         if (operation === "exit" && request.method === "POST") {
           response.once("finish", () => { void closeApp?.().catch(error => console.error(error)); });
           send({ ok: true }); return;
@@ -77,5 +78,5 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
     })();
     return shutdown;
   };
-  return { url: `http://127.0.0.1:${address.port}`, close: closeApp };
+  return { url: `http://127.0.0.1:${address.port}`, token, close: closeApp };
 }

@@ -1,6 +1,6 @@
 # AFK Fieldwork specification
 
-Status: implemented in this checkout; not published.
+Status: AFK 2.0 is released; see the changelog for subsequent unreleased changes.
 Approved direction: 2026-10-01.
 
 ## Purpose and boundaries
@@ -52,6 +52,10 @@ Project scope lists only that project's `.agents/skills` entries and disabled
 storage; global-only entries are excluded. Metadata files and broken links are
 ignored. The view is not a combined effective inventory: global skills may still
 be discoverable to an agent working in a project.
+
+The invocation filter uses effective Claude/Codex metadata, including differences
+between agents and unknown metadata. It combines with name search within the
+selected scope and does not change skill state.
 
 Inspection reads real SKILL.md and supporting files inside the selected skill
 folder. Individual availability is separate from profiles; disable owning profiles
@@ -160,6 +164,12 @@ A storage provider may sync the chosen settings file. AFK does not sync files,
 reconcile concurrent machines, or automatically apply another machine's activation.
 
 ## Lifecycle and verification
+
+`afk --background` starts a detached instance without opening a browser.
+`afk ui --background` is an alias. `afk status` verifies the background server and
+shows its URL, PID and log path; `afk stop` requests authenticated graceful shutdown.
+A second start reuses a running instance. These commands leave foreground sessions
+alone. Runtime records stay under `~/.afk/` and are not portable configuration.
 
 The server binds loopback, checks host/origin, and requires the current session
 token for APIs. Exit AFK stops accepting connections and shows a closed screen;

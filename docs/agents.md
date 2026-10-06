@@ -8,13 +8,13 @@ the agent's skill directory; `afk --help` includes this instruction.
 
 The canonical source is [skills/afk-cli](../skills/afk-cli/SKILL.md). An optional
 installation makes the skill discoverable through your agent's skill system.
-While this work is unpublished, install it from the repository checkout:
+For a local skill checkout:
 
 ```sh
 npx skills add ./ --skill afk-cli
 ```
 
-After this version is available upstream, install it from the repository:
+Or install from the upstream repository:
 
 ```sh
 npx skills add logbookfordevs/ai-field-kit --skill afk-cli

@@ -7,11 +7,23 @@ The web app is the main interface. These commands let a terminal or agent read s
 ```bash Launch AFK
 afk
 afk ui --no-open
+afk --background
+afk status
+afk stop
 ```
 
 AFK opens a loopback web app. **Exit AFK** in the app header or **Ctrl+C** stops its server. The public website does not start your local app.
 
-For an unpublished source build, [Start here](/docs?chapter=start#open) explains the local shortcut and direct launcher.
+`afk --background` (also `afk ui --background`) runs independently of the terminal
+without opening a browser. `afk status` shows the background URL, PID and log path;
+`afk stop` requests graceful shutdown of that instance. Foreground sessions are
+independent. Repeated background starts reuse the running instance. Background
+commands require AFK 2.0.2 or newer.
+
+To update AFK itself, run `afk update`. Use `afk update --dry-run` to print the
+installer command without executing it. This is separate from skill updates.
+
+For a local source build, [Start here](/docs?chapter=start#open) explains the local shortcut and direct launcher.
 
 <h2 id="reading">Read without activating</h2>
 

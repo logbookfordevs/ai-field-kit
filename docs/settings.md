@@ -22,6 +22,18 @@ Selecting an existing AFK folder loads its configuration without applying rules 
 agent files. Disconnect managed rule destinations and disable profiles before
 switching configurations so their ownership is not abandoned.
 
+## Background runtime files
+
+The background server keeps a machine-local record at
+`~/.afk/background/server.json` and appends output to `~/.afk/background.log`.
+The record contains its PID, loopback URL and session token, with private file
+permissions. These files are separate from the selected AFK folder and its export.
+Do not copy them to another machine. `afk status` verifies the recorded server;
+`afk stop` requests shutdown only after verifying its identity.
+
+A background server uses the configuration selected at startup. To launch with a
+different `AFK_SETTINGS` value, stop the current background instance first.
+
 ## What the file contains
 
 - Version 1, profile names/IDs, source references, selected members and enabled targets.

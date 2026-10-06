@@ -1,3 +1,4 @@
+import { startBackground, backgroundStatus, stopBackground } from "./background.js";
 import { updateAfk } from "./update.js";
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
@@ -15,6 +16,9 @@ const HELP = `AFK — local skills, tools, and agent rules
 
   afk                               Open the local web app
   afk ui --no-open                   Start without opening a browser
+  afk --background                   Run the app in the background
+  afk status                         Show the background app URL and PID
+  afk stop                           Stop the background app
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
   afk profiles use <id>              Read a group without enabling it
@@ -116,7 +120,17 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     if (action !== undefined) throw new Error("Use guide without additional arguments.");
     console.log(fileURLToPath(new URL("../../skills/afk-cli/SKILL.md", import.meta.url))); return 0;
   }
+  if (command === "status" || command === "stop") {
+    if (action !== undefined) throw new Error(`Use afk ${command} without additional arguments.`);
+    if (command === "status") await backgroundStatus(store.home);
+    else await stopBackground(store.home);
+    return 0;
+  }
   await store.initialize();
+  if (argv.includes("--background")) {
+    if (argv.some(arg => !["ui", "--background", "--no-open"].includes(arg))) throw new Error("Use afk --background or afk ui --background.");
+    await startBackground(store); return 0;
+  }
   const library = new SkillLibrary(store);
   if (command === "profiles") {
     if (!id || extra !== undefined || (action === "use" && target !== undefined)) throw new Error("Provide a profile identifier and optional scope for enable or disable.");

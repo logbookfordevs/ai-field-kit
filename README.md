@@ -8,8 +8,8 @@ AFK is a local web workspace for the skills and tools you use with coding agents
 Keep reusable skill profiles ready, enable them globally or for a project, and
 read a whole profile on demand without enabling it.
 
-The new app is implemented in this checkout. It is not yet a published release;
-the published package and website still describe the previous CLI.
+AFK 2.0 is released. Unreleased changes in this checkout are listed under
+**Next Release** in the [changelog](CHANGELOG.md).
 
 ## Run the local build
 
@@ -30,7 +30,7 @@ skill activation.
 | Section | Purpose | Scope |
 | --- | --- | --- |
 | Profiles | Prepare selected skills once, enable a group, or read its instructions | Shared definitions; activation per target |
-| Installed Skills | Inspect local files, toggle availability, set invocation preferences | Global or a selected project |
+| Installed Skills | Inspect local files, filter by invocation, toggle availability, set invocation preferences | Global or a selected project |
 | Sources & Stacks | Save repository bookmarks or multi-source skill selections and copy install scripts | Shared definitions; copying never installs or activates |
 | Tools | Save and explicitly run install/update commands | Always global |
 | Agent rules | Edit shared rules and references, preview and sync managed regions | Shared document; explicit destination files |
@@ -84,11 +84,10 @@ changelog and Git history.
 - `packages/afk/web/`: local app and its scoped design system.
 - `skills/afk-cli/`: agent management workflow and on-demand references.
 - `docs/`: current guides, decisions, specifications, and approved design references.
-- `apps/site/`: existing website, pending a separate update for this pivot.
+- `apps/site/`: public website and documentation.
 - `scripts/`: build, installation, and release support.
 
 The live website is [ai-field-kit.logbookfordevs.com](https://ai-field-kit.logbookfordevs.com/).
-Its current setup instructions are historical until the website rollout is completed.
 
 AFK is a tool from [Logbook for Devs](https://logbookfordevs.com/).
 
@@ -97,3 +96,19 @@ AFK is a tool from [Logbook for Devs](https://logbookfordevs.com/).
 Run `afk update` to rerun the hosted release installer and install the latest AFK
 release. `afk update --dry-run` prints the command without running it. This is
 separate from updating installed skills and works without reading AFK settings.
+
+## Run in the background
+
+```sh
+afk --background
+afk status
+afk stop
+```
+
+Background start prints the local URL without opening a browser. Status shows the
+URL, process ID and log location. Stop gracefully closes the background instance;
+foreground sessions are independent. Runtime records and logs stay under `~/.afk/`,
+separate from your portable settings. Starting again reuses the running instance.
+`afk ui --background` is also accepted. **Exit AFK** can close a background server
+from the app; closing the browser tab leaves it running. Background instances use
+the settings selected when they start; restart after changing `AFK_SETTINGS`.

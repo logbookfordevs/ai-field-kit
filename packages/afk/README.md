@@ -6,8 +6,8 @@
 
 A local web workspace for the skills and tools you use with coding agents.
 
-This pivot is currently available from this checkout. The published package may
-still expose the previous CLI until a new release is published.
+AFK 2.0 is released. Build this checkout to try changes listed under **Next Release**
+in the [changelog](../../CHANGELOG.md) before they are published.
 
 ```sh
 pnpm afk:build
@@ -41,6 +41,10 @@ the display name. `use` prints every member's instructions and resource director
 read. It does not enable skills, register a slash command, or inject another chat.
 
 ## Installed Skills
+
+Filter by effective invocation: Manual only, Automatic allowed, Varies by agent,
+or Unknown. The filter combines with name search within the selected scope; it
+does not change preferences or availability. **Clear filters** resets an empty result.
 
 Inventory follows the selected scope's `.agents/skills` directory. Project views
 exclude global-only entries. Inspect instructions, toggle individual availability,
@@ -148,3 +152,19 @@ The server binds loopback and requires a per-session token for local APIs.
 Run `afk update` to rerun the hosted release installer and install the latest AFK
 release. `afk update --dry-run` prints the command without running it. This is
 separate from updating installed skills and works without reading AFK settings.
+
+## Run in the background
+
+```sh
+afk --background
+afk status
+afk stop
+```
+
+Background start prints the local URL without opening a browser. Status shows the
+URL, process ID and log location. Stop gracefully closes the background instance;
+foreground sessions are independent. Runtime records and logs stay under `~/.afk/`,
+separate from your portable settings. Starting again reuses the running instance.
+`afk ui --background` is also accepted. **Exit AFK** can close a background server
+from the app; closing the browser tab leaves it running. Background instances use
+the settings selected when they start; restart after changing `AFK_SETTINGS`.

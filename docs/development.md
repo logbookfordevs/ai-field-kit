@@ -12,6 +12,21 @@ node packages/afk/dist/index.js ui --no-open
 Open the loopback URL printed in the terminal. The CLI normally opens a browser;
 `--no-open` leaves that to you. Exit AFK or Ctrl+C shuts down the server.
 
+## Background testing
+
+Build first, then use the local executable:
+
+```sh
+node packages/afk/dist/index.js --background
+node packages/afk/dist/index.js status
+node packages/afk/dist/index.js stop
+```
+
+The background process detaches from the terminal and prints its loopback URL.
+Status and stop address only that machine's background instance; a foreground
+server is independent. Runtime records and logs live under `~/.afk/`, rather than
+in the portable AFK folder. Use a temporary home for lifecycle tests.
+
 ## Checks
 
 ```sh
@@ -72,8 +87,9 @@ Do not redesign or update `apps/site/` as part of app maintenance unless request
 
 ## Release status
 
-The pivot is not published. A branch push does not publish npm or deploy the website.
-The package version has not been bumped. Release preparation is handled by the
+AFK 2.0 is released. Changes under **Next Release** in the changelog remain
+unreleased until a new version is published. A branch push does not publish npm
+or confirm a website deployment. Release preparation is handled by the
 repository's `afk-release` skill only when explicitly requested; the existing tag
 workflow publishes npm and creates a GitHub Release.
 

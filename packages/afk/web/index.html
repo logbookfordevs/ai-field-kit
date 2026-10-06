@@ -255,7 +255,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   .scope-control{flex-wrap:wrap}
   .scope-control label{flex:1 1 100%}
   .scope-control button{flex:1}
-  .toolbar>label:first-child,.search{width:100%;max-width:none}
+  .toolbar>label,.search{width:100%;max-width:none}
   .path-line .table-label:last-child{margin-left:0}
   .skill-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'name actions' 'avail avail' 'invoc invoc'}
   .tool-row{grid-template-columns:1fr;grid-template-areas:'name' 'cmds' 'run'}
@@ -567,7 +567,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refocus=id=>document.querySelector(`[data-od-id="${id}"]`)?.focus();
 
-let section='Profiles',scope='Global',query='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
+let section='Profiles',scope='Global',query='',invocationFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
 let projects=[],profiles=[],tools=[];
 const independent={Global:[]};
 let preferences={},individualOff={};
@@ -708,6 +708,7 @@ function renderSkills(){
   $('view').innerHTML=head('Installed Skills','Control availability and invocation for the selected scope.')
     +`<div class="toolbar">
         <label>Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>
+        <label>Invocation<select id="invocationFilter" onchange="invocationFilter=this.value;renderSkillList()"><option value="">All invocation modes</option>${['manual only','automatic allowed','varies by agent','unknown'].map(mode=>`<option value="${mode}" ${invocationFilter===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label>
         <label class="search">Find a skill<span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
         ${inventory().length?button('Copy update-all command','copyUpdateAll()','','data-od-id="copy-update-all"'):''}
       </div>
@@ -720,11 +721,12 @@ function renderSkills(){
 function setScope(value){scope=value;render();$('scopeSelect').focus()}
 
 function renderSkillList(){
-  const all=inventory(),list=all.filter(s=>s.name.includes(query.trim().toLowerCase()));
+  const all=inventory(),list=all.filter(s=>s.name.toLowerCase().includes(query.trim().toLowerCase())&&(!invocationFilter||invocationSummary(s.invocation)===invocationFilter));
+  const filtered=Boolean(query.trim()||invocationFilter);
   const available=all.filter(s=>isAvailable(s)).length;
-  $('skillCount').textContent=query?`${list.length} of ${all.length} shown`:`${all.length} entries · ${available} available`;
+  $('skillCount').textContent=filtered?`${list.length} of ${all.length} shown`:`${all.length} entries · ${available} available`;
   if(!list.length){
-    $('skillList').innerHTML=`<div class="empty"><h2>${query?'No matching skills':scope==='Global'?'No skills on this machine':'No skill entries in this project'}</h2><p class="sub">${query?'Try a different skill name.':scope==='Global'?'Create a profile from a source repository to prepare skills locally.':'Global-only skills are excluded. Enable a profile for this project to create its links.'}</p>${query?button('Clear search',"query='';renderSkills();$('skillSearch').focus()"):button('Go to Profiles',"navigate('Profiles')")}</div>`;
+    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'No skill entries in this project'}</h2><p class="sub">${filtered?'Try another invocation mode or skill name.':scope==='Global'?'Create a profile from a source repository to prepare skills locally.':'Global-only skills are excluded. Enable a profile for this project to create its links.'}</p>${filtered?button('Clear filters',"query='';invocationFilter='';renderSkills();$('skillSearch').focus()"):button('Go to Profiles',"navigate('Profiles')")}</div>`;
     return;
   }
   $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row table-label" aria-hidden="true"><span>Skill</span><span>Availability</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>`;

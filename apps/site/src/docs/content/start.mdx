@@ -1,17 +1,25 @@
 # Open your local field kit.
 
-AFK 2.0 opens a local workspace for skills, profiles, favorite sources, tools, and settings. Start with one small skill group.
+AFK 2.0 opens a local workspace for skills, profiles, sources and stacks, tools, agent rules, and settings. Start with one small skill group.
 
-<div className="docs-callout"><strong>AFK 2.0 release status</strong><p>The new app is not published yet. Use the source build below. Published pre-2.0 packages still run the old CLI.</p></div>
+AFK 2.0 is released. Install the latest release with:
+
+```bash Install AFK
+curl -fsSL https://ai-field-kit.logbookfordevs.com/install.sh | bash
+afk
+```
+
+Use `afk update` to update AFK itself. Skill package updates are separate.
+
+<div className="docs-callout"><strong>Requires AFK 2.0.2 or newer</strong><p>Background commands and invocation filtering are included in 2.0.2. Run `afk update` if your installed version is older.</p></div>
 
 <h2 id="open">Open the app</h2>
 
-You need Node.js 20 or newer and the repository’s configured pnpm version. Clone, build and launch the current branch:
+You need Node.js 20 or newer and the repository’s configured pnpm version. To try unreleased changes, clone, build and launch main:
 
 ```bash Build from source
 git clone https://github.com/logbookfordevs/ai-field-kit.git
 cd ai-field-kit
-git switch feat/afk-fieldwork-pivot
 pnpm install
 pnpm afk:build
 node packages/afk/dist/index.js
@@ -25,7 +33,20 @@ To make the shorter `afk` commands in this manual available, install the built l
 npm install -g ./packages/afk
 ```
 
-This installs your source build, rather than downloading the published pre-2.0 package. You can also substitute `node packages/afk/dist/index.js` for `afk` while in the repository.
+This installs your source build, including its unreleased changes. You can also substitute `node packages/afk/dist/index.js` for `afk` while in the repository.
+
+<h2 id="background">Keep AFK running in the background</h2>
+
+```bash Background lifecycle
+afk --background
+afk status
+afk stop
+```
+
+Background start prints the local URL without opening a browser and keeps running
+when the terminal closes. Status shows its URL, process ID and log location.
+Starting again reuses the same background instance. Stop gracefully closes that
+instance; foreground sessions remain independent. `afk ui --background` is an alias.
 
 <h2 id="first-profile">Create one useful profile</h2>
 
@@ -45,4 +66,5 @@ Need its guidance once? Choose **Use with your agent** and give the copied comma
 
 Use **Exit AFK** in the app header, or press **Ctrl+C** in the terminal. The server closes; settings and enabled skills stay as they were. In-flight operations may finish while connections drain.
 
-Closing the browser tab alone does not stop the server.
+For a background server, use **Exit AFK** or `afk stop`. Closing the browser tab
+alone does not stop the server.

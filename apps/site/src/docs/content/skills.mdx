@@ -10,6 +10,18 @@ Installed Skills shows real local entries. Availability and invocation are separ
 
 Select a skill to inspect its SKILL.md and supporting files. Metadata files and broken links are ignored by the inventory.
 
+<h2 id="filter">Filter by invocation</h2>
+
+In AFK 2.0.2 or newer, the **Invocation** filter selects
+**Manual only**, **Automatic allowed**, **Varies by agent**, or **Unknown**.
+It uses effective metadata, so a Global inheritance or project override is reflected
+in the results. **Varies by agent** means Claude and Codex report different modes;
+**Unknown** means both agents’ invocation metadata could not be read.
+
+Combine the filter with name search in the selected inventory scope. Filtering
+changes only the list. Choose **All invocation modes** to remove that filter, or
+**Clear filters** when there are no matches to reset both search and invocation.
+
 <h2 id="availability">Enable or disable one skill</h2>
 
 An individual toggle controls availability independently of profiles. Disable profiles that own the member before toggling it directly.
