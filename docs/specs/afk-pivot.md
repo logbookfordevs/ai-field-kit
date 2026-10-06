@@ -167,7 +167,8 @@ reconcile concurrent machines, or automatically apply another machine's activati
 
 `afk --port <number>` selects a fixed loopback port for either launch mode.
 Omitting it selects an available port. Values must be integers from 1 to 65535;
-occupied ports fail rather than falling back. A running background instance on a
+occupied ports fail rather than falling back. Browser-blocked ports are rejected
+before launch; failed startup verification stops its child before removing receipts. A running background instance on a
 different port must be stopped before switching. The port is not saved in settings.
 
 `afk --background` starts a detached instance without opening a browser.

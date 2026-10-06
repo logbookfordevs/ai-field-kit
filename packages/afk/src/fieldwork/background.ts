@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { mkdir, open, readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -70,22 +70,32 @@ export async function startBackground(store: SettingsStore, port = 0): Promise<v
   }
   await writeFile(location.receipt, JSON.stringify({ pid: process.pid, url: "http://127.0.0.1:1", token: "starting" }), { mode: 0o600 });
   const log = await open(location.log, "a", 0o600);
+  let child: ChildProcess | undefined;
   try {
-    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), store.home, store.path, String(port)], { detached: true, stdio: ["ignore", log.fd, log.fd, "ipc"] });
+    child = spawn(process.execPath, [fileURLToPath(import.meta.url), store.home, store.path, String(port)], { detached: true, stdio: ["ignore", log.fd, log.fd, "ipc"] });
+    const startedChild = child;
     await new Promise<void>((accept, reject) => {
-      const timeout = setTimeout(() => { child.kill(); reject(new Error(`AFK did not start. See ${location.log}`)); }, 15000);
-      child.once("error", error => { clearTimeout(timeout); reject(error); });
-      child.once("exit", () => { clearTimeout(timeout); reject(new Error(`AFK failed to start. See ${location.log}`)); });
-      child.once("message", (message: unknown) => {
+      const timeout = setTimeout(() => { startedChild.kill(); reject(new Error(`AFK did not start. See ${location.log}`)); }, 15000);
+      startedChild.once("error", error => { clearTimeout(timeout); reject(error); });
+      startedChild.once("exit", () => { clearTimeout(timeout); reject(new Error(`AFK failed to start. See ${location.log}`)); });
+      startedChild.once("message", (message: unknown) => {
         clearTimeout(timeout);
         const result = message as { error?: string };
         if (result?.error) { reject(new Error(result.error)); return; }
-        child.disconnect(); child.unref(); accept();
+        startedChild.disconnect(); startedChild.unref(); accept();
       });
     });
     const record = await running(store.home);
     console.log(`AFK background is running at ${record?.url}\nLog: ${location.log}\nRun afk stop to close it.`);
   } catch (error) {
+    if (child?.pid && child.exitCode === null && child.signalCode === null) {
+      const failedChild = child;
+      await new Promise<void>(accept => {
+        const timeout = setTimeout(() => { failedChild.kill("SIGKILL"); }, 3000);
+        failedChild.once("exit", () => { clearTimeout(timeout); accept(); });
+        failedChild.kill("SIGTERM");
+      });
+    }
     await rm(location.directory, { recursive: true, force: true });
     throw error;
   } finally { await log.close(); }

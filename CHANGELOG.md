@@ -16,6 +16,10 @@ This changelog tracks meaningful updates by version and date.
 - `afk status` reports the background server’s resident memory (RSS) in MiB, excluding the browser and child tool processes.
 - `afk --port <number>` selects a fixed loopback port in foreground or background mode. Occupied ports report an error; a background instance on a different port must be stopped before switching.
 
+### Fixed
+
+- Fixed-port launch rejects browser-blocked ports such as 6666 before starting. Failed background startup verification now stops its child before removing the tracking record, avoiding an untracked running server.
+
 ### Changed
 
 - The website’s Sources & Stacks guide now covers selected source bookmarks, stack creation and import, reviewed manifest refresh, JSON export, and copy-only installation scripts.

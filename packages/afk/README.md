@@ -178,7 +178,8 @@ afk --background --port 4310
 
 With `--port`, the app uses `http://127.0.0.1:4310`. Without it, AFK picks an
 available port. Ports must be integers from 1 to 65535; an occupied port causes
-an error rather than a fallback. If the background instance already uses another
+an error rather than a fallback. Browser-blocked ports such as 6666 are rejected
+before starting; choose a web port such as 4310 or 8080. If the background instance already uses another
 port, run `afk stop` before restarting with your chosen port. The port is a launch
 option, not a saved setting. `afk ui` accepts the same options.
 

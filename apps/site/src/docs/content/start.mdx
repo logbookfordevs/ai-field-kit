@@ -62,7 +62,8 @@ afk --background --port 4310
 
 Both use `http://127.0.0.1:4310`. Without `--port`, AFK picks an available port
 at startup. The number must be an integer from 1 to 65535. If it is occupied,
-AFK reports an error instead of silently selecting another port.
+AFK reports an error instead of silently selecting another port. Browser-blocked
+ports such as 6666 are rejected before launch; use a port such as 4310 or 8080.
 
 If your background instance is already running on another port, run `afk stop`
 before starting it with the new port. `afk status` shows the current URL. The port

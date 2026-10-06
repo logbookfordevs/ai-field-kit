@@ -35,7 +35,8 @@ afk --background --port 4310
 
 `--port <number>` and `--port=<number>` are accepted. Choose an integer from 1 to
 65535. AFK binds to `127.0.0.1` and reports an occupied port as an error; there is
-no fallback to a different port. Without this flag it selects an available port.
+no fallback to a different port. Browser-blocked ports such as 6666 are rejected
+before launch. Without this flag it selects an available port.
 
 A running background instance is reused when the requested port matches. If it
 uses another port, stop it with `afk stop` before restarting. This launch option
