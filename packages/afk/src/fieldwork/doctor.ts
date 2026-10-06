@@ -15,7 +15,7 @@ export interface DoctorReport {
   ok: boolean;
   settingsPath: string;
   issues: DoctorIssue[];
-  checked: { profiles: number; projects: number; managedLinks: number; rulesDestinations: number };
+  checked: { profiles: number; projects: number; managedLinks: number; rulesDestinations: number; stacks: number };
 }
 
 function errorText(error: unknown): string { return error instanceof Error ? error.message : String(error); }
@@ -24,7 +24,7 @@ function missing(error: unknown): boolean { return ["ENOENT", "ENOTDIR"].include
 export async function doctor(store: SettingsStore): Promise<DoctorReport> {
   const report: DoctorReport = {
     ok: true, settingsPath: store.path, issues: [],
-    checked: { profiles: 0, projects: 0, managedLinks: 0, rulesDestinations: 0 },
+    checked: { profiles: 0, projects: 0, managedLinks: 0, rulesDestinations: 0, stacks: 0 },
   };
   const issue = (severity: DoctorIssue["severity"], code: string, path: string, message: string): void => {
     report.issues.push({ severity, code, path, message });
@@ -44,6 +44,15 @@ export async function doctor(store: SettingsStore): Promise<DoctorReport> {
   try { settings = validateSettings(input); }
   catch (error) { issue("error", "settings_invalid", store.path, errorText(error)); return report; }
 
+  report.checked.stacks = settings.stacks?.length ?? 0;
+  for (const stack of settings.stacks ?? []) {
+    const owners = new Map<string, string>();
+    for (const group of stack.manifest.sources) for (const name of group.skills) {
+      const previous = owners.get(name);
+      if (previous && previous !== group.source) issue("warning", "stack_skill_collision", store.path, `Stack ${stack.manifest.id} selects ${name} from multiple repositories. Review before running its script.`);
+      owners.set(name, group.source);
+    }
+  }
   const library = new SkillLibrary(store);
   for (const project of settings.projects) {
     report.checked.projects++;

@@ -31,7 +31,7 @@ skill activation.
 | --- | --- | --- |
 | Profiles | Prepare selected skills once, enable a group, or read its instructions | Shared definitions; activation per target |
 | Installed Skills | Inspect local files, toggle availability, set invocation preferences | Global or a selected project |
-| Favorite skill sources | Save repository bookmarks and copy install commands | Shared bookmarks; copied commands choose a destination |
+| Sources & Stacks | Save repository bookmarks or multi-source skill selections and copy install scripts | Shared definitions; copying never installs or activates |
 | Tools | Save and explicitly run install/update commands | Always global |
 | Agent rules | Edit shared rules and references, preview and sync managed regions | Shared document; explicit destination files |
 | Settings | Choose the AFK folder, import/export, define project folders | One configuration |
@@ -45,8 +45,12 @@ AFK-owned exposure. Existing files and skills needed by another profile are pres
 the group's instructions for the calling agent to read; it does not inject another
 chat or register a slash command.
 
-Favorite sources and skill updates are copy-only. Tools run saved commands only
+Sources, stack installation, and skill updates are copy-only. Tools run saved commands only
 when you choose Install or Update. Removing a tool entry does not uninstall it.
+
+Stack publishers can use the [versioned manifest contract](docs/skill-stacks.md) and
+[example](docs/examples/skill-stack.v1.json). Import pasted JSON or a direct HTTPS
+manifest URL, review it, and copy its sequential Skills CLI script.
 
 ## Manage AFK through your agent
 

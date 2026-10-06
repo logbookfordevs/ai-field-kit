@@ -1,3 +1,4 @@
+import { fetchStack, manifestUrl, stackInstallScript, validateSavedStack, validateStack } from "./stacks.js";
 import { randomUUID } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
@@ -162,6 +163,29 @@ export class FieldworkOperations {
       updated.independentSkills = settings.independentSkills;
       updated.agentRules = settings.agentRules;
       await store.save(updated); return { ok: true };
+    }
+    if (operation === "stack/script") {
+      const stack = settings.stacks?.find(entry => entry.manifest.id === data.id);
+      if (!stack) throw new Error("Stack not found.");
+      return { script: stackInstallScript(stack.manifest, String(data.scope ?? "Global"), String(data.agent ?? "interactive"), settings.projects) };
+    }
+    if (operation === "stack/preview") {
+      if ((data.manifest === undefined) === (data.origin === undefined)) throw new Error("Provide pasted manifest JSON or its HTTPS URL, not both.");
+      const origin = data.origin === undefined ? undefined : manifestUrl(data.origin);
+      const manifest = origin ? await fetchStack(origin) : validateStack(typeof data.manifest === "string" ? JSON.parse(data.manifest) : data.manifest);
+      if (data.id !== undefined && data.id !== manifest.id) throw new Error("The manifest ID changed. Import it as a new stack instead.");
+      return { stack: { manifest, ...(origin ? { origin } : {}) }, expected: settings.stacks?.find(stack => stack.manifest.id === manifest.id) ?? null };
+    }
+    if (operation === "stack/save" || operation === "stack/remove") {
+      const stack = operation === "stack/save" ? validateSavedStack(data.stack) : undefined;
+      const id = stack?.manifest.id ?? data.id;
+      if (!skillName(id)) throw new Error("Choose a valid stack ID.");
+      const existing = settings.stacks?.find(entry => entry.manifest.id === id) ?? null;
+      if (data.expected === undefined || JSON.stringify(data.expected) !== JSON.stringify(existing)) throw new Error("This stack changed since review. Review it again before saving or removing.");
+      if (!stack && !existing) throw new Error("Stack not found.");
+      settings.stacks = (settings.stacks ?? []).filter(entry => entry.manifest.id !== id);
+      if (stack) settings.stacks.push(stack);
+      await store.save(settings); return { ok: true };
     }
     if (operation === "discover") {
       if (data.local === true) {

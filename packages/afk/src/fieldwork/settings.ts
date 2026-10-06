@@ -1,4 +1,5 @@
 import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { validateSavedStack, type SavedStack } from "./stacks.js";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
@@ -43,6 +44,7 @@ export interface Settings {
   projects: { name: string; path: string }[];
   tools: { id: number; name: string; install: string; update: string }[];
   favoriteSources: FavoriteSource[];
+  stacks?: SavedStack[];
   preferences: Record<string, string>;
   managedLinks: Record<string, string>;
   independentSkills: Record<string, string[]>;
@@ -89,6 +91,11 @@ export function validateSettings(value: unknown): Settings {
   if (new Set(tools.map(t => t.id)).size !== tools.length) throw new Error("Tool identifiers must be unique.");
   if (!sources.every(s => s && nonempty(s.name) && nonempty(s.source) && !s.source.startsWith("-"))) throw new Error("Sources need names and repository references.");
   if (!sources.every(s => s.skills === undefined || (Array.isArray(s.skills) && s.skills.length > 0 && s.skills.every(skillName) && new Set(s.skills).size === s.skills.length))) throw new Error("Choose at least one valid, unique skill for each selected source.");
+  if (data.stacks !== undefined) {
+    if (!Array.isArray(data.stacks)) throw new Error("Stacks must be an array of saved manifests.");
+    const stacks = data.stacks.map(validateSavedStack);
+    if (new Set(stacks.map(stack => stack.manifest.id)).size !== stacks.length) throw new Error("Stack identifiers must be unique.");
+  }
   const preferences = data.preferences;
   if (!preferences || typeof preferences !== "object" || Array.isArray(preferences) || !Object.entries(preferences).every(([key, mode]) => key.includes("|") && ["Manual only", "Automatic allowed"].includes(String(mode)))) throw new Error("Invalid invocation preferences.");
   const links = data.managedLinks;

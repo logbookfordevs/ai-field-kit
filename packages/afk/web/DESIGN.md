@@ -328,3 +328,20 @@ Welcome extends the native dialog to `min(720px,calc(100vw - 32px))`. A 16px int
 - **Don't** promote inherited text-glyph icons into reusable design rules.
 
 Not canonized: folder navigation retains a Unicode chevron. The craft floor excludes text-glyph icons from reusable design rules; this documentation does not create a token or preview for it. It remains untouched because this handoff owns documentation only.
+
+### Sources & Stacks
+
+The shared Sources & Stacks page retains the ruled source ledger and its optional
+agent selector. A wrapping page-action group contains Add source, Create stack,
+and Import stack; installation destination affects copied commands only. Sources
+and Stacks have distinct headings. Each stack identifies its source count, selected
+member count, and local or remote provenance. A native disclosure groups members
+under their original repository references. Stack controls copy a script, edit,
+export JSON, explicitly refresh a remote manifest, or remove the saved definition.
+
+Import uses the native dialog with JSON/HTTPS choices and retains invalid input.
+Creation selects existing explicit source selections; all-skills bookmarks remain
+outside this flow. Review shows the proposed source groups and a disclosure of the
+saved version before complete replacement. Refresh and saving remain separate from
+installing and profile activation. Stack groups use flat ruled boundaries; mobile
+controls follow the same two-column ledger action pattern without horizontal overflow.

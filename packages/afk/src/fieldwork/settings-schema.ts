@@ -1,3 +1,5 @@
+import { stackSchema } from "./stacks.js";
+
 const nonempty = { type: "string", pattern: "^(?![\\s\\S]*[\\u0000-\\u001f\\u007f])(?=[\\s\\S]*\\S)[\\s\\S]+$" };
 const skillName = { type: "string", pattern: "^[a-zA-Z0-9][a-zA-Z0-9._-]*$" };
 const skillNames = { type: "array", items: skillName };
@@ -7,6 +9,7 @@ export const settingsSchema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   title: "AFK settings",
   description: "Editor guidance for AFK settings version 1. AFK's validateSettings remains authoritative for cross-field rules, including unique identifiers and valid activation scopes. A valid document does not verify integration with an agent.",
+  $defs: stackSchema.$defs,
   type: "object",
   required: ["version", "profiles", "projects", "tools", "favoriteSources", "preferences", "managedLinks", "independentSkills"],
   properties: {
@@ -53,6 +56,13 @@ export const settingsSchema = {
         properties: {
           name: nonempty, source: { ...nonempty, allOf: [{ pattern: "^[^-]" }] }, skills: selectedSkills,
         },
+      },
+    },
+    stacks: {
+      type: "array", description: "User-editable declarative stacks. Saving never installs or activates skills. IDs must be unique.",
+      items: {
+        type: "object", additionalProperties: false, required: ["manifest"],
+        properties: { manifest: stackSchema, origin: { type: "string", format: "uri", pattern: "^https://" } },
       },
     },
     preferences: {

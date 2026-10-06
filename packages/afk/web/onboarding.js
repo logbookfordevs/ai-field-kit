@@ -14,7 +14,7 @@ function showWelcome(){
     <section class="welcome-section"><h3>Write your agent rules once</h3><p>Edit and save AGENTS.md here, then preview and sync it to Codex, Claude, or a custom file. AFK preserves text outside its marked region and backs up existing files.</p></section>
     <details class="welcome-extra"><summary>Skills, tools, and your portable setup</summary><ul>
       <li><strong>Installed Skills:</strong> inspect instructions, switch availability, and choose manual or automatic invocation.</li>
-      <li><strong>Favorite sources:</strong> bookmark repositories and copy install commands. Update controls also copy commands for you to run.</li>
+      <li><strong>Sources &amp; Stacks:</strong> bookmark repositories or save a group of selected skills from multiple sources. Copy install commands to run yourself. Update controls also copy commands for you to run.</li>
       <li><strong>Tools:</strong> save global install and update commands. Running one is an explicit action.</li>
       <li><strong>Settings:</strong> define project folders and choose where settings and rule files live. Export the AFK folder to take them with you.</li>
     </ul></details>`,

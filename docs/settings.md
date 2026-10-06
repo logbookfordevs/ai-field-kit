@@ -109,3 +109,13 @@ metadata rather than inheriting unrelated global copies.
 Global skills can still be available to an agent working in a project. The project
 inventory deliberately shows only that project's entries; it is not an effective
 combined view and cannot suppress global discovery.
+
+## Sources and stacks
+
+Existing `favoriteSources` entries retain their format. An optional `stacks` array
+holds `{manifest, origin?}` entries using the [version 1 stack contract](skill-stacks.md).
+The manifest ID is unique within stacks; origin is a direct HTTPS JSON URL used
+only for explicit refresh. These are portable definitions, separate from profile
+activation and local skill ownership. Settings/ZIP export and import include them.
+Doctor validates manifests without fetching origins or requiring their skills to
+be installed. Use stack preview/save operations for reviewed remote replacements.

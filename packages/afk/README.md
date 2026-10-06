@@ -15,7 +15,7 @@ node packages/afk/dist/index.js
 ```
 
 AFK opens a local web app. Its six sections are Profiles, Installed Skills,
-Favorite skill sources, Tools, Agent rules, and Settings. Nothing is published online.
+Sources & Stacks, Tools, Agent rules, and Settings. Nothing is published online.
 Use **Exit AFK** in the header to stop the local server. Exiting preserves saved
 configuration and skill activation; the browser tab shows a closed screen.
 
@@ -51,13 +51,20 @@ an isolated local copy when overridden, preserving the shared original.
 The update control copies a Skills CLI command; it never executes an update.
 Skills CLI owns update behavior and only updates installations it tracks.
 
-## Favorite sources
+## Sources & Stacks
 
 Save repository bookmarks for all skills or use **Choose skills** to find and
 select specific names. Search retains your selections. Copy an install
 command or a sequential install-all script; each command respects the bookmark’s
 selection. Choose a destination and agent when generating commands.
 Adding and removing bookmarks do not install or uninstall skills.
+
+Stacks group explicit skill selections from multiple original repositories. Create
+one from selected source bookmarks, import pasted JSON, or fetch a direct HTTPS
+manifest URL. Review the groups before saving. Copy install script uses the chosen
+destination and agent, sequentially; it never runs here. Refresh manifest reviews
+remote changes before replacing saved edits and does not update installed skills.
+See the [publisher schema and example](../../docs/skill-stacks.md).
 
 ## Tools
 

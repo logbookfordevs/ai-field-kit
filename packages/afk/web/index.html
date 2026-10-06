@@ -279,6 +279,10 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 .source-destination .toolbar>label{flex:1;min-width:0;max-width:300px}
 .source-row{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .source-info{min-width:0}.source-info h2{overflow-wrap:anywhere}
+.source-actions{flex-shrink:0;flex-wrap:wrap}
+.stack-section{margin-top:32px}
+.stack-group{padding:12px 0;border-top:1px solid var(--border);margin-top:12px}
+.stack-group h3{font-size:14px;margin:0 0 6px}
 .source-selection-summary,.source-members{display:block;margin-top:8px}
 .source-members{font:400 13px/1.5 var(--font-body)}
 .source-members summary{width:fit-content}
@@ -568,7 +572,7 @@ let projects=[],profiles=[],tools=[];
 const independent={Global:[]};
 let preferences={},individualOff={};
 let favoriteSources=[],installScope='Global',installAgent='interactive';
-const sections=[{id:'Profiles',short:'Profiles'},{id:'Installed Skills',short:'Skills'},{id:'Favorite skill sources',short:'Sources'},{id:'Tools',short:'Tools'},{id:'Agent rules',short:'Rules'},{id:'Settings',short:'Settings'}];
+const sections=[{id:'Profiles',short:'Profiles'},{id:'Installed Skills',short:'Skills'},{id:'Sources & Stacks',short:'Sources'},{id:'Tools',short:'Tools'},{id:'Agent rules',short:'Rules'},{id:'Settings',short:'Settings'}];
 
 function toast(message,action){
   const el=$('toast');
@@ -590,7 +594,7 @@ function navCount(id){
   if(id==='Installed Skills')return inventory().length;
   if(id==='Tools')return tools.length;
   if(id==='Agent rules')return rules.files.length;
-  if(id==='Favorite skill sources')return favoriteSources.length;
+  if(id==='Sources & Stacks')return favoriteSources.length+(currentSettings?.stacks?.length||0);
   return '';
 }
 
@@ -609,7 +613,7 @@ function render(){
   }).join('');
   $('crumb').textContent=section;
   $('mobileSection').innerHTML=sections.map(s=>`<option value="${s.id}" ${s.id===section?'selected':''}>${s.short}</option>`).join('');
-  ({Profiles:renderProfiles,'Installed Skills':renderSkills,'Favorite skill sources':renderSources,Tools:renderTools,'Agent rules':renderRules,Settings:renderAfkSettings})[section]();
+  ({Profiles:renderProfiles,'Installed Skills':renderSkills,'Sources & Stacks':renderSources,Tools:renderTools,'Agent rules':renderRules,Settings:renderAfkSettings})[section]();
 }
 
 function head(title,sub,action=''){return `<header class="page-head" data-od-id="page-heading"><div><h1>${title}</h1><p class="sub">${sub}</p></div>${action}</header>`}
@@ -872,6 +876,7 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 </script>
 <script src="/members.js"></script>
 <script src="/sources.js"></script>
+<script src="/stacks.js"></script>
 <script src="/invocation-info.js"></script>
 <script src="/rules.js"></script>
 <script src="/onboarding.js"></script>

@@ -13,10 +13,12 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- Sources & Stacks: named multi-repository skill selections, JSON or HTTPS manifest import with review, explicit refresh, JSON export, and copy-only sequential install scripts. Existing source bookmarks remain compatible.
+
 - An AFK favicon for the local app, matching the website branding.
 - A dismissible Welcome for first access, with profile and rule starting points; reopen it from About AFK.
 
-- A local web app with Profiles, Installed Skills, Favorite skill sources, Tools, Agent rules, and Settings, opened by `afk`.
+- A local web app with Profiles, Installed Skills, Sources & Stacks, Tools, Agent rules, and Settings, opened by `afk`.
 - Shared skill profiles prepared disabled, with additive Global/project activation and on-demand group reading.
 - Favorite repository bookmarks with all skills or a searchable selection, install commands, and a combined script that honors each selection.
 - Expandable repository folders in remote skill pickers, with selection counts and search by folder, skill name, or description.

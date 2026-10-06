@@ -5,12 +5,12 @@ Approved direction: 2026-10-01.
 
 ## Purpose and boundaries
 
-AFK manages local skills, shared profiles, favorite source bookmarks, and tool
+AFK manages local skills, shared profiles, source bookmarks, portable stacks, and tool
 commands. The CLI opens a local web app and exposes focused reading/activation
 operations. Catalogs, setup presets, conditional rule layers, hooks, MCP configuration, custom-agent
 provisioning, and general setup orchestration are outside its scope.
 
-The six sections are Profiles, Installed Skills, Favorite skill sources, Tools,
+The six sections are Profiles, Installed Skills, Sources & Stacks, Tools,
 Agent rules, and Settings. Tools, Agent rules and Settings have no project picker. Profiles put the target
 beside each activation action; Installed Skills uses a page-level inventory scope.
 
@@ -77,7 +77,7 @@ absolute entry-file path without opening the app or reading settings. CLI help
 instructs agents to read that file before management; skill installation is optional.
 
 The skill complements the app with a hybrid interface. Agents can edit
-favorite sources, saved tools, and inactive project definitions while preserving
+source bookmarks, stacks, saved tools, and inactive project definitions while preserving
 managed fields. Settings schema is editor guidance; validation checks structure,
 and read-only doctor reports schema and local filesystem drift.
 
@@ -93,7 +93,7 @@ These checks establish saved local state, not that a running agent has discovere
 new instructions. Concurrent processes and storage providers remain independent
 writers; the workflow rechecks original files before replacing simple definitions.
 
-## Favorite skill sources
+## Sources & Stacks
 
 Shared bookmarks store a name, source reference and optional selected skill names.
 All skills is the default and omits `skills`; Choose skills saves a nonempty,
@@ -116,6 +116,16 @@ Names missing from a later scan stay selected and visibly marked until removed.
 New upstream skills do not join an explicit selection automatically.
 Command generation can select Global/project destination and an optional agent.
 These actions never execute installation or uninstall removed bookmarks.
+
+Stacks add named, versioned selections across original repositories alongside the
+existing bookmarks. The optional settings `stacks` array preserves compatibility
+with old settings. Import accepts pasted JSON or a direct HTTPS JSON URL. Both
+paths validate the same manifest and show a review before saving. An origin URL
+enables explicit refresh; the proposed complete replacement is reviewed against
+current selections, and stale saves are rejected. Create/edit/export/remove and
+copy-script actions never install, activate, or create profiles. Doctor validates
+stacks without network requests and warns about selected-name collisions across
+repositories. The [manifest contract](../skill-stacks.md) owns publisher details.
 
 ## Tools
 

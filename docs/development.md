@@ -24,6 +24,7 @@ node --check packages/afk/web/rules.js
 node --check packages/afk/web/onboarding.js
 node --check packages/afk/web/members.js
 node --check packages/afk/web/sources.js
+node --check packages/afk/web/stacks.js
 node --check packages/afk/web/invocation-info.js
 ```
 
@@ -42,6 +43,9 @@ settings, availability, invocation metadata, Skills CLI preparation, and local A
 `operation-catalog.ts` exposes their current payload guidance. `doctor.ts` checks
 schema and local consistency without mutation, and `settings-schema.ts` supplies
 editor guidance while the runtime validator owns cross-field validation.
+`stacks.ts` owns the versioned manifest contract, bounded HTTPS JSON fetching and
+sequential script generation. Keep its exported schema synchronized with
+`docs/schemas/skill-stack.v1.schema.json`; the schema regression checks equality.
 `rules.ts` owns canonical rule files and managed destination regions; `bundle.ts`
 owns portable ZIP validation and restoration. Rule operations use temporary target
 files in tests; they must preserve surrounding text and restore owned changes after
