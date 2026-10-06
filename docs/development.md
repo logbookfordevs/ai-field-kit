@@ -23,7 +23,8 @@ node packages/afk/dist/index.js stop
 ```
 
 The background process detaches from the terminal and prints its loopback URL.
-Status and stop address only that machine's background instance; a foreground
+Status reports the server’s resident memory (RSS) in MiB, excluding browser and
+child tool processes. Status and stop address only that machine's background instance; a foreground
 server is independent. Runtime records and logs live under `~/.afk/`, rather than
 in the portable AFK folder. Use a temporary home for lifecycle tests.
 

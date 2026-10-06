@@ -40,7 +40,7 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
       if (url.pathname.startsWith("/api/")) {
         if (request.headers["x-afk-token"] !== token) { send({ error: "This session is not authorized. Reopen AFK from the CLI." }, 403); return; }
         const operation = url.pathname.slice("/api/".length);
-        if (operation === "status" && request.method === "GET") { send({ pid: process.pid }); return; }
+        if (operation === "status" && request.method === "GET") { send({ pid: process.pid, rssBytes: process.memoryUsage.rss() }); return; }
         if (operation === "exit" && request.method === "POST") {
           response.once("finish", () => { void closeApp?.().catch(error => console.error(error)); });
           send({ ok: true }); return;

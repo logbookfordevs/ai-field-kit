@@ -6,6 +6,7 @@ import { SettingsStore } from "./settings.js";
 import { startFieldwork } from "./server.js";
 
 interface Receipt { pid: number; url: string; token: string }
+interface RunningReceipt extends Receipt { rssBytes?: number }
 function paths(home: string) {
   const directory = resolve(home, ".afk/background");
   return { directory, receipt: resolve(directory, "server.json"), log: resolve(home, ".afk/background.log") };
@@ -25,18 +26,20 @@ async function receipt(home: string): Promise<Receipt | undefined> {
     throw error;
   }
 }
-async function running(home: string): Promise<Receipt | undefined> {
+async function running(home: string): Promise<RunningReceipt | undefined> {
   const record = await receipt(home);
   if (!record || !alive(record.pid)) return undefined;
   const response = await fetch(`${record.url}/api/status`, { headers: { "x-afk-token": record.token }, signal: AbortSignal.timeout(3000) });
-  const status = await response.json() as { pid?: number };
+  const status = await response.json() as { pid?: number; rssBytes?: unknown };
   if (!response.ok || status.pid !== record.pid) throw new Error("Could not verify the AFK background server. No process was stopped.");
-  return record;
+  const validMemory = typeof status.rssBytes === "number" && Number.isFinite(status.rssBytes) && status.rssBytes > 0;
+  return { ...record, ...(validMemory ? { rssBytes: status.rssBytes as number } : {}) };
 }
 
 export async function backgroundStatus(home: string): Promise<void> {
   const record = await running(home);
-  console.log(record ? `AFK background is running at ${record.url}\nPID: ${record.pid}\nLog: ${paths(home).log}` : "AFK background is not running.");
+  const memory = record?.rssBytes === undefined ? "unavailable (restart AFK after updating)" : `${(record.rssBytes / 1024 / 1024).toFixed(1)} MiB`;
+  console.log(record ? `AFK background is running at ${record.url}\nPID: ${record.pid}\nMemory (RSS): ${memory}\nLog: ${paths(home).log}` : "AFK background is not running.");
 }
 
 export async function stopBackground(home: string): Promise<void> {

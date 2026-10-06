@@ -106,7 +106,7 @@ afk stop
 ```
 
 Background start prints the local URL without opening a browser. Status shows the
-URL, process ID and log location. Stop gracefully closes the background instance;
+URL, process ID, resident memory (RSS) and log location. Stop gracefully closes the background instance;
 foreground sessions are independent. Runtime records and logs stay under `~/.afk/`,
 separate from your portable settings. Starting again reuses the running instance.
 `afk ui --background` is also accepted. **Exit AFK** can close a background server
@@ -125,3 +125,7 @@ available port. Ports must be integers from 1 to 65535; an occupied port causes
 an error rather than a fallback. If the background instance already uses another
 port, run `afk stop` before restarting with your chosen port. The port is a launch
 option, not a saved setting. `afk ui` accepts the same options.
+
+`afk status` reports the server’s current resident RAM in MiB, including Node.js
+and native allocations. It excludes the browser tab and child tool processes.
+Older running servers show memory as unavailable until restarted after updating.

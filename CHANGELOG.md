@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- `afk status` reports the background server’s resident memory (RSS) in MiB, excluding the browser and child tool processes.
 - `afk --port <number>` selects a fixed loopback port in foreground or background mode. Occupied ports report an error; a background instance on a different port must be stopped before switching.
 
 ### Changed

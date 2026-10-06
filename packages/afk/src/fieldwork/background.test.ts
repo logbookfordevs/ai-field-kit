@@ -37,6 +37,19 @@ describe("background instance verification", () => {
     await backgroundStatus(directory);
     expect(log.mock.calls[0]?.[0]).toContain(app.url);
     expect(log.mock.calls[0]?.[0]).toContain(`PID: ${process.pid}`);
+    expect(log.mock.calls[0]?.[0]).toMatch(/Memory \(RSS\): \d+\.\d MiB/);
+    const response = await fetch(`${app.url}/api/status`, { headers: { "x-afk-token": app.token } });
+    const status = await response.json() as { rssBytes: number };
+    expect(status.rssBytes).toBeGreaterThan(0);
+  });
+
+  it("supports older servers that do not report memory", async () => {
+    const directory = await home();
+    await writeFile(resolve(directory, ".afk/background/server.json"), JSON.stringify({ pid: process.pid, url: "http://127.0.0.1:4310", token: "test" }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ pid: process.pid })));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await backgroundStatus(directory);
+    expect(log.mock.calls[0]?.[0]).toContain("Memory (RSS): unavailable (restart AFK after updating)");
   });
 
   it("preserves a running background instance when another port is requested", async () => {

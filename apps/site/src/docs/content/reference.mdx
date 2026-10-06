@@ -42,6 +42,15 @@ uses another port, stop it with `afk stop` before restarting. This launch option
 is not stored in settings. Fixed-port support is unreleased; use a source build
 until the next version is published.
 
+<h2 id="memory">Memory usage — next release</h2>
+
+`afk status` includes **Memory (RSS)** in MiB: the server process's current resident
+RAM, including Node.js and native allocations. Browser tabs and child tool processes
+are separate and are not included. This is a snapshot, not a peak or historical chart.
+
+A server started with an older AFK version still reports its URL and PID, but memory
+is shown as unavailable. Stop and restart it after updating to enable the metric.
+
 <h2 id="reading">Read without activating</h2>
 
 ```bash Reading commands
