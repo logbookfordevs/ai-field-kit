@@ -21,10 +21,10 @@ function installCommand(source,target=installScope,agent=installAgent,skills){
   if(!['interactive','codex','claude-code','cursor','opencode'].includes(agent))throw Error('Choose a supported agent.');
   if(!validSkillSelection(skills))throw Error('Choose at least one valid, unique skill or use All skills.');
   const prefix=target==='Global'?'':projectPrefix(target);
-  const selection=skills===undefined?" --skill '*'":skills.map(name=>' --skill '+shellQuote(name)).join('');
+  const selection=skills===undefined?'':skills.map(name=>' --skill '+shellQuote(name)).join('');
   return prefix+'npx skills add '+shellQuote(source)+selection+(target==='Global'?' -g':'')+(agent==='interactive'?'':' --agent '+shellQuote(agent));
 }
-function updateCommand(target){return target==='Global'?'npx skills update -g':projectPrefix(target)+'npx skills update -p'}
+function updateCommand(target){return target==='Global'?'afk skills update -g':'afk skills update -p '+shellQuote(target)}
 function installScript(){
   if(!favoriteSources.length)throw Error('Save a source before copying the script.');
   return '#!/bin/sh\nset -e\n# Run manually. Each source is installed sequentially; prompts remain enabled.\n'+favoriteSources.map(x=>'('+installCommand(x.source,installScope,installAgent,x.skills)+')').join('\n')+'\n';
@@ -60,8 +60,8 @@ function saveRemap(i){
 }
 function renderSources(){
   if(!scopeNames().includes(installScope))installScope='Global';
-  const list=favoriteSources.length?`<div class="ledger">${favoriteSources.map((x,i)=>`<article class="row source-row" data-od-id="favorite-source-${i}"><div class="source-info"><h2>${esc(x.name)}</h2><code class="path">${esc(x.source)}</code>${sourceSelectionSummary(x)}</div><div class="inline">${button('Copy install command',`copyInstall(${i})`)}${button('Edit',`editSource(${i})`,'text')}${button('Remove bookmark',`removeSource(${i})`,'text')}</div></article>`).join('')}</div>`:`<div class="empty" data-od-id="sources-empty"><h2>No favorite sources yet</h2><p class="sub">Save a name and repository link to keep it close. Bookmarks do not install or enable skills.</p></div>`;
-  $('view').innerHTML=head('Sources & Stacks','Keep repository bookmarks and reusable selections from multiple sources.','<div class="inline source-actions">'+button('Add source','editSource()')+button('Create stack','createStack()')+button('Import stack','importStack()','primary')+'</div>')+`<section class="source-destination" data-od-id="installation-destination"><div class="toolbar"><label>Installation destination<select onchange="installScope=this.value;renderSources()">${scopeOptions(installScope)}</select></label><details class="source-options"><summary>Agent selection · optional</summary><label>Installation agent<select onchange="installAgent=this.value"><option value="interactive" ${installAgent==='interactive'?'selected':''}>Choose interactively in CLI</option>${['codex','claude-code','cursor','opencode'].map(a=>`<option value="${a}" ${installAgent===a?'selected':''}>${a}</option>`).join('')}</select></label></details>${button('Copy all sources script','copyInstallAll()','',favoriteSources.length?'':'disabled')}</div><p class="hint">Copies commands for each bookmark’s skill selection. Nothing runs here.</p></section>`+`<h2>Sources</h2>`+list+renderStacks()+`<aside class="note"><span class="table-label">Bookmarks, not inventory</span><p>Sources and stacks travel with your configuration. Removing one leaves installed skills unchanged. Refreshing a stack changes its saved selection; update installed packages from Installed Skills.</p></aside>`;
+  const list=favoriteSources.length?`<div class="ledger">${favoriteSources.map((x,i)=>`<article class="row source-row" data-od-id="favorite-source-${i}"><div class="source-info"><h2>${esc(x.name)}</h2><code class="path">${esc(x.source)}</code>${sourceSelectionSummary(x)}</div><div class="inline">${button('Install',`showInstallation('source',${i})`)}${button('Copy install command',`copyInstall(${i})`,'text')}${button('Edit',`editSource(${i})`,'text')}${button('Remove bookmark',`removeSource(${i})`,'text')}</div></article>`).join('')}</div>`:`<div class="empty" data-od-id="sources-empty"><h2>No favorite sources yet</h2><p class="sub">Save a name and repository link to keep it close. Bookmarks do not install or enable skills.</p></div>`;
+  $('view').innerHTML=head('Sources & Stacks','Keep repository bookmarks and reusable selections from multiple sources.','<div class="inline source-actions">'+button('Add source','editSource()')+button('Create stack','createStack()')+button('Import stack','importStack()','primary')+'</div>')+`<section class="source-destination" data-od-id="installation-destination"><div class="toolbar"><label>Installation destination<select onchange="installScope=this.value;renderSources()">${scopeOptions(installScope)}</select></label><details class="source-options"><summary>Agent selection · optional</summary><label>Installation agent<select onchange="installAgent=this.value"><option value="interactive" ${installAgent==='interactive'?'selected':''}>Choose interactively in CLI</option>${['codex','claude-code','cursor','opencode'].map(a=>`<option value="${a}" ${installAgent===a?'selected':''}>${a}</option>`).join('')}</select></label></details>${button('Copy all sources script','copyInstallAll()','',favoriteSources.length?'':'disabled')}</div><p class="hint">Copy commands to run yourself, or use Install on a source or stack to run Skills CLI here.</p></section>`+`<h2>Sources</h2>`+list+renderStacks()+`<aside class="note"><span class="table-label">Bookmarks, not inventory</span><p>Sources and stacks travel with your configuration. Removing one leaves installed skills unchanged. Refreshing a stack changes its saved selection; update installed packages from Installed Skills.</p></aside>`;
 }
 function sourceSelectionSummary(source){
   if(source.skills===undefined)return '<span class="meta source-selection-summary">All skills</span>';
@@ -124,3 +124,67 @@ function saveSource(i){
   return saveForm(()=>savePatch({favoriteSources:next}),'Bookmark saved. No skills installed.','sourceError');
 }
 function removeSource(index){return operation(async()=>{await savePatch({favoriteSources:currentSettings.favoriteSources.filter((_,position)=>position!==index)});toast('Bookmark removed. Installed skills unchanged.')})}
+
+let installationTarget,installationRunning=false,installationPicker;
+function showInstallation(kind,index){
+  const item=kind==='stack'?savedStacks()[index]:favoriteSources[index];
+  const label=kind==='stack'?item.manifest.name:item.name;
+  installationTarget={kind,label,scope:installScope,...(kind==='stack'?{id:item.manifest.id}:{source:item.source})};
+  installationPicker=kind==='source'&&item.skills===undefined?{kind:'installation',selected:new Set(),loading:false,loaded:false}:undefined;
+  const chosen=installAgent==='interactive'?'':installAgent;
+  modal('Install '+esc(label),`<p>Install into <strong>${esc(installScope)}</strong> through Skills CLI. Installation can replace existing skills and make them available. Use Update in Installed Skills to preserve an existing skill’s disabled state.</p><label>Installation agent<select id="installationAgent"><option value="">Choose an agent…</option>${['universal','codex','claude-code','cursor','opencode'].map(agent=>`<option value="${agent}" ${chosen===agent?'selected':''}>${agent==='universal'?'Universal · .agents/skills':agent}</option>`).join('')}</select></label>${installationPicker?`<section id="installationSelection">${button('Find skills','discoverInstallationSkills()','','id="findInstallationSkills"')}<div id="installationDiscovery"></div></section>`:''}<p class="hint">The copied script keeps its current behavior. This action runs without terminal prompts. Closing this dialog does not stop installation.</p><div id="installationOutput" role="status" aria-live="polite"></div><p id="installationError" class="field-error" role="alert"></p>`,button('Cancel installation','cancelInstallation()','text danger','id="cancelInstallation" hidden')+button('Close','closeModal()','text')+button('Install','executeInstallation()','primary','id="startInstallation"'));
+  if($('cancelInstallation')){$('cancelInstallation').disabled=false;$('cancelInstallation').textContent='Cancel installation';}
+  if(installationPicker)discoverInstallationSkills();
+  pollInstallation();
+}
+function updateInstallationSelection(){
+  const control=$('startInstallation');
+  if(control)control.disabled=installationRunning||!!installationPicker&&(installationPicker.loading||!installationPicker.loaded||!installationPicker.selected.size);
+}
+async function discoverInstallationSkills(){
+  const picker=installationPicker,target=installationTarget,body=$('sheetContent').firstElementChild;
+  if(!picker||picker.loading)return;
+  const current=()=>installationPicker===picker&&installationTarget===target&&$('sheet').open&&body.isConnected;
+  picker.loading=true;$('findInstallationSkills').disabled=true;$('installationError').textContent='';
+  $('installationDiscovery').textContent='Finding skills…';updateInstallationSelection();
+  try{
+    const result=await request('discover',{source:target.source});if(!current())return;
+    if(!Array.isArray(result.names)||result.names.some(name=>!validSkillSelection([name])))throw Error('The source returned an invalid skill list.');
+    picker.loaded=true;
+    renderMembers(result.names,'Skills to install',false,[...picker.selected],result.descriptions||{},picker,result.paths||{});
+  }catch(error){if(current()){$('installationDiscovery').textContent='';$('installationError').textContent=error.message}}
+  finally{if(current()){picker.loading=false;$('findInstallationSkills').disabled=false;updateInstallationSelection()}}
+}
+function renderInstallation(result){
+  const output=$('installationOutput');if(!output||!result)return;
+  if(result.label!==installationTarget.label||result.scope!==installationTarget.scope){if(!result.pending)return;}
+  if(!output.querySelector('[data-install-summary]'))output.innerHTML='<div data-install-summary></div><details><summary>Skills CLI output</summary><pre></pre></details>';
+  output.querySelector('[data-install-summary]').innerHTML=`<p class="meta">${esc(result.label)} · ${esc(result.scope)} · ${esc(result.agent)}</p><p class="update-phase">${result.pending?'<span class="update-spinner" aria-hidden="true"></span>':''}<strong>${esc(result.phase)}</strong></p><p>${result.completed} of ${result.total} sources installed.</p>${!result.pending&&result.code?'<p>Completed installations and any partial files are kept. Review the output before retrying.</p>':''}`;
+  output.querySelector('pre').textContent=result.output||'Preparing…';
+  const cancel=$('cancelInstallation');cancel.hidden=!result.pending;
+  if($('startInstallation'))$('startInstallation').disabled=result.pending;
+  if(installationPicker)updateInstallationSelection();
+  if($('installationSelection'))$('installationSelection').querySelectorAll('input,button').forEach(control=>control.disabled=result.pending);
+  if($('installationAgent'))$('installationAgent').disabled=result.pending;
+}
+async function pollInstallation(){
+  try{const result=await request('skills/install-state',{});installationRunning=!!result?.pending;renderInstallation(result);if(result?.pending&&$('installationOutput'))setTimeout(pollInstallation,1000)}catch{}
+}
+async function executeInstallation(){
+  if(installationRunning){await pollInstallation();return}
+  const target={...installationTarget},agent=$('installationAgent').value;
+  if(installationPicker&&(installationPicker.loading||!installationPicker.loaded||!installationPicker.selected.size)){$('installationError').textContent='Choose at least one skill to install.';return}
+  if(!agent){$('installationError').textContent='Choose an installation agent first.';return}
+  $('installationError').textContent='';installationRunning=true;$('cancelInstallation').disabled=false;$('cancelInstallation').textContent='Cancel installation';
+  renderInstallation({label:target.label,scope:target.scope,agent,pending:true,phase:'Preparing installation…',output:'',completed:0,total:target.kind==='stack'?savedStacks().find(stack=>stack.manifest.id===target.id).manifest.sources.length:1});
+  const timer=setTimeout(pollInstallation,1000);
+  try{
+    const data={scope:target.scope,agent,...(target.kind==='stack'?{id:target.id}:{source:target.source,...(installationPicker?{skills:[...installationPicker.selected]}:{})})};
+    const result=await request(target.kind+'/install',data);renderInstallation(result);await refresh();toast(result.code===0?'Installation complete.':result.cancelled?'Installation cancelled. Completed changes are kept.':'Installation stopped. Review the output.');
+  }catch(error){$('installationError')&&($('installationError').textContent=error.message);if($('startInstallation'))$('startInstallation').disabled=false;if($('installationAgent'))$('installationAgent').disabled=false;}
+  finally{clearTimeout(timer);installationRunning=false;updateInstallationSelection()}
+}
+async function cancelInstallation(){
+  const control=$('cancelInstallation');if(control){control.disabled=true;control.textContent='Cancelling…'}
+  try{const result=await request('skills/install-cancel',{});if(!result.cancelled)toast(result.reason);await pollInstallation()}catch(error){toast(error.message)}
+}

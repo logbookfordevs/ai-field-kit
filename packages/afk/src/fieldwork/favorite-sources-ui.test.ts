@@ -13,6 +13,7 @@ interface Field {
   hidden: boolean;
   open: boolean;
   attributes: Record<string, string>;
+  firstElementChild: { isConnected: boolean };
   focus(): void;
   setAttribute(name: string, value: string): void;
 }
@@ -25,7 +26,7 @@ let discoverRequest: (data: unknown) => Promise<unknown>;
 function field(id: string): Field {
   let value = fields.get(id);
   if (!value) {
-    value = { value: "", innerHTML: "", textContent: "", disabled: false, hidden: false, open: false, attributes: {}, focus() {}, setAttribute(name, text) { this.attributes[name] = text; } };
+    value = { value: "", innerHTML: "", textContent: "", disabled: false, hidden: false, open: false, attributes: {}, firstElementChild: { isConnected: true }, focus() {}, setAttribute(name, text) { this.attributes[name] = text; } };
     fields.set(id, value);
   }
   return value;
@@ -52,12 +53,42 @@ beforeEach(() => {
 });
 
 describe("favorite-source UI and copied commands", () => {
-  it("generates specific names for selected bookmarks and wildcard only for all-skill bookmarks", () => {
+  it("requires an explicit target before starting installation without changing copied commands", async () => {
+    const requests: string[] = [];
+    context.request = async (path: string) => { requests.push(path); };
+    evaluate("installationTarget={kind:'source',label:'Selected',scope:'Global',source:'owner/toolkit'}");
+    await evaluate<Promise<void>>("executeInstallation()");
+    expect(requests).toEqual([]);
+    expect(field("installationError").textContent).toBe("Choose an installation agent first.");
+    expect(evaluate<string>("installCommand('owner/toolkit')")).not.toContain("--yes");
+  });
+
+  it("runs the chosen stack once and forwards its scope and agent", async () => {
+    let complete: (value: unknown) => void = () => {};
+    const pending = new Promise(resolve => { complete = resolve; });
+    const requests: { path: string; data: unknown }[] = [];
+    context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return pending; };
+    context.savedStacks = () => [{ manifest: { id: "design", sources: [{}] } }];
+    context.setTimeout = () => 1;
+    context.clearTimeout = () => {};
+    context.refresh = async () => {};
+    context.toast = () => {};
+    evaluate("renderInstallation=()=>{};pollInstallation=async()=>{};installationTarget={kind:'stack',label:'Design',scope:'Studio',id:'design'}");
+    field("installationAgent").value = "claude-code";
+    const first = evaluate<Promise<void>>("executeInstallation()");
+    await evaluate<Promise<void>>("executeInstallation()");
+    expect(requests).toEqual([{ path: "stack/install", data: { id: "design", scope: "Studio", agent: "claude-code" } }]);
+    complete({ code: 0 });
+    await first;
+  });
+
+  it("keeps selected skill names and leaves all-skill bookmarks open to the CLI picker", () => {
     expect(evaluate<string>("installCommand('owner/toolkit','Global','codex',['review','video'])")).toBe("npx skills add 'owner/toolkit' --skill 'review' --skill 'video' -g --agent 'codex'");
-    expect(evaluate<string>("installCommand('owner/other')")).toBe("npx skills add 'owner/other' --skill '*' -g");
+    expect(evaluate<string>("installCommand('owner/other')")).toBe("npx skills add 'owner/other' -g");
     const script = evaluate<string>("installScript()");
     expect(script).toContain("'owner/toolkit' --skill 'review'");
-    expect(script).toContain("'owner/other' --skill '*'");
+    expect(script).toContain("npx skills add 'owner/other' -g");
+    expect(script).not.toContain("--skill '*'");
     expect(script).not.toContain("'owner/toolkit' --skill '*'");
   });
 
@@ -170,4 +201,35 @@ describe("favorite-source UI and copied commands", () => {
     expect(field("sourceDiscovery").innerHTML).toBe(before);
     expect(field("sourceError").textContent).toBe("");
   });
+});
+
+it("discovers and installs an explicit run-only selection for an all-skills bookmark", async () => {
+  const requests: { path: string; data: unknown }[] = [];
+  context.request = async (path: string, data: unknown) => {
+    requests.push({ path, data });
+    return path === "discover" ? { names: ["review", "video"], paths: { video: "media/video" } } : { code: 0 };
+  };
+  context.setTimeout = () => 1;context.clearTimeout = () => {};context.refresh = async () => {};context.toast = () => {};
+  evaluate("installationTarget={kind:'source',label:'All',source:'owner/other',scope:'Global'};installationPicker={kind:'installation',selected:new Set(),loading:false,loaded:false};renderInstallation=()=>{};pollInstallation=async()=>{}");
+  field("sheet").open = true;
+  field("installationAgent").value = "codex";
+  await evaluate<Promise<void>>("discoverInstallationSkills()");
+  expect(field("startInstallation").disabled).toBe(true);
+  await evaluate<Promise<void>>("executeInstallation()");
+  expect(requests).toHaveLength(1);
+  evaluate("memberChanged({value:'video',checked:true})");
+  expect(field("startInstallation").disabled).toBe(false);
+  await evaluate<Promise<void>>("executeInstallation()");
+  expect(requests.at(-1)).toEqual({ path: "source/install", data: { source: "owner/other", scope: "Global", agent: "codex", skills: ["video"] } });
+  expect(sources[1]).not.toHaveProperty("skills");
+});
+it("ignores installation discovery after the dialog closes", async () => {
+  let resolve: (value: unknown) => void = () => {};
+  context.request = () => new Promise(accept => { resolve = accept; });
+  evaluate("installationTarget={kind:'source',source:'owner/other',scope:'Global'};installationPicker={kind:'installation',selected:new Set(),loading:false,loaded:false}");
+  field("sheet").open = true;
+  const pending = evaluate<Promise<void>>("discoverInstallationSkills()");
+  field("sheet").open = false;
+  resolve({ names: ["video"] });await pending;
+  expect(evaluate("installationPicker.loaded")).toBe(false);
 });

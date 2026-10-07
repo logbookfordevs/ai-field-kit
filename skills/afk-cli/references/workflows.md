@@ -39,7 +39,7 @@ selections; installed package updates remain a separate Skills CLI action.
 
 Tools are global definitions in `tools`. Saving or removing an entry changes management only. `tool/run` executes the saved install command from the home directory; `update: true` selects update, falling back to install when empty. Inspect the saved command and use this operation when execution is authorized. Verify its returned output and exit code separately from saving the definition.
 
-Installed-skill updates belong to `npx skills update` with the requested Global/project destination. A copied update command is not an executed update, and Skills CLI only updates installations it tracks.
+For installed-skill updates, use `skills/update` with the requested scope, or `afk skills update [name] -g` / `afk skills update [name] -p <project>`. Provide `names` to update only selected skills; omit it for all tracked skills. AFK delegates to Skills CLI in isolation and preserves availability and saved invocation preferences. Inspect `skills/update-state` for progress, output and exit code. In the active app session, `skills/update-cancel` stops preparation or downloading; once file replacement starts it finishes safely. Skills CLI receipts determine which installations can update; running it directly bypasses AFK availability protection.
 
 ## Agent rules
 

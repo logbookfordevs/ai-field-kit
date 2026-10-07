@@ -27,6 +27,13 @@ html:has(.docs-app) { scroll-behavior: auto; }
 .docs-content h1 + p { color: var(--muted); font-size: 1.05rem; line-height: 1.8; }
 .docs-content article a { color: var(--command); text-decoration: underline; text-decoration-color: var(--verdigris); text-underline-offset: 4px; }
 .docs-content article a:hover { color: var(--rust-deep); }
+.docs-screenshot { margin: 28px 0 36px; }
+.docs-screenshot > a { display: block; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--paper); cursor: zoom-in; }
+.docs-screenshot > a:hover { border-color: var(--verdigris); }
+.docs-screenshot img { display: block; width: 100%; height: auto; }
+.docs-screenshot figcaption { margin-top: 12px; color: var(--muted); font-size: .8rem; line-height: 1.65; max-width: 70ch; }
+.docs-screenshot figcaption strong { color: var(--ink); font-weight: 500; }
+.docs-screenshot-detail { max-width: 640px; }
 .docs-content ul, .docs-content ol { padding-left: 24px; margin: 16px 0 24px; }
 .docs-content ul { list-style: disc; }
 .docs-content ol { list-style: decimal; }

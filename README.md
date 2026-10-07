@@ -1,3 +1,5 @@
+![AFK 2.0 — a paper field notebook for skills, profiles, tools and shared rules](docs/assets/afk-readme-hero-v2.webp)
+
 # AI Field Kit — AFK 2.0
 
 > **Welcome to AFK 2.0.** This is the new, focused AFK. Want the previous setup,
@@ -92,6 +94,10 @@ The live website is [ai-field-kit.logbookfordevs.com](https://ai-field-kit.logbo
 AFK is a tool from [Logbook for Devs](https://logbookfordevs.com/).
 
 ## Update AFK itself
+
+Use **Update skills** in Installed Skills, or `afk skills update -g` /
+`afk skills update -p <project>`, to update tracked skills while preserving
+availability and AFK invocation preferences.
 
 Run `afk update` to rerun the hosted release installer and install the latest AFK
 release. `afk update --dry-run` prints the command without running it. This is

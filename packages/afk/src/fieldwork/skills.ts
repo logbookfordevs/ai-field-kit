@@ -1,4 +1,5 @@
 import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, symlink } from "node:fs/promises";
+import { homedir } from "node:os";
 import { resolve, join } from "node:path";
 import { expandPath, skillName, type Settings, type SettingsStore } from "./settings.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
@@ -12,6 +13,7 @@ export interface SkillEntry {
   available: boolean;
   shared: boolean;
   description: string;
+  source?: string;
   invocation: SkillInvocation;
   defaultInvocation: SkillInvocation;
   invocationInherited: boolean;
@@ -23,6 +25,22 @@ async function exists(path: string): Promise<boolean> {
     if (code === "ENOENT" || code === "ENOTDIR") return false;
     throw error;
   }
+}
+
+async function sharedDiscoveryFolder(root: string): Promise<boolean> {
+  try { return await realpath(root) === await realpath(join(root, "../../.claude/skills")); }
+  catch (error) {
+    if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) return false;
+    throw error;
+  }
+}
+
+async function installedSources(path: string): Promise<Record<string, string>> {
+  try {
+    const receipt = JSON.parse(await readFile(path, "utf8")) as { skills?: Record<string, { source?: unknown }> };
+    return Object.fromEntries(Object.entries(receipt.skills ?? {}).flatMap(([name, entry]) =>
+      typeof entry?.source === "string" ? [[name, entry.source]] : []));
+  } catch { return {}; }
 }
 
 export class SkillLibrary {
@@ -38,6 +56,10 @@ export class SkillLibrary {
   async inventory(settings: Settings, scope: string): Promise<SkillEntry[]> {
     const root = this.root(settings, scope);
     const result: SkillEntry[] = [];
+    const stateHome = this.store.home === homedir() ? process.env.XDG_STATE_HOME : undefined;
+    const globalReceipt = stateHome ? join(stateHome, "skills/.skill-lock.json") : join(this.store.home, ".agents/.skill-lock.json");
+    const sources = await installedSources(scope === "Global" ? globalReceipt : join(root, "../../skills-lock.json"));
+    const globalSources = scope === "Global" ? sources : await installedSources(globalReceipt);
     for (const disabled of [false, true]) {
       const directory = disabled ? join(root, ".disabled") : root;
       let names: string[];
@@ -60,7 +82,8 @@ export class SkillLibrary {
         const defaultInvocation = resetsToGlobal
           ? globalPath ? (await readNativeMetadata(globalPath)).invocation : unknownInvocation()
           : await readOriginalInvocation(path, metadata.invocation);
-        return { name, path, owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited };
+        const source = sources[name] ?? (invocationInherited ? globalSources[name] : undefined);
+        return { name, path, ...(source ? { source } : {}), owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited };
       }));
       for (const entry of entries) if (entry) result.push(entry);
     }
@@ -95,7 +118,9 @@ export class SkillLibrary {
       const shared = enabled ? await this.locate(settings, name) : join(this.root(settings, "Global"), ".disabled", name);
       const override = join(root, ".afk-overrides", name);
       const source = scope !== "Global" && await exists(join(override, "SKILL.md")) ? override : shared;
-      const destinations = [join(root, name), join(root, "../../.claude/skills", name)];
+      const destinations = await sharedDiscoveryFolder(root)
+        ? [join(root, name)]
+        : [join(root, name), join(root, "../../.claude/skills", name)];
       for (const destination of destinations) {
         if (enabled) {
         if (await exists(destination)) {
@@ -160,7 +185,7 @@ export class SkillLibrary {
       let createdAlias = false;
       await symlink(source, active, "dir");
       try {
-        if (!hasAlias) {
+        if (!hasAlias && !await sharedDiscoveryFolder(root)) {
           await mkdir(resolve(alias, ".."), { recursive: true }); await symlink(source, alias, "dir");
           createdAlias = true; settings.managedLinks[alias] = source;
         }
@@ -176,7 +201,7 @@ export class SkillLibrary {
     const stat = await lstat(active);
     if (stat.isSymbolicLink() && await exists(disabled) && await realpath(active) === await realpath(disabled)) {
       const alias = join(root, "../../.claude/skills", name);
-      const removesAlias = settings.managedLinks[alias] === disabled && await exists(alias) && (await lstat(alias)).isSymbolicLink() && resolve(alias, "..", await readlink(alias)) === disabled;
+      const removesAlias = !await sharedDiscoveryFolder(root) && settings.managedLinks[alias] === disabled && await exists(alias) && (await lstat(alias)).isSymbolicLink() && resolve(alias, "..", await readlink(alias)) === disabled;
       await rm(active);
       if (removesAlias) { await rm(alias); delete settings.managedLinks[alias]; }
       settings.independentSkills[scope] = (settings.independentSkills[scope] ?? []).filter(member => member !== name);

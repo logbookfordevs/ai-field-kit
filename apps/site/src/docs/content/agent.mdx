@@ -12,7 +12,7 @@ You decide when to provide guidance. AFK does not make the agent’s tool choice
 
 <h2 id="retrieve">Retrieve the chosen profile</h2>
 
-In the local app, open the profile and choose **Use with your agent**. Copy its actual command, then ask the agent to run it in its terminal:
+In the local app, open the profile and choose **Read group once**. Copy its actual command, then ask the agent to run it in its terminal:
 
 ```bash Example syntax — replace with the actual copied ID
 afk profiles use <profile-id>
@@ -34,8 +34,14 @@ The group’s skills may remain disabled throughout. No discovery links are crea
 
 <h2 id="web-action">What the web button does</h2>
 
-**Use with your agent** shows instructions and a command to copy. It does not run that command inside an agent, expose a built-in slash command, or silently inject context.
+**Read group once** shows instructions and a command to copy. It does not run that command inside an agent, expose a built-in slash command, or silently inject context.
 
 <h2 id="context">Reading once does not erase context later</h2>
 
 Returned instructions remain in the conversation that read them. Later disabling the profile does not remove content already read. Live skill discovery inside different agent clients remains a separate compatibility check.
+
+<h2 id="manage">Ask your agent to manage AFK</h2>
+
+For setup and maintenance, ask the agent to run `afk guide` and read the bundled
+skill. It can inspect the schema, edit definitions, and use managed operations
+for filesystem changes. [See the headless interface](/docs?chapter=reference#manage).

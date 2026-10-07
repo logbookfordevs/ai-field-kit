@@ -7,6 +7,11 @@ original repositories into one named, portable install plan.
 Both are shared across your projects. Saving, importing, refreshing or removing
 one does not install skills or change profile activation.
 
+<figure className="docs-screenshot">
+  <a href="/docs/screenshots/sources-stacks.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/sources-stacks.webp" alt="Sources and Stacks showing saved selections, a destination picker, and Install alongside Copy install command or script." width="1280" height="1100" loading="lazy" decoding="async" /></a>
+  <figcaption><strong>Save a selection, then choose how to install.</strong> Bookmarks and stacks stay separate from installed inventory. Demo workspace from the current source build; open the image for a closer look.</figcaption>
+</figure>
+
 <h2 id="save">Save a source</h2>
 
 1. Choose **Add source** and enter a name and repository reference. Repository URLs,
@@ -20,7 +25,9 @@ When discovery provides folder paths, expandable folders show where each skill
 comes from. Filtering keeps your selected members, even when they are hidden
 from the current search.
 
-**All skills** copies an installation command for the whole source. **Choose skills**
+**All skills** copies a command that opens Skills CLI’s skill picker, so you can
+choose members when running it. The app’s **Install** action also lets you choose
+members for that run without changing the bookmark. **Choose skills**
 keeps an explicit selection: new upstream members do not join it automatically.
 Changing the repository reference clears its old selection so you can choose again.
 
@@ -28,10 +35,15 @@ Use **Edit** to change the bookmark or **Remove bookmark** to stop saving it.
 Removing a bookmark leaves installed skills alone. The source reference remains
 visible below its name for normal text selection and copying.
 
+For an **All skills** bookmark, **Install** discovers the repository’s skills and
+opens the searchable folder picker. Select individual members or **Select all**
+before starting. Bookmarks with saved selections and stacks keep their explicit
+member lists.
+
 <h2 id="copy">Copy installation commands</h2>
 
-- **Copy install command:** one source, using its saved all-skills or explicit selection.
-- **Copy install-all script:** every saved source bookmark, in sequence, respecting
+- **Copy install command:** one source, opening the skill picker for **All skills** bookmarks or passing the saved explicit selection.
+- **Copy all sources script:** every saved source bookmark, in sequence, respecting
   each bookmark's selection. This does not include saved stacks.
 - **Copy install script** on a stack: that stack's selected skills, grouped by source.
 
@@ -39,8 +51,27 @@ Choose the installation destination and optional agent before copying. Those
 choices affect the generated commands, not where bookmarks or stacks are saved.
 
 Run the copied text in your terminal when you are ready. Skills CLI performs the
-installation; AFK does not execute these commands or report a copied script as
-an installed set of skills.
+installation. Copying does not execute anything or change installed skills.
+
+<h2 id="install">Install from AFK</h2>
+
+Each source and stack also has an **Install** button. Choose the destination,
+open Install, and select an agent target. AFK runs Skills CLI with your saved
+skill selection and shows progress and command output. The copied commands
+retain their interactive behavior.
+
+<figure className="docs-screenshot docs-screenshot-detail">
+  <a href="/docs/screenshots/install-review.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/install-review.webp" alt="Install review for a saved stack with Global destination and Universal agent selected before confirming." width="640" height="484" loading="lazy" decoding="async" /></a>
+  <figcaption><strong>Execution is explicit.</strong> Choose an agent and review the destination before running Skills CLI. Demo workspace from the current source build; open the image for a closer look.</figcaption>
+</figure>
+
+Closing the dialog leaves installation running. Reopen Install to see its
+progress or result, or choose **Cancel installation** to stop it. Completed
+installations and any partial files are kept.
+
+Installation can replace existing skills and make them available. To update
+existing skills while preserving disabled state, use **Update skills** in
+Installed Skills instead.
 
 <h2 id="stacks">Create a stack from selected sources</h2>
 
@@ -48,12 +79,13 @@ A stack is useful when your preferred skill set spans several repositories.
 For example, you can keep a handful of design skills from one source and a few
 browser-testing skills from another, then share one install plan.
 
-1. Save each source with **Choose skills** and select the members you want.
+1. Save the sources you want to reuse, with either **All skills** or **Choose skills**.
 2. Choose **Create stack**. Enter a name, a stable identifier and an optional description.
-3. Select the saved source selections to include, then choose **Review stack**.
+3. Select sources to include. For an **All skills** bookmark, use **Choose skills**
+   to pick members in the searchable folder tree. Then choose **Review stack**.
 4. Check the original repository references and selected skills before saving.
 
-All-skills bookmarks are excluded from stack creation. Each stack group needs an
+Every saved source appears in stack creation. Each stack group needs an
 explicit skill list so the saved plan does not silently expand when upstream adds
 new skills. Saving a stack captures those choices; later bookmark edits do not
 rewrite the stack.
@@ -83,7 +115,7 @@ manifest and shows a comparison with your saved name, description, sources and
 skill selections. Review it before applying the replacement. Your current stack
 and local edits remain until you accept it.
 
-Refreshing a manifest does not update installed skills. Copy its installation
+Refreshing a manifest does not update installed skills. Use **Install** or copy its installation
 script if you want to install the revised selection. Use Installed Skills for
 package updates.
 
@@ -117,7 +149,8 @@ not create a profile, and installing its skills does not activate a profile.
 
 <h2 id="updates">Update from Installed Skills</h2>
 
-Use **Copy update-all command** in [Installed Skills](/docs?chapter=skills#update).
-AFK copies the command and Skills CLI performs the update when you run it. This
-only updates installations Skills CLI tracks. Source discovery and manifest refresh
+Use **Update skills** in [Installed Skills](/docs?chapter=skills#update).
+AFK runs Skills CLI in an isolated workspace and preserves availability and
+invocation preferences when applying updates. This only updates installations
+Skills CLI tracks. Source discovery and manifest refresh
 are separate from installed-package updates.

@@ -22,6 +22,11 @@ Add the project’s folder in **Settings** first. Then choose its name in the pr
 
 Changing the dropdown only changes the target shown. It does not activate anything. Global and project activation are independent; more than one profile can be enabled in the same target.
 
+<figure className="docs-screenshot">
+  <a href="/docs/screenshots/profiles.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/profiles.webp" alt="Profiles showing Video tools enabled for Demo Studio and Quality checks disabled globally, each with its own target selector." width="1280" height="900" loading="lazy" decoding="async" /></a>
+  <figcaption><strong>The target belongs to the action.</strong> Shared groups can be enabled independently in Global or a project. Demo workspace from the current source build; open the image for a closer look.</figcaption>
+</figure>
+
 <h2 id="physical">Understand the physical change</h2>
 
 Project activation exposes shared copies through AFK-owned links:
@@ -54,7 +59,7 @@ The project inventory excludes global-only entries. An agent may still discover 
 
 <h2 id="read">Read with your agent</h2>
 
-**Use with your agent** opens instructions and a copyable command using the profile’s actual ID:
+**Read group once** opens instructions and a copyable command using the profile’s actual ID:
 
 ```bash Use the ID copied by AFK
 afk profiles use <profile-id>
@@ -65,3 +70,12 @@ It prints locally prepared member instructions and resource directories without 
 <h2 id="edit">Edit or remove</h2>
 
 Disable the profile in every target first. Editing can prepare new selected members. Removing deletes its definition, not stored skill files. If preparation fails, the profile is not saved as ready; already prepared copies remain available for retry.
+
+<h2 id="missing">Restore missing members</h2>
+
+You can delete stored members while their profiles are disabled. The profile keeps
+its selection. Enabling a repository-backed profile prepares missing members from
+its saved source before making them available. If preparation fails, the profile
+stays disabled. A local-only profile has no download source: restore its missing
+files or edit its members before enabling it. Profiles enabled in any scope still
+protect their members from deletion.

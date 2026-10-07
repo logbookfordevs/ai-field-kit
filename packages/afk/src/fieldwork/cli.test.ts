@@ -1,3 +1,4 @@
+import { FieldworkOperations } from "./operations.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { access, mkdtemp, mkdir, readFile, readlink, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -335,4 +336,16 @@ describe("AFK agent CLI", () => {
     expectFailure(await command(store, ["manage", "discover", "--input", "-"]));
     expect(await readFile(store.path, "utf8")).toBe(before);
   });
+});
+
+it("routes named skill updates into the selected scope and propagates the result", async () => {
+  const { store } = await fixture();
+  const run = vi.spyOn(FieldworkOperations.prototype, "run").mockResolvedValue({ code: 130, output: "Cancelled", phase: "Update cancelled" });
+  expect((await command(store, ["skills", "update", "sample", "-g"])).code).toBe(130);
+  expect(run).toHaveBeenLastCalledWith("skills/update", { scope: "Global", names: ["sample"] });
+  await command(store, ["skills", "update", "sample", "-p", "Demo Studio"]);
+  expect(run).toHaveBeenLastCalledWith("skills/update", { scope: "Demo Studio", names: ["sample"] });
+  const count = run.mock.calls.length;
+  expect((await command(store, ["skills", "update", "-g", "-p", "Demo Studio"])).code).toBe(1);
+  expect(run.mock.calls.length).toBe(count);
 });

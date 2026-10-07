@@ -13,14 +13,44 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- Install on an All skills source offers a searchable folder picker for that run. Choose members without editing the bookmark; selected sources and stacks keep their saved member lists.
+
+- Installed Skills filters by availability and recorded source and shows rough per-agent automatic discovery token estimates, with on-demand file estimates in Inspect. Project estimates distinguish local inventory from totals including Global.
+
+- Stack creation lists every saved source, including All skills bookmarks. Choose individual skills in the stack form without changing the original bookmark.
+
+- Tools has Install all and Update all actions. Review the saved commands, run them sequentially, and see each result; a failed command does not stop the remaining tools.
+
+- Sources & Stacks offers Install alongside copied commands. Choose a destination and agent, then follow sequential installation progress and retained Skills CLI output. Cancellation stops remaining work while keeping completed or partial installations.
+
+- `afk skills update` and Installed Skills’ Update skills action, plus Update on each skill row, update tracked skills through Skills CLI while preserving availability and AFK invocation preferences. The app shows progress and retained results, with cancellation before file replacement; failed or cancelled updates preserve original files.
+
+- Installed Skills supports selecting multiple skills for bulk enable, disable, invocation changes and reviewed deletion. Selection survives filtering, resets across scopes, and reports per-skill failures without undoing completed changes.
+- Installed Skills can share the selected Global or project skills folder with Claude through a folder symlink. Missing folders are created; disconnecting keeps skills, while existing populated folders and unrelated links are preserved. Individual and profile activation work through shared folders.
+- Installed Skills can permanently delete a skill copy and its supporting files with a review dialog and a second click to confirm. Available skills are removed in the same action along with their AFK-owned links in that scope. Global deletion also removes the matching Claude copy or symlink and recognizes shared skills folders. Enabled profiles, other scopes and other unowned links remain protected; the review identifies any duplicate copy that will remain.
 - `afk status` reports the background server’s resident memory (RSS) in MiB, excluding the browser and child tool processes.
 - `afk --port <number>` selects a fixed loopback port in foreground or background mode. Occupied ports report an error; a background instance on a different port must be stopped before switching.
 
 ### Fixed
 
+- Bulk deletion opens a loading review immediately and prevents duplicate requests. Closing the review keeps delayed results from reopening it; selected skills share one inventory scan.
+
+- Skills CLI output stays expanded during update progress refreshes and completion, preserving the user’s open or closed choice.
+
+- Skill inspection opens the same copy shown in Installed Skills when both active and disabled copies share a name, keeping its path consistent with the availability switch.
 - Fixed-port launch rejects browser-blocked ports such as 6666 before starting. Failed background startup verification now stops its child before removing the tracking record, avoiding an untracked running server.
 
 ### Changed
+
+- Installed Skills puts scope and updates beside the heading, groups filters in a compact row, and moves discovery details and folder paths behind quick disclosures so skills appear sooner.
+
+- Stored skills can be deleted while their profiles are disabled. Profile definitions keep their selections; enabling a repository profile restores missing members before activation. Local-only profiles explain which files need restoring.
+
+- Copied source commands open Skills CLI’s skill picker for All skills bookmarks. Explicit selections and stacks keep their saved skill names; the app’s Install action offers its own one-off skill picker.
+
+- Installed Skills marks manual, automatic, mixed and unknown invocation modes with distinct icons while retaining text labels.
+
+- The website field manual includes demo screenshots, a dedicated Agent rules guide, and updated folder, installation and tool-batch workflows. Full-size images and captions are also available in its Markdown exports.
 
 - The website’s Sources & Stacks guide now covers selected source bookmarks, stack creation and import, reviewed manifest refresh, JSON export, and copy-only installation scripts.
 

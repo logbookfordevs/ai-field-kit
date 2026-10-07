@@ -15,12 +15,12 @@ function filter(mode: string, query = "") {
     { name: "Unreadable", invocation: { claude: "Unknown", codex: "Unknown" } },
   ];
   const context = createContext({
-    invocationFilter: mode, query, scope: "Global", inventory: () => inventory,
+    invocationFilter: mode, sourceFilter: "", availabilityFilter: "", query, scope: "Global", inventory: () => inventory,
     $: (id: keyof typeof fields) => fields[id], isAvailable: () => true,
     esc: String, skillRow: (skill: { name: string }) => `[${skill.name}]`,
     button: (label: string) => label,
   });
-  runInContext(summaryScript + listScript + "renderSkillList()", context);
+  runInContext(readFileSync(new URL("../../web/skill-insights.js", import.meta.url), "utf8") + summaryScript + listScript + "renderSkillList()", context);
   return fields;
 }
 

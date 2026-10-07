@@ -89,6 +89,25 @@ main{padding:20px clamp(20px,4vw,56px) 40px;min-width:0;max-width:1320px;outline
 .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:24px 0}
 .page-head .sub{max-width:60ch}
+.skills-heading{display:flex;align-items:center;gap:20px;margin:24px 0 20px;flex-wrap:wrap}
+.skills-heading h1{margin:0;margin-right:auto}
+.skills-heading .skills-scope{margin:0;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:400}
+.skills-scope select{width:180px}
+.skills-filters{display:grid;grid-template-columns:minmax(180px,1fr) 150px 190px minmax(150px,220px) auto;align-items:end;gap:12px;margin-bottom:12px}
+.skills-filters label{min-width:0;margin:0}
+.skills-filters select{width:100%;text-overflow:ellipsis}
+.skills-utilities{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:16px}
+.skills-utilities button{font-size:12px}
+.skills-folder{margin-left:auto;max-width:100%}
+.skills-folder-popover code{display:block;margin-top:8px;overflow-wrap:anywhere;white-space:normal}
+.skills-folder-popover .meta{display:block;margin-top:2px}
+.skills-list-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.skills-list-meta:has(.skill-bulk){display:block}
+.skills-list-meta #skillSelection>.inline{margin:0}
+@media(max-width:1000px){.skills-filters{grid-template-columns:minmax(160px,1fr) minmax(160px,1fr)}.skills-filters .search{grid-column:1/-1}}
+@media(max-width:600px){.skills-heading{gap:12px;margin:20px 0 16px}.skills-heading h1{width:100%}.skills-heading .skills-scope{flex:1;display:block}.skills-scope select{width:100%;margin-top:4px}.skills-heading>button{align-self:flex-end}.skills-filters{gap:10px}.skills-filters>label{font-size:12px}.skills-filters #clearSkillFilters{grid-column:1/-1;justify-self:start}.skills-utilities{gap:6px;margin-bottom:12px}.skills-folder{margin-left:0}}
+
+.tool-page-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:12px;margin-left:auto;flex-shrink:0}
 
 .ledger-label{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}
 .ledger{border-top:1px solid var(--fg)}
@@ -126,22 +145,40 @@ main{padding:20px clamp(20px,4vw,56px) 40px;min-width:0;max-width:1320px;outline
 .search-field input{padding-right:40px}
 .search-field kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none}
 @media(hover:none){.search-field kbd{display:none}}
+.sharing-state{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--control-border);border-radius:999px;padding:4px 10px;color:var(--fg);font-size:12px;font-weight:600;line-height:1.4;background:var(--surface)}
+.sharing-state::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.sharing-state[data-status=connected]{color:var(--accent-fg);border-color:var(--accent);background:var(--accent)}
+.sharing-state[data-status=connected]::before{background:var(--accent-fg)}
+.sharing-state[data-status=conflict]{color:var(--danger);border-color:var(--danger)}
+.sharing-state[data-status=conflict]::before{background:var(--danger)}
 .path-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:14px}
 .path-line .table-label:last-child{margin-left:auto}
 .path{font:13px var(--font-mono);overflow-wrap:anywhere}
 
-.skills .ledger-head,.skill-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1.1fr) 288px auto;grid-template-areas:'name avail invoc actions'}
+.skills .ledger-head,.skill-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1.1fr) 328px 248px;grid-template-areas:'name avail invoc actions'}
 .skill-row{display:grid;gap:24px;align-items:center}
 .skill-name{grid-area:name;display:grid;gap:2px;min-width:0}
 .skill-name h3{overflow-wrap:anywhere}
+.skill-name{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.skill-name>input{flex:none;width:18px;height:18px;margin:4px 0}
+.skill-name>div{min-width:0}
+.skill-bulk{position:sticky;top:12px;z-index:3;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:12px 16px;margin:12px 0;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface)}
+.skill-bulk label{margin:0}
+.skill-bulk select{width:auto;min-width:160px}
+.skill-bulk .bulk-count{margin-right:auto}
+@media(max-width:600px){.skill-bulk{position:static;padding:12px}.skill-bulk .bulk-count{width:100%}.skill-bulk label{flex:1}.skill-bulk select{width:100%}}
 .skill-avail{grid-area:avail;display:grid;justify-items:start}
 .skill-invoc{grid-area:invoc;display:flex;align-items:center;gap:4px;min-width:0}
 .skill-invoc select{min-width:0;flex:1}
+.skill-invoc-choice{position:relative;min-width:0;flex:1}
+.skill-invoc-choice select{width:100%;padding-inline-start:40px}
+.skill-invoc-mode{position:absolute;inset-inline-start:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--accent);pointer-events:none}
+.skill-invoc-mode svg{display:block;width:100%;height:100%}
 .skill-invoc-info{flex:none;width:44px;padding:0;background:transparent;border-color:transparent;color:var(--accent)}
 .skill-invoc-info:hover{background:var(--warm);border-color:transparent}
 .skill-invoc-info svg{width:20px;height:20px}
 .skill-invoc-popover{position:fixed;inset:auto;margin:0;width:min(320px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:14px 16px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font:13px/1.5 var(--font-body);box-shadow:0 18px 36px -22px color-mix(in srgb,var(--fg) 55%,transparent);overflow-wrap:anywhere}
-.skill-actions{grid-area:actions;justify-self:end}
+.skill-actions{grid-area:actions;justify-self:end;display:flex;align-items:center;gap:12px}
 .switch{min-height:44px;padding:0;gap:10px;border:0;background:none;font-size:14px}
 .switch:hover,.switch:disabled:hover{background:none}
 .switch .track{position:relative;flex:none;width:36px;height:20px;border:1px solid var(--control-border);border-radius:999px;background:var(--surface);transition:background-color .2s,border-color .2s}
@@ -257,7 +294,9 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   .scope-control button{flex:1}
   .toolbar>label,.search{width:100%;max-width:none}
   .path-line .table-label:last-child{margin-left:0}
-  .skill-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'name actions' 'avail avail' 'invoc invoc'}
+  .skill-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'name name' 'avail avail' 'invoc invoc' 'actions actions'}
+  .skill-actions{justify-self:stretch;justify-content:flex-start}
+  .skill-actions button:last-child{margin-left:auto}
   .tool-row{grid-template-columns:1fr;grid-template-areas:'name' 'cmds' 'run'}
   .tool-run button{flex:1}
   .cmds div{grid-template-columns:1fr;gap:4px}
@@ -436,6 +475,12 @@ input,textarea{caret-color:var(--focus)}
 .profile-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .profile-source{border:0;padding:0;margin:0;min-width:0}
 .profile-source legend{font-size:14px;font-weight:500;margin-bottom:6px}
+.stack-source-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;border-bottom:1px solid var(--border)}
+.stack-source-choice .check{min-width:0;gap:12px}
+.stack-source-choice .check>span{overflow-wrap:anywhere}
+.stack-source-choice input[type=checkbox]{flex:0 0 18px;width:18px;min-width:18px;height:18px;min-height:0;margin:0}
+.stack-source-choice>button{white-space:nowrap}
+@media(max-width:480px){.stack-source-choice{gap:8px}.stack-source-choice>button{font-size:12px;padding-inline:4px}}
 .profile-source .check{border:0;padding:8px 12px 8px 0;min-height:44px}
 .profile-source input[type=radio]{flex:0 0 18px;min-width:18px;width:18px;height:18px;min-height:0;accent-color:var(--accent)}
 #repositoryFields{display:grid;gap:12px;justify-items:start}
@@ -472,8 +517,8 @@ input,textarea{caret-color:var(--focus)}
 .source-options summary{font-size:14px}
 .source-options label{margin-top:12px}
 .rules-folder-details{margin-bottom:16px}
-.rules-folder-details summary{color:var(--muted)}
-.rules-folder-details summary .meta{margin-left:12px}
+.rules-folder-details summary{color:var(--muted);gap:8px;flex-wrap:wrap}
+.rules-folder-details summary .meta{margin-left:4px}
 .rules-folder-context{display:grid;gap:8px;padding:4px 0 12px}
 .conflict-destination{display:grid;gap:4px;min-width:0}
 .conflict-options .conflict-choice{grid-template-columns:minmax(0,1fr) auto;gap:6px 20px;padding:16px 0}
@@ -536,6 +581,14 @@ dialog.welcome{width:min(720px,calc(100vw - 32px))}
 }
 @media(max-width:360px){.mobile-navigation select{width:130px}.mobile-navigation button{padding:0 8px}}
 
+.update-steps{display:flex;gap:12px;padding:0;margin:24px 0;list-style:none}
+.update-steps li{flex:1;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding-bottom:10px;border-bottom:2px solid var(--border)}
+.update-steps li span{display:grid;place-items:center;width:24px;height:24px;border:1px solid currentColor;border-radius:50%;flex-shrink:0}
+.update-steps .current,.update-steps .complete{color:var(--fg);border-color:var(--fg)}
+.update-phase{display:flex;gap:10px;align-items:center}
+.update-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--fg);border-radius:50%;animation:update-spin .8s linear infinite;flex-shrink:0}
+@keyframes update-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.update-spinner{animation:none}}
 </style>
 </head>
 <body>
@@ -567,7 +620,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refocus=id=>document.querySelector(`[data-od-id="${id}"]`)?.focus();
 
-let section='Profiles',scope='Global',query='',invocationFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
+let section='Profiles',scope='Global',query='',invocationFilter='',sourceFilter='',availabilityFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
 let projects=[],profiles=[],tools=[];
 const independent={Global:[]};
 let preferences={},individualOff={};
@@ -705,28 +758,41 @@ async function copyCommand(){
 function scopePath(){return scope==='Global'?'~/.agents/skills/':(projects.find(p=>p.name===scope)?.path||'')+'/.agents/skills/'}
 
 function renderSkills(){
-  $('view').innerHTML=head('Installed Skills','Control availability and invocation for the selected scope.')
-    +`<div class="toolbar">
-        <label>Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>
-        <label>Invocation<select id="invocationFilter" onchange="invocationFilter=this.value;renderSkillList()"><option value="">All invocation modes</option>${['manual only','automatic allowed','varies by agent','unknown'].map(mode=>`<option value="${mode}" ${invocationFilter===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label>
+  if(selectedSkillScope!==scope){selectedSkills.clear();selectedSkillScope=scope}
+  const names=new Set(inventory().map(skill=>skill.name));
+  for(const name of selectedSkills)if(!names.has(name))selectedSkills.delete(name);
+  if(sourceFilter&&!inventory().some(entry=>(entry.source||'__local')===sourceFilter))sourceFilter='';
+  const sharingStatus=skillSharing[scope]?.status;
+  const sharingLabel=sharingStatus==='connected'?'Sharing on':sharingStatus==='conflict'?'Needs attention':'Sharing off';
+  $('view').innerHTML=`<header class="skills-heading"><h1>Installed Skills</h1><label class="skills-scope">Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>${inventory().length?button('Update skills','showSkillUpdate()','','data-od-id="update-skills"'):''}</header>
+      <div class="skills-filters">
         <label class="search">Find a skill<span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
-        ${inventory().length?button('Copy update-all command','copyUpdateAll()','','data-od-id="copy-update-all"'):''}
+        <label>Availability<select id="availabilityFilter" onchange="availabilityFilter=this.value;renderSkillList()"><option value="">All availability</option><option value="available" ${availabilityFilter==='available'?'selected':''}>Available</option><option value="disabled" ${availabilityFilter==='disabled'?'selected':''}>Disabled</option></select></label>
+        <label>Invocation<select id="invocationFilter" onchange="invocationFilter=this.value;renderSkillList()"><option value="">All modes</option>${['manual only','automatic allowed','varies by agent','unknown'].map(mode=>`<option value="${mode}" ${invocationFilter===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label>
+        <label>Source<select id="sourceFilter" onchange="sourceFilter=this.value;renderSkillList()"><option value="">All sources</option>${installedSourceOptions()}</select></label>
+        ${button('Clear filters','clearSkillFilters()','text',`id="clearSkillFilters" ${query.trim()||invocationFilter||sourceFilter||availabilityFilter?'':'hidden'}`)}
       </div>
-      ${inventory().length?`<p class="hint" style="margin-bottom:12px">Update copies a command for ${esc(scope)}; you run it in your terminal.</p>`:''}
-      <p class="path-line"><span class="meta">Folder</span><code class="path">${esc(scopePath())}</code><span class="table-label" id="skillCount"></span></p>
-      <div id="skillList"></div>`;
+      <div class="skills-utilities"><span class="sharing-state" data-status="${esc(sharingStatus||'missing')}">${esc(sharingLabel)}</span>${button('Claude sharing','reviewClaudeSharing()','text')}${skillTokenSummary()}<span class="skills-folder"><button type="button" class="text" popovertarget="skillsFolderDetails">Folder details</button><div id="skillsFolderDetails" class="skill-invoc-popover skills-folder-popover" popover aria-label="Skill folders"><strong>Skill folders · ${esc(scope)}</strong><code class="path">${esc(scopePath())}</code>${sharingStatus==='connected'?`<code class="path">${esc(scope==='Global'?'~/.claude/skills/':(projects.find(project=>project.name===scope)?.path||'')+'/.claude/skills/')} <span class="meta">Shared folder link</span></code>`:''}</div></span></div>
+      <div class="skills-list-meta"><span class="table-label" id="skillCount"></span><div id="skillSelection"></div></div><div id="skillList"></div>`;
   renderSkillList();
 }
 
-function setScope(value){scope=value;render();$('scopeSelect').focus()}
+function setScope(value){selectedSkills.clear();sourceFilter='';scope=value;render();$('scopeSelect').focus()}
+
+function clearSkillFilters(){
+  query='';invocationFilter='';sourceFilter='';availabilityFilter='';renderSkills();$('skillSearch').focus();
+}
 
 function renderSkillList(){
-  const all=inventory(),list=all.filter(s=>s.name.toLowerCase().includes(query.trim().toLowerCase())&&(!invocationFilter||invocationSummary(s.invocation)===invocationFilter));
-  const filtered=Boolean(query.trim()||invocationFilter);
+  const clearFilters=$('clearSkillFilters');
+  if(clearFilters)clearFilters.hidden=!(query.trim()||invocationFilter||sourceFilter||availabilityFilter);
+  const all=inventory(),list=all.filter(matchesSkillFilters);
+  const filtered=Boolean(query.trim()||invocationFilter||sourceFilter||availabilityFilter);
   const available=all.filter(s=>isAvailable(s)).length;
+  if(typeof renderSkillSelection==='function')renderSkillSelection(list);
   $('skillCount').textContent=filtered?`${list.length} of ${all.length} shown`:`${all.length} entries · ${available} available`;
   if(!list.length){
-    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'No skill entries in this project'}</h2><p class="sub">${filtered?'Try another invocation mode or skill name.':scope==='Global'?'Create a profile from a source repository to prepare skills locally.':'Global-only skills are excluded. Enable a profile for this project to create its links.'}</p>${filtered?button('Clear filters',"query='';invocationFilter='';renderSkills();$('skillSearch').focus()"):button('Go to Profiles',"navigate('Profiles')")}</div>`;
+    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'No skill entries in this project'}</h2><p class="sub">${filtered?'Try another availability, source, invocation mode or skill name.':scope==='Global'?'Create a profile from a source repository to prepare skills locally.':'Global-only skills are excluded. Enable a profile for this project to create its links.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):button('Go to Profiles',"navigate('Profiles')")}</div>`;
     return;
   }
   $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row table-label" aria-hidden="true"><span>Skill</span><span>Availability</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>`;
@@ -736,13 +802,13 @@ function skillRow(s){
   const held=s.owners.length>0,enabled=isAvailable(s);
   const invocationHint=preferenceHint(s.name);
     return `<article class="skill-row row" data-od-id="skill-${s.name}">
-    <div class="skill-name"><h3>${esc(s.name)}</h3>${scope!=='Global'?`<span class="meta">${s.shared?'Shared skill':'Project-local skill'}</span>`:''}</div>
+    <div class="skill-name"><input type="checkbox" data-skill-select="${esc(s.name)}" aria-label="Select ${esc(s.name)}" ${selectedSkills.has(s.name)?'checked':''} ${skillBulkBusy?'disabled':''} onchange="selectSkill('${s.name}',this.checked)"><div><h3>${esc(s.name)}</h3>${scope!=='Global'?`<span class="meta">${s.shared?'Shared skill':'Project-local skill'}</span>`:''}</div></div>
     <div class="skill-avail">
-      <button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>
+      <button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held||skillBulkBusy?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>
       ${held?`<span class="hint">Managed by ${s.owners.map(esc).join(', ')} · change in Profiles</span>`:''}
     </div>
-    <div class="skill-invoc">${invocationInfo(s.name,invocationHint)}${preferenceSelect(s.name)}</div>
-    <div class="skill-actions">${button('Inspect',`inspectSkill('${s.name}')`,'',`data-od-id="skill-${s.name}-inspect"`)}</div>
+    <div class="skill-invoc">${invocationInfo(s.name,invocationHint)}${preferenceSelect(s.name,skillBulkBusy?'disabled':'')}</div>
+    <div class="skill-actions">${button('Update',`showSkillUpdate('${s.name}')`,'text',skillBulkBusy?'disabled':'')}${button('Inspect',`inspectSkill('${s.name}')`,'text',`data-od-id="skill-${s.name}-inspect"`)}${button('Delete',`reviewSkillDeletion('${s.name}')`,'text danger',skillBulkBusy?'disabled':'')}</div>
   </article>`;
 }
 
@@ -755,7 +821,17 @@ function preferenceSelect(name,attrs=''){
   const current=preferences[scope+'|'+name]||'',entry=inventory().find(e=>e.name===name);
   const inherited=scope!=='Global'&&entry?.shared;
   const first=(inherited?'Global':'Default')+' · '+invocationSummary(entry?.defaultInvocation);
-  return `<select data-pref="${name}" aria-label="Invocation for ${name} in ${esc(scope)}" ${attrs} onchange="setPreference('${name}',this.value)"><option value="" ${current?'':'selected'}>${esc(first)}</option>${['Manual only','Automatic allowed'].map(v=>`<option ${current===v?'selected':''}>${v}</option>`).join('')}</select>`;
+  return `<div class="skill-invoc-choice">${invocationModeIcon(entry?.invocation)}<select data-pref="${name}" aria-label="Invocation for ${name} in ${esc(scope)}" ${attrs} onchange="setPreference('${name}',this.value)"><option value="" ${current?'':'selected'}>${esc(first)}</option>${['Manual only','Automatic allowed'].map(v=>`<option ${current===v?'selected':''}>${v}</option>`).join('')}</select></div>`;
+}
+function invocationModeIcon(policy){
+  const mode=invocationSummary(policy);
+  const paths={
+    'manual only':'<path d="m4 3 7 17 2.5-6.5L20 11 4 3Z"/>',
+    'automatic allowed':'<path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z"/>',
+    'varies by agent':'<path d="M7 5v10a4 4 0 0 0 4 4h6M7 9h6a4 4 0 0 0 4-4"/><circle cx="7" cy="3" r="2"/><circle cx="17" cy="3" r="2"/><circle cx="19" cy="19" r="2"/>',
+    unknown:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/>'
+  };
+  return `<span class="skill-invoc-mode" data-invocation-mode="${mode}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${paths[mode]}</svg></span>`;
 }
 function preferenceHint(name){
   const entry=inventory().find(e=>e.name===name),policy=entry?.invocation;
@@ -781,7 +857,7 @@ function renderTools(){
   const list=tools.length
     ?`<div class="ledger tools"><div class="ledger-head tool-row table-label" aria-hidden="true"><span>Tool</span><span>Saved commands</span><span>Run</span></div>${rows}</div>`
     :`<div class="empty"><h2>No saved commands</h2><p class="sub">Add a tool to keep its install and update commands together.</p></div>`;
-  $('view').innerHTML=head('Tools','Saved install and update commands. Each runs only when you choose, always in Global.',button('Add tool','editTool()','primary','data-od-id="add-tool"'))
+  $('view').innerHTML=head('Tools','Saved install and update commands. Each runs only when you choose, always in Global.',`<div class="tool-page-actions">${button('Install all','runAllTools(false)','',tools.length?'':'disabled')}${button('Update all','runAllTools(true)','',tools.length?'':'disabled')}${button('Add tool','editTool()','primary','data-od-id="add-tool"')}</div>`)
     +`<p class="path-line"><span class="table-label">Execution context</span><code class="path">Global · ~</code><span class="meta">Home directory</span></p>${list}`
     +`<aside class="note"><span class="table-label">Explicit commands</span><p><strong>Visible results, no hidden runs.</strong> Removing an entry does not uninstall its tool, and a successful command is not proof of a usable installation.</p></aside>`;
 }
@@ -882,6 +958,7 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 <script src="/invocation-info.js"></script>
 <script src="/rules.js"></script>
 <script src="/onboarding.js"></script>
+<script src="/skill-insights.js"></script>
 <script src="/client.js"></script>
 </body>
 </html>

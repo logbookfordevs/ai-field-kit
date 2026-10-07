@@ -60,3 +60,9 @@ test('pipes inside table code do not create extra columns', () => {
   const result = toMarkdown('<table><thead><tr><th>Command</th></tr></thead><tbody><tr><td><code>enable|disable</code></td></tr></tbody></table>');
   assert.ok(result.includes('`enable\\|disable`'));
 });
+
+test('screenshot exports retain descriptive alt text, captions and public image links', () => {
+  const result = toMarkdown('<figure><a href="/docs/screenshots/example.webp"><img src="/docs/screenshots/example.webp" alt="A skill [selection]" /></a><figcaption>Two selected skills.</figcaption></figure>');
+  assert.ok(result.includes(`![A skill \\[selection\\]](${publicOrigin}/docs/screenshots/example.webp)`));
+  assert.ok(result.includes('Two selected skills.'));
+});

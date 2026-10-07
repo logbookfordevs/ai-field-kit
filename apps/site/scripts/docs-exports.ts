@@ -43,6 +43,15 @@ export function toMarkdown(html: string) {
     filter: 'dt',
     replacement: (content) => `\n\n**${content}**\n\n`,
   });
+  converter.addRule('images', {
+    filter: 'img',
+    replacement: (_, node) => {
+      const source = node.getAttribute('src');
+      if (!source) return '';
+      const alt = (node.getAttribute('alt') ?? '').replaceAll('[', '\\[').replaceAll(']', '\\]');
+      return `![${alt}](${new URL(source, publicOrigin).href})`;
+    },
+  });
   converter.addRule('definitionBodies', { filter: 'dd', replacement: (content) => `\n\n${content}\n\n` });
   converter.addRule('summaries', { filter: 'summary', replacement: (content) => `\n\n**${content}**\n\n` });
   converter.addRule('codeBlocks', {

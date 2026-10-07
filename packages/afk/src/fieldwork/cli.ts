@@ -21,6 +21,7 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk --port <number>                Open the app on a fixed port
   afk status                         Show the background app URL and PID
   afk stop                           Stop the background app
+  afk skills update [name] [-g | -p <project>]  Update skills, preserving availability
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
   afk profiles use <id>              Read a group without enabling it
@@ -93,15 +94,18 @@ async function manage(argv: string[], store: SettingsStore): Promise<number> {
   const data = await inputObject(path);
   await store.initialize();
   const operations = new FieldworkOperations(store);
+  const cancelUpdate = (): void => { void operations.run("skills/update-cancel").catch(error => console.error(error)); };
+  if (operation === "skills/update") process.on("SIGINT", cancelUpdate);
   try {
     const result = await operations.run(operation, data);
     json(result);
+    if (operation === "skills/update") return (result as { code: number }).code;
     if (operation === "tool/run") {
       const code = (result as { code: number }).code;
       return code === 0 ? 0 : Math.max(1, Math.min(255, code));
     }
     return ["rules/sync", "rules/overwrite"].includes(operation) && hasErrors(result) ? 1 : 0;
-  } finally { await operations.close(); }
+  } finally { process.removeListener("SIGINT", cancelUpdate); await operations.close(); }
 }
 
 async function run(argv: string[], store: SettingsStore): Promise<number> {
@@ -136,6 +140,31 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     if (action === "use") { console.log(await library.readGroup(settings, id)); return 0; }
     if (action === "enable" || action === "disable") { await library.activate(settings, id, target ?? "Global", action === "enable"); return 0; }
     throw new Error("Choose profiles use, enable, or disable.");
+  }
+  if (command === "skills" && action === "update") {
+    let scope = "Global", hasScope = false;
+    const names: string[] = [];
+    const args = argv.slice(2);
+    for (let index = 0; index < args.length; index++) {
+      const argument = args[index]!;
+      if (["-g", "--global", "-p", "--project"].includes(argument)) {
+        if (hasScope) throw new Error("Choose one update scope.");
+        hasScope = true;
+        if (argument === "-p" || argument === "--project") {
+          const project = args[++index];
+          if (!project || project.startsWith("-")) throw new Error("Provide a configured project name after -p.");
+          scope = project;
+        }
+      } else {
+        if (argument.startsWith("-")) throw new Error("Use skills update [name] -g or -p <project>.");
+        names.push(argument);
+      }
+    }
+    const operations = new FieldworkOperations(store);
+    const cancelUpdate = (): void => { void operations.run("skills/update-cancel").catch(error => console.error(error)); };
+    process.on("SIGINT", cancelUpdate);
+    try { const result = await operations.run("skills/update", { scope, ...(names.length ? { names } : {}) }) as { code: number; output: string; phase: string }; console.log(result.output); console.log(result.phase); return result.code; }
+    finally { process.removeListener("SIGINT", cancelUpdate); await operations.close(); }
   }
   if (command === "skills" && action === "get" && id && extra === undefined) {
     const path = await library.locate(await store.read(), id, target ?? "Global");

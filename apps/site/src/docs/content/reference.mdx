@@ -57,6 +57,9 @@ is shown as unavailable. Stop and restart it after updating to enable the metric
 ```bash Reading commands
 afk profiles use <profile-id>
 afk skills get <skill-name> [scope]
+afk skills update -g
+afk skills update <skill-name> -g
+afk skills update -p 'Demo Studio'
 ```
 
 Use the ID copied by the app. Profiles print prepared local member guidance and resource directories. Skill get prints SKILL.md from the selected scope.
@@ -80,6 +83,34 @@ afk settings export /path/to/export.json
 
 Import and file-location selection live in Settings. Export does not install skills or run saved commands.
 
+<h2 id="manage">Manage AFK from an agent</h2>
+
+The bundled skill is available even when you have not installed it into your
+agent's skill directory. Run `afk guide` and ask the agent to read the returned
+`SKILL.md` before changing AFK configuration.
+
+```bash Discover the current interface
+afk guide
+afk settings path
+afk settings schema
+afk manage describe
+afk doctor --json
+```
+
+Editable JSON stores definitions. Use managed operations for activation,
+installation, deletion, invocation changes, rule sync and relocating the AFK
+folder. Describe an operation first to get its current input contract:
+
+```bash Inspect an operation before using it
+afk manage describe workspace
+afk manage describe stack/install
+afk manage describe rules/preview
+```
+
+Pass input as a JSON file with `afk manage <operation> --input <file>`, or use
+`--input -` to read JSON from stdin. Validation checks format; doctor also checks
+local consistency. Neither applies filesystem changes by itself.
+
 <h2 id="legacy">Choose the right AFK version</h2>
 
-Catalogs, setup, sync, rules, hooks, MCP configuration and custom-agent provisioning are no longer AFK commands. Read [AFK 1.x releases](/docs?chapter=legacy) to install or fork the old behavior.
+The old setup router, catalogs, hooks, MCP configuration and custom-agent provisioning belong to AFK 1.x. Agent rules now uses explicit managed-region operations rather than the old setup commands. Read [AFK 1.x releases](/docs?chapter=legacy) to install or fork the old behavior.

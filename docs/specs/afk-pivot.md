@@ -53,6 +53,25 @@ storage; global-only entries are excluded. Metadata files and broken links are
 ignored. The view is not a combined effective inventory: global skills may still
 be discoverable to an agent working in a project.
 
+Selection is scoped to the displayed inventory. Checkboxes and Select shown
+support bulk availability, invocation and deletion. Search/filter changes retain
+selection and expose the hidden count; changing scope clears it. Non-destructive
+success keeps selection for another action, while partial results retain failed
+members. Operations run sequentially and return per-member outcomes; successful
+changes are not rolled back when another member fails. Bulk deletion reviews all
+members and blockers before a single confirmation click, rejects stale reviews
+before starting, and removes only eligible reviewed copies.
+
+**Share skills with Claude** controls the selected scope’s local folder layout.
+Sharing creates the canonical skills folder and Claude directory if missing, then
+links `.claude/skills` to `.agents/skills`. Existing matching links are recognized.
+An empty Claude skills directory can be replaced after review; populated folders,
+files and unrelated links are preserved and reported as conflicts. Disconnecting
+removes only the folder link, keeping all canonical skill files. This local
+filesystem state is inspected directly, rather than exported as a portable
+configuration preference. Profile and individual activation avoid duplicate
+operations when the discovery folders share one underlying directory.
+
 The invocation filter uses effective Claude/Codex metadata, including differences
 between agents and unknown metadata. It combines with name search within the
 selected scope and does not change skill state.
@@ -69,10 +88,28 @@ owned links to shared storage so later Global changes flow through. A physical
 project-local skill restores its own original metadata. These controls do not
 claim support for every agent.
 
-Update-all copies `npx skills update -g` for Global or a command that changes to
-the project directory and runs `npx skills update -p`. It never executes the update.
-Skills CLI updates only installations it tracks; staged AFK copies are not a new
-upstream-update registry.
+Update skills runs `afk skills update -g` or `afk skills update -p <project>` through
+shared operations. Skills CLI updates tracked installations in an isolated home
+and workspace. Changed copies replace their existing physical storage locations;
+availability links and AFK invocation preferences remain intact. Failures before
+application leave originals unchanged; application failures restore backed-up
+copies. Concurrent local edits abort application. Progress and output remain
+available for the current app session after closing the dialog. Direct Skills CLI
+updates bypass this protection; untracked prepared copies remain untracked.
+
+Permanent deletion is separate from disabling. Delete beside Inspect opens a review of
+the affected folders and links; a second click on Delete permanently confirms it.
+No typed skill name or second dialog is required. The skill must be
+removed from profile definitions. Available physical copies and AFK-owned links
+to same-scope disabled storage can be deleted without a separate disable step.
+Owned availability links are reviewed and removed together with the storage;
+other scopes and unrelated unowned links block deletion. Global deletion also
+reviews and removes the matching Claude copy or link, without deleting unrelated
+symlink targets. Shared Claude skills folders are recognized without double
+removal. A shared project link must be
+deleted through its original storage scope. The preview lists duplicate copies
+that remain. Supporting files are deleted too. Changed files or links invalidate
+the review, and a failed settings save restores the folder and links. AFK cannot discover links in unconfigured projects.
 
 ## Agent management
 
@@ -138,6 +175,9 @@ an empty update reuses install. Install/Update explicitly run the saved command
 from the home directory and show output and exit status. Results persist during
 the server session even if the dialog closes. Duplicate concurrent runs for the
 same entry are rejected. Removing an entry only removes it from management.
+Install all and Update all review the saved commands before running them
+sequentially. Failures and already-running entries are reported without stopping
+the remaining tools; an empty update command still reuses install.
 
 ## Settings and projects
 
@@ -209,3 +249,15 @@ descriptions, and a selection count. Filtering retains chosen members. Installed
 Skills shows effective native invocation metadata and the behavior restored by
 clearing an override. Narrow screens keep a compact section selector and app
 utilities available while scrolling.
+
+### Installing saved sources and stacks
+
+Install runs Skills CLI for a saved source or stack, using the chosen scope and an
+explicit agent. Copied scripts retain their existing interactive behavior. App
+installation skips prompts after the user chooses the target, processes sources
+sequentially and retains progress/output during the session. Closing the dialog
+does not cancel the job. Cancellation stops the child process and later sources;
+completed or partial files remain. Installation can replace existing skills and
+make them available; the protected Installed Skills updater is the path for
+preserving an existing disabled state. Saving or editing a bookmark/stack still
+does not install anything. Agent operations expose the same installation actions.

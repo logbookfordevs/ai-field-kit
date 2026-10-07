@@ -9,7 +9,8 @@ function positionInvocationInfo(popover){
   if(!trigger)return;
   const anchor=trigger.getBoundingClientRect(),panel=popover.getBoundingClientRect();
   const gutter=16,gap=8;
-  const left=Math.max(gutter,Math.min(anchor.left,window.innerWidth-panel.width-gutter));
+  const desiredLeft=popover.classList.contains('skills-folder-popover')?anchor.right-panel.width:anchor.left;
+  const left=Math.max(gutter,Math.min(desiredLeft,window.innerWidth-panel.width-gutter));
   const below=anchor.bottom+gap;
   const fitsBelow=below+panel.height<=window.innerHeight-gutter;
   const top=fitsBelow?below:Math.max(gutter,anchor.top-panel.height-gap);
