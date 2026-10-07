@@ -146,7 +146,7 @@ discover=async()=>{
   const isCurrent=()=>profilePicker===picker&&version===picker.version&&$('sheet').open&&Boolean($('discoverMembers'));
   if(!source){$('profileError').textContent='Enter a repository to find its skills.';$('source').focus();return}
   $('profileError').textContent='';$('discovery').innerHTML='<p role="status">Finding skills in this repository…</p>';$('saveProfile').disabled=true;$('discoverMembers').disabled=true;
-  try{const result=await request('discover',{source});if(!isCurrent())return;renderMembers(result.names,'Repository skills',false,[],result.descriptions||{},picker,result.paths||{})}
+  try{const result=await request('discover',{source});if(!isCurrent())return;renderMembers(result.names,'Repository skills',false,picker.selectAllOnDiscovery?result.names:[],result.descriptions||{},picker,result.paths||{})}
   catch(error){if(isCurrent())$('discovery').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`}
   finally{if(isCurrent())$('discoverMembers').disabled=false}
 };

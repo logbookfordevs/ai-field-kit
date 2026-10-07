@@ -317,7 +317,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 .source-destination{margin-bottom:18px}
 .source-destination .toolbar>label{flex:1;min-width:0;max-width:300px}
 .source-row{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
-.source-info{min-width:0}.source-info h2{overflow-wrap:anywhere}
+.source-card-heading{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:8px}.source-card-heading h2{margin:0}.source-card-heading button{flex:none;min-height:40px;font-size:12px}.source-info{min-width:0}.source-info h2{overflow-wrap:anywhere}
 .source-actions{flex-shrink:0;flex-wrap:wrap}
 .source-section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:24px 0 12px}
 .source-section-heading h2{margin:0}.source-section-heading h2 .meta{margin-left:8px}
@@ -740,10 +740,10 @@ function inspectProfile(id){
 function editProfile(id){const p=profiles.find(p=>p.id===id);if(!p.enabled.length)createProfile(p)}
 
 let editing=null,profilePicker;
-function createProfile(p=null){
-  editing=p;
+function createProfile(p=null,isNew=false){
+  editing=isNew?null:p;
   profilePicker={mode:p?.source==='Local skill selection'?'local':'repository',names:[],selected:new Set(p?.skills||[]),query:'',selectedOnly:false,version:0,descriptions:{}};
-  modal(p?'Edit profile':'Create a profile',
+  modal(p&&!isNew?'Edit profile':'Create a profile',
     `<label>Profile name<input id="profileName" value="${p?esc(p.name):''}" placeholder="e.g. Video tools" oninput="this.removeAttribute('aria-invalid');$('nameError').textContent=''" aria-describedby="nameError"><span class="field-error" id="nameError"></span></label>
     <fieldset class="profile-source"><legend>Choose skills from</legend><div class="inline"><label class="check"><input type="radio" name="profileSource" value="repository" ${profilePicker.mode==='repository'?'checked':''} onchange="setProfileMode(this.value)"><span>Repository</span></label><label class="check"><input type="radio" name="profileSource" value="local" ${profilePicker.mode==='local'?'checked':''} onchange="setProfileMode(this.value)"><span>This machine</span></label></div></fieldset>
     <div id="repositoryFields" ${profilePicker.mode==='local'?'hidden':''}><label>Repository<input id="source" value="${p&&p.source!=='Local skill selection'?esc(p.source):''}" placeholder="Repository URL or owner/repository" oninput="resetDiscovery()"></label>${button('Find skills','discover()','','id="discoverMembers"')}</div>
@@ -788,7 +788,7 @@ function renderSkills(){
         <label>Profile<select id="profileFilter" onchange="profileFilter=this.value;renderSkillList()"><option value="">All skills</option><option value="__any" ${profileFilter==='__any'?'selected':''}>In any profile</option><option value="__none" ${profileFilter==='__none'?'selected':''}>No profile</option>${installedProfileOptions()}</select></label>
         ${button('Clear filters','clearSkillFilters()','text',`id="clearSkillFilters" ${query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter?'':'hidden'}`)}
       </div>
-      <div class="skills-utilities"><span class="sharing-state" data-status="${esc(sharingStatus||'missing')}">${esc(sharingLabel)}</span>${button('Claude sharing','reviewClaudeSharing()','text')}${skillTokenSummary()}<span class="skills-folder"><button type="button" class="text" popovertarget="skillsFolderDetails">Folder details</button><div id="skillsFolderDetails" class="skill-invoc-popover skills-folder-popover" popover aria-label="Skill folders"><strong>Skill folders · ${esc(scope)}</strong><code class="path">${esc(scopePath())}</code>${sharingStatus==='connected'?`<code class="path">${esc(scope==='Global'?'~/.claude/skills/':(projects.find(project=>project.name===scope)?.path||'')+'/.claude/skills/')} <span class="meta">Shared folder link</span></code>`:''}</div></span></div>
+      <div class="skills-utilities"><span class="sharing-state" data-status="${esc(sharingStatus||'missing')}">${esc(sharingLabel)}</span>${button('Claude sharing','reviewClaudeSharing()','text')}<span id="skillsDiscoverySummary">${skillTokenSummary()}</span><span class="skills-folder"><button type="button" class="text" popovertarget="skillsFolderDetails">Folder details</button><div id="skillsFolderDetails" class="skill-invoc-popover skills-folder-popover" popover aria-label="Skill folders"><strong>Skill folders · ${esc(scope)}</strong><code class="path">${esc(scopePath())}</code>${sharingStatus==='connected'?`<code class="path">${esc(scope==='Global'?'~/.claude/skills/':(projects.find(project=>project.name===scope)?.path||'')+'/.claude/skills/')} <span class="meta">Shared folder link</span></code>`:''}</div></span></div>
       <div class="skills-list-meta"><span class="table-label" id="skillCount"></span><div id="skillSelection"></div></div><div id="skillList"></div>`;
   renderSkillList();
 }
@@ -803,6 +803,8 @@ function renderSkillList(){
   const clearFilters=$('clearSkillFilters');
   if(clearFilters)clearFilters.hidden=!(query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter);
   const all=inventory(),list=all.filter(matchesSkillFilters);
+  const discovery=$('skillsDiscoverySummary');
+  if(discovery)discovery.innerHTML=skillTokenSummary();
   const filtered=Boolean(query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter);
   const available=all.filter(s=>isAvailable(s)).length;
   if(typeof renderSkillSelection==='function')renderSkillSelection(list);

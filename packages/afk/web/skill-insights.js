@@ -16,12 +16,12 @@ function tokenSummaryLine(entries){
   return ['codex','claude'].map(agent=>{const value=automaticTokenEstimate(entries,agent);return `${agent==='codex'?'Codex':'Claude'}: ~${value.tokens.toLocaleString()} tokens · ${value.count} automatic skills`}).join(' / ');
 }
 function skillTokenSummary(){
-  const codex=automaticTokenEstimate(inventory(),'codex'),claude=automaticTokenEstimate(inventory(),'claude');
+  const codex=automaticTokenEstimate(inventory().filter(matchesSkillFilters),'codex'),claude=automaticTokenEstimate(inventory().filter(matchesSkillFilters),'claude');
   return button(`Discovery: Codex ~${codex.tokens.toLocaleString()} · Claude ~${claude.tokens.toLocaleString()} tokens`,'showDiscoveryEstimate()','text');
 }
 function showDiscoveryEstimate(){
   const project=scope!=='Global';
-  modal('Automatic discovery estimate',`<p><strong>${esc(scope)}${project?' only':''}</strong></p><p>${esc(tokenSummaryLine(inventory()))}</p>${project?`<p>Including Global: ${esc(tokenSummaryLine([...(inventories.Global||[]),...inventory()]))}</p>`:''}<p class="hint">Rough estimate: one token per four characters in available automatic skills’ names and descriptions. Agent formatting, model tokenizers, full instructions and supporting files are excluded. Unknown invocation modes are not counted. Shared skill names count once; filters do not change this scope summary.</p>`);
+  modal('Automatic discovery estimate',`<p><strong>${esc(scope)}${project?' only':''} · shown skills</strong></p><p>${esc(tokenSummaryLine(inventory().filter(matchesSkillFilters)))}</p>${project?`<p>Including Global, same filters: ${esc(tokenSummaryLine([...(inventories.Global||[]),...inventory()].filter(matchesSkillFilters)))}</p>`:''}<p class="hint">Rough estimate: one token per four characters in available automatic skills’ names and descriptions. Agent formatting, model tokenizers, full instructions and supporting files are excluded. Unknown invocation modes are not counted. Shared skill names count once; current filters apply to this estimate. Only shown, available skills with automatic invocation contribute.</p>`);
 }
 function installedSourceOptions(){
   const sources=[...new Set(inventory().map(entry=>entry.source||'__local'))].sort();

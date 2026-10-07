@@ -13,9 +13,11 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- Source bookmarks offer Create profile with their saved skill selection, or all currently discovered members. Review before saving; the source stays bookmarked and profile activation remains unchanged.
+
 - Install on an All skills source offers a searchable folder picker for that run. Choose members without editing the bookmark; selected sources and stacks keep their saved member lists.
 
-- Installed Skills filters by availability, recorded source and saved profile membership and shows rough per-agent automatic discovery token estimates, with on-demand file estimates in Inspect. Project estimates distinguish local inventory from totals including Global.
+- Installed Skills filters by availability, recorded source and saved profile membership and shows rough per-agent automatic discovery token estimates for the filtered list, with on-demand file estimates in Inspect. Project estimates distinguish local inventory from totals including Global.
 
 - Stack creation lists every saved source, including All skills bookmarks. Choose individual skills in the stack form without changing the original bookmark.
 

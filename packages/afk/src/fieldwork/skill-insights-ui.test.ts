@@ -62,3 +62,18 @@ it("filters saved profile membership including disabled profiles and overlapping
   expect(ui.run("installedProfiles()")).toEqual([]);
   expect(ui.run("inventory().filter(matchesSkillFilters)")).toEqual([]);
 });
+
+
+it("updates discovery totals with current filters and excludes disabled matching members",()=>{
+  const ui=fixture();
+  ui.context.button=(label:string)=>label;
+  ui.context.profiles=[{id:"disabled-only",skills:["disabled"]}];
+  expect(ui.run<string>("skillTokenSummary()")).not.toContain("Codex ~0");
+  ui.run("profileFilter='disabled-only'");
+  expect(ui.run<string>("skillTokenSummary()")).toContain("Codex ~0");
+  expect(ui.run<string>("skillTokenSummary()")).toContain("Claude ~0");
+  ui.run("profileFilter='';query='nothing-matches'");
+  expect(ui.run<string>("skillTokenSummary()")).toContain("Codex ~0");
+  ui.run("query=''");
+  expect(ui.run<string>("skillTokenSummary()")).not.toContain("Codex ~0");
+});

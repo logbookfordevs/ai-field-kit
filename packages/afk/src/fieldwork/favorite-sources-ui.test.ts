@@ -53,6 +53,28 @@ beforeEach(() => {
 });
 
 describe("favorite-source UI and copied commands", () => {
+  it("starts a new profile from selected bookmark members without modifying or installing the source", async () => {
+    let draft: unknown;
+    context.createProfile = (profile: unknown) => { draft = profile; };
+    context.discover = () => { throw new Error("Selected bookmarks need no discovery"); };
+    const before = JSON.stringify(sources);
+    await evaluate<Promise<void>>("createProfileFromSource(0)");
+    expect(draft).toEqual({name:"Selected",source:"owner/toolkit",skills:["review"]});
+    expect(evaluate("editing")).toBeNull();
+    expect(JSON.stringify(sources)).toBe(before);
+    expect(patch).toBeUndefined();
+  });
+
+  it("discovers and selects all members only for an all-skills bookmark", async () => {
+    let calls = 0;
+    context.createProfile = () => { context.profilePicker = {}; };
+    context.discover = async () => { calls++; expect(evaluate("profilePicker.selectAllOnDiscovery")).toBe(true); };
+    await evaluate<Promise<void>>("createProfileFromSource(1)");
+    expect(calls).toBe(1);
+    expect(sources[1]?.skills).toBeUndefined();
+    expect(patch).toBeUndefined();
+  });
+
   it("switches both collection views without changing bookmarks or installation target", () => {
     context.scopeNames = () => ["Global"];
     context.scopeOptions = () => "";
