@@ -19,13 +19,17 @@ Build first, then use the local executable:
 ```sh
 node packages/afk/dist/index.js --background --port 4310
 node packages/afk/dist/index.js status
+node packages/afk/dist/index.js restart
 node packages/afk/dist/index.js stop
 ```
 
 The background process detaches from the terminal and prints its loopback URL.
 Status reports the server’s resident memory (RSS) in MiB, excluding browser and
-child tool processes. Status and stop address only that machine's background instance; a foreground
-server is independent. Runtime records and logs live under `~/.afk/`, rather than
+child tool processes. Status, stop and restart address only that machine’s
+background instance; a foreground server is independent. The restart command verifies and stops the instance before starting a replacement on
+the same port and current settings path. Changed terminal environment settings do
+not override that path. If shutdown is still draining operations, restart reports
+the wait rather than starting another process. Runtime records and logs live under `~/.afk/`, rather than
 in the portable AFK folder. Use a temporary home for lifecycle tests.
 
 ## Skill update testing

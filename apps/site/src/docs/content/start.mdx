@@ -47,7 +47,8 @@ afk stop
 
 Background start prints the local URL without opening a browser and keeps running
 when the terminal closes. Status shows its URL, process ID and log location.
-Starting again reuses the same background instance. Stop gracefully closes that
+Starting again reuses the same background instance. The next release also adds
+`afk restart` to reopen that instance on its current port and settings path. Stop gracefully closes that
 instance; foreground sessions remain independent. `afk ui --background` is an alias.
 
 <h2 id="port">Choose a fixed port</h2>

@@ -1,12 +1,12 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdir, open, readFile, rm, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SettingsStore } from "./settings.js";
 import { startFieldwork } from "./server.js";
 
 interface Receipt { pid: number; url: string; token: string }
-interface RunningReceipt extends Receipt { rssBytes?: number }
+interface RunningReceipt extends Receipt { rssBytes?: number; settingsPath?: string }
 function paths(home: string) {
   const directory = resolve(home, ".afk/background");
   return { directory, receipt: resolve(directory, "server.json"), log: resolve(home, ".afk/background.log") };
@@ -30,10 +30,10 @@ async function running(home: string): Promise<RunningReceipt | undefined> {
   const record = await receipt(home);
   if (!record || !alive(record.pid)) return undefined;
   const response = await fetch(`${record.url}/api/status`, { headers: { "x-afk-token": record.token }, signal: AbortSignal.timeout(3000) });
-  const status = await response.json() as { pid?: number; rssBytes?: unknown };
+  const status = await response.json() as { pid?: number; rssBytes?: unknown; settingsPath?: unknown };
   if (!response.ok || status.pid !== record.pid) throw new Error("Could not verify the AFK background server. No process was stopped.");
   const validMemory = typeof status.rssBytes === "number" && Number.isFinite(status.rssBytes) && status.rssBytes > 0;
-  return { ...record, ...(validMemory ? { rssBytes: status.rssBytes as number } : {}) };
+  return { ...record, ...(typeof status.settingsPath === "string" && isAbsolute(status.settingsPath) ? { settingsPath: status.settingsPath } : {}), ...(validMemory ? { rssBytes: status.rssBytes as number } : {}) };
 }
 
 export async function backgroundStatus(home: string): Promise<void> {
@@ -45,6 +45,10 @@ export async function backgroundStatus(home: string): Promise<void> {
 export async function stopBackground(home: string): Promise<void> {
   const record = await running(home);
   if (!record) { console.log("AFK background is not running."); return; }
+  await stopVerifiedBackground(record);
+}
+
+async function stopVerifiedBackground(record: Receipt): Promise<void> {
   const response = await fetch(`${record.url}/api/exit`, { method: "POST", headers: { "x-afk-token": record.token }, signal: AbortSignal.timeout(3000) });
   if (!response.ok) throw new Error("Could not stop AFK.");
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -52,6 +56,20 @@ export async function stopBackground(home: string): Promise<void> {
     await new Promise(accept => setTimeout(accept, 100));
   }
   throw new Error("AFK is shutting down; active operations may still be finishing. Check afk status again.");
+}
+
+export async function restartBackground(home: string): Promise<void> {
+  const record = await running(home);
+  if (!record) { console.log("AFK background is not running. Run afk --background to start it."); return; }
+  let settingsPath = record.settingsPath;
+  if (!settingsPath) {
+    const response = await fetch(`${record.url}/api/state`, { headers: { "x-afk-token": record.token }, signal: AbortSignal.timeout(3000) });
+    const state = await response.json() as { settingsPath?: unknown };
+    if (!response.ok || typeof state.settingsPath !== "string" || !isAbsolute(state.settingsPath)) throw new Error("Could not read the running AFK settings path. No process was stopped.");
+    settingsPath = state.settingsPath;
+  }
+  await stopVerifiedBackground(record);
+  await startBackground(new SettingsStore(home, settingsPath), Number(new URL(record.url).port));
 }
 
 export async function startBackground(store: SettingsStore, port = 0): Promise<void> {
@@ -72,7 +90,7 @@ export async function startBackground(store: SettingsStore, port = 0): Promise<v
   const log = await open(location.log, "a", 0o600);
   let child: ChildProcess | undefined;
   try {
-    child = spawn(process.execPath, [fileURLToPath(import.meta.url), store.home, store.path, String(port)], { detached: true, stdio: ["ignore", log.fd, log.fd, "ipc"] });
+    child = spawn(process.execPath, [fileURLToPath(import.meta.url), store.home, store.path, String(port)], { detached: true, env: { ...process.env, AFK_SETTINGS: store.path }, stdio: ["ignore", log.fd, log.fd, "ipc"] });
     const startedChild = child;
     await new Promise<void>((accept, reject) => {
       const timeout = setTimeout(() => { startedChild.kill(); reject(new Error(`AFK did not start. See ${location.log}`)); }, 15000);
@@ -86,7 +104,7 @@ export async function startBackground(store: SettingsStore, port = 0): Promise<v
       });
     });
     const record = await running(store.home);
-    console.log(`AFK background is running at ${record?.url}\nLog: ${location.log}\nRun afk stop to close it.`);
+    console.log(`AFK background is running at ${record?.url}\nPID: ${record?.pid}\nLog: ${location.log}\nRun afk stop to close it.`);
   } catch (error) {
     if (child?.pid && child.exitCode === null && child.signalCode === null) {
       const failedChild = child;

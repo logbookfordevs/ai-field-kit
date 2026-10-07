@@ -61,6 +61,16 @@ function expectFailure(result: { code: number; stdout: string; stderr: string })
 }
 
 describe("AFK agent CLI", () => {
+  it("routes restart without loading settings and rejects launch flags", async () => {
+    const {store}=await fixture();
+    await writeFile(store.path,"{invalid");
+    const idle=await command(store,["restart"]);
+    expect(idle.code).toBe(0);
+    expect(idle.stdout).toContain("Run afk --background");
+    expectFailure(await command(store,["restart","--port","4310"]));
+    expect(await readFile(store.path,"utf8")).toBe("{invalid");
+  });
+
   it("locates the bundled guide without reading or creating settings", async () => {
     const home = await mkdtemp(join(tmpdir(), "afk-guide-"));
     homes.push(home);

@@ -1,6 +1,6 @@
 # A small command surface.
 
-The web app is the main interface. These commands let a terminal or agent read skills, activate profiles, and export settings.
+The web app is the main interface. These commands let a terminal or agent manage local settings and skills, run protected updates, and control the background app.
 
 <h2 id="launch">Open and close</h2>
 
@@ -24,6 +24,20 @@ To update AFK itself, run `afk update`. Use `afk update --dry-run` to print the
 installer command without executing it. This is separate from skill updates.
 
 For a local source build, [Start here](/docs?chapter=start#open) explains the local shortcut and direct launcher.
+
+<h2 id="restart">Restart the background app — next release</h2>
+
+```bash Restart AFK
+afk restart
+```
+
+Restart verifies the running background instance, waits for it to stop, and starts
+its replacement using the same port and current settings path. It prints the new
+URL and PID. Changed terminal `AFK_SETTINGS` values do not redirect the restart;
+to switch configurations that way, stop and start explicitly. Foreground sessions
+are untouched. If no background instance is running, the command suggests
+`afk --background` without starting one. If shutdown takes too long or verification
+fails, it reports the problem instead of starting another server.
 
 <h2 id="port">Fixed port — next release</h2>
 

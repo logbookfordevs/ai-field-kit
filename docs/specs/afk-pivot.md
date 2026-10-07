@@ -225,6 +225,11 @@ different port must be stopped before switching. The port is not saved in settin
 `afk --background` starts a detached instance without opening a browser.
 `afk ui --background` is an alias. `afk status` verifies the background server and
 shows its URL, PID and log path; `afk stop` requests authenticated graceful shutdown.
+`afk restart` verifies the instance, retrieves its current settings path, waits
+for shutdown and launches a replacement on the same port. Changed shell settings
+do not redirect the restart. Older servers use their authenticated state response
+to recover the path; an unreadable path fails before shutdown. If no instance is
+running, restart suggests a background start without launching one.
 A second start reuses a running instance. These commands leave foreground sessions
 alone. Runtime records stay under `~/.afk/` and are not portable configuration.
 

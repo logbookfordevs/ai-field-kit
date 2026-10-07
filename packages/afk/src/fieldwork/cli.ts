@@ -1,5 +1,5 @@
 import { parseUiOptions } from "./ui-options.js";
-import { startBackground, backgroundStatus, stopBackground } from "./background.js";
+import { startBackground, backgroundStatus, stopBackground, restartBackground } from "./background.js";
 import { updateAfk } from "./update.js";
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
@@ -21,6 +21,7 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk --port <number>                Open the app on a fixed port
   afk status                         Show the background app URL and PID
   afk stop                           Stop the background app
+  afk restart                        Restart the background app on its current port
   afk skills update [name] [-g | -p <project>]  Update skills, preserving availability
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
@@ -126,10 +127,11 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     if (action !== undefined) throw new Error("Use guide without additional arguments.");
     console.log(fileURLToPath(new URL("../../skills/afk-cli/SKILL.md", import.meta.url))); return 0;
   }
-  if (command === "status" || command === "stop") {
+  if (command === "status" || command === "stop" || command === "restart") {
     if (action !== undefined) throw new Error(`Use afk ${command} without additional arguments.`);
     if (command === "status") await backgroundStatus(store.home);
-    else await stopBackground(store.home);
+    else if (command === "stop") await stopBackground(store.home);
+    else await restartBackground(store.home);
     return 0;
   }
   await store.initialize();

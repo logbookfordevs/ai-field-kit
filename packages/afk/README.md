@@ -179,6 +179,7 @@ separate from updating installed skills and works without reading AFK settings.
 ```sh
 afk --background
 afk status
+afk restart
 afk stop
 ```
 
@@ -188,7 +189,10 @@ foreground sessions are independent. Runtime records and logs stay under `~/.afk
 separate from your portable settings. Starting again reuses the running instance.
 `afk ui --background` is also accepted. **Exit AFK** can close a background server
 from the app; closing the browser tab leaves it running. Background instances use
-the settings selected when they start; restart after changing `AFK_SETTINGS`.
+the settings selected when they start. `afk restart` uses the running server’s
+current port and settings path, even if your terminal’s `AFK_SETTINGS` changed.
+If no background instance is running, it suggests `afk --background`. Foreground
+sessions are untouched. To switch via `AFK_SETTINGS`, stop and start explicitly.
 
 ### Choose a fixed port
 
@@ -207,3 +211,4 @@ option, not a saved setting. `afk ui` accepts the same options.
 `afk status` reports the server’s current resident RAM in MiB, including Node.js
 and native allocations. It excludes the browser tab and child tool processes.
 Older running servers show memory as unavailable until restarted after updating.
+`afk restart` is included in the next release; use a source build until published.

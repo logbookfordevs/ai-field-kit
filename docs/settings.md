@@ -29,7 +29,9 @@ The background server keeps a machine-local record at
 The record contains its PID, loopback URL and session token, with private file
 permissions. These files are separate from the selected AFK folder and its export.
 Do not copy them to another machine. `afk status` verifies the recorded server;
-`afk stop` requests shutdown only after verifying its identity.
+`afk stop` requests shutdown only after verifying its identity. `afk restart`
+uses the verified running server’s current port and settings path to launch its
+replacement. It leaves foreground sessions alone and does not start an idle instance.
 
 The server port is a launch option, not part of `settings.json`. Use
 `afk --background --port 4310` for a fixed URL; omit `--port` for an available
