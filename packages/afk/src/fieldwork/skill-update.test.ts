@@ -28,6 +28,17 @@ function runner(project = false, code = 0): UpdateRunner {
     await writeFile(join(root, "sample/SKILL.md"), text("new")); output("Updated sample\n"); return code;
   };
 }
+it("retains update errors without accumulating terminal progress redraws", async () => {
+  const f = await fixture();
+  const result = await updateSkills(f.store, f.settings, f.scope, () => {}, async (_cwd, _env, _args, output) => {
+    output("Checking skills\n◐ Downloading");
+    output("\r\u001b[2K◒ Downloading");
+    output("\r\u001b[2KDownload failed\nError: connection lost\n");
+    return 1;
+  });
+  expect(result.output).toBe("Checking skills\nDownload failed\nError: connection lost\n");
+  expect(result.code).toBe(1);
+});
 it("updates disabled storage without exposing it through the shared Claude folder", async () => {
   const f = await fixture(); await mkdir(join(f.home, ".claude")); await symlink(f.root, join(f.home, ".claude/skills"));
   const result = await updateSkills(f.store, f.settings, f.scope, () => {}, runner());

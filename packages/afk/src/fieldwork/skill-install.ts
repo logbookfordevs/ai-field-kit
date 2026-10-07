@@ -1,3 +1,4 @@
+import { ProcessOutput } from "./process-output.js";
 import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
@@ -20,8 +21,8 @@ export type InstallRunner = (cwd: string, env: NodeJS.ProcessEnv, args: string[]
 const run: InstallRunner = (cwd, env, args, output, signal) => new Promise((accept, reject) => {
   signal?.throwIfAborted();
   const child = spawn("npx", ["--yes", "skills", "add", ...args], { cwd, env, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
-  child.stdout.on("data", (data: Buffer) => output(data.toString()));
-  child.stderr.on("data", (data: Buffer) => output(data.toString()));
+  child.stdout.setEncoding("utf8").on("data", (data: string) => output(data));
+  child.stderr.setEncoding("utf8").on("data", (data: string) => output(data));
   const cancel = (): void => {
     if (!child.pid) return;
     if (process.platform === "win32") spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], { stdio: "ignore" }).once("error", () => child.kill());
@@ -43,7 +44,8 @@ export async function installSkills(store: SettingsStore, settings: Settings, so
   const env = { ...process.env, HOME: store.home, USERPROFILE: store.home, DISABLE_TELEMETRY: "1", ...(store.home !== homedir() ? { XDG_CONFIG_HOME: "", XDG_STATE_HOME: "", XDG_DATA_HOME: "" } : {}) };
   const state: InstallProgress = { pending: true, phase: "Preparing installation", output: "", completed: 0, total: sources.length, scope, agent, label };
   const report = (): void => progress({ ...state });
-  const append = (text: string): void => { state.output = (state.output + text.replace(new RegExp(String.fromCharCode(27) + "\\[[0-9;?]*[A-Za-z]", "g"), "")).slice(-100_000); report(); };
+  const output = new ProcessOutput();
+  const append = (text: string): void => { state.output = output.append(text); report(); };
   try {
     report();
     for (const group of sources) {

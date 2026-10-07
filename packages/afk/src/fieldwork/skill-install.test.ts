@@ -11,6 +11,17 @@ async function fixture() {
   const store = new SettingsStore(home); await store.initialize();
   return { home, store, settings: await store.read() };
 }
+it("replaces terminal spinner frames instead of accumulating them in installation output", async () => {
+  const f = await fixture();
+  const result = await installSkills(f.store, f.settings, [{ source: "owner/repo" }], "Global", "universal", "Test", () => {}, undefined, async (_cwd, _env, _args, output) => {
+    output("Source ready\n");
+    for (let i = 0; i < 30; i++) output(`\u001b[1G\u001b[2K${i % 2 ? "◒" : "◐"} Cloning repository…`);
+    output("\u001b[1G\u001b[2KCloned repository\nWarning: retained\nWarning: retained\n");
+    return 0;
+  });
+  expect(result.output).not.toContain("Cloning repository");
+  expect(result.output).toContain("Source ready\nCloned repository\nWarning: retained\nWarning: retained\n");
+});
 it("installs selected source groups sequentially with literal arguments and an explicit agent", async () => {
   const f = await fixture(), calls: string[][] = [], progress: InstallProgress[] = [];
   const runner: InstallRunner = async (cwd, env, args, output) => {

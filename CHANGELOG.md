@@ -37,6 +37,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
+- Skills CLI installation and update previews replace terminal spinner frames in place instead of repeating progress text, while retaining normal logs and errors.
+
 - Bulk deletion opens a loading review immediately and prevents duplicate requests. Closing the review keeps delayed results from reopening it; selected skills share one inventory scan.
 
 - Skills CLI output stays expanded during update progress refreshes and completion, preserving the user’s open or closed choice.

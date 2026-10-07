@@ -1,3 +1,4 @@
+import { ProcessOutput } from "./process-output.js";
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
@@ -13,8 +14,8 @@ export type UpdateRunner = (cwd: string, env: NodeJS.ProcessEnv, args: string[],
 const run: UpdateRunner = (cwd, env, args, output, signal) => new Promise((accept, reject) => {
   signal?.throwIfAborted();
   const child = spawn("npx", ["--yes", "skills", "update", ...args], { cwd, env, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
-  child.stdout.on("data", (chunk: Buffer) => output(chunk.toString()));
-  child.stderr.on("data", (chunk: Buffer) => output(chunk.toString()));
+  child.stdout.setEncoding("utf8").on("data", (chunk: string) => output(chunk));
+  child.stderr.setEncoding("utf8").on("data", (chunk: string) => output(chunk));
   const cancel = (): void => {
     if (!child.pid) return;
     if (process.platform === "win32") spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], { stdio: "ignore" }).once("error", () => child.kill());
@@ -50,7 +51,8 @@ export async function updateSkills(store: SettingsStore, settings: Settings, sco
   const stagedRoot = scope === "Global" ? join(home, ".agents/skills") : join(project, ".agents/skills");
   const state: UpdateProgress = { pending: true, cancellable: true, phase: "Preparing isolated update", output: "", scope, ...(selectedNames ? { names: selectedNames } : {}) };
   const report = (): void => progress({ ...state });
-  const append = (text: string): void => { state.output = (state.output + text.replace(new RegExp(String.fromCharCode(27) + "\\[[0-9;?]*[A-Za-z]", "g"), "")).slice(-100_000); report(); };
+  const output = new ProcessOutput();
+  const append = (text: string): void => { state.output = output.append(text); report(); };
   let committed = false;
   const backups: { path: string; backup: string }[] = [];
   try {
