@@ -93,7 +93,7 @@ main{padding:20px clamp(20px,4vw,56px) 40px;min-width:0;max-width:1320px;outline
 .skills-heading h1{margin:0;margin-right:auto}
 .skills-heading .skills-scope{margin:0;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:400}
 .skills-scope select{width:180px}
-.skills-filters{display:grid;grid-template-columns:minmax(180px,1fr) 150px 190px minmax(150px,220px) auto;align-items:end;gap:12px;margin-bottom:12px}
+.skills-filters{display:grid;grid-template-columns:minmax(180px,1fr) 140px 170px minmax(130px,1fr) minmax(130px,1fr) auto;align-items:end;gap:12px;margin-bottom:12px}
 .skills-filters label{min-width:0;margin:0}
 .skills-filters select{width:100%;text-overflow:ellipsis}
 .skills-utilities{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:16px}
@@ -104,8 +104,8 @@ main{padding:20px clamp(20px,4vw,56px) 40px;min-width:0;max-width:1320px;outline
 .skills-list-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap}
 .skills-list-meta:has(.skill-bulk){display:block}
 .skills-list-meta #skillSelection>.inline{margin:0}
-@media(max-width:1000px){.skills-filters{grid-template-columns:minmax(160px,1fr) minmax(160px,1fr)}.skills-filters .search{grid-column:1/-1}}
-@media(max-width:600px){.skills-heading{gap:12px;margin:20px 0 16px}.skills-heading h1{width:100%}.skills-heading .skills-scope{flex:1;display:block}.skills-scope select{width:100%;margin-top:4px}.skills-heading>button{align-self:flex-end}.skills-filters{gap:10px}.skills-filters>label{font-size:12px}.skills-filters #clearSkillFilters{grid-column:1/-1;justify-self:start}.skills-utilities{gap:6px;margin-bottom:12px}.skills-folder{margin-left:0}}
+@media(max-width:1180px){.skills-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.skills-filters .search{grid-column:1/-1}}
+@media(max-width:600px){.skills-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.skills-heading{gap:12px;margin:20px 0 16px}.skills-heading h1{width:100%}.skills-heading .skills-scope{flex:1;display:block}.skills-scope select{width:100%;margin-top:4px}.skills-heading>button{align-self:flex-end}.skills-filters{gap:10px}.skills-filters>label{font-size:12px}.skills-filters #clearSkillFilters{grid-column:1/-1;justify-self:start}.skills-utilities{gap:6px;margin-bottom:12px}.skills-folder{margin-left:0}}
 
 .tool-page-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:12px;margin-left:auto;flex-shrink:0}
 
@@ -634,7 +634,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refocus=id=>document.querySelector(`[data-od-id="${id}"]`)?.focus();
 
-let section='Profiles',scope='Global',query='',invocationFilter='',sourceFilter='',availabilityFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
+let section='Profiles',scope='Global',query='',invocationFilter='',sourceFilter='',availabilityFilter='',profileFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
 let projects=[],profiles=[],tools=[];
 const independent={Global:[]};
 let preferences={},individualOff={};
@@ -776,6 +776,7 @@ function renderSkills(){
   const names=new Set(inventory().map(skill=>skill.name));
   for(const name of selectedSkills)if(!names.has(name))selectedSkills.delete(name);
   if(sourceFilter&&!inventory().some(entry=>(entry.source||'__local')===sourceFilter))sourceFilter='';
+  if(profileFilter&&!['__any','__none'].includes(profileFilter)&&!installedProfiles().some(profile=>profile.id===profileFilter))profileFilter='';
   const sharingStatus=skillSharing[scope]?.status;
   const sharingLabel=sharingStatus==='connected'?'Sharing on':sharingStatus==='conflict'?'Needs attention':'Sharing off';
   $('view').innerHTML=`<header class="skills-heading"><h1>Installed Skills</h1><label class="skills-scope">Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>${inventory().length?button('Update skills','showSkillUpdate()','','data-od-id="update-skills"'):''}</header>
@@ -784,7 +785,8 @@ function renderSkills(){
         <label>Availability<select id="availabilityFilter" onchange="availabilityFilter=this.value;renderSkillList()"><option value="">All availability</option><option value="available" ${availabilityFilter==='available'?'selected':''}>Available</option><option value="disabled" ${availabilityFilter==='disabled'?'selected':''}>Disabled</option></select></label>
         <label>Invocation<select id="invocationFilter" onchange="invocationFilter=this.value;renderSkillList()"><option value="">All modes</option>${['manual only','automatic allowed','varies by agent','unknown'].map(mode=>`<option value="${mode}" ${invocationFilter===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label>
         <label>Source<select id="sourceFilter" onchange="sourceFilter=this.value;renderSkillList()"><option value="">All sources</option>${installedSourceOptions()}</select></label>
-        ${button('Clear filters','clearSkillFilters()','text',`id="clearSkillFilters" ${query.trim()||invocationFilter||sourceFilter||availabilityFilter?'':'hidden'}`)}
+        <label>Profile<select id="profileFilter" onchange="profileFilter=this.value;renderSkillList()"><option value="">All skills</option><option value="__any" ${profileFilter==='__any'?'selected':''}>In any profile</option><option value="__none" ${profileFilter==='__none'?'selected':''}>No profile</option>${installedProfileOptions()}</select></label>
+        ${button('Clear filters','clearSkillFilters()','text',`id="clearSkillFilters" ${query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter?'':'hidden'}`)}
       </div>
       <div class="skills-utilities"><span class="sharing-state" data-status="${esc(sharingStatus||'missing')}">${esc(sharingLabel)}</span>${button('Claude sharing','reviewClaudeSharing()','text')}${skillTokenSummary()}<span class="skills-folder"><button type="button" class="text" popovertarget="skillsFolderDetails">Folder details</button><div id="skillsFolderDetails" class="skill-invoc-popover skills-folder-popover" popover aria-label="Skill folders"><strong>Skill folders · ${esc(scope)}</strong><code class="path">${esc(scopePath())}</code>${sharingStatus==='connected'?`<code class="path">${esc(scope==='Global'?'~/.claude/skills/':(projects.find(project=>project.name===scope)?.path||'')+'/.claude/skills/')} <span class="meta">Shared folder link</span></code>`:''}</div></span></div>
       <div class="skills-list-meta"><span class="table-label" id="skillCount"></span><div id="skillSelection"></div></div><div id="skillList"></div>`;
@@ -794,19 +796,19 @@ function renderSkills(){
 function setScope(value){selectedSkills.clear();sourceFilter='';scope=value;render();$('scopeSelect').focus()}
 
 function clearSkillFilters(){
-  query='';invocationFilter='';sourceFilter='';availabilityFilter='';renderSkills();$('skillSearch').focus();
+  query='';invocationFilter='';sourceFilter='';availabilityFilter='';profileFilter='';renderSkills();$('skillSearch').focus();
 }
 
 function renderSkillList(){
   const clearFilters=$('clearSkillFilters');
-  if(clearFilters)clearFilters.hidden=!(query.trim()||invocationFilter||sourceFilter||availabilityFilter);
+  if(clearFilters)clearFilters.hidden=!(query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter);
   const all=inventory(),list=all.filter(matchesSkillFilters);
-  const filtered=Boolean(query.trim()||invocationFilter||sourceFilter||availabilityFilter);
+  const filtered=Boolean(query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter);
   const available=all.filter(s=>isAvailable(s)).length;
   if(typeof renderSkillSelection==='function')renderSkillSelection(list);
   $('skillCount').textContent=filtered?`${list.length} of ${all.length} shown`:`${all.length} entries · ${available} available`;
   if(!list.length){
-    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'No skill entries in this project'}</h2><p class="sub">${filtered?'Try another availability, source, invocation mode or skill name.':scope==='Global'?'Create a profile from a source repository to prepare skills locally.':'Global-only skills are excluded. Enable a profile for this project to create its links.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):button('Go to Profiles',"navigate('Profiles')")}</div>`;
+    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'No skill entries in this project'}</h2><p class="sub">${filtered?'Try another profile, availability, source, invocation mode or skill name.':scope==='Global'?'Create a profile from a source repository to prepare skills locally.':'Global-only skills are excluded. Enable a profile for this project to create its links.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):button('Go to Profiles',"navigate('Profiles')")}</div>`;
     return;
   }
   $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row table-label" aria-hidden="true"><span>Skill</span><span>Availability</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>`;

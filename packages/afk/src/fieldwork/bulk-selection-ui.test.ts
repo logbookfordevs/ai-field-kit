@@ -11,7 +11,7 @@ function fixture() {
     skillSelection: { innerHTML: "", disabled: false, focus() {} }, scopeSelect: { innerHTML: "", disabled: false, focus() {} },
   };
   const context = createContext({
-    scope: "Global", query: "", invocationFilter: "", sourceFilter: "",
+    scope: "Global", query: "", invocationFilter: "", profiles: [], profileFilter: "", sourceFilter: "",
     inventory: () => [{ name: "alpha", invocation: { mode: "manual" } }, { name: "beta", invocation: { mode: "auto" } }],
     invocationSummary: (policy: { mode: string }) => policy.mode,
     matchesSkillFilters: (entry: { name: string }) => entry.name.includes(String(context.query)),

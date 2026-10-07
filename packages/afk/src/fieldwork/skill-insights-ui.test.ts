@@ -10,7 +10,7 @@ const entries=[
 ];
 function fixture(){
   const fields={skillTokenDetails:{innerHTML:""}};
-  const context=createContext({inventory:()=>entries,inventories:{Global:entries},scope:"Global",sourceFilter:"",availabilityFilter:"",query:"",invocationFilter:"",invocationSummary:()=>"automatic allowed",esc:String,$:()=>fields.skillTokenDetails});
+  const context=createContext({inventory:()=>entries,inventories:{Global:entries},scope:"Global",profiles: [], profileFilter: "", sourceFilter:"",availabilityFilter:"",query:"",invocationFilter:"",invocationSummary:()=>"automatic allowed",esc:String,$:()=>fields.skillTokenDetails});
   runInContext(script,context);
   return {context,fields,run:<T>(code:string)=>runInContext(code,context) as T};
 }
@@ -42,4 +42,23 @@ it("filters available and disabled entries independently of invocation",()=>{
   expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["disabled"]);
   ui.run("availabilityFilter='available'");
   expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["auto","local"]);
+});
+
+it("filters saved profile membership including disabled profiles and overlapping members",()=>{
+  const ui=fixture();
+  ui.context.profiles=[
+    {id:"studio",name:"Studio",skills:["auto","disabled"],enabled:[]},
+    {id:"review",name:"Review",skills:["auto"],enabled:["Global"]},
+    {id:"missing",name:"Missing",skills:["not-installed"],enabled:[]},
+  ];
+  ui.run("profileFilter='__any'");
+  expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["auto","disabled"]);
+  ui.run("profileFilter='__none'");
+  expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["local"]);
+  ui.run("profileFilter='studio';availabilityFilter='disabled';sourceFilter='owner/b'");
+  expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["disabled"]);
+  expect(ui.run("installedProfiles().map(profile=>profile.id)")).toEqual(["studio","review"]);
+  ui.context.inventory=()=>[entries[2]];
+  expect(ui.run("installedProfiles()")).toEqual([]);
+  expect(ui.run("inventory().filter(matchesSkillFilters)")).toEqual([]);
 });

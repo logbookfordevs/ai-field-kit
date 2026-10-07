@@ -27,9 +27,23 @@ function installedSourceOptions(){
   const sources=[...new Set(inventory().map(entry=>entry.source||'__local'))].sort();
   return sources.map(source=>`<option value="${esc(source)}" ${sourceFilter===source?'selected':''}>${esc(source==='__local'?'Unknown / local':source)}</option>`).join('');
 }
+function installedProfiles(){
+  const names=new Set(inventory().map(entry=>entry.name));
+  return profiles.filter(profile=>profile.skills.some(name=>names.has(name)));
+}
+function installedProfileOptions(){
+  return installedProfiles().map(profile=>`<option value="${esc(profile.id)}" ${profileFilter===profile.id?'selected':''}>${esc(profile.name)}</option>`).join('');
+}
+function matchesProfileFilter(entry){
+  if(!profileFilter)return true;
+  const membership=profiles.filter(profile=>profile.skills.includes(entry.name));
+  if(profileFilter==='__any')return membership.length>0;
+  if(profileFilter==='__none')return membership.length===0;
+  return membership.some(profile=>profile.id===profileFilter);
+}
 function matchesSkillFilters(entry){
   const availability=typeof availabilityFilter==='undefined'?'':availabilityFilter;
-  return (!availability||(availability==='available'?entry.available:!entry.available))&&entry.name.toLowerCase().includes(query.trim().toLowerCase())&&(!invocationFilter||invocationSummary(entry.invocation)===invocationFilter)&&(!sourceFilter||(entry.source||'__local')===sourceFilter);
+  return matchesProfileFilter(entry)&&(!availability||(availability==='available'?entry.available:!entry.available))&&entry.name.toLowerCase().includes(query.trim().toLowerCase())&&(!invocationFilter||invocationSummary(entry.invocation)===invocationFilter)&&(!sourceFilter||(entry.source||'__local')===sourceFilter);
 }
 function showSkillTokenEstimate(){
   if(!inspectedSkill)return;

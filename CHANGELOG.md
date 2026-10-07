@@ -15,7 +15,7 @@ This changelog tracks meaningful updates by version and date.
 
 - Install on an All skills source offers a searchable folder picker for that run. Choose members without editing the bookmark; selected sources and stacks keep their saved member lists.
 
-- Installed Skills filters by availability and recorded source and shows rough per-agent automatic discovery token estimates, with on-demand file estimates in Inspect. Project estimates distinguish local inventory from totals including Global.
+- Installed Skills filters by availability, recorded source and saved profile membership and shows rough per-agent automatic discovery token estimates, with on-demand file estimates in Inspect. Project estimates distinguish local inventory from totals including Global.
 
 - Stack creation lists every saved source, including All skills bookmarks. Choose individual skills in the stack form without changing the original bookmark.
 

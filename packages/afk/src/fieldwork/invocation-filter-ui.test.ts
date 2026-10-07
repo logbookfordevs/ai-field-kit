@@ -15,7 +15,7 @@ function filter(mode: string, query = "") {
     { name: "Unreadable", invocation: { claude: "Unknown", codex: "Unknown" } },
   ];
   const context = createContext({
-    invocationFilter: mode, sourceFilter: "", availabilityFilter: "", query, scope: "Global", inventory: () => inventory,
+    invocationFilter: mode, profiles: [], profileFilter: "", sourceFilter: "", availabilityFilter: "", query, scope: "Global", inventory: () => inventory,
     $: (id: keyof typeof fields) => fields[id], isAvailable: () => true,
     esc: String, skillRow: (skill: { name: string }) => `[${skill.name}]`,
     button: (label: string) => label,
