@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.0.3 - 2026-10-07
+
 ### Added
 
 - `afk restart` restarts the verified background app on its current port and settings path and reports the replacement URL and PID. Foreground sessions stay untouched; an idle instance gets startup guidance.
