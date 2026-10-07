@@ -1,12 +1,19 @@
-# One file. Local paths.
+# One folder. Local paths.
 
 Definitions can travel between machines. Skill copies and project folders remain local.
 
 <h2 id="location">Choose where settings live</h2>
 
-Default: `~/.afk/settings.json`. In **Settings**, choose another file, including a folder synced by your storage provider. A local pointer at `~/.afk/settings-location.json` remembers that location.
+Default: `~/.afk/settings.json`. The **AFK folder** keeps `settings.json`, your canonical `AGENTS.md`, and `references/` together. Choose a repository, Drive or iCloud folder if you want your storage provider to sync these files. A local pointer at `~/.afk/settings-location.json` remembers where the configuration lives.
 
-Relocation copies the configuration, preserves the old file, and refuses to overwrite an existing destination. A launch override takes precedence over the pointer:
+**Choose folder** opens a folder browser. Create a dedicated AFK subfolder, move your current AFK files into a new location, or load an existing folder containing `settings.json`. Moving copies the configuration and Markdown, keeps the original folder, and refuses to overwrite existing files. Loading another configuration requires disabling active skills and profiles and disconnecting synced rule destinations first. Neither action syncs agent files.
+
+<figure className="docs-screenshot">
+  <a href="/docs/screenshots/settings-folder.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/settings-folder.webp" alt="Settings displaying the AFK folder, settings.json, AGENTS.md, references and ZIP export/import controls." width="949" height="838" loading="lazy" decoding="async" /></a>
+  <figcaption><strong>The portable part lives together.</strong> Configuration, canonical rules and references share one AFK folder. Demo workspace from the current source build; open the image for a closer look.</figcaption>
+</figure>
+
+A launch override takes precedence over the local pointer:
 
 ```bash Optional launch override
 AFK_SETTINGS=/path/to/settings.json afk
@@ -41,7 +48,9 @@ Existing available skills may remain in place. Profile disable removes only owne
 
 <h2 id="export">Export configuration</h2>
 
-**Export configuration** downloads JSON. The terminal alternative writes a new file and refuses to overwrite an existing export:
+**Export AFK folder · ZIP** includes settings, canonical rules and references. Import previews the contents and asks which local destination files to connect; it does not sync them. Review project folder mappings too.
+
+The separate **Settings only · JSON** controls export or import configuration without rule content. The terminal alternative writes a new file and refuses to overwrite an existing export:
 
 ```bash Export current configuration
 afk settings export /path/to/export.json

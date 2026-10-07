@@ -9,8 +9,9 @@ import { repository, sourceLaunch } from '@/site-config.ts';
 const sections = [
   { title: 'Profiles', description: 'Reusable skill groups. Shared definitions, separate activation for each target.', chapter: 'profiles' },
   { title: 'Installed Skills', description: 'Inspect real files. Control availability and supported invocation preferences.', chapter: 'skills' },
-  { title: 'Sources & Stacks', description: 'Save repository selections, share multi-source stacks and copy install scripts.', chapter: 'sources' },
+  { title: 'Sources & Stacks', description: 'Save repository selections, share stacks, copy commands or install with review.', chapter: 'sources' },
   { title: 'Tools', description: 'Your global command shelf. Run Install or Update explicitly and see the result.', chapter: 'tools' },
+  { title: 'Agent rules', description: 'Edit shared rules and references. Preview managed changes before syncing to your agents.', chapter: 'rules' },
   { title: 'Settings', description: 'Choose one configuration file. Add project folders and import or export your setup.', chapter: 'settings' },
 ];
 
@@ -55,7 +56,7 @@ export default function App() {
         <div className="field-note"><strong>A focused 2.0</strong><p>Filesystem activation and Claude/Codex invocation metadata are implemented. Live conversation discovery is still being verified. AFK doesn’t manage rules, hooks, MCP setup, or custom agents.</p></div>
       </div></section>
       <section className="section start-section" aria-labelledby="start-title"><div className="container start-grid">
-        <div><h2 id="start-title">Try the new AFK.</h2><p className="section-copy">AFK 2.0 is available from source today. These commands launch a built checkout; published pre-2.0 packages still run the old CLI.</p><CommandPanel value={sourceLaunch} label="From a cloned checkout" /><SiteLink className="button" href="/docs">Open the first-run guide <Arrow /></SiteLink></div>
+        <div><h2 id="start-title">Try the new AFK.</h2><p className="section-copy">AFK 2.0 is released. These commands launch a source checkout for testing; use the first-run guide to install the latest published release.</p><CommandPanel value={sourceLaunch} label="From a cloned checkout" /><SiteLink className="button" href="/docs">Open the first-run guide <Arrow /></SiteLink></div>
         <div className="legacy-note"><h3>Coming from AFK 1.x?</h3><p>Want the previous catalogs and setup behavior? Install a pre-2.0 release or fork its tagged source.</p><SiteLink className="text-link" href="/docs?chapter=legacy">Find pre-2.0 releases <Arrow /></SiteLink><SiteLink href="/docs?chapter=legacy#what-changed">Read what changed in 2.0</SiteLink></div>
       </div></section>
     </main>

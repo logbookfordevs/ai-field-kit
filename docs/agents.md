@@ -118,8 +118,14 @@ JSON
 
 Read the saved command and replace `123` with the actual tool ID. An empty update
 command reuses install. Inspect output and exit status to verify execution.
-Skills CLI owns external skill installation and updates; copying an update
-command in the web app leaves it unexecuted.
+Use `source/install` or `stack/install` for authorized installation, and inspect
+`skills/install-state` for progress and results. `skills/install-cancel` stops
+remaining installation work while keeping completed or partial files.
+Use `afk skills update [name] -g` or `afk skills update [name] -p <project>` for
+protected updates, or the shared `skills/update` operation. AFK delegates to
+Skills CLI in isolation and preserves availability and invocation preferences;
+`skills/update-state` and `skills/update-cancel` expose progress and cancellation.
+Direct Skills CLI updates bypass this availability protection.
 
 Headless results are JSON; operation failures print JSON to stderr and exit
 nonzero. `tool/run` also exits nonzero when the saved command fails, while keeping

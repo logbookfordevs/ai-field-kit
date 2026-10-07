@@ -17,15 +17,28 @@ Open the loopback URL printed in the terminal. The CLI normally opens a browser;
 Build first, then use the local executable:
 
 ```sh
-node packages/afk/dist/index.js --background
+node packages/afk/dist/index.js --background --port 4310
 node packages/afk/dist/index.js status
+node packages/afk/dist/index.js restart
 node packages/afk/dist/index.js stop
 ```
 
 The background process detaches from the terminal and prints its loopback URL.
-Status and stop address only that machine's background instance; a foreground
-server is independent. Runtime records and logs live under `~/.afk/`, rather than
+Status reports the server’s resident memory (RSS) in MiB, excluding browser and
+child tool processes. Status, stop and restart address only that machine’s
+background instance; a foreground server is independent. The restart command verifies and stops the instance before starting a replacement on
+the same port and current settings path. Changed terminal environment settings do
+not override that path. If shutdown is still draining operations, restart reports
+the wait rather than starting another process. Runtime records and logs live under `~/.afk/`, rather than
 in the portable AFK folder. Use a temporary home for lifecycle tests.
+
+## Skill update testing
+
+`afk skills update -g` and `afk skills update -p <project>` delegate updates in an
+isolated workspace, then replace existing stored copies. Use temporary homes and
+receipts to test update failures, disabled skills, shared Claude links and
+intervening edits. The web app uses the same `skills/update` operation;
+`skills/update-state` exposes session progress without waiting for the mutation queue.
 
 ## Checks
 
@@ -59,7 +72,9 @@ settings, availability, invocation metadata, Skills CLI preparation, and local A
 schema and local consistency without mutation, and `settings-schema.ts` supplies
 editor guidance while the runtime validator owns cross-field validation.
 `stacks.ts` owns the versioned manifest contract, bounded HTTPS JSON fetching and
-sequential script generation. Keep its exported schema synchronized with
+sequential script generation. `skill-install.ts` runs explicit saved-source and
+stack installation jobs through Skills CLI; state/cancellation operations bypass
+the mutation queue. Use temporary homes and a local repository for browser tests. Keep its exported schema synchronized with
 `docs/schemas/skill-stack.v1.schema.json`; the schema regression checks equality.
 `rules.ts` owns canonical rule files and managed destination regions; `bundle.ts`
 owns portable ZIP validation and restoration. Rule operations use temporary target
@@ -93,7 +108,8 @@ or confirm a website deployment. Release preparation is handled by the
 repository's `afk-release` skill only when explicitly requested; the existing tag
 workflow publishes npm and creates a GitHub Release.
 
-The update command copied by the app belongs to Skills CLI and only updates
-installations it tracks. AFK's staged disabled copies do not establish a separate
-upstream-update registry. Native invocation files and links are tested; discovery
-inside live agent conversations is a separate verification step.
+The app and `afk skills update` use the protected staged updater, which delegates
+to Skills CLI and only updates installations it tracks. Profile preparation does
+not establish tracking receipts for those copies. Direct `npx skills update`
+bypasses AFK’s availability protection. Native invocation files and links are
+tested; discovery inside live agent conversations is a separate verification step.

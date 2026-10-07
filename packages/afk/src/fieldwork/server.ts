@@ -40,7 +40,7 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
       if (url.pathname.startsWith("/api/")) {
         if (request.headers["x-afk-token"] !== token) { send({ error: "This session is not authorized. Reopen AFK from the CLI." }, 403); return; }
         const operation = url.pathname.slice("/api/".length);
-        if (operation === "status" && request.method === "GET") { send({ pid: process.pid }); return; }
+        if (operation === "status" && request.method === "GET") { send({ pid: process.pid, rssBytes: process.memoryUsage.rss(), settingsPath: store.path }); return; }
         if (operation === "exit" && request.method === "POST") {
           response.once("finish", () => { void closeApp?.().catch(error => console.error(error)); });
           send({ ok: true }); return;
@@ -68,7 +68,10 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
       response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Operation failed." }));
     });
   });
-  await new Promise<void>((accept, reject) => { server.once("error", reject); server.listen(port, "127.0.0.1", accept); });
+  await new Promise<void>((accept, reject) => { server.once("error", error => {
+    const code = (error as NodeJS.ErrnoException).code;
+    reject(code === "EADDRINUSE" ? new Error(`Port ${port} is already in use. Choose another --port or stop the server using it.`) : error);
+  }); server.listen(port, "127.0.0.1", accept); });
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("Could not start AFK.");
   closeApp = () => {

@@ -10,6 +10,72 @@ Installed Skills shows real local entries. Availability and invocation are separ
 
 Select a skill to inspect its SKILL.md and supporting files. Metadata files and broken links are ignored by the inventory.
 
+<h2 id="estimates">Filter sources and estimate discovery cost</h2>
+
+The **Source** filter lists only sources represented in the selected inventory,
+using Skills CLI installation receipts. **Unknown / local** covers entries without
+recorded provenance. Availability, source, invocation, profile and name filters work together; bulk
+selections remain selected when hidden by a filter.
+
+The automatic discovery summary estimates names and descriptions for available
+skills with automatic invocation allowed, separately for Codex and Claude. Project
+scope also shows a combined estimate including Global, counting shared names once.
+Only the **Profile** filter applies to these estimates, including the combined Global
+view. Search, source, availability and invocation filters change the list only.
+Unknown invocation modes are excluded. The **Profile** filter follows saved membership,
+including disabled profiles, and offers any profile, no profile, or a named profile
+represented in the selected inventory.
+
+In **Inspect**, choose **Show token usage estimation** to estimate full instructions
+or the selected supporting file on demand. The estimate uses four characters per
+token, not a model tokenizer: agent formatting and actual context usage can differ.
+Supporting files are excluded unless you inspect and estimate them separately.
+
+<h2 id="bulk">Manage selected skills together</h2>
+
+In the next release, check skills or choose **Select shown** to select the filtered
+list. The selection bar shows the count and scope, including how many selections
+are hidden by filters. Filtering keeps your selection; changing scope clears it.
+
+Use **Enable**, **Disable**, or **Change invocation** to apply the same action to
+selected skills. Invocation choices are Manual only, Automatic allowed, and
+Restore defaults. Successful availability or invocation changes keep the selection
+so you can apply another action. **Clear selection** starts over.
+
+<figure className="docs-screenshot">
+  <a href="/docs/screenshots/installed-skills.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/installed-skills.webp" alt="Installed Skills with two checked skills and a bulk-action bar, alongside independent availability and invocation controls." width="1280" height="900" loading="lazy" decoding="async" /></a>
+  <figcaption><strong>Select once, act together.</strong> Scope and selection remain visible above the skill rows. Demo workspace from the current source build; open the image for a closer look.</figcaption>
+</figure>
+
+**Delete selected** opens a review of the selected storage folders, matching Claude
+copies and links. It identifies blocked skills that will be kept. A second click
+confirms deletion of eligible skills, without typing names. A changed review must
+be opened again before deleting.
+
+Bulk actions report each failure. Completed changes remain applied; after a
+partial result, only failed skills stay selected. Profile ownership and shared
+storage protections still apply.
+
+<h2 id="claude-sharing">Share the skills folder with Claude</h2>
+
+In the next release, choose **Global** or a project in Installed Skills, then
+**Share skills with Claude**. The dialog shows both folder paths and the current
+sharing state. **Enable sharing** creates missing folders and links Claude’s
+skills folder to the canonical skills folder:
+
+- Global: `~/.claude/skills` points to `~/.agents/skills`.
+- Project: `<project>/.claude/skills` points to `<project>/.agents/skills`.
+
+Claude sees the same available entries; availability changes affect both folder
+views. AFK recognizes an existing matching link, including one you created
+manually. An empty Claude skills folder can be replaced after review. If it
+contains skills or links elsewhere, AFK preserves it and explains the conflict;
+move or merge those files yourself before enabling sharing.
+
+**Disconnect sharing** removes only the folder link. The canonical skills and their
+availability stay unchanged, but Claude stops discovering them through that path.
+Sharing is local filesystem state and is not part of configuration export.
+
 <h2 id="filter">Filter by invocation</h2>
 
 In AFK 2.0.2 or newer, the **Invocation** filter selects
@@ -19,8 +85,8 @@ in the results. **Varies by agent** means Claude and Codex report different mode
 **Unknown** means both agents’ invocation metadata could not be read.
 
 Combine the filter with name search in the selected inventory scope. Filtering
-changes only the list. Choose **All invocation modes** to remove that filter, or
-**Clear filters** when there are no matches to reset both search and invocation.
+changes only the list. Choose **All modes** to remove that filter, or **Clear filters** to reset search,
+availability, invocation, source and profile while keeping the inventory scope.
 
 <h2 id="availability">Enable or disable one skill</h2>
 
@@ -28,7 +94,36 @@ An individual toggle controls availability independently of profiles. Disable pr
 
 A physical skill can move into that scope’s disabled folder. AFK retargets its owned links when needed. Skills enabled independently remain available when a profile is disabled; preexisting user files are preserved.
 
+<h2 id="delete">Permanently delete stored files</h2>
+
+In the next release, **Delete** beside **Inspect** removes the selected skill copy’s
+folder and all its supporting files. Review the affected folders and links, then choose **Delete permanently**.
+This is two clicks total: **Delete**, then **Delete permanently**. No typing is
+required. Choose **Cancel** to keep the files.
+
+You do not need to disable it first. The review lists any AFK-owned links in the
+selected scope that will be removed with the storage. If another copy exists,
+the review explains that it will remain.
+
+For Global deletion, the matching `~/.claude/skills/<name>` entry is included too,
+whether it is a separate copy or a symlink. The review lists the extra copy or link;
+if Claude shares the canonical skills folder, it explains that deletion affects
+both. Removing a symlink does not delete an unrelated target folder.
+
+Disable profiles that contain the skill first; their definitions keep the member
+selection, and repository-backed profiles restore missing files on their next enable.
+Local-only profiles need their files restored manually. AFK blocks deletion when another
+scope or an unrelated link it does not own still uses the folder. For a project link to Global
+storage, delete the original copy from Global after removing its dependencies.
+AFK checks configured project paths and recorded links; it cannot discover links
+in unconfigured projects. Deletion cannot be undone; reinstall from the source if
+needed.
+
 <h2 id="invocation">Choose Manual, Auto, or Original</h2>
+
+The selector’s icon reflects the effective mode: a pointer for manual, lightning
+for automatic, branches for modes that vary by agent, and a question mark when
+metadata cannot be read. Text labels remain visible alongside the icons.
 
 - **Manual:** disallow implicit model invocation through the supported native metadata.
 - **Auto:** allow automatic selection through that metadata.
@@ -38,18 +133,31 @@ For Claude Code, AFK changes `disable-model-invocation`. For Codex, it changes `
 
 A project override of a shared member makes an isolated local copy. Reset reconnects AFK-owned links to the shared copy. A physical project-local skill restores its own original metadata.
 
-<h2 id="update">Copy the update-all command</h2>
+<h2 id="update">Update skills without changing availability</h2>
 
-**Copy update-all command** copies text; it does not run an update. Global uses:
+Use **Update** on a skill row to update only that skill.
+**Update skills** runs Skills CLI for the selected Global or project scope. Follow
+preparation, update and application progress in the dialog, with expandable output.
+You can close it while the update runs and reopen it to see the result.
+**Cancel update** stops preparation or downloading and preserves the original
+files. Once replacement starts, AFK finishes that short step safely.
 
-```bash Global update — run yourself
-npx skills update -g
+AFK stages updates separately, then replaces the original stored copies. Disabled
+skills stay disabled, available skills keep their links, and saved AFK invocation
+preferences are reapplied. Failed updates leave the original copies unchanged.
+
+```bash Global update
+afk skills update -g
 ```
 
-For a project, AFK copies a command that changes to its folder and runs:
-
-```bash Project update — run from the project folder
-npx skills update -p
+```bash One Global skill
+afk skills update agent-browser -g
 ```
 
-Skills CLI updates installations it tracks. AFK’s prepared copies are not a new upstream-update registry. Do not add `--all` to these update commands.
+```bash Configured project update
+afk skills update -p 'Demo Studio'
+```
+
+Skills CLI updates only installations it tracks. Prepared profile copies without
+Skills CLI receipts are not a new upstream-update registry. Running
+`npx skills update` directly bypasses AFK's availability protection.

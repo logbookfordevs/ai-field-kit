@@ -53,9 +53,31 @@ storage; global-only entries are excluded. Metadata files and broken links are
 ignored. The view is not a combined effective inventory: global skills may still
 be discoverable to an agent working in a project.
 
+Selection is scoped to the displayed inventory. Checkboxes and Select shown
+support bulk availability, invocation and deletion. Search/filter changes retain
+selection and expose the hidden count; changing scope clears it. Non-destructive
+success keeps selection for another action, while partial results retain failed
+members. Operations run sequentially and return per-member outcomes; successful
+changes are not rolled back when another member fails. Bulk deletion reviews all
+members and blockers before a single confirmation click, rejects stale reviews
+before starting, and removes only eligible reviewed copies.
+
+**Share skills with Claude** controls the selected scope’s local folder layout.
+Sharing creates the canonical skills folder and Claude directory if missing, then
+links `.claude/skills` to `.agents/skills`. Existing matching links are recognized.
+An empty Claude skills directory can be replaced after review; populated folders,
+files and unrelated links are preserved and reported as conflicts. Disconnecting
+removes only the folder link, keeping all canonical skill files. This local
+filesystem state is inspected directly, rather than exported as a portable
+configuration preference. Profile and individual activation avoid duplicate
+operations when the discovery folders share one underlying directory.
+
 The invocation filter uses effective Claude/Codex metadata, including differences
-between agents and unknown metadata. It combines with name search within the
-selected scope and does not change skill state.
+between agents and unknown metadata. It combines with availability, recorded
+source, saved profile membership and
+name search within the selected scope without changing skill state. The discovery
+estimate counts available automatic skills and follows only the Profile filter.
+Other filters change the list only; profile membership includes disabled profiles.
 
 Inspection reads real SKILL.md and supporting files inside the selected skill
 folder. Individual availability is separate from profiles; disable owning profiles
@@ -69,10 +91,31 @@ owned links to shared storage so later Global changes flow through. A physical
 project-local skill restores its own original metadata. These controls do not
 claim support for every agent.
 
-Update-all copies `npx skills update -g` for Global or a command that changes to
-the project directory and runs `npx skills update -p`. It never executes the update.
-Skills CLI updates only installations it tracks; staged AFK copies are not a new
-upstream-update registry.
+Update skills runs `afk skills update -g` or `afk skills update -p <project>` through
+shared operations. Skills CLI updates tracked installations in an isolated home
+and workspace. Changed copies replace their existing physical storage locations;
+availability links and AFK invocation preferences remain intact. Failures before
+application leave originals unchanged; application failures restore backed-up
+copies. Concurrent local edits abort application. Progress and output remain
+available for the current app session after closing the dialog. Direct Skills CLI
+updates bypass this protection; untracked prepared copies remain untracked.
+
+Permanent deletion is separate from disabling. Delete beside Inspect opens a review of
+the affected folders and links; a second click on Delete permanently confirms it.
+No typed skill name or second dialog is required. Enabled profiles block deletion;
+disabled definitions retain their members. Deleting Global storage marks affected
+profiles unprepared; enabling a repository profile restores missing members before
+activation. Local-only profiles require restoring files or editing membership.
+Available physical copies and AFK-owned links
+to same-scope disabled storage can be deleted without a separate disable step.
+Owned availability links are reviewed and removed together with the storage;
+other scopes and unrelated unowned links block deletion. Global deletion also
+reviews and removes the matching Claude copy or link, without deleting unrelated
+symlink targets. Shared Claude skills folders are recognized without double
+removal. A shared project link must be
+deleted through its original storage scope. The preview lists duplicate copies
+that remain. Supporting files are deleted too. Changed files or links invalidate
+the review, and a failed settings save restores the folder and links. AFK cannot discover links in unconfigured projects.
 
 ## Agent management
 
@@ -119,7 +162,12 @@ Their saved members appear without folder grouping until Find skills runs again.
 Names missing from a later scan stay selected and visibly marked until removed.
 New upstream skills do not join an explicit selection automatically.
 Command generation can select Global/project destination and an optional agent.
-These actions never execute installation or uninstall removed bookmarks.
+Copying commands never executes them. Separate Install actions run Skills CLI
+after target review; removing bookmarks does not uninstall anything.
+The Cards/List switch affects both collections. Create profile opens a draft
+with the source name and selected members, or discovers all current members for
+All skills. Review and saving are explicit; the bookmark and activation remain
+unchanged. Profiles retain explicit selections rather than following later source edits.
 
 Stacks add named, versioned selections across original repositories alongside the
 existing bookmarks. The optional settings `stacks` array preserves compatibility
@@ -138,6 +186,9 @@ an empty update reuses install. Install/Update explicitly run the saved command
 from the home directory and show output and exit status. Results persist during
 the server session even if the dialog closes. Duplicate concurrent runs for the
 same entry are rejected. Removing an entry only removes it from management.
+Install all and Update all review the saved commands before running them
+sequentially. Failures and already-running entries are reported without stopping
+the remaining tools; an empty update command still reuses install.
 
 ## Settings and projects
 
@@ -165,9 +216,20 @@ reconcile concurrent machines, or automatically apply another machine's activati
 
 ## Lifecycle and verification
 
+`afk --port <number>` selects a fixed loopback port for either launch mode.
+Omitting it selects an available port. Values must be integers from 1 to 65535;
+occupied ports fail rather than falling back. Browser-blocked ports are rejected
+before launch; failed startup verification stops its child before removing receipts. A running background instance on a
+different port must be stopped before switching. The port is not saved in settings.
+
 `afk --background` starts a detached instance without opening a browser.
 `afk ui --background` is an alias. `afk status` verifies the background server and
 shows its URL, PID and log path; `afk stop` requests authenticated graceful shutdown.
+`afk restart` verifies the instance, retrieves its current settings path, waits
+for shutdown and launches a replacement on the same port. Changed shell settings
+do not redirect the restart. Older servers use their authenticated state response
+to recover the path; an unreadable path fails before shutdown. If no instance is
+running, restart suggests a background start without launching one.
 A second start reuses a running instance. These commands leave foreground sessions
 alone. Runtime records stay under `~/.afk/` and are not portable configuration.
 
@@ -176,8 +238,9 @@ token for APIs. Exit AFK stops accepting connections and shows a closed screen;
 Ctrl+C also closes the server. Configuration and activation remain unchanged.
 In-flight operations can finish as shutdown drains existing connections.
 
-Typecheck, lint, build, ten regressions, installer checks, and focused browser
-checks pass. The approved design was reviewed at desktop/mobile widths; real
+Verification includes typecheck, lint, build, regression tests, installer checks
+and focused browser checks; record current results with each change. The approved
+design was reviewed at desktop/mobile widths; real
 inventory startup and the Exit action were verified. Native metadata and link
 behavior are tested. Discovery in live Claude Code/Codex conversations, disabled
 folder treatment across all clients, publication, and website rollout remain
@@ -203,3 +266,15 @@ descriptions, and a selection count. Filtering retains chosen members. Installed
 Skills shows effective native invocation metadata and the behavior restored by
 clearing an override. Narrow screens keep a compact section selector and app
 utilities available while scrolling.
+
+### Installing saved sources and stacks
+
+Install runs Skills CLI for a saved source or stack, using the chosen scope and an
+explicit agent. Copied scripts retain their existing interactive behavior. App
+installation skips prompts after the user chooses the target, processes sources
+sequentially and retains progress/output during the session. Closing the dialog
+does not cancel the job. Cancellation stops the child process and later sources;
+completed or partial files remain. Installation can replace existing skills and
+make them available; the protected Installed Skills updater is the path for
+preserving an existing disabled state. Saving or editing a bookmark/stack still
+does not install anything. Agent operations expose the same installation actions.

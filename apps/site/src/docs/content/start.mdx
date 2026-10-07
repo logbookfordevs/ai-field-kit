@@ -13,9 +13,11 @@ Use `afk update` to update AFK itself. Skill package updates are separate.
 
 <div className="docs-callout"><strong>Requires AFK 2.0.2 or newer</strong><p>Background commands and invocation filtering are included in 2.0.2. Run `afk update` if your installed version is older.</p></div>
 
+<div className="docs-callout"><strong>Preview of the next release</strong><p>This manual also covers upcoming installation buttons, tool batches, bulk skill actions and protected skill updates. Screenshots use a demo workspace from the current development build; some controls are not in 2.0.2 yet.</p></div>
+
 <h2 id="open">Open the app</h2>
 
-You need Node.js 20 or newer and the repository’s configured pnpm version. To try unreleased changes, clone, build and launch main:
+You need Node.js 20 or newer and the repository’s configured pnpm version. To try unreleased changes, clone, check out the branch or tag you want to test, then build and launch:
 
 ```bash Build from source
 git clone https://github.com/logbookfordevs/ai-field-kit.git
@@ -45,8 +47,31 @@ afk stop
 
 Background start prints the local URL without opening a browser and keeps running
 when the terminal closes. Status shows its URL, process ID and log location.
-Starting again reuses the same background instance. Stop gracefully closes that
+Starting again reuses the same background instance. The next release also adds
+`afk restart` to reopen that instance on its current port and settings path. Stop gracefully closes that
 instance; foreground sessions remain independent. `afk ui --background` is an alias.
+
+<h2 id="port">Choose a fixed port</h2>
+
+The next release adds `--port` for a URL you can bookmark and a resident-memory
+metric in `afk status` (server RAM only, excluding your browser). To try it before release,
+build this branch and substitute `node packages/afk/dist/index.js` for `afk`:
+
+```bash Fixed-port launch — next release
+afk --port 4310
+# Or keep it running in the background:
+afk --background --port 4310
+```
+
+Both use `http://127.0.0.1:4310`. Without `--port`, AFK picks an available port
+at startup. The number must be an integer from 1 to 65535. If it is occupied,
+AFK reports an error instead of silently selecting another port. Browser-blocked
+ports such as 6666 are rejected before launch; use a port such as 4310 or 8080.
+
+If your background instance is already running on another port, run `afk stop`
+before starting it with the new port. `afk status` shows the current URL. The port
+is a launch option, not a saved preference; include it whenever you start AFK.
+`afk ui` accepts the same option.
 
 <h2 id="first-profile">Create one useful profile</h2>
 
@@ -60,7 +85,7 @@ A profile is a shared definition. Creating it does not enable it. Read the [prof
 
 Need the group available for ongoing work? Add your project folder in **Settings**, then choose that project beside the profile’s **Enable** action. Choose **Global** when you want global availability.
 
-Need its guidance once? Choose **Use with your agent** and give the copied command to your agent. It reads the group’s instructions without enabling them. [See the agent flow](/docs?chapter=agent).
+Need its guidance once? Choose **Read group once** and give the copied command to your agent. It reads the group’s instructions without enabling them. [See the agent flow](/docs?chapter=agent).
 
 <h2 id="close">Close AFK</h2>
 

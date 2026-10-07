@@ -1,4 +1,5 @@
-import { startBackground, backgroundStatus, stopBackground } from "./background.js";
+import { parseUiOptions } from "./ui-options.js";
+import { startBackground, backgroundStatus, stopBackground, restartBackground } from "./background.js";
 import { updateAfk } from "./update.js";
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
@@ -16,9 +17,12 @@ const HELP = `AFK — local skills, tools, and agent rules
 
   afk                               Open the local web app
   afk ui --no-open                   Start without opening a browser
-  afk --background                   Run the app in the background
+  afk --background [--port <number>] Run the app in the background
+  afk --port <number>                Open the app on a fixed port
   afk status                         Show the background app URL and PID
   afk stop                           Stop the background app
+  afk restart                        Restart the background app on its current port
+  afk skills update [name] [-g | -p <project>]  Update skills, preserving availability
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
   afk profiles use <id>              Read a group without enabling it
@@ -91,15 +95,18 @@ async function manage(argv: string[], store: SettingsStore): Promise<number> {
   const data = await inputObject(path);
   await store.initialize();
   const operations = new FieldworkOperations(store);
+  const cancelUpdate = (): void => { void operations.run("skills/update-cancel").catch(error => console.error(error)); };
+  if (operation === "skills/update") process.on("SIGINT", cancelUpdate);
   try {
     const result = await operations.run(operation, data);
     json(result);
+    if (operation === "skills/update") return (result as { code: number }).code;
     if (operation === "tool/run") {
       const code = (result as { code: number }).code;
       return code === 0 ? 0 : Math.max(1, Math.min(255, code));
     }
     return ["rules/sync", "rules/overwrite"].includes(operation) && hasErrors(result) ? 1 : 0;
-  } finally { await operations.close(); }
+  } finally { process.removeListener("SIGINT", cancelUpdate); await operations.close(); }
 }
 
 async function run(argv: string[], store: SettingsStore): Promise<number> {
@@ -120,17 +127,14 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     if (action !== undefined) throw new Error("Use guide without additional arguments.");
     console.log(fileURLToPath(new URL("../../skills/afk-cli/SKILL.md", import.meta.url))); return 0;
   }
-  if (command === "status" || command === "stop") {
+  if (command === "status" || command === "stop" || command === "restart") {
     if (action !== undefined) throw new Error(`Use afk ${command} without additional arguments.`);
     if (command === "status") await backgroundStatus(store.home);
-    else await stopBackground(store.home);
+    else if (command === "stop") await stopBackground(store.home);
+    else await restartBackground(store.home);
     return 0;
   }
   await store.initialize();
-  if (argv.includes("--background")) {
-    if (argv.some(arg => !["ui", "--background", "--no-open"].includes(arg))) throw new Error("Use afk --background or afk ui --background.");
-    await startBackground(store); return 0;
-  }
   const library = new SkillLibrary(store);
   if (command === "profiles") {
     if (!id || extra !== undefined || (action === "use" && target !== undefined)) throw new Error("Provide a profile identifier and optional scope for enable or disable.");
@@ -138,6 +142,31 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     if (action === "use") { console.log(await library.readGroup(settings, id)); return 0; }
     if (action === "enable" || action === "disable") { await library.activate(settings, id, target ?? "Global", action === "enable"); return 0; }
     throw new Error("Choose profiles use, enable, or disable.");
+  }
+  if (command === "skills" && action === "update") {
+    let scope = "Global", hasScope = false;
+    const names: string[] = [];
+    const args = argv.slice(2);
+    for (let index = 0; index < args.length; index++) {
+      const argument = args[index]!;
+      if (["-g", "--global", "-p", "--project"].includes(argument)) {
+        if (hasScope) throw new Error("Choose one update scope.");
+        hasScope = true;
+        if (argument === "-p" || argument === "--project") {
+          const project = args[++index];
+          if (!project || project.startsWith("-")) throw new Error("Provide a configured project name after -p.");
+          scope = project;
+        }
+      } else {
+        if (argument.startsWith("-")) throw new Error("Use skills update [name] -g or -p <project>.");
+        names.push(argument);
+      }
+    }
+    const operations = new FieldworkOperations(store);
+    const cancelUpdate = (): void => { void operations.run("skills/update-cancel").catch(error => console.error(error)); };
+    process.on("SIGINT", cancelUpdate);
+    try { const result = await operations.run("skills/update", { scope, ...(names.length ? { names } : {}) }) as { code: number; output: string; phase: string }; console.log(result.output); console.log(result.phase); return result.code; }
+    finally { process.removeListener("SIGINT", cancelUpdate); await operations.close(); }
   }
   if (command === "skills" && action === "get" && id && extra === undefined) {
     const path = await library.locate(await store.read(), id, target ?? "Global");
@@ -166,10 +195,11 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     }
     return report.ok ? 0 : 1;
   }
-  if ((command && command !== "ui") || argv.some(arg => !["ui", "--no-open"].includes(arg))) throw new Error("Run afk --help for supported commands.");
-  const app = await startFieldwork(store);
+  const options = parseUiOptions(argv);
+  if (options.background) { await startBackground(store, options.port); return 0; }
+  const app = await startFieldwork(store, options.port);
   console.log(`AFK is running at ${app.url}\nPress Ctrl+C to close it.`);
-  if (!argv.includes("--no-open")) {
+  if (options.open) {
     const [opener, args] = process.platform === "darwin" ? ["open", [app.url]] : process.platform === "win32" ? ["cmd", ["/c", "start", "", app.url]] : ["xdg-open", [app.url]];
     const child = spawn(opener!, args, { stdio: "ignore" });
     child.on("error", () => console.error("Open the AFK URL in your browser."));

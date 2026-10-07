@@ -1,3 +1,5 @@
+![AFK 2.0 — a paper field notebook for skills, profiles, tools and shared rules](docs/assets/afk-readme-hero-v2.webp)
+
 # AI Field Kit — AFK 2.0
 
 > **Welcome to AFK 2.0.** This is the new, focused AFK. Want the previous setup,
@@ -30,8 +32,8 @@ skill activation.
 | Section | Purpose | Scope |
 | --- | --- | --- |
 | Profiles | Prepare selected skills once, enable a group, or read its instructions | Shared definitions; activation per target |
-| Installed Skills | Inspect local files, filter by invocation, toggle availability, set invocation preferences | Global or a selected project |
-| Sources & Stacks | Save repository bookmarks or multi-source skill selections and copy install scripts | Shared definitions; copying never installs or activates |
+| Installed Skills | Inspect and update local files, filter skills, manage availability and invocation, delete stored copies | Global or a selected project |
+| Sources & Stacks | Save repository bookmarks or multi-source selections, copy commands or run installation | Shared definitions; installation targets Global or a project |
 | Tools | Save and explicitly run install/update commands | Always global |
 | Agent rules | Edit shared rules and references, preview and sync managed regions | Shared document; explicit destination files |
 | Settings | Choose the AFK folder, import/export, define project folders | One configuration |
@@ -45,12 +47,17 @@ AFK-owned exposure. Existing files and skills needed by another profile are pres
 the group's instructions for the calling agent to read; it does not inject another
 chat or register a slash command.
 
-Sources, stack installation, and skill updates are copy-only. Tools run saved commands only
-when you choose Install or Update. Removing a tool entry does not uninstall it.
+Sources and stacks offer copied commands or explicit Install actions with progress.
+Installed Skills updates preserve availability and invocation preferences; its
+Profile filter also scopes the automatic discovery token estimate. Source cards
+can create a profile draft without removing the bookmark. Tools run saved commands
+only when you choose Install or Update, individually or in a reviewed batch.
+Removing a tool entry does not uninstall it.
 
 Stack publishers can use the [versioned manifest contract](docs/skill-stacks.md) and
 [example](docs/examples/skill-stack.v1.json). Import pasted JSON or a direct HTTPS
-manifest URL, review it, and copy its sequential Skills CLI script.
+manifest URL, review it, then copy its sequential Skills CLI script or install
+through the app.
 
 ## Manage AFK through your agent
 
@@ -74,7 +81,7 @@ The [agent guide](docs/agents.md) explains installation and workflows.
 - [Changelog](CHANGELOG.md)
 
 AFK no longer manages catalogs, conditional rule layers, hooks, MCP configuration, custom agents,
-setup presets, or general installation orchestration. Existing user files are not
+setup presets, or general agent-environment provisioning. Existing user files are not
 automatically migrated or removed. Historical releases remain documented in the
 changelog and Git history.
 
@@ -91,6 +98,12 @@ The live website is [ai-field-kit.logbookfordevs.com](https://ai-field-kit.logbo
 
 AFK is a tool from [Logbook for Devs](https://logbookfordevs.com/).
 
+## Update skills
+
+Use **Update skills** in Installed Skills, or `afk skills update -g` /
+`afk skills update -p <project>`, to update tracked skills while preserving
+availability and AFK invocation preferences.
+
 ## Update AFK itself
 
 Run `afk update` to rerun the hosted release installer and install the latest AFK
@@ -102,13 +115,36 @@ separate from updating installed skills and works without reading AFK settings.
 ```sh
 afk --background
 afk status
+afk restart
 afk stop
 ```
 
 Background start prints the local URL without opening a browser. Status shows the
-URL, process ID and log location. Stop gracefully closes the background instance;
+URL, process ID, resident memory (RSS) and log location. Stop gracefully closes the background instance;
 foreground sessions are independent. Runtime records and logs stay under `~/.afk/`,
 separate from your portable settings. Starting again reuses the running instance.
 `afk ui --background` is also accepted. **Exit AFK** can close a background server
 from the app; closing the browser tab leaves it running. Background instances use
-the settings selected when they start; restart after changing `AFK_SETTINGS`.
+the settings selected when they start. `afk restart` uses the running server’s
+current port and settings path, even if your terminal’s `AFK_SETTINGS` changed.
+If no background instance is running, it suggests `afk --background`. Foreground
+sessions are untouched. To switch via `AFK_SETTINGS`, stop and start explicitly.
+
+### Choose a fixed port
+
+```sh
+afk --port 4310
+afk --background --port 4310
+```
+
+With `--port`, the app uses `http://127.0.0.1:4310`. Without it, AFK picks an
+available port. Ports must be integers from 1 to 65535; an occupied port causes
+an error rather than a fallback. Browser-blocked ports such as 6666 are rejected
+before starting; choose a web port such as 4310 or 8080. If the background instance already uses another
+port, run `afk stop` before restarting with your chosen port. The port is a launch
+option, not a saved setting. `afk ui` accepts the same options.
+
+`afk status` reports the server’s current resident RAM in MiB, including Node.js
+and native allocations. It excludes the browser tab and child tool processes.
+Older running servers show memory as unavailable until restarted after updating.
+`afk restart` is included in the next release; use a source build until published.

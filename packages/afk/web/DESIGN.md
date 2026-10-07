@@ -322,7 +322,7 @@ Welcome extends the native dialog to `min(720px,calc(100vw - 32px))`. A 16px int
 
 ### Don't:
 
-- **Don't** replace open ledger rows with elevated decorative card grids.
+- **Don't** replace operational ledgers with elevated decorative card grids. Sources & Stacks has an approved flat paper gallery with a List alternative.
 - **Don't** use Rust Deep as the ordinary primary-action fill.
 - **Don't** make state depend only on color or motion.
 - **Don't** promote inherited text-glyph icons into reusable design rules.
@@ -331,17 +331,23 @@ Not canonized: folder navigation retains a Unicode chevron. The craft floor excl
 
 ### Sources & Stacks
 
-The shared Sources & Stacks page retains the ruled source ledger and its optional
-agent selector. A wrapping page-action group contains Add source, Create stack,
-and Import stack; installation destination affects copied commands only. Sources
-and Stacks have distinct headings. Each stack identifies its source count, selected
-member count, and local or remote provenance. A native disclosure groups members
-under their original repository references. Stack controls copy a script, edit,
-export JSON, explicitly refresh a remote manifest, or remove the saved definition.
+The shared Sources & Stacks page defaults to a flat paper card gallery. A
+Cards/List toggle applies to both collections for the current page session; it
+does not change saved definitions or installation targets. Sources and Stacks
+retain distinct headings. Desktop cards use two equal columns with a 16px gap,
+20px insets, Surface fill, a Rule border and 8px corners, without elevation.
+At 1000px the gallery becomes one column; mobile insets reduce to 16px. Titles,
+repository paths and selection disclosures lead; actions follow a quiet divider
+at the bottom. Long paths wrap and mobile actions use two columns.
+
+A wrapping page-action group contains Add source, Create stack and Import stack.
+Each stack identifies its source count, selected member count, and local or remote
+provenance. A native disclosure groups members under their original repositories.
+Controls install, copy a script, edit, export JSON, explicitly refresh a remote
+manifest, or remove the saved definition.
 
 Import uses the native dialog with JSON/HTTPS choices and retains invalid input.
-Creation selects existing explicit source selections; all-skills bookmarks remain
-outside this flow. Review shows the proposed source groups and a disclosure of the
-saved version before complete replacement. Refresh and saving remain separate from
-installing and profile activation. Stack groups use flat ruled boundaries; mobile
-controls follow the same two-column ledger action pattern without horizontal overflow.
+Creation lists every saved source and saves explicit skill selections, including
+one-off choices from all-skills bookmarks. Review shows the proposed source groups
+and saved version before complete replacement. Refreshing and saving remain
+separate from installation and profile activation.

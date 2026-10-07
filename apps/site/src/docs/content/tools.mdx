@@ -10,7 +10,19 @@ Tools are always Global. Project selection does not change the list or the worki
 
 <h2 id="run">Install or update explicitly</h2>
 
-Click **Install** or **Update** to execute the saved command from your home directory. Unlike Sources & Stacks and skill-update copy controls, these buttons do run commands.
+Click **Install** or **Update** to execute the saved command from your home directory.
+
+Use **Install all** or **Update all** at the top to review and run every saved tool
+command sequentially. Update all reuses the install command for entries without
+an update command. Each tool shows its result; failures do not stop the remaining
+commands, and already-running tools are skipped. Closing the dialog leaves the
+batch running; reopen either bulk action to follow the active batch. Keep the app
+tab open until the batch finishes.
+
+<figure className="docs-screenshot docs-screenshot-detail">
+  <a href="/docs/screenshots/tools-batch.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/tools-batch.webp" alt="Completed Update all tools dialog showing separate commands, output and success for two demo tools, including the install fallback." width="640" height="640" loading="lazy" decoding="async" /></a>
+  <figcaption><strong>One batch, individual results.</strong> Each command keeps its own output and completion status. Demo workspace from the current source build; open the image for a closer look.</figcaption>
+</figure>
 
 The output dialog shows stdout, errors, and exit status. Results remain available during the server session if you close the dialog. A second concurrent run for the same entry is rejected.
 

@@ -1,13 +1,13 @@
 let memberPicker;
 function renderMembers(names,title,local,checked=[],descriptions={},picker=profilePicker,paths=picker.paths||{}){
   memberPicker=picker;
-  const isSource=picker.kind==='source',target=isSource?'sourceDiscovery':'discovery';
+  const isSource=picker.kind==='source'||picker.kind==='stack'||picker.kind==='installation',target=picker.kind==='installation'?'installationDiscovery':picker.kind==='stack'?'stackDiscovery':isSource?'sourceDiscovery':'discovery';
   picker.descriptions=descriptions;
   picker.paths=local?{}:paths;picker.openFolders=new Map();
   picker.names=isSource?[...new Set([...names,...checked])]:names;
   picker.selected=new Set(checked.filter(n=>picker.names.includes(n)));picker.query='';picker.selectedOnly=false;
   picker.unavailable=new Set(isSource?checked.filter(n=>!names.includes(n)):[]);
-  const hint=isSource?'Only the bookmark selection is saved. Nothing is installed.':local?'Existing skill availability stays unchanged.':'New skills are downloaded disabled; existing skills stay as they are.';
+  const hint=picker.kind==='installation'?'Choose skills for this installation. The bookmark stays unchanged.':picker.kind==='stack'?'Only this stack’s selection changes. Nothing is installed.':isSource?'Only the bookmark selection is saved. Nothing is installed.':local?'Existing skill availability stays unchanged.':'New skills are downloaded disabled; existing skills stay as they are.';
   $(target).innerHTML=`<p class="hint">${hint}</p><label>${isSource?'Find skills':'Find members'}<input id="memberSearch" type="search" placeholder="Search skills, folders and descriptions" oninput="memberPicker.query=this.value;renderMemberList()" autocomplete="off"></label><div class="members-head"><strong>${esc(title)}</strong>${button('Select shown','selectShownMembers()','text','id="selectShownMembers"')}</div><div class="member-selection"><span id="memberCount" role="status"></span>${button('Selected only','toggleSelectedMembers()','','id="selectedOnly" aria-pressed="false"')}${button('Clear selection','clearMembers()','text')}</div><div id="memberResults" class="member-results" role="group" aria-label="${isSource?'Selected source skills':'Profile members'}"></div>`;
   renderMemberList();
 }
@@ -65,7 +65,7 @@ function renderMemberList(){
 }
 function updateMemberCount(){
   const n=memberPicker.selected.size;
-  if(memberPicker.kind==='source')updateSourceSave();else $('saveProfile').disabled=!n;
+  if(memberPicker.kind==='installation')updateInstallationSelection();else if(memberPicker.kind==='stack')updateStackSelection();else if(memberPicker.kind==='source')updateSourceSave();else $('saveProfile').disabled=!n;
   const shown=visibleMembers().length,filtered=Boolean(memberPicker.query.trim()||memberPicker.selectedOnly);
   const visibility=memberPicker.hasFolders?(filtered?`${shown} of ${memberPicker.names.length} match`:`${memberPicker.names.length} skills`):`${shown} of ${memberPicker.names.length} shown`;
   $('memberCount').textContent=`${n} selected · ${visibility}`;

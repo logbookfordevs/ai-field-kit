@@ -66,8 +66,8 @@ describe("stack management interface", () => {
     resolve({ stack, expected: null }); await pending;
     expect(context.dialog).toBe("Other dialog");
   });
-  it("creates a stack only from explicitly selected bookmarks", () => {
+  it("offers every saved bookmark for stack selection", () => {
     evaluate("createStack()");
-    expect(evaluate("stackDraft.choices")).toEqual([{ name: "Some", source: "owner/video", skills: ["render"] }]);
+    expect(evaluate("stackDraft.choices")).toEqual([{ name: "Some", source: "owner/video", skills: ["render"] }, { name: "All", source: "owner/all", skills: [] }]);
   });
 });

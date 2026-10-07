@@ -1,0 +1,94 @@
+# Write once. Preview before syncing.
+
+**Agent rules** keeps one canonical `AGENTS.md` and optional Markdown references in
+your AFK folder. Save your edits locally, then preview and sync them to Codex,
+Claude or a custom destination file.
+
+<div className="docs-callout"><strong>Saving and syncing are separate</strong><p>Save changes the files in your AFK folder. Sync changes only the AFK-managed region in the destinations you select. Existing text outside that region stays in place.</p></div>
+
+<h2 id="write">Start your shared rules</h2>
+
+Choose **Start AGENTS.md** and paste or write your instructions. You can also start
+an unsaved draft with **Copy from Codex’s AGENTS.md** or **Copy from Claude’s
+AGENTS.md**. Copying does not save or sync anything.
+
+Use **Save** to keep the draft. Supporting files live under `references/` beside
+the canonical document. Your canonical rules are shared across profiles and
+projects; destinations are specific files on this machine.
+
+<figure className="docs-screenshot">
+  <a href="/docs/screenshots/agent-rules.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/agent-rules.webp" alt="Agent rules editor with AGENTS.md selected, artifacts.md in the reference list, and a saved reference key in the instructions." width="949" height="579" loading="lazy" decoding="async" /></a>
+  <figcaption><strong>One document, supporting references.</strong> Edit the canonical rules and reference files together. Demo workspace from the current source build; open the image for a closer look.</figcaption>
+</figure>
+
+<h2 id="references">Link supporting instructions</h2>
+
+Choose **Add reference**, name the Markdown file, and write its content. In
+`AGENTS.md`, type `{{` to choose an available reference, or write a key directly:
+
+```text Canonical rule before sync
+When creating durable workflow artifacts, read {{artifacts.md}}.
+```
+
+The key names `references/artifacts.md` in your AFK folder. When you sync, AFK
+copies the supporting file into the destination's `afk-rules/<destination-id>/`
+folder and replaces the key with its absolute path. Each destination gets its own
+resolved path. The canonical document retains the key so it stays portable.
+
+```text Example resolved rule in Codex's destination
+When creating durable workflow artifacts, read /Users/you/.codex/afk-rules/codex/references/artifacts.md.
+```
+
+Relative Markdown links to reference files are also resolved. Missing references
+must be fixed before syncing; the editor calls them out below the text area.
+
+<h2 id="sync">Review and sync saved rules</h2>
+
+1. Save your rules and references.
+2. Select the destination checkboxes. Codex and Claude default to their respective
+   `AGENTS.md` files; **Add custom destination** accepts another rules-file path.
+3. Choose **Preview** for one destination or **Sync saved rules** for the selection.
+4. Review the changes, resolved reference paths and destination status.
+5. Confirm **Sync** to apply the reviewed changes.
+
+<figure className="docs-screenshot docs-screenshot-detail">
+  <a href="/docs/screenshots/rules-preview.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/rules-preview.webp" alt="Sync preview for Codex showing the AFK region markers and the resolved absolute path to artifacts.md before confirmation." width="900" height="835" loading="lazy" decoding="async" /></a>
+  <figcaption><strong>The preview is the boundary.</strong> Review what will be written before confirming. Paths shown belong to an isolated demo workspace.</figcaption>
+</figure>
+
+AFK writes between `<!-- AFK:RULES:START -->` and `<!-- AFK:RULES:END -->`.
+It creates backups of existing files before changing them. It does not replace the
+whole destination file or symlink your canonical rules into it. If a source or
+destination changes after preview, review again before syncing.
+
+<h2 id="conflicts">Choose which rules to keep</h2>
+
+AFK stops when a managed region or reference copy has changed outside AFK, when an
+existing region has no local ownership record, or when markers are malformed.
+Choose **Review conflict** to see why.
+
+- **Bring rules into editor** loads the destination's AFK region as an unsaved
+  draft and keeps your previous draft aside. Reference copies are not imported.
+  Review, save, then sync when ready.
+- **Replace AFK region with saved rules** deliberately uses the canonical rules
+  after review. Text outside the markers stays untouched; existing files are backed up.
+- A reference file AFK does not own must be moved or renamed before replacement.
+  Broken markers need manual repair; AFK does not guess where a region ends.
+
+<h2 id="disconnect">Disconnect a destination</h2>
+
+**Stop managing only** removes the connection and leaves destination content.
+**Remove AFK content** removes only the unchanged managed region and reference
+copies AFK owns. Conflicting content must be resolved first. The destination file
+and surrounding text remain.
+
+<h2 id="portable">Keep the canonical folder portable</h2>
+
+Put your AFK folder in a Git repository or a Drive/iCloud-synced location if you
+want your storage provider to carry it between machines. AFK does not pull rules
+from a remote Git URL or automatically sync destinations after another machine
+changes the files.
+
+Use **Export AFK folder · ZIP** to include canonical rules and references. Import
+previews local destination mappings and does not sync agent files.
+[Choose your storage location](/docs?chapter=settings#location).
