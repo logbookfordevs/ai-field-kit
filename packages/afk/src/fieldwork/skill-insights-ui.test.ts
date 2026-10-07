@@ -64,7 +64,7 @@ it("filters saved profile membership including disabled profiles and overlapping
 });
 
 
-it("updates discovery totals with current filters and excludes disabled matching members",()=>{
+it("updates discovery totals only with profile membership and excludes disabled members",()=>{
   const ui=fixture();
   ui.context.button=(label:string)=>label;
   ui.context.profiles=[{id:"disabled-only",skills:["disabled"]}];
@@ -72,8 +72,9 @@ it("updates discovery totals with current filters and excludes disabled matching
   ui.run("profileFilter='disabled-only'");
   expect(ui.run<string>("skillTokenSummary()")).toContain("Codex ~0");
   expect(ui.run<string>("skillTokenSummary()")).toContain("Claude ~0");
-  ui.run("profileFilter='';query='nothing-matches'");
-  expect(ui.run<string>("skillTokenSummary()")).toContain("Codex ~0");
-  ui.run("query=''");
+  ui.run("profileFilter=''");
+  const baseline=ui.run<string>("skillTokenSummary()");
+  ui.run("query='nothing-matches';sourceFilter='owner/b';availabilityFilter='disabled';invocationFilter='manual only'");
+  expect(ui.run<string>("skillTokenSummary()")).toBe(baseline);
   expect(ui.run<string>("skillTokenSummary()")).not.toContain("Codex ~0");
 });
