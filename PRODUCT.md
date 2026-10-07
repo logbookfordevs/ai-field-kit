@@ -14,7 +14,8 @@ installing and uninstalling them.
 ## Product Purpose
 
 AI Field Kit manages the skills and tools a developer actually uses. Its CLI opens
-a local web app and exposes a small set of reading and profile activation commands.
+a local web app and provides headless management operations, protected skill updates
+and background lifecycle commands alongside profile reading and activation.
 
 The product has six sections: Profiles, Installed Skills, Sources & Stacks,
 Tools, Agent rules, and Settings. Profile definitions are shared; activation is global or

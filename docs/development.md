@@ -104,7 +104,8 @@ or confirm a website deployment. Release preparation is handled by the
 repository's `afk-release` skill only when explicitly requested; the existing tag
 workflow publishes npm and creates a GitHub Release.
 
-The update command copied by the app belongs to Skills CLI and only updates
-installations it tracks. AFK's staged disabled copies do not establish a separate
-upstream-update registry. Native invocation files and links are tested; discovery
-inside live agent conversations is a separate verification step.
+The app and `afk skills update` use the protected staged updater, which delegates
+to Skills CLI and only updates installations it tracks. Profile preparation does
+not establish tracking receipts for those copies. Direct `npx skills update`
+bypasses AFK’s availability protection. Native invocation files and links are
+tested; discovery inside live agent conversations is a separate verification step.

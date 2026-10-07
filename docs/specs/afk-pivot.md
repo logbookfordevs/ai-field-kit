@@ -73,8 +73,11 @@ configuration preference. Profile and individual activation avoid duplicate
 operations when the discovery folders share one underlying directory.
 
 The invocation filter uses effective Claude/Codex metadata, including differences
-between agents and unknown metadata. It combines with name search within the
-selected scope and does not change skill state.
+between agents and unknown metadata. It combines with availability, recorded
+source, saved profile membership and
+name search within the selected scope without changing skill state. The discovery
+estimate counts available automatic skills and follows only the Profile filter.
+Other filters change the list only; profile membership includes disabled profiles.
 
 Inspection reads real SKILL.md and supporting files inside the selected skill
 folder. Individual availability is separate from profiles; disable owning profiles
@@ -99,8 +102,11 @@ updates bypass this protection; untracked prepared copies remain untracked.
 
 Permanent deletion is separate from disabling. Delete beside Inspect opens a review of
 the affected folders and links; a second click on Delete permanently confirms it.
-No typed skill name or second dialog is required. The skill must be
-removed from profile definitions. Available physical copies and AFK-owned links
+No typed skill name or second dialog is required. Enabled profiles block deletion;
+disabled definitions retain their members. Deleting Global storage marks affected
+profiles unprepared; enabling a repository profile restores missing members before
+activation. Local-only profiles require restoring files or editing membership.
+Available physical copies and AFK-owned links
 to same-scope disabled storage can be deleted without a separate disable step.
 Owned availability links are reviewed and removed together with the storage;
 other scopes and unrelated unowned links block deletion. Global deletion also
@@ -156,7 +162,12 @@ Their saved members appear without folder grouping until Find skills runs again.
 Names missing from a later scan stay selected and visibly marked until removed.
 New upstream skills do not join an explicit selection automatically.
 Command generation can select Global/project destination and an optional agent.
-These actions never execute installation or uninstall removed bookmarks.
+Copying commands never executes them. Separate Install actions run Skills CLI
+after target review; removing bookmarks does not uninstall anything.
+The Cards/List switch affects both collections. Create profile opens a draft
+with the source name and selected members, or discovers all current members for
+All skills. Review and saving are explicit; the bookmark and activation remain
+unchanged. Profiles retain explicit selections rather than following later source edits.
 
 Stacks add named, versioned selections across original repositories alongside the
 existing bookmarks. The optional settings `stacks` array preserves compatibility
@@ -222,8 +233,9 @@ token for APIs. Exit AFK stops accepting connections and shows a closed screen;
 Ctrl+C also closes the server. Configuration and activation remain unchanged.
 In-flight operations can finish as shutdown drains existing connections.
 
-Typecheck, lint, build, ten regressions, installer checks, and focused browser
-checks pass. The approved design was reviewed at desktop/mobile widths; real
+Verification includes typecheck, lint, build, regression tests, installer checks
+and focused browser checks; record current results with each change. The approved
+design was reviewed at desktop/mobile widths; real
 inventory startup and the Exit action were verified. Native metadata and link
 behavior are tested. Discovery in live Claude Code/Codex conversations, disabled
 folder treatment across all clients, publication, and website rollout remain

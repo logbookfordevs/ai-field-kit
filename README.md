@@ -32,8 +32,8 @@ skill activation.
 | Section | Purpose | Scope |
 | --- | --- | --- |
 | Profiles | Prepare selected skills once, enable a group, or read its instructions | Shared definitions; activation per target |
-| Installed Skills | Inspect local files, filter by invocation, toggle availability, set invocation preferences | Global or a selected project |
-| Sources & Stacks | Save repository bookmarks or multi-source skill selections and copy install scripts | Shared definitions; copying never installs or activates |
+| Installed Skills | Inspect and update local files, filter skills, manage availability and invocation, delete stored copies | Global or a selected project |
+| Sources & Stacks | Save repository bookmarks or multi-source selections, copy commands or run installation | Shared definitions; installation targets Global or a project |
 | Tools | Save and explicitly run install/update commands | Always global |
 | Agent rules | Edit shared rules and references, preview and sync managed regions | Shared document; explicit destination files |
 | Settings | Choose the AFK folder, import/export, define project folders | One configuration |
@@ -47,12 +47,17 @@ AFK-owned exposure. Existing files and skills needed by another profile are pres
 the group's instructions for the calling agent to read; it does not inject another
 chat or register a slash command.
 
-Sources, stack installation, and skill updates are copy-only. Tools run saved commands only
-when you choose Install or Update. Removing a tool entry does not uninstall it.
+Sources and stacks offer copied commands or explicit Install actions with progress.
+Installed Skills updates preserve availability and invocation preferences; its
+Profile filter also scopes the automatic discovery token estimate. Source cards
+can create a profile draft without removing the bookmark. Tools run saved commands
+only when you choose Install or Update, individually or in a reviewed batch.
+Removing a tool entry does not uninstall it.
 
 Stack publishers can use the [versioned manifest contract](docs/skill-stacks.md) and
 [example](docs/examples/skill-stack.v1.json). Import pasted JSON or a direct HTTPS
-manifest URL, review it, and copy its sequential Skills CLI script.
+manifest URL, review it, then copy its sequential Skills CLI script or install
+through the app.
 
 ## Manage AFK through your agent
 
@@ -76,7 +81,7 @@ The [agent guide](docs/agents.md) explains installation and workflows.
 - [Changelog](CHANGELOG.md)
 
 AFK no longer manages catalogs, conditional rule layers, hooks, MCP configuration, custom agents,
-setup presets, or general installation orchestration. Existing user files are not
+setup presets, or general agent-environment provisioning. Existing user files are not
 automatically migrated or removed. Historical releases remain documented in the
 changelog and Git history.
 
@@ -93,11 +98,13 @@ The live website is [ai-field-kit.logbookfordevs.com](https://ai-field-kit.logbo
 
 AFK is a tool from [Logbook for Devs](https://logbookfordevs.com/).
 
-## Update AFK itself
+## Update skills
 
 Use **Update skills** in Installed Skills, or `afk skills update -g` /
 `afk skills update -p <project>`, to update tracked skills while preserving
 availability and AFK invocation preferences.
+
+## Update AFK itself
 
 Run `afk update` to rerun the hosted release installer and install the latest AFK
 release. `afk update --dry-run` prints the command without running it. This is
