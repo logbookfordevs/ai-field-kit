@@ -42,6 +42,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- Sources & Stacks defaults to a responsive card gallery, with a List switch for a compact view. Both layouts retain installation, copying, editing and saved skill selections.
+
 - Installed Skills puts scope and updates beside the heading, groups filters in a compact row, and moves discovery details and folder paths behind quick disclosures so skills appear sooner.
 
 - Stored skills can be deleted while their profiles are disabled. Profile definitions keep their selections; enabling a repository profile restores missing members before activation. Local-only profiles explain which files need restoring.

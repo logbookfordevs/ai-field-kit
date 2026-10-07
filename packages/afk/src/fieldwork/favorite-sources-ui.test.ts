@@ -53,6 +53,25 @@ beforeEach(() => {
 });
 
 describe("favorite-source UI and copied commands", () => {
+  it("switches both collection views without changing bookmarks or installation target", () => {
+    context.scopeNames = () => ["Global"];
+    context.scopeOptions = () => "";
+    context.head = () => "";
+    context.renderStacks = (layout: string) => `<section data-layout="${layout}"></section>`;
+    const before = JSON.stringify(sources);
+    evaluate("renderSources()");
+    expect(field("view").innerHTML).toContain("source-gallery");
+    expect(field("view").innerHTML).toContain('data-layout="cards"');
+    evaluate("setSourcesLayout('list')");
+    expect(field("view").innerHTML).not.toContain("source-gallery");
+    expect(field("view").innerHTML).toContain('data-layout="list"');
+    evaluate("setSourcesLayout('cards');setSourcesLayout('invalid')");
+    expect(evaluate("sourcesLayout")).toBe("cards");
+    expect(evaluate("installScope")).toBe("Global");
+    expect(JSON.stringify(sources)).toBe(before);
+    expect(patch).toBeUndefined();
+  });
+
   it("requires an explicit target before starting installation without changing copied commands", async () => {
     const requests: string[] = [];
     context.request = async (path: string) => { requests.push(path); };
