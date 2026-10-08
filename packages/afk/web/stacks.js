@@ -39,19 +39,28 @@ function createStack(){
   const choices=favoriteSources.map(source=>({...source,skills:[...(source.skills||[])]}));
   const version=++stackDialogVersion;
   stackDraft={choices,version,pickers:new Map()};
-  modal('Create stack',`<p>Name your stack, then select saved sources. Choose specific skills for sources saved as All skills.</p><label>Name<input id="stackName" maxlength="120"></label><label>Identifier<input id="stackId" placeholder="my-stack" maxlength="200"></label><label>Description · optional<input id="stackDescription" maxlength="4000"></label><fieldset class="profile-source"><legend>Source selections</legend>${choices.length?choices.map((source,i)=>`<div class="stack-source-choice"><label class="check"><input type="checkbox" data-stack-source="${i}" onchange="stackSourceChanged(${i},this.checked)"><span>${esc(source.name)} · <span id="stackSourceCount-${i}">${source.skills.length?source.skills.length+' skills':'No skills selected'}</span></span></label>${button('Choose skills',`chooseStackSkills(${i})`,'text')}</div>`).join(''):'<p class="hint">Save a source first, or import a manifest.</p>'}</fieldset><div id="stackSkillSelection" hidden><h3 id="stackSkillTitle"></h3><div id="stackDiscovery"></div></div><p class="hint">Selections apply only to this stack. Saved bookmarks stay unchanged. Nothing is installed or activated.</p><p id="stackError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Review stack',`previewNewStack(${version})`,'primary','id="reviewStack"'));
+  modal('Create stack',`<p>Name your stack, then select saved sources. Choose specific skills for sources saved as All skills.</p><label>Name<input id="stackName" maxlength="120"></label><label>Identifier<input id="stackId" placeholder="my-stack" maxlength="200"></label><label>Description · optional<input id="stackDescription" maxlength="4000"></label><fieldset class="profile-source"><legend>Source selections</legend>${choices.length?choices.map((source,i)=>`<div class="stack-source-choice"><label class="check"><input type="checkbox" id="stackSource-${i}" data-stack-source="${i}" onchange="stackSourceChanged(${i},this.checked)"><span>${esc(source.name)} · <span id="stackSourceCount-${i}">${source.skills.length?source.skills.length+' skills':'No skills selected'}</span></span></label>${button('Choose skills',`chooseStackSkills(${i})`,'text',`id="stackChooseSkills-${i}" aria-expanded="false" aria-controls="stackSkillSelection"`)}</div><div id="stackSkillSlot-${i}"></div>`).join(''):'<p class="hint">Save a source first, or import a manifest.</p>'}</fieldset><div id="stackSkillSelection" class="stack-skill-selection" role="group" hidden><div id="stackDiscovery"></div></div><p class="hint">Selections apply only to this stack. Saved bookmarks stay unchanged. Nothing is installed or activated.</p><p id="stackError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Review stack',`previewNewStack(${version})`,'primary','id="reviewStack"'));
 }
 function stackSourceChanged(index,checked){
-  if(checked&&!stackDraft.choices[index].skills.length)chooseStackSkills(index);
+  if(checked&&(!stackDraft.choices[index].skills.length||stackDraft.pickers.has(index)))return chooseStackSkills(index);
+  if(!checked&&stackDraft.activeSource===index){
+    $('stackSkillSelection').hidden=true;
+    $('stackChooseSkills-'+index).setAttribute('aria-expanded','false');
+    stackDraft.activeSource=undefined;
+  }
 }
 async function chooseStackSkills(index){
   const draft=stackDraft,version=draft.version,body=$('sheetContent').firstElementChild;
   const source=draft.choices[index];
   let picker=draft.pickers.get(index);
-  $('stackSkillSelection').hidden=false;$('stackSkillTitle').textContent=source.name;$('stackError').textContent='';
+  $('stackSource-'+index).checked=true;
+  if(draft.activeSource!==undefined)$('stackChooseSkills-'+draft.activeSource).setAttribute('aria-expanded','false');
+  $('stackSkillSlot-'+index).appendChild($('stackSkillSelection'));
+  $('stackChooseSkills-'+index).setAttribute('aria-expanded','true');
+  $('stackSkillSelection').hidden=false;$('stackSkillSelection').setAttribute('aria-label',source.name+' skills');$('stackError').textContent='';
   draft.activeSource=index;
   if(picker){renderMembers(picker.names,'Repository skills',false,[...picker.selected],picker.descriptions,picker,picker.paths);return}
-  $('stackDiscovery').textContent='Finding skills…';
+  $('stackDiscovery').innerHTML='<p class="hint" role="status">Finding skills…</p>';
   try{
     const result=await request('discover',{source:source.source});
     if(!stackDialogCurrent(version,body)||stackDraft!==draft)return;

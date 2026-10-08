@@ -316,6 +316,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 
 .source-destination{margin-bottom:18px}
 .source-destination .toolbar>label{flex:1;min-width:0;max-width:300px}
+.source-reference{display:inline-block;max-width:100%;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px;overflow-wrap:anywhere}
+.source-reference:hover{text-decoration-thickness:2px}
 .source-row{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .source-card-heading{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:8px}.source-card-heading h2{margin:0}.source-card-heading button{flex:none;min-height:40px;font-size:12px}.source-info{min-width:0}.source-info h2{overflow-wrap:anywhere}
 .source-actions{flex-shrink:0;flex-wrap:wrap}
@@ -489,6 +491,12 @@ input,textarea{caret-color:var(--focus)}
 .profile-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .profile-source{border:0;padding:0;margin:0;min-width:0}
 .profile-source legend{font-size:14px;font-weight:500;margin-bottom:6px}
+.stack-skill-selection{padding:16px 0;border-bottom:1px solid var(--border)}
+.member-selection.stack-member-toolbar{border-block:0;padding:4px 0;gap:4px 12px}
+.member-selection.stack-member-toolbar>span{font-size:13px}
+.stack-member-toolbar button{font-size:12px}
+.member-selection.stack-member-toolbar button[aria-pressed=true]{background:transparent;color:var(--fg);font-weight:600;text-decoration-thickness:2px}
+@media(max-width:480px){.member-selection.stack-member-toolbar>span{flex-basis:100%}.member-selection.stack-member-toolbar{column-gap:16px}}
 .stack-source-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;border-bottom:1px solid var(--border)}
 .stack-source-choice .check{min-width:0;gap:12px}
 .stack-source-choice .check>span{overflow-wrap:anywhere}

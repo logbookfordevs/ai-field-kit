@@ -8,7 +8,15 @@ function renderMembers(names,title,local,checked=[],descriptions={},picker=profi
   picker.selected=new Set(checked.filter(n=>picker.names.includes(n)));picker.query='';picker.selectedOnly=false;
   picker.unavailable=new Set(isSource?checked.filter(n=>!names.includes(n)):[]);
   const hint=picker.kind==='installation'?'Choose skills for this installation. The bookmark stays unchanged.':picker.kind==='stack'?'Only this stack’s selection changes. Nothing is installed.':isSource?'Only the bookmark selection is saved. Nothing is installed.':local?'Existing skill availability stays unchanged.':'New skills are downloaded disabled; existing skills stay as they are.';
-  $(target).innerHTML=`<p class="hint">${hint}</p><label>${isSource?'Find skills':'Find members'}<input id="memberSearch" type="search" placeholder="Search skills, folders and descriptions" oninput="memberPicker.query=this.value;renderMemberList()" autocomplete="off"></label><div class="members-head"><strong>${esc(title)}</strong>${button('Select shown','selectShownMembers()','text','id="selectShownMembers"')}</div><div class="member-selection"><span id="memberCount" role="status"></span>${button('Selected only','toggleSelectedMembers()','','id="selectedOnly" aria-pressed="false"')}${button('Clear selection','clearMembers()','text')}</div><div id="memberResults" class="member-results" role="group" aria-label="${isSource?'Selected source skills':'Profile members'}"></div>`;
+  const isStack=picker.kind==='stack';
+  const search=`<input id="memberSearch" type="search" aria-label="${isSource?'Find skills':'Find members'}" placeholder="${isStack?'Search skills…':'Search skills, folders and descriptions'}" oninput="memberPicker.query=this.value;renderMemberList()" autocomplete="off">`;
+  const results=`<div id="memberResults" class="member-results" role="group" aria-label="${isSource?'Selected source skills':'Profile members'}"></div>`;
+  const actions=button('Select shown','selectShownMembers()','text','id="selectShownMembers"')+button('Selected only','toggleSelectedMembers()',isStack?'text':'','id="selectedOnly" aria-pressed="false"')+button(isStack?'Clear':'Clear selection','clearMembers()','text');
+  if(isStack){
+    $(target).innerHTML=`${search}<div class="member-selection stack-member-toolbar"><span id="memberCount" role="status"></span>${actions}</div>${results}`;
+  }else{
+    $(target).innerHTML=`<p class="hint">${hint}</p><label>${isSource?'Find skills':'Find members'}${search}</label><div class="members-head"><strong>${esc(title)}</strong>${button('Select shown','selectShownMembers()','text','id="selectShownMembers"')}</div><div class="member-selection"><span id="memberCount" role="status"></span>${button('Selected only','toggleSelectedMembers()','','id="selectedOnly" aria-pressed="false"')}${button('Clear selection','clearMembers()','text')}</div>${results}`;
+  }
   renderMemberList();
 }
 function memberDescription(name){return memberPicker.descriptions[name]||(memberPicker.kind==='source'?'':(inventories.Global||[]).find(s=>s.name===name)?.description)||''}
@@ -27,6 +35,7 @@ function memberTree(names){
     const path=memberPicker.paths[name];
     if(!path){root.names.push(name);continue}
     const parents=path==='.'?[]:path.split('/').slice(0,-1);
+    if(parents[0]==='skills')parents.shift();
     let node=root,folderPath='';
     for(const folder of parents){
       folderPath=folderPath?folderPath+'/'+folder:folder;
@@ -67,9 +76,9 @@ function updateMemberCount(){
   const n=memberPicker.selected.size;
   if(memberPicker.kind==='installation')updateInstallationSelection();else if(memberPicker.kind==='stack')updateStackSelection();else if(memberPicker.kind==='source')updateSourceSave();else $('saveProfile').disabled=!n;
   const shown=visibleMembers().length,filtered=Boolean(memberPicker.query.trim()||memberPicker.selectedOnly);
-  const visibility=memberPicker.hasFolders?(filtered?`${shown} of ${memberPicker.names.length} match`:`${memberPicker.names.length} skills`):`${shown} of ${memberPicker.names.length} shown`;
+  const visibility=memberPicker.hasFolders?(filtered?`${shown} of ${memberPicker.names.length} match`:`${memberPicker.names.length} skills`):(filtered?`${shown} of ${memberPicker.names.length} shown`:`${memberPicker.names.length} skills`);
   $('memberCount').textContent=`${n} selected · ${visibility}`;
-  $('selectShownMembers').textContent=memberPicker.hasFolders?(filtered?'Select matches':'Select all'):'Select shown';
+  $('selectShownMembers').textContent=memberPicker.hasFolders||memberPicker.kind==='stack'?(filtered?'Select matches':'Select all'):'Select shown';
   $('selectedOnly').setAttribute('aria-pressed',String(memberPicker.selectedOnly));
   memberPicker.renderedFolders.forEach((node,index)=>$('memberFolderCount-'+index).textContent=memberFolderCount(node));
 }

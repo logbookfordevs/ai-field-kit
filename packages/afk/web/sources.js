@@ -58,6 +58,24 @@ function saveRemap(i){
   if(!safeShellValue(path)){toast('Enter a directory without control characters.');return}
   projects[i].path=path;closeModal();render();toast('Directory remapped. Copy the command when ready.');
 }
+function sourceWebUrl(source){
+  const value=source.trim();
+  const shorthand=value.match(/^([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)$/);
+  if(shorthand)return 'https://github.com/'+shorthand[1]+'/'+shorthand[2];
+  const ssh=value.match(/^(?:git@|ssh:\/\/git@)([a-zA-Z0-9.-]+)[:/]([^\s?#]+)$/);
+  const candidate=ssh?'https://'+ssh[1]+'/'+ssh[2].replace(/\.git$/,''):value;
+  try{
+    const url=new URL(candidate);
+    if(!['https:','http:'].includes(url.protocol)||url.username||url.password)return null;
+    return url.href;
+  }catch{return null}
+}
+function sourceReference(source){
+  const url=sourceWebUrl(source.source);
+  const label='Open source for '+source.name+' (opens in a new tab)';
+  const text=`<code class="path">${esc(source.source)}</code>`;
+  return url?`<a class="source-reference" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(label)}" title="${esc(label)}">${text}</a>`:text;
+}
 let sourcesLayout='cards';
 function setSourcesLayout(layout){
   if(!['cards','list'].includes(layout))return;
@@ -68,7 +86,7 @@ function sourceLayoutControls(){
 }
 function renderSources(){
   if(!scopeNames().includes(installScope))installScope='Global';
-  const list=favoriteSources.length?`<div class="ledger source-collection ${sourcesLayout==='cards'?'source-gallery':''}">${favoriteSources.map((x,i)=>`<article class="row source-row" data-od-id="favorite-source-${i}"><div class="source-info"><div class="source-card-heading"><h2>${esc(x.name)}</h2>${button('Create profile',`createProfileFromSource(${i})`,'text')}</div><code class="path">${esc(x.source)}</code>${sourceSelectionSummary(x)}</div><div class="inline">${button('Install',`showInstallation('source',${i})`)}${button('Copy install command',`copyInstall(${i})`,'text')}${button('Edit',`editSource(${i})`,'text')}${button('Remove bookmark',`removeSource(${i})`,'text')}</div></article>`).join('')}</div>`:`<div class="empty" data-od-id="sources-empty"><h2>No favorite sources yet</h2><p class="sub">Save a name and repository link to keep it close. Bookmarks do not install or enable skills.</p></div>`;
+  const list=favoriteSources.length?`<div class="ledger source-collection ${sourcesLayout==='cards'?'source-gallery':''}">${favoriteSources.map((x,i)=>`<article class="row source-row" data-od-id="favorite-source-${i}"><div class="source-info"><div class="source-card-heading"><h2>${esc(x.name)}</h2>${button('Create profile',`createProfileFromSource(${i})`,'text')}</div>${sourceReference(x)}${sourceSelectionSummary(x)}</div><div class="inline">${button('Install',`showInstallation('source',${i})`)}${button('Copy install command',`copyInstall(${i})`,'text')}${button('Edit',`editSource(${i})`,'text')}${button('Remove bookmark',`removeSource(${i})`,'text')}</div></article>`).join('')}</div>`:`<div class="empty" data-od-id="sources-empty"><h2>No favorite sources yet</h2><p class="sub">Save a name and repository link to keep it close. Bookmarks do not install or enable skills.</p></div>`;
   $('view').innerHTML=head('Sources & Stacks','Keep repository bookmarks and reusable selections from multiple sources.','<div class="inline source-actions">'+button('Add source','editSource()')+button('Create stack','createStack()')+button('Import stack','importStack()','primary')+'</div>')+`<section class="source-destination" data-od-id="installation-destination"><div class="toolbar"><label>Installation destination<select onchange="installScope=this.value;renderSources()">${scopeOptions(installScope)}</select></label><details class="source-options"><summary>Agent selection · optional</summary><label>Installation agent<select onchange="installAgent=this.value"><option value="interactive" ${installAgent==='interactive'?'selected':''}>Choose interactively in CLI</option>${['codex','claude-code','cursor','opencode'].map(a=>`<option value="${a}" ${installAgent===a?'selected':''}>${a}</option>`).join('')}</select></label></details>${button('Copy all sources script','copyInstallAll()','',favoriteSources.length?'':'disabled')}</div><p class="hint">Copy commands to run yourself, or use Install on a source or stack to run Skills CLI here.</p></section>`+`<div class="source-section-heading"><h2>Sources <span class="meta">${favoriteSources.length}</span></h2>${sourceLayoutControls()}</div>`+list+renderStacks(sourcesLayout)+`<aside class="note"><span class="table-label">Bookmarks, not inventory</span><p>Sources and stacks travel with your configuration. Removing one leaves installed skills unchanged. Refreshing a stack changes its saved selection; update installed packages from Installed Skills.</p></aside>`;
 }
 async function createProfileFromSource(index){

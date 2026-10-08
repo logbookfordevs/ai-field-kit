@@ -42,7 +42,7 @@ beforeEach(() => {
   patch = undefined;
   discoverRequest = async () => ({ names: ["review", "video"], descriptions: { video: "Render demo clips" } });
   context = createContext({
-    $: field, favoriteSources: sources, currentSettings: { favoriteSources: sources },
+    $: field, URL, favoriteSources: sources, currentSettings: { favoriteSources: sources },
     installScope: "Global", installAgent: "interactive", projects: [{ name: "Studio", path: "/work/demo studio" }], inventories: {},
     esc: (text: unknown) => String(text).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;"),
     button: () => "", request: (_path: string, data: unknown) => discoverRequest(data),
@@ -53,6 +53,32 @@ beforeEach(() => {
 });
 
 describe("favorite-source UI and copied commands", () => {
+  it.each([
+    ["https://github.com/owner/repo/tree/main/skills", "https://github.com/owner/repo/tree/main/skills"],
+    ["owner/repo", "https://github.com/owner/repo"],
+    ["git@github.com:owner/repo.git", "https://github.com/owner/repo"],
+    ["ssh://git@gitlab.com/owner/repo.git", "https://gitlab.com/owner/repo"],
+    ["javascript:alert(1)", null],
+    ["file:///tmp/skills", null],
+    ["/tmp/skills", null],
+    ["https://user:secret@example.com/repo", null],
+  ])("resolves browser destinations for %s", (source, expected) => {
+    context.sourceValue = source;
+    expect(evaluate("sourceWebUrl(sourceValue)")).toBe(expected);
+  });
+
+  it("renders an accessible source link and retains selectable source text", () => {
+    context.bookmark = { name: 'Toolkit "Review"', source: "owner/toolkit" };
+    const html = evaluate<string>("sourceReference(bookmark)");
+    expect(html).toContain('href="https://github.com/owner/toolkit"');
+    expect(html).toContain('target="_blank" rel="noopener noreferrer"');
+    expect(html).toContain('aria-label="Open source for Toolkit &quot;Review&quot; (opens in a new tab)"');
+    expect(html).toContain('<code class="path">owner/toolkit</code></a>');
+    expect(html).not.toContain('<svg');
+    context.bookmark = { name: "Local", source: "/tmp/skills" };
+    expect(evaluate<string>("sourceReference(bookmark)")).not.toContain("<a ");
+  });
+
   it("starts a new profile from selected bookmark members without modifying or installing the source", async () => {
     let draft: unknown;
     context.createProfile = (profile: unknown) => { draft = profile; };
