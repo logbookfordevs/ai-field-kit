@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
+- Stack editing uses the same form as creation, prefilled with saved source and skill selections. Edit JSON remains available separately; both editors review changes before saving.
 - Source bookmark text links open the repository in a new tab in both Cards and List views.
 - Stack creation shows a compact skill picker directly beneath the chosen source. Choose skills checks the source; unchecking hides its picker and preserves selections for later use.
 - Repository skill pickers show the contents of a top-level `skills` folder at the root, retaining nested folders and search by original path.

@@ -174,8 +174,10 @@ existing bookmarks. The optional settings `stacks` array preserves compatibility
 with old settings. Import accepts pasted JSON or a direct HTTPS JSON URL. Both
 paths validate the same manifest and show a review before saving. An origin URL
 enables explicit refresh; the proposed complete replacement is reviewed against
-current selections, and stale saves are rejected. Create/edit/export/remove and
-copy-script actions never install, activate, or create profiles. Doctor validates
+current selections, and stale saves are rejected. Create and Edit share the
+source-selection form; Edit prefills saved groups, name and description while retaining the identifier and refresh origin. Edit JSON remains
+available separately. Create/edit/export/remove and copy-script actions never
+install, activate, or create profiles. Doctor validates
 stacks without network requests and warns about selected-name collisions across
 repositories. The [manifest contract](../skill-stacks.md) owns publisher details.
 
