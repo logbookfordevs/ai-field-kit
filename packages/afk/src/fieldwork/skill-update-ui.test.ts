@@ -37,3 +37,37 @@ it("keeps the output disclosure open across new logs and completion, and honors 
   refresh(false, "Final output");
   expect(output.details.open).toBe(false);
 });
+
+it("reviews and updates only the selected skills, including selections hidden by filters", async () => {
+  const requests: { operation: string; data: Record<string, unknown> }[] = [];
+  let review = "";
+  const context = createContext({
+    scope: "Demo", esc: String, $: (id: string) => id === "sheetContent" ? { querySelector: () => null } : null,
+    modal: (_title: string, body: string) => { review = body; },
+    button: (label: string) => label,
+    request: async (operation: string, data: Record<string, unknown>) => {
+      requests.push({ operation, data });
+      return operation === "skills/update" ? { scope: "Demo", code: 0, updated: 2 } : null;
+    },
+    refresh: async () => {}, toast() {}, setTimeout: () => 1, clearTimeout() {},
+  });
+  runInContext(source.slice(source.indexOf("let skillUpdateRunning=")), context);
+  runInContext("const selected=['alpha','beta'];showSkillUpdate(selected);selected.push('unselected')", context);
+  expect(review).toContain("2 selected skills");
+  expect(review).toContain("alpha"); expect(review).toContain("beta"); expect(review).not.toContain("unselected");
+  runInContext("renderSkillUpdate=()=>{}", context);
+  await runInContext("executeSkillUpdate()", context);
+  expect(requests.find(request => request.operation === "skills/update")?.data).toEqual({ scope: "Demo", names: ["alpha", "beta"] });
+});
+
+it("keeps updating all tracked skills distinct from updating a selection", async () => {
+  const requests: Record<string, unknown>[] = [];
+  const context = createContext({ scope: "Global", esc: String, $: (id: string) => id === "sheetContent" ? { querySelector: () => null } : null, modal() {}, button: String,
+    request: async (operation: string, data: Record<string, unknown>) => { if (operation === "skills/update") requests.push(data); return null; },
+    refresh: async () => {}, toast() {}, setTimeout: () => 1, clearTimeout() {},
+  });
+  runInContext(source.slice(source.indexOf("let skillUpdateRunning=")), context);
+  runInContext("showSkillUpdate();renderSkillUpdate=()=>{}", context);
+  await runInContext("executeSkillUpdate()", context);
+  expect(requests).toEqual([{ scope: "Global" }]);
+});

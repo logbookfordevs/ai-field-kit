@@ -168,7 +168,7 @@ function showInstallation(kind,index){
   installationTarget={kind,label,scope:installScope,...(kind==='stack'?{id:item.manifest.id}:{source:item.source})};
   installationPicker=kind==='source'&&item.skills===undefined?{kind:'installation',selected:new Set(),loading:false,loaded:false}:undefined;
   const chosen=installAgent==='interactive'?'':installAgent;
-  modal('Install '+esc(label),`<p>Install into <strong>${esc(installScope)}</strong> through Skills CLI. Installation can replace existing skills and make them available. Use Update in Installed Skills to preserve an existing skill’s disabled state.</p><label>Installation agent<select id="installationAgent"><option value="">Choose an agent…</option>${['universal','codex','claude-code','cursor','opencode'].map(agent=>`<option value="${agent}" ${chosen===agent?'selected':''}>${agent==='universal'?'Universal · .agents/skills':agent}</option>`).join('')}</select></label>${installationPicker?`<section id="installationSelection">${button('Find skills','discoverInstallationSkills()','','id="findInstallationSkills"')}<div id="installationDiscovery"></div></section>`:''}<p class="hint">The copied script keeps its current behavior. This action runs without terminal prompts. Closing this dialog does not stop installation.</p><div id="installationOutput" role="status" aria-live="polite"></div><p id="installationError" class="field-error" role="alert"></p>`,button('Cancel installation','cancelInstallation()','text danger','id="cancelInstallation" hidden')+button('Close','closeModal()','text')+button('Install','executeInstallation()','primary','id="startInstallation"'));
+  modal('Install '+esc(label),`<p>Install into <strong>${esc(installScope)}</strong> through Skills CLI. Installation can replace existing skills and make them available. Use Update in Installed Skills to preserve an existing skill’s disabled state.</p><label>Installation agent<select id="installationAgent"><option value="">Choose an agent…</option>${['universal','codex','claude-code','cursor','opencode'].map(agent=>`<option value="${agent}" ${chosen===agent?'selected':''}>${agent==='universal'?'Universal · .agents/skills':agent}</option>`).join('')}</select></label>${installationPicker?`<section id="installationSelection"><div class="installation-discovery-actions">${button('Find skills','discoverInstallationSkills()','','id="findInstallationSkills"')}<span id="installationDiscoveryStatus" class="hint" role="status" aria-live="polite"></span></div><div id="installationDiscovery"></div></section>`:''}<p class="hint">The copied script keeps its current behavior. This action runs without terminal prompts. Closing this dialog does not stop installation.</p><div id="installationOutput" role="status" aria-live="polite"></div><p id="installationError" class="field-error" role="alert"></p>`,button('Cancel installation','cancelInstallation()','text danger','id="cancelInstallation" hidden')+button('Close','closeModal()','text')+button('Install','executeInstallation()','primary','id="startInstallation"'));
   if($('cancelInstallation')){$('cancelInstallation').disabled=false;$('cancelInstallation').textContent='Cancel installation';}
   if(installationPicker)discoverInstallationSkills();
   pollInstallation();
@@ -182,14 +182,14 @@ async function discoverInstallationSkills(){
   if(!picker||picker.loading)return;
   const current=()=>installationPicker===picker&&installationTarget===target&&$('sheet').open&&body.isConnected;
   picker.loading=true;$('findInstallationSkills').disabled=true;$('installationError').textContent='';
-  $('installationDiscovery').textContent='Finding skills…';updateInstallationSelection();
+  $('installationDiscoveryStatus').textContent='Finding skills…';updateInstallationSelection();
   try{
     const result=await request('discover',{source:target.source});if(!current())return;
     if(!Array.isArray(result.names)||result.names.some(name=>!validSkillSelection([name])))throw Error('The source returned an invalid skill list.');
     picker.loaded=true;
     renderMembers(result.names,'Skills to install',false,[...picker.selected],result.descriptions||{},picker,result.paths||{});
   }catch(error){if(current()){$('installationDiscovery').textContent='';$('installationError').textContent=error.message}}
-  finally{if(current()){picker.loading=false;$('findInstallationSkills').disabled=false;updateInstallationSelection()}}
+  finally{if(current()){picker.loading=false;$('installationDiscoveryStatus').textContent='';$('findInstallationSkills').disabled=false;updateInstallationSelection()}}
 }
 function renderInstallation(result){
   const output=$('installationOutput');if(!output||!result)return;

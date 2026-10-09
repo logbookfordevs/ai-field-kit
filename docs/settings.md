@@ -42,15 +42,15 @@ different `AFK_SETTINGS` value, stop the current background instance first.
 
 ## What the file contains
 
-- Version 1, profile names/IDs, source references, selected members and enabled targets.
+- Version 1, configuration identity, profile names/IDs, source references and selected members.
 - Project names and folder paths.
 - Global tool entries and favorite source bookmarks. A bookmark’s optional `skills`
   array stores selected names; omitting it means all skills. Empty, duplicate or
   wildcard selections are rejected rather than broadened.
   Repository folder paths shown by Find skills are discovery metadata and are
   not saved in the settings file.
-- Invocation preferences, individual activation state and managed-link receipts.
-- Rule destination definitions and local receipts for managed regions/reference copies.
+- Optional manually saved installed-skill lists, including known repository sources, availability and invocation choices. Skill files are not included.
+- Rule destination definitions.
 - Optional `welcomeDismissed`, remembering that you closed the first-access Welcome. Reopen it from About AFK.
 
 The UI and headless AFK operations keep managed values and filesystem effects in
@@ -59,7 +59,11 @@ project definitions while preserving managed fields. `afk settings schema`
 describes the format; `afk settings validate [file]` checks a candidate without
 importing it. `afk doctor --json` also inspects local consistency and never applies
 repairs. See [agent workflows](agents.md) for the boundary.
-Editing activation arrays directly does not create or remove discovery links.
+Machine state lives in `~/.afk/local/<configurationId>.json`: profile activation and readiness, invocation preferences, individual activation, managed links and rule ownership receipts. It stays on this machine when the AFK folder travels. On another machine, profile definitions start disabled and unprepared. Existing legacy settings are migrated only when local files establish ownership; migration is written on the next save.
+
+Installed Skills offers **Save installed skills** for the current scope. Review additions, changes and removals before replacing that scope’s saved list. **Saved skills** compares the list with this machine; select missing skills to install or apply saved settings to existing copies. Restoration applies invocation and availability without enabling profiles. Unknown sources require the original local copy; conflicting sources preserve existing files. Progress, cancellation and retry keep completed items visible. Default restores the skill’s original invocation behavior, rather than imposing manual or automatic invocation.
+
+Settings marks missing project folders and offers **Choose folder** or **Remove project**. AFK does not copy project files. Disable active managed skills before changing or removing their project definition.
 Paths, receipts, and prepared state describe local storage; exporting them does
 not make them valid on another machine.
 

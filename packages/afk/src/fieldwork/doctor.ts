@@ -41,7 +41,7 @@ export async function doctor(store: SettingsStore): Promise<DoctorReport> {
   try { input = JSON.parse(text); }
   catch (error) { issue("error", "settings_invalid_json", store.path, errorText(error)); return report; }
   let settings: Settings;
-  try { settings = validateSettings(input); }
+  try { validateSettings(input); settings = await store.read(); }
   catch (error) { issue("error", "settings_invalid", store.path, errorText(error)); return report; }
 
   report.checked.stacks = settings.stacks?.length ?? 0;

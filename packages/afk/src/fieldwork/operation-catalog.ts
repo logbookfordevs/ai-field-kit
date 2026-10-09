@@ -4,6 +4,12 @@ interface OperationDescription {
 }
 
 export const operationCatalog = {
+  "skills/snapshot-preview": { description: "Review saving every installed skill in one inventory scope, including disabled skills. Does not save or install.", input: { scope: "Global or a configured project name." } },
+  "skills/snapshot-save": { description: "Save the exact reviewed inventory as a portable snapshot; reject changed inventory or saved list.", input: { preview: "Exact skills/snapshot-preview result." } },
+  "skills/saved-restore": { description: "Restore explicitly selected saved skills, then apply saved invocation and availability. Preserves conflicting copies and never enables profiles.", input: { scope: "Global or configured project name.", names: "Unique saved skill names.", expected: "Exact saved scope snapshot from state." } },
+  "skills/restore-state": { description: "Read retained per-item restore progress and output.", input: {} },
+  "skills/restore-cancel": { description: "Stop restore before later items; completed changes remain.", input: {} },
+  "project/remove": { description: "Remove an inactive project definition and its saved snapshot; never deletes project files.", input: { name: "Configured project name." } },
   state: { description: "Read settings, local inventories, settings path, and session tool results.", input: {} },
   settings: { description: "Save definitions while preserving profile and ownership state. Prefer schema-guided configuration edits for favorites and tools.", input: { settings: "Full Settings object; profile definitions and link receipts must match current state." } },
   "stack/install": { description: "Install a saved stack through Skills CLI. Runs immediately for the explicit target; existing skills may be replaced and become available.", input: { id: "Saved stack ID.", scope: "Global or configured project name.", agent: "Explicit universal, codex, claude-code, cursor, or opencode target." } },
@@ -17,7 +23,7 @@ export const operationCatalog = {
   discover: { description: "List local skills or stage repository skills in temporary storage, returning names and descriptions plus available original repository folder paths. No activation or user inventory installation.", input: { source: "Repository reference, unless local is true.", local: "Optional boolean; true reads the Global inventory." } },
   "profile/save": { description: "Create or update a profile and prepare its selected skills. Disable all scopes before updating an existing profile.", input: { id: "Existing profile ID when editing; omit to create.", name: "Profile name.", source: "Repository reference or Local skill selection.", skills: "Nonempty array of unique skill names." } },
   "profile/remove": { description: "Remove an inactive profile definition; stored skill files remain.", input: { id: "Inactive profile ID." } },
-  "profile/read": { description: "Read the group's instructions without enabling it.", input: { id: "Profile ID." } },
+  "profile/read": { description: "Read the group's instructions without enabling it.", input: { id: "Profile name (case-insensitive) or ID; duplicate names require an ID." } },
   activation: { description: "Enable or disable a profile in a target while preserving other owners.", input: { id: "Profile ID.", scope: "Global or configured project name.", enabled: "Required boolean; true enables, false disables." } },
   "project/save": { description: "Create or update a project definition; existing profile scopes follow a rename. Disable profiles before changing its folder.", input: { previous: "Existing project name when updating; omit to create.", name: "Unique project name, excluding Global.", path: "Local project folder." } },
   invocation: { description: "Apply native invocation metadata; project overrides isolate shared copies.", input: { name: "Installed skill name.", scope: "Global or configured project name.", mode: "Manual only, Automatic allowed, or an empty string to restore the default." } },

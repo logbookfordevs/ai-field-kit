@@ -113,3 +113,11 @@ to Skills CLI and only updates installations it tracks. Profile preparation does
 not establish tracking receipts for those copies. Direct `npx skills update`
 bypasses AFK’s availability protection. Native invocation files and links are
 tested; discovery inside live agent conversations is a separate verification step.
+
+## App update notice
+
+The web app checks the latest stable GitHub release on opening; successful and failed checks are cached for one hour. **Check for updates** explicitly refreshes the result. No installer runs during a check. The authenticated web-only endpoints are `GET /api/app/update-check`, `GET /api/app/update-state`, and `POST /api/app/update`.
+
+**Update & restart** launches a detached worker that runs the existing `afk update` implementation, verifies the new launcher version, closes this app, and starts the updated launcher in the background on the same port with the same settings path. It supports both foreground and background app sessions. Queued mutations finish first; running tools must finish before updating. New mutations are blocked while updating. The page reloads when the restarted app supplies its new session token.
+
+Progress and failure output stay machine-local in `~/.afk/app-update.json`. An installation or verification failure leaves the current app running. A restart failure keeps recovery output in that file; reopen AFK from the terminal. Verify orchestration with injected command runners and preview with a simulated release; do not install real updates as part of automated QA.

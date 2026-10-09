@@ -1,4 +1,5 @@
 import { ProcessOutput } from "./process-output.js";
+import { isDeepStrictEqual } from "node:util";
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
@@ -102,7 +103,7 @@ export async function updateSkills(store: SettingsStore, settings: Settings, sco
       if (await realpath(snapshot.entry.path) !== snapshot.path || await digest(snapshot.path) !== snapshot.before) throw new Error("Skills changed during the update. Original files preserved; retry after other changes finish.");
     }
     if (await optional(receipt) !== receiptText) throw new Error("Skills CLI receipts changed during the update. Retry after other updates finish.");
-    if (JSON.stringify(await store.read()) !== JSON.stringify(settings)) throw new Error("AFK settings changed during the update. Retry after other changes finish.");
+    if (!isDeepStrictEqual(await store.read(), settings)) throw new Error("AFK settings changed during the update. Retry after other changes finish.");
     signal?.throwIfAborted();
     state.cancellable = false; report();
     const destinations = new Set<string>();

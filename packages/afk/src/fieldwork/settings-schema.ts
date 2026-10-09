@@ -11,18 +11,28 @@ export const settingsSchema = {
   description: "Editor guidance for AFK settings version 1. AFK's validateSettings remains authoritative for cross-field rules, including unique identifiers and valid activation scopes. A valid document does not verify integration with an agent.",
   $defs: stackSchema.$defs,
   type: "object",
-  required: ["version", "profiles", "projects", "tools", "favoriteSources", "preferences", "managedLinks", "independentSkills"],
+  required: ["version", "profiles", "projects", "tools", "favoriteSources"],
   properties: {
+    configurationId: { ...skillName, readOnly: true, description: "Stable configuration identity; machine-local state is associated with it." },
+    savedSkills: {
+      type: "array", readOnly: true, description: "Manually reviewed installed-skill snapshots; use snapshot operations to replace them.",
+      items: {
+        type: "object", required: ["scope", "savedAt", "skills"], properties: {
+          scope: nonempty, savedAt: { type: "string", format: "date-time" },
+          skills: { type: "array", items: { type: "object", required: ["name", "available", "invocation"], properties: { name: skillName, source: nonempty, available: { type: "boolean" }, invocation: { enum: ["", "Manual only", "Automatic allowed"] } } } },
+        },
+      },
+    },
     version: { const: 1, readOnly: true, description: "AFK-managed format version." },
     profiles: {
       type: "array", readOnly: true,
       description: "AFK-managed definitions, preparation and activation state. Use AFK profile operations to preserve physical skills and ownership receipts.",
       items: {
-        type: "object", required: ["id", "name", "source", "skills", "enabled", "ready"],
+        type: "object", required: ["id", "name", "source", "skills"],
         properties: {
           id: skillName, name: nonempty, source: nonempty, skills: selectedSkills,
-          enabled: { type: "array", items: { type: "string" }, description: "Global or a configured project name; validated across fields by AFK." },
-          ready: { type: "boolean" },
+          enabled: { type: "array", items: { type: "string" }, description: "Machine-local activation, accepted for legacy input. Portable profile definitions omit this field." },
+          ready: { type: "boolean", description: "Machine-local readiness; omitted from portable settings." },
         },
       },
     },
@@ -66,11 +76,11 @@ export const settingsSchema = {
       },
     },
     preferences: {
-      type: "object", readOnly: true, description: "AFK-managed native invocation preferences keyed by scope|skill. Use AFK to apply metadata changes.",
+      type: "object", readOnly: true, description: "Machine-local native invocation preferences keyed by scope|skill. Use AFK to apply metadata changes.",
       propertyNames: { pattern: "\\|" }, additionalProperties: { type: "string", enum: ["Manual only", "Automatic allowed"] },
     },
     managedLinks: {
-      type: "object", readOnly: true, description: "AFK-managed local ownership receipts: discovery link path to its recorded target. Do not hand-edit or transfer ownership by changing receipts.",
+      type: "object", readOnly: true, description: "Machine-local ownership receipts: discovery link path to its recorded target. Do not hand-edit or transfer ownership by changing receipts.",
       propertyNames: nonempty, additionalProperties: nonempty,
     },
     independentSkills: {
@@ -80,7 +90,7 @@ export const settingsSchema = {
     welcomeDismissed: { type: "boolean", readOnly: true, description: "AFK-managed local onboarding preference." },
     agentRules: {
       type: "object", readOnly: true, description: "AFK-managed destination configuration and local sync receipts. Use rules operations to preview conflicts and sync explicitly.",
-      required: ["destinations", "receipts"],
+      required: ["destinations"],
       properties: {
         destinations: {
           type: "array", items: {

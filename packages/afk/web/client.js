@@ -7,7 +7,7 @@ async function request(path,data){
 }
 async function refresh(){
   const state=await request('state');
-  currentSettings=state.settings;inventories=state.inventories;skillSharing=state.skillSharing||{};settingsPath=state.settingsPath;afkHome=state.home;
+  currentSettings=state.settings;inventories=state.inventories;skillSharing=state.skillSharing||{};settingsPath=state.settingsPath;afkHome=state.home;savedSkillComparisons=state.savedSkillComparisons||{};projectStatuses=state.projectStatuses||{};portableConfiguration=state.portableSettings;
   ({profiles,projects,tools,favoriteSources,preferences}=currentSettings);
   toolRuns=state.toolRuns||{};
   tools=tools.map(tool=>({...tool,last:toolRuns[tool.id]?{ok:toolRuns[tool.id].code===0,label:toolRuns[tool.id].pending?'Running…':'Last run · exit '+toolRuns[tool.id].code}:null}));
@@ -39,10 +39,17 @@ inspectSkill=async(name,fromProfile,file='SKILL.md')=>{
     $('previewFile').onchange=event=>inspectSkill(name,fromProfile,event.target.value);
   }catch(error){toast(error.message)}
 };
+function profileUsageCommands(profile){
+  const duplicates=profiles.filter(item=>item.name.toLowerCase()===profile.name.toLowerCase()).length>1;
+  const reference=duplicates?profile.id:profile.name;
+  const argument=/^[a-zA-Z0-9._-]+$/.test(reference)?reference:"'"+reference.replaceAll("'", "'\\''")+"'";
+  return {command:'afk profiles use '+argument,skill:'/afk-cli use profile '+argument,duplicates};
+}
 invoke=async id=>{
   try{
     const profile=profiles.find(p=>p.id===id),data=await request('profile/read',{id});
-    modal('Use '+esc(profile.name)+' with your agent',`<p>Ask your agent to run this command and read its output. Nothing is enabled.</p><label>AFK command<span class="inline"><input id="invocationCommand" readonly value="afk profiles use ${esc(id)}">${button('Copy command','copyCommand()','primary')}</span></label><details><summary>Preview group instructions</summary><pre>${esc(data.content)}</pre></details>`);
+    const usage=profileUsageCommands(profile);
+    modal('Use '+esc(profile.name)+' with your agent',`<p>Ask your agent to run the AFK command, or invoke the installed afk-cli skill. Both read this profile for the current conversation without enabling it.</p>${usage.duplicates?'<p class="hint">This name belongs to multiple profiles, so these commands use its ID.</p>':''}<label>AFK command<span class="inline"><input id="invocationCommand" readonly value="${esc(usage.command)}">${button('Copy command','copyCommand()','primary')}</span></label><p class="table-label">OR</p><label>Agent skill<span class="inline"><input id="invocationSkillCommand" readonly value="${esc(usage.skill)}">${button('Copy skill usage',"copyCommand('invocationSkillCommand')")}</span></label><p class="hint">Requires the afk-cli skill installed in your agent.</p><details><summary>Preview group instructions</summary><pre>${esc(data.content)}</pre></details>`);
   }catch(error){toast(error.message)}
 };
 async function saveForm(action,message,errorId){
@@ -119,7 +126,7 @@ folderModal=async()=>{
     const data=await request('folders',{path:folder});folder=data.path;
     const parts=folder.split('/').filter(Boolean);
     const ancestors=[{name:'/',path:'/'}];parts.forEach((name,index)=>ancestors.push({name,path:'/'+parts.slice(0,index+1).join('/')}));
-    modal('Choose '+(browseMode==='project'?'project folder':'AFK folder'),`<div class="folder-path">${button('Parent',`chooseFolder(${JSON.stringify(data.parent).replaceAll('"','&quot;')})`,'',data.parent===folder?'disabled':'')}<nav aria-label="Folder breadcrumbs" class="folder-crumbs">${ancestors.map((part,index)=>`<button type="button" class="text" data-ancestor="${index}" ${part.path===folder?'aria-current="location"':''}>${esc(part.name)}</button>`).join('<span aria-hidden="true">/</span>')}</nav></div>${browseMode==='settings'?`<p class="hint">${data.settings?'Existing AFK folder · settings.json found. Select it to load its configuration.':'Navigate to your preferred folder. Move your AFK files here or create a dedicated subfolder.'}</p><ul class="folder-files">${(data.files||[]).filter(name=>name==='settings.json'||name==='AGENTS.md').map(name=>`<li><code>${esc(name)}</code></li>`).join('')}</ul>`:''}<div class="list">${data.folders.map((name,index)=>`<button type="button" class="folder" data-folder-index="${index}"><span>${esc(name)}</span><span aria-hidden="true">›</span></button>`).join('')||'<p>No subfolders.</p>'}</div>`,button('Cancel','closeModal()','text')+(browseMode==='settings'?(data.settings?button('Load this AFK folder',`workspaceReview('select',${esc(JSON.stringify(folder))})`,'primary'):button('Create AFK folder here','newWorkspaceFolder()')+button('Move into this folder',`workspaceReview('move',${esc(JSON.stringify(folder))})`,'primary')):button('Use this folder','useFolder()','primary')));
+    modal('Choose '+(browseMode.startsWith('project')?'project folder':'AFK folder'),`<div class="folder-path">${button('Parent',`chooseFolder(${JSON.stringify(data.parent).replaceAll('"','&quot;')})`,'',data.parent===folder?'disabled':'')}<nav aria-label="Folder breadcrumbs" class="folder-crumbs">${ancestors.map((part,index)=>`<button type="button" class="text" data-ancestor="${index}" ${part.path===folder?'aria-current="location"':''}>${esc(part.name)}</button>`).join('<span aria-hidden="true">/</span>')}</nav></div>${browseMode==='settings'?`<p class="hint">${data.settings?'Existing AFK folder · settings.json found. Select it to load its configuration.':'Navigate to your preferred folder. Move your AFK files here or create a dedicated subfolder.'}</p><ul class="folder-files">${(data.files||[]).filter(name=>name==='settings.json'||name==='AGENTS.md').map(name=>`<li><code>${esc(name)}</code></li>`).join('')}</ul>`:''}<div class="list">${data.folders.map((name,index)=>`<button type="button" class="folder" data-folder-index="${index}"><span>${esc(name)}</span><span aria-hidden="true">›</span></button>`).join('')||'<p>No subfolders.</p>'}</div>`,button('Cancel','closeModal()','text')+(browseMode==='settings'?(data.settings?button('Load this AFK folder',`workspaceReview('select',${esc(JSON.stringify(folder))})`,'primary'):button('Create AFK folder here','newWorkspaceFolder()')+button('Move into this folder',`workspaceReview('move',${esc(JSON.stringify(folder))})`,'primary')):button('Use this folder','useFolder()','primary')));
     document.querySelectorAll('[data-ancestor]').forEach(element=>element.onclick=()=>chooseFolder(ancestors[Number(element.dataset.ancestor)].path));
     document.querySelectorAll('[data-folder-index]').forEach(element=>element.onclick=()=>chooseFolder(folder+'/'+data.folders[Number(element.dataset.folderIndex)]));
   }catch(error){toast(error.message)}
@@ -127,6 +134,7 @@ folderModal=async()=>{
 function chooseFolder(path){folder=path;folderModal()}
 const originalUseFolder=useFolder;
 useFolder=()=>{
+  if(browseMode==='project-remap'){const project=remappingProject;return saveForm(()=>request('project/save',{previous:project.name,name:project.name,path:folder}),'Project folder updated.','projectError')}
   if(browseMode==='settings'){workspaceReview('move',folder);return}
   originalUseFolder();
 };
@@ -135,12 +143,12 @@ saveProject=()=>{
   if(!name||projects.some(project=>project.name===name)){toast('Choose a unique project name.');return}
   return saveForm(()=>request('project/save',{name,path:folder}),'Project saved. Profile activation unchanged.','projectError');
 };
-configuration=()=>structuredClone(currentSettings);
+configuration=()=>structuredClone(portableConfiguration||currentSettings);
 exportSettings=()=>{
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(configuration(),null,2)],{type:'application/json'}));a.download='settings.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
-showNotes=()=>modal('AFK — Fieldwork','<p>Your local workspace for skills, shared profiles, favorite sources, global tool commands, and shared agent rules.</p><p class="sub">Settings and rule files live together in the AFK folder you choose. Source controls copy installation commands; skill updates run here and preserve availability.</p>',button('Show Welcome','showWelcome()'));
-refresh().then(maybeWelcome).catch(error=>{$('view').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`});
+showNotes=()=>modal('AFK — Fieldwork','<p>Your local workspace for skills, shared profiles, favorite sources, global tool commands, and shared agent rules.</p><p class="sub">Settings and rule files live together in the AFK folder you choose. Source controls copy installation commands; skill updates run here and preserve availability.</p>',button('Show Welcome','showWelcome()','text')+button('Take a quick tour','startTour()','primary'));
+refresh().then(()=>{maybeWelcome();checkAppVersion()}).catch(error=>{$('view').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`});
 discover=async()=>{
   const picker=profilePicker,source=$('source').value.trim(),version=++picker.version;
   const isCurrent=()=>profilePicker===picker&&version===picker.version&&$('sheet').open&&Boolean($('discoverMembers'));
@@ -239,6 +247,11 @@ async function applyClaudeSharing(enabled){
 }
 
 let selectedSkills=new Set(),selectedSkillScope='Global',skillBulkBusy=false,bulkDeleteReview;
+function skillActionLabel(label,action){
+  const paths={update:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.6-2L20 8M4 16l2.3 3A7 7 0 0 0 18 17"/>',save:'<path d="M6 4h12v17l-6-4-6 4V4Z"/>'};
+  return `<svg class="skill-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths[action]}</svg><span>${label}</span>`;
+}
+
 function selectSkill(name,selected){if(selected)selectedSkills.add(name);else selectedSkills.delete(name);renderSkillList();document.querySelector(`[data-skill-select="${name}"]`)?.focus()}
 function selectShownSkills(){for(const skill of inventory())if(matchesSkillFilters(skill))selectedSkills.add(skill.name);renderSkillList()}
 function clearSkillSelection(){selectedSkills.clear();renderSkillList()}
@@ -247,7 +260,7 @@ function renderSkillSelection(shown){
   const hidden=[...selectedSkills].filter(name=>!shown.some(skill=>skill.name===name)).length;
   const disabled=skillBulkBusy?'disabled':'';
   const count=selectedSkills.size;
-  $('skillSelection').innerHTML=count?`<div class="skill-bulk" role="group" aria-label="Selected skill actions"><strong class="bulk-count">${count} selected${skillBulkBusy?' · Applying…':''}${hidden?' · '+hidden+' hidden by filters':''} · ${esc(scope)}</strong>${button('Enable',"applySkillBulk('enable')",'',disabled)}${button('Disable',"applySkillBulk('disable')",'',disabled)}<label><span class="sr-only">Invocation for selected skills</span><select ${disabled} aria-label="Invocation for selected skills" onchange="if(this.value)applySkillBulk('invocation',this.value==='default'?'':this.value)"><option value="">Change invocation…</option><option>Manual only</option><option>Automatic allowed</option><option value="default">Restore defaults</option></select></label>${button('Delete selected','reviewBulkSkillDeletion()','text danger',disabled)}${button('Clear selection','clearSkillSelection()','text',disabled)}</div>`:'';
+  $('skillSelection').innerHTML=count?`<div class="skill-bulk" role="group" aria-label="Selected skill actions"><strong class="bulk-count">${count} selected${skillBulkBusy?' · Applying…':''}${hidden?' · '+hidden+' hidden by filters':''} · ${esc(scope)}</strong>${button('Enable',"applySkillBulk('enable')",'',disabled)}${button('Disable',"applySkillBulk('disable')",'',disabled)}<label><span class="sr-only">Invocation for selected skills</span><select ${disabled} aria-label="Invocation for selected skills" onchange="if(this.value)applySkillBulk('invocation',this.value==='default'?'':this.value)"><option value="">Change invocation…</option><option>Manual only</option><option>Automatic allowed</option><option value="default">Restore defaults</option></select></label>${button(skillActionLabel('Update selected','update'),'showSkillUpdate([...selectedSkills])','primary',disabled)}${button('Delete selected','reviewBulkSkillDeletion()','text danger',disabled)}${button('Clear selection','clearSkillSelection()','text',disabled)}</div>`:'';
   if(shown.length)$('skillSelection').innerHTML+=`<p>${button('Select shown','selectShownSkills()','text',disabled)}</p>`;
 }
 function showSkillBulkResult(result,target){
@@ -289,9 +302,14 @@ async function finishBulkSkillDeletion(){
 }
 
 let skillUpdateRunning=false,skillUpdateNames;
-showSkillUpdate=(name)=>{
-  skillUpdateNames=name?[name]:undefined;
-  modal(name?'Update '+esc(name):'Update skills',`<p>Update ${name?esc(name):'tracked skills'} in ${esc(scope)} through Skills CLI. Available skills stay available; disabled skills stay disabled. Your AFK invocation preferences are kept.</p><p class="hint">Updates are prepared separately before replacing stored files.</p><div id="skillUpdateOutput" role="status" aria-live="polite"></div>`,button('Close','closeModal()','text')+button(skillUpdateRunning?'View progress':'Update skills','executeSkillUpdate()', 'primary'));
+showSkillUpdate=(selection)=>{
+  const selected=Array.isArray(selection);
+  skillUpdateNames=selected?[...selection]:selection?[selection]:undefined;
+  if(selected&&!skillUpdateNames.length)return;
+  const title=selected?'Update selected skills':selection?'Update '+esc(selection):'Update skills';
+  const subject=selected?`${skillUpdateNames.length} selected skills`:selection?esc(selection):'tracked skills';
+  const members=selected?`<ul>${skillUpdateNames.map(name=>`<li><code>${esc(name)}</code></li>`).join('')}</ul>`:'';
+  modal(title,`<p>Update ${subject} in ${esc(scope)} through Skills CLI. Available skills stay available; disabled skills stay disabled. Your AFK invocation preferences are kept.</p>${members}<p class="hint">Updates are prepared separately before replacing stored files.</p><div id="skillUpdateOutput" role="status" aria-live="polite"></div>`,button('Close','closeModal()','text')+button(skillUpdateRunning?'View progress':selected?'Update selected':'Update skills','executeSkillUpdate()', 'primary'));
   pollSkillUpdate();
 };
 function renderSkillUpdate(result){

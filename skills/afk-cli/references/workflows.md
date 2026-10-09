@@ -16,7 +16,8 @@ Use `state` for inventories, profile IDs, readiness, and enabled targets. Scope 
 
 - Create/edit: discover repository or Global members with `discover`, choose explicit skill names, then `profile/save`. Saving a remote profile prepares missing selected copies in shared disabled storage; it preserves existing copies. Inspect existing names before reusing them across sources. Disable every enabled target before changing members or removing a profile.
 - Activate: use `afk profiles enable <id> [scope]` / `disable`, or `activation`. Activation is additive and owns discovery links. Disable preserves overlapping profiles, independent availability, and preexisting files.
-- Read a group for this conversation: run `afk profiles use <id>` or `profile/read`, then read the returned instructions and relevant supporting resources. This includes prepared disabled members and leaves activation unchanged.
+- `/afk-cli use profile <name>` means read that profile for this conversation. Match names without case sensitivity; quote names containing spaces when passing them to the shell. Use an ID to resolve duplicate names.
+- Read a group for this conversation: run `afk profiles use <name-or-id>` or `profile/read`, then read the returned instructions and relevant supporting resources. This includes prepared disabled members and leaves activation unchanged.
 - Inspect a skill: `afk skills get <name> [scope]` reads SKILL.md; `skill/read` also lists supporting files and can read a chosen relative file.
 - Set individual availability with `skill/availability`, supplying the desired `enabled` boolean. Retries preserve that state. Disable profiles that own the skill before changing its individual availability. Invocation uses `invocation` and is independent of availability. Inspect the supported modes and current override before changing them; a project override can create an isolated copy, and reset restores its original/shared metadata behavior.
 

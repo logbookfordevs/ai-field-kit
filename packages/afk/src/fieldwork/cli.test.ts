@@ -139,7 +139,7 @@ describe("AFK agent CLI", () => {
     expect((await command(store, ["settings", "path"])).stdout).toBe(store.path);
     const shown = await command(store, ["settings", "show"]);
     expect(shown.code).toBe(0);
-    expect(json<Settings>(shown.stdout)).toEqual(settings);
+    expect(json<Settings>(shown.stdout)).toMatchObject(settings);
     const state = await manage(store, "state");
     expect(state.code).toBe(0);
     expect(json(state.stdout)).toMatchObject({ settings, settingsPath: store.path, home });
@@ -170,7 +170,7 @@ describe("AFK agent CLI", () => {
       expect(store.path).toBe(originalPath);
       expect(await readFile(originalPath, "utf8")).toBe(before);
       await expect(access(store.pointer)).rejects.toMatchObject({ code: "ENOENT" });
-      expect(await readdir(dirname(originalPath))).toEqual(["settings.json"]);
+      expect(await readdir(dirname(originalPath))).toEqual(["local", "settings.json"]);
     }
     const destination = join(home, "new-workspace");
     expectFailure(await manage(store, "workspace", { mode: ["select"], folder: destination }));
@@ -196,9 +196,15 @@ describe("AFK agent CLI", () => {
     expect(profile).toMatchObject({ ...definition, ready: true, enabled: [] });
     expect(json<{ content: string }>((await manage(store, "profile/read", { id: profile.id })).stdout).content).toContain("Fixture instruction");
     expect((await command(store, ["profiles", "use", profile.id])).stdout).toContain("Fixture instruction");
+    expect((await command(store, ["profiles", "use", "video"])).stdout).toContain("Fixture instruction");
+    expect(json<{ content: string }>((await manage(store, "profile/read", { id: "VIDEO" })).stdout).content).toContain("Fixture instruction");
     expect((await command(store, ["skills", "get", "render"])).stdout).toContain("Fixture instruction");
     expect((await store.read()).profiles[0]?.enabled).toEqual([]);
 
+    expect((await command(store, ["profiles", "enable", "VIDEO", "Demo"])).code).toBe(0);
+    expect(await readlink(join(project, ".agents/skills/render"))).toBe(skill);
+    expect((await command(store, ["profiles", "disable", "video", "Demo"])).code).toBe(0);
+    await expect(access(join(project, ".agents/skills/render"))).rejects.toMatchObject({ code: "ENOENT" });
     expect((await manage(store, "activation", { id: profile.id, scope: "Demo", enabled: true })).code).toBe(0);
     expect(await readlink(join(project, ".agents/skills/render"))).toBe(skill);
     const activated = await readFile(store.path, "utf8");
@@ -316,7 +322,7 @@ describe("AFK agent CLI", () => {
     expect(await readlink(alias)).toBe(stored);
     expect((await manage(store, "skill/availability", { ...availability, enabled: false })).code).toBe(0);
     expect((await manage(store, "import", { settings: imported })).code).toBe(0);
-    expect(await store.read()).toEqual(imported);
+    expect(await store.read()).toMatchObject(imported);
     await expect(access(active)).rejects.toMatchObject({ code: "ENOENT" });
     await expect(access(alias)).rejects.toMatchObject({ code: "ENOENT" });
     expect(await readFile(join(stored, "SKILL.md"), "utf8")).toContain("Fixture instruction");

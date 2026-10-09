@@ -10,6 +10,7 @@ import { FieldworkOperations } from "./operations.js";
 import { operationCatalog } from "./operation-catalog.js";
 import { SettingsStore, validateSettings } from "./settings.js";
 import { settingsSchema } from "./settings-schema.js";
+import { portableSettings } from "./local-state.js";
 import { SkillLibrary } from "./skills.js";
 import { startFieldwork } from "./server.js";
 
@@ -25,9 +26,9 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk skills update [name] [-g | -p <project>]  Update skills, preserving availability
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
-  afk profiles use <id>              Read a group without enabling it
-  afk profiles enable <id> [scope]
-  afk profiles disable <id> [scope]
+  afk profiles use <name-or-id>              Read a group without enabling it
+  afk profiles enable <name-or-id> [scope]
+  afk profiles disable <name-or-id> [scope]
   afk skills get <name> [scope]
   afk settings path                  Print the selected settings file path
   afk settings show                  Read settings as JSON
@@ -137,7 +138,7 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
   await store.initialize();
   const library = new SkillLibrary(store);
   if (command === "profiles") {
-    if (!id || extra !== undefined || (action === "use" && target !== undefined)) throw new Error("Provide a profile identifier and optional scope for enable or disable.");
+    if (!id || extra !== undefined || (action === "use" && target !== undefined)) throw new Error("Provide a profile name or ID and optional scope for enable or disable.");
     const settings = await store.read();
     if (action === "use") { console.log(await library.readGroup(settings, id)); return 0; }
     if (action === "enable" || action === "disable") { await library.activate(settings, id, target ?? "Global", action === "enable"); return 0; }
@@ -181,7 +182,7 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
       validateSettings(JSON.parse(await readFile(path, "utf8")));
       json({ ok: true, path }); return 0;
     }
-    if (action === "export" && id) { await writeFile(id, await readFile(store.path), { flag: "wx", mode: 0o600 }); return 0; }
+    if (action === "export" && id) { await writeFile(id, JSON.stringify(portableSettings(await store.read()), null, 2) + "\n", { flag: "wx", mode: 0o600 }); return 0; }
     throw new Error("Choose settings path, show, schema, validate, or export.");
   }
   if (command === "doctor") {

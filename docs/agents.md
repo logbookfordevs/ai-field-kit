@@ -96,12 +96,12 @@ preparation. Saving does not activate the profile. Disable all targets before
 editing or removing an existing definition.
 
 ```sh
-afk profiles enable profile-id Global
-afk profiles disable profile-id Global
-afk profiles use profile-id
+afk profiles enable "My profile" Global
+afk profiles disable "My profile" Global
+afk profiles use "My profile"
 ```
 
-Replace `profile-id` with the actual ID. Enabling exposes prepared skills through
+Use the profile name, matched without case sensitivity, or its ID. Quote names containing spaces. Duplicate names require an ID. With the `afk-cli` skill installed, `/afk-cli use profile "My profile"` asks the agent to read the same group. Enabling exposes prepared skills through
 owned links; disabling withdraws those links while preserving other owners and
 existing files. `use` prints locally prepared member instructions, including
 disabled members. The calling agent must read that output; the command leaves

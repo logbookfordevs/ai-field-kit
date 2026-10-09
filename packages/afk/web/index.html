@@ -94,7 +94,18 @@ main{padding:20px clamp(20px,4vw,56px) 40px;min-width:0;max-width:1320px;outline
 .skills-heading .skills-scope{margin:0;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:400}
 .skills-scope select{width:180px}
 .skills-filters{display:grid;grid-template-columns:minmax(180px,1fr) 140px 170px minmax(130px,1fr) minmax(130px,1fr) auto;align-items:end;gap:12px;margin-bottom:12px}
-.skills-filters label{min-width:0;margin:0}
+.skills-filters label{min-width:0;margin:0;color:var(--muted)}
+.skills-filters input,.skills-filters select{color:var(--fg)}
+.app-update-notice{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted)}
+.app-update-notice:empty{display:none}
+.app-update-notice:not(:empty)+.topline{padding-top:12px}
+.app-update-notice strong{color:var(--fg)}
+.app-update-notice .app-update-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.app-update-notice details{width:100%}
+.app-update-notice pre{max-height:180px;overflow:auto}
+@media(max-width:600px){.app-update-notice .app-update-actions{margin-left:0;width:100%}}
+.skill-action-icon{width:18px;height:18px;flex:none}
+.skill-action-icon path{vector-effect:non-scaling-stroke}
 .skills-filters select{width:100%;text-overflow:ellipsis}
 .skills-utilities{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:16px}
 .skills-utilities button{font-size:12px}
@@ -209,7 +220,7 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code-b
 .settings-body{display:grid;gap:14px;align-content:start;min-width:0}
 .path-card{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 12px 12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
 .project-list{border-top:1px solid var(--border)}
-.project-row{display:grid;grid-template-columns:minmax(120px,.7fr) minmax(0,1.3fr) auto;gap:16px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.project-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .pref-list{margin:0;padding:0;list-style:none;border-top:1px solid var(--border)}
 .pref-list li{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
 .inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -507,10 +518,21 @@ input,textarea{caret-color:var(--focus)}
 .profile-source input[type=radio]{flex:0 0 18px;min-width:18px;width:18px;height:18px;min-height:0;accent-color:var(--accent)}
 #repositoryFields{display:grid;gap:12px;justify-items:start}
 #repositoryFields label{width:100%}
-#discovery,#sourceDiscovery,#sourceSelection{display:grid;gap:10px}
+#discovery,#sourceDiscovery,#sourceSelection,#installationDiscovery{display:grid;gap:10px}
+#installationSelection{display:grid;gap:20px}
+.installation-discovery-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.installation-discovery-actions .hint{margin:0}
+#installationDiscovery:empty{display:none}
 #sourceSelection[hidden]{display:none}
 .member-selection{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-block:1px solid var(--border)}
 .member-selection>span{margin-right:auto;font-size:14px;font-weight:500}
+.member-selection.member-picker-toolbar{border-top:0;padding:0 0 10px;gap:8px 16px}
+.member-picker-toolbar>span{margin-right:0;color:var(--muted);font-weight:400}
+.member-picker-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-wrap:wrap}
+.member-view-filter{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-size:13px;margin:0}
+.member-view-filter input{width:18px;height:18px;min-height:0;margin:0;accent-color:var(--accent)}
+.member-view-filter[hidden]{display:none}
+@media(max-width:600px){.member-picker-actions{margin-left:0;width:100%}}
 .member-selection button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
 .member-results{max-height:min(36vh,360px);overflow:auto;scrollbar-gutter:stable}
 .member-results .check{min-height:48px;padding:10px 4px}
@@ -552,6 +574,14 @@ input,textarea{caret-color:var(--focus)}
 .conflict-feedback{display:grid;gap:8px;justify-items:start}
 dialog.welcome{width:min(720px,calc(100vw - 32px))}
 .welcome-intro{margin:0;font-size:16px;max-width:60ch}
+.feature-tour{margin-top:20px;padding:20px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px}
+.feature-tour[hidden]{display:none}
+.tour-copy{max-width:70ch}
+.tour-copy h2{font-size:20px;margin:6px 0}
+.tour-copy p{margin:0;font-size:14px}
+.tour-controls{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+.tour-controls .text{margin-right:auto}
+@media(max-width:600px){.feature-tour{padding:16px}.tour-controls button{padding-inline:12px}}
 .welcome-section{padding-top:16px;border-top:1px solid var(--border)}
 .welcome-section h3{margin-bottom:6px}
 .welcome-section p{font-size:14px;color:var(--muted);margin:0}
@@ -611,6 +641,12 @@ dialog.welcome{width:min(720px,calc(100vw - 32px))}
 .update-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--fg);border-radius:50%;animation:update-spin .8s linear infinite;flex-shrink:0}
 @keyframes update-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.update-spinner{animation:none}}
+ .saved-skill-tabs{border-bottom:1px solid var(--border);gap:0!important;flex-wrap:nowrap!important}
+.saved-skill-tabs .skill-view-tab{border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--muted);padding:12px 20px;margin-bottom:-1px;min-height:48px}
+.saved-skill-tabs .skill-view-tab[aria-pressed=true]{border-bottom-color:var(--accent);color:var(--fg);background:var(--surface);font-weight:600}
+.saved-skill-tabs .skill-view-tab:hover{background:var(--surface);color:var(--fg)}
+@media(max-width:760px){.saved-skill-tabs .skill-view-tab{padding:12px 10px;font-size:13px}}
+.saved-skill-tabs,.saved-skill-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.saved-skill-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(160px,1fr) auto;gap:20px;padding:16px 0;border-bottom:1px solid var(--border);align-items:center}.saved-skill-row .check{align-items:flex-start;border-bottom:0;padding:0}.saved-skill-row code,.saved-restore-review code{display:block;margin-top:6px;overflow-wrap:anywhere}.saved-restore-review{padding:12px 0;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px 16px}.saved-restore-review code,.saved-restore-review p{flex-basis:100%}.project-row>div{min-width:0}.project-row .path{display:block;margin-top:6px}.skills-heading .page-actions{display:flex;gap:8px;flex-wrap:wrap}@media(max-width:1000px){.saved-skill-row{grid-template-columns:1fr}.saved-skill-row>div{padding-left:30px}}@media(max-width:760px){.project-row{display:flex;flex-direction:column;align-items:flex-start}.skills-heading .page-actions{width:100%}.saved-skill-tabs button{flex:1}.saved-skill-row>div{padding-left:0}}
 </style>
 </head>
 <body>
@@ -622,6 +658,7 @@ dialog.welcome{width:min(720px,calc(100vw - 32px))}
     <div class="rail-foot">Personal workspace<br>One configuration.<br>Local skills.</div>
   </aside>
   <main id="main" tabindex="-1" data-od-id="workspace">
+    <div id="appUpdateNotice" class="app-update-notice" aria-live="polite"></div>
     <div class="topline">
       <span class="sr-only" id="crumb"></span>
       <div class="top-actions">
@@ -629,6 +666,7 @@ dialog.welcome{width:min(720px,calc(100vw - 32px))}
         <button type="button" class="demo" id="exitAfk" data-exit onclick="exitAfk()">Exit AFK</button>
       </div>
     </div>
+    <section id="featureTour" class="feature-tour" aria-label="AFK quick tour" hidden></section>
     <div id="view"></div>
     <footer>A tool from Logbook for Devs · Charting the technical seas, one commit at a time.</footer>
   </main>
@@ -647,7 +685,7 @@ let projects=[],profiles=[],tools=[];
 const independent={Global:[]};
 let preferences={},individualOff={};
 let favoriteSources=[],installScope='Global',installAgent='interactive';
-const sections=[{id:'Profiles',short:'Profiles'},{id:'Installed Skills',short:'Skills'},{id:'Sources & Stacks',short:'Sources'},{id:'Tools',short:'Tools'},{id:'Agent rules',short:'Rules'},{id:'Settings',short:'Settings'}];
+const sections=[{id:'Installed Skills',short:'Skills'},{id:'Profiles',short:'Profiles'},{id:'Sources & Stacks',short:'Sources'},{id:'Agent rules',short:'Rules'},{id:'Tools',short:'Tools'},{id:'Settings',short:'Settings'}];
 
 function toast(message,action){
   const el=$('toast');
@@ -676,6 +714,7 @@ function navCount(id){
 function closeUtilities(){if($('appUtilities').matches(':popover-open'))$('appUtilities').hidePopover()}
 
 function navigate(s){
+  if(typeof tourStep!=='undefined'&&tourStep>=0&&tourSteps[tourStep].section!==s)tourStep=-1;
   section=s;query='';render();window.scrollTo(0,0);
   closeUtilities();
   (matchMedia('(max-width:760px)').matches?$('mobileSection'):document.querySelector('#nav [aria-current]'))?.focus();
@@ -689,6 +728,7 @@ function render(){
   $('crumb').textContent=section;
   $('mobileSection').innerHTML=sections.map(s=>`<option value="${s.id}" ${s.id===section?'selected':''}>${s.short}</option>`).join('');
   ({Profiles:renderProfiles,'Installed Skills':renderSkills,'Sources & Stacks':renderSources,Tools:renderTools,'Agent rules':renderRules,Settings:renderAfkSettings})[section]();
+  if(typeof renderTour==='function')renderTour();
 }
 
 function head(title,sub,action=''){return `<header class="page-head" data-od-id="page-heading"><div><h1>${title}</h1><p class="sub">${sub}</p></div>${action}</header>`}
@@ -709,7 +749,7 @@ function profileRow(p){
   const toggleLabel=`${on?'Disable':'Enable'} ${isGlobal?'globally':'in project'}`;
   const prepAction=p.ready
     ?button('Read group once',`invoke('${p.id}')`,'text',`data-od-id="profile-${p.id}-read"`)
-    :button('Retry preparation',`retryPreparation('${p.id}')`,'text',`data-od-id="profile-${p.id}-retry"`);
+    :button('Install profile skills',`retryPreparation('${p.id}')`,'text',`data-od-id="profile-${p.id}-retry"`);
   return `<article class="profile row" data-od-id="profile-${p.id}">
     <div class="profile-main">
       <div class="profile-title"><button type="button" class="profile-name" onclick="inspectProfile('${p.id}')" aria-label="Inspect ${esc(p.name)}">${esc(p.name)}</button><span class="meta">${p.skills.length} skill${p.skills.length===1?'':'s'}</span></div>
@@ -739,7 +779,7 @@ function inspectProfile(id){
   const lockNote=locked
     ?`Active in ${p.enabled.map(esc).join(', ')}. Membership edits and removal unlock after every scope is disabled.`
     :'No scope enabled. Prepared members stay stored and ready.';
-  const foot=(p.ready?'':button('Retry preparation',`retryPreparation('${id}')`,'push'))
+  const foot=(p.ready?'':button('Install profile skills',`retryPreparation('${id}')`,'push'))
     +button('Remove definition',`removeProfile('${id}')`,'text danger',locked?'disabled':'')
     +button('Edit profile',`editProfile('${id}')`,'',locked?'disabled':'');
   modal(esc(p.name),`<p class="sub">Shared definition · ${esc(p.source)}</p><div><div class="members-head"><span class="table-label">Members in local storage</span><span class="table-label">${p.skills.length}</span></div><div class="list">${members}</div></div><p class="sub">${lockNote}</p>`,foot,'Profile');
@@ -772,9 +812,9 @@ function resetDiscovery(){
   $('saveProfile').disabled=true;
   $('discovery').innerHTML='<p class="sub">Find the repository’s skills, then choose the ones for this profile. New skills are downloaded disabled.</p>';
 }
-async function copyCommand(){
-  try{await navigator.clipboard.writeText($('invocationCommand').value);toast('Entry command copied. Activation unchanged.')}
-  catch{$('invocationCommand').select();toast('Select and copy the command.')}
+async function copyCommand(fieldId='invocationCommand'){
+  try{await navigator.clipboard.writeText($(fieldId).value);toast('Entry command copied. Activation unchanged.')}
+  catch{$(fieldId).select();toast('Select and copy the command.')}
 }
 
 function scopePath(){return scope==='Global'?'~/.agents/skills/':(projects.find(p=>p.name===scope)?.path||'')+'/.agents/skills/'}
@@ -787,7 +827,9 @@ function renderSkills(){
   if(profileFilter&&!['__any','__none'].includes(profileFilter)&&!installedProfiles().some(profile=>profile.id===profileFilter))profileFilter='';
   const sharingStatus=skillSharing[scope]?.status;
   const sharingLabel=sharingStatus==='connected'?'Sharing on':sharingStatus==='conflict'?'Needs attention':'Sharing off';
-  $('view').innerHTML=`<header class="skills-heading"><h1>Installed Skills</h1><label class="skills-scope">Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>${inventory().length?button('Update skills','showSkillUpdate()','','data-od-id="update-skills"'):''}</header>
+  $('view').innerHTML=`<header class="skills-heading"><h1>Installed Skills</h1><label class="skills-scope">Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label><div class="page-actions">${button(skillActionLabel('Save installed skills','save'),'reviewInstalledSnapshot()')}${inventory().length?button(skillActionLabel('Update skills','update'),'showSkillUpdate()','primary','data-od-id="update-skills"'):''}</div></header>${savedSkillNavigation()}`;
+  if(skillsView==='saved'){renderSavedSkills();return}
+  $('view').insertAdjacentHTML('beforeend',`
       <div class="skills-filters">
         <label class="search">Find a skill<span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
         <label>Availability<select id="availabilityFilter" onchange="availabilityFilter=this.value;renderSkillList()"><option value="">All availability</option><option value="available" ${availabilityFilter==='available'?'selected':''}>Available</option><option value="disabled" ${availabilityFilter==='disabled'?'selected':''}>Disabled</option></select></label>
@@ -797,11 +839,11 @@ function renderSkills(){
         ${button('Clear filters','clearSkillFilters()','text',`id="clearSkillFilters" ${query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter?'':'hidden'}`)}
       </div>
       <div class="skills-utilities"><span class="sharing-state" data-status="${esc(sharingStatus||'missing')}">${esc(sharingLabel)}</span>${button('Claude sharing','reviewClaudeSharing()','text')}<span id="skillsDiscoverySummary">${skillTokenSummary()}</span><span class="skills-folder"><button type="button" class="text" popovertarget="skillsFolderDetails">Folder details</button><div id="skillsFolderDetails" class="skill-invoc-popover skills-folder-popover" popover aria-label="Skill folders"><strong>Skill folders · ${esc(scope)}</strong><code class="path">${esc(scopePath())}</code>${sharingStatus==='connected'?`<code class="path">${esc(scope==='Global'?'~/.claude/skills/':(projects.find(project=>project.name===scope)?.path||'')+'/.claude/skills/')} <span class="meta">Shared folder link</span></code>`:''}</div></span></div>
-      <div class="skills-list-meta"><span class="table-label" id="skillCount"></span><div id="skillSelection"></div></div><div id="skillList"></div>`;
+      <div class="skills-list-meta"><span class="table-label" id="skillCount"></span><div id="skillSelection"></div></div><div id="skillList"></div>`);
   renderSkillList();
 }
 
-function setScope(value){selectedSkills.clear();sourceFilter='';scope=value;render();$('scopeSelect').focus()}
+function setScope(value){restoreSelection.clear();selectedSkills.clear();sourceFilter='';scope=value;render();$('scopeSelect').focus()}
 
 function clearSkillFilters(){
   query='';invocationFilter='';sourceFilter='';availabilityFilter='';profileFilter='';renderSkills();$('skillSearch').focus();
@@ -932,7 +974,7 @@ function renderSettings(){
       <section class="settings-block" data-od-id="projects-settings">
         <div><h2>Projects</h2><p class="sub">Save the folder here; enable groups from Profiles.</p></div>
         <div class="settings-body">
-          <div class="project-list">${projects.map((p,i)=>`<div class="project-row"><strong>${esc(p.name)}</strong><code class="path">${esc(p.path)}</code>${button('Edit',`editProject(${i})`,'text')}</div>`).join('')}</div>
+          <div class="project-list">${projects.map((p,i)=>`<div class="project-row"><div><strong>${esc(p.name)}</strong><code class="path">${esc(p.path)}</code>${projectStatuses[p.name]&&projectStatuses[p.name]!=='present'?`<p class="field-error" role="status">${projectStatuses[p.name]==='missing'?'Project folder not found':projectStatuses[p.name]==='not-folder'?'This path is not a folder':'Project folder cannot be read'}. Choose another folder or remove the project definition.</p>`:''}</div><div class="inline">${button('Edit',`editProject(${i})`,'text')}${projectStatuses[p.name]&&projectStatuses[p.name]!=='present'?button('Choose folder',`chooseProjectFolder(${i})`)+button('Remove project',`removeProject(${i})`,'text'):''}</div></div>`).join('')}</div>
           <div>${button('Add project',"browse('project')")}</div>
         </div>
       </section>
@@ -965,7 +1007,7 @@ $('sheet').addEventListener('close',()=>{
 
 document.addEventListener('keydown',e=>{
   const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
-  if(e.key==='/'&&!typing&&!$('sheet').open&&section==='Installed Skills'){e.preventDefault();$('skillSearch').focus()}
+  if(e.key==='/'&&!typing&&!$('sheet').open&&section==='Installed Skills'){e.preventDefault();$('skillSearch')?.focus()}
 });
 
 // State is loaded from the local AFK service.
@@ -985,6 +1027,8 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 <script src="/rules.js"></script>
 <script src="/onboarding.js"></script>
 <script src="/skill-insights.js"></script>
+<script src="/saved-skills.js"></script>
+<script src="/app-update.js"></script>
 <script src="/client.js"></script>
 </body>
 </html>

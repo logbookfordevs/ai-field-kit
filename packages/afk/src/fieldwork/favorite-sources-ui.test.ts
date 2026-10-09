@@ -300,3 +300,23 @@ it("ignores installation discovery after the dialog closes", async () => {
   resolve({ names: ["video"] });await pending;
   expect(evaluate("installationPicker.loaded")).toBe(false);
 });
+
+it("shows useful selection actions and clearing exits the selected-only view", async () => {
+  evaluate("editSource(1);setSourceMode('selected')"); field("sourceLink").value = "owner/other";
+  await evaluate<Promise<void>>("discoverSourceSkills()");
+  evaluate("clearMembers()");
+  expect(field("selectedOnlyControl").hidden).toBe(true);
+  expect(field("clearSelectedMembers").hidden).toBe(true);
+  evaluate("memberPicker.query='review';renderMemberList();selectShownMembers()");
+  expect(evaluate<string[]>("[...memberPicker.selected]")).toEqual(["review"]);
+  expect(field("selectedOnlyControl").hidden).toBe(false);
+  expect(field("clearSelectedMembers").hidden).toBe(false);
+  evaluate("toggleSelectedMembers()");
+  expect(field("selectShownMembers").hidden).toBe(true);
+  expect(evaluate("$('selectedOnly').checked")).toBe(true);
+  evaluate("clearMembers();memberPicker.query='';renderMemberList()");
+  expect(evaluate("memberPicker.selectedOnly")).toBe(false);
+  expect(evaluate<string[]>("visibleMembers()")).toEqual(["review", "video"]);
+  expect(field("selectShownMembers").hidden).toBe(false);
+  expect(field("selectedOnlyControl").hidden).toBe(true);
+});

@@ -20,6 +20,7 @@ export async function setInvocation(store: SettingsStore, settings: Settings, na
   if (!["", "Manual only", "Automatic allowed"].includes(mode)) throw new Error("Choose a supported invocation mode.");
   const library = new SkillLibrary(store);
   const originalPath = await library.locate(settings, name, scope);
+  const source = scope !== "Global" ? (await library.inventory(settings, scope)).find(entry => entry.name === name)?.source : undefined;
   const override = join(library.root(settings, scope), ".afk-overrides", name);
   const info = await lstat(originalPath);
   const linkTarget = info.isSymbolicLink() ? resolve(dirname(originalPath), await readlink(originalPath)) : undefined;
@@ -75,6 +76,7 @@ export async function setInvocation(store: SettingsStore, settings: Settings, na
       await mkdir(dirname(override), { recursive: true });
       await cp(originalPath, override, { recursive: true, dereference: true, force: false, errorOnExist: true });
       cloned = true;
+      if (source) await writeFile(join(override, ".afk-source.json"), JSON.stringify({ source }), { mode: 0o600 });
       await rm(originalPath); await symlink(override, originalPath, "dir");
       if (settings.managedLinks[originalPath]) settings.managedLinks[originalPath] = override;
       if (originalLinks[alias] === linkTarget) {

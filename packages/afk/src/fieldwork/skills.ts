@@ -1,8 +1,17 @@
-import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, symlink } from "node:fs/promises";
+import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { resolve, join } from "node:path";
 import { expandPath, skillName, type Settings, type SettingsStore } from "./settings.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
+
+export function resolveProfile(settings: Settings, reference: string): Settings["profiles"][number] {
+  const byId = settings.profiles.find(profile => profile.id === reference);
+  if (byId) return byId;
+  const matches = settings.profiles.filter(profile => profile.name.toLowerCase() === reference.trim().toLowerCase());
+  if (matches.length > 1) throw new Error(`Multiple profiles are named "${reference}". Use a profile ID: ${matches.map(profile => profile.id).join(", ")}.`);
+  if (!matches[0]) throw new Error("Profile not found. Use a profile name or ID.");
+  return matches[0];
+}
 
 export interface SkillEntry {
   name: string;
@@ -82,7 +91,9 @@ export class SkillLibrary {
         const defaultInvocation = resetsToGlobal
           ? globalPath ? (await readNativeMetadata(globalPath)).invocation : unknownInvocation()
           : await readOriginalInvocation(path, metadata.invocation);
-        const source = sources[name] ?? (invocationInherited ? globalSources[name] : undefined);
+        let preparedSource: string | undefined;
+        try { const receipt = JSON.parse(await readFile(join(path, ".afk-source.json"), "utf8")) as { source?: unknown }; if (typeof receipt.source === "string") preparedSource = receipt.source; } catch { /* Older prepared copies have no provenance receipt. */ }
+        const source = preparedSource ?? sources[name] ?? (invocationInherited ? globalSources[name] : undefined);
         return { name, path, ...(source ? { source } : {}), owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited };
       }));
       for (const entry of entries) if (entry) result.push(entry);
@@ -100,8 +111,7 @@ export class SkillLibrary {
   }
 
   async readGroup(settings: Settings, id: string): Promise<string> {
-    const profile = settings.profiles.find(p => p.id === id);
-    if (!profile) throw new Error("Profile not found.");
+    const profile = resolveProfile(settings, id);
     const groups = await Promise.all(profile.skills.map(async name => {
       const path = await this.locate(settings, name);
       return `## ${name}\n\nSupporting files: ${path}\n\n${await readFile(join(path, "SKILL.md"), "utf8")}`;
@@ -110,9 +120,9 @@ export class SkillLibrary {
   }
 
   async activate(settings: Settings, id: string, scope: string, enabled: boolean): Promise<void> {
-    const profile = settings.profiles.find(p => p.id === id);
-    if (!profile) throw new Error("Profile not found.");
+    const profile = resolveProfile(settings, id);
     const root = this.root(settings, scope);
+    if (enabled && scope !== "Global" && !(await stat(resolve(root, "../.."))).isDirectory()) throw new Error("Choose an existing project folder in Settings.");
     const operations: { path: string; source: string; create: boolean }[] = [];
     for (const name of profile.skills) {
       const shared = enabled ? await this.locate(settings, name) : join(this.root(settings, "Global"), ".disabled", name);
@@ -129,7 +139,7 @@ export class SkillLibrary {
         }
         operations.push({ path: destination, source, create: true });
       } else {
-        const otherOwner = settings.profiles.some(p => p.id !== id && p.enabled.includes(scope) && p.skills.includes(name));
+        const otherOwner = settings.profiles.some(p => p.id !== profile.id && p.enabled.includes(scope) && p.skills.includes(name));
         if (otherOwner || settings.independentSkills[scope]?.includes(name) || !settings.managedLinks[destination] || !(await exists(destination))) continue;
         const stat = await lstat(destination);
         if (!stat.isSymbolicLink()) continue;
@@ -139,7 +149,7 @@ export class SkillLibrary {
       }
     }
     }
-    await mkdir(root, { recursive: true });
+    if (enabled) await mkdir(root, { recursive: true });
     const completed: typeof operations = [];
     const original = [...profile.enabled];
     const originalLinks = { ...settings.managedLinks };
@@ -212,8 +222,13 @@ export class SkillLibrary {
     const dependentLinks = Object.entries(settings.managedLinks).filter(([, target]) => target === active);
     const movedLinks: string[] = [];
     const originalLinks = { ...settings.managedLinks };
+    const alias = join(root, "../../.claude/skills", name);
+    const ownedTarget = originalLinks[active];
+    const removesAlias = Boolean(ownedTarget && originalLinks[alias] === ownedTarget && await exists(alias) && (await lstat(alias)).isSymbolicLink() && resolve(alias, "..", await readlink(alias)) === ownedTarget);
     await rename(active, disabled);
     try {
+      delete settings.managedLinks[active];
+      if (removesAlias) { await rm(alias); delete settings.managedLinks[alias]; }
       for (const [path] of dependentLinks) {
         if (!(await exists(path)) || !(await lstat(path)).isSymbolicLink()) continue;
         if (resolve(path, "..", await readlink(path)) !== active) continue;
@@ -224,13 +239,14 @@ export class SkillLibrary {
       await this.store.save(settings);
     } catch (error) {
       await rename(disabled, active);
+      if (removesAlias) await symlink(ownedTarget!, alias, "dir");
       for (const path of movedLinks) { await rm(path); await symlink(active, path, "dir"); }
       settings.managedLinks = originalLinks;
       throw error;
     }
   }
 
-  async storePrepared(settings: Settings, source: string, names: string[]): Promise<void> {
+  async storePrepared(settings: Settings, source: string, names: string[], reference?: string): Promise<void> {
     const root = this.root(settings, "Global");
     for (const name of names) {
       if (!skillName(name)) throw new Error("Invalid skill name.");
@@ -241,6 +257,7 @@ export class SkillLibrary {
       if (!(await exists(join(from, "SKILL.md")))) throw new Error(`Installer did not prepare ${name}.`);
       await mkdir(join(root, ".disabled"), { recursive: true });
       await cp(await realpath(from), destination, { recursive: true, dereference: true, errorOnExist: true, force: false });
+      if (reference) await writeFile(join(destination, ".afk-source.json"), JSON.stringify({ source: reference }), { mode: 0o600 });
     }
   }
 }

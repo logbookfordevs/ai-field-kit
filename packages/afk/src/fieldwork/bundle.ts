@@ -3,6 +3,7 @@ import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/
 import { dirname, extname, join, relative, sep } from "node:path";
 import { inflateRawSync } from "node:zlib";
 import { containsControl, expandPath, SettingsStore, validateSettings, type Settings } from "./settings.js";
+import { portableSettings as portableConfiguration } from "./local-state.js";
 import { referenceErrors, validateRulesFiles } from "./rules.js";
 
 const maximumBytes = 5 * 1024 * 1024;
@@ -212,7 +213,7 @@ function portableSettings(settings: Settings): Settings {
 }
 
 export async function exportBundle(store: SettingsStore): Promise<{ base64: string; name: string }> {
-  const settings = portableSettings(await store.read());
+  const settings = portableConfiguration(await store.read());
   const files = await workspaceFiles(dirname(store.path));
   if (!files.some(file => file.path === "AGENTS.md")) files.unshift({ path: "AGENTS.md", content: "" });
   validateReferences(files);
@@ -249,7 +250,7 @@ export async function applyBundle(store: SettingsStore, base64: string, mappings
   await checkedImportFile(root, store.path.slice(root.length + 1));
   await checkedPath(root, ".backups");
   await mkdir(join(root, ".backups"), { recursive: true });
-  const backup = encodeArchive([{ path: "settings.json", content: `${JSON.stringify(current, null, 2)}\n` }, ...previous]);
+  const backup = encodeArchive([{ path: "settings.json", content: `${JSON.stringify(portableConfiguration(current), null, 2)}\n` }, ...previous]);
   await writeFile(join(root, ".backups", `import-${Date.now()}-${randomUUID()}.zip`), backup, { mode: 0o600 });
   const staged: { temporary: string; destination: string }[] = [];
   const written: string[] = [];

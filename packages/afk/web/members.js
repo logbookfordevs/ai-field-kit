@@ -9,13 +9,13 @@ function renderMembers(names,title,local,checked=[],descriptions={},picker=profi
   picker.unavailable=new Set(isSource?checked.filter(n=>!names.includes(n)):[]);
   const hint=picker.kind==='installation'?'Choose skills for this installation. The bookmark stays unchanged.':picker.kind==='stack'?'Only this stack’s selection changes. Nothing is installed.':isSource?'Only the bookmark selection is saved. Nothing is installed.':local?'Existing skill availability stays unchanged.':'New skills are downloaded disabled; existing skills stay as they are.';
   const isStack=picker.kind==='stack';
-  const search=`<input id="memberSearch" type="search" aria-label="${isSource?'Find skills':'Find members'}" placeholder="${isStack?'Search skills…':'Search skills, folders and descriptions'}" oninput="memberPicker.query=this.value;renderMemberList()" autocomplete="off">`;
+  const search=`<input id="memberSearch" type="search" aria-label="${isSource?'Find skills':'Find members'}" placeholder="${isSource?'Search skills…':'Search members…'}" oninput="memberPicker.query=this.value;renderMemberList()" autocomplete="off">`;
   const results=`<div id="memberResults" class="member-results" role="group" aria-label="${isSource?'Selected source skills':'Profile members'}"></div>`;
   const actions=button('Select shown','selectShownMembers()','text','id="selectShownMembers"')+button('Selected only','toggleSelectedMembers()',isStack?'text':'','id="selectedOnly" aria-pressed="false"')+button(isStack?'Clear':'Clear selection','clearMembers()','text');
   if(isStack){
     $(target).innerHTML=`${search}<div class="member-selection stack-member-toolbar"><span id="memberCount" role="status"></span>${actions}</div>${results}`;
   }else{
-    $(target).innerHTML=`<p class="hint">${hint}</p><label>${isSource?'Find skills':'Find members'}${search}</label><div class="members-head"><strong>${esc(title)}</strong>${button('Select shown','selectShownMembers()','text','id="selectShownMembers"')}</div><div class="member-selection"><span id="memberCount" role="status"></span>${button('Selected only','toggleSelectedMembers()','','id="selectedOnly" aria-pressed="false"')}${button('Clear selection','clearMembers()','text')}</div>${results}`;
+    $(target).innerHTML=`<div class="members-head"><strong>${esc(title)}</strong></div><p class="hint">${hint}</p><label>${isSource?'Find skills':'Find members'}${search}</label><div class="member-selection member-picker-toolbar" role="group" aria-label="Skill selection"><span id="memberCount" role="status"></span>${button('Select all','selectShownMembers()','text','id="selectShownMembers"')}<div class="member-picker-actions"><label id="selectedOnlyControl" class="member-view-filter"><input id="selectedOnly" type="checkbox" onchange="toggleSelectedMembers()"><span>Show selected only</span></label>${button('Clear selection','clearMembers()','text','id="clearSelectedMembers"')}</div></div>${results}`;
   }
   renderMemberList();
 }
@@ -69,7 +69,7 @@ function renderMemberList(){
   const unknown=tree.names.filter(name=>!memberPicker.paths[name]);
   const known=tree.names.filter(name=>memberPicker.paths[name]);
   const unknownLabel=folders.length&&unknown.length?'<p class="hint member-unknown">Folder information unavailable</p>':'';
-  $('memberResults').innerHTML=names.length?folders.map(folder=>renderMemberFolder(folder,0)).join('')+known.map(memberRow).join('')+unknownLabel+unknown.map(memberRow).join(''):'<p class="sub member-empty">No members match. Change the search or turn off Selected only.</p>';
+  $('memberResults').innerHTML=names.length?folders.map(folder=>renderMemberFolder(folder,0)).join('')+known.map(memberRow).join('')+unknownLabel+unknown.map(memberRow).join(''):'<p class="sub member-empty">No skills match. Change the search or turn off Show selected only.</p>';
   updateMemberCount();
 }
 function updateMemberCount(){
@@ -77,12 +77,21 @@ function updateMemberCount(){
   if(memberPicker.kind==='installation')updateInstallationSelection();else if(memberPicker.kind==='stack')updateStackSelection();else if(memberPicker.kind==='source')updateSourceSave();else $('saveProfile').disabled=!n;
   const shown=visibleMembers().length,filtered=Boolean(memberPicker.query.trim()||memberPicker.selectedOnly);
   const visibility=memberPicker.hasFolders?(filtered?`${shown} of ${memberPicker.names.length} match`:`${memberPicker.names.length} skills`):(filtered?`${shown} of ${memberPicker.names.length} shown`:`${memberPicker.names.length} skills`);
-  $('memberCount').textContent=`${n} selected · ${visibility}`;
-  $('selectShownMembers').textContent=memberPicker.hasFolders||memberPicker.kind==='stack'?(filtered?'Select matches':'Select all'):'Select shown';
-  $('selectedOnly').setAttribute('aria-pressed',String(memberPicker.selectedOnly));
+  const isStack=memberPicker.kind==='stack';
+  $('memberCount').textContent=isStack?`${n} selected · ${visibility}`:`${n} of ${memberPicker.names.length} selected${memberPicker.query.trim()?' · '+shown+' match search':''}`;
+  const selectAll=$('selectShownMembers');
+  selectAll.textContent=isStack?(filtered?'Select matches':'Select all'):`${memberPicker.query.trim()?'Select matches':'Select all'} (${shown})`;
+  selectAll.disabled=!shown||visibleMembers().every(name=>memberPicker.selected.has(name));
+  if(isStack)$('selectedOnly').setAttribute('aria-pressed',String(memberPicker.selectedOnly));
+  else{
+    selectAll.hidden=memberPicker.selectedOnly;
+    $('selectedOnly').checked=memberPicker.selectedOnly;
+    $('selectedOnlyControl').hidden=!n&&!memberPicker.selectedOnly;
+    $('clearSelectedMembers').hidden=!n;
+  }
   memberPicker.renderedFolders.forEach((node,index)=>$('memberFolderCount-'+index).textContent=memberFolderCount(node));
 }
 function memberChanged(input){if(input.checked)memberPicker.selected.add(input.value);else memberPicker.selected.delete(input.value);if(memberPicker.selectedOnly)renderMemberList();else updateMemberCount()}
 function selectShownMembers(){visibleMembers().forEach(n=>memberPicker.selected.add(n));renderMemberList()}
-function clearMembers(){memberPicker.selected.clear();renderMemberList()}
+function clearMembers(){memberPicker.selected.clear();memberPicker.selectedOnly=false;renderMemberList()}
 function toggleSelectedMembers(){memberPicker.selectedOnly=!memberPicker.selectedOnly;renderMemberList()}

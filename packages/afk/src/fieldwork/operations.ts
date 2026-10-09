@@ -15,12 +15,16 @@ import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
+import { compareSavedSkills, projectStatus, reviewSnapshot, restoreSavedSkills, type RestoreProgress, type SnapshotReview } from "./saved-skills.js";
+import type { SavedSkills } from "./settings.js";
+import { portableSettings } from "./local-state.js";
 
 function validateInput(operation: Operation, data: Record<string, unknown>): void {
   for (const key of Object.keys(data)) {
     if (!Object.hasOwn(operationCatalog[operation].input, key)) throw new Error(`Unknown ${operation} input field: ${key}. Read manage describe ${operation}.`);
   }
   const requiredText: Partial<Record<Operation, string[]>> = {
+    "skills/snapshot-preview": ["scope"], "skills/saved-restore": ["scope"], "project/remove": ["name"],
     "stack/install": ["id", "scope", "agent"], "source/install": ["source", "scope", "agent"],
     "profile/remove": ["id"], "profile/read": ["id"], "profile/save": ["name"],
     activation: ["id", "scope"], "project/save": ["name", "path"],
@@ -80,6 +84,8 @@ export class FieldworkOperations {
   private skillInstall: InstallProgress | null = null;
   private updateController: AbortController | null = null;
   private skillUpdate: UpdateProgress | null = null;
+  private restoreController: AbortController | null = null;
+  private restoreProgress: RestoreProgress | null = null;
   private mutations: Promise<void> = Promise.resolve();
   private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number }> = {};
 
@@ -91,10 +97,15 @@ export class FieldworkOperations {
   run(operation: string, data: Record<string, unknown> = {}): Promise<unknown> {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const action = (): Promise<unknown> => this.apply(operation as Operation, data);
-    if (["state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel"].includes(operation)) return action();
+    if (["state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/restore-state", "skills/restore-cancel"].includes(operation)) return action();
     const result = this.mutations.then(action);
     this.mutations = result.then(() => undefined, () => undefined);
     return result;
+  }
+
+  async idle(): Promise<void> {
+    await this.mutations;
+    if (Object.values(this.toolRuns).some(run => run.pending)) throw new Error("Wait for running tool commands to finish before updating AFK.");
   }
 
   async close(): Promise<void> {
@@ -103,6 +114,8 @@ export class FieldworkOperations {
   }
 
   private async apply(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
+    if (operation === "skills/restore-state") { validateInput(operation, data); return this.restoreProgress; }
+    if (operation === "skills/restore-cancel") { validateInput(operation, data); this.restoreController?.abort(); return { cancelled: Boolean(this.restoreController) }; }
     if (operation === "skills/install-state") { validateInput(operation, data); return this.skillInstall; }
     if (operation === "skills/install-cancel") {
       validateInput(operation, data);
@@ -120,6 +133,22 @@ export class FieldworkOperations {
     validateInput(operation, data);
     const { store, library, rules, preparation, toolRuns } = this;
     const settings = await store.read();
+    if (operation === "skills/snapshot-preview") return await reviewSnapshot(store, settings, String(data.scope));
+    if (operation === "skills/snapshot-save") {
+      const preview = data.preview as SnapshotReview | undefined;
+      if (!preview || typeof preview.scope !== "string") throw new Error("Review the installed skills before saving.");
+      const current = await reviewSnapshot(store, settings, preview.scope);
+      if (JSON.stringify(current) !== JSON.stringify(preview)) throw new Error("Installed skills or the saved list changed. Review again before saving.");
+      settings.savedSkills = [...(settings.savedSkills ?? []).filter(snapshot => snapshot.scope !== preview.scope), { scope: preview.scope, savedAt: new Date().toISOString(), skills: current.skills }];
+      await store.save(settings); return { ok: true };
+    }
+    if (operation === "skills/saved-restore") {
+      if (!Array.isArray(data.names) || !data.names.every(skillName)) throw new Error("Choose saved skill names.");
+      this.restoreController = new AbortController();
+      try {
+        return await restoreSavedSkills(store, String(data.scope), data.names, data.expected as SavedSkills, value => { this.restoreProgress = value; }, this.restoreController.signal);
+      } finally { this.restoreController = null; }
+    }
     if (operation === "stack/install" || operation === "source/install") {
       const stack = operation === "stack/install" ? settings.stacks?.find(stack => stack.manifest.id === data.id) : undefined;
       const source = operation === "source/install" ? settings.favoriteSources?.find(source => source.source === data.source) : undefined;
@@ -154,18 +183,26 @@ export class FieldworkOperations {
       return await exportBundle(store);
     }
     if (operation === "state") {
+      const projectStatuses = await projectStatus(store, settings);
       const inventories: Record<string, Awaited<ReturnType<SkillLibrary["inventory"]>>> = {};
       const skillSharing: Record<string, Awaited<ReturnType<typeof sharingState>>> = {};
+      const savedSkillComparisons: Record<string, Awaited<ReturnType<typeof compareSavedSkills>>> = {};
       for (const scope of ["Global", ...settings.projects.map(p => p.name)]) {
+        if (scope !== "Global" && projectStatuses[scope] !== "present") {
+          inventories[scope] = [];
+          savedSkillComparisons[scope] = await compareSavedSkills(store, settings, scope);
+          continue;
+        }
         inventories[scope] = await library.inventory(settings, scope);
         skillSharing[scope] = await sharingState(store, settings, scope);
+        savedSkillComparisons[scope] = await compareSavedSkills(store, settings, scope);
       }
       for (const profile of settings.profiles) {
         if (!profile.ready) continue;
         try { for (const name of profile.skills) await library.locate(settings, name); }
         catch { profile.ready = false; }
       }
-      return { settings, settingsPath: store.path, home: store.home, inventories, skillSharing, toolRuns };
+      return { settings, portableSettings: portableSettings(settings), settingsPath: store.path, home: store.home, inventories, skillSharing, savedSkillComparisons, projectStatuses, toolRuns };
     }
     if (operation === "rules/save") {
       return await rules.saveFiles(data.files as RulesFile[], typeof data.expectedHash === "string" ? data.expectedHash : undefined);
@@ -223,6 +260,8 @@ export class FieldworkOperations {
       const definitions = (profiles: typeof settings.profiles): string => JSON.stringify(profiles.map(({ ready: _ready, ...profile }) => profile));
       if (definitions(updated.profiles) !== definitions(settings.profiles) || JSON.stringify(updated.managedLinks) !== JSON.stringify(settings.managedLinks)) throw new Error("Profile changes must use profile operations.");
       if (JSON.stringify(updated.preferences) !== JSON.stringify(settings.preferences)) throw new Error("Invocation changes must use the invocation operation.");
+      if (JSON.stringify(updated.savedSkills) !== JSON.stringify(settings.savedSkills)) throw new Error("Saved skills must use snapshot operations.");
+      if (updated.configurationId !== settings.configurationId) throw new Error("Configuration identity cannot be edited.");
       updated.profiles = settings.profiles;
       updated.independentSkills = settings.independentSkills;
       updated.agentRules = settings.agentRules;
@@ -272,7 +311,7 @@ export class FieldworkOperations {
       if (source === "Local skill selection") {
         for (const name of names) await library.locate(settings, name);
       } else {
-        await library.storePrepared(settings, await preparation.directory(source), names);
+        await library.storePrepared(settings, await preparation.directory(source), names, source);
       }
       const profile = { id: existing?.id ?? "profile-" + randomUUID(), name: data.name.trim(), source, skills: names, enabled: [], ready: true };
       settings.profiles = [...settings.profiles.filter(p => p.id !== profile.id), profile];
@@ -287,14 +326,48 @@ export class FieldworkOperations {
     if (operation === "project/save") {
       const previous = settings.projects.find(p => p.name === data.previous);
       if (typeof data.name !== "string" || typeof data.path !== "string") throw new Error("Choose a project name and folder.");
+      if (previous && previous.path !== data.path && (await projectStatus(store, settings))[previous.name] === "missing") {
+        const root = library.root(settings, previous.name), aliasRoot = resolve(root, "../../.claude/skills");
+        for (const profile of settings.profiles) profile.enabled = profile.enabled.filter(scope => scope !== previous.name);
+        delete settings.independentSkills[previous.name];
+        settings.managedLinks = Object.fromEntries(Object.entries(settings.managedLinks).filter(([path]) => !path.startsWith(root + "/") && !path.startsWith(aliasRoot + "/")));
+      }
       if (previous && previous.path !== data.path && settings.profiles.some(p => p.enabled.includes(previous.name))) throw new Error("Disable profiles before changing this project's folder.");
+      if (previous && previous.path !== data.path) {
+        const root = library.root(settings, previous.name);
+        if (settings.independentSkills[previous.name]?.length || Object.keys(settings.managedLinks).some(path => path.startsWith(root + "/") || path.startsWith(resolve(root, "../../.claude/skills") + "/"))) throw new Error("Disable this project's managed individual skills before changing its folder.");
+      }
       if (previous) {
+        for (const snapshot of settings.savedSkills ?? []) if (snapshot.scope === previous.name) snapshot.scope = data.name;
+        if (settings.independentSkills[previous.name] && previous.name !== data.name) {
+          settings.independentSkills[data.name] = settings.independentSkills[previous.name]!;
+          delete settings.independentSkills[previous.name];
+        }
         for (const profile of settings.profiles) profile.enabled = profile.enabled.map(scope => scope === previous.name ? String(data.name) : scope);
         for (const key of Object.keys(settings.preferences)) {
           if (key.startsWith(previous.name + "|")) { settings.preferences[String(data.name) + key.slice(previous.name.length)] = settings.preferences[key]!; delete settings.preferences[key]; }
         }
         previous.name = data.name; previous.path = data.path;
       } else settings.projects.push({ name: data.name, path: data.path });
+      await store.save(settings); return { ok: true };
+    }
+    if (operation === "project/remove") {
+      const project = settings.projects.find(project => project.name === data.name);
+      if (!project) throw new Error("Project not found.");
+      const root = library.root(settings, project.name);
+      const missingFolder = (await projectStatus(store, settings))[project.name] === "missing";
+      if (missingFolder) {
+        for (const profile of settings.profiles) profile.enabled = profile.enabled.filter(scope => scope !== project.name);
+        delete settings.independentSkills[project.name];
+        const aliasRoot = resolve(root, "../../.claude/skills");
+        settings.managedLinks = Object.fromEntries(Object.entries(settings.managedLinks).filter(([path]) => !path.startsWith(root + "/") && !path.startsWith(aliasRoot + "/")));
+      }
+      const owned = Object.keys(settings.managedLinks).some(path => path.startsWith(root + "/") || path.startsWith(resolve(root, "../../.claude/skills") + "/"));
+      if (settings.profiles.some(profile => profile.enabled.includes(project.name)) || settings.independentSkills[project.name]?.length || owned) throw new Error("Disable this project's profiles and managed individual skills before removing its definition.");
+      settings.projects = settings.projects.filter(project => project.name !== data.name);
+      if (settings.savedSkills) settings.savedSkills = settings.savedSkills.filter(snapshot => snapshot.scope !== data.name);
+      settings.preferences = Object.fromEntries(Object.entries(settings.preferences).filter(([key]) => !key.startsWith(String(data.name) + "|")));
+      delete settings.independentSkills[String(data.name)];
       await store.save(settings); return { ok: true };
     }
     if (operation === "location") { await store.relocate(String(data.path)); return { ok: true }; }
@@ -321,7 +394,7 @@ export class FieldworkOperations {
         }
         if (missing.length) {
           if (profile.source === "Local skill selection") throw new Error(`Restore these local skill files before enabling: ${missing.join(", ")}. This profile has no repository source.`);
-          await library.storePrepared(settings, await preparation.directory(profile.source), missing);
+          await library.storePrepared(settings, await preparation.directory(profile.source), missing, profile.source);
         }
         profile.ready = true;
       }

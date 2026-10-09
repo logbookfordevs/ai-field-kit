@@ -39,7 +39,7 @@ source with the same name does not get a separate namespace. Review existing
 members before reusing names across sources.
 
 **Use with your agent** opens guidance and a copyable command for the profile ID.
-`afk profiles use <id>` reads all locally prepared member instructions, including
+`afk profiles use <name-or-id>` reads all locally prepared member instructions, including
 disabled members, and prints supporting resource directories. It does not change
 activation, register a slash command, or inject another chat. A calling agent must
 run the command and read its output. Instructions already read stay in that
@@ -280,3 +280,7 @@ completed or partial files remain. Installation can replace existing skills and
 make them available; the protected Installed Skills updater is the path for
 preserving an existing disabled state. Saving or editing a bookmark/stack still
 does not install anything. Agent operations expose the same installation actions.
+
+### Portable configuration and local state
+
+An AFK folder carries definitions, canonical rules and optional manually saved installed-skill lists. Profile activation, readiness, invocation preferences and ownership receipts persist separately under the machine home, keyed by configuration identity. Reusing the folder on another machine does not install skills or enable profiles. Installed Skills separates local inventory from saved-list comparison; restoration is explicitly selected and reapplies saved availability and invocation. Project folder repair updates a mapping only and never transfers project files.

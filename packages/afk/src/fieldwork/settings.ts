@@ -2,6 +2,21 @@ import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/
 import { validateSavedStack, type SavedStack } from "./stacks.js";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { randomUUID } from "node:crypto";
+import { applyLocalState, localState, portableSettings, verifiedLegacyState, type LocalState } from "./local-state.js";
+
+export interface SavedSkill {
+  name: string;
+  source?: string;
+  available: boolean;
+  invocation: "" | "Manual only" | "Automatic allowed";
+}
+
+export interface SavedSkills {
+  scope: string;
+  savedAt: string;
+  skills: SavedSkill[];
+}
 
 export interface RulesDestination {
   id: string;
@@ -40,6 +55,8 @@ export interface FavoriteSource {
 
 export interface Settings {
   version: 1;
+  configurationId?: string;
+  savedSkills?: SavedSkills[];
   profiles: Profile[];
   projects: { name: string; path: string }[];
   tools: { id: number; name: string; install: string; update: string }[];
@@ -74,11 +91,21 @@ function nonempty(value: unknown): value is string {
 
 export function validateSettings(value: unknown): Settings {
   if (!value || typeof value !== "object") throw new Error("Choose an AFK settings file.");
-  const data = value as Record<string, unknown>;
+  const data = structuredClone(value) as Record<string, unknown>;
   if (data.version !== 1 || !Array.isArray(data.profiles) || !Array.isArray(data.projects) || !Array.isArray(data.tools) || !Array.isArray(data.favoriteSources)) {
     throw new Error("Unsupported settings format. Expected AFK settings version 1.");
   }
   const profiles = data.profiles as Profile[];
+  for (const profile of profiles) {
+    if (profile && typeof profile === "object") {
+      profile.enabled ??= [];
+      profile.ready ??= false;
+    }
+  }
+  data.preferences ??= {};
+  data.managedLinks ??= {};
+  data.independentSkills ??= {};
+  if (data.agentRules && typeof data.agentRules === "object") (data.agentRules as AgentRulesSettings).receipts ??= {};
   const projects = data.projects as Settings["projects"];
   const tools = data.tools as Settings["tools"];
   const sources = data.favoriteSources as Settings["favoriteSources"];
@@ -103,19 +130,25 @@ export function validateSettings(value: unknown): Settings {
   const independent = data.independentSkills;
   if (!independent || typeof independent !== "object" || Array.isArray(independent) || !Object.values(independent).every(members => Array.isArray(members) && members.every(skillName))) throw new Error("Invalid individual activation state.");
   if (data.welcomeDismissed !== undefined && typeof data.welcomeDismissed !== "boolean") throw new Error("Invalid welcome dismissal state.");
+  if (data.configurationId !== undefined && !skillName(data.configurationId)) throw new Error("Invalid configuration identifier.");
+  if (data.savedSkills !== undefined) {
+    const snapshots = data.savedSkills as SavedSkills[];
+    if (!Array.isArray(snapshots) || !snapshots.every(snapshot => snapshot && scopes.has(snapshot.scope) && typeof snapshot.savedAt === "string" && Number.isFinite(Date.parse(snapshot.savedAt)) && Array.isArray(snapshot.skills) && snapshot.skills.every(skill => skill && skillName(skill.name) && typeof skill.available === "boolean" && ["", "Manual only", "Automatic allowed"].includes(skill.invocation) && (skill.source === undefined || (nonempty(skill.source) && !skill.source.startsWith("-")))) && new Set(snapshot.skills.map(skill => skill.name)).size === snapshot.skills.length) || new Set(snapshots.map(snapshot => snapshot.scope)).size !== snapshots.length) throw new Error("Invalid saved skills snapshot.");
+  }
   if (data.agentRules !== undefined) {
     const rules = data.agentRules as AgentRulesSettings;
     if (!rules || !Array.isArray(rules.destinations) || !rules.destinations.every(d => d && skillName(d.id) && nonempty(d.name) && ["codex", "claude", "custom"].includes(d.kind) && nonempty(d.path))) throw new Error("Agent rules destinations need names and file paths.");
     if (new Set(rules.destinations.map(d => d.id)).size !== rules.destinations.length) throw new Error("Agent rules destination identifiers must be unique.");
     if (!rules.receipts || typeof rules.receipts !== "object" || Array.isArray(rules.receipts) || !Object.entries(rules.receipts).every(([id, r]) => skillName(id) && r && typeof r.region === "string" && typeof r.lastSync === "string" && r.references && typeof r.references === "object" && !Array.isArray(r.references) && Object.entries(r.references).every(([path, content]) => path.startsWith("references/") && !path.split("/").includes("..") && typeof content === "string"))) throw new Error("Invalid agent rules sync receipts.");
   }
-  return structuredClone(value) as Settings;
+  return data as unknown as Settings;
 }
 
 export class SettingsStore {
   path: string;
   readonly home: string;
   readonly pointer: string;
+  private readonly identifiers = new Map<string, string>();
 
   constructor(home = homedir(), path?: string) {
     this.home = home;
@@ -134,18 +167,56 @@ export class SettingsStore {
   }
 
   async read(): Promise<Settings> {
-    try { return validateSettings(JSON.parse(await readFile(this.path, "utf8"))); }
+    try {
+      const settings = validateSettings(JSON.parse(await readFile(this.path, "utf8")));
+      const legacy = !settings.configurationId;
+      settings.configurationId ??= this.identifier(true);
+      let state: LocalState | undefined;
+      try {
+        const raw = JSON.parse(await readFile(this.localPath(settings.configurationId), "utf8")) as LocalState;
+        if (raw.version !== 1 || !raw.profiles || typeof raw.profiles !== "object" || Array.isArray(raw.profiles) || !Object.values(raw.profiles).every(profile => profile && typeof profile.definition === "string" && Array.isArray(profile.enabled) && profile.enabled.every(scope => typeof scope === "string") && typeof profile.ready === "boolean")) throw new Error("Invalid machine-local profile state.");
+        validateSettings({ ...settings, preferences: raw.preferences, managedLinks: raw.managedLinks, independentSkills: raw.independentSkills, agentRules: { destinations: [], receipts: raw.ruleReceipts } });
+        if (raw.projectPaths !== undefined && (!raw.projectPaths || typeof raw.projectPaths !== "object" || Array.isArray(raw.projectPaths) || !Object.values(raw.projectPaths).every(path => typeof path === "string"))) throw new Error("Invalid machine-local project paths.");
+        state = raw;
+      } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+      if (!state && legacy) state = await verifiedLegacyState(settings, this.home);
+      return applyLocalState(settings, state, this.home);
+    }
     catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptySettings(); throw error; }
   }
 
+  private identifier(legacy = false): string {
+    const key = this.path + (legacy ? "|legacy" : "");
+    let id = this.identifiers.get(key);
+    if (!id) { id = randomUUID(); this.identifiers.set(key, id); }
+    return id;
+  }
+
+  localPath(id: string): string {
+    if (!skillName(id)) throw new Error("Invalid configuration identifier.");
+    return join(this.home, ".afk/local", id + ".json");
+  }
+
   async save(settings: Settings): Promise<void> {
+    settings.configurationId ??= this.identifier();
     const validated = validateSettings(settings);
     await mkdir(dirname(this.path), { recursive: true });
     const temporary = `${this.path}.${process.pid}.tmp`;
+    const local = this.localPath(validated.configurationId!);
+    await mkdir(dirname(local), { recursive: true });
+    const localTemporary = `${local}.${process.pid}.tmp`;
+    let previous: string | undefined;
+    try { previous = await readFile(local, "utf8"); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
     try {
-      await writeFile(temporary, `${JSON.stringify(validated, null, 2)}\n`, { mode: 0o600 });
+      await writeFile(temporary, `${JSON.stringify(portableSettings(validated), null, 2)}\n`, { mode: 0o600 });
+      await writeFile(localTemporary, `${JSON.stringify(localState(validated, this.home), null, 2)}\n`, { mode: 0o600 });
+      await rename(localTemporary, local);
       await rename(temporary, this.path);
-    } finally { await rm(temporary, { force: true }); }
+    } catch (error) {
+      if (previous === undefined) await rm(local, { force: true });
+      else { await writeFile(localTemporary, previous, { mode: 0o600 }); await rename(localTemporary, local); }
+      throw error;
+    } finally { await rm(temporary, { force: true }); await rm(localTemporary, { force: true }); }
   }
 
   async relocate(path: string): Promise<void> {
