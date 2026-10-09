@@ -14,11 +14,11 @@ You decide when to provide guidance. AFK does not make the agent’s tool choice
 
 In the local app, open the profile and choose **Read group once**. Copy its actual command, then ask the agent to run it in its terminal:
 
-```bash Example syntax — replace with the actual copied ID
-afk profiles use <profile-id>
+```bash Example — use your profile name
+afk profiles use 'Video tools'
 ```
 
-A profile’s display name is not necessarily its ID. Use the value AFK provides. If you run from a source checkout without installing the shortcut, substitute the source-build launcher described in [Start here](/docs?chapter=start#open).
+Names work without case sensitivity; IDs also work. If names are duplicated, use the ID AFK provides. The dialog also offers `/afk-cli use profile Video tools` for an agent using the afk-cli skill. If you run from a source checkout without installing the shortcut, substitute the source-build launcher described in [Start here](/docs?chapter=start#open).
 
 <h2 id="output">Read and apply the output</h2>
 
@@ -34,7 +34,7 @@ The group’s skills may remain disabled throughout. No discovery links are crea
 
 <h2 id="web-action">What the web button does</h2>
 
-**Read group once** shows instructions and a command to copy. It does not run that command inside an agent, expose a built-in slash command, or silently inject context.
+**Read group once** shows instructions and a command to copy. It also offers an afk-cli skill request to copy. Neither option executes inside an agent or injects context by itself; give the copied command or request to your agent.
 
 <h2 id="context">Reading once does not erase context later</h2>
 

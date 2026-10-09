@@ -147,7 +147,7 @@ configuration=()=>structuredClone(portableConfiguration||currentSettings);
 exportSettings=()=>{
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(configuration(),null,2)],{type:'application/json'}));a.download='settings.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
-showNotes=()=>modal('AFK — Fieldwork','<p>Your local workspace for skills, shared profiles, favorite sources, global tool commands, and shared agent rules.</p><p class="sub">Settings and rule files live together in the AFK folder you choose. Source controls copy installation commands; skill updates run here and preserve availability.</p>',button('Show Welcome','showWelcome()','text')+button('Take a quick tour','startTour()','primary'));
+showNotes=()=>modal('AFK — Fieldwork','<p>Your local workspace for skills, shared profiles, favorite sources, global tool commands, and shared agent rules.</p><p class="sub">Settings and rule files live together in the AFK folder you choose. Sources can install skills here or copy installation commands; skill updates preserve availability.</p>',button('Show Welcome','showWelcome()','text')+button('Take a quick tour','startTour()','primary'));
 refresh().then(()=>{maybeWelcome();checkAppVersion()}).catch(error=>{$('view').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`});
 discover=async()=>{
   const picker=profilePicker,source=$('source').value.trim(),version=++picker.version;

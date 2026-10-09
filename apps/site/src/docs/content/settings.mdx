@@ -19,7 +19,12 @@ A launch override takes precedence over the local pointer:
 AFK_SETTINGS=/path/to/settings.json afk
 ```
 
-The JSON holds profile definitions and selected activation state, project paths, tool commands, source bookmarks, stack manifests and their optional origins, invocation preferences, individual activation and managed-link receipts. Use the UI for changes so settings and filesystem operations agree.
+The portable JSON holds profile definitions, project paths, tool commands, source
+bookmarks, stack manifests and optional origins, and manually saved skill lists.
+Activation, readiness, invocation preferences and ownership receipts are stored
+separately on this machine. Saved skill lists carry the availability and invocation
+choices captured when you saved them. Use the UI for changes so configuration and
+filesystem operations agree.
 
 <h2 id="projects">Add a project folder</h2>
 
@@ -27,14 +32,18 @@ Choose **Add project**, navigate from your home folder, select **Use this folder
 
 Renaming preserves its target relationships and preferences. Disable its profiles before changing the folder.
 
+If a project path is missing on this machine, Settings shows **Project folder missing**.
+Choose another folder to reconnect it, or remove the saved project entry. AFK does
+not copy, clone or download project files.
+
 <h2 id="import">Import intentionally</h2>
 
 1. Disable currently enabled profiles before replacing configuration.
 2. Choose the JSON file and review or remap project folders.
 3. Import. Profiles start unprepared and disabled; local link receipts and individual activation are cleared.
-4. Prepare the members for this machine, then enable each desired target explicitly.
+4. Use **Install profile skills** for the profiles you want, then enable each desired target explicitly. Restore individual saved skills from **Installed Skills → Saved skills** after review.
 
-<div className="docs-callout"><strong>Import does not execute setup</strong><p>Saved tool commands do not run. Imported invocation preferences are stored but are not automatically written to native skill files.</p></div>
+<div className="docs-callout"><strong>Import does not execute setup</strong><p>Saved tool commands do not run. Saved skill choices are applied to local files only when you explicitly restore selected entries.</p></div>
 
 Your provider owns sync and concurrent-file conflict handling. AFK does not automatically apply another machine’s activation or sync downloaded skill files.
 
@@ -56,4 +65,4 @@ The separate **Settings only · JSON** controls export or import configuration w
 afk settings export /path/to/export.json
 ```
 
-Exported paths, link receipts and readiness describe this machine; they do not become valid automatically on another one. Review mappings during import.
+Export includes definitions and saved skill lists, but excludes local activation, readiness and ownership receipts. Project paths travel as references; review their mappings on the new machine. Skill files and project files are not included.

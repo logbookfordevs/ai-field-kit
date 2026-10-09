@@ -33,11 +33,11 @@ Supporting files are excluded unless you inspect and estimate them separately.
 
 <h2 id="bulk">Manage selected skills together</h2>
 
-In the next release, check skills or choose **Select shown** to select the filtered
+check skills or choose **Select shown** to select the filtered
 list. The selection bar shows the count and scope, including how many selections
 are hidden by filters. Filtering keeps your selection; changing scope clears it.
 
-Use **Enable**, **Disable**, or **Change invocation** to apply the same action to
+Use **Update selected**, **Enable**, **Disable**, or **Change invocation** to apply the same action to
 selected skills. Invocation choices are Manual only, Automatic allowed, and
 Restore defaults. Successful availability or invocation changes keep the selection
 so you can apply another action. **Clear selection** starts over.
@@ -58,7 +58,7 @@ storage protections still apply.
 
 <h2 id="claude-sharing">Share the skills folder with Claude</h2>
 
-In the next release, choose **Global** or a project in Installed Skills, then
+choose **Global** or a project in Installed Skills, then
 **Share skills with Claude**. The dialog shows both folder paths and the current
 sharing state. **Enable sharing** creates missing folders and links Claude’s
 skills folder to the canonical skills folder:
@@ -96,7 +96,7 @@ A physical skill can move into that scope’s disabled folder. AFK retargets its
 
 <h2 id="delete">Permanently delete stored files</h2>
 
-In the next release, **Delete** beside **Inspect** removes the selected skill copy’s
+**Delete** beside **Inspect** removes the selected skill copy’s
 folder and all its supporting files. Review the affected folders and links, then choose **Delete permanently**.
 This is two clicks total: **Delete**, then **Delete permanently**. No typing is
 required. Choose **Cancel** to keep the files.
@@ -135,7 +135,7 @@ A project override of a shared member makes an isolated local copy. Reset reconn
 
 <h2 id="update">Update skills without changing availability</h2>
 
-Use **Update** on a skill row to update only that skill.
+Use **Update** on a skill row to update only that skill, or check several skills and choose **Update selected**. Review the selected names before running the update.
 **Update skills** runs Skills CLI for the selected Global or project scope. Follow
 preparation, update and application progress in the dialog, with expandable output.
 You can close it while the update runs and reopen it to see the result.
@@ -161,3 +161,22 @@ afk skills update -p 'Demo Studio'
 Skills CLI updates only installations it tracks. Prepared profile copies without
 Skills CLI receipts are not a new upstream-update registry. Running
 `npx skills update` directly bypasses AFK's availability protection.
+
+<h2 id="saved">Save a portable skill list</h2>
+
+**Save installed skills** captures every installed skill in the current scope,
+including disabled entries, regardless of search or filters. Review additions,
+changes and removals before saving. The list records names, known repository
+sources, availability and invocation choices, including defaults; it does not
+copy skill files. Saving again replaces that scope’s list after review.
+
+When a list exists, use the **Installed on this machine** and **Saved skills** views
+to distinguish local files from your portable list. Saved skills identifies missing
+copies, matching copies and settings that differ. Select entries and review
+**Restore selected** to install recoverable missing skills and apply their saved
+availability and invocation settings. Profiles stay unchanged. Existing copies
+from another source need review; local-only skills require their original files.
+
+Restoration uses the source version available at the time, rather than a pinned
+archive. Completed changes remain if another item fails. Use **Retry failed** for
+unfinished items. For a missing project folder, fix its path in Settings first.

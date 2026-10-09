@@ -1,4 +1,5 @@
 let welcomeActive=false,welcomeDismissedHere=false,tourStep=-1;
+let tourDimmerFrame;
 const tourSteps=[
   {section:'Installed Skills',copy:'See the skills installed on this machine, switch their availability, and choose how agents invoke them. Save installed skills to keep a portable list you can restore elsewhere; the files stay on this machine.'},
   {section:'Profiles',copy:'Group skills for a particular kind of work. Enable a profile globally or for a project, or use Read group once to read its instructions without changing activation.'},
@@ -30,10 +31,35 @@ function renderTour(){
   if(!target)return;
   const active=tourStep>=0;
   target.hidden=!active;
-  if(!active){target.innerHTML='';return}
+  if(!active){target.innerHTML='';renderTourDimmer();return}
   const step=tourSteps[tourStep],last=tourStep===tourSteps.length-1;
   target.innerHTML=`<div class="tour-copy"><p class="meta">Quick tour · ${tourStep+1} of ${tourSteps.length}</p><h2 id="tourHeading" tabindex="-1">${esc(step.section)}</h2><p>${esc(step.copy)}</p></div><div class="tour-controls">${button('Skip tour','endTour()','text')}${button('Back','moveTour(-1)','',tourStep===0?'disabled':'')}${button(last?'Finish tour':'Next',last?'endTour(true)':'moveTour(1)','primary')}</div>`;
+  renderTourDimmer();
 }
+
+function renderTourDimmer(){
+  const dimmer=$('tourDimmer');
+  if(!dimmer)return;
+  dimmer.hidden=tourStep<0;
+  if(dimmer.hidden){dimmer.innerHTML='';return}
+  const regions=[$('featureTour'),$('view'),document.querySelector('#nav [aria-current="page"]'),$('mobileSection')];
+  const holes=regions.filter(Boolean).map(element=>{
+    const rect=element.getBoundingClientRect();
+    if(!rect.width||!rect.height)return '';
+    return `<rect x="${rect.x-4}" y="${rect.y-4}" width="${rect.width+8}" height="${rect.height+8}" rx="8" fill="black"/>`;
+  }).join('');
+  dimmer.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><mask id="tourSpotlight" maskUnits="userSpaceOnUse" x="0" y="0" width="${innerWidth}" height="${innerHeight}"><rect width="100%" height="100%" fill="white"/>${holes}</mask></defs><rect width="100%" height="100%" fill="#17201e" fill-opacity="0.4" mask="url(#tourSpotlight)"/></svg>`;
+}
+function scheduleTourDimmer(){
+  if(tourStep<0||tourDimmerFrame)return;
+  tourDimmerFrame=requestAnimationFrame(()=>{tourDimmerFrame=undefined;renderTourDimmer()});
+}
+window.addEventListener('resize',scheduleTourDimmer);
+window.addEventListener('scroll',scheduleTourDimmer,{passive:true});
+new ResizeObserver(scheduleTourDimmer).observe($('view'));
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&tourStep>=0&&!$('sheet').open){event.preventDefault();endTour()}
+});
 
 function maybeWelcome(){
   if(!currentSettings.welcomeDismissed&&!welcomeDismissedHere&&!$('sheet').open)showWelcome();
@@ -49,7 +75,7 @@ function showWelcome(){
     <section class="welcome-section"><h3>Write your agent rules once</h3><p>Edit and save AGENTS.md here, then preview and sync it to Codex, Claude, or a custom file. AFK preserves text outside its marked region and backs up existing files.</p></section>
     <details class="welcome-extra"><summary>Skills, tools, and your portable setup</summary><ul>
       <li><strong>Installed Skills:</strong> inspect instructions, switch availability, and choose manual or automatic invocation.</li>
-      <li><strong>Sources &amp; Stacks:</strong> bookmark repositories or save a group of selected skills from multiple sources. Copy install commands to run yourself. Update controls also copy commands for you to run.</li>
+      <li><strong>Sources &amp; Stacks:</strong> bookmark repositories or save a group of selected skills from multiple sources. Choose what to install here, or copy install commands to run yourself.</li>
       <li><strong>Tools:</strong> save global install and update commands. Running one is an explicit action.</li>
       <li><strong>Settings:</strong> define project folders and choose where settings and rule files live. Export the AFK folder to take them with you.</li>
     </ul></details>`,

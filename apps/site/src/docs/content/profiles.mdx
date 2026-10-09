@@ -59,11 +59,15 @@ The project inventory excludes global-only entries. An agent may still discover 
 
 <h2 id="read">Read with your agent</h2>
 
-**Read group once** opens instructions and a copyable command using the profile’s actual ID:
+**Read group once** offers a terminal command using the profile’s name:
 
-```bash Use the ID copied by AFK
-afk profiles use <profile-id>
+```bash Read a named profile
+afk profiles use 'Video tools'
 ```
+
+Or ask an agent with the **afk-cli** skill to use `/afk-cli use profile Video tools`.
+Names are matched without case sensitivity; IDs remain supported. If names are
+duplicated, AFK provides the ID to disambiguate them.
 
 It prints locally prepared member instructions and resource directories without changing activation. There is no remote fetch during invocation, automatic slash-command registration, or injection into another chat. [Follow the complete flow](/docs?chapter=agent).
 
@@ -79,3 +83,11 @@ its saved source before making them available. If preparation fails, the profile
 stays disabled. A local-only profile has no download source: restore its missing
 files or edit its members before enabling it. Profiles enabled in any scope still
 protect their members from deletion.
+
+<h2 id="portable">Profiles travel as definitions</h2>
+
+The AFK folder carries profile names, sources and selected members. Activation,
+installed-member readiness and managed-link ownership stay on each machine.
+On a new machine, profiles start disabled and unprepared; opening the configuration
+does not download their packages. Choose **Install profile skills** to prepare the
+members, then enable the desired Global or project target explicitly.

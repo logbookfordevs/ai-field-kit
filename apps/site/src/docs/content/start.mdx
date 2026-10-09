@@ -13,7 +13,7 @@ Use `afk update` to update AFK itself. Skill package updates are separate.
 
 <div className="docs-callout"><strong>Requires AFK 2.0.2 or newer</strong><p>Background commands and invocation filtering are included in 2.0.2. Run `afk update` if your installed version is older.</p></div>
 
-<div className="docs-callout"><strong>Preview of the next release</strong><p>This manual also covers upcoming installation buttons, tool batches, bulk skill actions and protected skill updates. Screenshots use a demo workspace from the current development build; some controls are not in 2.0.2 yet.</p></div>
+<div className="docs-callout"><strong>AFK 2.0.4</strong><p>This manual covers saved skill lists, machine-local profile activation, protected updates and the optional quick tour. Screenshots use a demo workspace and may show earlier layouts.</p></div>
 
 <h2 id="open">Open the app</h2>
 
@@ -47,17 +47,16 @@ afk stop
 
 Background start prints the local URL without opening a browser and keeps running
 when the terminal closes. Status shows its URL, process ID and log location.
-Starting again reuses the same background instance. The next release also adds
+Starting again reuses the same background instance. Use
 `afk restart` to reopen that instance on its current port and settings path. Stop gracefully closes that
 instance; foreground sessions remain independent. `afk ui --background` is an alias.
 
 <h2 id="port">Choose a fixed port</h2>
 
-The next release adds `--port` for a URL you can bookmark and a resident-memory
-metric in `afk status` (server RAM only, excluding your browser). To try it before release,
-build this branch and substitute `node packages/afk/dist/index.js` for `afk`:
+Use `--port` for a URL you can bookmark. `afk status` includes resident memory
+(server RAM only, excluding your browser). Both are available in AFK 2.0.3 or newer:
 
-```bash Fixed-port launch — next release
+```bash Fixed-port launch
 afk --port 4310
 # Or keep it running in the background:
 afk --background --port 4310
@@ -93,3 +92,24 @@ Use **Exit AFK** in the app header, or press **Ctrl+C** in the terminal. The ser
 
 For a background server, use **Exit AFK** or `afk stop`. Closing the browser tab
 alone does not stop the server.
+
+<h2 id="tour">Take a quick tour</h2>
+
+Welcome offers **Take a quick tour** or **I’ll explore**. The tour visits Installed
+Skills, Profiles, Sources & Stacks, Agent rules, Tools and Settings. Each step keeps
+its guidance, page content and selected navigation clear while dimming the
+surroundings. Use Back, Next, Skip tour or Escape; the tour requires no setup actions.
+Reopen it from **About AFK**. Welcome also links to Settings to choose your AFK folder.
+
+<h2 id="app-update">Check and update AFK</h2>
+
+The app header shows the installed version and checks for a newer stable release.
+**Check for updates** gives explicit checking, up-to-date, available or failure
+feedback. Checking never installs anything. **Update & restart** runs `afk update`,
+verifies the installation and restarts the app on its current port and configuration.
+Follow progress and review output in Update details. If installation fails, the
+current app stays running; if restart fails, reopen AFK from your terminal.
+
+The sidebar footer displays the server PID and resident memory (RSS) in MiB,
+excluding the browser and launched commands. It refreshes every 30 seconds while
+the tab is visible; failed checks show **Disconnected** instead of stale figures.

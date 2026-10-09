@@ -25,7 +25,7 @@ installer command without executing it. This is separate from skill updates.
 
 For a local source build, [Start here](/docs?chapter=start#open) explains the local shortcut and direct launcher.
 
-<h2 id="restart">Restart the background app — next release</h2>
+<h2 id="restart">Restart the background app</h2>
 
 ```bash Restart AFK
 afk restart
@@ -39,7 +39,7 @@ are untouched. If no background instance is running, the command suggests
 `afk --background` without starting one. If shutdown takes too long or verification
 fails, it reports the problem instead of starting another server.
 
-<h2 id="port">Fixed port — next release</h2>
+<h2 id="port">Fixed port</h2>
 
 ```bash Fixed-port commands
 afk --port 4310
@@ -54,10 +54,9 @@ before launch. Without this flag it selects an available port.
 
 A running background instance is reused when the requested port matches. If it
 uses another port, stop it with `afk stop` before restarting. This launch option
-is not stored in settings. Fixed-port support is unreleased; use a source build
-until the next version is published.
+is not stored in settings. Fixed-port support is available in AFK 2.0.3 or newer.
 
-<h2 id="memory">Memory usage — next release</h2>
+<h2 id="memory">Memory usage</h2>
 
 `afk status` includes **Memory (RSS)** in MiB: the server process's current resident
 RAM, including Node.js and native allocations. Browser tabs and child tool processes
@@ -69,22 +68,22 @@ is shown as unavailable. Stop and restart it after updating to enable the metric
 <h2 id="reading">Read without activating</h2>
 
 ```bash Reading commands
-afk profiles use <profile-id>
+afk profiles use 'Video tools'
 afk skills get <skill-name> [scope]
 afk skills update -g
 afk skills update <skill-name> -g
 afk skills update -p 'Demo Studio'
 ```
 
-Use the ID copied by the app. Profiles print prepared local member guidance and resource directories. Skill get prints SKILL.md from the selected scope.
+Use a profile name or ID. Names are case-insensitive; duplicate names require an ID. Profiles print prepared local member guidance and resource directories. Skill get prints SKILL.md from the selected scope.
 
 Square brackets describe optional arguments; do not type the brackets literally.
 
 <h2 id="activation">Enable or disable one target</h2>
 
 ```bash Example project target
-afk profiles enable <profile-id> 'Demo Studio'
-afk profiles disable <profile-id> 'Demo Studio'
+afk profiles enable 'Video tools' 'Demo Studio'
+afk profiles disable 'Video tools' 'Demo Studio'
 ```
 
 Omit the target for Global. A project target must match its configured name. Disable affects only AFK-owned exposure in that target and preserves other owners.
