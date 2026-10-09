@@ -11,7 +11,22 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.0.4 - 2026-10-09
+
+### Added
+
+- Save a portable list of installed skills by scope, including known sources, availability and invocation choices. Saved skills compares the list with this machine and offers reviewed selective restoration without copying skill files.
+- Check for AFK updates from the app header and explicitly update and restart on the current port and configuration, with explicit checking and up-to-date feedback, progress, results and recovery guidance.
+- Take an optional six-page quick tour from Welcome or About AFK, with dimmed surroundings, clear page content and Back, Next, Skip and Escape controls.
+- The sidebar footer shows AFK’s PID and RSS, refreshed every 30 seconds while the tab is visible.
+
 ### Changed
+
+- Profile definitions travel in the AFK folder; activation, readiness, invocation preferences and ownership receipts stay machine-local. Profiles start disabled and unprepared on a new machine.
+- Profile reading and activation commands accept case-insensitive names as well as IDs. Read group once offers name-based terminal commands and an afk-cli skill request.
+- Update selected applies protected skill updates only to checked skills. Update and Save actions have distinct icons and emphasis; installed and saved views use a shared tab bar.
+- Skill pickers group selection controls, show selected-only filtering explicitly, and place discovery feedback beside Find skills. Profile preparation is labeled Install profile skills.
+- Settings identifies missing project folders and offers reconnection or removal without copying project files. Welcome links to AFK folder settings; navigation starts with Installed Skills.
 
 - Stack editing uses the same form as creation, prefilled with saved source and skill selections. Edit JSON remains available separately; both editors review changes before saving.
 - Source bookmark text links open the repository in a new tab in both Cards and List views.
