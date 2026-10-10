@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+### Fixed
+
+- Successful AFK updates clear Update details from the header. Running updates and failures retain their details; the local update log stays on disk.
+
 ## v2.0.4 - 2026-10-09
 
 ### Added

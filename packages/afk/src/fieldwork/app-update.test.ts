@@ -111,3 +111,20 @@ it("reports a failed manual check and keeps successful checks independent of upd
     expect(messages).toEqual([fails ? "Could not check for updates. Try again." : "AFK 2.0.3 is up to date. No update found."]);
   }
 });
+
+it("hides successful update logs while keeping progress and failure details visible", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { createContext, runInContext } = await import("node:vm");
+  const notice = { innerHTML: "" };
+  const context = createContext({ $: () => notice, esc: String, button: (label: string) => label });
+  runInContext(readFileSync(new URL("../../web/app-update.js", import.meta.url), "utf8"), context);
+  runInContext("appVersion={current:'2.0.4',available:false};appUpdateJob={pending:true,phase:'Restarting AFK…',output:'Installer output'};renderAppUpdate()", context);
+  expect(notice.innerHTML).toContain("Update details");
+  runInContext("appUpdateJob.pending=false;appUpdateJob.phase='AFK updated and restarted.';renderAppUpdate()", context);
+  expect(notice.innerHTML).not.toContain("Update details");
+  expect(notice.innerHTML).toContain("Up to date");
+  expect(runInContext("appUpdateJob.output", context)).toBe("Installer output");
+  runInContext("appUpdateJob.error='Restart failed';renderAppUpdate()", context);
+  expect(notice.innerHTML).toContain("Update details");
+  expect(notice.innerHTML).toContain("Restart failed");
+});

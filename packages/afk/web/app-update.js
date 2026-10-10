@@ -8,7 +8,8 @@ function renderAppUpdate(){
   const status=updating?esc(appUpdateJob.phase):appVersionChecking?'Checking for updates…':appUpdateJob?.error?'Update needs attention':appVersion?.error?'Update check unavailable':available?'Version '+esc(appVersion.latest)+' is available':appVersion?'Up to date':'Checking for updates…';
   const actions=updating?'':appVersionChecking?button('Checking…','checkAppVersion(true)','text','disabled'):available?button(skillActionLabel('Update & restart','update'),'startAppUpdate()','primary'):button('Check for updates','checkAppVersion(true)','text');
   const output=appUpdateJob?.output||appUpdateJob?.error;
-  target.innerHTML=`<span><strong>${version}</strong> · ${status}</span><div class="app-update-actions">${actions}</div>${output?`<details ${appUpdateDetailsOpen?'open':''} ontoggle="appUpdateDetailsOpen=this.open"><summary>Update details</summary>${appUpdateJob.error?`<p role="alert">${esc(appUpdateJob.error)}</p><p>You can retry, or run <code>afk update</code> in your terminal.</p>`:''}<pre>${esc(appUpdateJob.output)}</pre></details>`:''}`;
+  const showsDetails=Boolean(output)&&Boolean(updating||appUpdateJob?.error);
+  target.innerHTML=`<span><strong>${version}</strong> · ${status}</span><div class="app-update-actions">${actions}</div>${showsDetails?`<details ${appUpdateDetailsOpen?'open':''} ontoggle="appUpdateDetailsOpen=this.open"><summary>Update details</summary>${appUpdateJob.error?`<p role="alert">${esc(appUpdateJob.error)}</p><p>You can retry, or run <code>afk update</code> in your terminal.</p>`:''}<pre>${esc(appUpdateJob.output)}</pre></details>`:''}`;
 }
 async function checkAppVersion(force=false){
   if(appVersionChecking)return;
