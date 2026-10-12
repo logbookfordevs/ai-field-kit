@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { resolve, join } from "node:path";
@@ -27,6 +28,16 @@ export interface SkillEntry {
   defaultInvocation: SkillInvocation;
   invocationInherited: boolean;
 }
+
+export interface NestedSkillEntry {
+  name: string;
+  folder: string;
+  path: string;
+  description: string;
+  invocation: SkillInvocation;
+}
+
+const nestedSkillDepth = 4;
 
 async function exists(path: string): Promise<boolean> {
   try { await lstat(path); return true; } catch (error) {
@@ -99,6 +110,26 @@ export class SkillLibrary {
       for (const entry of entries) if (entry) result.push(entry);
     }
     return result.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Subfolders belong to whichever tool created them, so their skills are listed without joining name-keyed management.
+  async nested(settings: Settings, scope: string): Promise<NestedSkillEntry[]> {
+    const root = this.root(settings, scope);
+    const result: NestedSkillEntry[] = [];
+    const walk = async (segments: string[]): Promise<void> => {
+      let children: Dirent[];
+      try { children = await readdir(join(root, ...segments), { withFileTypes: true }); }
+      catch (error) { if (["ENOENT", "ENOTDIR", "EACCES"].includes((error as NodeJS.ErrnoException).code ?? "")) return; throw error; }
+      for (const child of children) {
+        if (!child.isDirectory() || child.name.startsWith(".") || child.name === "node_modules") continue;
+        const path = join(root, ...segments, child.name);
+        if (await exists(join(path, "SKILL.md"))) {
+          if (segments.length) result.push({ name: child.name, folder: segments.join("/"), path, ...await readNativeMetadata(path) });
+        } else if (segments.length < nestedSkillDepth) await walk([...segments, child.name]);
+      }
+    };
+    await walk([]);
+    return result.sort((a, b) => a.folder.localeCompare(b.folder) || a.name.localeCompare(b.name));
   }
 
   async locate(settings: Settings, name: string, scope = "Global"): Promise<string> {

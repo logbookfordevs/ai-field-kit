@@ -78,3 +78,15 @@ it("updates discovery totals only with profile membership and excludes disabled 
   expect(ui.run<string>("skillTokenSummary()")).toBe(baseline);
   expect(ui.run<string>("skillTokenSummary()")).not.toContain("Codex ~0");
 });
+
+it("keeps nested skills out of managed-only filters and groups them by folder",()=>{
+  const ui=fixture();
+  ui.run("invocationSummary=policy=>policy.claude==='Manual only'?'manual only':'automatic allowed'");
+  ui.run("nested=[{name:'pdf',folder:'synced/acct',invocation:{claude:'Automatic allowed'}},{name:'docx',folder:'synced/acct',invocation:{claude:'Manual only'}},{name:'plan',folder:'team',invocation:{claude:'Manual only'}}]");
+  expect(ui.run("nestedSkillGroups(nested).map(group=>[group.folder,group.skills.length])")).toEqual([["synced/acct",2],["team",1]]);
+  ui.run("query='SYNCED';invocationFilter='manual only'");
+  expect(ui.run("nested.filter(matchesNestedSkillFilters).map(entry=>entry.name)")).toEqual(["docx"]);
+  ui.run("query='';invocationFilter='';availabilityFilter='available'");
+  expect(ui.run("nested.filter(matchesNestedSkillFilters)")).toEqual([]);
+  expect(ui.run("shortFolderPath('synced/937583ee-01ae-4eb2-a899-07800134a783_0ac2e7dd')")).toBe("synced/937583ee…e7dd");
+});

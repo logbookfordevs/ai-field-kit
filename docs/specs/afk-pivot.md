@@ -53,6 +53,17 @@ storage; global-only entries are excluded. Metadata files and broken links are
 ignored. The view is not a combined effective inventory: global skills may still
 be discoverable to an agent working in a project.
 
+Skills inside subfolders of the selected scope's skills folder are listed in a
+separate In subfolders group, one disclosure per folder, up to four folder
+levels deep. Dot folders, symlinked folders and the inside of a skill's own
+folder are not searched. These entries show description and invocation metadata
+and support Inspect only; they are excluded from selection, availability,
+invocation changes, updates, deletion, profiles, saved lists and the discovery
+estimate, because the tool that created the folder owns them. Name search and
+the invocation filter apply to them; availability, source and profile filters
+hide them. The state operation returns them as `nestedInventories`, and
+`skill/read` reads one when given its `folder`.
+
 Selection is scoped to the displayed inventory. Checkboxes and Select shown
 support bulk availability, invocation and deletion. Search/filter changes retain
 selection and expose the hidden count; changing scope clears it. Non-destructive
