@@ -243,8 +243,9 @@ export class RulesWorkspace {
     await noSymlinksBelow(dirname(path), join(dirname(path), "afk-rules"));
   }
 
-  async saveDestination(settings: Settings, destination: RulesDestination): Promise<Settings> {
+  async saveDestination(settings: Settings, input: Omit<RulesDestination, "id"> & { id?: string }): Promise<Settings> {
     const config = structuredClone(this.configuration(settings));
+    let destination: RulesDestination = { ...input, id: input.id ?? `custom-${randomUUID()}` };
     const previous = config.destinations.find(d => d.id === destination.id);
     if (previous && expandPath(previous.path, this.store.home) !== expandPath(destination.path, this.store.home) && config.receipts[destination.id]) throw new Error("Disconnect the existing destination before changing its path.");
     await this.checkDestination(settings, destination);

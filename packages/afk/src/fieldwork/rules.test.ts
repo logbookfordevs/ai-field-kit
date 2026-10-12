@@ -267,6 +267,14 @@ describe("Agent rules managed regions", () => {
     await expect(rules.saveDestination(settings, { id: "relative", name: "Relative", kind: "custom", path: "somewhere/AGENTS.md" })).rejects.toThrow("absolute");
   });
 
+  it("assigns an id to a destination saved without one", async () => {
+    const { rules, settings, target } = await fixture();
+    const saved = await rules.saveDestination(settings, { name: "Claude Work", kind: "custom", path: join(dirname(target), "WORK.md") });
+    const created = saved.agentRules?.destinations.find(d => d.name === "Claude Work");
+    expect(created?.id).toBeTruthy();
+    await expect(rules.preview(saved, [created!.id])).resolves.toBeTruthy();
+  });
+
   it("keeps references isolated for two targets in the same directory", async () => {
     const { rules, settings, target } = await fixture();
     await rules.saveDestination(settings, { id: "other", name: "Other", kind: "custom", path: join(dirname(target), "OTHER.md") });

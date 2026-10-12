@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+### Added
+
+- Installed Skills lists skills kept inside subfolders of the skills folder, such as the account skills Claude syncs under `synced/`. They appear in a separate In subfolders group per folder, with their description and invocation mode, and can be inspected. AFK does not manage them: availability, invocation, updates, deletion, profiles and saved lists still cover top-level skills only.
+
 ### Fixed
 
 - Successful AFK updates clear Update details from the header. Running updates and failures retain their details; the local update log stays on disk.

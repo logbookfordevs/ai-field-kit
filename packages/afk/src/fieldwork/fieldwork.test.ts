@@ -6,6 +6,7 @@ import { emptySettings, SettingsStore } from "./settings.js";
 import { SkillLibrary } from "./skills.js";
 import { setInvocation } from "./invocation.js";
 import { startFieldwork } from "./server.js";
+import { FieldworkOperations } from "./operations.js";
 
 const folders: string[] = [];
 afterEach(async () => { await Promise.all(folders.splice(0).map(path => rm(path, { recursive: true, force: true }))); });
@@ -148,5 +149,36 @@ describe("Fieldwork local server", () => {
       const state = await fetch(`${app.url}/api/state`, { headers: { "x-afk-token": token! } });
       expect(state.status).toBe(200);
     } finally { await app.close(); }
+  });
+});
+
+describe("Fieldwork nested skills", () => {
+  it("lists skills inside subfolders separately from the managed inventory", async () => {
+    const { home, library, settings } = await fixture();
+    const root = join(home, ".agents/skills");
+    const synced = join(root, "synced/account/research"); await mkdir(synced, { recursive: true });
+    await writeFile(join(synced, "SKILL.md"), "---\nname: research\ndescription: Research topics\n---\nResearch\n");
+    await mkdir(join(root, "top/references/inner"), { recursive: true });
+    await writeFile(join(root, "top/SKILL.md"), "Top"); await writeFile(join(root, "top/references/inner/SKILL.md"), "Inner");
+    await mkdir(join(root, ".disabled/render/extra/hidden"), { recursive: true });
+    await writeFile(join(root, ".disabled/render/extra/hidden/SKILL.md"), "Hidden");
+    await symlink(join(root, "synced"), join(root, "alias"));
+
+    expect((await library.inventory(settings, "Global")).map(entry => entry.name)).toEqual(["render", "top"]);
+    expect(await library.nested(settings, "Global")).toEqual([
+      { name: "research", folder: "synced/account", path: synced, description: "Research topics", invocation: { claude: "Automatic allowed", codex: "Automatic allowed" } },
+    ]);
+    expect(await library.nested(settings, "Demo")).toEqual([]);
+  });
+
+  it("reads a nested skill only when its folder is named", async () => {
+    const { home, store } = await fixture();
+    const nested = join(home, ".agents/skills/synced/account/render"); await mkdir(nested, { recursive: true });
+    await writeFile(join(nested, "SKILL.md"), "Nested instruction");
+    const operations = new FieldworkOperations(store);
+
+    expect(await operations.run("skill/read", { name: "render", scope: "Global", folder: "synced/account" })).toMatchObject({ path: nested, content: "Nested instruction" });
+    expect(await operations.run("skill/read", { name: "render", scope: "Global" })).toMatchObject({ content: expect.stringContaining("Render instruction") });
+    expect((await operations.run("state", {}) as { nestedInventories: Record<string, { name: string }[]> }).nestedInventories.Global?.map(entry => entry.name)).toEqual(["render"]);
   });
 });

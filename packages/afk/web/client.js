@@ -1,4 +1,4 @@
-let currentSettings, inventories={}, skillSharing={}, afkHome='',toolRuns={};
+let currentSettings, inventories={}, nestedInventories={}, skillSharing={}, afkHome='',toolRuns={};
 async function request(path,data){
   const response=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:{'X-AFK-Token':window.afkToken,'Content-Type':'application/json'},...(data===undefined?{}:{body:JSON.stringify(data)})});
   const result=await response.json();
@@ -7,7 +7,7 @@ async function request(path,data){
 }
 async function refresh(){
   const state=await request('state');
-  currentSettings=state.settings;inventories=state.inventories;skillSharing=state.skillSharing||{};settingsPath=state.settingsPath;afkHome=state.home;savedSkillComparisons=state.savedSkillComparisons||{};projectStatuses=state.projectStatuses||{};portableConfiguration=state.portableSettings;
+  currentSettings=state.settings;inventories=state.inventories;nestedInventories=state.nestedInventories||{};skillSharing=state.skillSharing||{};settingsPath=state.settingsPath;afkHome=state.home;savedSkillComparisons=state.savedSkillComparisons||{};projectStatuses=state.projectStatuses||{};portableConfiguration=state.portableSettings;
   ({profiles,projects,tools,favoriteSources,preferences}=currentSettings);
   toolRuns=state.toolRuns||{};
   tools=tools.map(tool=>({...tool,last:toolRuns[tool.id]?{ok:toolRuns[tool.id].code===0,label:toolRuns[tool.id].pending?'Running…':'Last run · exit '+toolRuns[tool.id].code}:null}));
@@ -23,6 +23,7 @@ async function persist(){
   await request('settings',{settings});
 }
 inventory=()=>inventories[scope]||[];
+nestedInventory=()=>nestedInventories[scope]||[];
 isAvailable=entry=>entry.available;
 activate=id=>operation(async()=>{
   const profile=profiles.find(p=>p.id===id),target=selectedTargets[id]||'Global';
@@ -30,13 +31,13 @@ activate=id=>operation(async()=>{
   await request('activation',{id,scope:target,enabled:!profile.enabled.includes(target)});
 });
 toggleSkill=name=>operation(()=>request('skill/toggle',{name,scope}));
-inspectSkill=async(name,fromProfile,file='SKILL.md')=>{
+inspectSkill=async(name,fromProfile,file='SKILL.md',folder)=>{
   try{
     const selectedScope=fromProfile?'Global':scope;
-    const data=await request('skill/read',{name,scope:selectedScope,file});
-    inspectedSkill={name,scope:selectedScope,file,content:data.content};
+    const data=await request('skill/read',{name,scope:selectedScope,file,...(folder===undefined?{}:{folder})});
+    inspectedSkill={name,scope:selectedScope,file,folder,content:data.content};
     modal(esc(name),`<p class="path">${esc(data.path)}</p><label>Skill file<select id="previewFile">${data.files.map(path=>`<option ${path===file?'selected':''}>${esc(path)}</option>`).join('')}</select></label><div id="skillTokenDetails">${button('Show token usage estimation','showSkillTokenEstimate()','text')}</div><pre>${esc(data.content)}</pre>`,'','Skill instructions');
-    $('previewFile').onchange=event=>inspectSkill(name,fromProfile,event.target.value);
+    $('previewFile').onchange=event=>inspectSkill(name,fromProfile,event.target.value,folder);
   }catch(error){toast(error.message)}
 };
 function profileUsageCommands(profile){

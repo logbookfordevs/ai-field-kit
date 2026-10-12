@@ -47,7 +47,22 @@ function matchesSkillFilters(entry){
 }
 function showSkillTokenEstimate(){
   if(!inspectedSkill)return;
-  const entry=(inventories[inspectedSkill.scope]||[]).find(skill=>skill.name===inspectedSkill.name);
+  const nested=inspectedSkill.folder!==undefined;
+  const entry=((nested?nestedInventories:inventories)[inspectedSkill.scope]||[]).find(skill=>skill.name===inspectedSkill.name&&(!nested||skill.folder===inspectedSkill.folder));
   const discovery=entry?`<p>Discovery (name + description): ~${discoveryEstimate(entry).toLocaleString()} tokens.</p>`:'';
   $('skillTokenDetails').innerHTML=`${discovery}<p>${inspectedSkill.file==='SKILL.md'?'Full instructions':'Selected file'}: ~${estimateTokens(inspectedSkill.content).toLocaleString()} tokens.</p><p class="hint">Text-length estimate at four characters per token, not actual context usage or billing. Supporting files are excluded. Full instructions are counted separately from discovery.</p>`;
+}
+
+function matchesNestedSkillFilters(entry){
+  const hasManagedFilter=Boolean(availabilityFilter||sourceFilter||profileFilter),search=query.trim().toLowerCase();
+  if(hasManagedFilter)return false;
+  return (entry.name.toLowerCase().includes(search)||entry.folder.toLowerCase().includes(search))&&(!invocationFilter||invocationSummary(entry.invocation)===invocationFilter);
+}
+function shortFolderPath(folder){
+  return folder.split('/').map(segment=>segment.length>24?segment.slice(0,8)+'…'+segment.slice(-4):segment).join('/');
+}
+function nestedSkillGroups(entries){
+  const groups=new Map();
+  for(const entry of entries)groups.set(entry.folder,[...(groups.get(entry.folder)||[]),entry]);
+  return [...groups].map(([folder,skills])=>({folder,skills}));
 }

@@ -39,7 +39,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
     "profile/save": ["id", "source"], "project/save": ["previous"],
-    "skill/read": ["file"], "rules/save": ["expectedHash"], folders: ["path"],
+    "skill/read": ["file", "folder"], "rules/save": ["expectedHash"], folders: ["path"],
   };
   for (const key of requiredText[operation] ?? []) {
     if (typeof data[key] !== "string" || !data[key].trim()) throw new Error(`Provide ${key} as a nonempty string.`);
@@ -185,15 +185,18 @@ export class FieldworkOperations {
     if (operation === "state") {
       const projectStatuses = await projectStatus(store, settings);
       const inventories: Record<string, Awaited<ReturnType<SkillLibrary["inventory"]>>> = {};
+      const nestedInventories: Record<string, Awaited<ReturnType<SkillLibrary["nested"]>>> = {};
       const skillSharing: Record<string, Awaited<ReturnType<typeof sharingState>>> = {};
       const savedSkillComparisons: Record<string, Awaited<ReturnType<typeof compareSavedSkills>>> = {};
       for (const scope of ["Global", ...settings.projects.map(p => p.name)]) {
         if (scope !== "Global" && projectStatuses[scope] !== "present") {
           inventories[scope] = [];
+          nestedInventories[scope] = [];
           savedSkillComparisons[scope] = await compareSavedSkills(store, settings, scope);
           continue;
         }
         inventories[scope] = await library.inventory(settings, scope);
+        nestedInventories[scope] = await library.nested(settings, scope);
         skillSharing[scope] = await sharingState(store, settings, scope);
         savedSkillComparisons[scope] = await compareSavedSkills(store, settings, scope);
       }
@@ -202,13 +205,13 @@ export class FieldworkOperations {
         try { for (const name of profile.skills) await library.locate(settings, name); }
         catch { profile.ready = false; }
       }
-      return { settings, portableSettings: portableSettings(settings), settingsPath: store.path, home: store.home, inventories, skillSharing, savedSkillComparisons, projectStatuses, toolRuns };
+      return { settings, portableSettings: portableSettings(settings), settingsPath: store.path, home: store.home, inventories, nestedInventories, skillSharing, savedSkillComparisons, projectStatuses, toolRuns };
     }
     if (operation === "rules/save") {
       return await rules.saveFiles(data.files as RulesFile[], typeof data.expectedHash === "string" ? data.expectedHash : undefined);
     }
     if (operation === "rules/destination") {
-      const updated = await rules.saveDestination(settings, data.destination as NonNullable<typeof settings.agentRules>["destinations"][number]);
+      const updated = await rules.saveDestination(settings, data.destination as Parameters<typeof rules.saveDestination>[1]);
       return await rules.state(updated);
     }
     if (operation === "rules/preview") {
@@ -468,7 +471,9 @@ export class FieldworkOperations {
       return { ok: true, available: data.enabled };
     }
     if (operation === "skill/read") {
-      const entry = (await library.inventory(settings, String(data.scope))).find(skill => skill.name === data.name);
+      const entry = typeof data.folder === "string"
+        ? (await library.nested(settings, String(data.scope))).find(skill => skill.name === data.name && skill.folder === data.folder)
+        : (await library.inventory(settings, String(data.scope))).find(skill => skill.name === data.name);
       if (!entry) throw new Error("Skill not found in the selected scope.");
       const path = entry.path;
       const base = await realpath(path);
