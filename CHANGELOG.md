@@ -13,6 +13,9 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- The Install dialog on Sources & Stacks shows an Installation folder selector beside the agent. It starts on the page’s installation destination and can be changed for that install without changing the page.
+- Claude and custom rules destinations have an optional **Import through CLAUDE.md** setting in their Edit dialog, and the row shows when it is on. It keeps an `@AGENTS.md` import in the `CLAUDE.md` beside the synced file, creating it if needed, so Claude loads your rules in projects that have their own `CLAUDE.md`, including a second Claude config folder. An import you already wrote is left alone, and turning the option off removes only what AFK added.
+
 - Installed Skills lists skills kept inside subfolders of the skills folder, such as the account skills Claude syncs under `synced/`. They appear in a separate In subfolders group per folder, with their description and invocation mode, and can be inspected. AFK does not manage them: availability, invocation, updates, deletion, profiles and saved lists still cover top-level skills only.
 
 ### Fixed

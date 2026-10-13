@@ -1,10 +1,12 @@
 import { createHash, randomUUID } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, extname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
-import { containsControl, expandPath, type AgentRulesSettings, type RulesDestination, type Settings, SettingsStore, validateSettings } from "./settings.js";
+import { basename, dirname, extname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
+import { containsControl, expandPath, type AgentRulesSettings, type RulesDestination, type RulesReceipt, type Settings, SettingsStore, validateSettings } from "./settings.js";
 
 export const RULES_START = "<!-- AFK:RULES:START -->";
 export const RULES_END = "<!-- AFK:RULES:END -->";
+export const IMPORT_START = "<!-- AFK:IMPORT:START -->";
+export const IMPORT_END = "<!-- AFK:IMPORT:END -->";
 const LIMIT = 2_000_000;
 
 export interface RulesFile { path: string; content: string }
@@ -20,6 +22,7 @@ export interface RulesTargetPreview extends RulesDestinationState {
   region: string;
   currentRegion: string | null;
   references: RulesReferenceOperation[];
+  claudeMd?: RulesReferenceOperation;
 }
 export interface RulesPreview { filesHash: string; targets: RulesTargetPreview[]; errors: string[] }
 export interface RulesState { folder: string; canonicalExists: boolean; files: RulesFile[]; filesHash: string; destinations: RulesDestinationState[]; errors: string[] }
@@ -92,14 +95,15 @@ export function referenceErrors(files: RulesFile[]): string[] {
 }
 
 interface Region { text: string; start: number; end: number; content: string }
-function regionIn(text: string): Region | null {
-  const starts = [...text.matchAll(/<!-- AFK:RULES:START -->/g)];
-  const ends = [...text.matchAll(/<!-- AFK:RULES:END -->/g)];
+function regionIn(text: string, kind: "RULES" | "IMPORT" = "RULES"): Region | null {
+  const [startMarker, endMarker] = kind === "RULES" ? [RULES_START, RULES_END] : [IMPORT_START, IMPORT_END];
+  const starts = [...text.matchAll(new RegExp(startMarker, "g"))];
+  const ends = [...text.matchAll(new RegExp(endMarker, "g"))];
   if (!starts.length && !ends.length) return null;
   if (starts.length !== 1 || ends.length !== 1 || starts[0]!.index! >= ends[0]!.index!) throw new Error("AFK markers are broken or duplicated. Repair them before syncing.");
   const start = starts[0]!.index!;
-  const end = ends[0]!.index! + RULES_END.length;
-  const content = text.slice(start + RULES_START.length, end - RULES_END.length).replace(/^\r?\n/, "").replace(/\r?\n$/, "");
+  const end = ends[0]!.index! + endMarker.length;
+  const content = text.slice(start + startMarker.length, end - endMarker.length).replace(/^\r?\n/, "").replace(/\r?\n$/, "");
   return { text: text.slice(start, end), start, end, content };
 }
 function replaceRegion(text: string, region: Region | null, desired: string): string {
@@ -109,6 +113,9 @@ function replaceRegion(text: string, region: Region | null, desired: string): st
   const gap = text.endsWith(newline + newline) ? "" : text.endsWith(newline) ? newline : newline + newline;
   return text + gap + desired;
 }
+function claudeMdPath(destinationPath: string): string { return join(dirname(destinationPath), "CLAUDE.md"); }
+function importedElsewhere(text: string, name: string): boolean { return text.split(/\r?\n/).some(line => line.trim() === `@${name}`); }
+
 async function optionalText(path: string): Promise<string | null> {
   try {
     const info = await lstat(path);
@@ -232,6 +239,7 @@ export class RulesWorkspace {
   private async checkDestination(settings: Settings, destination: RulesDestination): Promise<void> {
     if (!destination.path.trim() || (!isAbsolute(destination.path) && !destination.path.startsWith("~/")) || containsControl(destination.path) || extname(destination.path).toLowerCase() !== ".md") throw new Error("Choose an absolute Markdown destination file path.");
     const path = expandPath(destination.path, this.store.home);
+    if (destination.claudeMdImport && basename(path).toLowerCase() === "claude.md") throw new Error("CLAUDE.md can import AGENTS.md-style rules files only. Choose another destination file or turn the option off.");
     const canonical = await physical(this.folder);
     const identity = await physical(path);
     if (identity === canonical || identity.startsWith(canonical + sep)) throw new Error("A destination cannot be inside the AFK source folder.");
@@ -241,6 +249,30 @@ export class RulesWorkspace {
       if (other.id !== destination.id && (await physical(expandPath(other.path, this.store.home))) === identity) throw new Error("Another destination already uses that file.");
     }
     await noSymlinksBelow(dirname(path), join(dirname(path), "afk-rules"));
+  }
+
+  private async planClaudeMdImport(destination: RulesDestination, destinationPath: string, receipt: RulesReceipt | undefined): Promise<RulesReferenceOperation | undefined> {
+    const path = claudeMdPath(destinationPath);
+    const owned = receipt?.claudeMdImport;
+    if (destination.claudeMdImport !== true && owned === undefined) return undefined;
+    let before: string | null;
+    try { before = await optionalText(path); }
+    catch (error) { throw new Error(`CLAUDE.md cannot be edited by AFK: ${errorText(error)} Make it a regular file or turn the CLAUDE.md option off.`); }
+    const region = regionIn(before ?? "", "IMPORT");
+    if (owned !== undefined && (region?.text ?? "") !== owned) throw new Error("The CLAUDE.md import was edited outside AFK. Restore it, or turn the CLAUDE.md option off after repairing the file.");
+    if (destination.claudeMdImport !== true) {
+      if (!region) return undefined;
+      return { path, before, after: before!.slice(0, region.start) + before!.slice(region.end).replace(/^\r?\n/, "") };
+    }
+    const name = basename(destinationPath);
+    const newline = before?.includes("\r\n") ? "\r\n" : "\n";
+    const desired = `${IMPORT_START}${newline}@${name}${newline}${IMPORT_END}`;
+    if (region) {
+      if (owned === undefined && region.text !== desired) throw new Error("CLAUDE.md already has an AFK import region that differs from the expected one. Repair it before syncing.");
+      return { path, before, after: before!.slice(0, region.start) + desired + before!.slice(region.end) };
+    }
+    if (importedElsewhere(before ?? "", name)) return undefined;
+    return { path, before, after: replaceRegion(before ?? "", null, desired) + newline };
   }
 
   async saveDestination(settings: Settings, input: Omit<RulesDestination, "id"> & { id?: string }): Promise<Settings> {
@@ -312,7 +344,9 @@ export class RulesWorkspace {
           if (owned === undefined && operation.before !== null) throw new Error(`An existing reference is not owned by AFK: ${key}`);
           if (owned !== undefined && operation.before !== owned) throw new Error(`A reference was changed outside AFK: ${key}`);
         }
-        const isCurrent = target.before === target.after && target.references.every(operation => operation.before === operation.after);
+        const claudeMd = await this.planClaudeMdImport(destination, target.path, receipt);
+        if (claudeMd) target.claudeMd = claudeMd;
+        const isCurrent = target.before === target.after && target.references.every(operation => operation.before === operation.after) && (!claudeMd || claudeMd.before === claudeMd.after);
         target.status = isCurrent ? "current" : receipt ? "outdated" : "never";
         target.reason = isCurrent ? "Matches the saved rules." : receipt ? "Saved rules have changes to sync." : "Ready for first sync.";
       } catch (error) { target.status = "conflict"; target.reason = errorText(error); }
@@ -325,7 +359,7 @@ export class RulesWorkspace {
     try {
       const files = await this.files();
       const preview = await this.preview(settings, this.configuration(settings).destinations.map(d => d.id));
-      return { folder: this.folder, canonicalExists: await optionalText(join(this.folder, "AGENTS.md")) !== null, files, filesHash: digest(JSON.stringify(files)), destinations: preview.targets.map(({ before: _before, after: _after, region: _region, currentRegion: _current, references: _references, ...destination }) => destination), errors: preview.errors };
+      return { folder: this.folder, canonicalExists: await optionalText(join(this.folder, "AGENTS.md")) !== null, files, filesHash: digest(JSON.stringify(files)), destinations: preview.targets.map(({ before: _before, after: _after, region: _region, currentRegion: _current, references: _references, claudeMd: _claudeMd, ...destination }) => destination), errors: preview.errors };
     } catch (error) { return { folder: this.folder, canonicalExists: false, files: [], filesHash: "", destinations: [], errors: [errorText(error)] }; }
   }
 
@@ -336,6 +370,7 @@ export class RulesWorkspace {
     for (const target of writable) {
       if (await optionalText(target.path) !== target.before) throw new Error("A destination changed after preview. Preview again.");
       for (const ref of target.references) if (await optionalText(ref.path) !== ref.before) throw new Error("A reference changed after preview. Preview again.");
+      if (target.claudeMd && await optionalText(target.claudeMd.path) !== target.claudeMd.before) throw new Error("CLAUDE.md changed after preview. Preview again.");
     }
     const originalRules = settings.agentRules;
     const config = structuredClone(this.configuration(settings));
@@ -354,6 +389,10 @@ export class RulesWorkspace {
           }
           await writeWithBackup(target.path, target.before, target.after);
           changed.push({ path: target.path, before: target.before, after: target.after });
+          if (target.claudeMd) {
+            await writeWithBackup(target.claudeMd.path, target.claudeMd.before, target.claudeMd.after);
+            if (target.claudeMd.before !== target.claudeMd.after) changed.push(target.claudeMd);
+          }
           completed.push(...changed);
         } catch (error) {
           for (const operation of changed.reverse()) {
@@ -364,7 +403,8 @@ export class RulesWorkspace {
           throw error;
         }
         const root = join(dirname(target.path), "afk-rules", target.id);
-        config.receipts[target.id] = { region: target.region, references: Object.fromEntries(target.references.filter(ref => ref.after !== null).map(ref => [relative(root, ref.path).split(sep).join("/"), ref.after!])), lastSync: new Date().toISOString() };
+        const importRegion = target.claudeMd?.after ? regionIn(target.claudeMd.after, "IMPORT")?.text : undefined;
+        config.receipts[target.id] = { region: target.region, references: Object.fromEntries(target.references.filter(ref => ref.after !== null).map(ref => [relative(root, ref.path).split(sep).join("/"), ref.after!])), lastSync: new Date().toISOString(), ...(importRegion === undefined ? {} : { claudeMdImport: importRegion }) };
       }
       await this.store.save(settings);
     } catch (error) {
@@ -404,7 +444,7 @@ export class RulesWorkspace {
       }
     }
     const config = structuredClone(this.configuration(settings));
-    config.receipts[id] = { region: region.text, references: config.receipts[id]?.references ?? {}, lastSync: config.receipts[id]?.lastSync ?? "" };
+    config.receipts[id] = { ...config.receipts[id], region: region.text, references: config.receipts[id]?.references ?? {}, lastSync: config.receipts[id]?.lastSync ?? "" };
     settings.agentRules = config;
     await this.store.save(settings);
     return content;
@@ -416,7 +456,7 @@ export class RulesWorkspace {
     const target = preview.targets[0]!;
     if ((target.currentRegion ?? "") !== expectedRegion || !target.region) throw new Error("The destination changed or its markers are broken. Preview again before overwriting.");
     const config = structuredClone(this.configuration(settings));
-    config.receipts[id] = { region: target.currentRegion ?? "", references: config.receipts[id]?.references ?? {}, lastSync: config.receipts[id]?.lastSync ?? "" };
+    config.receipts[id] = { ...config.receipts[id], region: target.currentRegion ?? "", references: config.receipts[id]?.references ?? {}, lastSync: config.receipts[id]?.lastSync ?? "" };
     if (expectedPreview !== undefined) {
       const root = join(dirname(target.path), "afk-rules", id);
       for (const operation of target.references) {
@@ -456,6 +496,13 @@ export class RulesWorkspace {
         operations.push({ path: file, before, after: null });
       }
       operations.unshift({ path, before: text, after: text!.slice(0, region!.start) + text!.slice(region!.end) });
+      if (receipt.claudeMdImport !== undefined) {
+        const claudeMd = claudeMdPath(path);
+        const claudeText = await optionalText(claudeMd);
+        const importRegion = regionIn(claudeText ?? "", "IMPORT");
+        if (importRegion?.text !== receipt.claudeMdImport) throw new Error("The CLAUDE.md import was edited outside AFK. Resolve the conflict before disconnecting.");
+        operations.push({ path: claudeMd, before: claudeText, after: claudeText!.slice(0, importRegion.start) + claudeText!.slice(importRegion.end).replace(/^\r?\n/, "") });
+      }
     }
     try {
       for (const operation of operations) {

@@ -3,7 +3,7 @@ import { chmod, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { emptySettings, SettingsStore } from "./settings.js";
-import { RULES_END, RULES_START, RulesWorkspace } from "./rules.js";
+import { IMPORT_END, IMPORT_START, RULES_END, RULES_START, RulesWorkspace } from "./rules.js";
 
 const folders: string[] = [];
 afterEach(async () => { await Promise.all(folders.splice(0).map(path => rm(path, { recursive: true, force: true }))); });
@@ -306,5 +306,110 @@ describe("Agent rules managed regions", () => {
     await symlink(newFolder, join(dirname(original), "references"));
     await expect(store.relocate(join(newFolder, "settings.json"))).rejects.toThrow("symbolic links");
     await expect(readFile(join(newFolder, "AGENTS.md"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+});
+
+describe("Claude CLAUDE.md import", () => {
+  async function claudeFixture() {
+    const context = await fixture();
+    const destination = { id: "claude", name: "Claude", kind: "claude" as const, path: join(context.home, ".claude/AGENTS.md"), claudeMdImport: true };
+    await context.rules.saveDestination(context.settings, destination);
+    return { ...context, claudeMd: join(context.home, ".claude/CLAUDE.md") };
+  }
+
+  it("creates CLAUDE.md with the import, then leaves it untouched on repeat syncs", async () => {
+    const { settings, rules, store, claudeMd } = await claudeFixture();
+    await rules.sync(settings, ["claude"]);
+    const written = await readFile(claudeMd, "utf8");
+    expect(written).toBe(`${IMPORT_START}\n@AGENTS.md\n${IMPORT_END}\n`);
+    const files = await readdir(dirname(claudeMd));
+    await rules.sync(await store.read(), ["claude"]);
+    expect(await readdir(dirname(claudeMd))).toEqual(files);
+    expect(await readFile(claudeMd, "utf8")).toBe(written);
+  });
+
+  it("appends to an existing CLAUDE.md after a backup and preserves its bytes", async () => {
+    const { home, settings, rules, claudeMd } = await claudeFixture();
+    const original = "# My Claude notes\r\nKeep this.  \r\n";
+    await mkdir(dirname(claudeMd), { recursive: true });
+    await writeFile(claudeMd, original);
+    await rules.sync(settings, ["claude"]);
+    const written = await readFile(claudeMd, "utf8");
+    expect(written.startsWith(original)).toBe(true);
+    expect(written).toContain(`${IMPORT_START}\r\n@AGENTS.md\r\n${IMPORT_END}`);
+    const backups = (await readdir(dirname(claudeMd))).filter(name => name.startsWith("CLAUDE.md.afk-backup-"));
+    expect(backups).toHaveLength(1);
+    expect(await readFile(join(home, ".claude", backups[0]!), "utf8")).toBe(original);
+  });
+
+  it("does nothing when CLAUDE.md already imports AGENTS.md", async () => {
+    const { settings, rules, store, claudeMd } = await claudeFixture();
+    const original = "@AGENTS.md\n\n## Claude Code\nUse plan mode.\n";
+    await mkdir(dirname(claudeMd), { recursive: true });
+    await writeFile(claudeMd, original);
+    await rules.sync(settings, ["claude"]);
+    expect(await readFile(claudeMd, "utf8")).toBe(original);
+    expect((await readdir(dirname(claudeMd))).filter(name => name.includes("afk-backup"))).toEqual([]);
+    expect((await store.read()).agentRules?.receipts.claude?.claudeMdImport).toBeUndefined();
+  });
+
+  it("stays untouched until the option is on, and removes only its region when turned off", async () => {
+    const { home, settings, rules, store, claudeMd } = await fixture().then(async context => ({ ...context, claudeMd: join(context.home, ".claude/CLAUDE.md") }));
+    await mkdir(dirname(claudeMd), { recursive: true });
+    await writeFile(claudeMd, "Mine\n");
+    await rules.sync(settings, ["claude"]);
+    expect(await readFile(claudeMd, "utf8")).toBe("Mine\n");
+    await rules.saveDestination(await store.read(), { id: "claude", name: "Claude", kind: "claude", path: join(home, ".claude/AGENTS.md"), claudeMdImport: true });
+    await rules.sync(await store.read(), ["claude"]);
+    expect(await readFile(claudeMd, "utf8")).toContain(IMPORT_START);
+    await rules.saveDestination(await store.read(), { id: "claude", name: "Claude", kind: "claude", path: join(home, ".claude/AGENTS.md") });
+    await rules.sync(await store.read(), ["claude"]);
+    const after = await readFile(claudeMd, "utf8");
+    expect(after).not.toContain(IMPORT_START);
+    expect(after.startsWith("Mine\n")).toBe(true);
+    expect((await store.read()).agentRules?.receipts.claude?.claudeMdImport).toBeUndefined();
+  });
+
+  it("reports an edited import region as a conflict without writing anything", async () => {
+    const { settings, rules, store, target, claudeMd } = await claudeFixture();
+    await rules.sync(settings, ["claude"]);
+    const edited = (await readFile(claudeMd, "utf8")).replace("@AGENTS.md", "@SOMETHING-ELSE.md");
+    await writeFile(claudeMd, edited);
+    await rules.saveFiles([{ path: "AGENTS.md", content: "Changed" }]);
+    const preview = await rules.preview(await store.read(), ["claude"]);
+    expect(preview.targets[0]!.status).toBe("conflict");
+    await rules.sync(await store.read(), ["claude"]);
+    expect(await readFile(claudeMd, "utf8")).toBe(edited);
+    await expect(readFile(target)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("supports custom destinations such as a second Claude config folder", async () => {
+    const { home, settings, rules, store } = await fixture();
+    const path = join(home, ".claude-work/AGENTS.md");
+    await rules.saveDestination(settings, { id: "claude-work", name: "Claude Work", kind: "custom", path, claudeMdImport: true });
+    await rules.sync(await store.read(), ["claude-work"]);
+    expect(await readFile(join(home, ".claude-work/CLAUDE.md"), "utf8")).toBe(`${IMPORT_START}\n@AGENTS.md\n${IMPORT_END}\n`);
+    await expect(readFile(join(home, ".claude/CLAUDE.md"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("does not offer the import for Codex destinations", async () => {
+    const { home, settings, rules } = await fixture();
+    await expect(rules.saveDestination(settings, { id: "codex", name: "Codex", kind: "codex", path: join(home, ".codex/AGENTS.md"), claudeMdImport: true })).rejects.toThrow();
+  });
+
+  it("rejects an import option on a destination that is itself CLAUDE.md", async () => {
+    const { home, settings, rules } = await fixture();
+    await expect(rules.saveDestination(settings, { id: "claude", name: "Claude", kind: "claude", path: join(home, ".claude/CLAUDE.md"), claudeMdImport: true })).rejects.toThrow(/CLAUDE\.md/);
+  });
+
+  it("clean disconnect removes the import region and the managed rules but keeps other text", async () => {
+    const { settings, rules, store, claudeMd } = await claudeFixture();
+    await mkdir(dirname(claudeMd), { recursive: true });
+    await writeFile(claudeMd, "Mine\n");
+    await rules.sync(settings, ["claude"]);
+    await rules.disconnect(await store.read(), "claude", true);
+    const after = await readFile(claudeMd, "utf8");
+    expect(after).not.toContain(IMPORT_START);
+    expect(after.startsWith("Mine\n")).toBe(true);
   });
 });

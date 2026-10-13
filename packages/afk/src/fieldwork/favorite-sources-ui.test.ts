@@ -149,6 +149,28 @@ describe("favorite-source UI and copied commands", () => {
     await first;
   });
 
+  it("opens the install dialog on the page's destination and lets the folder change for that install only", async () => {
+    const requests: { path: string; data: unknown }[] = [];
+    let html = "";
+    context.scopeOptions = (value: string) => `<selected ${value}>`;
+    context.modal = (_title: string, body: string) => { html = body; field("sheet").open = true; };
+    context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return path === "source/install" ? { code: 0 } : null; };
+    context.setTimeout = () => 1; context.clearTimeout = () => {}; context.refresh = async () => {}; context.toast = () => {};
+    evaluate("installScope='Studio'");
+    evaluate("showInstallation('source',0)");
+    expect(html).toContain('id="installationScope"');
+    expect(html).toContain("<selected Studio>");
+    expect(html).toContain("/work/demo studio");
+    field("installationFolder");
+    evaluate("setInstallationScope('Global')");
+    expect(field("installationFolder").textContent).toContain("home folder");
+    expect(evaluate("installScope")).toBe("Studio");
+    field("installationAgent").value = "codex";
+    evaluate("renderInstallation=()=>{};pollInstallation=async()=>{}");
+    await evaluate<Promise<void>>("executeInstallation()");
+    expect(requests.find(request => request.path === "source/install")?.data).toEqual({ source: "owner/toolkit", scope: "Global", agent: "codex" });
+  });
+
   it("keeps selected skill names and leaves all-skill bookmarks open to the CLI picker", () => {
     expect(evaluate<string>("installCommand('owner/toolkit','Global','codex',['review','video'])")).toBe("npx skills add 'owner/toolkit' --skill 'review' --skill 'video' -g --agent 'codex'");
     expect(evaluate<string>("installCommand('owner/other')")).toBe("npx skills add 'owner/other' -g");

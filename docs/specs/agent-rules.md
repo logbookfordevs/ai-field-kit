@@ -30,6 +30,18 @@ Previously configured paths are retained with their ownership records. Claude's
 controls AGENTS.md loading; existing project CLAUDE.md files can take precedence.
 Check `/context` in Claude to confirm the rules are loaded.
 
+Claude reads `AGENTS.md` only when no `CLAUDE.md` exists in the working directory
+or above it, so `~/.claude/AGENTS.md` stops loading in projects that have their own
+`CLAUDE.md`. Claude and custom destinations, such as a second Claude config
+folder, have an opt-in **Import through CLAUDE.md** option in their Edit dialog;
+Codex does not. When on, sync ensures the `CLAUDE.md` beside the destination file
+imports it with `@<file name>`, creating that file if needed. A plain `@AGENTS.md` line you
+already wrote counts as present and is left alone. AFK-added imports sit inside
+`<!-- AFK:IMPORT:START -->` and `<!-- AFK:IMPORT:END -->`; the same ownership,
+backup and conflict rules apply as for the rules region. Turning the option off and
+syncing, or disconnecting with AFK content removed, deletes only that region.
+A symbolic-link `CLAUDE.md` is reported as a conflict rather than edited.
+
 ## File ownership
 
 Only the text between `<!-- AFK:RULES:START -->` and

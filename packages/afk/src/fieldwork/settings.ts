@@ -23,6 +23,7 @@ export interface RulesDestination {
   name: string;
   kind: "codex" | "claude" | "custom";
   path: string;
+  claudeMdImport?: boolean;
 }
 
 export type AgentRulesDestination = RulesDestination;
@@ -31,6 +32,7 @@ export interface RulesReceipt {
   region: string;
   references: Record<string, string>;
   lastSync: string;
+  claudeMdImport?: string;
 }
 
 export interface AgentRulesSettings {
@@ -137,9 +139,9 @@ export function validateSettings(value: unknown): Settings {
   }
   if (data.agentRules !== undefined) {
     const rules = data.agentRules as AgentRulesSettings;
-    if (!rules || !Array.isArray(rules.destinations) || !rules.destinations.every(d => d && skillName(d.id) && nonempty(d.name) && ["codex", "claude", "custom"].includes(d.kind) && nonempty(d.path))) throw new Error("Agent rules destinations need names and file paths.");
+    if (!rules || !Array.isArray(rules.destinations) || !rules.destinations.every(d => d && skillName(d.id) && nonempty(d.name) && ["codex", "claude", "custom"].includes(d.kind) && nonempty(d.path) && (d.claudeMdImport === undefined || typeof d.claudeMdImport === "boolean" && d.kind !== "codex"))) throw new Error("Agent rules destinations need names and file paths.");
     if (new Set(rules.destinations.map(d => d.id)).size !== rules.destinations.length) throw new Error("Agent rules destination identifiers must be unique.");
-    if (!rules.receipts || typeof rules.receipts !== "object" || Array.isArray(rules.receipts) || !Object.entries(rules.receipts).every(([id, r]) => skillName(id) && r && typeof r.region === "string" && typeof r.lastSync === "string" && r.references && typeof r.references === "object" && !Array.isArray(r.references) && Object.entries(r.references).every(([path, content]) => path.startsWith("references/") && !path.split("/").includes("..") && typeof content === "string"))) throw new Error("Invalid agent rules sync receipts.");
+    if (!rules.receipts || typeof rules.receipts !== "object" || Array.isArray(rules.receipts) || !Object.entries(rules.receipts).every(([id, r]) => skillName(id) && r && typeof r.region === "string" && typeof r.lastSync === "string" && (r.claudeMdImport === undefined || typeof r.claudeMdImport === "string") && r.references && typeof r.references === "object" && !Array.isArray(r.references) && Object.entries(r.references).every(([path, content]) => path.startsWith("references/") && !path.split("/").includes("..") && typeof content === "string"))) throw new Error("Invalid agent rules sync receipts.");
   }
   return data as unknown as Settings;
 }

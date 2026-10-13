@@ -250,10 +250,10 @@ function destRow(d){
   const id=esc(d.id),custom=d.kind==='custom';
   const actions=!d.managed?button('Reconnect',`reconnect('${id}')`,'text'):
     (d.status==='conflict'?button('Review conflict',`reviewConflict('${id}')`,'',`data-od-id="destination-${id}-conflict"`):button('Preview',`previewDest('${id}')`,'text',`data-od-id="destination-${id}-preview"`))+
-    (custom?button('Edit',`editDest('${id}')`,'text'):'')+button(custom?'Remove':'Disconnect',`disconnectDest('${id}')`,'text');
+    (d.kind!=='codex'?button('Edit',`editDest('${id}')`,'text'):'')+button(custom?'Remove':'Disconnect',`disconnectDest('${id}')`,'text');
   return `<article class="dest-row row" data-od-id="destination-${id}">
     <label class="dest-sel"><input type="checkbox" ${d.selected&&d.managed?'checked':''} ${d.managed?'':'disabled'} onchange="selectDest('${id}',this.checked)" aria-label="Include ${esc(d.name)} in sync"></label>
-    <div class="dest-name"><h3>${esc(d.name)}</h3><code class="path">${esc(d.path)}</code><span class="meta">${custom?'Custom rules file':'Global agent rules'}</span></div>
+    <div class="dest-name"><h3>${esc(d.name)}</h3><code class="path">${esc(d.path)}</code><span class="meta">${custom?'Custom rules file':'Global agent rules'}${d.claudeMdImport?' · Imported via CLAUDE.md':''}</span></div>
     <div class="dest-status"><span class="status ${cls}">${label}</span><span class="hint">${esc(d.reason||'')}</span></div>
     <div class="dest-last"><span class="meta">${esc(dateLabel(d.lastSync))}</span><span class="hint">${d.lastSync?'Last successful sync':'No sync yet'}</span></div>
     <div class="dest-actions">${actions}</div></article>`;
@@ -292,6 +292,7 @@ function previewBlock(t){
   const [cls,label]=STATUS[t.status]||['warn','Needs attention'];
   return `<section class="plan"><div class="plan-head"><div><h3>${esc(t.name)}</h3><code class="path">${esc(t.path)}</code></div><span class="status ${cls}">${label}</span></div><p class="sub">${esc(t.reason)}</p>
     ${blocked?button('Review conflict',`reviewConflict('${esc(t.id)}')`):same?'<p class="hint">No write needed.</p>':`<p class="hint">An existing file is backed up before any changes.</p><details open><summary>Destination file changes</summary>${diffHtml(simpleDiff(t.before,t.after),'Changes to '+t.path)}</details>`}
+    ${t.claudeMd&&t.claudeMd.before!==t.claudeMd.after?`<details open><summary>${t.claudeMd.after!==null&&t.claudeMd.after.includes('AFK:IMPORT:START')?(t.claudeMd.before===null?'Create CLAUDE.md import':'Update CLAUDE.md import'):'Remove CLAUDE.md import'} · ${esc(t.claudeMd.path)}</summary>${diffHtml(simpleDiff(t.claudeMd.before,t.claudeMd.after),'CLAUDE.md changes')}</details>`:''}
     ${t.references.filter(r=>r.before!==r.after).map(r=>`<details><summary>${r.after===null?'Remove AFK copy':r.before===null?'Copy reference':'Update reference'} · ${esc(r.path)}</summary>${diffHtml(simpleDiff(r.before,r.after),'Reference changes')}</details>`).join('')}</section>`;
 }
 async function runSync(){
@@ -367,20 +368,21 @@ async function overwriteRegion(id){
 }
 async function recheck(id){closeModal();await checkDestinations();const d=dests.find(d=>d.id===id);if(d?.status==='conflict')await reviewConflict(id)}
 function editDest(id){
-  const d=dests.find(d=>d.id===id),locked=Boolean(d?.lastSync);
-  modal(d?'Edit destination':'Add a custom destination',`<label>Name<input id="destName" value="${esc(d?.name||'')}" maxlength="80" placeholder="My agent"></label><label>Absolute file path<input id="destPath" value="${esc(d?.path||'')}" placeholder="~/Projects/my-project/AGENTS.md" ${locked?'readonly':''}></label><p class="hint">${locked?'Disconnect this file before changing its path.':'Choose a file, not a folder. Existing text stays outside the AFK region.'}</p><p id="ruleActionError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Save destination',`saveDest('${esc(id||'')}')`,'primary'));
+  const d=dests.find(d=>d.id===id),locked=Boolean(d?.lastSync),builtIn=Boolean(d)&&d.kind!=='custom',offersImport=!d||d.kind!=='codex';
+  const importField=offersImport?`<label class="check"><input type="checkbox" id="destImport" ${d?.claudeMdImport?'checked':''}><span>Import through CLAUDE.md<span class="hint">Keeps an @-import of this file in the CLAUDE.md beside it, so Claude loads these rules even in projects with their own CLAUDE.md. Applied on the next sync.</span></span></label>`:'';
+  modal(d?'Edit destination':'Add a custom destination',`<label>Name<input id="destName" value="${esc(d?.name||'')}" maxlength="80" placeholder="My agent" ${builtIn?'readonly':''}></label><label>Absolute file path<input id="destPath" value="${esc(d?.path||'')}" placeholder="~/Projects/my-project/AGENTS.md" ${locked||builtIn?'readonly':''}></label><p class="hint">${builtIn?'Built-in destinations keep their name and path.':locked?'Disconnect this file before changing its path.':'Choose a file, not a folder. Existing text stays outside the AFK region.'}</p>${importField}<p id="ruleActionError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Save destination',`saveDest('${esc(id||'')}')`,'primary'));
 }
 async function saveDest(id){
-  const d=dests.find(d=>d.id===id),name=$('destName').value.trim(),path=$('destPath').value.trim();
+  const d=dests.find(d=>d.id===id),name=$('destName').value.trim(),path=$('destPath').value.trim(),importOn=Boolean($('destImport')?.checked);
   if(!name||!safeShellValue(path)||!/^([/]|~\/)/.test(path)||path.endsWith('/')){$('ruleActionError').textContent='Enter a name and an absolute file path beginning with / or ~/.';return}
-  await rulesAction(async()=>{await request('rules/destination',{destination:{...(id?{id}:{}),name,path,kind:d?.kind||'custom'}});closeModal()},'Destination saved. No agent file changed.');
+  await rulesAction(async()=>{await request('rules/destination',{destination:{...(id?{id}:{}),name,path,kind:d?.kind||'custom',...(importOn?{claudeMdImport:true}:{})}});closeModal()},'Destination saved. No agent file changed.');
 }
 function disconnectDest(id){
   const d=dests.find(d=>d.id===id);
   modal('Disconnect '+esc(d.name)+'?',`<p>Stop managing <code>${esc(d.path)}</code>. Its file and text outside AFK's region stay in place.</p><p class="sub">Remove AFK content deletes only the managed region and reference copies AFK owns. Conflicting or broken regions require repair first.</p><p id="ruleActionError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Stop managing only',`doDisconnect('${esc(id)}',false)`)+button('Remove AFK content',`doDisconnect('${esc(id)}',true)`,'primary'));
 }
 async function doDisconnect(id,clean){await rulesAction(async()=>{await request('rules/disconnect',{id,clean});closeModal()},'Destination disconnected. Your file remains in place.')}
-async function reconnect(id){const d=dests.find(d=>d.id===id);await rulesAction(()=>request('rules/destination',{destination:{id,name:d.name,kind:d.kind,path:d.path}}),'Destination reconnected. Preview before syncing.')}
+async function reconnect(id){const d=dests.find(d=>d.id===id);await rulesAction(()=>request('rules/destination',{destination:{id,name:d.name,kind:d.kind,path:d.path,...(d.claudeMdImport?{claudeMdImport:true}:{})}}),'Destination reconnected. Preview before syncing.')}
 window.addEventListener('beforeunload',event=>{if(hasRuleEdits()){event.preventDefault();event.returnValue=''}});
 document.addEventListener('keydown',event=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='s'&&section==='Agent rules'&&!$('sheet').open&&rules.files.length){event.preventDefault();saveRules()}});
 $('sheet').addEventListener('close',()=>{$('sheet').classList.remove('wide')});
