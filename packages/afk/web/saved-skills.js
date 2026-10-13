@@ -63,6 +63,6 @@ let remappingProject;
 function chooseProjectFolder(index){remappingProject=projects[index];browseMode='project-remap';folder=afkHome;folderModal()}
 function removeProject(index){
   const project=projects[index];
-  modal('Remove project definition',`<p>Remove ${esc(project.name)} from AFK, including its saved skills list and invocation preferences. The project folder and its files are unchanged.</p><p id="removeProjectError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Remove project',`confirmProjectRemoval(${esc(JSON.stringify(project.name))})`,'danger'));
+  modal('Remove project definition',`<p>Remove ${esc(project.name)} from AFK, including its saved skills list and invocation preferences. The project folder and its files are unchanged. Disable its profiles and managed skills first.</p><p id="removeProjectError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Remove project',`confirmProjectRemoval(${esc(JSON.stringify(project.name))})`,'danger'));
 }
 async function confirmProjectRemoval(name){return saveForm(()=>request('project/remove',{name}),'Project definition removed. Files unchanged.','removeProjectError')}
