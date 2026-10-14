@@ -543,6 +543,18 @@ input,textarea{caret-color:var(--focus)}
 #installationSelection{display:grid;gap:20px}
 .installation-discovery-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .installation-discovery-actions .hint{margin:0}
+.install-context{margin:16px 0 8px}
+.install-progress-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}
+.install-phase{font-size:14px;font-weight:600}
+.install-count{font-variant-numeric:tabular-nums;white-space:nowrap}
+.install-bar{height:6px;border-radius:3px;background:var(--border);overflow:hidden}
+.install-bar span{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .2s ease}
+.install-progress[data-state=pending] .install-bar span{background:linear-gradient(90deg,var(--accent) 0 calc(100% - 24px),var(--focus));animation:install-pulse 1.4s ease-in-out infinite}
+.install-progress[data-state=failed] .install-bar span{background:var(--danger)}
+.install-progress[data-state=failed] .install-phase,.install-note{color:var(--danger)}
+.install-note{margin:8px 0 0;font-size:13px}
+@keyframes install-pulse{50%{opacity:.65}}
+@media(prefers-reduced-motion:reduce){.install-bar span{transition:none}.install-progress[data-state=pending] .install-bar span{animation:none}}
 #installationDiscovery:empty{display:none}
 #sourceSelection[hidden]{display:none}
 .member-selection{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-block:1px solid var(--border)}
