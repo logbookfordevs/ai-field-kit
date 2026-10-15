@@ -64,6 +64,12 @@ installation. Copying does not execute anything or change installed skills.
 
 <h2 id="install">Install from AFK</h2>
 
+All-skills source bookmarks also offer **Install all skills…** on the card. This
+opens target confirmation without loading the skill list. In the regular picker,
+**Install all instead…** switches to that same flow, including while discovery is
+loading or has failed. Skills CLI still fetches the repository during installation.
+Saved selections and stacks retain their explicit members.
+
 Each source and stack also has an **Install** button. Choose the destination,
 open Install, and select an agent target. AFK runs Skills CLI with your saved
 skill selection and shows progress and command output. The copied commands
@@ -81,6 +87,21 @@ installations and any partial files are kept.
 Installation can replace existing skills and make them available. To update
 existing skills while preserving disabled state, use **Update skills** in
 Installed Skills instead.
+
+<h2 id="cli-install">Install a shared stack from the terminal</h2>
+
+With AFK 2.0.5 or newer, run `afk install https://example.com/stack.json` to review a
+manifest, choose the agent and destination, and confirm installation without
+opening the web app. Confirmation saves its manifest and URL in Sources & Stacks,
+then installs the selected skills through Skills CLI. Reload an already-open app
+to see the saved entry. A matching ID updates the entry rather than duplicating it.
+
+For automation, use `afk install example.com/stack.json --agent codex -g --yes`,
+or replace `-g` with `-p ./project` for an existing project folder. Use the direct
+JSON asset, such as `/stack.json`, instead of the HTML `/stack/` guide. Declining
+confirmation saves nothing; failed installation retains the saved stack for retry,
+plus any completed or partial skill files. See the [CLI reference](/docs?chapter=reference#install-stack)
+for supported agents, URL limits, and the npm invocation.
 
 <h2 id="stacks">Create a stack from selected sources</h2>
 

@@ -1,3 +1,4 @@
+import { installFromUrl } from "./install-cli.js";
 import { parseUiOptions } from "./ui-options.js";
 import { startBackground, backgroundStatus, stopBackground, restartBackground } from "./background.js";
 import { updateAfk } from "./update.js";
@@ -24,6 +25,7 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk stop                           Stop the background app
   afk restart                        Restart the background app on its current port
   afk skills update [name] [-g | -p <project>]  Update skills, preserving availability
+  afk install <url> [--agent <agent>] [-g | -p <folder>] [--yes]
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
   afk profiles use <name-or-id>              Read a group without enabling it
@@ -117,6 +119,7 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     const pkg = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
     console.log(pkg.version); return 0;
   }
+  if (command === "install") return installFromUrl(argv.slice(1), store);
   if (command === "update") return updateAfk(argv.slice(1));
   if (command === "manage") return manage(argv.slice(1), store);
   if (command === "settings" && action === "schema") {

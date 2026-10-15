@@ -80,7 +80,12 @@ export async function fetchStack(origin: string): Promise<SkillStack> {
       chunks.push(value);
     }
   } finally { await reader.cancel(); }
-  return validateStack(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+  const body = Buffer.concat(chunks).toString("utf8");
+  if (response.headers.get("content-type")?.includes("text/html") || body.trimStart().startsWith("<")) throw new Error("The URL returned an HTML guide. Use a direct HTTPS JSON manifest URL (for example /stack.json, not /stack/).");
+  let value: unknown;
+  try { value = JSON.parse(body); }
+  catch { throw new Error("The URL did not return valid JSON. Use a direct HTTPS JSON manifest URL."); }
+  return validateStack(value);
 }
 
 export function stackInstallScript(stack: SkillStack, target: string, agent: string, projects: { name: string; path: string }[]): string {

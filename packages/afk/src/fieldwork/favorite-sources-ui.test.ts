@@ -342,3 +342,46 @@ it("shows useful selection actions and clearing exits the selected-only view", a
   expect(field("selectShownMembers").hidden).toBe(false);
   expect(field("selectedOnlyControl").hidden).toBe(true);
 });
+
+it("opens install-all without discovery and keeps installation behind target confirmation", async () => {
+  const requests: { path: string; data: unknown }[] = [];
+  context.scopeOptions = () => "";
+  context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return null; };
+  evaluate("showInstallation('source',1,true)");
+  expect(requests.every(request => request.path === "skills/install-state")).toBe(true);
+  expect(evaluate("installationPicker")).toBeUndefined();
+  field("installationAgent").value = "cursor";
+  evaluate("setInstallationScope('Studio');renderInstallation=()=>{};pollInstallation=async()=>{}");
+  context.setTimeout = () => 1; context.clearTimeout = () => {}; context.refresh = async () => {}; context.toast = () => {};
+  context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return { code: 0 }; };
+  await evaluate<Promise<void>>("executeInstallation()");
+  expect(requests.at(-1)).toEqual({ path: "source/install", data: { source: "owner/other", scope: "Studio", agent: "cursor" } });
+  expect(sources[1]).not.toHaveProperty("skills");
+});
+
+it.each(["success", "failure"])("switches to all during discovery and ignores its late %s", async outcome => {
+  let accept: (value: unknown) => void = () => {}, decline: (error: Error) => void = () => {};
+  context.request = () => new Promise((resolve, reject) => { accept = resolve; decline = reject; });
+  evaluate("installationTarget={kind:'source',source:'owner/other',scope:'Global',allowsAll:true};installationPicker={kind:'installation',selected:new Set(),loading:false,loaded:false}");
+  field("sheet").open = true;
+  const pending = evaluate<Promise<void>>("discoverInstallationSkills()");
+  expect(field("startInstallation").disabled).toBe(true);
+  evaluate("chooseInstallationAll()");
+  const summary = field("installationSelection").innerHTML;
+  expect(field("startInstallation").disabled).toBe(false);
+  expect(field("startInstallation").textContent).toBe("Install all skills");
+  if (outcome === "success") accept({ names: ["late"] }); else decline(new Error("Late discovery error"));
+  await pending;
+  expect(evaluate("installationPicker")).toBeUndefined();
+  expect(field("installationSelection").innerHTML).toBe(summary);
+  expect(field("installationError").textContent).toBe("");
+});
+
+it("does not allow install-all to widen a bookmark's saved selection", () => {
+  context.scopeOptions = () => "";
+  context.request = async () => null;
+  evaluate("showInstallation('source',0,true);chooseInstallationAll()");
+  expect(evaluate("installationTarget.allowsAll")).toBe(false);
+  expect(field("startInstallation").textContent).not.toBe("Install all skills");
+  expect(sources[0]!.skills).toEqual(["review"]);
+});

@@ -65,6 +65,36 @@ are separate and are not included. This is a snapshot, not a peak or historical 
 A server started with an older AFK version still reports its URL and PID, but memory
 is shown as unavailable. Stop and restart it after updating to enable the metric.
 
+<h2 id="install-stack">Install a stack from a URL</h2>
+
+AFK 2.0.5 and newer can install a curated stack directly, without a profile or the web app.
+
+```bash Review and install a stack
+afk install https://example.com/stack.json
+```
+
+Review the repositories and selected skills, choose an agent and Global/project
+folder, then confirm. The confirmed manifest and URL are saved in Sources & Stacks
+before Skills CLI runs. Reload an open app using the same settings file to see it.
+
+```bash Install with an explicit target
+afk install example.com/stack.json --agent codex -g --yes
+afk install https://example.com/stack.json --agent claude-code -p ./my-project --yes
+npx @logbookfordevs/afk install https://example.com/stack.json --agent codex -g --yes
+```
+
+`--yes` requires an explicit agent and scope. Agents are `universal`, `codex`,
+`claude-code`, `cursor`, and `opencode`. Project scope accepts an existing folder
+without registering a project. Bare domain/path arguments use HTTPS; pass a direct
+JSON manifest, not an HTML guide. HTTP, credentials, fragments and redirects are
+rejected. Requests have a 15-second timeout and 1 MB response limit.
+
+A matching saved stack ID is replaced after review without creating a duplicate.
+Declining confirmation saves nothing. Failed installations exit nonzero and stop
+later sources, retaining the saved stack and completed or partial skill files.
+The saved stack does not prove installation succeeded. Installation may replace
+existing skills; use protected skill updates to preserve availability.
+
 <h2 id="reading">Read without activating</h2>
 
 ```bash Reading commands

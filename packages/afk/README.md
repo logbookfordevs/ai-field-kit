@@ -211,4 +211,20 @@ option, not a saved setting. `afk ui` accepts the same options.
 `afk status` reports the server’s current resident RAM in MiB, including Node.js
 and native allocations. It excludes the browser tab and child tool processes.
 Older running servers show memory as unavailable until restarted after updating.
-`afk restart` is included in the next release; use a source build until published.
+`afk restart` is available in AFK 2.0.3 and newer.
+
+### Install a curated stack (2.0.5+)
+
+Run `afk install https://example.com/stack.json` to review a version 1 manifest,
+choose an agent and destination, save it in Sources & Stacks, and install its
+selections through Skills CLI. The saved stack remains on installation failure;
+reload an open app to see it.
+For automation: `afk install example.com/stack.json --agent codex -g --yes`.
+Use `-p <folder>` for a project without registering it in AFK. No profile or web
+app is required. See [stack installation](../../docs/skill-stacks.md#install-directly-from-a-manifest)
+for limits, partial failures, and npm/local-checkout invocation. This command requires AFK 2.0.5 or newer.
+
+All-skills source bookmarks offer **Install all skills…** on the card and
+**Install all instead…** in the picker. Both skip AFK skill discovery while
+keeping agent and folder confirmation. Saved selections and stacks retain their
+explicit members.

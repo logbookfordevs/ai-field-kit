@@ -43,6 +43,52 @@ The copied shell script runs Skills CLI sequentially for each source, with the
 saved explicit names and chosen destination/agent. AFK copies text only; users
 choose when to run it. Removing a source or stack leaves installed skills alone.
 
+## Install directly from a manifest
+
+AFK 2.0.5 and newer support direct installation without adopting a profile or
+opening the web app:
+
+```sh
+afk install https://example.com/stack.json
+```
+
+An interactive terminal shows the manifest's original repositories and explicit
+skill selections, asks for an agent and Global/project destination, and confirms
+before saving the stack and running Skills CLI. The saved manifest and origin URL
+appear in Sources & Stacks using the same settings file (`AFK_SETTINGS` applies).
+Reload an already-open app to see CLI changes. An existing stack with the same ID
+is replaced by the reviewed manifest and URL; repeated installs do not create
+duplicates. Changes to that saved stack during review abort before installation.
+Declining confirmation saves nothing. The saved stack remains if installation
+fails or is cancelled, so its presence does not prove successful installation.
+Supported agents are `universal`, `codex`,
+`claude-code`, `cursor`, and `opencode`. Project scope accepts an existing folder;
+it does not require or save a configured AFK project.
+
+For automation, specify both target options and confirmation:
+
+```sh
+afk install https://example.com/stack.json --agent codex --global --yes
+afk install example.com/stack.json --agent claude-code --project ./my-project --yes
+npx @logbookfordevs/afk install https://example.com/stack.json --agent codex -g --yes
+```
+
+The npm invocation requires AFK 2.0.5 or newer. To exercise a local checkout, build it with `pnpm afk:build`
+and replace `afk` with `node packages/afk/dist/index.js`.
+
+Bare domain/path arguments use HTTPS. The same manifest policy applies: no HTTP,
+credentials, fragments, or redirects; a 15-second request timeout and 1 MB response
+limit apply. Pass the direct JSON asset (for example `/stack.json`), rather than
+the HTML `/stack/` guide. Fetch and validation errors prevent installation.
+
+Sources install sequentially with their explicit selections using AFK's existing
+Skills CLI runner. Installation may replace existing skills and make them
+available. A failed source stops the remaining sources; completed or partial
+files remain. The command reports the completed source count and exits nonzero
+on failure (130 for installation cancellation). It does not claim rollback or
+that every skill in a failed source was installed. `--yes` requires an explicit
+agent and scope; without it, a terminal confirmation is required.
+
 ## Agent operations
 
 Use `afk manage describe stack/preview` for live input guidance. Preview accepts

@@ -29,8 +29,10 @@ Sources are bookmarks in `favoriteSources`: saving one neither installs skills n
 
 Stacks live in optional `stacks` entries as `{manifest,origin?}`. Each version-one
 manifest has `id`, `name`, optional `description`, and ordered `sources` groups of
-`{name,source,skills}` with explicit selected names. Import JSON or a direct HTTPS
-JSON URL through `stack/preview`. Inspect its proposed stack and existing snapshot,
+`{name,source,skills}` with explicit selected names. When authoring a manifest,
+read the [version-one schema](https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/docs/schemas/skill-stack.v1.schema.json)
+and [complete example](https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/docs/examples/skill-stack.v1.json).
+Import JSON or a direct HTTPS JSON URL through `stack/preview`. Inspect its proposed stack and existing snapshot,
 then pass both unchanged to `stack/save`. For refresh, preview the saved origin
 with its ID; compare all groups and local edits before replacement. Use
 `stack/script` for the selected scope/agent and `stack/remove` with the inspected
