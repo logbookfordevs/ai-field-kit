@@ -136,6 +136,8 @@ describe("favorite-source UI and copied commands", () => {
     const requests: { path: string; data: unknown }[] = [];
     context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return pending; };
     context.savedStacks = () => [{ manifest: { id: "design", sources: [{}] } }];
+    context.stackInstallSourceCount = () => 1;
+    context.renderStackInstallPlan = () => {};
     context.setTimeout = () => 1;
     context.clearTimeout = () => {};
     context.refresh = async () => {};
@@ -147,6 +149,22 @@ describe("favorite-source UI and copied commands", () => {
     expect(requests).toEqual([{ path: "stack/install", data: { id: "design", scope: "Studio", agent: "claude-code" } }]);
     complete({ code: 0 });
     await first;
+  });
+
+  it("forwards only-missing to a stack install and counts only the sources that will run", async () => {
+    const requests: { path: string; data: unknown }[] = [];
+    context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return { code: 0 }; };
+    context.savedStacks = () => [{ manifest: { id: "design", sources: [{}, {}] } }];
+    context.stackInstallSourceCount = () => 1;
+    context.renderStackInstallPlan = () => {};
+    context.setTimeout = () => 1; context.clearTimeout = () => {}; context.refresh = async () => {}; context.toast = () => {};
+    let rendered: { total?: number } | undefined;
+    context.renderInstallation = (value: { total?: number }) => { rendered ??= value; };
+    evaluate("pollInstallation=async()=>{};installationTarget={kind:'stack',label:'Design',scope:'Studio',id:'design',onlyMissing:true}");
+    field("installationAgent").value = "codex";
+    await evaluate<Promise<void>>("executeInstallation()");
+    expect(requests).toEqual([{ path: "stack/install", data: { id: "design", scope: "Studio", agent: "codex", onlyMissing: true } }]);
+    expect(rendered?.total).toBe(1);
   });
 
   it("opens the install dialog on the page's destination and lets the folder change for that install only", async () => {

@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fetchStack, manifestUrl, stackInstallScript, stackSchema, validateStack, type SkillStack } from "./stacks.js";
+import { fetchStack, manifestUrl, missingStackSources, stackInstallScript, stackSchema, validateStack, type SkillStack } from "./stacks.js";
 import { emptySettings, SettingsStore, validateSettings } from "./settings.js";
 import { FieldworkOperations } from "./operations.js";
 import { doctor } from "./doctor.js";
@@ -85,6 +85,35 @@ describe("portable skill stacks", () => {
     expect(script.indexOf("render")).toBeLessThan(script.indexOf("layout"));
     expect(stackInstallScript(manifest, "Global", "interactive", [])).toContain("--skill 'review' -g)");
     expect(() => stackInstallScript(manifest, "Missing", "interactive", [])).toThrow();
+  });
+  it("limits a stack to skills that are not installed yet and drops sources with nothing missing", () => {
+    expect(missingStackSources(manifest, new Set(["render"]))).toEqual([
+      { name: "Video", source: "owner/video", skills: ["review"] },
+      { name: "Design", source: "owner/design", skills: ["layout"] },
+    ]);
+    expect(missingStackSources(manifest, new Set(["render", "review"])).map(group => group.source)).toEqual(["owner/design"]);
+    expect(missingStackSources(manifest, new Set(["render", "review", "layout"]))).toEqual([]);
+    const script = stackInstallScript(manifest, "Global", "codex", [], new Set(["render", "layout"]));
+    expect(script).toContain("--skill 'review'");
+    expect(script).not.toContain("render"); expect(script).not.toContain("owner/design");
+    expect(() => stackInstallScript(manifest, "Global", "codex", [], new Set(["render", "review", "layout"]))).toThrow(/already installed/);
+  });
+  it("reads installed skills from the chosen destination when generating or running an only-missing install", async () => {
+    const { home, store, operations } = await fixture();
+    const settings = emptySettings(); settings.stacks = [{ manifest }]; await store.save(settings);
+    const install = async (name: string): Promise<void> => {
+      await mkdir(join(home, ".agents/skills", name), { recursive: true });
+      await writeFile(join(home, ".agents/skills", name, "SKILL.md"), `---\nname: ${name}\ndescription: ${name}\n---\n`);
+    };
+    await install("render");
+    const partial = await operations.run("stack/script", { id: "studio", scope: "Global", agent: "codex", onlyMissing: true }) as { script: string };
+    expect(partial.script).toContain("--skill 'review'"); expect(partial.script).toContain("owner/design"); expect(partial.script).not.toContain("'render'");
+    expect(((await operations.run("stack/script", { id: "studio", scope: "Global", agent: "codex" })) as { script: string }).script).toContain("'render'");
+    await install("review"); await install("layout");
+    await expect(operations.run("stack/script", { id: "studio", scope: "Global", onlyMissing: true })).rejects.toThrow(/already installed/);
+    await expect(operations.run("stack/install", { id: "studio", scope: "Global", agent: "codex", onlyMissing: true })).rejects.toThrow(/already installed/);
+    await expect(operations.run("stack/install", { id: "studio", scope: "Global", agent: "codex", onlyMissing: "yes" })).rejects.toThrow(/true or false/);
+    await operations.close();
   });
   it("executes copied shell syntax as sequential literal arguments with a harmless CLI fixture", async () => {
     const { home, operations } = await fixture();

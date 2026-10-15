@@ -169,8 +169,10 @@ function showInstallation(kind,index,all=false){
   const installsAll=allowsAll&&all;
   installationTarget={kind,label,scope:installScope,allowsAll,...(kind==='stack'?{id:item.manifest.id}:{source:item.source})};
   installationPicker=allowsAll&&!installsAll?{kind:'installation',selected:new Set(),loading:false,loaded:false}:undefined;
-  modal('Install '+esc(label),`<p>Install through Skills CLI. Installation can replace existing skills and make them available. Use Update in Installed Skills to preserve an existing skill’s disabled state.</p><label>Installation folder<select id="installationScope" onchange="setInstallationScope(this.value)">${scopeOptions(installScope)}</select></label><p id="installationFolder" class="hint">${esc(installationFolderHint(installScope))}</p><label>Installation agent<select id="installationAgent">${['universal','codex','claude-code','cursor','opencode'].map(agent=>`<option value="${agent}" ${agent==='universal'?'selected':''}>${agent==='universal'?'Universal · .agents/skills':agent}</option>`).join('')}</select></label>${installationPicker?`<section id="installationSelection"><div class="installation-discovery-actions">${button('Find skills','discoverInstallationSkills()','','id="findInstallationSkills"')}${button('Install all instead…','chooseInstallationAll()','text')}<span id="installationDiscoveryStatus" class="hint" role="status" aria-live="polite"></span></div><div id="installationDiscovery"></div></section>`:installsAll?'<section id="installationSelection"><p>Install all skills currently available in this repository.</p></section>':''}<p class="hint">The copied script keeps its current behavior. This action runs without terminal prompts. Closing this dialog does not stop installation.</p><div id="installationOutput" role="status" aria-live="polite"></div><p id="installationError" class="field-error" role="alert"></p>`,button('Cancel installation','cancelInstallation()','text danger','id="cancelInstallation" hidden')+button('Close','closeModal()','text')+button(installsAll?'Install all skills':'Install','executeInstallation()','primary','id="startInstallation"'));
+  const chosen=installAgent==='interactive'?'universal':installAgent;
+  modal('Install '+esc(label),`<p>Install through Skills CLI. Installation can replace existing skills and make them available. Use Update in Installed Skills to preserve an existing skill’s disabled state.</p><label>Installation folder<select id="installationScope" onchange="setInstallationScope(this.value)">${scopeOptions(installScope)}</select></label><p id="installationFolder" class="hint">${esc(installationFolderHint(installScope))}</p><label>Installation agent<select id="installationAgent">${['universal','codex','claude-code','cursor','opencode'].map(agent=>`<option value="${agent}" ${chosen===agent?'selected':''}>${agent==='universal'?'Universal · .agents/skills':agent}</option>`).join('')}</select></label>${kind==='stack'?`<fieldset id="installationMode" class="profile-source"><legend>What to install</legend><label class="check"><input type="radio" name="installationMode" id="installationOnlyMissing" value="missing" onchange="setInstallationMode(true)"><span><strong>Only what’s missing</strong><br><span id="installationMissingHint" class="hint"></span></span></label><label class="check"><input type="radio" name="installationMode" id="installationAll" value="all" onchange="setInstallationMode(false)"><span><strong>Everything in the stack</strong><br><span class="hint">Replaces skills already installed here and turns disabled ones back on.</span></span></label></fieldset><div id="installationPlan"></div>`:''}${installationPicker?`<section id="installationSelection"><div class="installation-discovery-actions">${button('Find skills','discoverInstallationSkills()','','id="findInstallationSkills"')}${button('Install all instead…','chooseInstallationAll()','text')}<span id="installationDiscoveryStatus" class="hint" role="status" aria-live="polite"></span></div><div id="installationDiscovery"></div></section>`:installsAll?'<section id="installationSelection"><p>Install all skills currently available in this repository.</p></section>':''}<p class="hint">The copied script keeps its current behavior. This action runs without terminal prompts. Closing this dialog does not stop installation.</p><div id="installationOutput" role="status" aria-live="polite"></div><p id="installationError" class="field-error" role="alert"></p>`,button('Cancel installation','cancelInstallation()','text danger','id="cancelInstallation" hidden')+button('Close','closeModal()','text')+button(installsAll?'Install all skills':'Install','executeInstallation()','primary','id="startInstallation"'));
   if($('cancelInstallation')){$('cancelInstallation').disabled=false;$('cancelInstallation').textContent='Cancel installation';}
+  if(kind==='stack')renderStackInstallPlan(true);
   if(installationPicker)discoverInstallationSkills();
   pollInstallation();
 }
@@ -188,6 +190,7 @@ function setInstallationScope(value){
   if(!installationTarget||installationRunning)return;
   installationTarget.scope=value;
   $('installationFolder').textContent=installationFolderHint(value);
+  if(installationTarget.kind==='stack')renderStackInstallPlan(true);
 }
 function updateInstallationSelection(){
   const control=$('startInstallation');
@@ -224,7 +227,8 @@ function renderInstallation(result){
   summary.querySelector('.install-note').hidden=!failed;
   output.querySelector('pre').textContent=result.output||'Preparing…';
   const cancel=$('cancelInstallation');cancel.hidden=!result.pending;
-  if($('startInstallation'))$('startInstallation').disabled=result.pending;
+  if($('startInstallation'))$('startInstallation').disabled=result.pending||installationTarget.kind==='stack'&&stackInstallBlocked();
+  document.querySelectorAll('#installationMode input').forEach(control=>control.disabled=result.pending||control.dataset.locked==='true');
   if(installationPicker)updateInstallationSelection();
   if($('installationSelection'))$('installationSelection').querySelectorAll('input,button').forEach(control=>control.disabled=result.pending);
   if($('installationAgent'))$('installationAgent').disabled=result.pending;
@@ -239,11 +243,11 @@ async function executeInstallation(){
   if(installationPicker&&(installationPicker.loading||!installationPicker.loaded||!installationPicker.selected.size)){$('installationError').textContent='Choose at least one skill to install.';return}
   if(!agent){$('installationError').textContent='Choose an installation agent first.';return}
   $('installationError').textContent='';installationRunning=true;$('cancelInstallation').disabled=false;$('cancelInstallation').textContent='Cancel installation';
-  renderInstallation({label:target.label,scope:target.scope,agent,pending:true,phase:'Preparing installation…',output:'',completed:0,total:target.kind==='stack'?savedStacks().find(stack=>stack.manifest.id===target.id).manifest.sources.length:1});
+  renderInstallation({label:target.label,scope:target.scope,agent,pending:true,phase:'Preparing installation…',output:'',completed:0,total:target.kind==='stack'?stackInstallSourceCount(target):1});
   const timer=setTimeout(pollInstallation,1000);
   try{
-    const data={scope:target.scope,agent,...(target.kind==='stack'?{id:target.id}:{source:target.source,...(installationPicker?{skills:[...installationPicker.selected]}:{})})};
-    const result=await request(target.kind+'/install',data);renderInstallation(result);await refresh();toast(result.code===0?'Installation complete.':result.cancelled?'Installation cancelled. Completed changes are kept.':'Installation stopped. Review the output.');
+    const data={scope:target.scope,agent,...(target.kind==='stack'?{id:target.id,...(target.onlyMissing?{onlyMissing:true}:{})}:{source:target.source,...(installationPicker?{skills:[...installationPicker.selected]}:{})})};
+    const result=await request(target.kind+'/install',data);renderInstallation(result);await refresh();if(target.kind==='stack'&&installationTarget?.id===target.id)renderStackInstallPlan(false);toast(result.code===0?'Installation complete.':result.cancelled?'Installation cancelled. Completed changes are kept.':'Installation stopped. Review the output.');
   }catch(error){$('installationError')&&($('installationError').textContent=error.message);if($('startInstallation'))$('startInstallation').disabled=false;if($('installationAgent'))$('installationAgent').disabled=false;if($('installationScope'))$('installationScope').disabled=false;}
   finally{clearTimeout(timer);installationRunning=false;updateInstallationSelection()}
 }
