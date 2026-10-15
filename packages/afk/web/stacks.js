@@ -132,3 +132,58 @@ function removeStack(index){
   stackDraft={existing};
 }
 function confirmRemoveStack(){const expected=stackDraft.existing;return saveForm(()=>request('stack/remove',{id:expected.manifest.id,expected}),'Stack removed. Installed skills unchanged.','stackError')}
+
+function stackInstallPlan(manifest,scope){
+  const have=new Map((inventories[scope]||[]).map(skill=>[skill.name,skill.available?'on':'off']));
+  const groups=manifest.sources.map(group=>({source:group.source,skills:group.skills.map(name=>({name,state:have.get(name)||'missing'}))}));
+  const total=groups.reduce((n,group)=>n+group.skills.length,0);
+  const missing=groups.reduce((n,group)=>n+group.skills.filter(skill=>skill.state==='missing').length,0);
+  return{groups,total,missing,installed:total-missing};
+}
+function stackInstallSourceCount(target){
+  const manifest=savedStacks().find(stack=>stack.manifest.id===target.id).manifest;
+  return target.onlyMissing?stackInstallPlan(manifest,target.scope).groups.filter(group=>group.skills.some(skill=>skill.state==='missing')).length:manifest.sources.length;
+}
+function stackInstallBlocked(){
+  const stack=savedStacks().find(item=>item.manifest.id===installationTarget.id);
+  return !!installationTarget.onlyMissing&&!!stack&&stackInstallPlan(stack.manifest,installationTarget.scope).missing===0;
+}
+function setInstallationMode(onlyMissing){
+  if(!installationTarget||installationRunning)return;
+  installationTarget.onlyMissing=onlyMissing;
+  renderStackInstallPlan(false);
+}
+function renderStackInstallPlan(resetMode){
+  const target=installationTarget,host=$('installationPlan'),stack=savedStacks().find(item=>item.manifest.id===target?.id);
+  if(!host||!stack)return;
+  const plan=stackInstallPlan(stack.manifest,target.scope);
+  const offersChoice=plan.installed>0;
+  if(resetMode)target.onlyMissing=offersChoice;
+  if(!offersChoice)target.onlyMissing=false;
+  const onlyMissing=target.onlyMissing,complete=plan.missing===0;
+  const plural=(count,word)=>count+' '+word+(count===1?'':'s');
+  const groups=plan.groups.map(group=>{
+    const runs=!onlyMissing||group.skills.some(skill=>skill.state==='missing');
+    const skills=group.skills.map(skill=>{
+      const off=skill.state==='off';
+      const [kind,mark,label]=skill.state==='missing'?['add','+','Will install']:onlyMissing?['have','✓',off?'Installed · off':'Installed']:['replace','↻',off?'Will replace · turns on':'Will replace'];
+      return `<li class="plan-skill is-${kind}"><span class="plan-mark" aria-hidden="true">${mark}</span><span class="plan-name">${esc(skill.name)}</span><span class="plan-tag">${label}</span></li>`;
+    }).join('');
+    return `<section class="plan-group${runs?'':' is-skipped'}"><h3>${esc(group.source)}${runs?'':' <span class="meta">Skipped · nothing to install</span>'}</h3><ul>${skills}</ul></section>`;
+  }).join('');
+  const sources=plan.groups.filter(group=>!onlyMissing||group.skills.some(skill=>skill.state==='missing')).length;
+  const count=onlyMissing?plan.missing:plan.total;
+  let summary=`<strong>${plural(count,'skill')}</strong> from ${plural(sources,'source')} will be added. ${plural(plan.installed,'installed skill')} stay as they are.`;
+  if(complete&&onlyMissing)summary=`<strong>Already complete here.</strong> Every skill in this stack is installed in ${esc(target.scope)}.`;
+  if(!onlyMissing)summary=`<strong>${plural(count,'skill')}</strong> from ${plural(sources,'source')} will be installed${plan.installed?`, replacing ${plan.installed} that already ${plan.installed===1?'exists':'exist'}`:''}.`;
+  host.innerHTML=`<div class="install-plan"><div class="plan-head"><span>${plural(plan.total,'skill')} in this stack</span><span class="meta">${plan.installed} installed · ${plan.missing} missing</span></div>${groups}</div><p class="plan-summary" role="status">${summary}</p>`;
+  $('installationOnlyMissing').checked=onlyMissing;
+  $('installationAll').checked=!onlyMissing;
+  for(const id of ['installationOnlyMissing','installationAll']){$(id).disabled=!offersChoice;$(id).dataset.locked=String(!offersChoice)}
+  $('installationMissingHint').textContent=!offersChoice?'Nothing is installed here yet, so everything will be added.':complete?'Nothing is missing here.':`${plural(plan.missing,'skill')} not installed here. Leaves ${plan.installed} untouched.`;
+  const start=$('startInstallation');
+  if(start){
+    start.disabled=installationRunning||complete&&onlyMissing;
+    start.textContent=complete&&onlyMissing?'Nothing to install':onlyMissing?'Install '+plural(plan.missing,'missing skill'):offersChoice?'Install all '+plan.total+' skills':'Install '+plural(plan.total,'skill');
+  }
+}
