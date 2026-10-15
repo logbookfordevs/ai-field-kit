@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export interface VersionCheck { current: string; latest?: string; available: boolean; error?: string }
-export interface AppUpdateJob { pending: boolean; phase: string; output: string; error?: string; pid?: number; startedAt?: number }
+export interface AppUpdateJob { pending: boolean; phase: string; output: string; error?: string; pid?: number; startedAt?: number; targetVersion?: string }
 export interface UpdateTarget { home: string; settingsPath: string; url: string; token: string; current?: string; latest?: string }
 
 export function newerVersion(latest: string, current: string): boolean {
@@ -43,13 +43,16 @@ export class AppUpdates {
   }
   async state(home: string): Promise<AppUpdateJob | null> {
     try {
-      const job = JSON.parse(await readFile(join(home, ".afk/app-update.json"), "utf8")) as AppUpdateJob;
-      if (job.pending && job.startedAt && Date.now() - job.startedAt > 15 * 60_000) return { ...job, pending: false, error: "The updater did not finish. Review its output and retry." };
+      let job = JSON.parse(await readFile(join(home, ".afk/app-update.json"), "utf8")) as AppUpdateJob;
+      if (job.pending && job.startedAt && Date.now() - job.startedAt > 15 * 60_000) job = { ...job, pending: false, error: "The updater did not finish. Review its output and retry." };
       if (job.pending && job.pid) {
         try { process.kill(job.pid, 0); }
-        catch (error) { if ((error as NodeJS.ErrnoException).code === "ESRCH") return { ...job, pending: false, error: "The updater stopped before finishing. Review its output and retry." }; throw error; }
+        catch (error) { if ((error as NodeJS.ErrnoException).code === "ESRCH") job = { ...job, pending: false, error: "The updater stopped before finishing. Review its output and retry." }; else throw error; }
       }
-      return job;
+      const verifiedLatest = this.cached && !this.cached.error && this.cached.latest;
+      const resolvedVersion = job.targetVersion ?? verifiedLatest;
+      const recovered = !job.pending && job.error && resolvedVersion && (this.current === resolvedVersion || newerVersion(this.current, resolvedVersion));
+      return recovered ? null : job;
     }
     catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return null; throw error; }
   }

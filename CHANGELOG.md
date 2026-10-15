@@ -11,6 +11,10 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+### Fixed
+
+- A failed-update notice clears after AFK verifies that the running version has reached the update target, including recovery by reopening AFK from a terminal. Previous update logs stay on disk; unresolved failures remain visible.
+
 ## v2.0.6 - 2026-10-15
 
 ### Added

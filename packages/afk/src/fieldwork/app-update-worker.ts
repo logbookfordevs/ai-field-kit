@@ -19,7 +19,7 @@ export async function updateAndRestart(target: UpdateTarget, run: (command: stri
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.once("message", (target: UpdateTarget) => {
-  const state: AppUpdateJob = { pending: true, phase: "Starting update…", output: "", pid: process.pid, startedAt: Date.now() };
+  const state: AppUpdateJob = { pending: true, phase: "Starting update…", output: "", pid: process.pid, startedAt: Date.now(), ...(target.latest ? { targetVersion: target.latest } : {}) };
   const directory = join(target.home, ".afk"), path = join(directory, "app-update.json");
   let writes = Promise.resolve();
   const save = (): Promise<void> => {

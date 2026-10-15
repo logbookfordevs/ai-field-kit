@@ -128,3 +128,47 @@ it("hides successful update logs while keeping progress and failure details visi
   expect(notice.innerHTML).toContain("Update details");
   expect(notice.innerHTML).toContain("Restart failed");
 });
+
+it("clears a legacy failed-update notice after manual recovery to the verified latest version, retaining its log", async () => {
+  const { mkdtemp, mkdir, writeFile, readFile, rm } = await import("node:fs/promises");
+  const { join } = await import("node:path");
+  const { tmpdir } = await import("node:os");
+  const home = await mkdtemp(join(tmpdir(), "afk-recovered-update-"));
+  try {
+    await mkdir(join(home, ".afk"));
+    const path = join(home, ".afk/app-update.json");
+    const job = { pending: false, phase: "Update needs attention", error: "Update command failed (exit 1).", output: "Previous installer output" };
+    await writeFile(path, JSON.stringify(job));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ tag_name: "v2.0.6" })));
+    const updates = new AppUpdates("2.0.6");
+    await updates.check();
+    expect(await updates.state(home)).toBeNull();
+    expect(JSON.parse(await readFile(path, "utf8"))).toEqual(job);
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+it.each([
+  { current: "2.0.6", targetVersion: "2.0.6", pending: false, latest: undefined, resolved: true },
+  { current: "2.0.7", targetVersion: "2.0.6", pending: false, latest: undefined, resolved: true },
+  { current: "2.0.4", targetVersion: "2.0.6", pending: false, latest: "2.0.6", resolved: false },
+  { current: "2.0.6", targetVersion: "2.0.6", pending: true, latest: "2.0.6", resolved: false },
+  { current: "2.0.6", targetVersion: undefined, pending: false, latest: undefined, resolved: false },
+  { current: "2.0.4", targetVersion: undefined, pending: false, latest: "2.0.6", resolved: false },
+])("reconciles updater recovery without hiding unresolved work: %j", async ({ current, targetVersion, pending, latest, resolved }) => {
+  const { mkdtemp, mkdir, writeFile, rm } = await import("node:fs/promises");
+  const { join } = await import("node:path");
+  const { tmpdir } = await import("node:os");
+  const home = await mkdtemp(join(tmpdir(), "afk-update-recovery-"));
+  try {
+    await mkdir(join(home, ".afk"));
+    const job = { pending, phase: "Update needs attention", error: "Previous update failed", output: "Installer log", targetVersion };
+    await writeFile(join(home, ".afk/app-update.json"), JSON.stringify(job));
+    const updates = new AppUpdates(current);
+    if (latest) {
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ tag_name: latest })));
+      await updates.check();
+    }
+    const result = await updates.state(home);
+    if (resolved) expect(result).toBeNull(); else expect(result).toMatchObject({ pending, error: job.error });
+  } finally { await rm(home, { recursive: true, force: true }); }
+});

@@ -120,4 +120,9 @@ The web app checks the latest stable GitHub release on opening; successful and f
 
 **Update & restart** launches a detached worker that runs the existing `afk update` implementation, verifies the new launcher version, closes this app, and starts the updated launcher in the background on the same port with the same settings path. It supports both foreground and background app sessions. Queued mutations finish first; running tools must finish before updating. New mutations are blocked while updating. The page reloads when the restarted app supplies its new session token.
 
-Progress and failure output stay machine-local in `~/.afk/app-update.json`. An installation or verification failure leaves the current app running. A restart failure keeps recovery output in that file; reopen AFK from the terminal. Verify orchestration with injected command runners and preview with a simulated release; do not install real updates as part of automated QA.
+Progress and failure output stay machine-local in `~/.afk/app-update.json`. Failed notices are reconciled against the running version: reaching the recorded
+update target clears the notice while preserving the log. Older records without a
+target are cleared after a successful version check verifies recovery. Pending
+updates and unresolved failures remain visible.
+
+An installation or verification failure leaves the current app running. A restart failure keeps recovery output in that file; reopen AFK from the terminal. Verify orchestration with injected command runners and preview with a simulated release; do not install real updates as part of automated QA.
