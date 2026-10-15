@@ -544,6 +544,28 @@ input,textarea{caret-color:var(--focus)}
 .installation-discovery-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .installation-discovery-actions .hint{margin:0}
 #installationDiscovery:empty{display:none}
+#installationPlan{margin-top:16px}
+.install-plan{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.plan-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;padding:10px 14px;background:var(--warm);font-size:13px;font-weight:500}
+.plan-group{padding:10px 14px;border-top:1px solid var(--border)}
+.plan-head+.plan-group{border-top:0}
+.plan-group h3{font-size:14px;margin:0 0 4px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.plan-group.is-skipped{background:var(--bg)}
+.plan-group.is-skipped h3{color:var(--muted)}
+.plan-group ul{list-style:none;margin:0;padding:0}
+.plan-skill{display:flex;align-items:center;gap:10px;min-height:32px;font-size:14px}
+.plan-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.plan-mark{display:grid;place-items:center;flex:none;width:20px;height:20px;border:1.5px solid var(--border);border-radius:999px;font-size:12px;color:var(--muted)}
+.plan-skill.is-have .plan-name{color:var(--muted)}
+.plan-skill.is-have .plan-mark{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.plan-skill.is-add .plan-mark{border-color:var(--accent);color:var(--accent);font-weight:700}
+.plan-skill.is-replace .plan-mark{border-color:var(--danger);color:var(--danger)}
+.plan-tag{flex:none;padding:2px 6px;border:1px solid var(--border);border-radius:4px;font-family:var(--font-mono,'IBM Plex Mono',monospace);font-size:12px;color:var(--muted);white-space:nowrap}
+.plan-skill.is-add .plan-tag{border-color:var(--accent);color:var(--accent)}
+.plan-skill.is-replace .plan-tag{border-color:var(--danger);color:var(--danger)}
+.plan-summary{font-size:14px;margin:12px 0 0}
+@media(max-width:480px){.plan-skill{flex-wrap:wrap}.plan-tag{margin-left:30px}}
+
 #sourceSelection[hidden]{display:none}
 .member-selection{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-block:1px solid var(--border)}
 .member-selection>span{margin-right:auto;font-size:14px;font-weight:500}

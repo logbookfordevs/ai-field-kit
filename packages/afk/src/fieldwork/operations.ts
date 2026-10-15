@@ -2,12 +2,12 @@ import { installSkills, type InstallProgress } from "./skill-install.js";
 import { updateSkills, type UpdateProgress } from "./skill-update.js";
 import { sharingState, setSharing } from "./sharing.js";
 import { deleteSkill, previewDeletion } from "./deletion.js";
-import { fetchStack, manifestUrl, stackInstallScript, validateSavedStack, validateStack } from "./stacks.js";
+import { fetchStack, manifestUrl, missingStackSources, stackInstallScript, validateSavedStack, validateStack } from "./stacks.js";
 import { randomUUID } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { spawn } from "node:child_process";
-import { SettingsStore, validateSettings, skillName } from "./settings.js";
+import { SettingsStore, validateSettings, skillName, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
 import { SourcePreparation } from "./preparation.js";
 import { SkillLibrary } from "./skills.js";
@@ -47,7 +47,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   for (const key of optionalText[operation] ?? []) {
     if (data[key] !== undefined && typeof data[key] !== "string") throw new Error(`Provide ${key} as a string.`);
   }
-  for (const key of ["local", "update", "clean", "enabled", "confirmed"]) {
+  for (const key of ["local", "update", "clean", "enabled", "confirmed", "onlyMissing"]) {
     if (data[key] !== undefined && typeof data[key] !== "boolean") throw new Error(`Provide ${key} as true or false.`);
   }
   if (operation === "skills/delete-preview" || operation === "skills/bulk" || (operation === "skills/update" && data.names !== undefined)) {
@@ -92,6 +92,10 @@ export class FieldworkOperations {
   constructor(readonly store: SettingsStore) {
     this.library = new SkillLibrary(store);
     this.rules = new RulesWorkspace(store);
+  }
+
+  private async installedNames(settings: Settings, scope: string): Promise<Set<string>> {
+    return new Set((await this.library.inventory(settings, scope)).map(entry => entry.name));
   }
 
   run(operation: string, data: Record<string, unknown> = {}): Promise<unknown> {
@@ -157,7 +161,11 @@ export class FieldworkOperations {
         if (!Array.isArray(data.skills) || !data.skills.length || !data.skills.every(skillName) || new Set(data.skills).size !== data.skills.length) throw new Error("Choose unique skill names for this installation.");
         if (source?.skills && data.skills.some(name => !source.skills!.includes(name))) throw new Error("Choose skills from the bookmark’s saved selection.");
       }
-      const groups = stack ? stack.manifest.sources : [{ ...source!, ...(data.skills ? { skills: data.skills as string[] } : {}) }];
+      let groups = stack ? stack.manifest.sources : [{ ...source!, ...(data.skills ? { skills: data.skills as string[] } : {}) }];
+      if (stack && data.onlyMissing === true) {
+        groups = missingStackSources(stack.manifest, await this.installedNames(settings, String(data.scope)));
+        if (!groups.length) throw new Error(`Every skill in this stack is already installed in ${String(data.scope)}.`);
+      }
       const label = stack ? stack.manifest.name : source!.name;
       this.installController = new AbortController();
       try {
@@ -273,7 +281,9 @@ export class FieldworkOperations {
     if (operation === "stack/script") {
       const stack = settings.stacks?.find(entry => entry.manifest.id === data.id);
       if (!stack) throw new Error("Stack not found.");
-      return { script: stackInstallScript(stack.manifest, String(data.scope ?? "Global"), String(data.agent ?? "interactive"), settings.projects) };
+      const scope = String(data.scope ?? "Global");
+      const installed = data.onlyMissing === true ? await this.installedNames(settings, scope) : undefined;
+      return { script: stackInstallScript(stack.manifest, scope, String(data.agent ?? "interactive"), settings.projects, installed) };
     }
     if (operation === "stack/preview") {
       if ((data.manifest === undefined) === (data.origin === undefined)) throw new Error("Provide pasted manifest JSON or its HTTPS URL, not both.");

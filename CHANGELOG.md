@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- Installing a stack can now install only what’s missing. The Install dialog checks the chosen folder, lists each skill as installed, off or missing, and defaults to **Only what’s missing** when the folder is partly filled. Installed skills, including disabled ones, are left untouched, and sources with nothing missing are skipped. **Everything in the stack** keeps the previous replace behavior. `stack/install` and `stack/script` accept `onlyMissing`.
 - The Install dialog on Sources & Stacks shows an Installation folder selector beside the agent. It starts on the page’s installation destination and can be changed for that install without changing the page.
 - Claude and custom rules destinations have an optional **Import through CLAUDE.md** setting in their Edit dialog, and the row shows when it is on. It keeps an `@AGENTS.md` import in the `CLAUDE.md` beside the synced file, creating it if needed, so Claude loads your rules in projects that have their own `CLAUDE.md`, including a second Claude config folder. An import you already wrote is left alone, and turning the option off removes only what AFK added.
 
