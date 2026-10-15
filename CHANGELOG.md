@@ -11,7 +11,7 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
-## v2.0.5 - 2026-10-15
+## v2.0.6 - 2026-10-15
 
 ### Added
 

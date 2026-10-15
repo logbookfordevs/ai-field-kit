@@ -45,7 +45,7 @@ choose when to run it. Removing a source or stack leaves installed skills alone.
 
 ## Install directly from a manifest
 
-AFK 2.0.5 and newer support direct installation without adopting a profile or
+AFK 2.0.6 and newer support direct installation without adopting a profile or
 opening the web app:
 
 ```sh
@@ -73,7 +73,7 @@ afk install example.com/stack.json --agent claude-code --project ./my-project --
 npx @logbookfordevs/afk install https://example.com/stack.json --agent codex -g --yes
 ```
 
-The npm invocation requires AFK 2.0.5 or newer. To exercise a local checkout, build it with `pnpm afk:build`
+The npm invocation requires AFK 2.0.6 or newer. To exercise a local checkout, build it with `pnpm afk:build`
 and replace `afk` with `node packages/afk/dist/index.js`.
 
 Bare domain/path arguments use HTTPS. The same manifest policy applies: no HTTP,
