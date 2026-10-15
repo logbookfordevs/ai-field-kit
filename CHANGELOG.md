@@ -11,8 +11,13 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.0.5 - 2026-10-15
+
 ### Added
 
+- All-skills source bookmarks offer **Install all skills…** on the card and **Install all instead…** in the picker, so you can confirm an agent and folder without waiting for skill discovery. Saved selections and stacks keep their explicit members.
+- Installation dialogs show an accessible progress bar with completion and failure states, and default the agent to Universal.
+- `afk install <manifest-url>` reviews and saves a stack in Sources & Stacks, then installs its selected skills across repositories without a profile or web app. Choose an agent and Global/project folder interactively, or supply `--agent`, `-g`/`-p <folder>`, and `--yes`. Bare domain/path URLs use HTTPS; failures report completed sources and retain the saved stack for retry.
 - The Install dialog on Sources & Stacks shows an Installation folder selector beside the agent. It starts on the page’s installation destination and can be changed for that install without changing the page.
 - Claude and custom rules destinations have an optional **Import through CLAUDE.md** setting in their Edit dialog, and the row shows when it is on. It keeps an `@AGENTS.md` import in the `CLAUDE.md` beside the synced file, creating it if needed, so Claude loads your rules in projects that have their own `CLAUDE.md`, including a second Claude config folder. An import you already wrote is left alone, and turning the option off removes only what AFK added.
 
@@ -20,6 +25,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
+- Project removal stays available and explains when profiles and managed skills must be disabled first.
 - Successful AFK updates clear Update details from the header. Running updates and failures retain their details; the local update log stays on disk.
 
 ## v2.0.4 - 2026-10-09
