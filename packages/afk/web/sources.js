@@ -105,10 +105,22 @@ function sourceSelectionSummary(source){
   return `<details class="source-members"><summary>${label}</summary><ul>${source.skills.map(name=>`<li>${esc(name)}</li>`).join('')}</ul></details>`;
 }
 let sourcePicker;
+function sourceReferenceHint(source){
+  const standard='Repository URL, SSH URL, or owner/repository. For a specific branch, use https://github.com/owner/repository#branch-name.';
+  try{
+    const url=new URL(source);
+    const tree=url.hostname==='github.com'&&url.pathname.match(/^\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)$/);
+    if(tree){
+      const [,owner,repo,branch,remainder]=tree;
+      return `Skills CLI reads only “${branch}” as the branch in this URL. If “${branch}/${remainder}” is the full branch name, use https://github.com/${owner}/${repo}#${branch}/${remainder}. If it includes a folder, use # followed by the exact branch name and choose the skills.`;
+    }
+  }catch{}
+  return standard;
+}
 function editSource(i){
   const x=favoriteSources[i]||{name:'',source:''};
   sourcePicker={kind:'source',source:x.source,mode:x.skills===undefined?'all':'selected',names:[...(x.skills||[])],selected:new Set(x.skills||[]),query:'',selectedOnly:false,descriptions:{},version:0,loading:false,loaded:false};
-  modal(i===undefined?'Add favorite source':'Edit favorite source',`<label>Name<input id="sourceName" value="${esc(x.name)}" maxlength="120"></label><label>Source repository link<input id="sourceLink" value="${esc(x.source)}" placeholder="https://github.com/owner/repository" oninput="sourceLinkChanged()" aria-describedby="sourceHint sourceError"></label><p class="hint" id="sourceHint">Repository URL, SSH URL, or owner/repository.</p><fieldset class="profile-source"><legend>Skills to install</legend><div class="inline"><label class="check"><input type="radio" name="sourceSkills" value="all" ${sourcePicker.mode==='all'?'checked':''} onchange="setSourceMode(this.value)"><span>All skills</span></label><label class="check"><input type="radio" name="sourceSkills" value="selected" ${sourcePicker.mode==='selected'?'checked':''} onchange="setSourceMode(this.value)"><span>Choose skills</span></label></div></fieldset><div id="sourceSelection" ${sourcePicker.mode==='all'?'hidden':''}>${button('Find skills','discoverSourceSkills()','','id="discoverSourceSkills"')}<div id="sourceDiscovery"></div></div><p id="sourceError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Save bookmark',`saveSource(${i===undefined?-1:i})`,'primary','id="saveSource"'));
+  modal(i===undefined?'Add favorite source':'Edit favorite source',`<label>Name<input id="sourceName" value="${esc(x.name)}" maxlength="120"></label><label>Source repository link<input id="sourceLink" value="${esc(x.source)}" placeholder="https://github.com/owner/repository" oninput="sourceLinkChanged()" aria-describedby="sourceHint sourceError"></label><p class="hint" id="sourceHint" aria-live="polite">${esc(sourceReferenceHint(x.source))}</p><fieldset class="profile-source"><legend>Skills to install</legend><div class="inline"><label class="check"><input type="radio" name="sourceSkills" value="all" ${sourcePicker.mode==='all'?'checked':''} onchange="setSourceMode(this.value)"><span>All skills</span></label><label class="check"><input type="radio" name="sourceSkills" value="selected" ${sourcePicker.mode==='selected'?'checked':''} onchange="setSourceMode(this.value)"><span>Choose skills</span></label></div></fieldset><div id="sourceSelection" ${sourcePicker.mode==='all'?'hidden':''}>${button('Find skills','discoverSourceSkills()','','id="discoverSourceSkills"')}<div id="sourceDiscovery"></div></div><p id="sourceError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Save bookmark',`saveSource(${i===undefined?-1:i})`,'primary','id="saveSource"'));
   showSourceSelection();
 }
 function showSourceSelection(){
@@ -128,6 +140,7 @@ function setSourceMode(mode){
 }
 function sourceLinkChanged(){
   const source=$('sourceLink').value.trim(),picker=sourcePicker;
+  $('sourceHint').textContent=sourceReferenceHint(source);
   if(source===picker.source)return;
   const hadSelection=picker.selected.size>0;
   Object.assign(picker,{source,names:[],availableNames:undefined,selected:new Set(),descriptions:{},paths:{},version:picker.version+1,loading:false,loaded:false});

@@ -403,3 +403,16 @@ it("does not allow install-all to widen a bookmark's saved selection", () => {
   expect(field("startInstallation").textContent).not.toBe("Install all skills");
   expect(sources[0]!.skills).toEqual(["review"]);
 });
+
+it("warns on ambiguous tree URLs without rewriting the user's branch or folder", () => {
+  evaluate("editSource()");
+  const source = "https://github.com/logbookfordevs/atlas-skills/tree/feat/atlas-implement";
+  field("sourceLink").value = source;
+  evaluate("sourceLinkChanged()");
+  expect(field("sourceHint").textContent).toContain("https://github.com/logbookfordevs/atlas-skills#feat/atlas-implement");
+  expect(field("sourceLink").value).toBe(source);
+  expect(evaluate("sourcePicker.source")).toBe(source);
+  field("sourceLink").value = "https://github.com/logbookfordevs/atlas-skills#feat/atlas-implement";
+  evaluate("sourceLinkChanged()");
+  expect(field("sourceHint").textContent).not.toContain("reads only");
+});

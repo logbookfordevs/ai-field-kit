@@ -62,6 +62,21 @@ choices affect the generated commands, not where bookmarks or stacks are saved.
 Run the copied text in your terminal when you are ready. Skills CLI performs the
 installation. Copying does not execute anything or change installed skills.
 
+<h2 id="branches">Use a specific branch</h2>
+
+For a branch name containing a slash, enter an explicit repository reference:
+
+```text Branch source reference
+https://github.com/owner/repository#feat/my-branch
+```
+
+Skills CLI treats only the first segment after `/tree/` as the branch, so a URL
+like `https://github.com/owner/repository/tree/feat/my-branch` is read as branch
+`feat` and folder `my-branch`. AFK warns about that ambiguity and leaves the
+source unchanged. Use `#` followed by the exact branch name, then choose the
+skills you want. The fragment is a Skills CLI source reference; opening it in a
+browser does not select that branch on GitHub.
+
 <h2 id="install">Install from AFK</h2>
 
 All-skills source bookmarks also offer **Install all skills…** on the card. This

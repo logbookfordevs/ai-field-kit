@@ -2,6 +2,7 @@ import { mkdtemp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
+import { ProcessOutput } from "./process-output.js";
 import { containsControl, skillName } from "./settings.js";
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -14,6 +15,22 @@ function repositoryDirectory(value: unknown): string | undefined {
   const parts = path.split("/");
   if (parts.at(-1) !== "SKILL.md" || parts.some(part => !part || part === "." || part === ".." || part.includes(":")) || parts[0]?.startsWith("~")) return undefined;
   return parts.slice(0, -1).join("/") || ".";
+}
+
+function preparationFailure(source: string, output: string): Error {
+  const transcript = new ProcessOutput().append(output).trim();
+  const fatal = transcript.split("\n").find(line => line.includes("fatal:"));
+  const summary = fatal ? fatal.slice(fatal.indexOf("fatal:")) : transcript.slice(-4000);
+  let guidance = "";
+  try {
+    const url = new URL(source);
+    const tree = url.hostname === "github.com" && url.pathname.match(/^\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)$/);
+    if (tree && /Remote branch .+ not found in upstream origin/.test(summary)) {
+      const [, owner, repo, branch, remainder] = tree;
+      guidance = `\nSkills CLI reads only "${branch}" as the branch in this /tree/ URL. If "${branch}/${remainder}" is the full branch name, use https://github.com/${owner}/${repo}#${branch}/${remainder}. If part of the path is a folder, use the repository URL followed by # and the exact branch name, then choose the skills.`;
+    }
+  } catch { /* Non-URL source references also use Skills CLI. */ }
+  return new Error(`Skills CLI could not prepare the source:\n${summary || "No error output was returned."}${guidance}`);
 }
 
 export class SourcePreparation {
@@ -35,7 +52,7 @@ export class SourcePreparation {
         child.stdout.on("data", append); child.stderr.on("data", append);
         child.once("error", reject); child.once("close", code => accept({ code: code ?? 1, output }));
       }).catch(async error => { await rm(directory!, { recursive: true, force: true }); throw error; });
-      if (result.code !== 0) { await rm(directory, { recursive: true, force: true }); throw new Error(`Skills CLI could not prepare the source:\n${result.output}`); }
+      if (result.code !== 0) { await rm(directory, { recursive: true, force: true }); throw preparationFailure(source, result.output); }
       this.sources.set(source, directory);
     }
     const members = await readdir(join(directory, ".agents/skills"));

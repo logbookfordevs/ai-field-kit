@@ -84,3 +84,27 @@ it("omits local, unsupported and malformed entries while retaining valid reposit
   expect(await preparation.paths("owner/repository")).toEqual({ deploy: "skills/deploy" });
   expect(await preparation.discover("owner/repository")).toHaveLength(5);
 });
+
+it.each([
+  ["https://github.com/logbookfordevs/atlas-skills/tree/feat/atlas-implement", true],
+  ["https://github.com/logbookfordevs/atlas-skills#feat/atlas-implement", false],
+  ["owner/repo", false],
+])("reports readable clone failures with branch guidance only for ambiguous tree URLs (%s)", async (source, ambiguous) => {
+  spawn.mockImplementation(() => {
+    const child = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough() });
+    queueMicrotask(() => {
+      child.stderr.write("\u001b[31mBanner\u001b[0m\n│ fatal: Remote branch feat not found in upstream origin\n");
+      child.emit("close", 1);
+    });
+    return child;
+  });
+  const error = await preparation.discover(source).catch((error: Error) => error);
+  expect(error).toBeInstanceOf(Error);
+  const message = (error as Error).message;
+  expect(message).toContain("fatal: Remote branch feat not found");
+  expect(message).not.toContain("\u001b");
+  expect(message).not.toContain("Banner");
+  if (ambiguous) expect(message).toContain("https://github.com/logbookfordevs/atlas-skills#feat/atlas-implement");
+  else expect(message).not.toContain("If");
+  expect(spawn.mock.calls[0]?.[1]).toContain(source);
+});

@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
+- Source forms explain ambiguous GitHub branch URLs and show the explicit `#branch-name` format. Failed source discovery removes terminal formatting and gives branch-specific recovery guidance without rewriting the source.
 - A failed-update notice clears after AFK verifies that the running version has reached the update target, including recovery by reopening AFK from a terminal. Previous update logs stay on disk; unresolved failures remain visible.
 
 ## v2.0.6 - 2026-10-15

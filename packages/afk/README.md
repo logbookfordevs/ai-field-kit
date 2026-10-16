@@ -228,3 +228,8 @@ All-skills source bookmarks offer **Install all skills…** on the card and
 **Install all instead…** in the picker. Both skip AFK skill discovery while
 keeping agent and folder confirmation. Saved selections and stacks retain their
 explicit members.
+
+For a GitHub branch containing `/`, use a source reference such as
+`https://github.com/owner/repository#feat/my-branch`. Skills CLI interprets
+`/tree/feat/my-branch` as branch `feat` and folder `my-branch`; AFK explains this
+ambiguity without changing your source.
