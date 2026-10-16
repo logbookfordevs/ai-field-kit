@@ -97,6 +97,21 @@ main{padding:20px clamp(20px,4vw,56px) 40px;min-width:0;max-width:1320px;outline
 .skills-filters{display:grid;grid-template-columns:minmax(180px,1fr) 140px 170px minmax(130px,1fr) minmax(130px,1fr) auto;align-items:end;gap:12px;margin-bottom:12px}
 .skills-filters label{min-width:0;margin:0;color:var(--muted)}
 .skills-filters input,.skills-filters select{color:var(--fg)}
+.skills-filters label.filter-active{color:var(--fg);font-weight:600}
+.skills-filters label.filter-active :is(input,select){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background-color:var(--warm);font-weight:600}
+.skills-filters label.filter-active select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23102c2c' stroke-width='2'/%3E%3C/svg%3E")}
+.skills-filters label.filter-active .filter-dot{display:inline-block}
+.skills-filters label{position:relative}
+.filter-dot{display:none;position:absolute;top:4px;right:0;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.delete-list{display:grid;gap:0;border-top:1px solid var(--border)}
+.delete-list>details,.delete-list>p{padding:0;border-bottom:1px solid var(--border)}
+.delete-list>p{padding:10px 0;max-width:none}
+.delete-list details summary{min-height:40px;text-decoration:none;word-break:break-word}
+.delete-list details summary::after{content:'›';margin-left:auto;color:var(--muted);transition:transform .16s}
+.delete-list details[open] summary::after{transform:rotate(90deg)}
+.delete-list details[open] summary{margin-bottom:2px}
+.delete-list details>.path{margin:0 0 6px;font-size:12px;color:var(--muted)}
+.delete-list details>p:last-child{margin-bottom:10px}
 .app-update-notice{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted)}
 .app-update-notice:empty{display:none}
 .app-update-notice:not(:empty)+.topline{padding-top:12px}
@@ -890,11 +905,11 @@ function renderSkills(){
   if(skillsView==='saved'){renderSavedSkills();return}
   $('view').insertAdjacentHTML('beforeend',`
       <div class="skills-filters">
-        <label class="search">Find a skill<span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
-        <label>Availability<select id="availabilityFilter" onchange="availabilityFilter=this.value;renderSkillList()"><option value="">All availability</option><option value="available" ${availabilityFilter==='available'?'selected':''}>Available</option><option value="disabled" ${availabilityFilter==='disabled'?'selected':''}>Disabled</option></select></label>
-        <label>Invocation<select id="invocationFilter" onchange="invocationFilter=this.value;renderSkillList()"><option value="">All modes</option>${['manual only','automatic allowed','varies by agent','unknown'].map(mode=>`<option value="${mode}" ${invocationFilter===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label>
-        <label>Source<select id="sourceFilter" onchange="sourceFilter=this.value;renderSkillList()"><option value="">All sources</option>${installedSourceOptions()}</select></label>
-        <label>Profile<select id="profileFilter" onchange="profileFilter=this.value;renderSkillList()"><option value="">All skills</option><option value="__any" ${profileFilter==='__any'?'selected':''}>In any profile</option><option value="__none" ${profileFilter==='__none'?'selected':''}>No profile</option>${installedProfileOptions()}</select></label>
+        <label class="search">Find a skill<i class="filter-dot" aria-hidden="true"></i><span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
+        <label>Availability<i class="filter-dot" aria-hidden="true"></i><select id="availabilityFilter" onchange="availabilityFilter=this.value;renderSkillList()"><option value="">All availability</option><option value="available" ${availabilityFilter==='available'?'selected':''}>Available</option><option value="disabled" ${availabilityFilter==='disabled'?'selected':''}>Disabled</option></select></label>
+        <label>Invocation<i class="filter-dot" aria-hidden="true"></i><select id="invocationFilter" onchange="invocationFilter=this.value;renderSkillList()"><option value="">All modes</option>${['manual only','automatic allowed','varies by agent','unknown'].map(mode=>`<option value="${mode}" ${invocationFilter===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label>
+        <label>Source<i class="filter-dot" aria-hidden="true"></i><select id="sourceFilter" onchange="sourceFilter=this.value;renderSkillList()"><option value="">All sources</option>${installedSourceOptions()}</select></label>
+        <label>Profile<i class="filter-dot" aria-hidden="true"></i><select id="profileFilter" onchange="profileFilter=this.value;renderSkillList()"><option value="">All skills</option><option value="__any" ${profileFilter==='__any'?'selected':''}>In any profile</option><option value="__none" ${profileFilter==='__none'?'selected':''}>No profile</option>${installedProfileOptions()}</select></label>
         ${button('Clear filters','clearSkillFilters()','text',`id="clearSkillFilters" ${query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter?'':'hidden'}`)}
       </div>
       <div class="skills-utilities"><span class="sharing-state" data-status="${esc(sharingStatus||'missing')}">${esc(sharingLabel)}</span>${button('Claude sharing','reviewClaudeSharing()','text')}<span id="skillsDiscoverySummary">${skillTokenSummary()}</span><span class="skills-folder"><button type="button" class="text" popovertarget="skillsFolderDetails">Folder details</button><div id="skillsFolderDetails" class="skill-invoc-popover skills-folder-popover" popover aria-label="Skill folders"><strong>Skill folders · ${esc(scope)}</strong><code class="path">${esc(scopePath())}</code>${sharingStatus==='connected'?`<code class="path">${esc(scope==='Global'?'~/.claude/skills/':(projects.find(project=>project.name===scope)?.path||'')+'/.claude/skills/')} <span class="meta">Shared folder link</span></code>`:''}</div></span></div>
@@ -909,6 +924,8 @@ function clearSkillFilters(){
 }
 
 function renderSkillList(){
+  const activeFilters={skillSearch:query.trim(),availabilityFilter,invocationFilter,sourceFilter,profileFilter};
+  for(const [id,value] of Object.entries(activeFilters))$(id)?.closest('label')?.classList.toggle('filter-active',Boolean(value));
   const clearFilters=$('clearSkillFilters');
   if(clearFilters)clearFilters.hidden=!(query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter);
   const all=inventory(),list=all.filter(matchesSkillFilters);
