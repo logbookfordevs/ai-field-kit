@@ -9,8 +9,15 @@ AFK_SETTINGS=/path/to/settings.json node packages/afk/dist/index.js
 
 Changing location in Settings copies the configuration, canonical `AGENTS.md` and
 supporting `references/` to the selected AFK folder and
-stores a local pointer in `~/.afk/settings-location.json`. It refuses to overwrite
-an existing destination. The old file remains. The environment override takes
+stores a local pointer in `~/.afk/settings-location.json`. **Move current setup here**
+works with existing folders: destination `settings.json`, `AGENTS.md` and
+`references/` are retained in a `.afk-backup-<id>` folder before replacement.
+Your current files win conflicts, preserving the current configuration identity
+and its local activation. Reference files unique to either folder are kept.
+**Load existing setup** instead uses the destination configuration without copying.
+Other files stay untouched, and skills stay in their existing storage. A failed
+move restores destination files.
+The original AFK folder remains. The environment override takes
 precedence over the pointer.
 
 A folder synced by Drive or another provider can hold the file. That provider owns

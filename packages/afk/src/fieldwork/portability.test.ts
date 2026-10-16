@@ -230,3 +230,118 @@ it("removes a missing project with stale local activation without recreating its
   expect(Object.keys(current.managedLinks).some(path => path.startsWith(project + "/"))).toBe(false);
   await expect(readFile(join(project, ".agents/skills/review/SKILL.md"))).rejects.toMatchObject({ code: "ENOENT" });
 });
+
+it("loads an existing copy of the current configuration without disabling active skills", async () => {
+  const f = await fixture(); await skill(f.home, "review", true);
+  f.settings.profiles.push({ id: "writing", name: "Writing", source: "Local skill selection", skills: ["review"], ready: true, enabled: [] });
+  const library = new SkillLibrary(f.store);
+  await library.activate(f.settings, "writing", "Global", true);
+  const folder = join(f.home, "existing"); await mkdir(folder);
+  await writeFile(join(folder, "settings.json"), await readFile(f.store.path));
+  await f.ops.run("workspace", { mode: "select", folder });
+  expect((await f.store.read()).profiles[0]?.enabled).toEqual(["Global"]);
+  const restarted = new SettingsStore(f.home); await restarted.initialize();
+  expect(restarted.path).toBe(join(folder, "settings.json"));
+  await new SkillLibrary(restarted).activate(await restarted.read(), "writing", "Global", false);
+  expect((await restarted.read()).profiles[0]?.enabled).toEqual([]);
+  await expect(readFile(join(f.home, ".agents/skills/review/SKILL.md"))).rejects.toMatchObject({ code: "ENOENT" });
+});
+
+it("preserves the current location and activation when an existing configuration differs", async () => {
+  const f = await fixture(); await skill(f.home, "review", true);
+  f.settings.profiles.push({ id: "writing", name: "Writing", source: "Local skill selection", skills: ["review"], ready: true, enabled: [] });
+  await new SkillLibrary(f.store).activate(f.settings, "writing", "Global", true);
+  const original = f.store.path;
+  const folder = join(f.home, "existing"); await mkdir(folder);
+  const changed = JSON.parse(await readFile(original, "utf8")) as Settings;
+  changed.profiles = [];
+  await writeFile(join(folder, "settings.json"), JSON.stringify(changed));
+  await expect(f.ops.run("workspace", { mode: "select", folder })).rejects.toThrow("different configuration");
+  expect(f.store.path).toBe(original);
+  expect((await f.store.read()).profiles[0]?.enabled).toEqual(["Global"]);
+  changed.configurationId = "different";
+  await writeFile(join(folder, "settings.json"), JSON.stringify(changed));
+  await expect(f.store.selectFolder(folder)).rejects.toThrow("different configuration");
+  await expect(f.store.selectFolder(join(f.home, ".afk"))).resolves.toBeUndefined();
+});
+
+it("moves active configuration into an existing AFK folder with a recoverable destination backup", async () => {
+  const f = await fixture(); const stored = await skill(f.home, "review", true);
+  f.settings.profiles.push({ id: "writing", name: "Writing", source: "Local skill selection", skills: ["review"], ready: true, enabled: [] });
+  await new SkillLibrary(f.store).activate(f.settings, "writing", "Global", true);
+  const original = f.store.path;
+  await writeFile(join(f.home, ".afk/AGENTS.md"), "Current rules");
+  const folder = join(f.home, "existing"); await mkdir(join(folder, "references"), { recursive: true });
+  await writeFile(join(folder, "settings.json"), "Previous settings");
+  await writeFile(join(folder, "AGENTS.md"), "Previous rules");
+  await writeFile(join(folder, "references/old.md"), "Previous reference");
+  await writeFile(join(folder, "unrelated.txt"), "Keep me");
+  const result = await f.ops.run("workspace", { mode: "move", folder }) as { backup?: string };
+  expect((await f.store.read()).profiles[0]?.enabled).toEqual(["Global"]);
+  expect(await readFile(join(folder, "AGENTS.md"), "utf8")).toBe("Current rules");
+  expect(await readFile(join(result.backup!, "settings.json"), "utf8")).toBe("Previous settings");
+  expect(await readFile(join(result.backup!, "AGENTS.md"), "utf8")).toBe("Previous rules");
+  expect(await readFile(join(result.backup!, "references/old.md"), "utf8")).toBe("Previous reference");
+  expect(await readFile(join(folder, "references/old.md"), "utf8")).toBe("Previous reference");
+  expect(await readFile(join(folder, "unrelated.txt"), "utf8")).toBe("Keep me");
+  expect(await readFile(join(stored, "SKILL.md"), "utf8")).toContain("name: review");
+  expect(await readFile(original, "utf8")).toContain('"version"');
+  await new SkillLibrary(f.store).activate(await f.store.read(), "writing", "Global", false);
+  expect((await f.store.read()).profiles[0]?.enabled).toEqual([]);
+});
+
+it("restores destination AFK files if relocation fails after backing them up", async () => {
+  const f = await fixture(); const original = f.store.path;
+  await symlink(join(f.home, "missing"), join(f.home, ".afk/AGENTS.md"));
+  const folder = join(f.home, "existing"); await mkdir(folder);
+  await writeFile(join(folder, "settings.json"), "Previous settings");
+  await writeFile(join(folder, "AGENTS.md"), "Previous rules");
+  await expect(f.ops.run("workspace", { mode: "move", folder })).rejects.toThrow("symbolic links");
+  expect(f.store.path).toBe(original);
+  expect(await readFile(join(folder, "settings.json"), "utf8")).toBe("Previous settings");
+  expect(await readFile(join(folder, "AGENTS.md"), "utf8")).toBe("Previous rules");
+});
+
+it("prefers incoming files in conflicts while retaining unique references", async () => {
+  const f = await fixture();
+  f.settings.tools = [{ id: 1, name: "Incoming tool", install: "echo incoming", update: "" }];
+  await f.store.save(f.settings);
+  const original = f.store.path;
+  const incoming = join(f.home, ".afk");
+  const folder = join(f.home, "destination");
+  for (const root of [incoming, folder]) await mkdir(join(root, "references/nested"), { recursive: true });
+  const existing = new SettingsStore(f.home, join(folder, "settings.json"));
+  const settings = emptySettings(); settings.tools = [{ id: 2, name: "Existing tool", install: "echo existing", update: "" }];
+  await existing.save(settings);
+  await writeFile(join(incoming, "AGENTS.md"), "Incoming rules");
+  await writeFile(join(folder, "AGENTS.md"), "Existing rules");
+  await writeFile(join(incoming, "references/nested/shared.md"), "Incoming reference");
+  await writeFile(join(folder, "references/nested/shared.md"), "Existing reference");
+  await writeFile(join(incoming, "references/incoming.md"), "Incoming only");
+  await writeFile(join(folder, "references/existing.md"), "Existing only");
+  const result = await f.ops.run("workspace", { mode: "move", folder }) as { backup?: string };
+  expect((await f.store.read()).tools[0]?.name).toBe("Incoming tool");
+  expect((await f.store.read()).configurationId).toBe(f.settings.configurationId);
+  expect(await readFile(join(folder, "AGENTS.md"), "utf8")).toBe("Incoming rules");
+  expect(await readFile(join(folder, "references/nested/shared.md"), "utf8")).toBe("Incoming reference");
+  expect(await readFile(join(folder, "references/incoming.md"), "utf8")).toBe("Incoming only");
+  expect(await readFile(join(folder, "references/existing.md"), "utf8")).toBe("Existing only");
+  expect(await readFile(join(result.backup!, "AGENTS.md"), "utf8")).toBe("Existing rules");
+  expect(await readFile(original, "utf8")).toContain("Incoming tool");
+});
+
+it("restores nested destination references when updating the location pointer fails", async () => {
+  const f = await fixture(); const original = f.store.path;
+  const folder = join(f.home, "destination");
+  await mkdir(join(f.home, ".afk/references/new"), { recursive: true });
+  await writeFile(join(f.home, ".afk/references/new/incoming.md"), "Incoming");
+  await mkdir(join(folder, "references/old"), { recursive: true });
+  await writeFile(join(folder, "settings.json"), "Original destination");
+  await writeFile(join(folder, "references/old/existing.md"), "Existing");
+  await mkdir(f.store.pointer);
+  await expect(f.ops.run("workspace", { mode: "move", folder })).rejects.toThrow();
+  expect(f.store.path).toBe(original);
+  expect(await readFile(join(folder, "settings.json"), "utf8")).toBe("Original destination");
+  expect(await readFile(join(folder, "references/old/existing.md"), "utf8")).toBe("Existing");
+  await expect(readFile(join(folder, "references/new/incoming.md"))).rejects.toMatchObject({ code: "ENOENT" });
+});

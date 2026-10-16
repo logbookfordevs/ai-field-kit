@@ -1,8 +1,9 @@
 import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { validateSavedStack, type SavedStack } from "./stacks.js";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { applyLocalState, localState, portableSettings, verifiedLegacyState, type LocalState } from "./local-state.js";
 
 export interface SavedSkill {
@@ -221,7 +222,7 @@ export class SettingsStore {
     } finally { await rm(temporary, { force: true }); await rm(localTemporary, { force: true }); }
   }
 
-  async relocate(path: string): Promise<void> {
+  async relocate(path: string, existingFolder?: string): Promise<void> {
     const destination = expandPath(path, this.home);
     if (destination === this.path) return;
     try { await lstat(destination); throw new Error("That file already exists. Import it or choose another location."); }
@@ -245,22 +246,28 @@ export class SettingsStore {
         catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
       }
     };
-    const collect = async (folder: string, prefix: string): Promise<void> => {
-      await checkedPath(dirname(previous), folder);
+    const collect = async (folder: string, prefix: string, root: string): Promise<void> => {
+      await checkedPath(root, folder);
       try {
         for (const entry of await readdir(folder, { withFileTypes: true })) {
           if (entry.isSymbolicLink()) throw new Error("Rules references cannot contain symbolic links.");
           const path = `${prefix}${entry.name}`;
-          if (entry.isDirectory()) await collect(join(folder, entry.name), `${path}/`);
+          if (entry.isDirectory()) await collect(join(folder, entry.name), `${path}/`, root);
           else if (entry.isFile()) files.push({ path, content: await readFile(join(folder, entry.name), "utf8") });
         }
       } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
     };
     if (dirname(destination) !== dirname(previous)) {
-      await checkedPath(dirname(previous), join(dirname(previous), "AGENTS.md"));
-      try { files.push({ path: "AGENTS.md", content: await readFile(join(dirname(previous), "AGENTS.md"), "utf8") }); }
-      catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-      await collect(join(dirname(previous), "references"), "references/");
+      const roots = [dirname(previous)];
+      if (existingFolder) roots.unshift(existingFolder);
+      for (const root of roots) {
+        await checkedPath(root, join(root, "AGENTS.md"));
+        try { files.push({ path: "AGENTS.md", content: await readFile(join(root, "AGENTS.md"), "utf8") }); }
+        catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+        await collect(join(root, "references"), "references/", root);
+      }
+      const preferred = new Map(files.map(file => [file.path, file]));
+      files.splice(0, files.length, ...preferred.values());
       await checkedPath(dirname(destination), join(dirname(destination), "references"));
       for (const file of files) {
         const target = join(dirname(destination), file.path);
@@ -293,6 +300,54 @@ export class SettingsStore {
     }
   }
 
+  async moveFolder(folder: string): Promise<string | undefined> {
+    const root = expandPath(folder, this.home);
+    const destination = join(root, "settings.json");
+    if (destination === this.path) return;
+
+    const withinReferences = relative(join(dirname(this.path), "references"), root);
+    if (withinReferences === "" || (!withinReferences.startsWith("../") && withinReferences !== "..")) throw new Error("Choose a folder outside the current AFK rule files.");
+
+    const entries: string[] = [];
+    for (const name of ["settings.json", "AGENTS.md", "references"]) {
+      const target = join(root, name);
+      const sourceWithinTarget = relative(target, this.path);
+      if (sourceWithinTarget === "" || (!sourceWithinTarget.startsWith("../") && sourceWithinTarget !== "..")) throw new Error("Choose a folder outside the current AFK rule files.");
+      try {
+        const info = await lstat(target);
+        if (info.isSymbolicLink() || (name === "references" ? !info.isDirectory() : !info.isFile())) throw new Error(`AFK destination has an unsupported file: ${name}`);
+        entries.push(name);
+      } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    }
+    if (!entries.length) { await this.relocate(destination); return; }
+
+    let ancestor = root;
+    while (ancestor !== dirname(ancestor)) {
+      try {
+        if ((await lstat(ancestor)).isSymbolicLink() && !["/var", "/tmp"].includes(ancestor)) throw new Error(`AFK folders cannot cross symbolic links: ${ancestor}`);
+      } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+      ancestor = dirname(ancestor);
+    }
+    const backup = join(root, `.afk-backup-${randomUUID()}`);
+    await mkdir(backup);
+    const moved: string[] = [];
+    let relocationStarted = false;
+    try {
+      for (const name of entries) {
+        await rename(join(root, name), join(backup, name));
+        moved.push(name);
+      }
+      relocationStarted = true;
+      await this.relocate(destination, backup);
+      return backup;
+    } catch (error) {
+      if (relocationStarted) await rm(join(root, "references"), { recursive: true, force: true });
+      for (const name of moved.reverse()) await rename(join(backup, name), join(root, name));
+      await rm(backup, { recursive: true });
+      throw error;
+    }
+  }
+
   async select(path: string): Promise<void> {
     const destination = expandPath(path, this.home);
     validateSettings(JSON.parse(await readFile(destination, "utf8")));
@@ -302,11 +357,15 @@ export class SettingsStore {
   }
 
   async selectFolder(folder: string): Promise<void> {
+    const destination = join(expandPath(folder, this.home), "settings.json");
+    if (destination === this.path) return;
     const current = await this.read();
+    const selected = validateSettings(JSON.parse(await readFile(destination, "utf8")));
+    const sameConfiguration = Boolean(current.configurationId) && isDeepStrictEqual(portableSettings(current), portableSettings(selected));
     const hasActiveProfiles = current.profiles.some(profile => profile.enabled.length > 0);
     const hasRulesReceipts = Object.keys(current.agentRules?.receipts ?? {}).length > 0;
     const hasSkillOwnership = Object.keys(current.managedLinks).length > 0 || Object.values(current.independentSkills).some(skills => skills.length > 0);
-    if (hasActiveProfiles || hasRulesReceipts || hasSkillOwnership) throw new Error("Disable active skills and profiles and disconnect synced rules before switching AFK folders.");
-    await this.select(join(expandPath(folder, this.home), "settings.json"));
+    if (!sameConfiguration && (hasActiveProfiles || hasRulesReceipts || hasSkillOwnership)) throw new Error("This folder contains a different configuration. Move your current AFK folder to a new location to keep active skills and synced rules, or disable them before loading a different configuration.");
+    await this.select(destination);
   }
 }

@@ -386,6 +386,7 @@ export class FieldworkOperations {
     if (operation === "location") { await store.relocate(String(data.path)); return { ok: true }; }
     if (operation === "workspace") {
       if (typeof data.folder !== "string" || !["move", "select", "create"].includes(String(data.mode))) throw new Error("Choose an AFK folder and action.");
+      if (data.mode === "move") return { ok: true, backup: await store.moveFolder(data.folder) };
       if (data.mode === "select") await store.selectFolder(data.folder);
       else await store.relocate(join(data.folder, "settings.json"));
       return { ok: true };

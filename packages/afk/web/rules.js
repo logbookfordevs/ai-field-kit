@@ -420,7 +420,7 @@ async function applyAfkBundle(){
 function workspaceReview(mode,target){
   if(hasRuleEdits()){toast('Save your rule drafts before changing the AFK folder.');return}
   const selects=mode==='select';
-  modal(selects?'Use this AFK folder?':'Move your AFK folder?',`<p><code>${esc(target)}</code></p><p class="sub">${selects?'Load the settings, rules and references already in this folder. No agent files are synced. Disconnect managed destinations and disable profiles before switching configurations.':'Copy your current settings, rules and references here, then use this location. The original folder is retained. Existing files are never overwritten.'}</p><p id="ruleActionError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button(selects?'Load AFK folder':'Move AFK folder',`applyWorkspace('${mode}',${esc(JSON.stringify(target))})`,'primary'));
+  modal(selects?'Use this AFK folder?':'Move your AFK folder?',`<p><code>${esc(target)}</code></p><p class="sub">${selects?'Load the settings, rules and references already in this folder. No agent files are synced. An unchanged copy of your current configuration keeps active skills and synced rules. Loading a different configuration requires disabling skills and disconnecting managed destinations first.':'Bring your settings, rules and references here, then use this location. Your current files win conflicts; reference files unique to either folder are kept. Skills stay in place. Existing AFK files are backed up here first; your original folder is retained. Other files stay untouched.'}</p><p id="ruleActionError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button(selects?'Load AFK folder':'Move AFK folder',`applyWorkspace('${mode}',${esc(JSON.stringify(target))})`,'primary'));
 }
 function newWorkspaceFolder(){
   if(hasRuleEdits()){toast('Save your rule drafts before moving your AFK folder.');return}
@@ -428,7 +428,7 @@ function newWorkspaceFolder(){
 }
 function createWorkspaceFolder(){const name=$('workspaceName').value.trim();if(!name||/[\/\\\u0000-\u001f]/.test(name)||name==='.'||name==='..'){$('ruleActionError').textContent='Choose a simple folder name without slashes.';return}applyWorkspace('create',folder.replace(/\/$/,'')+'/'+name)}
 async function applyWorkspace(mode,target){
-  try{await request('workspace',{folder:target,mode});await loadRules(true);closeModal();await refresh();toast('AFK folder changed. No agent files were synced.')}
+  try{const result=await request('workspace',{folder:target,mode});await loadRules(true);closeModal();await refresh();toast(result.backup?'AFK folder changed. Previous files saved in '+result.backup:'AFK folder changed. Skills remain in place.')}
   catch(error){$('ruleActionError').textContent=error.message}
 }
 

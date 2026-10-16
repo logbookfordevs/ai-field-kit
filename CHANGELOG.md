@@ -13,6 +13,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
+- Move your AFK setup into an existing folder without disabling skills or disconnecting synced rules. Choose between loading the existing setup and moving your current one; incoming files win conflicts, destination AFK files are backed up, and skill files stay in place.
 - Source forms explain ambiguous GitHub branch URLs and show the explicit `#branch-name` format. Failed source discovery removes terminal formatting and gives branch-specific recovery guidance without rewriting the source.
 - A failed-update notice clears after AFK verifies that the running version has reached the update target, including recovery by reopening AFK from a terminal. Previous update logs stay on disk; unresolved failures remain visible.
 

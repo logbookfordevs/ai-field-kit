@@ -294,6 +294,18 @@ describe("Agent rules managed regions", () => {
     await expect(readFile(target)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("loads a relocated copy with synced rules and retains ownership", async () => {
+    const { store, home, rules, target } = await fixture();
+    await rules.sync(await store.read(), ["codex"]);
+    const before = await readFile(target, "utf8");
+    const original = store.path;
+    const destination = join(home, "Existing/afk/settings.json");
+    await store.relocate(destination);
+    await store.selectFolder(dirname(original));
+    expect(await readFile(target, "utf8")).toBe(before);
+    expect(Object.keys((await store.read()).agentRules!.receipts)).toContain("codex");
+  });
+
   it("refuses workspace relocation reference symlinks and destination collisions before copying", async () => {
     const { store, home } = await fixture();
     const original = store.path;
