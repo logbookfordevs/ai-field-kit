@@ -8,7 +8,7 @@ function shellQuote(value){
 function validSource(value){return safeShellValue(value)&&!value.startsWith('-')}
 function validSkillSelection(skills){return skills===undefined||(Array.isArray(skills)&&skills.length>0&&new Set(skills).size===skills.length&&skills.every(name=>typeof name==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)&&name!=='.'&&name!=='..'))}
 function validSources(list){
-  return list===undefined||(Array.isArray(list)&&list.every(x=>x&&typeof x.name==='string'&&x.name.trim()&&validSource(x.source)&&validSkillSelection(x.skills)));
+  return list===undefined||(Array.isArray(list)&&list.every(x=>x&&typeof x.name==='string'&&x.name.trim()&&validSource(x.source)&&(x.description===undefined||safeShellValue(x.description))&&validSkillSelection(x.skills)));
 }
 function projectPrefix(target){
   const path=projects.find(p=>p.name===target)?.path;
@@ -84,10 +84,83 @@ function setSourcesLayout(layout){
 function sourceLayoutControls(){
   return `<div class="source-view-switch" role="group" aria-label="Collection view">${['cards','list'].map(layout=>button(layout==='cards'?'Cards':'List',`setSourcesLayout('${layout}')`,'',`aria-pressed="${sourcesLayout===layout}"`)).join('')}</div>`;
 }
+let sourceQuery='',expandedSources=new Set();
+function sourceKey(reference){return (sourceWebUrl(reference)||reference).trim().replace(/\.git$/,'').replace(/\/+$/,'').toLowerCase()}
+function sourceStacks(source){
+  const key=sourceKey(source.source);
+  return savedStacks().filter(stack=>stack.manifest.sources.some(group=>sourceKey(group.source)===key)).map(stack=>stack.manifest.name);
+}
+function sourceMatches(source,query){
+  const needle=query.trim().toLowerCase();
+  if(!needle)return true;
+  return [source.name,source.source,source.description||'',...(source.skills||[]),...sourceStacks(source)].some(value=>value.toLowerCase().includes(needle));
+}
+function sourceMenuItem(label,action,extra=''){return `<button type="button" role="menuitem" ${extra} onclick="this.closest('[popover]').hidePopover();${action}">${esc(label)}</button>`}
+function sourceMenu(source,i){
+  const id='source-menu-'+i;
+  const items=(source.skills===undefined?sourceMenuItem('Install all skills…',`showInstallation('source',${i},true)`):'')
+    +sourceMenuItem('Copy install command',`copyInstall(${i})`)
+    +sourceMenuItem('Add to stack…',`addSourceToStack(${i})`)
+    +sourceMenuItem('Create profile',`createProfileFromSource(${i})`)
+    +sourceMenuItem('Edit',`editSource(${i})`)
+    +sourceMenuItem('Remove bookmark',`removeSource(${i})`,'class="danger"');
+  return `<button type="button" class="source-menu-trigger" popovertarget="${id}" aria-label="More actions for ${esc(source.name)}" aria-haspopup="menu">⋯</button><div id="${id}" class="skill-invoc-popover skills-folder-popover source-menu" popover role="menu">${items}</div>`;
+}
+function sourceSelection(source,i){
+  if(source.skills===undefined)return '<span class="meta">All skills</span>';
+  const expanded=expandedSources.has(source.source);
+  const label=`${source.skills.length} ${source.skills.length===1?'skill':'skills'}`;
+  return `<button type="button" class="text source-skills-toggle" aria-expanded="${expanded}" aria-controls="source-skills-${i}" onclick="toggleSourceSkills(${i})">${label}</button>`;
+}
+function toggleSourceSkills(i){
+  const source=favoriteSources[i];if(!source)return;
+  if(expandedSources.has(source.source))expandedSources.delete(source.source);else expandedSources.add(source.source);
+  renderSourceList();
+}
+function sourceRow(source,i){
+  const expanded=source.skills!==undefined&&expandedSources.has(source.source);
+  const description=source.description?`<span class="source-description">${esc(source.description)}</span>`:'';
+  const skills=expanded?`<ul class="source-skill-tags" id="source-skills-${i}">${source.skills.map(name=>`<li class="tag">${esc(name)}</li>`).join('')}</ul>`:'';
+  const stacks=sourceStacks(source);
+  const stackTags=stacks.length?`<ul class="source-stack-tags" aria-label="In stacks">${stacks.map(name=>`<li><button type="button" class="source-stack-tag" onclick="setSourcesTab('stacks')" title="In stack ${esc(name)} · open Stacks">${esc(name)}</button></li>`).join('')}</ul>`:'';
+  return `<article class="source-item" data-od-id="favorite-source-${i}"><div class="source-item-main"><h3>${esc(source.name)}</h3><div class="source-item-meta">${sourceReference(source)}${description}</div>${stackTags}${skills}</div><div class="source-item-selection">${sourceSelection(source,i)}</div><div class="source-item-actions">${button('Install',`showInstallation('source',${i})`)}${sourceMenu(source,i)}</div></article>`;
+}
+function renderSourceList(){
+  const host=$('sourceList');if(!host)return;
+  const shown=favoriteSources.map((source,i)=>[source,i]).filter(([source])=>sourceMatches(source,sourceQuery));
+  host.innerHTML=shown.length?shown.map(([source,i])=>sourceRow(source,i)).join(''):`<div class="empty"><h3>No matching sources</h3><p class="sub">Search covers names, links, descriptions, selected skills and stack names.</p></div>`;
+}
+function setSourceQuery(value){sourceQuery=value;renderSourceList()}
+function sourceLinks(){
+  return favoriteSources.filter(source=>sourceMatches(source,sourceQuery)).map(source=>sourceWebUrl(source.source)||source.source);
+}
+function copySourceLinks(){
+  const links=sourceLinks();
+  if(!links.length){toast('No sources to copy.');return}
+  return copyText(links.join('\n'),links.length===favoriteSources.length?'All source links':`${links.length} source ${links.length===1?'link':'links'}`);
+}
+let sourcesTab='sources';
+function setSourcesTab(tab){
+  if(!['sources','stacks'].includes(tab))return;
+  sourcesTab=tab;renderSources();$('sourcesTab-'+tab)?.focus();
+}
+function sourcesTabKey(event){
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+  event.preventDefault();
+  setSourcesTab(event.key==='Home'?'sources':event.key==='End'?'stacks':sourcesTab==='sources'?'stacks':'sources');
+}
+function sourcesTabs(){
+  const tabs=[['sources','Sources',favoriteSources.length],['stacks','Stacks',savedStacks().length]];
+  return `<div class="page-tabs" role="tablist" aria-label="Sources and stacks">${tabs.map(([id,label,count])=>`<button type="button" role="tab" id="sourcesTab-${id}" aria-selected="${sourcesTab===id}" aria-controls="sourcesPanel" tabindex="${sourcesTab===id?0:-1}" onclick="setSourcesTab('${id}')" onkeydown="sourcesTabKey(event)">${label} <span class="meta">${count}</span></button>`).join('')}</div>`;
+}
 function renderSources(){
   if(!scopeNames().includes(installScope))installScope='Global';
-  const list=favoriteSources.length?`<div class="ledger source-collection ${sourcesLayout==='cards'?'source-gallery':''}">${favoriteSources.map((x,i)=>`<article class="row source-row" data-od-id="favorite-source-${i}"><div class="source-info"><div class="source-card-heading"><h2>${esc(x.name)}</h2>${button('Create profile',`createProfileFromSource(${i})`,'text')}</div>${sourceReference(x)}${sourceSelectionSummary(x)}</div><div class="inline">${button('Install',`showInstallation('source',${i})`)}${x.skills===undefined?button('Install all skills…',`showInstallation('source',${i},true)`,'text'):''}${button('Copy install command',`copyInstall(${i})`,'text')}${button('Edit',`editSource(${i})`,'text')}${button('Remove bookmark',`removeSource(${i})`,'text')}</div></article>`).join('')}</div>`:`<div class="empty" data-od-id="sources-empty"><h2>No favorite sources yet</h2><p class="sub">Save a name and repository link to keep it close. Bookmarks do not install or enable skills.</p></div>`;
-  $('view').innerHTML=head('Sources & Stacks','Keep repository bookmarks and reusable selections from multiple sources.','<div class="inline source-actions">'+button('Add source','editSource()')+button('Create stack','createStack()')+button('Import stack','importStack()','primary')+'</div>')+`<section class="source-destination" data-od-id="installation-destination"><div class="toolbar"><label>Installation destination<select onchange="installScope=this.value;renderSources()">${scopeOptions(installScope)}</select></label><details class="source-options"><summary>Agent selection · optional</summary><label>Installation agent<select onchange="installAgent=this.value"><option value="interactive" ${installAgent==='interactive'?'selected':''}>Choose interactively in CLI</option>${['codex','claude-code','cursor','opencode'].map(a=>`<option value="${a}" ${installAgent===a?'selected':''}>${a}</option>`).join('')}</select></label></details>${button('Copy all sources script','copyInstallAll()','',favoriteSources.length?'':'disabled')}</div><p class="hint">Copy commands to run yourself, or use Install on a source or stack to run Skills CLI here.</p></section>`+`<div class="source-section-heading"><h2>Sources <span class="meta">${favoriteSources.length}</span></h2>${sourceLayoutControls()}</div>`+list+renderStacks(sourcesLayout)+`<aside class="note"><span class="table-label">Bookmarks, not inventory</span><p>Sources and stacks travel with your configuration. Removing one leaves installed skills unchanged. Refreshing a stack changes its saved selection; update installed packages from Installed Skills.</p></aside>`;
+  const search=favoriteSources.length?`<div class="source-list-tools"><label class="source-search"><span class="sr-only">Search sources</span><input type="search" id="sourceSearch" placeholder="Search sources…" value="${esc(sourceQuery)}" oninput="setSourceQuery(this.value)"></label>${button('Copy links','copySourceLinks()','','title="Copy the links of the sources shown, one per line"')}</div>`:'';
+  const list=favoriteSources.length?`${search}<div class="source-list" id="sourceList"></div>`:`<div class="empty" data-od-id="sources-empty"><h2>No favorite sources yet</h2><p class="sub">Save a name and repository link to keep it close. Bookmarks do not install or enable skills.</p></div>`;
+  const toolbar=`<section class="source-destination" data-od-id="installation-destination"><div class="toolbar"><label>Installation destination<select onchange="installScope=this.value;renderSources()">${scopeOptions(installScope)}</select></label><details class="source-options"><summary>Agent selection · optional</summary><label>Installation agent<select onchange="installAgent=this.value"><option value="interactive" ${installAgent==='interactive'?'selected':''}>Choose interactively in CLI</option>${['codex','claude-code','cursor','opencode'].map(a=>`<option value="${a}" ${installAgent===a?'selected':''}>${a}</option>`).join('')}</select></label></details>${sourcesTab==='sources'?button('Copy all sources script','copyInstallAll()','',favoriteSources.length?'':'disabled'):''}</div><p class="hint">Copy commands to run yourself, or use Install on a source or stack to run Skills CLI here.</p></section>`;
+  const panel=sourcesTab==='sources'?list:renderStacks(sourcesLayout,sourceLayoutControls());
+  $('view').innerHTML=head('Sources & Stacks','Keep repository bookmarks and reusable selections from multiple sources.','<div class="inline source-actions">'+button('Add source','editSource()')+button('Create stack','createStack()')+button('Import stack','importStack()','primary')+'</div>')+toolbar+sourcesTabs()+`<div id="sourcesPanel" role="tabpanel" aria-labelledby="sourcesTab-${sourcesTab}">${panel}</div>`+`<aside class="note"><span class="table-label">Bookmarks, not inventory</span><p>Sources and stacks travel with your configuration. Removing one leaves installed skills unchanged. Refreshing a stack changes its saved selection; update installed packages from Installed Skills.</p></aside>`;
+  if(sourcesTab==='sources')renderSourceList();
 }
 async function createProfileFromSource(index){
   const source=favoriteSources[index];
@@ -120,7 +193,7 @@ function sourceReferenceHint(source){
 function editSource(i){
   const x=favoriteSources[i]||{name:'',source:''};
   sourcePicker={kind:'source',source:x.source,mode:x.skills===undefined?'all':'selected',names:[...(x.skills||[])],selected:new Set(x.skills||[]),query:'',selectedOnly:false,descriptions:{},version:0,loading:false,loaded:false};
-  modal(i===undefined?'Add favorite source':'Edit favorite source',`<label>Name<input id="sourceName" value="${esc(x.name)}" maxlength="120"></label><label>Source repository link<input id="sourceLink" value="${esc(x.source)}" placeholder="https://github.com/owner/repository" oninput="sourceLinkChanged()" aria-describedby="sourceHint sourceError"></label><p class="hint" id="sourceHint" aria-live="polite">${esc(sourceReferenceHint(x.source))}</p><fieldset class="profile-source"><legend>Skills to install</legend><div class="inline"><label class="check"><input type="radio" name="sourceSkills" value="all" ${sourcePicker.mode==='all'?'checked':''} onchange="setSourceMode(this.value)"><span>All skills</span></label><label class="check"><input type="radio" name="sourceSkills" value="selected" ${sourcePicker.mode==='selected'?'checked':''} onchange="setSourceMode(this.value)"><span>Choose skills</span></label></div></fieldset><div id="sourceSelection" ${sourcePicker.mode==='all'?'hidden':''}>${button('Find skills','discoverSourceSkills()','','id="discoverSourceSkills"')}<div id="sourceDiscovery"></div></div><p id="sourceError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Save bookmark',`saveSource(${i===undefined?-1:i})`,'primary','id="saveSource"'));
+  modal(i===undefined?'Add favorite source':'Edit favorite source',`<label>Name<input id="sourceName" value="${esc(x.name)}" maxlength="120"></label><label>Description · optional<input id="sourceDescription" value="${esc(x.description||'')}" maxlength="280" placeholder="What you use it for"></label><label>Source repository link<input id="sourceLink" value="${esc(x.source)}" placeholder="https://github.com/owner/repository" oninput="sourceLinkChanged()" aria-describedby="sourceHint sourceError"></label><p class="hint" id="sourceHint" aria-live="polite">${esc(sourceReferenceHint(x.source))}</p><fieldset class="profile-source"><legend>Skills to install</legend><div class="inline"><label class="check"><input type="radio" name="sourceSkills" value="all" ${sourcePicker.mode==='all'?'checked':''} onchange="setSourceMode(this.value)"><span>All skills</span></label><label class="check"><input type="radio" name="sourceSkills" value="selected" ${sourcePicker.mode==='selected'?'checked':''} onchange="setSourceMode(this.value)"><span>Choose skills</span></label></div></fieldset><div id="sourceSelection" ${sourcePicker.mode==='all'?'hidden':''}>${button('Find skills','discoverSourceSkills()','','id="discoverSourceSkills"')}<div id="sourceDiscovery"></div></div><p id="sourceError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Save bookmark',`saveSource(${i===undefined?-1:i})`,'primary','id="saveSource"'));
   showSourceSelection();
 }
 function showSourceSelection(){
@@ -163,12 +236,13 @@ async function discoverSourceSkills(){
   finally{if(isCurrent()){picker.loading=false;control.disabled=false;control.textContent='Find skills';updateSourceSave()}}
 }
 function saveSource(i){
-  const name=$('sourceName').value.trim(),source=$('sourceLink').value.trim();
+  const name=$('sourceName').value.trim(),source=$('sourceLink').value.trim(),description=$('sourceDescription').value.trim();
   if(!name||!validSource(source)){$('sourceError').textContent='Name the source and enter a repository reference without control characters or a leading dash.';return}
   if(sourcePicker.loading)return;
   const skills=sourcePicker.mode==='selected'?[...sourcePicker.selected]:undefined;
   if(!validSkillSelection(skills)){$('sourceError').textContent='Choose at least one skill or use All skills.';return}
-  const bookmark={name,source,...(skills===undefined?{}:{skills})},next=currentSettings.favoriteSources.map(entry=>({...entry}));
+  if(description&&!safeShellValue(description)){$('sourceError').textContent='Use a description without control characters.';return}
+  const bookmark={name,source,...(description?{description}:{}),...(skills===undefined?{}:{skills})},next=currentSettings.favoriteSources.map(entry=>({...entry}));
   if(i<0)next.push(bookmark);else next[i]=bookmark;
   return saveForm(()=>savePatch({favoriteSources:next}),'Bookmark saved. No skills installed.','sourceError');
 }

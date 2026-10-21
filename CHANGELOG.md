@@ -11,8 +11,17 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+### Added
+
+- Sources are a compact list with a search field. Each row shows the name, link, an optional description you write yourself, and its selection; selected skills expand inline. **Install** stays visible and other actions move to a ⋯ menu. Sources and Stacks have their own tabs on the page, and the Cards/List switch applies to stacks only.
+- Creating or editing a stack can add a new repository directly: find its skills, pick some, and when the stack is saved the repository is also saved to Sources with the same picks. Review lists the new sources; cancelling saves nothing.
+- Source rows show tags for the stacks that use them, matching the same repository written as `owner/repo` or a full URL. Clicking a tag opens Stacks, and source search also matches stack names.
+- **Copy links** beside the source search copies the links of the sources shown, one per line (browser URLs where available).
+- Source rows offer **Add to stack…**. Choose an existing stack (remote ones are flagged) or a new one, then pick which skills from that source to include and review the change before saving. Nothing is installed or activated.
+
 ### Fixed
 
+- Finding skills in a source with no valid skills explains why instead of showing raw installer output: it names each skipped `SKILL.md` and, for YAML frontmatter errors, suggests quoting the description or using a fixed fork.
 - The **Import through CLAUDE.md** hint explains the benefit first: Claude loads your rules in projects with their own `CLAUDE.md` and in apps that skip `AGENTS.md`.
 - Move your AFK setup into an existing folder without disabling skills or disconnecting synced rules. Choose between loading the existing setup and moving your current one; incoming files win conflicts, destination AFK files are backed up, and skill files stay in place.
 - Source forms explain ambiguous GitHub branch URLs and show the explicit `#branch-name` format. Failed source discovery removes terminal formatting and gives branch-specific recovery guidance without rewriting the source.

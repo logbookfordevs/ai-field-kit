@@ -108,3 +108,31 @@ it.each([
   else expect(message).not.toContain("If");
   expect(spawn.mock.calls[0]?.[1]).toContain(source);
 });
+
+it("explains sources without valid skills, naming skipped files and YAML guidance without installer noise", async () => {
+  spawn.mockImplementation(() => {
+    const child = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough() });
+    queueMicrotask(() => {
+      child.stdout.write("███ banner ███\n│ Tip: use the --yes flag\n◇ Repository cloned\n│\n⚠ Skipped /var/folders/_w/abc/T/skills-vD7azl/skills/iso-figure/SKILL.md — YAML parse error: Nested mappings are not allowed in compact mappings at line 2, column 14: description: Build a figure: monochrome\n◇ No skills found\n└ No valid skills found. Skills require a SKILL.md with name and description.\nnpm notice New minor version of npm available!\n");
+      child.emit("close", 1);
+    });
+    return child;
+  });
+  const message = (await preparation.discover("https://github.com/owner/repo").catch((error: Error) => error) as Error).message;
+  expect(message).toContain("No valid skills found in this source.");
+  expect(message).toContain("- skills/iso-figure/SKILL.md: YAML parse error at line 2, column 14");
+  expect(message).toContain("unquoted description");
+  for (const noise of ["banner", "npm notice", "Tip:", "/var/folders"]) expect(message).not.toContain(noise);
+});
+
+it("explains an empty source without inventing skipped files", async () => {
+  spawn.mockImplementation(() => {
+    const child = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough() });
+    queueMicrotask(() => { child.stdout.write("◇ No skills found\n"); child.emit("close", 1); });
+    return child;
+  });
+  const message = (await preparation.discover("owner/empty").catch((error: Error) => error) as Error).message;
+  expect(message).toContain("No valid skills found in this source.");
+  expect(message).not.toContain("skipped");
+  expect(message).toContain("valid frontmatter");
+});

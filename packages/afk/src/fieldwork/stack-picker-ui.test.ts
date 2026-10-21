@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import { createContext, runInContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 
-const scripts = ["members.js", "stacks.js"].map(name => readFileSync(new URL(`../../web/${name}`, import.meta.url), "utf8")).join("\n");
+const scripts = ["members.js", "sources.js", "stacks.js"].map(name => readFileSync(new URL(`../../web/${name}`, import.meta.url), "utf8")).join("\n");
 
 function setup() {
-  const fields = new Map<string, { value: string; textContent: string; innerHTML: string; hidden: boolean; checked: boolean; open: boolean; firstElementChild: { isConnected: boolean }; attributes: Record<string, string>; parentId?: string; appendChild(child: { parentId?: string }): void; setAttribute(name: string, value: string): void }>();
+  const fields = new Map<string, { value: string; textContent: string; innerHTML: string; hidden: boolean; checked: boolean; open: boolean; firstElementChild: { isConnected: boolean }; attributes: Record<string, string>; parentId?: string; appendChild(child: { parentId?: string }): void; setAttribute(name: string, value: string): void; insertAdjacentHTML(position: string, html: string): void; focus(): void }>();
   const field = (id: string) => {
-    if (!fields.has(id)) fields.set(id, { value: "", textContent: "", innerHTML: "", hidden: false, checked: false, open: true, firstElementChild: { isConnected: true }, attributes: {}, appendChild(child) { child.parentId = id; }, setAttribute(name, value) { this.attributes[name] = value; } });
+    if (!fields.has(id)) fields.set(id, { value: "", textContent: "", innerHTML: "", hidden: false, checked: false, open: true, firstElementChild: { isConnected: true }, attributes: {}, appendChild(child) { child.parentId = id; }, setAttribute(name, value) { this.attributes[name] = value; }, insertAdjacentHTML(_position, html) { this.innerHTML += html; }, focus() {} });
     return fields.get(id)!;
   };
   const sources = [{ name: "Selected", source: "owner/one", skills: ["review"] }, { name: "All", source: "owner/two" }];
@@ -129,5 +129,61 @@ describe("stack source picker", () => {
     ui.field("sheet").open = false;
     await ui.run<Promise<void>>("chooseStackSkills(1)");
     expect(ui.run<number>("stackDraft.pickers.size")).toBe(0);
+  });
+
+  describe("adding a repository from the stack form", () => {
+    it("adds a new repository as a marked choice, discovers its skills and keeps bookmark-only fields out of the manifest", async () => {
+      const ui = setup();
+      let reviewed: unknown[] = [];
+      ui.context.reviewStack = (...args: unknown[]) => { reviewed = args; };
+      ui.field("stackNewSource").value = "https://github.com/owner/new-tools.git";
+      await ui.run<Promise<void>>("addStackRepository()");
+      expect(ui.run("stackDraft.choices[2]")).toEqual({ name: "new-tools", source: "https://github.com/owner/new-tools.git", skills: [], isNew: true });
+      expect(ui.field("stackChoices").innerHTML).toContain("New source");
+      expect(ui.requests.at(-1)).toEqual({ path: "discover", data: { source: "https://github.com/owner/new-tools.git" } });
+      expect(ui.run<number>("memberPicker.index")).toBe(2);
+      ui.run("memberChanged({value:'video',checked:true})");
+      ui.context.document = { querySelectorAll: () => [{ dataset: { stackSource: "2" } }] };
+      ui.field("stackName").value = "Tools";
+      ui.field("stackId").value = "tools";
+      await ui.run<Promise<void>>("previewNewStack(stackDraft.version)");
+      expect(ui.requests.at(-1)).toEqual({ path: "stack/preview", data: { manifest: { version: 1, id: "tools", name: "Tools", sources: [{ name: "new-tools", source: "https://github.com/owner/new-tools.git", skills: ["video"] }] } } });
+      expect(reviewed[1]).toEqual([{ name: "new-tools", source: "https://github.com/owner/new-tools.git", skills: ["video"] }]);
+      expect(ui.sources).toHaveLength(2);
+    });
+
+    it("selects an existing choice instead of duplicating an equivalent repository reference", async () => {
+      const ui = setup();
+      ui.field("stackNewSource").value = "https://github.com/owner/two";
+      await ui.run<Promise<void>>("addStackRepository()");
+      expect(ui.run<number>("stackDraft.choices.length")).toBe(2);
+      expect(ui.run<number>("memberPicker.index")).toBe(1);
+      ui.field("stackNewSource").value = "--not-a-source";
+      await ui.run<Promise<void>>("addStackRepository()");
+      expect(ui.field("stackError").textContent).toContain("Enter a repository");
+      expect(ui.run<number>("stackDraft.choices.length")).toBe(2);
+    });
+
+    it("saves new sources with the stack's picks only after the stack saves, skipping ones bookmarked meanwhile", async () => {
+      const ui = setup();
+      const calls: string[] = [];
+      let patch: unknown;
+      ui.context.currentSettings = { favoriteSources: ui.sources };
+      ui.context.saveForm = (action: () => Promise<void>) => action();
+      ui.context.refresh = async () => { calls.push("refresh"); ui.context.currentSettings = { favoriteSources: [...ui.sources, { name: "Late", source: "owner/late" }] }; };
+      ui.context.savePatch = async (value: unknown) => { calls.push("patch"); patch = value; };
+      ui.context.request = async (path: string) => { calls.push(path); };
+      ui.context.proposal = { stack: { manifest: { version: 1, id: "tools", name: "Tools", sources: [] } }, expected: null };
+      ui.context.additions = [{ name: "new-tools", source: "owner/new-tools", skills: ["video"] }, { name: "late", source: "https://github.com/owner/late", skills: ["x"] }];
+      ui.run("reviewStack(proposal,additions)");
+      await ui.run<Promise<void>>("saveReviewedStack()");
+      expect(calls).toEqual(["stack/save", "refresh", "patch"]);
+      expect((patch as { favoriteSources: unknown[] }).favoriteSources.slice(-2)).toEqual([{ name: "Late", source: "owner/late" }, { name: "new-tools", source: "owner/new-tools", skills: ["video"] }]);
+      calls.length = 0;
+      ui.context.proposal = { stack: { manifest: { version: 1, id: "solo", name: "Solo", sources: [] } }, expected: null };
+      ui.run("reviewStack(proposal)");
+      await ui.run<Promise<void>>("saveReviewedStack()");
+      expect(calls).toEqual(["stack/save"]);
+    });
   });
 });

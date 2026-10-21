@@ -45,7 +45,7 @@ beforeEach(() => {
     $: field, URL, favoriteSources: sources, currentSettings: { favoriteSources: sources },
     installScope: "Global", installAgent: "interactive", projects: [{ name: "Studio", path: "/work/demo studio" }], inventories: {},
     esc: (text: unknown) => String(text).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;"),
-    button: () => "", request: (_path: string, data: unknown) => discoverRequest(data),
+    button: (label: string) => `<button>${label}</button>`, request: (_path: string, data: unknown) => discoverRequest(data),
     savePatch: async (value: unknown) => { patch = value; }, saveForm: async (action: () => Promise<void>) => action(),
     modal: () => { field("sheet").open = true; },
   });
@@ -101,23 +101,108 @@ describe("favorite-source UI and copied commands", () => {
     expect(patch).toBeUndefined();
   });
 
-  it("switches both collection views without changing bookmarks or installation target", () => {
+  function renderPage(): void {
     context.scopeNames = () => ["Global"];
     context.scopeOptions = () => "";
     context.head = () => "";
-    context.renderStacks = (layout: string) => `<section data-layout="${layout}"></section>`;
-    const before = JSON.stringify(sources);
+    context.renderStacks = (layout: string, controls: string) => `<section data-layout="${layout}">${controls}</section>`;
+    context.savedStacks ??= () => [];
     evaluate("renderSources()");
-    expect(field("view").innerHTML).toContain("source-gallery");
+  }
+
+  it("separates sources and stacks into tabs, keeping the layout switch for stacks only", () => {
+    const before = JSON.stringify(sources);
+    renderPage();
+    expect(field("view").innerHTML).toContain('id="sourcesTab-sources" aria-selected="true"');
+    expect(field("view").innerHTML).toContain("Copy all sources script");
+    expect(field("view").innerHTML).not.toContain("data-layout");
+    expect(field("view").innerHTML).not.toContain("source-view-switch");
+    expect(field("sourceList").innerHTML).toContain('data-od-id="favorite-source-0"');
+    expect(field("sourceList").innerHTML).toContain('data-od-id="favorite-source-1"');
+    evaluate("setSourcesTab('stacks')");
+    expect(field("view").innerHTML).toContain('id="sourcesTab-stacks" aria-selected="true"');
     expect(field("view").innerHTML).toContain('data-layout="cards"');
+    expect(field("view").innerHTML).toContain("source-view-switch");
+    expect(field("view").innerHTML).not.toContain("Copy all sources script");
+    evaluate("sourcesTabKey({key:'ArrowRight',preventDefault(){}})");
+    expect(evaluate("sourcesTab")).toBe("sources");
+    evaluate("setSourcesTab('invalid');setSourcesTab('stacks')");
+    expect(evaluate("sourcesTab")).toBe("stacks");
     evaluate("setSourcesLayout('list')");
-    expect(field("view").innerHTML).not.toContain("source-gallery");
     expect(field("view").innerHTML).toContain('data-layout="list"');
     evaluate("setSourcesLayout('cards');setSourcesLayout('invalid')");
     expect(evaluate("sourcesLayout")).toBe("cards");
-    expect(evaluate("installScope")).toBe("Global");
     expect(JSON.stringify(sources)).toBe(before);
     expect(patch).toBeUndefined();
+  });
+
+  it("filters sources by name, link, description and selected skill without changing them", () => {
+    sources[1]!.description = "Video editing helpers";
+    renderPage();
+    for (const [query, shown, hidden] of [["video", 1, 0], ["REVIEW", 0, 1], ["owner/other", 1, 0], ["selected", 0, 1]] as const) {
+      evaluate(`setSourceQuery(${JSON.stringify(query)})`);
+      expect(field("sourceList").innerHTML).toContain(`favorite-source-${shown}`);
+      expect(field("sourceList").innerHTML).not.toContain(`favorite-source-${hidden}`);
+    }
+    evaluate("setSourceQuery('nothing matches')");
+    expect(field("sourceList").innerHTML).toContain("No matching sources");
+    evaluate("setSourceQuery('')");
+    expect(field("sourceList").innerHTML).toContain("favorite-source-1");
+  });
+
+  it("expands a selected source's skills inline and offers secondary actions in its menu", () => {
+    renderPage();
+    expect(field("sourceList").innerHTML).not.toContain('<li class="tag">review</li>');
+    evaluate("toggleSourceSkills(0)");
+    expect(field("sourceList").innerHTML).toContain('<li class="tag">review</li>');
+    expect(field("sourceList").innerHTML).toContain('aria-expanded="true"');
+    evaluate("toggleSourceSkills(0)");
+    expect(field("sourceList").innerHTML).not.toContain('<li class="tag">review</li>');
+    const menu = evaluate<string>("sourceMenu(favoriteSources[1],1)");
+    for (const action of ["showInstallation('source',1,true)", "copyInstall(1)", "addSourceToStack(1)", "createProfileFromSource(1)", "editSource(1)", "removeSource(1)"]) expect(menu).toContain(action);
+    expect(evaluate<string>("sourceMenu(favoriteSources[0],0)")).not.toContain("Install all skills");
+  });
+
+  it("copies browser links for the sources shown, falling back to the saved reference", async () => {
+    sources.push({ name: "Local", source: "/tmp/skills" });
+    let copied: [string, string] | undefined;
+    context.copyText = async (text: string, label: string) => { copied = [text, label]; };
+    renderPage();
+    await evaluate<Promise<void>>("copySourceLinks()");
+    expect(copied).toEqual(["https://github.com/owner/toolkit\nhttps://github.com/owner/other\n/tmp/skills", "All source links"]);
+    evaluate("setSourceQuery('toolkit')");
+    await evaluate<Promise<void>>("copySourceLinks()");
+    expect(copied).toEqual(["https://github.com/owner/toolkit", "1 source link"]);
+    expect(patch).toBeUndefined();
+  });
+
+  it("tags sources with the stacks that use them, matching equivalent repository references", () => {
+    context.savedStacks = () => [
+      { manifest: { name: "Creative", sources: [{ source: "https://github.com/owner/toolkit.git", skills: ["review"] }] } },
+      { manifest: { name: "Ops", sources: [{ source: "owner/elsewhere", skills: ["deploy"] }] } },
+    ];
+    renderPage();
+    const html = field("sourceList").innerHTML;
+    expect(html.slice(0, html.indexOf("favorite-source-1"))).toContain(">Creative</button>");
+    expect(html).not.toContain(">Ops</button>");
+    evaluate("setSourceQuery('creative')");
+    expect(field("sourceList").innerHTML).toContain("favorite-source-0");
+    expect(field("sourceList").innerHTML).not.toContain("favorite-source-1");
+  });
+
+  it("saves an optional manual description and omits it when blank", async () => {
+    evaluate("editSource()");
+    field("sourceName").value = "Docs";
+    field("sourceLink").value = "owner/docs";
+    field("sourceDescription").value = "  Writing helpers  ";
+    await evaluate<Promise<void>>("saveSource(-1)");
+    expect((patch as { favoriteSources: FavoriteSource[] }).favoriteSources.at(-1)).toEqual({ name: "Docs", source: "owner/docs", description: "Writing helpers" });
+    evaluate("editSource()");
+    field("sourceName").value = "Docs";
+    field("sourceLink").value = "owner/docs";
+    field("sourceDescription").value = "   ";
+    await evaluate<Promise<void>>("saveSource(-1)");
+    expect((patch as { favoriteSources: FavoriteSource[] }).favoriteSources.at(-1)).toEqual({ name: "Docs", source: "owner/docs" });
   });
 
   it("requires an explicit target before starting installation without changing copied commands", async () => {

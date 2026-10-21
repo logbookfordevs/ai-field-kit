@@ -17,8 +17,28 @@ function repositoryDirectory(value: unknown): string | undefined {
   return parts.slice(0, -1).join("/") || ".";
 }
 
+function skippedSkills(transcript: string): string[] {
+  return transcript.split("\n").flatMap(line => {
+    const match = line.match(/Skipped\s+(\S*SKILL\.md)\s+[—–-]\s+(.+)$/);
+    if (!match) return [];
+    const path = match[1]!.replace(/\\/g, "/").match(/\/skills-[^/]+\/(.+)$/)?.[1] ?? match[1]!.split("/").slice(-2).join("/");
+    const yaml = match[2]!.match(/YAML parse error.*?(at line \d+, column \d+)/);
+    return [`${path}: ${yaml ? `YAML parse error ${yaml[1]}` : match[2]!.trim()}`];
+  });
+}
+
+function noValidSkills(transcript: string): Error {
+  const skipped = skippedSkills(transcript);
+  const details = skipped.length ? `\nSkills CLI skipped:\n${skipped.map(entry => `- ${entry}`).join("\n")}` : "";
+  const yaml = skipped.some(entry => entry.includes("YAML parse error"))
+    ? "\nA YAML error in SKILL.md frontmatter is often an unquoted description containing \": \". Ask the maintainer to quote it, or add a fixed fork as the source."
+    : "\nEach skill needs a SKILL.md with a name and description in valid frontmatter.";
+  return new Error(`No valid skills found in this source.${details}${yaml}`);
+}
+
 function preparationFailure(source: string, output: string): Error {
   const transcript = new ProcessOutput().append(output).trim();
+  if (/No (valid )?skills found/i.test(transcript)) return noValidSkills(transcript);
   const fatal = transcript.split("\n").find(line => line.includes("fatal:"));
   const summary = fatal ? fatal.slice(fatal.indexOf("fatal:")) : transcript.slice(-4000);
   let guidance = "";

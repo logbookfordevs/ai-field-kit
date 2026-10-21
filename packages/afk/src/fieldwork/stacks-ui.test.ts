@@ -157,6 +157,66 @@ describe("stack management interface", () => {
     resolve({ stack, expected: null }); await pending;
     expect(context.dialog).toBe("Other dialog");
   });
+  describe("adding a source to a stack", () => {
+    function choose(value?: string) {
+      context.document = { querySelector: () => (value === undefined ? null : { value }) };
+      context.renderMembers = () => {};
+      const base = context.$ as (id: string) => Record<string, unknown>;
+      context.$ = (id: string) => Object.assign(base(id), { appendChild() {}, setAttribute() {} });
+      response = { names: ["render", "cut"] };
+    }
+    it("opens the new-stack form with the source's skill picker when no stacks exist", () => {
+      context.currentSettings = {};
+      choose();
+      evaluate("addSourceToStack(1)");
+      expect(evaluate("stackDraft.activeSource")).toBe(1);
+      expect(fields["stackSource-1"]!.checked).toBe(true);
+      expect(evaluate("$('stackId').readOnly")).toBe(false);
+      expect(evaluate("stackDraft.existing")).toBeUndefined();
+    });
+    it("asks which stack to use, flagging stacks that already include the source or come from a remote origin", () => {
+      choose();
+      evaluate("addSourceToStack(0)");
+      expect(context.dialog).toContain("Studio");
+      expect(context.dialog).toContain("Already includes this source");
+      expect(context.dialog).toContain("Remote");
+      expect(context.dialog).toContain("New stack");
+    });
+    it("requires a choice before continuing", () => {
+      choose();
+      evaluate("addSourceToStack(1)");
+      evaluate("continueAddToStack(stackDraft.version)");
+      expect(fields.stackError!.textContent).not.toBe("");
+      expect(evaluate("stackDraft.existing")).toBeUndefined();
+    });
+    it("edits the chosen stack with the source preselected, without saving or touching the bookmark", () => {
+      choose("0");
+      evaluate("addSourceToStack(1)");
+      evaluate("continueAddToStack(stackDraft.version)");
+      expect(evaluate("stackDraft.existing.manifest.id")).toBe("studio");
+      expect(evaluate("stackDraft.activeSource")).toBe(1);
+      expect(fields["stackSource-1"]!.checked).toBe(true);
+      expect(evaluate("favoriteSources[1]")).toEqual({ name: "All", source: "owner/all" });
+      expect(calls.some(call => call.path === "stack/save")).toBe(false);
+    });
+    it("starts a new stack with the source preselected when New stack is chosen", () => {
+      choose("new");
+      evaluate("addSourceToStack(1)");
+      evaluate("continueAddToStack(stackDraft.version)");
+      expect(evaluate("stackDraft.existing")).toBeUndefined();
+      expect(evaluate("stackDraft.activeSource")).toBe(1);
+    });
+  });
+  it("builds stack groups from described bookmarks without bookmark-only fields", async () => {
+    context.favoriteSources = [{ name: "Described", source: "owner/described", description: "Notes for me", skills: ["draw"] }];
+    context.currentSettings = {};
+    context.document = { querySelectorAll: () => [{ dataset: { stackSource: "0" } }] };
+    evaluate("createStack();$('sheetContent').firstElementChild={isConnected:true}");
+    fields.stackName!.value = "Art";
+    fields.stackId!.value = "art";
+    await evaluate<Promise<void>>("previewNewStack(stackDraft.version)");
+    expect(calls).toEqual([{ path: "stack/preview", data: { manifest: { version: 1, id: "art", name: "Art", sources: [{ name: "Described", source: "owner/described", skills: ["draw"] }] } } }]);
+  });
   it("offers every saved bookmark for stack selection", () => {
     evaluate("createStack()");
     expect(evaluate("stackDraft.choices")).toEqual([{ name: "Some", source: "owner/video", skills: ["render"] }, { name: "All", source: "owner/all", skills: [] }]);

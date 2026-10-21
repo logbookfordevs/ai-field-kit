@@ -53,6 +53,7 @@ export interface Profile {
 export interface FavoriteSource {
   name: string;
   source: string;
+  description?: string;
   skills?: string[];
 }
 
@@ -120,6 +121,7 @@ export function validateSettings(value: unknown): Settings {
   if (!tools.every(t => t && Number.isSafeInteger(t.id) && nonempty(t.name) && typeof t.install === "string" && t.install.trim() && !t.install.includes("\0") && typeof t.update === "string" && !t.update.includes("\0"))) throw new Error("Tools need names and install commands.");
   if (new Set(tools.map(t => t.id)).size !== tools.length) throw new Error("Tool identifiers must be unique.");
   if (!sources.every(s => s && nonempty(s.name) && nonempty(s.source) && !s.source.startsWith("-"))) throw new Error("Sources need names and repository references.");
+  if (!sources.every(s => s.description === undefined || (nonempty(s.description) && s.description.length <= 280))) throw new Error("Source descriptions must be short text without control characters.");
   if (!sources.every(s => s.skills === undefined || (Array.isArray(s.skills) && s.skills.length > 0 && s.skills.every(skillName) && new Set(s.skills).size === s.skills.length))) throw new Error("Choose at least one valid, unique skill for each selected source.");
   if (data.stacks !== undefined) {
     if (!Array.isArray(data.stacks)) throw new Error("Stacks must be an array of saved manifests.");

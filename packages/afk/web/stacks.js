@@ -2,10 +2,10 @@ function savedStacks(){return currentSettings.stacks||[]}
 function stackGroups(manifest){
   return manifest.sources.map(group=>`<section class="stack-group"><h3>${esc(group.name)}</h3><code class="path">${esc(group.source)}</code><ul>${group.skills.map(name=>`<li>${esc(name)}</li>`).join('')}</ul></section>`).join('');
 }
-function renderStacks(layout='list'){
+function renderStacks(layout='list',controls=''){
   const stacks=savedStacks();
   const list=stacks.length?`<div class="ledger source-collection ${layout==='cards'?'source-gallery':''}">${stacks.map((stack,i)=>`<article class="row source-row"><div class="source-info"><h3>${esc(stack.manifest.name)} <span class="meta">Stack</span></h3>${stack.manifest.description?`<p class="sub">${esc(stack.manifest.description)}</p>`:''}<p class="meta">${stack.manifest.sources.length} sources · ${stack.manifest.sources.reduce((n,g)=>n+g.skills.length,0)} selected skills</p>${stack.origin?`<code class="path">${esc(stack.origin)}</code>`:'<span class="meta">Local manifest</span>'}<details class="source-members"><summary>Skills by source</summary>${stackGroups(stack.manifest)}</details></div><div class="inline">${button('Install',`showInstallation('stack',${i})`)}${button('Copy install script',`copyStack(${i})`,'text')}${button('Edit',`editStack(${i})`,'text')}${button('Edit JSON',`editStackJson(${i})`,'text')}${stack.origin?button('Refresh manifest',`refreshStack(${i})`,'text'):''}${button('Export JSON',`exportStack(${i})`,'text')}${button('Remove stack',`removeStack(${i})`,'text')}</div></article>`).join('')}</div>`:'<div class="empty"><h3>No stacks yet</h3><p class="sub">Combine selected skills from several sources, or import a published manifest. Saving a stack leaves skills uninstalled and profiles unchanged.</p></div>';
-  return '<section class="stack-section"><h2>Stacks</h2>'+list+'</section>';
+  return `<section class="stack-section">${stacks.length&&controls?`<div class="stack-toolbar">${controls}</div>`:''}`+list+'</section>';
 }
 async function copyStack(index){
   try{const result=await request('stack/script',{id:savedStacks()[index].manifest.id,scope:installScope,agent:installAgent});await copyText(result.script,'Stack install script')}
@@ -36,17 +36,58 @@ async function previewStackInput(version){
   }catch(error){if(stackDialogCurrent(version,body)){$('stackError').textContent=error.message;control.disabled=false}}
 }
 function createStack(){openStackForm()}
-function openStackForm(existing){
+function addSourceToStack(index){
+  const source=favoriteSources[index],stacks=savedStacks();
+  if(!source)return;
+  if(!stacks.length){openStackForm(undefined,source.source);return}
+  const version=++stackDialogVersion;
+  stackDraft={version,focusSource:source.source};
+  const options=stacks.map((stack,i)=>{
+    const includes=stack.manifest.sources.some(group=>group.source===source.source);
+    const notes=[includes?'Already includes this source':'',stack.origin?'Remote · refresh asks before replacing your edits':''].filter(Boolean).join(' · ');
+    return `<label class="check"><input type="radio" name="stackTarget" value="${i}"><span>${esc(stack.manifest.name)}${notes?`<span class="hint">${esc(notes)}</span>`:''}</span></label>`;
+  }).join('');
+  modal('Add '+esc(source.name)+' to a stack',`<p>Choose a stack, then pick which skills from this source to include. You’ll review the change before it’s saved.</p><fieldset class="profile-source"><legend>Stack</legend>${options}<label class="check"><input type="radio" name="stackTarget" value="new"><span>New stack</span></label></fieldset><p class="hint">Nothing is installed or activated.</p><p id="stackError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Choose skills',`continueAddToStack(${version})`,'primary'));
+}
+function continueAddToStack(version){
+  if(!stackDialogCurrent(version))return;
+  const choice=document.querySelector('input[name=stackTarget]:checked');
+  if(!choice){$('stackError').textContent='Choose a stack or start a new one.';return}
+  const source=stackDraft.focusSource;
+  openStackForm(choice.value==='new'?undefined:savedStacks()[Number(choice.value)],source);
+}
+function stackChoiceRow(source,i,checked){
+  const count=source.skills.length?source.skills.length+' skills':'No skills selected';
+  return `<div class="stack-source-choice"><label class="check"><input type="checkbox" id="stackSource-${i}" data-stack-source="${i}" onchange="stackSourceChanged(${i},this.checked)" ${checked?'checked':''}><span>${esc(source.name)}${source.isNew?' <span class="meta">· New source</span>':''} · <span id="stackSourceCount-${i}">${count}</span></span></label>${button('Choose skills',`chooseStackSkills(${i})`,'text',`id="stackChooseSkills-${i}" aria-expanded="false" aria-controls="stackSkillSelection"`)}</div><div id="stackSkillSlot-${i}"></div>`;
+}
+function repositoryName(reference){
+  const path=reference.trim().replace(/#.*$/,'').replace(/\.git$/,'').replace(/\/+$/,'');
+  return path.split(/[/:]/).filter(Boolean).pop()||path;
+}
+function addStackRepository(){
+  const draft=stackDraft,reference=$('stackNewSource').value.trim();
+  $('stackError').textContent='';
+  if(!validSource(reference)){$('stackError').textContent='Enter a repository URL or owner/repository.';$('stackNewSource').focus();return}
+  const existing=draft.choices.findIndex(choice=>sourceKey(choice.source)===sourceKey(reference));
+  if(existing>=0){$('stackNewSource').value='';return chooseStackSkills(existing)}
+  const index=draft.choices.push({name:repositoryName(reference),source:reference,skills:[],isNew:true})-1;
+  $('stackChoices').insertAdjacentHTML('beforeend',stackChoiceRow(draft.choices[index],index,true));
+  $('stackNewSource').value='';
+  return chooseStackSkills(index);
+}
+function openStackForm(existing,focusSource){
   const manifest=existing?.manifest;
   const savedSources=manifest?.sources||[];
-  const choices=[...savedSources,...favoriteSources.filter(source=>!savedSources.some(saved=>saved.source===source.source))].map(source=>({...source,skills:[...(source.skills||[])]}));
+  const choices=[...savedSources,...favoriteSources.filter(source=>!savedSources.some(saved=>saved.source===source.source))].map(source=>({name:source.name,source:source.source,skills:[...(source.skills||[])]}));
   const version=++stackDialogVersion;
   stackDraft={choices,existing,version,pickers:new Map()};
-  modal(existing?'Edit stack':'Create stack',`<p>Name your stack, then select saved sources. Choose specific skills for sources saved as All skills.</p><label>Name<input id="stackName" maxlength="120"></label><label>Identifier<input id="stackId" placeholder="my-stack" maxlength="200"></label><label>Description · optional<input id="stackDescription" maxlength="4000"></label><fieldset class="profile-source"><legend>Source selections</legend>${choices.length?choices.map((source,i)=>`<div class="stack-source-choice"><label class="check"><input type="checkbox" id="stackSource-${i}" data-stack-source="${i}" onchange="stackSourceChanged(${i},this.checked)" ${i<savedSources.length?'checked':''}><span>${esc(source.name)} · <span id="stackSourceCount-${i}">${source.skills.length?source.skills.length+' skills':'No skills selected'}</span></span></label>${button('Choose skills',`chooseStackSkills(${i})`,'text',`id="stackChooseSkills-${i}" aria-expanded="false" aria-controls="stackSkillSelection"`)}</div><div id="stackSkillSlot-${i}"></div>`).join(''):'<p class="hint">Save a source first, or import a manifest.</p>'}</fieldset><div id="stackSkillSelection" class="stack-skill-selection" role="group" hidden><div id="stackDiscovery"></div></div><p class="hint">Selections apply only to this stack. Saved bookmarks stay unchanged. Nothing is installed or activated.</p><p id="stackError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button(existing?'Review changes':'Review stack',`previewNewStack(${version})`,'primary','id="reviewStack"'));
+  modal(existing?'Edit stack':'Create stack',`<p>Name your stack, then select saved sources. Choose specific skills for sources saved as All skills.</p><label>Name<input id="stackName" maxlength="120"></label><label>Identifier<input id="stackId" placeholder="my-stack" maxlength="200"></label><label>Description · optional<input id="stackDescription" maxlength="4000"></label><fieldset class="profile-source"><legend>Source selections</legend><div id="stackChoices">${choices.map((source,i)=>stackChoiceRow(source,i,i<savedSources.length)).join('')}</div><div class="stack-add-source"><label>Add a repository<input id="stackNewSource" placeholder="owner/repository or URL" onkeydown="if(event.key==='Enter'){event.preventDefault();addStackRepository()}"></label>${button('Find skills','addStackRepository()','','id="stackAddRepository"')}</div><p class="hint">A new repository is also saved as a source, with the skills you pick here, when you save the stack.</p></fieldset><div id="stackSkillSelection" class="stack-skill-selection" role="group" hidden><div id="stackDiscovery"></div></div><p class="hint">Selections apply only to this stack. Saved bookmarks stay unchanged. Nothing is installed or activated.</p><p id="stackError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button(existing?'Review changes':'Review stack',`previewNewStack(${version})`,'primary','id="reviewStack"'));
   $('stackName').value=manifest?.name||'';
   $('stackId').value=manifest?.id||'';
   $('stackId').readOnly=Boolean(existing);
   $('stackDescription').value=manifest?.description||'';
+  const focus=focusSource===undefined?-1:choices.findIndex(choice=>choice.source===focusSource);
+  if(focus>=0){chooseStackSkills(focus);$('stackChooseSkills-'+focus).scrollIntoView?.({block:'center'})}
 }
 function stackSourceChanged(index,checked){
   if(checked&&(!stackDraft.choices[index].skills.length||stackDraft.pickers.has(index)))return chooseStackSkills(index);
@@ -83,8 +124,10 @@ function updateStackSelection(){
 }
 async function previewNewStack(version){
   const body=$('sheetContent').firstElementChild;
-  const sources=[...document.querySelectorAll('[data-stack-source]:checked')].map(input=>stackDraft.choices[Number(input.dataset.stackSource)]);
-  if(sources.some(source=>!source.skills.length)){$('stackError').textContent='Choose at least one skill for each selected source.';return}
+  const selected=[...document.querySelectorAll('[data-stack-source]:checked')].map(input=>stackDraft.choices[Number(input.dataset.stackSource)]);
+  if(selected.some(source=>!source.skills.length)){$('stackError').textContent='Choose at least one skill for each selected source.';return}
+  const sources=selected.map(({name,source,skills})=>({name,source,skills}));
+  const newSources=selected.filter(source=>source.isNew).map(({name,source,skills})=>({name,source,skills:[...skills]}));
   const existing=stackDraft.existing;
   const manifest={...(existing?.manifest||{version:1}),id:existing?.manifest.id||$('stackId').value.trim(),name:$('stackName').value.trim(),sources};
   const description=$('stackDescription').value.trim();if(description)manifest.description=description;else delete manifest.description;
@@ -92,7 +135,7 @@ async function previewNewStack(version){
     const proposal=await request('stack/preview',existing?{id:existing.manifest.id,manifest}:{manifest});
     if(!stackDialogCurrent(version,body))return;
     if(existing?.origin)proposal.stack.origin=existing.origin;
-    reviewStack(proposal);
+    reviewStack(proposal,newSources);
   }
   catch(error){if(stackDialogCurrent(version,body))$('stackError').textContent=error.message}
 }
@@ -118,14 +161,28 @@ async function refreshStack(index){
   try{const proposal=await request('stack/preview',{id:existing.manifest.id,origin:existing.origin});if(stackDialogCurrent(version,body))reviewStack(proposal)}
   catch(error){if(stackDialogCurrent(version,body))$('stackError').textContent=error.message}
 }
-function reviewStack(proposal){
-  ++stackDialogVersion;stackDraft=proposal;
+let pendingStackSources=[];
+function reviewStack(proposal,newSources=[]){
+  ++stackDialogVersion;stackDraft=proposal;pendingStackSources=newSources;
   const {stack,expected}=proposal,manifest=stack.manifest;
   const changed=expected&&JSON.stringify(expected)!==JSON.stringify(stack);
   const current=expected?`<details><summary>Currently saved · ${esc(expected.manifest.name)}</summary>${expected.manifest.description?`<p>${esc(expected.manifest.description)}</p>`:''}${stackGroups(expected.manifest)}</details>`:'';
-  modal(expected?'Review stack changes':'Review stack',`<p>${changed?'Saving replaces the complete saved manifest, including local selections. Review both versions below.':expected?'The proposed manifest matches the saved stack.':'Save this install plan to your configuration.'}</p>${current}<section><h3>${expected?'Proposed':'Stack'} · ${esc(manifest.name)}</h3><code>${esc(manifest.id)}</code>${manifest.description?`<p>${esc(manifest.description)}</p>`:''}${stack.origin?`<p class="hint">Refresh origin: ${esc(stack.origin)}</p>`:''}${stackGroups(manifest)}</section><p class="hint">No skills will be installed or activated. Installed Skills and Profiles stay unchanged.</p><p id="stackError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button(expected?'Save reviewed changes':'Save stack','saveReviewedStack()','primary'));
+  modal(expected?'Review stack changes':'Review stack',`<p>${changed?'Saving replaces the complete saved manifest, including local selections. Review both versions below.':expected?'The proposed manifest matches the saved stack.':'Save this install plan to your configuration.'}</p>${current}<section><h3>${expected?'Proposed':'Stack'} · ${esc(manifest.name)}</h3><code>${esc(manifest.id)}</code>${manifest.description?`<p>${esc(manifest.description)}</p>`:''}${stack.origin?`<p class="hint">Refresh origin: ${esc(stack.origin)}</p>`:''}${stackGroups(manifest)}</section>${newSources.length?`<section><h3>New sources</h3><p class="hint">Saved to Sources with the same skills as this stack.</p><ul>${newSources.map(source=>`<li>${esc(source.name)} · <code>${esc(source.source)}</code> · ${source.skills.length} ${source.skills.length===1?'skill':'skills'}</li>`).join('')}</ul></section>`:''}<p class="hint">No skills will be installed or activated. Installed Skills and Profiles stay unchanged.</p><p id="stackError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button(expected?'Save reviewed changes':'Save stack','saveReviewedStack()','primary'));
 }
-function saveReviewedStack(){const proposal=stackDraft;return saveForm(()=>request('stack/save',proposal),'Stack saved. No skills installed.','stackError')}
+function saveReviewedStack(){
+  const proposal=stackDraft,newSources=pendingStackSources;
+  sourcesTab='stacks';
+  return saveForm(async()=>{
+    await request('stack/save',{stack:proposal.stack,expected:proposal.expected});
+    if(!newSources.length)return;
+    await refresh();
+    const known=new Set(currentSettings.favoriteSources.map(source=>sourceKey(source.source)));
+    const additions=newSources.filter(source=>!known.has(sourceKey(source.source)));
+    if(!additions.length)return;
+    try{await savePatch({favoriteSources:[...currentSettings.favoriteSources,...additions]})}
+    catch(error){throw Error('The stack was saved, but its new sources were not added to Sources: '+error.message)}
+  },newSources.length?'Stack and new sources saved. No skills installed.':'Stack saved. No skills installed.','stackError');
+}
 function removeStack(index){
   const existing=savedStacks()[index];
   modal('Remove stack?',`<p>Remove ${esc(existing.manifest.name)} from your configuration? Installed skills and profiles remain unchanged.</p><p id="stackError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Remove stack','confirmRemoveStack()'));

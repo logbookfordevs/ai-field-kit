@@ -64,7 +64,9 @@ export const settingsSchema = {
       items: {
         type: "object", required: ["name", "source"],
         properties: {
-          name: nonempty, source: { ...nonempty, allOf: [{ pattern: "^[^-]" }] }, skills: selectedSkills,
+          name: nonempty, source: { ...nonempty, allOf: [{ pattern: "^[^-]" }] },
+          description: { ...nonempty, maxLength: 280, description: "Optional note written by the user; AFK never fetches it." },
+          skills: selectedSkills,
         },
       },
     },

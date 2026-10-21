@@ -36,4 +36,13 @@ describe("favorite source selections", () => {
     const settings = { ...emptySettings(), favoriteSources: [{ name: "Toolkit", source: "owner/toolkit", skills }] };
     expect(() => validateSettings(settings)).toThrow();
   });
+
+  it("keeps an optional manual description and rejects empty, oversized or control-character text", () => {
+    const settings = emptySettings();
+    settings.favoriteSources = [{ name: "Toolkit", source: "owner/toolkit", description: "Daily review helpers" }];
+    expect(validateSettings(settings).favoriteSources[0]?.description).toBe("Daily review helpers");
+    for (const description of ["", "   ", "a".repeat(281), "line\nbreak", 42]) {
+      expect(() => validateSettings({ ...emptySettings(), favoriteSources: [{ name: "Toolkit", source: "owner/toolkit", description }] })).toThrow();
+    }
+  });
 });

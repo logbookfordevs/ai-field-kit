@@ -153,7 +153,9 @@ writers; the workflow rechecks original files before replacing simple definition
 
 ## Sources & Stacks
 
-Shared bookmarks store a name, source reference and optional selected skill names.
+Shared bookmarks store a name, source reference, an optional user-written
+description (never fetched) and optional selected skill names. Sources render as
+a compact searchable list; secondary actions sit in a per-row menu.
 All skills is the default and omits `skills`; Choose skills saves a nonempty,
 unique list of names. Both modes support adding, editing, removing, copying one
 install command, and copying a sequential install-all script. The source reference
@@ -185,8 +187,10 @@ existing bookmarks. The optional settings `stacks` array preserves compatibility
 with old settings. Import accepts pasted JSON or a direct HTTPS JSON URL. Both
 paths validate the same manifest and show a review before saving. An origin URL
 enables explicit refresh; the proposed complete replacement is reviewed against
-current selections, and stale saves are rejected. Create and Edit share the
-source-selection form; Edit prefills saved groups, name and description while retaining the identifier and refresh origin. Edit JSON remains
+current selections, and stale saves are rejected. A source card's Add to stack action chooses an existing or new stack, then opens that form with the source selected and its skill picker open. Create and Edit share the
+source-selection form, which can also add a repository: after review, saving the stack also
+saves each selected new repository as a bookmark with the same explicit picks (equivalent
+references reuse the existing choice); Edit prefills saved groups, name and description while retaining the identifier and refresh origin. Edit JSON remains
 available separately. Create/edit/export/remove and copy-script actions never
 install, activate, or create profiles. Doctor validates
 stacks without network requests and warns about selected-name collisions across
