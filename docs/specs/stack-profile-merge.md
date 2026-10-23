@@ -2,6 +2,13 @@
 
 Status: idea, not scheduled. Profiles and Stacks stay separate for now.
 
+Done since: profiles accept several sources (`groups`), and a stack can be turned
+into a linked profile (`stack-<id>`) and updated from it. The collision rule below
+is settled: a profile rejects a skill selected from two sources. Stack cards act as
+the linked profile (state, Turn on/off per scope, out-of-date marker), and saving a
+stack updates a linked profile that is off everywhere. Still open: one stored object,
+Install preparing instead of installing, and edits syncing links while on.
+
 ## Why
 
 A stack's definition is a superset of a profile's: named, explicit skill

@@ -14,7 +14,7 @@ function setup() {
   const requests: { path: string; data: unknown }[] = [];
   let markup = "";
   const context = createContext({
-    $: field, favoriteSources: sources, esc: String, button: () => "", inventories: {},
+    $: field, favoriteSources: sources, profiles: [], esc: String, button: () => "", inventories: {},
     modal: (_title: string, html: string) => { markup = html; },
     document: { querySelectorAll: () => [{ dataset: { stackSource: "1" } }] },
     request: async (path: string, data: unknown) => { requests.push({ path, data }); return { names: ["video", "review"], paths: { video: "media/video", review: "qa/review" } }; },

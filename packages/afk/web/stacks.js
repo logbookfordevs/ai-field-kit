@@ -4,7 +4,7 @@ function stackGroups(manifest){
 }
 function renderStacks(layout='list',controls=''){
   const stacks=savedStacks();
-  const list=stacks.length?`<div class="ledger source-collection ${layout==='cards'?'source-gallery':''}">${stacks.map((stack,i)=>`<article class="row source-row"><div class="source-info"><h3>${esc(stack.manifest.name)} <span class="meta">Stack</span></h3>${stack.manifest.description?`<p class="sub">${esc(stack.manifest.description)}</p>`:''}<p class="meta">${stack.manifest.sources.length} sources · ${stack.manifest.sources.reduce((n,g)=>n+g.skills.length,0)} selected skills</p>${stack.origin?`<code class="path">${esc(stack.origin)}</code>`:'<span class="meta">Local manifest</span>'}<details class="source-members"><summary>Skills by source</summary>${stackGroups(stack.manifest)}</details></div><div class="inline">${button('Install',`showInstallation('stack',${i})`)}${button('Copy install script',`copyStack(${i})`,'text')}${button('Edit',`editStack(${i})`,'text')}${button('Edit JSON',`editStackJson(${i})`,'text')}${stack.origin?button('Refresh manifest',`refreshStack(${i})`,'text'):''}${button('Export JSON',`exportStack(${i})`,'text')}${button('Remove stack',`removeStack(${i})`,'text')}</div></article>`).join('')}</div>`:'<div class="empty"><h3>No stacks yet</h3><p class="sub">Combine selected skills from several sources, or import a published manifest. Saving a stack leaves skills uninstalled and profiles unchanged.</p></div>';
+  const list=stacks.length?`<div class="ledger source-collection ${layout==='cards'?'source-gallery':''}">${stacks.map((stack,i)=>`<article class="row source-row"><div class="source-info"><h3>${esc(stack.manifest.name)} <span class="meta">Stack</span></h3>${stack.manifest.description?`<p class="sub">${esc(stack.manifest.description)}</p>`:''}<p class="meta">${stack.manifest.sources.length} sources · ${stack.manifest.sources.reduce((n,g)=>n+g.skills.length,0)} selected skills</p>${stack.origin?`<code class="path">${esc(stack.origin)}</code>`:'<span class="meta">Local manifest</span>'}<details class="source-members"><summary>Skills by source</summary>${stackGroups(stack.manifest)}</details>${stackProfilePanel(stack)}</div><div class="inline">${button('Install',`showInstallation('stack',${i})`)}${button(stackProfile(stack)?'Update profile':'Turn into profile',`turnStackIntoProfile(${i})`,'text')}${button('Copy install script',`copyStack(${i})`,'text')}${button('Edit',`editStack(${i})`,'text')}${button('Edit JSON',`editStackJson(${i})`,'text')}${stack.origin?button('Refresh manifest',`refreshStack(${i})`,'text'):''}${button('Export JSON',`exportStack(${i})`,'text')}${button('Remove stack',`removeStack(${i})`,'text')}</div></article>`).join('')}</div>`:'<div class="empty"><h3>No stacks yet</h3><p class="sub">Combine selected skills from several sources, or import a published manifest. Saving a stack leaves skills uninstalled and profiles unchanged.</p></div>';
   return `<section class="stack-section">${stacks.length&&controls?`<div class="stack-toolbar">${controls}</div>`:''}`+list+'</section>';
 }
 async function copyStack(index){
@@ -34,6 +34,48 @@ async function previewStackInput(version){
     if(!stackDialogCurrent(version,body))return;
     reviewStack(proposal);
   }catch(error){if(stackDialogCurrent(version,body)){$('stackError').textContent=error.message;control.disabled=false}}
+}
+function stackProfile(stack){return profiles.find(profile=>profile.id==='stack-'+stack.manifest.id)}
+function stackProfileGroups(manifest){
+  const merged=new Map();
+  for(const group of manifest.sources)merged.set(group.source,[...new Set([...(merged.get(group.source)||[]),...group.skills])]);
+  return [...merged].map(([source,skills])=>({source,skills}));
+}
+function stackProfileOutdated(stack,profile=stackProfile(stack)){
+  if(!profile)return false;
+  const current=profile.groups||[{source:profile.source,skills:profile.skills}];
+  return JSON.stringify(current)!==JSON.stringify(stackProfileGroups(stack.manifest));
+}
+function setStackTarget(profileId,value){selectedTargets[profileId]=value;renderSources();$('stack-scope-'+profileId)?.focus()}
+function stackProfilePanel(stack){
+  const profile=stackProfile(stack);
+  if(!profile)return '';
+  const target=selectedTargets[profile.id]||'Global',on=profile.enabled.includes(target);
+  const state=profile.enabled.length?`On in ${profile.enabled.map(esc).join(' · ')}`:'Off everywhere';
+  const outdated=stackProfileOutdated(stack,profile)?`<span class="status warn">Out of date</span>`:'';
+  const toggle=`<button type="button" data-od-id="stack-profile-${esc(profile.id)}-toggle" onclick="activate('${profile.id}')">${on?'Turn off':'Turn on'}</button>`;
+  return `<div class="stack-profile"><p class="stack-profile-state"><span class="table-label">Profile</span> <strong>${state}</strong>${outdated}</p><div class="stack-profile-controls"><label class="sr-only" for="stack-scope-${esc(profile.id)}">Scope for ${esc(stack.manifest.name)}</label><select id="stack-scope-${esc(profile.id)}" onchange="setStackTarget('${profile.id}',this.value)">${scopeOptions(target)}</select>${toggle}</div>${outdated&&profile.enabled.length?'<p class="hint">Turn the profile off everywhere, then use Update profile to apply the stack’s picks.</p>':''}</div>`;
+}
+function stackCollisions(manifest){
+  const origins=new Map();
+  for(const group of manifest.sources)for(const name of group.skills)origins.set(name,[...new Set([...(origins.get(name)||[]),group.source])]);
+  return [...origins].filter(([,sources])=>sources.length>1);
+}
+function turnStackIntoProfile(index){
+  const stack=savedStacks()[index];if(!stack)return;
+  const manifest=stack.manifest,linked=stackProfile(stack),collisions=stackCollisions(manifest);
+  const total=manifest.sources.reduce((count,group)=>count+group.skills.length,0);
+  const plural=(count,word)=>count+' '+word+(count===1?'':'s');
+  const blocker=collisions.length?`Each skill can come from only one source. ${collisions.map(([name,sources])=>`${name} is selected from ${sources.join(' and ')}`).join('; ')}. Edit the stack to keep it in one source.`:linked?.enabled.length?`${linked.name} is on in ${linked.enabled.join(', ')}. Turn it off everywhere in Profiles before updating it.`:'';
+  modal(linked?'Update profile from stack':'Turn into profile',`<p>${linked?`Replace the members of <strong>${esc(linked.name)}</strong> with this stack’s current picks.`:'Create a profile with this stack’s picks, so you can turn them on or off per Global or project.'}</p><label>Profile name<input id="stackProfileName" maxlength="120" value="${esc(linked?.name||manifest.name)}"></label><p class="meta">${plural(total,'skill')} from ${plural(manifest.sources.length,'source')}</p>${stackGroups(manifest)}<p class="hint">AFK downloads these skills now and keeps them off. Later stack edits don’t change the profile; use Update profile again.</p><p id="stackError" class="field-error" role="alert">${esc(blocker)}</p>`,button('Cancel','closeModal()','text')+button(linked?'Update profile':'Create profile',`saveStackProfile(${index})`,'primary',`id="saveStackProfile" ${blocker?'disabled':''}`));
+}
+function saveStackProfile(index){
+  const stack=savedStacks()[index],name=$('stackProfileName').value.trim();
+  if(!stack)return;
+  if(!name){$('stackError').textContent='Name the profile.';return}
+  const linked=stackProfile(stack);
+  $('saveStackProfile').textContent='Preparing…';
+  return saveForm(()=>request('profile/save',{stack:stack.manifest.id,name}),linked?'Profile updated. It stays off until you turn it on in Profiles.':'Profile created. Turn it on from Profiles.','stackError');
 }
 function createStack(){openStackForm()}
 function addSourceToStack(index){
@@ -174,6 +216,7 @@ function saveReviewedStack(){
   sourcesTab='stacks';
   return saveForm(async()=>{
     await request('stack/save',{stack:proposal.stack,expected:proposal.expected});
+    await syncStackProfile(proposal.stack);
     if(!newSources.length)return;
     await refresh();
     const known=new Set(currentSettings.favoriteSources.map(source=>sourceKey(source.source)));
@@ -182,6 +225,12 @@ function saveReviewedStack(){
     try{await savePatch({favoriteSources:[...currentSettings.favoriteSources,...additions]})}
     catch(error){throw Error('The stack was saved, but its new sources were not added to Sources: '+error.message)}
   },newSources.length?'Stack and new sources saved. No skills installed.':'Stack saved. No skills installed.','stackError');
+}
+async function syncStackProfile(stack){
+  const profile=stackProfile(stack);
+  if(!profile||profile.enabled.length||!stackProfileOutdated(stack,profile))return;
+  try{await request('profile/save',{stack:stack.manifest.id,name:profile.name})}
+  catch(error){throw Error('The stack was saved, but its profile was not updated: '+error.message)}
 }
 function removeStack(index){
   const existing=savedStacks()[index];

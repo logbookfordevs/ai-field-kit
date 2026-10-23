@@ -578,6 +578,13 @@ input,textarea{caret-color:var(--focus)}
 .member-selection.stack-member-toolbar button[aria-pressed=true]{background:transparent;color:var(--fg);font-weight:600;text-decoration-thickness:2px}
 @media(max-width:480px){.member-selection.stack-member-toolbar>span{flex-basis:100%}.member-selection.stack-member-toolbar{column-gap:16px}}
 .stack-add-source{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;margin-top:16px}
+.stack-profile{margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:grid;gap:8px}
+.stack-profile-state{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;margin:0}
+.stack-profile-controls{display:flex;gap:8px;align-items:center}
+.stack-profile-controls select{flex:1;min-width:0;min-height:40px}
+.stack-profile-controls button{flex:none;min-height:40px;font-size:13px}
+.profile-stack-link{min-height:32px;font-size:13px}
+.profile-group-source{margin:12px 0 4px;font-family:var(--font-mono);overflow-wrap:anywhere}
 .stack-source-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;border-bottom:1px solid var(--border)}
 .stack-source-choice .check{min-width:0;gap:12px}
 .stack-source-choice .check>span{overflow-wrap:anywhere}
@@ -860,7 +867,7 @@ function profileRow(p){
     :button('Install profile skills',`retryPreparation('${p.id}')`,'text',`data-od-id="profile-${p.id}-retry"`);
   return `<article class="profile row" data-od-id="profile-${p.id}">
     <div class="profile-main">
-      <div class="profile-title"><button type="button" class="profile-name" onclick="inspectProfile('${p.id}')" aria-label="Inspect ${esc(p.name)}">${esc(p.name)}</button><span class="meta">${p.skills.length} skill${p.skills.length===1?'':'s'}</span></div>
+      <div class="profile-title"><button type="button" class="profile-name" onclick="inspectProfile('${p.id}')" aria-label="Inspect ${esc(p.name)}">${esc(p.name)}</button><span class="meta">${p.skills.length} skill${p.skills.length===1?'':'s'}${p.groups?` · ${p.groups.length} sources`:''}</span>${profileStackLabel(p)}</div>
       <ul class="tags" aria-label="Members">${shown.map(s=>`<li class="tag">${esc(s)}</li>`).join('')}${extra>0?`<li class="tag more">+${extra} more</li>`:''}</ul>
       <div class="prep">${p.ready?'': '<span class="status warn">Preparation incomplete</span>'}${prepAction}</div>
     </div>
@@ -872,6 +879,14 @@ function profileRow(p){
   </article>`;
 }
 
+function profileStackLabel(p){
+  if(!p.id.startsWith('stack-'))return '';
+  const stack=savedStacks().find(stack=>'stack-'+stack.manifest.id===p.id);
+  if(!stack)return '<span class="meta">Stack removed</span>';
+  const outdated=stackProfileOutdated(stack,p)?' <span class="status warn">Out of date</span>':'';
+  return `<button type="button" class="text profile-stack-link" onclick="openProfileStack()">From stack · ${esc(stack.manifest.name)}</button>${outdated}`;
+}
+function openProfileStack(){sourcesTab='stacks';navigate('Sources & Stacks')}
 function setTarget(id,value){selectedTargets[id]=value;renderProfiles();refocus(`profile-${id}-scope`)}
 
 function modal(title,body,foot=''){
@@ -883,17 +898,29 @@ function closeModal(){$('sheet').close()}
 
 function inspectProfile(id){
   const p=profiles.find(p=>p.id===id),locked=p.enabled.length>0;
-  const members=p.skills.map(s=>`<div class="check"><span><strong>${esc(s)}</strong><small>${esc((inventories.Global||[]).find(entry=>entry.name===s)?.path||"Not prepared locally")}</small></span>${button('Inspect',`inspectSkill('${s}','${id}')`,'text')}</div>`).join('');
+  const memberRows=names=>names.map(s=>`<div class="check"><span><strong>${esc(s)}</strong><small>${esc((inventories.Global||[]).find(entry=>entry.name===s)?.path||"Not prepared locally")}</small></span>${button('Inspect',`inspectSkill('${s}','${id}')`,'text')}</div>`).join('');
+  const members=p.groups?p.groups.map(group=>`<p class="table-label profile-group-source">${esc(group.source)}</p>${memberRows(group.skills)}`).join(''):memberRows(p.skills);
+  const stackIndex=savedStacks().findIndex(stack=>'stack-'+stack.manifest.id===p.id);
+  const editable=!p.groups||stackIndex>=0;
   const lockNote=locked
     ?`Active in ${p.enabled.map(esc).join(', ')}. Membership edits and removal unlock after every scope is disabled.`
     :'No scope enabled. Prepared members stay stored and ready.';
   const foot=(p.ready?'':button('Install profile skills',`retryPreparation('${id}')`,'push'))
     +button('Remove definition',`removeProfile('${id}')`,'text danger',locked?'disabled':'')
-    +button('Edit profile',`editProfile('${id}')`,'',locked?'disabled':'');
-  modal(esc(p.name),`<p class="sub">Shared definition · ${esc(p.source)}</p><div><div class="members-head"><span class="table-label">Members in local storage</span><span class="table-label">${p.skills.length}</span></div><div class="list">${members}</div></div><p class="sub">${lockNote}</p>`,foot,'Profile');
+    +button(p.groups?'Edit in stack':'Edit profile',`editProfile('${id}')`,'',locked||!editable?'disabled':'');
+  const origin=p.groups?`${p.groups.length} sources`:esc(p.source);
+  const groupNote=p.groups?(stackIndex>=0?'<p class="hint">Edit the stack, then use Update profile on it to change these members.</p>':'<p class="hint">The stack this profile came from was removed, so its members can’t be edited here.</p>'):'';
+  modal(esc(p.name),`<p class="sub">Shared definition · ${origin}</p>${groupNote}<div><div class="members-head"><span class="table-label">Members in local storage</span><span class="table-label">${p.skills.length}</span></div><div class="list">${members}</div></div><p class="sub">${lockNote}</p>`,foot,'Profile');
 }
 
-function editProfile(id){const p=profiles.find(p=>p.id===id);if(!p.enabled.length)createProfile(p)}
+function editProfile(id){
+  const p=profiles.find(p=>p.id===id);
+  if(!p||p.enabled.length)return;
+  if(!p.groups)return createProfile(p);
+  const index=savedStacks().findIndex(stack=>'stack-'+stack.manifest.id===p.id);
+  if(index<0){toast('Edit multi-source profiles through the stack they came from.');return}
+  closeModal();sourcesTab='stacks';navigate('Sources & Stacks');editStack(index);
+}
 
 let editing=null,profilePicker;
 function createProfile(p=null,isNew=false){

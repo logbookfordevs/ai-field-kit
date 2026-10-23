@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { spawn } from "node:child_process";
-import { SettingsStore, validateSettings, skillName, type Settings } from "./settings.js";
+import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, validateSettings, skillName, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
 import { SourcePreparation } from "./preparation.js";
 import { SkillLibrary } from "./skills.js";
@@ -26,7 +26,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   const requiredText: Partial<Record<Operation, string[]>> = {
     "skills/snapshot-preview": ["scope"], "skills/saved-restore": ["scope"], "project/remove": ["name"],
     "stack/install": ["id", "scope", "agent"], "source/install": ["source", "scope", "agent"],
-    "profile/remove": ["id"], "profile/read": ["id"], "profile/save": ["name"],
+    "profile/remove": ["id"], "profile/read": ["id"],
     activation: ["id", "scope"], "project/save": ["name", "path"],
     invocation: ["name", "scope"], "skill/toggle": ["name", "scope"],
     "skills/update": ["scope"], "skills/delete-preview": ["scope"], "skills/bulk": ["scope", "action"],
@@ -38,7 +38,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "bundle/preview": ["base64"], "bundle/import": ["base64"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
-    "profile/save": ["id", "source"], "project/save": ["previous"],
+    "profile/save": ["id", "name", "source", "stack"], "project/save": ["previous"],
     "skill/read": ["file", "folder"], "rules/save": ["expectedHash"], folders: ["path"],
   };
   for (const key of requiredText[operation] ?? []) {
@@ -316,19 +316,39 @@ export class FieldworkOperations {
       return { names, descriptions, paths: await preparation.paths(source) };
     }
     if (operation === "profile/save") {
-      const names = data.skills;
-      if (!Array.isArray(names) || !names.length || !names.every(skillName) || new Set(names).size !== names.length || typeof data.name !== "string" || !data.name.trim()) throw new Error("Name the profile and choose unique members.");
-      const source = String(data.source || "Local skill selection");
-      const existing = settings.profiles.find(p => p.id === data.id);
-      if (existing?.enabled.length) throw new Error("Disable every scope before editing members.");
-      if (source === "Local skill selection") {
-        for (const name of names) await library.locate(settings, name);
+      const stack = data.stack === undefined ? undefined : settings.stacks?.find(entry => entry.manifest.id === data.stack);
+      if (data.stack !== undefined && !stack) throw new Error("Stack not found.");
+      if (stack && (data.groups !== undefined || data.skills !== undefined || data.source !== undefined)) throw new Error("A profile from a stack takes its members from the stack. Omit groups, skills and source.");
+      const name = typeof data.name === "string" && data.name.trim() ? data.name.trim() : stack?.manifest.name;
+      if (!name) throw new Error("Name the profile.");
+      let groups: ProfileGroup[];
+      if (stack) groups = stack.manifest.sources.map(group => ({ source: group.source, skills: [...group.skills] }));
+      else if (data.groups !== undefined) {
+        if (!Array.isArray(data.groups) || !data.groups.length || !data.groups.every(isProfileGroup)) throw new Error("Each profile group needs a source and at least one valid skill name.");
+        groups = data.groups.map(group => ({ source: group.source.trim(), skills: [...group.skills] }));
       } else {
-        await library.storePrepared(settings, await preparation.directory(source), names, source);
+        const names = data.skills;
+        if (!Array.isArray(names) || !names.length || !names.every(skillName) || new Set(names).size !== names.length) throw new Error("Name the profile and choose unique members.");
+        groups = [{ source: String(data.source || LOCAL_PROFILE_SOURCE), skills: names }];
       }
-      const profile = { id: existing?.id ?? "profile-" + randomUUID(), name: data.name.trim(), source, skills: names, enabled: [], ready: true };
+      const merged = new Map<string, string[]>();
+      for (const group of groups) merged.set(group.source, [...new Set([...(merged.get(group.source) ?? []), ...group.skills])]);
+      groups = [...merged].map(([source, skills]) => ({ source, skills }));
+      const origins = new Map<string, string[]>();
+      for (const group of groups) for (const name of group.skills) origins.set(name, [...(origins.get(name) ?? []), group.source]);
+      const collisions = [...origins].filter(([, sources]) => sources.length > 1);
+      if (collisions.length) throw new Error(`Each skill can come from only one source. ${collisions.map(([skill, sources]) => `${skill} is selected from ${sources.join(" and ")}`).join("; ")}. Keep it in one source.`);
+      const id = stack ? "stack-" + stack.manifest.id : typeof data.id === "string" && data.id ? data.id : undefined;
+      const existing = id ? settings.profiles.find(p => p.id === id) : undefined;
+      if (existing?.enabled.length) throw new Error("Disable every scope before editing members.");
+      for (const group of groups) {
+        if (group.source === LOCAL_PROFILE_SOURCE) { for (const name of group.skills) await library.locate(settings, name); }
+        else await library.storePrepared(settings, await preparation.directory(group.source), group.skills, group.source);
+      }
+      const skills = groups.flatMap(group => group.skills);
+      const profile = { id: id ?? "profile-" + randomUUID(), name, source: groups[0]!.source, skills, ...(groups.length > 1 ? { groups } : {}), enabled: [], ready: true };
       settings.profiles = [...settings.profiles.filter(p => p.id !== profile.id), profile];
-      await store.save(settings); return { ok: true };
+      await store.save(settings); return { ok: true, id: profile.id };
     }
     if (operation === "profile/remove") {
       const profile = settings.profiles.find(p => p.id === data.id);
@@ -406,9 +426,11 @@ export class FieldworkOperations {
         for (const name of profile.skills) {
           try { await library.locate(settings, name); } catch { missing.push(name); }
         }
-        if (missing.length) {
-          if (profile.source === "Local skill selection") throw new Error(`Restore these local skill files before enabling: ${missing.join(", ")}. This profile has no repository source.`);
-          await library.storePrepared(settings, await preparation.directory(profile.source), missing, profile.source);
+        for (const group of profileGroups(profile)) {
+          const absent = group.skills.filter(name => missing.includes(name));
+          if (!absent.length) continue;
+          if (group.source === LOCAL_PROFILE_SOURCE) throw new Error(`Restore these local skill files before enabling: ${absent.join(", ")}. They have no repository source.`);
+          await library.storePrepared(settings, await preparation.directory(group.source), absent, group.source);
         }
         profile.ready = true;
       }

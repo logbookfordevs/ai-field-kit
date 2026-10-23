@@ -16,10 +16,16 @@ beside each activation action; Installed Skills uses a page-level inventory scop
 
 ## Profiles
 
-Definitions are shared and reusable. The current definition stores one source
-reference, a name and identifier, selected skill names, readiness, and enabled
-targets. Create from a repository or existing Global skills; multiple source
-references in one definition are not currently supported.
+Definitions are shared and reusable. A definition stores a name and identifier,
+selected skill names, readiness, and enabled targets, plus either one source
+reference or `groups` of `{source, skills}` for several repositories (`source`
+repeats the first group and `skills` lists every member in order, so older readers
+still see valid members). Each skill comes from exactly one source. Create from a
+repository, existing Global skills, or a saved stack: **Turn into profile** copies the
+stack's current picks into profile `stack-<id>`, and **Update profile** replaces them
+later while the profile is off everywhere. Stack edits update a linked profile only when it
+is off everywhere; otherwise the stack card and profile row mark it out of date. The
+stack card also shows the linked profile's state and turns it on or off per scope. Multi-source profiles are edited through their stack.
 
 Repository discovery delegates to Skills CLI in an isolated temporary workspace
 and home. Users select members; only selected missing copies are retained under

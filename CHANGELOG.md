@@ -14,6 +14,8 @@ This changelog tracks meaningful updates by version and date.
 ### Added
 
 - Sources are a compact list with a search field. Each row shows the name, link, an optional description you write yourself, and its selection; selected skills expand inline. **Install** stays visible and other actions move to a ⋯ menu. Sources and Stacks have their own tabs on the page, and the Cards/List switch applies to stacks only.
+- Stacks can be turned into profiles with **Turn into profile**: skills from every source in the stack are downloaded once and kept off, ready to turn on per Global or project. **Update profile** later replaces the profile's members with the stack's current picks; a skill selected from two sources is rejected. Profiles now support multiple sources, and their details list members by source.
+- A stack with a linked profile shows that profile on its card: where it's on, a scope picker with **Turn on**/**Turn off**, and an **Out of date** marker when the stack's picks have changed. Saving the stack updates the profile automatically while it's off everywhere. In Profiles, linked profiles show **From stack** and open the stack.
 - Creating or editing a stack can add a new repository directly: find its skills, pick some, and when the stack is saved the repository is also saved to Sources with the same picks. Review lists the new sources; cancelling saves nothing.
 - Source rows show tags for the stacks that use them, matching the same repository written as `owner/repo` or a full URL. Clicking a tag opens Stacks, and source search also matches stack names.
 - **Copy links** beside the source search copies the links of the sources shown, one per line (browser URLs where available).
