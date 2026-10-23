@@ -31,6 +31,10 @@ export const settingsSchema = {
         type: "object", required: ["id", "name", "source", "skills"],
         properties: {
           id: skillName, name: nonempty, source: nonempty, skills: selectedSkills,
+          groups: {
+            type: "array", minItems: 2, description: "Multi-source profiles: one entry per repository. source repeats the first group and skills lists every group's skills in order.",
+            items: { type: "object", required: ["source", "skills"], properties: { source: nonempty, skills: selectedSkills } },
+          },
           enabled: { type: "array", items: { type: "string" }, description: "Machine-local activation, accepted for legacy input. Portable profile definitions omit this field." },
           ready: { type: "boolean", description: "Machine-local readiness; omitted from portable settings." },
         },
@@ -64,7 +68,9 @@ export const settingsSchema = {
       items: {
         type: "object", required: ["name", "source"],
         properties: {
-          name: nonempty, source: { ...nonempty, allOf: [{ pattern: "^[^-]" }] }, skills: selectedSkills,
+          name: nonempty, source: { ...nonempty, allOf: [{ pattern: "^[^-]" }] },
+          description: { ...nonempty, maxLength: 280, description: "Optional note written by the user; AFK never fetches it." },
+          skills: selectedSkills,
         },
       },
     },

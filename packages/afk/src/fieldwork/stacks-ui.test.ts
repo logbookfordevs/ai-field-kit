@@ -13,7 +13,8 @@ beforeEach(() => {
   fields = {}; calls = []; response = { stack, expected: null };
   context = createContext({
     currentSettings: { stacks: [stack] }, favoriteSources: [{ name: "Some", source: "owner/video", skills: ["render"] }, { name: "All", source: "owner/all" }],
-    installScope: "Studio", installAgent: "codex",
+    installScope: "Studio", installAgent: "codex", profiles: [], selectedTargets: {},
+    scopeOptions: (value: string) => `<option selected>${value}</option>`,
     $: (id: string) => fields[id] ??= { value: "", textContent: "", innerHTML: "", checked: false, dataset: {}, hidden: false, disabled: false, open: true },
     esc: (value: unknown) => String(value).replaceAll("<", "&lt;"), button: (label: string) => `<button>${label}</button>`,
     modal: (_title: string, body: string) => { context.dialog = body; },
@@ -156,6 +157,121 @@ describe("stack management interface", () => {
     body.isConnected = false; context.dialog = "Other dialog";
     resolve({ stack, expected: null }); await pending;
     expect(context.dialog).toBe("Other dialog");
+  });
+  describe("adding a source to a stack", () => {
+    function choose(value?: string) {
+      context.document = { querySelector: () => (value === undefined ? null : { value }) };
+      context.renderMembers = () => {};
+      const base = context.$ as (id: string) => Record<string, unknown>;
+      context.$ = (id: string) => Object.assign(base(id), { appendChild() {}, setAttribute() {} });
+      response = { names: ["render", "cut"] };
+    }
+    it("opens the new-stack form with the source's skill picker when no stacks exist", () => {
+      context.currentSettings = {};
+      choose();
+      evaluate("addSourceToStack(1)");
+      expect(evaluate("stackDraft.activeSource")).toBe(1);
+      expect(fields["stackSource-1"]!.checked).toBe(true);
+      expect(evaluate("$('stackId').readOnly")).toBe(false);
+      expect(evaluate("stackDraft.existing")).toBeUndefined();
+    });
+    it("asks which stack to use, flagging stacks that already include the source or come from a remote origin", () => {
+      choose();
+      evaluate("addSourceToStack(0)");
+      expect(context.dialog).toContain("Studio");
+      expect(context.dialog).toContain("Already includes this source");
+      expect(context.dialog).toContain("Remote");
+      expect(context.dialog).toContain("New stack");
+    });
+    it("requires a choice before continuing", () => {
+      choose();
+      evaluate("addSourceToStack(1)");
+      evaluate("continueAddToStack(stackDraft.version)");
+      expect(fields.stackError!.textContent).not.toBe("");
+      expect(evaluate("stackDraft.existing")).toBeUndefined();
+    });
+    it("edits the chosen stack with the source preselected, without saving or touching the bookmark", () => {
+      choose("0");
+      evaluate("addSourceToStack(1)");
+      evaluate("continueAddToStack(stackDraft.version)");
+      expect(evaluate("stackDraft.existing.manifest.id")).toBe("studio");
+      expect(evaluate("stackDraft.activeSource")).toBe(1);
+      expect(fields["stackSource-1"]!.checked).toBe(true);
+      expect(evaluate("favoriteSources[1]")).toEqual({ name: "All", source: "owner/all" });
+      expect(calls.some(call => call.path === "stack/save")).toBe(false);
+    });
+    it("starts a new stack with the source preselected when New stack is chosen", () => {
+      choose("new");
+      evaluate("addSourceToStack(1)");
+      evaluate("continueAddToStack(stackDraft.version)");
+      expect(evaluate("stackDraft.existing")).toBeUndefined();
+      expect(evaluate("stackDraft.activeSource")).toBe(1);
+    });
+  });
+  it("builds stack groups from described bookmarks without bookmark-only fields", async () => {
+    context.favoriteSources = [{ name: "Described", source: "owner/described", description: "Notes for me", skills: ["draw"] }];
+    context.currentSettings = {};
+    context.document = { querySelectorAll: () => [{ dataset: { stackSource: "0" } }] };
+    evaluate("createStack();$('sheetContent').firstElementChild={isConnected:true}");
+    fields.stackName!.value = "Art";
+    fields.stackId!.value = "art";
+    await evaluate<Promise<void>>("previewNewStack(stackDraft.version)");
+    expect(calls).toEqual([{ path: "stack/preview", data: { manifest: { version: 1, id: "art", name: "Art", sources: [{ name: "Described", source: "owner/described", skills: ["draw"] }] } } }]);
+  });
+  describe("turning a stack into a profile", () => {
+    it("offers Turn into profile, then Update profile once a linked profile exists", () => {
+      expect(evaluate<string>("renderStacks()")).toContain("Turn into profile");
+      context.profiles = [{ id: "stack-studio", name: "Studio", enabled: [] }];
+      expect(evaluate<string>("renderStacks()")).toContain("Update profile");
+    });
+    it("creates the profile from the saved stack with the chosen name", async () => {
+      evaluate("turnStackIntoProfile(0)");
+      expect(context.dialog).toContain("1 skill from 1 source");
+      evaluate("$('stackProfileName');$('saveStackProfile')");
+      fields.stackProfileName!.value = "Studio work";
+      await evaluate<Promise<void>>("saveStackProfile(0)");
+      expect(calls).toEqual([{ path: "profile/save", data: { stack: "studio", name: "Studio work" } }]);
+    });
+    it("blocks profiles where one skill comes from two sources", () => {
+      context.currentSettings = { stacks: [{ manifest: { ...stack.manifest, sources: [
+        { name: "A", source: "owner/a", skills: ["draw"] }, { name: "B", source: "owner/b", skills: ["draw", "ink"] },
+      ] } }] };
+      evaluate("turnStackIntoProfile(0)");
+      expect(context.dialog).toContain("draw is selected from owner/a and owner/b");
+    });
+    it("shows the linked profile's state and an out-of-date marker on the stack card", () => {
+      context.profiles = [{ id: "stack-studio", name: "Studio", source: "owner/video", skills: ["render"], enabled: ["Global", "Demo"] }];
+      let html = evaluate<string>("renderStacks()");
+      expect(html).toContain("On in Global · Demo");
+      expect(html).toContain(">Turn off</button>");
+      expect(html).toContain("activate('stack-studio')");
+      expect(html).not.toContain("Out of date");
+      context.profiles = [{ id: "stack-studio", name: "Studio", source: "owner/video", skills: ["old"], enabled: [] }];
+      html = evaluate<string>("renderStacks()");
+      expect(html).toContain("Off everywhere");
+      expect(html).toContain(">Turn on</button>");
+      expect(html).toContain("Out of date");
+    });
+    it("updates a linked profile after saving the stack only when it is off everywhere and out of date", async () => {
+      const proposal = { stack: { manifest: { ...stack.manifest, sources: [{ name: "Video", source: "owner/video", skills: ["render", "trim"] }] } }, expected: stack };
+      const save = async (profile: Record<string, unknown>) => {
+        calls.length = 0;
+        context.profiles = [{ id: "stack-studio", name: "My studio", ...profile }];
+        context.proposal = proposal;
+        evaluate("reviewStack(proposal)");
+        await evaluate<Promise<void>>("saveReviewedStack()");
+        return calls.map(call => call.path);
+      };
+      expect(await save({ source: "owner/video", skills: ["render"], enabled: [] })).toEqual(["stack/save", "profile/save"]);
+      expect(calls[1]).toEqual({ path: "profile/save", data: { stack: "studio", name: "My studio" } });
+      expect(await save({ source: "owner/video", skills: ["render"], enabled: ["Global"] })).toEqual(["stack/save"]);
+      expect(await save({ source: "owner/video", skills: ["render", "trim"], enabled: [] })).toEqual(["stack/save"]);
+    });
+    it("blocks updating a linked profile that is on", () => {
+      context.profiles = [{ id: "stack-studio", name: "Studio", enabled: ["Global"] }];
+      evaluate("turnStackIntoProfile(0)");
+      expect(context.dialog).toContain("Turn it off everywhere");
+    });
   });
   it("offers every saved bookmark for stack selection", () => {
     evaluate("createStack()");

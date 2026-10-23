@@ -333,9 +333,14 @@ Not canonized: folder navigation retains a Unicode chevron. The craft floor excl
 
 ### Sources & Stacks
 
-The shared Sources & Stacks page defaults to a flat paper card gallery. A
-Cards/List toggle applies to both collections for the current page session; it
-does not change saved definitions or installation targets. Sources and Stacks
+Sources and Stacks sit in underline tabs (arrow keys switch) below the shared
+installation destination; saving a stack opens the Stacks tab. Sources render as a compact ruled list under a full-width search field that
+matches names, links, descriptions and selected skills. Each row stacks the name
+over the mono link and optional muted description, with the selection, an outlined
+Install and a ⋯ menu popover on the right; selected skills expand inline as mono
+tags. At 760px the selection and actions move below the text. Stacks default to a
+flat paper card gallery; a right-aligned Cards/List toggle above them applies for the
+current page session and does not change saved definitions or installation targets. Sources and Stacks
 retain distinct headings. Desktop cards use two equal columns with a 16px gap,
 20px insets, Surface fill, a Rule border and 8px corners, without elevation.
 At 1000px the gallery becomes one column; mobile insets reduce to 16px. Titles,
@@ -345,11 +350,12 @@ at the bottom. Long paths wrap and mobile actions use two columns.
 A wrapping page-action group contains Add source, Create stack and Import stack.
 Each stack identifies its source count, selected member count, and local or remote
 provenance. A native disclosure groups members under their original repositories.
-Controls install, copy a script, edit, export JSON, explicitly refresh a remote
+Source cards add an Add to stack text action that opens a native dialog of radio choices (each saved stack, then New stack); stacks with a refresh origin or that already include the source carry a quiet hint line. A linked stack card adds a ruled Profile block: its state, an Out of date warning when picks differ, and a scope select with Turn on/Turn off. Profile rows show From stack as a text link. Stack cards also offer Turn into profile (Update profile once linked) as a text action; its dialog names the profile and lists source groups, and a collision or an active linked profile disables the save with the reason. Stack controls install, copy a script, edit, export JSON, explicitly refresh a remote
 manifest, or remove the saved definition.
 
 Import uses the native dialog with JSON/HTTPS choices and retains invalid input.
 Creation lists every saved source and saves explicit skill selections, including
-one-off choices from all-skills bookmarks. Review shows the proposed source groups
+one-off choices from all-skills bookmarks. An Add a repository field and Find skills
+button sit below the list; new repositories are marked New source and listed in review. Review shows the proposed source groups
 and saved version before complete replacement. Refreshing and saving remain
 separate from installation and profile activation.

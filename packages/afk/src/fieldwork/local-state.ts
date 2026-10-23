@@ -14,7 +14,8 @@ export interface LocalState {
 }
 
 export function definition(profile: Settings["profiles"][number]): string {
-  return createHash("sha256").update(JSON.stringify([profile.source, profile.skills])).digest("hex");
+  const parts = profile.groups ? [profile.source, profile.skills, profile.groups] : [profile.source, profile.skills];
+  return createHash("sha256").update(JSON.stringify(parts)).digest("hex");
 }
 
 export function localState(settings: Settings, home: string): LocalState {

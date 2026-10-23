@@ -51,7 +51,8 @@ different `AFK_SETTINGS` value, stop the current background instance first.
 
 - Version 1, configuration identity, profile names/IDs, source references and selected members.
 - Project names and folder paths.
-- Global tool entries and favorite source bookmarks. A bookmark’s optional `skills`
+- Global tool entries and favorite source bookmarks. A bookmark may carry an optional
+  `description` you write (up to 280 characters). Its optional `skills`
   array stores selected names; omitting it means all skills. Empty, duplicate or
   wildcard selections are rejected rather than broadened.
   Repository folder paths shown by Find skills are discovery metadata and are

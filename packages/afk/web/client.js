@@ -168,7 +168,7 @@ saveProfile=async()=>{
 };
 
 removeProfile=id=>operation(async()=>{await request('profile/remove',{id});closeModal()});
-retryPreparation=id=>operation(async()=>{const {name,source,skills}=profiles.find(p=>p.id===id);await request('profile/save',{id,name,source,skills})});
+retryPreparation=id=>operation(async()=>{const {name,source,skills,groups}=profiles.find(p=>p.id===id);await request('profile/save',{id,name,...(groups?{groups}:{source,skills})})});
 setPreference=(name,mode)=>operation(()=>request('invocation',{name,scope,mode}));
 importSettings=async file=>{
   $('importFile').value='';if(!file)return;

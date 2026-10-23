@@ -41,18 +41,42 @@ export interface AgentRulesSettings {
   receipts: Record<string, RulesReceipt>;
 }
 
+export interface ProfileGroup {
+  source: string;
+  skills: string[];
+}
+
 export interface Profile {
   id: string;
   name: string;
   source: string;
   skills: string[];
+  groups?: ProfileGroup[];
   enabled: string[];
   ready: boolean;
+}
+
+export const LOCAL_PROFILE_SOURCE = "Local skill selection";
+
+export function profileGroups(profile: Pick<Profile, "source" | "skills" | "groups">): ProfileGroup[] {
+  return profile.groups ?? [{ source: profile.source, skills: profile.skills }];
+}
+
+export function isProfileGroup(value: unknown): value is ProfileGroup {
+  if (!value || typeof value !== "object") return false;
+  const { source, skills } = value as Record<string, unknown>;
+  return nonempty(source) && !source.startsWith("-") && Array.isArray(skills) && skills.length > 0 && skills.every(skillName);
+}
+
+export function validProfileGroups(groups: unknown): groups is ProfileGroup[] {
+  return Array.isArray(groups) && groups.length > 1 && groups.every(isProfileGroup)
+    && new Set(groups.map(group => group.source)).size === groups.length;
 }
 
 export interface FavoriteSource {
   name: string;
   source: string;
+  description?: string;
   skills?: string[];
 }
 
@@ -117,9 +141,14 @@ export function validateSettings(value: unknown): Settings {
   if (scopes.size !== projects.length + 1) throw new Error("Project names must be unique.");
   if (!profiles.every(p => p && skillName(p.id) && nonempty(p.name) && nonempty(p.source) && Array.isArray(p.skills) && p.skills.length > 0 && p.skills.every(skillName) && new Set(p.skills).size === p.skills.length && Array.isArray(p.enabled) && p.enabled.every(s => scopes.has(s)) && typeof p.ready === "boolean")) throw new Error("Profiles need valid members and activation scopes.");
   if (new Set(profiles.map(p => p.id)).size !== profiles.length) throw new Error("Profile identifiers must be unique.");
+  for (const profile of profiles) {
+    if (profile.groups === undefined) continue;
+    if (!validProfileGroups(profile.groups) || profile.source !== profile.groups[0]!.source || JSON.stringify(profile.groups.flatMap(group => group.skills)) !== JSON.stringify(profile.skills)) throw new Error("Multi-source profiles need distinct sources whose skills match the profile members; each skill comes from one source.");
+  }
   if (!tools.every(t => t && Number.isSafeInteger(t.id) && nonempty(t.name) && typeof t.install === "string" && t.install.trim() && !t.install.includes("\0") && typeof t.update === "string" && !t.update.includes("\0"))) throw new Error("Tools need names and install commands.");
   if (new Set(tools.map(t => t.id)).size !== tools.length) throw new Error("Tool identifiers must be unique.");
   if (!sources.every(s => s && nonempty(s.name) && nonempty(s.source) && !s.source.startsWith("-"))) throw new Error("Sources need names and repository references.");
+  if (!sources.every(s => s.description === undefined || (nonempty(s.description) && s.description.length <= 280))) throw new Error("Source descriptions must be short text without control characters.");
   if (!sources.every(s => s.skills === undefined || (Array.isArray(s.skills) && s.skills.length > 0 && s.skills.every(skillName) && new Set(s.skills).size === s.skills.length))) throw new Error("Choose at least one valid, unique skill for each selected source.");
   if (data.stacks !== undefined) {
     if (!Array.isArray(data.stacks)) throw new Error("Stacks must be an array of saved manifests.");
