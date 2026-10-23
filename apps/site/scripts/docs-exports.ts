@@ -7,7 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import * as runtime from 'react/jsx-runtime';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
-import { chapters } from '../src/docs/chapters.ts';
+import { chapters, retiredChapters } from '../src/docs/chapters.ts';
 import { markdownOptions } from '../src/docs/markdown-options.ts';
 import { markdownPath, publicOrigin } from '../src/docs/doc-links.ts';
 
@@ -43,6 +43,15 @@ export function toMarkdown(html: string) {
     filter: 'dt',
     replacement: (content) => `\n\n**${content}**\n\n`,
   });
+  converter.addRule('images', {
+    filter: 'img',
+    replacement: (_, node) => {
+      const source = node.getAttribute('src');
+      if (!source) return '';
+      const alt = (node.getAttribute('alt') ?? '').replaceAll('[', '\\[').replaceAll(']', '\\]');
+      return `![${alt}](${new URL(source, publicOrigin).href})`;
+    },
+  });
   converter.addRule('definitionBodies', { filter: 'dd', replacement: (content) => `\n\n${content}\n\n` });
   converter.addRule('summaries', { filter: 'summary', replacement: (content) => `\n\n**${content}**\n\n` });
   converter.addRule('codeBlocks', {
@@ -76,7 +85,11 @@ export async function generateDocsExports() {
     assets.set(markdownPath(chapter.id), withSource);
     return withSource;
   }));
-  assets.set('/llms.txt', '# AI Field Kit\n\n> Setup and skill-management documentation for AFK.\n\n## Chapters\n\n' + chapters.map(({ id, title, description }) => `- [${title}](${publicOrigin}${markdownPath(id)}): ${description}`).join('\n') + `\n\n## Complete documentation\n\n- [All chapters](${publicOrigin}/llms-full.txt)\n`);
+  for (const retired of retiredChapters) {
+    const notice = `# ${retired.title} — pre-2.0 guide\n\nThis chapter belongs to AFK before 2.0. It is no longer a current guide.\n\n- [AFK 2.0 first-run guide](${publicOrigin}/docs/start.md)\n- [Install or fork a pre-2.0 release](${publicOrigin}/docs/legacy.md)\n`;
+    assets.set(markdownPath(retired.id), notice);
+  }
+  assets.set('/llms.txt', '# AI Field Kit\n\n> Local skills, shared profiles, agent reading, global tools and settings for AFK 2.0.\n\n## Chapters\n\n' + chapters.map(({ id, title, description }) => `- [${title}](${publicOrigin}${markdownPath(id)}): ${description}`).join('\n') + `\n\n## Complete documentation\n\n- [All chapters](${publicOrigin}/llms-full.txt)\n`);
   assets.set('/llms-full.txt', '# AI Field Kit — Complete documentation\n\n' + documents.join('\n---\n\n'));
   return assets;
 }

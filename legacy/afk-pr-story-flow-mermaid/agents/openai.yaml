@@ -1,3 +1,0 @@
-display_name: AFK PR Story Flow Mermaid
-short_description: Generate a comprehensive and clear Pull Request mermaid flow by analyzing the changes between two branches.
-default_prompt: Follow the /afk-pr-story-flow-mermaid workflow for this project.

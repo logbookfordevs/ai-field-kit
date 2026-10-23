@@ -1,6 +1,0 @@
-interface:
-  display_name: "AFK CLI"
-  short_description: "Manage AFK setup, catalogs, and profiles"
-  default_prompt: "Use $afk-cli to handle my AFK configuration request through the installed CLI and verify the resulting state."
-policy:
-  allow_implicit_invocation: false

@@ -6,16 +6,184 @@ This changelog tracks meaningful updates by version and date.
 
 - Keep unreleased work in `## Next Release`; when a batch feels complete, move it into a versioned section like `## v0.5.0 - 2026-05-19`.
 - Prefer reader-focused summaries over raw commit messages.
-- Group bullets by area prefix when helpful: `docs:`, `skills:`, `workflows:`, `mcps:`, `sync:`, `rules:`.
-- Skip trivial noise. Record changes that affect how someone uses, syncs, extends, or trusts the kit.
+- Group bullets by area when helpful: profiles, skills, sources, tools, settings, and docs.
+- Skip trivial noise. Record changes that affect how someone uses, configures, or trusts AFK.
 
 ## Next Release
 
+### Fixed
+
+- The **Import through CLAUDE.md** hint explains the benefit first: Claude loads your rules in projects with their own `CLAUDE.md` and in apps that skip `AGENTS.md`.
+- Move your AFK setup into an existing folder without disabling skills or disconnecting synced rules. Choose between loading the existing setup and moving your current one; incoming files win conflicts, destination AFK files are backed up, and skill files stay in place.
+- Source forms explain ambiguous GitHub branch URLs and show the explicit `#branch-name` format. Failed source discovery removes terminal formatting and gives branch-specific recovery guidance without rewriting the source.
+- A failed-update notice clears after AFK verifies that the running version has reached the update target, including recovery by reopening AFK from a terminal. Previous update logs stay on disk; unresolved failures remain visible.
+
+## v2.0.6 - 2026-10-15
+
 ### Added
+
+- All-skills source bookmarks offer **Install all skills…** on the card and **Install all instead…** in the picker, so you can confirm an agent and folder without waiting for skill discovery. Saved selections and stacks keep their explicit members.
+- Installation dialogs show an accessible progress bar with completion and failure states, and default the agent to Universal.
+- `afk install <manifest-url>` reviews and saves a stack in Sources & Stacks, then installs its selected skills across repositories without a profile or web app. Choose an agent and Global/project folder interactively, or supply `--agent`, `-g`/`-p <folder>`, and `--yes`. Bare domain/path URLs use HTTPS; failures report completed sources and retain the saved stack for retry.
+- Installing a stack can now install only what’s missing. The Install dialog checks the chosen folder, lists each skill as installed, off or missing, and defaults to **Only what’s missing** when the folder is partly filled. Installed skills, including disabled ones, are left untouched, and sources with nothing missing are skipped. **Everything in the stack** keeps the previous replace behavior. `stack/install` and `stack/script` accept `onlyMissing`.
+- The Install dialog on Sources & Stacks shows an Installation folder selector beside the agent. It starts on the page’s installation destination and can be changed for that install without changing the page.
+- Claude and custom rules destinations have an optional **Import through CLAUDE.md** setting in their Edit dialog, and the row shows when it is on. It keeps an `@AGENTS.md` import in the `CLAUDE.md` beside the synced file, creating it if needed, so Claude loads your rules in projects that have their own `CLAUDE.md`, including a second Claude config folder. An import you already wrote is left alone, and turning the option off removes only what AFK added.
+
+- Installed Skills lists skills kept inside subfolders of the skills folder, such as the account skills Claude syncs under `synced/`. They appear in a separate In subfolders group per folder, with their description and invocation mode, and can be inspected. AFK does not manage them: availability, invocation, updates, deletion, profiles and saved lists still cover top-level skills only.
+
+### Fixed
+
+- Project removal stays available and explains when profiles and managed skills must be disabled first.
+- Successful AFK updates clear Update details from the header. Running updates and failures retain their details; the local update log stays on disk.
+
+## v2.0.4 - 2026-10-09
+
+### Added
+
+- Save a portable list of installed skills by scope, including known sources, availability and invocation choices. Saved skills compares the list with this machine and offers reviewed selective restoration without copying skill files.
+- Check for AFK updates from the app header and explicitly update and restart on the current port and configuration, with explicit checking and up-to-date feedback, progress, results and recovery guidance.
+- Take an optional six-page quick tour from Welcome or About AFK, with dimmed surroundings, clear page content and Back, Next, Skip and Escape controls.
+- The sidebar footer shows AFK’s PID and RSS, refreshed every 30 seconds while the tab is visible.
+
+### Changed
+
+- Profile definitions travel in the AFK folder; activation, readiness, invocation preferences and ownership receipts stay machine-local. Profiles start disabled and unprepared on a new machine.
+- Profile reading and activation commands accept case-insensitive names as well as IDs. Read group once offers name-based terminal commands and an afk-cli skill request.
+- Update selected applies protected skill updates only to checked skills. Update and Save actions have distinct icons and emphasis; installed and saved views use a shared tab bar.
+- Skill pickers group selection controls, show selected-only filtering explicitly, and place discovery feedback beside Find skills. Profile preparation is labeled Install profile skills.
+- Settings identifies missing project folders and offers reconnection or removal without copying project files. Welcome links to AFK folder settings; navigation starts with Installed Skills.
+
+- Stack editing uses the same form as creation, prefilled with saved source and skill selections. Edit JSON remains available separately; both editors review changes before saving.
+- Source bookmark text links open the repository in a new tab in both Cards and List views.
+- Stack creation shows a compact skill picker directly beneath the chosen source. Choose skills checks the source; unchecking hides its picker and preserves selections for later use.
+- Repository skill pickers show the contents of a top-level `skills` folder at the root, retaining nested folders and search by original path.
+
+## v2.0.3 - 2026-10-07
+
+### Added
+
+- `afk restart` restarts the verified background app on its current port and settings path and reports the replacement URL and PID. Foreground sessions stay untouched; an idle instance gets startup guidance.
+
+- Source bookmarks offer Create profile with their saved skill selection, or all currently discovered members. Review before saving; the source stays bookmarked and profile activation remains unchanged.
+
+- Install on an All skills source offers a searchable folder picker for that run. Choose members without editing the bookmark; selected sources and stacks keep their saved member lists.
+
+- Installed Skills filters by availability, recorded source and saved profile membership and shows rough per-agent automatic discovery token estimates following only the Profile filter, with on-demand file estimates in Inspect. Project estimates distinguish local inventory from totals including Global.
+
+- Stack creation lists every saved source, including All skills bookmarks. Choose individual skills in the stack form without changing the original bookmark.
+
+- Tools has Install all and Update all actions. Review the saved commands, run them sequentially, and see each result; a failed command does not stop the remaining tools.
+
+- Sources & Stacks offers Install alongside copied commands. Choose a destination and agent, then follow sequential installation progress and retained Skills CLI output. Cancellation stops remaining work while keeping completed or partial installations.
+
+- `afk skills update` and Installed Skills’ Update skills action, plus Update on each skill row, update tracked skills through Skills CLI while preserving availability and AFK invocation preferences. The app shows progress and retained results, with cancellation before file replacement; failed or cancelled updates preserve original files.
+
+- Installed Skills supports selecting multiple skills for bulk enable, disable, invocation changes and reviewed deletion. Selection survives filtering, resets across scopes, and reports per-skill failures without undoing completed changes.
+- Installed Skills can share the selected Global or project skills folder with Claude through a folder symlink. Missing folders are created; disconnecting keeps skills, while existing populated folders and unrelated links are preserved. Individual and profile activation work through shared folders.
+- Installed Skills can permanently delete a skill copy and its supporting files with a review dialog and a second click to confirm. Available skills are removed in the same action along with their AFK-owned links in that scope. Global deletion also removes the matching Claude copy or symlink and recognizes shared skills folders. Enabled profiles, other scopes and other unowned links remain protected; the review identifies any duplicate copy that will remain.
+- `afk status` reports the background server’s resident memory (RSS) in MiB, excluding the browser and child tool processes.
+- `afk --port <number>` selects a fixed loopback port in foreground or background mode. Occupied ports report an error; a background instance on a different port must be stopped before switching.
+
+### Fixed
+
+- Skills CLI installation and update previews replace terminal spinner frames in place instead of repeating progress text, while retaining normal logs and errors.
+
+- Bulk deletion opens a loading review immediately and prevents duplicate requests. Closing the review keeps delayed results from reopening it; selected skills share one inventory scan.
+
+- Skills CLI output stays expanded during update progress refreshes and completion, preserving the user’s open or closed choice.
+
+- Skill inspection opens the same copy shown in Installed Skills when both active and disabled copies share a name, keeping its path consistent with the availability switch.
+- Fixed-port launch rejects browser-blocked ports such as 6666 before starting. Failed background startup verification now stops its child before removing the tracking record, avoiding an untracked running server.
+
+### Changed
+
+- Sources & Stacks defaults to a responsive card gallery, with a List switch for a compact view. Both layouts retain installation, copying, editing and saved skill selections.
+
+- Installed Skills puts scope and updates beside the heading, groups filters in a compact row, and moves discovery details and folder paths behind quick disclosures so skills appear sooner.
+
+- Stored skills can be deleted while their profiles are disabled. Profile definitions keep their selections; enabling a repository profile restores missing members before activation. Local-only profiles explain which files need restoring.
+
+- Copied source commands open Skills CLI’s skill picker for All skills bookmarks. Explicit selections and stacks keep their saved skill names; the app’s Install action offers its own one-off skill picker.
+
+- Installed Skills marks manual, automatic, mixed and unknown invocation modes with distinct icons while retaining text labels.
+
+- The website field manual includes demo screenshots, a dedicated Agent rules guide, and updated folder, installation and tool-batch workflows. Full-size images and captions are also available in its Markdown exports.
+
+## v2.0.2 - 2026-10-06
+
+### Added
+
+- `afk --background` starts the local app independently of the terminal. `afk status` shows its URL, process ID and log location; `afk stop` gracefully closes the background instance. Repeated starts reuse it, and foreground sessions remain independent.
+- Installed Skills filters by effective invocation mode: Manual only, Automatic allowed, Varies by agent, or Unknown. Filtering combines with name search and the selected inventory scope.
+
+## v2.0.1 - 2026-10-06
+
+### Fixed
+
+- Restored `afk update` and `afk update --dry-run` for updating AFK itself through the release installer, independently of skill installation and configuration.
+
+## v2.0.0 - 2026-10-06
+
+### Added
+
+- Sources & Stacks: named multi-repository skill selections, JSON or HTTPS manifest import with review, explicit refresh, JSON export, and copy-only sequential install scripts. Existing source bookmarks remain compatible.
+
+- An AFK favicon for the local app, matching the website branding.
+- A dismissible Welcome for first access, with profile and rule starting points; reopen it from About AFK.
+
+- A local web app with Profiles, Installed Skills, Sources & Stacks, Tools, Agent rules, and Settings, opened by `afk`.
+- Shared skill profiles prepared disabled, with additive Global/project activation and on-demand group reading.
+- Favorite repository bookmarks with all skills or a searchable selection, install commands, and a combined script that honors each selection.
+- Expandable repository folders in remote skill pickers, with selection counts and search by folder, skill name, or description.
+- A selectable settings-file location, configuration import/export, folder-based project definitions, and an Exit AFK control.
+- An Agent rules editor with supporting references, reference completion, explicit destination sync, previews, backups, and conflict management that preserves existing instructions outside AFK's region.
+- AFK folder ZIP export/import for settings and Markdown, with local agent-path mapping before sync.
+- An AFK 2.0 agent skill, settings schema and validation commands, read-only doctor diagnostics, and headless management using the same operations as the local app.
+- The agent skill ships with AFK; `afk guide` prints its path, and CLI help directs agents to read it before management, without a separate skill installation.
+
+### Fixed
+
+- Reference autocomplete now replaces the whole existing key, preventing duplicated filename suffixes in synced agent rules.
+
+### Changed
+
+- The local app now has compact persistent mobile navigation, denser ledgers, and more readable labels.
+- Profile creation separates repository and local skills, with description search and selections retained across filters.
+- Conflict review explains both choices before the diff and requires a new review after a failed replacement.
+- Invocation controls show the native Claude/Codex behavior and the result of resetting an override; conditional details open from an information icon beside the selector.
+- Settings prioritize portable AFK folder ZIP transfer; JSON-only controls remain available under advanced disclosure.
+- Claude rule destinations now default to AGENTS.md, with equal-weight Codex and Claude copy controls. Existing configured paths retain their sync ownership.
+
+- Skill availability now uses shared stored copies and scoped links, preserving overlapping profiles and independent activation.
+- Invocation controls write supported native Claude and Codex metadata; project overrides are isolated and reset to shared inheritance.
+- Tools are always global, run saved commands explicitly, and retain session results. Empty update commands reuse install; removing an entry does not uninstall the tool.
+- Skill update controls copy Skills CLI commands for users to run. AFK does not execute updates.
+- Headless operations accept JSON files or stdin, reject malformed fields before applying changes, and preserve rule preview checks. Settings import requires individual skills to be disabled before their ownership is replaced.
+- Repository documentation now describes Fieldwork; obsolete setup/catalog plans and references have been removed.
+- The website now introduces AFK 2.0 through profiles, with an interactive example and a ten-chapter field manual. Retired guide links explain how to keep using pre-2.0 releases.
+
+### Removed
+
+- Catalog, setup, sync, rules, hooks, MCP, custom-agent provisioning, and general setup-orchestration commands from the AFK CLI. Existing user files are not automatically removed or migrated.
+
+
+## v1.4.4 - 2026-09-25
+
+### Added
+
+- `skills:` added `afk skills add --invocation auto|manual` to set invocation policy during installation.
+- `skills:` interactive `afk skills add` now asks how new skills should start and whether invocation is automatic or manual; `--yes`, `--no-prompt`, and explicit policy flags support unattended installs.
 
 - `skills:` added `afk setup skills --all --exclude-imported` to include every non-imported catalog skill, regardless of its default setting.
 
 ### Changed
+
+- `catalog:` Logbook Atlas now owns the default catalog, skills, rules, agents, and hooks. AFK fetches defaults from Atlas and migrates legacy AFK source references while preserving custom catalogs and selections. Catalog content and documentation now live in Atlas; the CLI no longer bundles them.
+
+- `profiles:` `afk setup profiles` now prepares only the cached profile catalog. Use `afk setup skills --profile [id]` to explicitly install profile members, with an interactive picker when the ID is omitted and `--local` for project scope. New package skills start disabled; catalog startup policy and existing disabled settings are preserved.
+- `catalog:` renamed the `video` profile to `hyperframe` (Hyperframe), keeping its `heygen-com/hyperframes` package.
+
+- `skills:` `afk skills invocation auto|manual <skill>` replaces `enable|disable`; the bare command still opens the batch policy editor.
 
 - `sync:` now installs new preset members automatically and updates existing ones; `--install-missing` is no longer needed. When a preset includes skills, sync covers the entire non-imported catalog regardless of preset skill selections. `--include-extra-skills` also includes imported catalog entries; uncataloged skills remain untouched.
 - `sync:` batches skill installs by source and syncs rules once across selected harnesses, reducing repeated work and output.

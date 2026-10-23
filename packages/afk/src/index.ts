@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-import { runCli } from "./cli.js";
+import { runFieldwork } from "./fieldwork/cli.js";
 
-const code = await runCli(process.argv.slice(2));
-process.exitCode = code;
+try {
+  process.exitCode = await runFieldwork(process.argv.slice(2));
+} catch (error) {
+  console.error(error instanceof Error ? error.message : "AFK could not complete the operation.");
+  process.exitCode = 1;
+}

@@ -1,0 +1,40 @@
+import { afterEach, expect, it } from "vitest";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { startFieldwork } from "./server.js";
+import { emptySettings, SettingsStore } from "./settings.js";
+
+const cleanups: (() => Promise<void>)[] = [];
+afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
+
+it("authenticates rule APIs and rechecks a reviewed destination before writing", async () => {
+  const home = await mkdtemp(join(tmpdir(), "afk-rules-api-"));
+  cleanups.push(() => rm(home, { recursive: true, force: true }));
+  const store = new SettingsStore(home);
+  await store.save(emptySettings());
+  const app = await startFieldwork(store);
+  cleanups.push(app.close);
+  const html = await (await fetch(app.url)).text();
+  const token = html.match(/window.afkToken="([^"]+)"/)?.[1];
+  expect(token).toBeTruthy();
+  const post = (path: string, body: unknown) => fetch(app.url + path, { method: "POST", headers: { "x-afk-token": token!, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  expect((await fetch(app.url + "/api/rules/state")).status).toBe(403);
+  const saved = await post("/api/rules/save", { files: [{ path: "AGENTS.md", content: "Example instructions\n" }] });
+  expect(saved.ok).toBe(true);
+  const state = await (await fetch(app.url + "/api/rules/state", { headers: { "x-afk-token": token! } })).json() as { destinations: { id: string; kind: string; path: string }[] };
+  const destination = state.destinations.find(d => d.kind === "codex")!;
+  const preview = await (await post("/api/rules/preview", { ids: [destination.id] })).json() as unknown;
+  await mkdir(join(home, ".codex"), { recursive: true });
+  await writeFile(destination.path, "Changed after the preview\n");
+  const stale = await post("/api/rules/sync", { ids: [destination.id], preview });
+  const response = await stale.json() as { error?: string; preview?: { targets: { status: string }[] } };
+  expect(stale.status === 400 || response.preview?.targets.some(t => t.status === "conflict")).toBe(true);
+  expect(await readFile(destination.path, "utf8")).toBe("Changed after the preview\n");
+  const fresh = await (await post("/api/rules/preview", { ids: [destination.id] })).json() as unknown;
+  const applied = await post("/api/rules/sync", { ids: [destination.id], preview: fresh });
+  expect(applied.ok).toBe(true);
+  expect(await readFile(destination.path, "utf8")).toContain("Changed after the preview\n");
+  expect(await readFile(destination.path, "utf8")).toContain("<!-- AFK:RULES:START -->");
+  expect(Object.keys((await store.read()).agentRules?.receipts ?? {})).toContain(destination.id);
+});

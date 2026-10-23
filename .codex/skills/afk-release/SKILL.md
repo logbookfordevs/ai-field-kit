@@ -13,18 +13,21 @@ A request to bump a version or prepare a release authorizes local preparation an
 1. Use the requested bump (`patch`, `minor`, or `major`); otherwise state the default, `patch`.
 2. Read `packages/afk/package.json` and compute the next semver version.
 3. Edit only `CHANGELOG.md`:
-   - keep a fresh empty `## TBD - TBD` heading at the top.
-   - move current TBD bullets under `## vX.Y.Z - YYYY-MM-DD`.
-   - if TBD is empty, ask before releasing.
-4. Run:
+   - keep a fresh empty `## Next Release` heading at the top.
+   - move current Next Release bullets under `## vX.Y.Z - YYYY-MM-DD`.
+   - if Next Release is empty, ask before releasing.
+4. Run checks from the repository root, then inspect the package from `packages/afk`. Confirm the archive includes the fieldwork modules, web HTML/JavaScript, and bundled fonts.
 
 ```bash
 pnpm afk:typecheck
+pnpm afk:lint
 pnpm afk:test
-pnpm --dir packages/afk pack --dry-run
+pnpm afk:build
+cd packages/afk
+npm pack --dry-run --ignore-scripts --json
 ```
 
-5. Commit the changelog only:
+5. Return to the repository root and commit the changelog only:
 
 ```bash
 git add CHANGELOG.md

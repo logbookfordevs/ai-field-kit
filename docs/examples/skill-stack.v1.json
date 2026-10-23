@@ -1,0 +1,19 @@
+{
+  "$schema": "../schemas/skill-stack.v1.schema.json",
+  "version": 1,
+  "id": "video-workbench",
+  "name": "Video workbench",
+  "description": "A reusable selection of video and interface guidance from original repositories.",
+  "sources": [
+    {
+      "name": "Remotion",
+      "source": "remotion-dev/skills",
+      "skills": ["remotion-best-practices"]
+    },
+    {
+      "name": "Interface guidance",
+      "source": "vercel-labs/agent-skills",
+      "skills": ["web-design-guidelines"]
+    }
+  ]
+}

@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { generateDocsExports, toMarkdown } from './docs-exports.ts';
-import { chapters } from '../src/docs/chapters.ts';
+import { chapters, retiredChapters } from '../src/docs/chapters.ts';
 import { assistantUrl, isPublicDocsHost, publicOrigin } from '../src/docs/doc-links.ts';
 
 test('exports every chapter, an index, and the full manual without UI controls', async () => {
   const assets = await generateDocsExports();
-  assert.equal(assets.size, chapters.length + 2);
+  assert.equal(assets.size, chapters.length + retiredChapters.length + 2);
   for (const { id } of chapters) {
     const path = `/docs/${id}.md`;
     const text = assets.get(path);
@@ -16,6 +16,16 @@ test('exports every chapter, an index, and the full manual without UI controls',
     assert.ok(assets.get('/llms.txt')?.includes(publicOrigin + path));
     assert.ok(assets.get('/llms-full.txt')?.includes(text));
     assert.doesNotMatch(text, /<Command|<Menu\.|Copy command:|className=/);
+  }
+});
+
+test('retired Markdown URLs remain available and point readers to a deliberate version choice', async () => {
+  const assets = await generateDocsExports();
+  for (const retired of retiredChapters) {
+    const text = assets.get(`/docs/${retired.id}.md`);
+    assert.ok(text);
+    assert.ok(text.includes(`${publicOrigin}/docs/start.md`));
+    assert.ok(text.includes(`${publicOrigin}/docs/legacy.md`));
   }
 });
 
@@ -49,4 +59,10 @@ test('assistant handoffs encode a short public page prompt, never the full manua
 test('pipes inside table code do not create extra columns', () => {
   const result = toMarkdown('<table><thead><tr><th>Command</th></tr></thead><tbody><tr><td><code>enable|disable</code></td></tr></tbody></table>');
   assert.ok(result.includes('`enable\\|disable`'));
+});
+
+test('screenshot exports retain descriptive alt text, captions and public image links', () => {
+  const result = toMarkdown('<figure><a href="/docs/screenshots/example.webp"><img src="/docs/screenshots/example.webp" alt="A skill [selection]" /></a><figcaption>Two selected skills.</figcaption></figure>');
+  assert.ok(result.includes(`![A skill \\[selection\\]](${publicOrigin}/docs/screenshots/example.webp)`));
+  assert.ok(result.includes('Two selected skills.'));
 });

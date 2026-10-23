@@ -9,7 +9,6 @@
     "afk:typecheck": "pnpm --dir packages/afk typecheck",
     "lint": "eslint .",
     "afk:version": "./scripts/version-afk.sh",
-    "registry:validate": "pnpm dlx shadcn@4.16.2 registry validate registry.json",
     "site:build": "pnpm --dir apps/site build",
     "site:dev": "pnpm --dir apps/site dev",
     "site:preview": "pnpm --dir apps/site preview",
@@ -22,8 +21,8 @@
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "globals": "^17.12.0",
+    "globals": "^17.13.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.69.0"
+    "typescript-eslint": "^8.71.1"
   }
 }

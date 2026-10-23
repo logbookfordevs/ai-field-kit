@@ -14,8 +14,10 @@ node_modules/
 .pnpm-store/
 dist/
 .release/
+/packages/afk/skills/afk-cli/
 
 # Local environment overrides
 .env
 .env.local
 .agents
+.impeccable/
