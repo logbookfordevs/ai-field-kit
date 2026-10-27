@@ -338,8 +338,8 @@ installation destination; saving a stack opens the Stacks tab. Sources render as
 matches names, links, descriptions and selected skills. Each row stacks the name
 over the mono link and optional muted description, with the selection, an outlined
 Install and a ⋯ menu popover on the right; selected skills expand inline as mono
-tags. At 760px the selection and actions move below the text. Stacks default to a
-flat paper card gallery; a right-aligned Cards/List toggle above them applies for the
+tags. At 760px the selection and actions move below the text. Stacks default to the
+ruled list; a right-aligned Cards/List toggle above them switches to a flat paper card gallery for the
 current page session and does not change saved definitions or installation targets. Sources and Stacks
 retain distinct headings. Desktop cards use two equal columns with a 16px gap,
 20px insets, Surface fill, a Rule border and 8px corners, without elevation.

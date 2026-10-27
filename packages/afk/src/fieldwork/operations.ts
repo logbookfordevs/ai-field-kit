@@ -47,7 +47,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   for (const key of optionalText[operation] ?? []) {
     if (data[key] !== undefined && typeof data[key] !== "string") throw new Error(`Provide ${key} as a string.`);
   }
-  for (const key of ["local", "update", "clean", "enabled", "confirmed", "onlyMissing"]) {
+  for (const key of ["local", "update", "clean", "enabled", "confirmed", "onlyMissing", "prepare"]) {
     if (data[key] !== undefined && typeof data[key] !== "boolean") throw new Error(`Provide ${key} as true or false.`);
   }
   if (operation === "skills/delete-preview" || operation === "skills/bulk" || (operation === "skills/update" && data.names !== undefined)) {
@@ -343,10 +343,12 @@ export class FieldworkOperations {
       if (existing?.enabled.length) throw new Error("Disable every scope before editing members.");
       for (const group of groups) {
         if (group.source === LOCAL_PROFILE_SOURCE) { for (const name of group.skills) await library.locate(settings, name); }
-        else await library.storePrepared(settings, await preparation.directory(group.source), group.skills, group.source);
+        else if (data.prepare === true) await library.storePrepared(settings, await preparation.directory(group.source), group.skills, group.source);
       }
       const skills = groups.flatMap(group => group.skills);
-      const profile = { id: id ?? "profile-" + randomUUID(), name, source: groups[0]!.source, skills, ...(groups.length > 1 ? { groups } : {}), enabled: [], ready: true };
+      let ready = true;
+      for (const name of skills) { try { await library.locate(settings, name); } catch { ready = false; } }
+      const profile = { id: id ?? "profile-" + randomUUID(), name, source: groups[0]!.source, skills, ...(groups.length > 1 ? { groups } : {}), enabled: [], ready };
       settings.profiles = [...settings.profiles.filter(p => p.id !== profile.id), profile];
       await store.save(settings); return { ok: true, id: profile.id };
     }

@@ -285,7 +285,7 @@ export class SkillLibrary {
       const destination = join(root, ".disabled", name);
       if (await exists(destination)) throw new Error(`${name} has an incomplete stored copy. Inspect it before retrying.`);
       const from = join(source, name);
-      if (!(await exists(join(from, "SKILL.md")))) throw new Error(`Installer did not prepare ${name}.`);
+      if (!(await exists(join(from, "SKILL.md")))) throw new Error(`Installer did not prepare ${name}${reference ? ` from ${reference}` : ""}.`);
       await mkdir(join(root, ".disabled"), { recursive: true });
       await cp(await realpath(from), destination, { recursive: true, dereference: true, errorOnExist: true, force: false });
       if (reference) await writeFile(join(destination, ".afk-source.json"), JSON.stringify({ source: reference }), { mode: 0o600 });

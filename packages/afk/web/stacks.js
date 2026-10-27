@@ -67,14 +67,13 @@ function turnStackIntoProfile(index){
   const total=manifest.sources.reduce((count,group)=>count+group.skills.length,0);
   const plural=(count,word)=>count+' '+word+(count===1?'':'s');
   const blocker=collisions.length?`Each skill can come from only one source. ${collisions.map(([name,sources])=>`${name} is selected from ${sources.join(' and ')}`).join('; ')}. Edit the stack to keep it in one source.`:linked?.enabled.length?`${linked.name} is on in ${linked.enabled.join(', ')}. Turn it off everywhere in Profiles before updating it.`:'';
-  modal(linked?'Update profile from stack':'Turn into profile',`<p>${linked?`Replace the members of <strong>${esc(linked.name)}</strong> with this stack’s current picks.`:'Create a profile with this stack’s picks, so you can turn them on or off per Global or project.'}</p><label>Profile name<input id="stackProfileName" maxlength="120" value="${esc(linked?.name||manifest.name)}"></label><p class="meta">${plural(total,'skill')} from ${plural(manifest.sources.length,'source')}</p>${stackGroups(manifest)}<p class="hint">AFK downloads these skills now and keeps them off. Later stack edits don’t change the profile; use Update profile again.</p><p id="stackError" class="field-error" role="alert">${esc(blocker)}</p>`,button('Cancel','closeModal()','text')+button(linked?'Update profile':'Create profile',`saveStackProfile(${index})`,'primary',`id="saveStackProfile" ${blocker?'disabled':''}`));
+  modal(linked?'Update profile from stack':'Turn into profile',`<p>${linked?`Replace the members of <strong>${esc(linked.name)}</strong> with this stack’s current picks.`:'Create a profile with this stack’s picks, so you can turn them on or off per Global or project.'}</p><label>Profile name<input id="stackProfileName" maxlength="120" value="${esc(linked?.name||manifest.name)}"></label><p class="meta">${plural(total,'skill')} from ${plural(manifest.sources.length,'source')}</p>${stackGroups(manifest)}<p class="hint">Skills download the first time you turn the profile on. Later stack edits don’t change the profile; use Update profile again.</p><p id="stackError" class="field-error" role="alert">${esc(blocker)}</p>`,button('Cancel','closeModal()','text')+button(linked?'Update profile':'Create profile',`saveStackProfile(${index})`,'primary',`id="saveStackProfile" ${blocker?'disabled':''}`));
 }
 function saveStackProfile(index){
   const stack=savedStacks()[index],name=$('stackProfileName').value.trim();
   if(!stack)return;
   if(!name){$('stackError').textContent='Name the profile.';return}
   const linked=stackProfile(stack);
-  $('saveStackProfile').textContent='Preparing…';
   return saveForm(()=>request('profile/save',{stack:stack.manifest.id,name}),linked?'Profile updated. It stays off until you turn it on in Profiles.':'Profile created. Turn it on from Profiles.','stackError');
 }
 function createStack(){openStackForm()}
@@ -212,25 +211,26 @@ function reviewStack(proposal,newSources=[]){
   modal(expected?'Review stack changes':'Review stack',`<p>${changed?'Saving replaces the complete saved manifest, including local selections. Review both versions below.':expected?'The proposed manifest matches the saved stack.':'Save this install plan to your configuration.'}</p>${current}<section><h3>${expected?'Proposed':'Stack'} · ${esc(manifest.name)}</h3><code>${esc(manifest.id)}</code>${manifest.description?`<p>${esc(manifest.description)}</p>`:''}${stack.origin?`<p class="hint">Refresh origin: ${esc(stack.origin)}</p>`:''}${stackGroups(manifest)}</section>${newSources.length?`<section><h3>New sources</h3><p class="hint">Saved to Sources with the same skills as this stack.</p><ul>${newSources.map(source=>`<li>${esc(source.name)} · <code>${esc(source.source)}</code> · ${source.skills.length} ${source.skills.length===1?'skill':'skills'}</li>`).join('')}</ul></section>`:''}<p class="hint">No skills will be installed or activated. Installed Skills and Profiles stay unchanged.</p><p id="stackError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button(expected?'Save reviewed changes':'Save stack','saveReviewedStack()','primary'));
 }
 function saveReviewedStack(){
-  const proposal=stackDraft,newSources=pendingStackSources;
+  const proposal=stackDraft,newSources=pendingStackSources,warnings=[];
   sourcesTab='stacks';
   return saveForm(async()=>{
     await request('stack/save',{stack:proposal.stack,expected:proposal.expected});
-    await syncStackProfile(proposal.stack);
+    const profileError=await syncStackProfile(proposal.stack);
+    if(profileError)warnings.push('its profile was not updated: '+profileError+' Use Update profile to retry.');
     if(!newSources.length)return;
     await refresh();
     const known=new Set(currentSettings.favoriteSources.map(source=>sourceKey(source.source)));
     const additions=newSources.filter(source=>!known.has(sourceKey(source.source)));
     if(!additions.length)return;
     try{await savePatch({favoriteSources:[...currentSettings.favoriteSources,...additions]})}
-    catch(error){throw Error('The stack was saved, but its new sources were not added to Sources: '+error.message)}
-  },newSources.length?'Stack and new sources saved. No skills installed.':'Stack saved. No skills installed.','stackError');
+    catch(error){warnings.push('its new sources were not added to Sources: '+error.message)}
+  },()=>warnings.length?'The stack was saved, but '+warnings.join('; '):newSources.length?'Stack and new sources saved. No skills installed.':'Stack saved. No skills installed.','stackError');
 }
 async function syncStackProfile(stack){
   const profile=stackProfile(stack);
-  if(!profile||profile.enabled.length||!stackProfileOutdated(stack,profile))return;
-  try{await request('profile/save',{stack:stack.manifest.id,name:profile.name})}
-  catch(error){throw Error('The stack was saved, but its profile was not updated: '+error.message)}
+  if(!profile||profile.enabled.length||!stackProfileOutdated(stack,profile))return '';
+  try{await request('profile/save',{stack:stack.manifest.id,name:profile.name});return ''}
+  catch(error){return error.message}
 }
 function removeStack(index){
   const existing=savedStacks()[index];

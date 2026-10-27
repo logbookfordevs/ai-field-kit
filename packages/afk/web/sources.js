@@ -76,7 +76,7 @@ function sourceReference(source){
   const text=`<code class="path">${esc(source.source)}</code>`;
   return url?`<a class="source-reference" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(label)}" title="${esc(label)}">${text}</a>`:text;
 }
-let sourcesLayout='cards';
+let sourcesLayout='list';
 function setSourcesLayout(layout){
   if(!['cards','list'].includes(layout))return;
   sourcesLayout=layout;renderSources();

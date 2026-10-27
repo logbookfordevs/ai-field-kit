@@ -56,7 +56,7 @@ invoke=async id=>{
 async function saveForm(action,message,errorId){
   const form=$('sheetContent').firstElementChild,buttons=[...$('sheetContent').querySelectorAll('button')];
   buttons.forEach(button=>button.disabled=true);
-  try{await action();if(form.isConnected)closeModal();await refresh();toast(message)}
+  try{await action();if(form.isConnected)closeModal();await refresh();toast(typeof message==='function'?message():message)}
   catch(error){if(form.isConnected){const field=$(errorId);if(field)field.textContent=error.message;else toast(error.message)}else toast(error.message)}
   finally{if(form.isConnected)buttons.forEach(button=>button.disabled=false)}
 }
@@ -168,7 +168,7 @@ saveProfile=async()=>{
 };
 
 removeProfile=id=>operation(async()=>{await request('profile/remove',{id});closeModal()});
-retryPreparation=id=>operation(async()=>{const {name,source,skills,groups}=profiles.find(p=>p.id===id);await request('profile/save',{id,name,...(groups?{groups}:{source,skills})})});
+retryPreparation=id=>operation(async()=>{const {name,source,skills,groups}=profiles.find(p=>p.id===id);await request('profile/save',{id,name,prepare:true,...(groups?{groups}:{source,skills})})});
 setPreference=(name,mode)=>operation(()=>request('invocation',{name,scope,mode}));
 importSettings=async file=>{
   $('importFile').value='';if(!file)return;

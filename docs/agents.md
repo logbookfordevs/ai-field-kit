@@ -91,8 +91,9 @@ project also supplies its current name as `previous`.
 ## Prepare, activate, or read a profile
 
 Ask your agent to discover a source and save a profile with selected skill names.
-The `discover` and `profile/save` operations handle source inspection and local
-preparation. Saving does not activate the profile. Disable all targets before
+The `discover` and `profile/save` operations handle source inspection and the
+profile definition. Skills download when the profile is first enabled, or at save
+time with `prepare: true`. Saving does not activate the profile. Disable all targets before
 editing or removing an existing definition.
 
 ```sh

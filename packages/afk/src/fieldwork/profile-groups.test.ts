@@ -50,17 +50,33 @@ afterEach(async () => {
 });
 
 describe("multi-source profiles", () => {
-  it("turns a stack into a profile, preparing each skill from its own source", async () => {
+  it("turns a stack into a profile without downloading anything", async () => {
     expect(await operations.run("profile/save", { stack: "creative" })).toEqual({ ok: true, id: "stack-creative" });
     const profile = (await store.read()).profiles[0]!;
     expect(profile).toMatchObject({
       id: "stack-creative", name: "Creative", source: "owner/art", skills: ["draw", "paint", "review"],
       groups: [{ source: "owner/art", skills: ["draw", "paint"] }, { source: "owner/qa", skills: ["review"] }],
-      ready: true, enabled: [],
+      ready: false, enabled: [],
     });
+    expect(SourcePreparation.prototype.directory).not.toHaveBeenCalled();
+    await expect(readFile(join(home, ".agents/skills/.disabled/draw/SKILL.md"), "utf8")).rejects.toThrow();
+  });
+
+  it("prepares each skill from its own source when asked to prepare", async () => {
+    await operations.run("profile/save", { stack: "creative", prepare: true });
+    expect((await store.read()).profiles[0]?.ready).toBe(true);
     const stored = join(home, ".agents/skills/.disabled");
     expect(await readFile(join(stored, "draw/SKILL.md"), "utf8")).toContain("draw from art");
     expect(JSON.parse(await readFile(join(stored, "review/.afk-source.json"), "utf8"))).toEqual({ source: "owner/qa" });
+  });
+
+  it("downloads missing members from their own source when the profile is first enabled", async () => {
+    await operations.run("profile/save", { stack: "creative" });
+    await operations.run("activation", { id: "stack-creative", scope: "Global", enabled: true });
+    const stored = join(home, ".agents/skills/.disabled");
+    expect(await readFile(join(stored, "draw/SKILL.md"), "utf8")).toContain("draw from art");
+    expect(JSON.parse(await readFile(join(stored, "review/.afk-source.json"), "utf8"))).toEqual({ source: "owner/qa" });
+    expect((await store.read()).profiles[0]?.ready).toBe(true);
   });
 
   it("activates every member across sources and keeps activation after reloading", async () => {

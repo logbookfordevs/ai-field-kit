@@ -267,6 +267,16 @@ describe("stack management interface", () => {
       expect(await save({ source: "owner/video", skills: ["render"], enabled: ["Global"] })).toEqual(["stack/save"]);
       expect(await save({ source: "owner/video", skills: ["render", "trim"], enabled: [] })).toEqual(["stack/save"]);
     });
+    it("keeps a saved stack saved and reports the profile failure instead of stranding the review", async () => {
+      context.profiles = [{ id: "stack-studio", name: "My studio", source: "owner/video", skills: ["old"], enabled: [] }];
+      context.proposal = { stack, expected: null };
+      evaluate("reviewStack(proposal)");
+      context.request = async (path: string, data: unknown) => { calls.push({ path, data }); if (path === "profile/save") throw new Error("Installer did not prepare anatomy."); return response; };
+      context.saveForm = async (action: () => Promise<unknown>, message: () => string) => { await action(); context.notice = message(); };
+      await evaluate<Promise<void>>("saveReviewedStack()");
+      expect(calls.map(call => call.path)).toEqual(["stack/save", "profile/save"]);
+      expect(context.notice).toContain("The stack was saved, but its profile was not updated: Installer did not prepare anatomy.");
+    });
     it("blocks updating a linked profile that is on", () => {
       context.profiles = [{ id: "stack-studio", name: "Studio", enabled: ["Global"] }];
       evaluate("turnStackIntoProfile(0)");

@@ -869,10 +869,10 @@ function profileRow(p){
     <div class="profile-main">
       <div class="profile-title"><button type="button" class="profile-name" onclick="inspectProfile('${p.id}')" aria-label="Inspect ${esc(p.name)}">${esc(p.name)}</button><span class="meta">${p.skills.length} skill${p.skills.length===1?'':'s'}${p.groups?` · ${p.groups.length} sources`:''}</span>${profileStackLabel(p)}</div>
       <ul class="tags" aria-label="Members">${shown.map(s=>`<li class="tag">${esc(s)}</li>`).join('')}${extra>0?`<li class="tag more">+${extra} more</li>`:''}</ul>
-      <div class="prep">${p.ready?'': '<span class="status warn">Preparation incomplete</span>'}${prepAction}</div>
+      <div class="prep">${p.ready?'': '<span class="status warn">Skills not downloaded yet</span>'}${prepAction}</div>
     </div>
     <div class="profile-scope">
-      <div class="scope-control"><label>Enable for<select data-od-id="profile-${p.id}-scope" aria-label="Scope for ${esc(p.name)}" onchange="setTarget('${p.id}',this.value)">${scopeOptions(target)}</select></label><button type="button" data-od-id="profile-${p.id}-toggle" ${p.ready||on?'':'disabled'} onclick="activate('${p.id}')">${toggleLabel}</button></div>
+      <div class="scope-control"><label>Enable for<select data-od-id="profile-${p.id}-scope" aria-label="Scope for ${esc(p.name)}" onchange="setTarget('${p.id}',this.value)">${scopeOptions(target)}</select></label><button type="button" data-od-id="profile-${p.id}-toggle" onclick="activate('${p.id}')">${toggleLabel}</button></div>
       <p class="scope-state"><strong>${on?'Enabled':'Not enabled'} ${isGlobal?'globally':'in '+esc(target)}</strong></p>
       ${others.length?`<p class="meta">Also active: ${others.map(esc).join(' · ')}</p>`:''}
     </div>
