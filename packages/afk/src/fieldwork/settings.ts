@@ -200,7 +200,7 @@ export class SettingsStore {
 
   async read(): Promise<Settings> {
     try {
-      const settings = validateSettings(JSON.parse(await readFile(this.path, "utf8")));
+      const settings = validateSettings(JSON.parse(await this.readPortable()));
       const legacy = !settings.configurationId;
       settings.configurationId ??= this.identifier(true);
       let state: LocalState | undefined;
@@ -215,6 +215,16 @@ export class SettingsStore {
       return applyLocalState(settings, state, this.home);
     }
     catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptySettings(); throw error; }
+  }
+
+  private async readPortable(): Promise<string> {
+    for (let attempt = 0; ; attempt++) {
+      try { return await readFile(this.path, "utf8"); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT" || attempt === 4) throw error;
+        await new Promise(done => setTimeout(done, 100));
+      }
+    }
   }
 
   private identifier(legacy = false): string {
