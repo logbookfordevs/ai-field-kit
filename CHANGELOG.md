@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.0.7 - 2026-10-28
+
 ### Added
 
 - AFK keeps the last 20 snapshots of `settings.json` in `~/.afk/backups/`, outside any synced folder. Before a save replaces the file, the previous version is stored. `afk settings backups` lists them and `afk settings restore <name>` brings one back, snapshotting the current file first. AFK also refuses to overwrite a settings file with one that has a different configuration identity unless you are deliberately importing or replacing it.
