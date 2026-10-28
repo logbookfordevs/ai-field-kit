@@ -449,7 +449,7 @@ export class FieldworkOperations {
       imported.independentSkills = {};
       imported.profiles = imported.profiles.map(p => ({ ...p, enabled: [], ready: false }));
       imported.agentRules = settings.agentRules;
-      await store.save(imported); return { ok: true };
+      await store.save(imported, { replace: true }); return { ok: true };
     }
     if (operation === "skills/delete-preview" || operation === "skills/bulk") {
       const names = data.names as string[], scope = String(data.scope);
