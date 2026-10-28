@@ -126,6 +126,8 @@ and leaves agent files unchanged until an explicit sync.
 AFK_SETTINGS=/path/to/settings.json afk
 afk ui --no-open
 afk settings export /path/to/export.json
+afk settings backups
+afk settings restore <name>
 ```
 
 ## Manage from your agent

@@ -6,6 +6,8 @@ Run `afk manage describe <operation>` for current payloads. Read the relevant br
 
 Resolve the file with `afk settings path`; read current JSON with `afk settings show` and guidance with `afk settings schema`. `show` returns defaults when no file exists. The runtime validator is authoritative: `afk settings validate [file]` validates JSON and exits nonzero on invalid input; it does not apply filesystem changes.
 
+AFK snapshots `settings.json` into `~/.afk/backups/` before a save replaces it. `afk settings backups` lists them; `afk settings restore <name>` restores one after snapshotting the current file. A save refused with "different AFK configuration" means the file on disk belongs to another configuration: check the backups instead of forcing the write.
+
 Direct edits are for `favoriteSources`, `stacks`, `tools`, and inactive project definitions. Preserve the rest of the current document, especially `profiles`, `preferences`, `managedLinks`, `independentSkills`, and `agentRules` destinations/receipts. Prepare a candidate, validate it, check that the original has not changed, then replace it. Prefer `project/save` for project changes because it handles renames and associated state. Profile preparation, activation, invocation, rule ownership, and import use AFK operations.
 
 `afk doctor --json` checks schema and local drift, including rule references. It is read-only. Read its findings and repair each through the relevant workflow; a clean report does not prove a running agent has loaded instructions.
