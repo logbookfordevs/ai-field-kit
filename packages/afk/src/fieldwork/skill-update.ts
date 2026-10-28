@@ -88,7 +88,6 @@ export async function updateSkills(store: SettingsStore, settings: Settings, sco
     state.phase = "Checking and applying updates"; report();
     const changed = [];
     const stagedStore = new Store(home, join(temporary, "settings.json"));
-    await stagedStore.initialize();
     const stagedSettings = emptySettings();
     if (scope !== "Global") stagedSettings.projects.push({ name: scope, path: project });
     for (const snapshot of snapshots) {

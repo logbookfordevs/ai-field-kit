@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -7,7 +7,7 @@ import { SkillLibrary } from "./skills.js";
 import { setInvocation } from "./invocation.js";
 import { updateSkills, type UpdateRunner } from "./skill-update.js";
 const homes: string[] = [];
-afterEach(async () => { await Promise.all(homes.map(home => rm(home, { recursive: true, force: true }))); homes.length = 0; });
+afterEach(async () => { vi.unstubAllEnvs(); await Promise.all(homes.map(home => rm(home, { recursive: true, force: true }))); homes.length = 0; });
 const text = (version: string): string => `---\nname: sample\ndescription: Fixture\n---\n${version}\n`;
 async function fixture(project = false) {
   const home = await mkdtemp(join(tmpdir(), "afk-update-test-")); homes.push(home);
@@ -112,4 +112,12 @@ it("updates only the requested skill and keeps other copies and receipts intact"
 it("reports missing tracking metadata for a requested skill instead of pretending it updated", async () => {
   const f = await fixture(); await writeFile(f.receipt, JSON.stringify({ skills: {} }));
   await expect(updateSkills(f.store, f.settings, f.scope, () => {}, runner(), undefined, ["sample"])).rejects.toThrow("no Skills CLI update receipt");
+});
+it("never writes staged invocation preferences to the real settings file when AFK_SETTINGS is set", async () => {
+  const f = await fixture(); await setInvocation(f.store, f.settings, "sample", f.scope, "Manual only");
+  const settingsPath = join(f.home, ".afk/settings.json"), before = await readFile(settingsPath, "utf8");
+  vi.stubEnv("AFK_SETTINGS", settingsPath);
+  await updateSkills(f.store, await f.store.read(), f.scope, () => {}, runner());
+  expect(await readFile(settingsPath, "utf8")).toBe(before);
+  expect((await f.store.read()).preferences).toMatchObject({ "Global|sample": "Manual only" });
 });
