@@ -6,3 +6,5 @@ allowBuilds:
 overrides:
   # GHSA-g7r4-m6w7-qqqr: Windows development-server path traversal.
   esbuild: "^0.28.1"
+  # GHSA-mrhx-c7xc-m3w5: Zod memory exhaustion on oversized constrained collections.
+  zod: "^4.6.6"
