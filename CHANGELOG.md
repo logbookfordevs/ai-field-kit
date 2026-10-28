@@ -23,6 +23,7 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
+- Updating a skill no longer overwrites your settings file with a blank configuration when AFK runs in the background. The update's temporary working copy now stays inside its own temporary folder instead of following `AFK_SETTINGS` to your real settings.
 - Finding skills in a source with no valid skills explains why instead of showing raw installer output: it names each skipped `SKILL.md` and, for YAML frontmatter errors, suggests quoting the description or using a fixed fork.
 - The **Import through CLAUDE.md** hint explains the benefit first: Claude loads your rules in projects with their own `CLAUDE.md` and in apps that skip `AGENTS.md`.
 - Move your AFK setup into an existing folder without disabling skills or disconnecting synced rules. Choose between loading the existing setup and moving your current one; incoming files win conflicts, destination AFK files are backed up, and skill files stay in place.
