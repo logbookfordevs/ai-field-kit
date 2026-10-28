@@ -37,6 +37,8 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk settings schema                Print editor-oriented JSON Schema
   afk settings validate [file]       Validate JSON without importing it
   afk settings export <file>         Export without overwriting a file
+  afk settings backups               List automatic snapshots of settings.json
+  afk settings restore <name>        Restore a snapshot (the current file is snapshotted first)
   afk doctor [--json]                 Check configuration and local consistency
   afk manage describe [operation]    Describe headless operations as JSON
   afk manage <operation> [--input <file|->]
@@ -185,8 +187,10 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
       validateSettings(JSON.parse(await readFile(path, "utf8")));
       json({ ok: true, path }); return 0;
     }
+    if (action === "backups" && id === undefined) { json(await store.backups()); return 0; }
+    if (action === "restore" && id) { await store.restoreBackup(id); json({ ok: true, restored: id, path: store.path }); return 0; }
     if (action === "export" && id) { await writeFile(id, JSON.stringify(portableSettings(await store.read()), null, 2) + "\n", { flag: "wx", mode: 0o600 }); return 0; }
-    throw new Error("Choose settings path, show, schema, validate, or export.");
+    throw new Error("Choose settings path, show, schema, validate, export, backups, or restore.");
   }
   if (command === "doctor") {
     if ((action !== undefined && action !== "--json") || id !== undefined) throw new Error("Use doctor [--json].");

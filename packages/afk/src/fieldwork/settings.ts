@@ -176,6 +176,20 @@ export function validateSettings(value: unknown): Settings {
   return data as unknown as Settings;
 }
 
+const BACKUP_LIMIT = 20;
+const BACKUP_NAME = /^settings-[0-9A-Za-z-]+\.json$/;
+
+export interface BackupSummary {
+  name: string;
+  savedAt: string;
+  configurationId?: string | undefined;
+  profiles: number;
+  stacks: number;
+  sources: number;
+  projects: number;
+  tools: number;
+}
+
 export class SettingsStore {
   path: string;
   readonly home: string;
@@ -239,10 +253,16 @@ export class SettingsStore {
     return join(this.home, ".afk/local", id + ".json");
   }
 
-  async save(settings: Settings): Promise<void> {
+  async save(settings: Settings, options: { replace?: boolean } = {}): Promise<void> {
     settings.configurationId ??= this.identifier();
     const validated = validateSettings(settings);
     await mkdir(dirname(this.path), { recursive: true });
+    const serialized = `${JSON.stringify(portableSettings(validated), null, 2)}\n`;
+    const existing = await this.existingPortable();
+    if (existing !== undefined && existing.text !== serialized) {
+      if (!options.replace && existing.configurationId !== undefined && existing.configurationId !== validated.configurationId) throw new Error("Refusing to overwrite a different AFK configuration. Restore a backup with `afk settings backups`, or import the configuration deliberately.");
+      await this.snapshot(existing.text);
+    }
     const temporary = `${this.path}.${process.pid}.tmp`;
     const local = this.localPath(validated.configurationId!);
     await mkdir(dirname(local), { recursive: true });
@@ -250,7 +270,7 @@ export class SettingsStore {
     let previous: string | undefined;
     try { previous = await readFile(local, "utf8"); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
     try {
-      await writeFile(temporary, `${JSON.stringify(portableSettings(validated), null, 2)}\n`, { mode: 0o600 });
+      await writeFile(temporary, serialized, { mode: 0o600 });
       await writeFile(localTemporary, `${JSON.stringify(localState(validated, this.home), null, 2)}\n`, { mode: 0o600 });
       await rename(localTemporary, local);
       await rename(temporary, this.path);
@@ -259,6 +279,61 @@ export class SettingsStore {
       else { await writeFile(localTemporary, previous, { mode: 0o600 }); await rename(localTemporary, local); }
       throw error;
     } finally { await rm(temporary, { force: true }); await rm(localTemporary, { force: true }); }
+  }
+
+  private async existingPortable(): Promise<{ text: string; configurationId?: string } | undefined> {
+    let text: string;
+    try { text = await readFile(this.path, "utf8"); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined; throw error; }
+    try {
+      const id = (JSON.parse(text) as { configurationId?: unknown }).configurationId;
+      return typeof id === "string" ? { text, configurationId: id } : { text };
+    } catch { return { text }; }
+  }
+
+  get backupFolder(): string {
+    return join(this.home, ".afk/backups");
+  }
+
+  private async snapshot(text: string): Promise<void> {
+    const folder = this.backupFolder;
+    await mkdir(folder, { recursive: true });
+    const names = await this.backupNames();
+    const newest = names.at(-1);
+    if (newest && await readFile(join(folder, newest), "utf8") === text) return;
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    await writeFile(join(folder, `settings-${stamp}-${randomUUID().slice(0, 8)}.json`), text, { mode: 0o600 });
+    for (const old of names.slice(0, Math.max(0, names.length + 1 - BACKUP_LIMIT))) await rm(join(folder, old), { force: true });
+  }
+
+  private async backupNames(): Promise<string[]> {
+    try { return (await readdir(this.backupFolder)).filter(name => BACKUP_NAME.test(name)).sort(); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return []; throw error; }
+  }
+
+  async backups(): Promise<BackupSummary[]> {
+    const summaries: BackupSummary[] = [];
+    for (const name of (await this.backupNames()).reverse()) {
+      try {
+        const settings = validateSettings(JSON.parse(await readFile(join(this.backupFolder, name), "utf8")));
+        summaries.push({ name, savedAt: (await lstat(join(this.backupFolder, name))).mtime.toISOString(), configurationId: settings.configurationId, profiles: settings.profiles.length, stacks: settings.stacks?.length ?? 0, sources: settings.favoriteSources.length, projects: settings.projects.length, tools: settings.tools.length });
+      } catch { /* unreadable snapshots stay on disk but are not offered */ }
+    }
+    return summaries;
+  }
+
+  async restoreBackup(name: string): Promise<void> {
+    if (!BACKUP_NAME.test(name)) throw new Error("Choose a backup name from `afk settings backups`.");
+    let text: string;
+    try { text = await readFile(join(this.backupFolder, name), "utf8"); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new Error("That backup no longer exists."); throw error; }
+    validateSettings(JSON.parse(text));
+    const existing = await this.existingPortable();
+    if (existing !== undefined && existing.text !== text) await this.snapshot(existing.text);
+    await mkdir(dirname(this.path), { recursive: true });
+    const temporary = `${this.path}.${process.pid}.tmp`;
+    try { await writeFile(temporary, text, { mode: 0o600 }); await rename(temporary, this.path); }
+    finally { await rm(temporary, { force: true }); }
   }
 
   async relocate(path: string, existingFolder?: string): Promise<void> {

@@ -264,7 +264,7 @@ export async function applyBundle(store: SettingsStore, base64: string, mappings
     }
     for (const file of staged) { await rename(file.temporary, file.destination); written.push(file.destination); }
     for (const file of previous) if (!imported.files.some(incoming => incoming.path === file.path)) await rm(await checkedPath(root, file.path));
-    await store.save(settings);
+    await store.save(settings, { replace: true });
   } catch (error) {
     const restored = await Promise.allSettled(previous.map(async file => writeFile(await checkedPath(root, file.path), file.content, { mode: 0o600 })));
     const cleaned = await Promise.allSettled(written.filter(path => !previous.some(old => join(root, old.path) === path)).map(async path => {
@@ -273,7 +273,7 @@ export async function applyBundle(store: SettingsStore, base64: string, mappings
       if (!stat.isFile()) throw new Error(`Import rollback preserved unexpected contents at ${safe}.`);
       await rm(safe);
     }));
-    const saved = await Promise.allSettled([store.save(current)]);
+    const saved = await Promise.allSettled([store.save(current, { replace: true })]);
     const failures = [...restored, ...cleaned, ...saved].filter(result => result.status === "rejected");
     if (failures.length) {
       const causes: unknown[] = [error];
