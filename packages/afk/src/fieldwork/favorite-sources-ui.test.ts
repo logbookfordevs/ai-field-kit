@@ -136,6 +136,15 @@ describe("favorite-source UI and copied commands", () => {
     expect(patch).toBeUndefined();
   });
 
+  it("lists sources alphabetically while rows keep their stored positions", () => {
+    sources.push({ name: "beta", source: "owner/beta" });
+    renderPage();
+    const html = field("sourceList").innerHTML;
+    expect(html.indexOf("favorite-source-1")).toBeLessThan(html.indexOf("favorite-source-2"));
+    expect(html.indexOf("favorite-source-2")).toBeLessThan(html.indexOf("favorite-source-0"));
+    expect(evaluate<string[]>("sourceLinks()")).toEqual(["https://github.com/owner/other", "https://github.com/owner/beta", "https://github.com/owner/toolkit"]);
+  });
+
   it("filters sources by name, link, description and selected skill without changing them", () => {
     sources[1]!.description = "Video editing helpers";
     renderPage();
@@ -169,7 +178,7 @@ describe("favorite-source UI and copied commands", () => {
     context.copyText = async (text: string, label: string) => { copied = [text, label]; };
     renderPage();
     await evaluate<Promise<void>>("copySourceLinks()");
-    expect(copied).toEqual(["https://github.com/owner/toolkit\nhttps://github.com/owner/other\n/tmp/skills", "All source links"]);
+    expect(copied).toEqual(["https://github.com/owner/other\n/tmp/skills\nhttps://github.com/owner/toolkit", "All source links"]);
     evaluate("setSourceQuery('toolkit')");
     await evaluate<Promise<void>>("copySourceLinks()");
     expect(copied).toEqual(["https://github.com/owner/toolkit", "1 source link"]);
@@ -183,7 +192,8 @@ describe("favorite-source UI and copied commands", () => {
     ];
     renderPage();
     const html = field("sourceList").innerHTML;
-    expect(html.slice(0, html.indexOf("favorite-source-1"))).toContain(">Creative</button>");
+    expect(html.slice(html.indexOf("favorite-source-0"))).toContain(">Creative</button>");
+    expect(html.slice(0, html.indexOf("favorite-source-0"))).not.toContain(">Creative</button>");
     expect(html).not.toContain(">Ops</button>");
     evaluate("setSourceQuery('creative')");
     expect(field("sourceList").innerHTML).toContain("favorite-source-0");

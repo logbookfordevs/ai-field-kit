@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { createContext, runInContext, type Context } from "node:vm";
 
-const script = readFileSync(new URL("../../web/stacks.js", import.meta.url), "utf8");
+const script = ["members.js", "stacks.js"].map(name => readFileSync(new URL(`../../web/${name}`, import.meta.url), "utf8")).join("\n");
 const stack = { manifest: { version: 1, id: "studio", name: "Studio", sources: [{ name: "Video", source: "owner/video", skills: ["render"] }] }, origin: "https://example.com/stack.json" };
 let context: Context;
 let calls: { path: string; data: unknown }[];
@@ -27,6 +27,17 @@ describe("stack management interface", () => {
   it("shows skills grouped by their original source, with remote refresh separate from installation", () => {
     const html = evaluate<string>("renderStacks()");
     expect(html).toContain("owner/video"); expect(html).toContain("render"); expect(html).toContain("Refresh manifest"); expect(html).toContain("Copy install script");
+  });
+  it("lists stacks alphabetically while actions keep targeting the stored stack", () => {
+    const zeta = { manifest: { ...stack.manifest, id: "zeta", name: "Zeta" } };
+    const alpha = { manifest: { ...stack.manifest, id: "alpha", name: "alpha" } };
+    context.currentSettings = { stacks: [zeta, stack, alpha] };
+    context.button = (label: string, action: string) => `<button data-action="${action}">${label}</button>`;
+    const html = evaluate<string>("renderStacks()");
+    expect(html.indexOf("alpha")).toBeLessThan(html.indexOf("Studio"));
+    expect(html.indexOf("Studio")).toBeLessThan(html.indexOf("Zeta"));
+    expect(html.indexOf('"copyStack(2)"')).toBeLessThan(html.indexOf('"copyStack(1)"'));
+    expect(html.indexOf('"copyStack(1)"')).toBeLessThan(html.indexOf('"copyStack(0)"'));
   });
   it("imports pasted JSON and URL through the same explicit review without saving", async () => {
     evaluate("importStack();$('stackJson')"); fields.stackJson!.value = JSON.stringify(stack.manifest);

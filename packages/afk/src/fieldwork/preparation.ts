@@ -17,6 +17,10 @@ function repositoryDirectory(value: unknown): string | undefined {
   return parts.slice(0, -1).join("/") || ".";
 }
 
+function isAgentConfigDirectory(directory: string | undefined): boolean {
+  return directory?.split("/").some(part => part === ".agents" || part === ".claude") ?? false;
+}
+
 function skippedSkills(transcript: string): string[] {
   return transcript.split("\n").flatMap(line => {
     const match = line.match(/Skipped\s+(\S*SKILL\.md)\s+[—–-]\s+(.+)$/);
@@ -76,7 +80,19 @@ export class SourcePreparation {
       this.sources.set(source, directory);
     }
     const members = await readdir(join(directory, ".agents/skills"));
-    return members.filter(name => skillName(name) && !name.startsWith("."));
+    const lock = await this.lock(directory);
+    return members.filter(name => {
+      if (!skillName(name) || name.startsWith(".")) return false;
+      const entry = lock?.[name];
+      return !(record(entry) && isAgentConfigDirectory(repositoryDirectory(entry.skillPath)));
+    });
+  }
+
+  private async lock(directory: string): Promise<Record<string, unknown> | undefined> {
+    try {
+      const lock: unknown = JSON.parse(await readFile(join(directory, "skills-lock.json"), "utf8"));
+      return record(lock) && lock.version === 1 && record(lock.skills) ? lock.skills : undefined;
+    } catch { return undefined; }
   }
 
   async directory(source: string): Promise<string> {
@@ -86,15 +102,12 @@ export class SourcePreparation {
 
   async paths(source: string): Promise<Record<string, string>> {
     const names = await this.discover(source);
-    let lock: unknown;
-    try {
-      lock = JSON.parse(await readFile(join(this.sources.get(source)!, "skills-lock.json"), "utf8"));
-    } catch { return {}; }
-    if (!record(lock) || lock.version !== 1 || !record(lock.skills)) return {};
+    const lock = await this.lock(this.sources.get(source)!);
+    if (!lock) return {};
 
     const paths: [string, string][] = [];
     for (const name of names) {
-      const entry = lock.skills[name];
+      const entry = lock[name];
       if (!record(entry) || typeof entry.sourceType !== "string" || !["github", "gitlab", "git"].includes(entry.sourceType)) continue;
       const directory = repositoryDirectory(entry.skillPath);
       if (directory !== undefined) paths.push([name, directory]);
