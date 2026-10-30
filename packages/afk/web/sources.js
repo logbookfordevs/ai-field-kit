@@ -127,12 +127,12 @@ function sourceRow(source,i){
 }
 function renderSourceList(){
   const host=$('sourceList');if(!host)return;
-  const shown=favoriteSources.map((source,i)=>[source,i]).filter(([source])=>sourceMatches(source,sourceQuery));
+  const shown=favoriteSources.map((source,i)=>[source,i]).filter(([source])=>sourceMatches(source,sourceQuery)).sort(([a],[b])=>byName(a.name,b.name));
   host.innerHTML=shown.length?shown.map(([source,i])=>sourceRow(source,i)).join(''):`<div class="empty"><h3>No matching sources</h3><p class="sub">Search covers names, links, descriptions, selected skills and stack names.</p></div>`;
 }
 function setSourceQuery(value){sourceQuery=value;renderSourceList()}
 function sourceLinks(){
-  return favoriteSources.filter(source=>sourceMatches(source,sourceQuery)).map(source=>sourceWebUrl(source.source)||source.source);
+  return favoriteSources.filter(source=>sourceMatches(source,sourceQuery)).sort((a,b)=>byName(a.name,b.name)).map(source=>sourceWebUrl(source.source)||source.source);
 }
 function copySourceLinks(){
   const links=sourceLinks();

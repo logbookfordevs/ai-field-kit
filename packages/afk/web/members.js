@@ -1,3 +1,4 @@
+function byName(a,b){return a.localeCompare(b,undefined,{sensitivity:'base',numeric:true})}
 let memberPicker;
 function renderMembers(names,title,local,checked=[],descriptions={},picker=profilePicker,paths=picker.paths||{}){
   memberPicker=picker;
