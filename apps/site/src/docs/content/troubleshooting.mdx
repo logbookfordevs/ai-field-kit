@@ -1,32 +1,40 @@
 # Find the problem at its source.
 
-Start with the affected profile, target, path, or command. AFK does not own every layer of your agent setup.
+Start with the affected kit entry, pack, target, path, or command. AFK does not own every layer of your agent setup.
 
-<h2 id="members">A profile is missing members</h2>
+<h2 id="members">A pack is missing members</h2>
 
-Choose **Install profile skills** in **Profiles** before enabling or reading. Invocation reads local copies and has no remote fallback.
+Choose **Download skills** in **Kit → Packs** before turning it on or reading it. Reading uses stored copies and has no remote fallback.
 
-If preparation fails, inspect the error and retry. Already prepared copies remain available. Check source and selected names; two sources with the same member name share one storage identity.
+If the download fails, inspect the error and retry. Already stored copies remain available. Check source and selected names; two sources with the same skill name share one storage identity.
+
+<h2 id="sync">Sync did not finish</h2>
+
+Open **Sync this machine** again, or run `afk kit`, to see what still differs. Completed installs stay. If Skills CLI stopped, review its output and retry. A tool listed under **Missing here** runs only when you approve its command. A skill without a repository source can't be installed by sync; link it to a tool or keep it on this machine only.
+
+<h2 id="old-settings">AFK refuses to save settings</h2>
+
+A file that still holds stacks can be read but not saved. Run `afk migrate` for a dry run, or use **Move to your kit**. See [Move from stacks and profiles](/docs?chapter=legacy#migrate). If an older AFK rejects the file, update AFK on that machine; it can't read settings version 2.
 
 <h2 id="links">A skill is still available after Disable</h2>
 
-Check other enabled profiles, independent availability and preexisting files. AFK keeps exposure another owner still needs. Global discovery may also remain visible to an agent working in a project.
+Check other packs that are on, Core, independent availability and preexisting files. AFK keeps exposure another owner still needs. Global discovery may also remain visible to an agent working in a project.
 
-Inspect [physical storage and ownership](/docs?chapter=profiles#physical). The project inventory is not a combined effective inventory.
+Inspect [physical storage and ownership](/docs?chapter=packs#physical). The project inventory is not a combined effective inventory.
 
-<h2 id="edits">A profile or path cannot be changed</h2>
+<h2 id="edits">A pack or path cannot be changed</h2>
 
-Disable the profile in every target before editing or removing it. Disable a project’s profiles before changing its folder. Disable owning profiles before individually toggling a member.
+Turn a pack off in every target before removing it; editing works while it is on. Turn a project's packs off before changing its folder. Turn off owning packs before individually toggling a member.
 
 <h2 id="imported">Imported activation is missing</h2>
 
-Import deliberately starts profiles inactive and unprepared. Remap project folders, prepare members locally, and enable explicitly. It does not run tools or apply native invocation metadata automatically.
+Import deliberately starts packs off and not downloaded. Remap project folders, run `afk sync` for Core, and turn packs on explicitly. It does not run tools or apply native invocation metadata automatically.
 
 <h2 id="agent">The agent cannot invoke a skill as expected</h2>
 
 Check the actual native metadata, selected target, and that agent’s discovery behavior. AFK writes Claude Code and Codex invocation preferences; it does not guarantee every client uses the same controls.
 
-For on-demand reading, copy the profile command using its name, or the ID if names are duplicated. Ask the agent to execute the command and read its output rather than expecting the web app to inject a chat.
+For on-demand reading, copy the pack command using its name, or the ID if names are duplicated. Ask the agent to execute the command and read its output rather than expecting the web app to inject a chat.
 
 <h2 id="clipboard">A copy button fails</h2>
 

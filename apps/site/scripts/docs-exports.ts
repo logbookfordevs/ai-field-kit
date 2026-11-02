@@ -7,7 +7,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import * as runtime from 'react/jsx-runtime';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
-import { chapters, retiredChapters } from '../src/docs/chapters.ts';
+import { chapterAliases, chapters, retiredChapters } from '../src/docs/chapters.ts';
+import { canonicalChapterId } from '../src/docs/navigation.ts';
 import { markdownOptions } from '../src/docs/markdown-options.ts';
 import { markdownPath, publicOrigin } from '../src/docs/doc-links.ts';
 
@@ -16,8 +17,8 @@ export const contentFiles = chapters.map(({ id }) => fileURLToPath(new URL(`../s
 function markdownLink(href: string) {
   const url = new URL(href, publicOrigin);
   if (url.origin === publicOrigin && url.pathname === '/docs') {
-    const id = url.searchParams.get('chapter') || chapters[0].id;
-    if (chapters.some((chapter) => chapter.id === id)) {
+    const id = canonicalChapterId(url.searchParams.get('chapter') || chapters[0].id);
+    if (id && chapters.some((chapter) => chapter.id === id)) {
       return new URL(markdownPath(id) + url.hash, publicOrigin).href;
     }
   }
@@ -85,11 +86,15 @@ export async function generateDocsExports() {
     assets.set(markdownPath(chapter.id), withSource);
     return withSource;
   }));
+  for (const [alias, target] of Object.entries(chapterAliases)) {
+    const document = assets.get(markdownPath(target));
+    if (document) assets.set(markdownPath(alias), document);
+  }
   for (const retired of retiredChapters) {
     const notice = `# ${retired.title} — pre-2.0 guide\n\nThis chapter belongs to AFK before 2.0. It is no longer a current guide.\n\n- [AFK 2.0 first-run guide](${publicOrigin}/docs/start.md)\n- [Install or fork a pre-2.0 release](${publicOrigin}/docs/legacy.md)\n`;
     assets.set(markdownPath(retired.id), notice);
   }
-  assets.set('/llms.txt', '# AI Field Kit\n\n> Local skills, shared profiles, agent reading, global tools and settings for AFK 2.0.\n\n## Chapters\n\n' + chapters.map(({ id, title, description }) => `- [${title}](${publicOrigin}${markdownPath(id)}): ${description}`).join('\n') + `\n\n## Complete documentation\n\n- [All chapters](${publicOrigin}/llms-full.txt)\n`);
+  assets.set('/llms.txt', '# AI Field Kit\n\n> A portable kit of skills, packs you turn on or read once, global tools, agent rules and settings for AFK 2.0.\n\n## Chapters\n\n' + chapters.map(({ id, title, description }) => `- [${title}](${publicOrigin}${markdownPath(id)}): ${description}`).join('\n') + `\n\n## Complete documentation\n\n- [All chapters](${publicOrigin}/llms-full.txt)\n`);
   assets.set('/llms-full.txt', '# AI Field Kit — Complete documentation\n\n' + documents.join('\n---\n\n'));
   return assets;
 }

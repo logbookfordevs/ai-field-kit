@@ -1,6 +1,6 @@
 # Open your local field kit.
 
-AFK 2.0 opens a local workspace for skills, profiles, sources and stacks, tools, agent rules, and settings. Start with one small skill group.
+AFK 2.0 opens a local workspace with five sections: Kit, Installed Skills, Agent rules, Tools and Settings. Start with a small kit of skills you use every day.
 
 AFK 2.0 is released. Install the latest release with:
 
@@ -13,7 +13,7 @@ Use `afk update` to update AFK itself. Skill package updates are separate.
 
 <div className="docs-callout"><strong>Requires AFK 2.0.2 or newer</strong><p>Background commands and invocation filtering are included in 2.0.2. Run `afk update` if your installed version is older.</p></div>
 
-<div className="docs-callout"><strong>AFK 2.0.6</strong><p>This manual covers direct stack installation, saved skill lists, machine-local profile activation, protected updates and the optional quick tour. Screenshots use a demo workspace and may show earlier layouts.</p></div>
+<div className="docs-callout"><strong>The kit is in the next release</strong><p>This manual describes the kit, packs and `afk sync`, listed under Next Release in the changelog. Until they are published, [build from source](/docs?chapter=start#open) to try them. Screenshots use a demo workspace and may show earlier layouts.</p></div>
 
 <h2 id="open">Open the app</h2>
 
@@ -72,19 +72,31 @@ before starting it with the new port. `afk status` shows the current URL. The po
 is a launch option, not a saved preference; include it whenever you start AFK.
 `afk ui` accepts the same option.
 
-<h2 id="first-profile">Create one useful profile</h2>
+<h2 id="first-profile">Start your kit</h2>
 
-1. Open **Profiles → Create profile**. Paste a repository reference or select existing Global skills.
-2. Review the discovered members and select the ones you need.
-3. Save the profile. Selected missing copies are prepared disabled. Existing available skills keep their state.
+1. Open **Kit → This machine**. Skills you already have appear under **Not in your kit**.
+2. Send the ones you use everywhere to **Core**. Keep the rest on **This machine only**, or put them in a pack.
+3. To add something new, choose **Install skills**, enter a repository, pick its skills and choose where they go.
 
-A profile is a shared definition. Creating it does not enable it. Read the [profile guide](/docs?chapter=profiles) for storage and activation details.
+Core skills are always on, globally. AFK ships no default Core; you choose what goes in it. Read the [kit guide](/docs?chapter=kit) for every destination.
 
-<h2 id="choose">Choose how to use it</h2>
+<h2 id="choose">Keep occasional skills in a pack</h2>
 
-Need the group available for ongoing work? Add your project folder in **Settings**, then choose that project beside the profile’s **Enable** action. Choose **Global** when you want global availability.
+A pack groups skills you need only for some work. Create one in **Kit → Packs**. Saving it does not turn it on.
 
-Need its guidance once? Choose **Read group once** and give the copied command to your agent. It reads the group’s instructions without enabling them. [See the agent flow](/docs?chapter=agent).
+Need the pack for ongoing work? Add your project folder in **Settings**, then choose that project beside the pack's turn-on action. Choose **Global** for global availability.
+
+Need its guidance once? Choose **Read once** and give the copied command to your agent. It reads the pack's instructions without turning it on. [See packs](/docs?chapter=packs) and [the agent flow](/docs?chapter=agent).
+
+<h2 id="another-machine">Bring your kit to another machine</h2>
+
+Put your AFK folder somewhere your storage provider syncs, or import it. On the other machine, open the same settings file, then sync:
+
+```bash Sync this machine
+afk sync
+```
+
+Sync shows its plan, installs missing Core skills, turns Core skills back on and never removes anything. A tool's saved command runs only when you approve it. Packs start off; turn on the ones you need. See [Sync a machine](/docs?chapter=kit#sync).
 
 <h2 id="close">Close AFK</h2>
 
@@ -95,8 +107,8 @@ alone does not stop the server.
 
 <h2 id="tour">Take a quick tour</h2>
 
-Welcome offers **Take a quick tour** or **I’ll explore**. The tour visits Installed
-Skills, Profiles, Sources & Stacks, Agent rules, Tools and Settings. Each step keeps
+Welcome offers **Take a quick tour** or **I’ll explore**. The tour visits Kit,
+Installed Skills, Agent rules, Tools and Settings. Each step keeps
 its guidance, page content and selected navigation clear while dimming the
 surroundings. Use Back, Next, Skip tour or Escape; the tour requires no setup actions.
 Reopen it from **About AFK**. Welcome also links to Settings to choose your AFK folder.

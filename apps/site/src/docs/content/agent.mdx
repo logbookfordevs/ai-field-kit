@@ -1,24 +1,24 @@
 # Give guidance at the right moment.
 
-Let the agent decide how to approach an open-ended task before loading tool-specific instructions. Then ask it to read a prepared profile.
+Let the agent decide how to approach an open-ended task before loading tool-specific instructions. Then ask it to read a pack.
 
 <h2 id="task">Start with the task</h2>
 
 For example, tell your agent:
 
-> Create a demo video for this project. Choose the approach you think fits, then use the relevant AFK profile for guidance.
+> Create a demo video for this project. Choose the approach you think fits, then use the relevant AFK pack for guidance.
 
 You decide when to provide guidance. AFK does not make the agent’s tool choice or connect the website to your conversation.
 
-<h2 id="retrieve">Retrieve the chosen profile</h2>
+<h2 id="retrieve">Retrieve the chosen pack</h2>
 
-In the local app, open the profile and choose **Read group once**. Copy its actual command, then ask the agent to run it in its terminal:
+In the local app, open **Kit → Packs** and choose **Read once** on the pack. Copy its actual command, then ask the agent to run it in its terminal:
 
-```bash Example — use your profile name
-afk profiles use 'Video tools'
+```bash Example — use your pack name
+afk packs use 'Video tools'
 ```
 
-Names work without case sensitivity; IDs also work. If names are duplicated, use the ID AFK provides. The dialog also offers `/afk-cli use profile Video tools` for an agent using the afk-cli skill. If you run from a source checkout without installing the shortcut, substitute the source-build launcher described in [Start here](/docs?chapter=start#open).
+Names work without case sensitivity; IDs also work. If names are duplicated, use the ID AFK provides. The dialog also offers `/afk-cli use pack Video tools` for an agent using the afk-cli skill. If you run from a source checkout without installing the shortcut, substitute the source-build launcher described in [Start here](/docs?chapter=start#open).
 
 <h2 id="output">Read and apply the output</h2>
 
@@ -28,17 +28,17 @@ Names work without case sensitivity; IDs also work. If names are duplicated, use
 | Read the output and any supporting files needed for the task | Your agent |
 | Decide how to apply that guidance | Your agent, following your request |
 
-The group’s skills may remain disabled throughout. No discovery links are created and no other conversation is modified.
+The pack's skills may stay off throughout. No discovery links are created and no other conversation is modified.
 
-<div className="docs-callout"><strong>Prepared local members required</strong><p>Prepare a remote profile first. AFK does not fetch missing instructions during invocation. Recover missing members in Profiles.</p></div>
+<div className="docs-callout"><strong>Downloaded skills required</strong><p>Read once is offered after a pack's skills are downloaded. AFK does not fetch missing instructions while reading. Choose **Download skills** in Packs first.</p></div>
 
 <h2 id="web-action">What the web button does</h2>
 
-**Read group once** shows instructions and a command to copy. It also offers an afk-cli skill request to copy. Neither option executes inside an agent or injects context by itself; give the copied command or request to your agent.
+**Read once** shows instructions and a command to copy. It also offers an afk-cli skill request to copy. Neither option executes inside an agent or injects context by itself; give the copied command or request to your agent.
 
 <h2 id="context">Reading once does not erase context later</h2>
 
-Returned instructions remain in the conversation that read them. Later disabling the profile does not remove content already read. Live skill discovery inside different agent clients remains a separate compatibility check.
+Returned instructions remain in the conversation that read them. Turning the pack off later does not remove content already read. Live skill discovery inside different agent clients remains a separate compatibility check.
 
 <h2 id="manage">Ask your agent to manage AFK</h2>
 

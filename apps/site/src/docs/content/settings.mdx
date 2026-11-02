@@ -6,11 +6,11 @@ Definitions can travel between machines. Skill copies and project folders remain
 
 Default: `~/.afk/settings.json`. The **AFK folder** keeps `settings.json`, your canonical `AGENTS.md`, and `references/` together. Choose a repository, Drive or iCloud folder if you want your storage provider to sync these files. A local pointer at `~/.afk/settings-location.json` remembers where the configuration lives.
 
-**Choose folder** opens a folder browser. Create a dedicated AFK subfolder, move your current AFK files into a new location, or load an existing folder containing `settings.json`. Moving copies the configuration and Markdown, keeps the original folder, and refuses to overwrite existing files. Loading another configuration requires disabling active skills and profiles and disconnecting synced rule destinations first. Neither action syncs agent files.
+**Choose folder** opens a folder browser. Create a dedicated AFK subfolder, move your current AFK files into a new location, or load an existing folder containing `settings.json`. Moving copies the configuration and Markdown, keeps the original folder, and refuses to overwrite existing files. Loading another configuration requires turning off packs and active skills and disconnecting synced rule destinations first. Neither action syncs agent files.
 
 <figure className="docs-screenshot">
   <a href="/docs/screenshots/settings-folder.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/settings-folder.webp" alt="Settings displaying the AFK folder, settings.json, AGENTS.md, references and ZIP export/import controls." width="949" height="838" loading="lazy" decoding="async" /></a>
-  <figcaption><strong>The portable part lives together.</strong> Configuration, canonical rules and references share one AFK folder. Demo workspace from the current source build; open the image for a closer look.</figcaption>
+  <figcaption><strong>The portable part lives together.</strong> Configuration, canonical rules and references share one AFK folder. Demo workspace from an earlier source build, before the kit; open the image for a closer look.</figcaption>
 </figure>
 
 A launch override takes precedence over the local pointer:
@@ -19,18 +19,23 @@ A launch override takes precedence over the local pointer:
 AFK_SETTINGS=/path/to/settings.json afk
 ```
 
-The portable JSON holds profile definitions, project paths, tool commands, source
-bookmarks, stack manifests and optional origins, and manually saved skill lists.
-Activation, readiness, invocation preferences and ownership receipts are stored
-separately on this machine. Saved skill lists carry the availability and invocation
-choices captured when you saved them. Use the UI for changes so configuration and
-filesystem operations agree.
+The portable JSON holds your kit: Core skills by repository, packs and their
+optional manifest origins, and Try later bookmarks. It also holds project paths,
+tool commands and the skills tools provide, and rule destinations. Pack on or off
+state, downloaded copies, invocation preferences, ownership receipts and skills
+kept on this machine only are stored separately in `~/.afk/local/`. Use the UI or
+AFK commands for changes so configuration and filesystem operations agree.
+
+Before each save, AFK keeps the previous file in `~/.afk/backups/`, on this machine
+only. `afk settings backups` lists them and `afk settings restore <name>` restores one.
+
+<div className="docs-callout"><strong>Settings version 2</strong><p>The kit uses settings version 2. Older AFK versions reject it, so update AFK on every machine that shares the file. A file that still holds stacks can be read but not saved until you migrate it. See [Move from stacks and profiles](/docs?chapter=legacy#migrate).</p></div>
 
 <h2 id="projects">Add a project folder</h2>
 
-Choose **Add project**, navigate from your home folder, select **Use this folder**, then name the project. This defines a target; activation stays in **Profiles**.
+Choose **Add project**, navigate from your home folder, select **Use this folder**, then name the project. This defines a target; turn packs on from **Kit → Packs**.
 
-Renaming preserves its target relationships and preferences. Disable its profiles before changing the folder.
+Renaming preserves its target relationships and preferences. Turn its packs off before changing the folder.
 
 If a project path is missing on this machine, Settings shows **Project folder missing**.
 Choose another folder to reconnect it, or remove the saved project entry. AFK does
@@ -38,12 +43,14 @@ not copy, clone or download project files.
 
 <h2 id="import">Import intentionally</h2>
 
-1. Disable currently enabled profiles before replacing configuration.
+1. Turn off packs that are on before replacing configuration.
 2. Choose the JSON file and review or remap project folders.
-3. Import. Profiles start unprepared and disabled; local link receipts and individual activation are cleared.
-4. Use **Install profile skills** for the profiles you want, then enable each desired target explicitly. Restore individual saved skills from **Installed Skills → Saved skills** after review.
+3. Import. Packs start off and not downloaded; local link receipts and individual activation are cleared.
+4. Run [`afk sync`](/docs?chapter=kit#sync), or **Sync this machine**, to install missing Core skills. Turn on the packs you want explicitly.
 
-<div className="docs-callout"><strong>Import does not execute setup</strong><p>Saved tool commands do not run. Saved skill choices are applied to local files only when you explicitly restore selected entries.</p></div>
+A version 1 file imports with an empty Core.
+
+<div className="docs-callout"><strong>Import does not execute setup</strong><p>Saved tool commands do not run. Skills are installed only when you sync or turn a pack on.</p></div>
 
 Your provider owns sync and concurrent-file conflict handling. AFK does not automatically apply another machine’s activation or sync downloaded skill files.
 
@@ -53,7 +60,7 @@ New selected repository members are stored under `~/.agents/skills/.disabled/<sk
 
 A project invocation override uses `<project>/.agents/skills/.afk-overrides/<skill>/`. Reset reconnects owned links to the shared copy. Physical project-local skills keep their own original metadata.
 
-Existing available skills may remain in place. Profile disable removes only owned exposure, preserving other profiles, independent availability, and preexisting files.
+Existing available skills may remain in place. Turning a pack off removes only owned exposure, preserving other packs, independent availability, and preexisting files.
 
 <h2 id="export">Export configuration</h2>
 
@@ -65,4 +72,4 @@ The separate **Settings only · JSON** controls export or import configuration w
 afk settings export /path/to/export.json
 ```
 
-Export includes definitions and saved skill lists, but excludes local activation, readiness and ownership receipts. Project paths travel as references; review their mappings on the new machine. Skill files and project files are not included.
+Export includes definitions and your kit, but excludes local activation, readiness and ownership receipts. Project paths travel as references; review their mappings on the new machine. Skill files and project files are not included.

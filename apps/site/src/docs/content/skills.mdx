@@ -8,22 +8,24 @@ Installed Skills shows real local entries. Availability and invocation are separ
 
 <div className="docs-callout"><strong>Inventory is not an isolation boundary</strong><p>An agent working in a project may still discover Global skills. The project view is not a combined list of everything that agent can use.</p></div>
 
+The list shows enabled skills by default. In **Availability**, choose **Include disabled** to see every entry, or **Disabled only**.
+
 Select a skill to inspect its SKILL.md and supporting files. Metadata files and broken links are ignored by the inventory.
 
 <h2 id="estimates">Filter sources and estimate discovery cost</h2>
 
 The **Source** filter lists only sources represented in the selected inventory,
 using Skills CLI installation receipts. **Unknown / local** covers entries without
-recorded provenance. Availability, source, invocation, profile and name filters work together; bulk
+recorded provenance. Availability, source, invocation, pack and name filters work together; bulk
 selections remain selected when hidden by a filter.
 
 The automatic discovery summary estimates names and descriptions for available
 skills with automatic invocation allowed, separately for Codex and Claude. Project
 scope also shows a combined estimate including Global, counting shared names once.
-Only the **Profile** filter applies to these estimates, including the combined Global
+Only the **Pack** filter applies to these estimates, including the combined Global
 view. Search, source, availability and invocation filters change the list only.
-Unknown invocation modes are excluded. The **Profile** filter follows saved membership,
-including disabled profiles, and offers any profile, no profile, or a named profile
+Unknown invocation modes are excluded. The **Pack** filter follows saved membership,
+including packs that are off, and offers **In any pack**, **No pack**, or a named pack
 represented in the selected inventory.
 
 In **Inspect**, choose **Show token usage estimation** to estimate full instructions
@@ -44,7 +46,7 @@ so you can apply another action. **Clear selection** starts over.
 
 <figure className="docs-screenshot">
   <a href="/docs/screenshots/installed-skills.webp" target="_blank" rel="noopener noreferrer"><img src="/docs/screenshots/installed-skills.webp" alt="Installed Skills with two checked skills and a bulk-action bar, alongside independent availability and invocation controls." width="1280" height="900" loading="lazy" decoding="async" /></a>
-  <figcaption><strong>Select once, act together.</strong> Scope and selection remain visible above the skill rows. Demo workspace from the current source build; open the image for a closer look.</figcaption>
+  <figcaption><strong>Select once, act together.</strong> Scope and selection remain visible above the skill rows. Demo workspace from an earlier source build, before the kit; open the image for a closer look.</figcaption>
 </figure>
 
 **Delete selected** opens a review of the selected storage folders, matching Claude
@@ -53,7 +55,7 @@ confirms deletion of eligible skills, without typing names. A changed review mus
 be opened again before deleting.
 
 Bulk actions report each failure. Completed changes remain applied; after a
-partial result, only failed skills stay selected. Profile ownership and shared
+partial result, only failed skills stay selected. Pack ownership and shared
 storage protections still apply.
 
 <h2 id="claude-sharing">Share the skills folder with Claude</h2>
@@ -86,13 +88,15 @@ in the results. **Varies by agent** means Claude and Codex report different mode
 
 Combine the filter with name search in the selected inventory scope. Filtering
 changes only the list. Choose **All modes** to remove that filter, or **Clear filters** to reset search,
-availability, invocation, source and profile while keeping the inventory scope.
+availability, invocation, source and pack while keeping the inventory scope.
 
 <h2 id="availability">Enable or disable one skill</h2>
 
-An individual toggle controls availability independently of profiles. Disable profiles that own the member before toggling it directly.
+An individual toggle controls availability independently of packs. Turn off packs that own the skill before toggling it directly.
 
-A physical skill can move into that scope’s disabled folder. AFK retargets its owned links when needed. Skills enabled independently remain available when a profile is disabled; preexisting user files are preserved.
+A physical skill can move into that scope’s disabled folder. AFK retargets its owned links when needed. Skills enabled independently remain available when a pack is turned off; preexisting user files are preserved.
+
+A Core skill that is off here appears under **Missing here** in the [kit](/docs?chapter=kit#catch-up), with **Turn on**.
 
 <h2 id="delete">Permanently delete stored files</h2>
 
@@ -110,9 +114,9 @@ whether it is a separate copy or a symlink. The review lists the extra copy or l
 if Claude shares the canonical skills folder, it explains that deletion affects
 both. Removing a symlink does not delete an unrelated target folder.
 
-Disable profiles that contain the skill first; their definitions keep the member
-selection, and repository-backed profiles restore missing files on their next enable.
-Local-only profiles need their files restored manually. AFK blocks deletion when another
+Turn off packs that contain the skill first; they keep the member selection,
+and repository packs restore missing files the next time they are turned on.
+Packs built from skills on this machine need their files restored manually. AFK blocks deletion when another
 scope or an unrelated link it does not own still uses the folder. For a project link to Global
 storage, delete the original copy from Global after removing its dependencies.
 AFK checks configured project paths and recorded links; it cannot discover links
@@ -158,25 +162,17 @@ afk skills update agent-browser -g
 afk skills update -p 'Demo Studio'
 ```
 
-Skills CLI updates only installations it tracks. Prepared profile copies without
-Skills CLI receipts are not a new upstream-update registry. Running
-`npx skills update` directly bypasses AFK's availability protection.
+Skills CLI updates only installations it tracks. Pack copies without Skills CLI
+receipts are not a new upstream-update registry. Running `npx skills update`
+directly bypasses AFK's availability protection.
 
-<h2 id="saved">Save a portable skill list</h2>
+Skills a [tool provides](/docs?chapter=tools#provides) are labeled in the list.
+Updates skip them, and updating one by name is refused. Update them with the
+tool's own command.
 
-**Save installed skills** captures every installed skill in the current scope,
-including disabled entries, regardless of search or filters. Review additions,
-changes and removals before saving. The list records names, known repository
-sources, availability and invocation choices, including defaults; it does not
-copy skill files. Saving again replaces that scope’s list after review.
+<h2 id="saved">Bring your skills to another machine</h2>
 
-When a list exists, use the **Installed on this machine** and **Saved skills** views
-to distinguish local files from your portable list. Saved skills identifies missing
-copies, matching copies and settings that differ. Select entries and review
-**Restore selected** to install recoverable missing skills and apply their saved
-availability and invocation settings. Profiles stay unchanged. Existing copies
-from another source need review; local-only skills require their original files.
-
-Restoration uses the source version available at the time, rather than a pinned
-archive. Completed changes remain if another item fails. Use **Retry failed** for
-unfinished items. For a missing project folder, fix its path in Settings first.
+Installed Skills shows this machine's files. To keep the same skills on every
+machine, put them in your [kit](/docs?chapter=kit): send them to Core from
+**Kit → This machine**, then run `afk sync` on the other machine. Sync installs
+missing Core skills and turns them back on, without removing anything.
