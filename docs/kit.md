@@ -19,8 +19,8 @@ belongs to one Core source. Core is Global only; use a pack for a project.
 
 AFK ships no default Core. You choose what goes in it.
 
-Add skills from This machine, from the `afk kit add` command, or by choosing them from a
-repository with **Add from a repository**. **Export JSON** in Core publishes it as a
+Add skills from This machine, from the `afk kit add` command, or with **Install skills**
+(see [Installing](#installing)). **Export JSON** in Core publishes it as a
 manifest (see [Share a pack with a manifest](#share-a-pack-with-a-manifest)).
 
 ### Follow a repository
@@ -57,6 +57,42 @@ afk packs disable "My pack" "Project name"
 
 `afk profiles` still works as an alias. Names match without case sensitivity; duplicate
 names need the pack ID.
+
+## Installing
+
+**Install skills** on the Kit page, or `afk add <repository>`, is one place to install from.
+Skills CLI does the work. AFK lists the repository's skills first, from a temporary download,
+so you can read each `SKILL.md` before anything is installed. You then choose where they go:
+
+| Destination | What happens |
+| --- | --- |
+| Core | Installs now and joins Core, so other machines see it as missing until they sync. |
+| A pack | Downloads into an existing or new pack. The pack stays on or off as it was. |
+| This machine | Installs and stays out of the kit. A project choice installs there instead. |
+| Try later | Saves a bookmark and installs nothing. With no skills picked, it covers the repository. |
+
+A skill installed this way never appears under **Not in your kit**. AFK remembers your last
+destination and agent, and asks the first time. A failed installation adds nothing to the kit.
+
+Skills already installed from that repository are adopted without reinstalling. A skill
+installed from another repository is left unticked, with a warning, because installing replaces
+it. Ticking it approves the replacement; in the CLI, pass `--replace`. A skill a tool provides
+is left out, and AFK names the tool.
+
+```sh
+afk add owner/repo
+afk add owner/repo --skill review --core --yes
+afk add owner/repo --skill review --pack "Video" --yes
+afk add owner/repo --skill review --here --project Work --yes
+afk add owner/repo --later --yes
+```
+
+Without a skill and destination, a terminal asks for them. Unattended runs need `--skill` or
+`--all`, a destination and `--yes`. For a published manifest URL, use `afk install`.
+
+To catch up one missing skill, use **Install** on its row under **Missing here**, or **Turn on**
+if it's installed but off. A tool's row offers **Run install command**, which shows the saved
+command first. **Install all…** opens the sync review.
 
 ## Try later
 

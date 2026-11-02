@@ -19,6 +19,9 @@ This changelog tracks meaningful updates by version and date.
 
 ### Added
 
+- **Install skills** on the Kit page, and `afk add <repository>`, install through Skills CLI and ask where each skill belongs: Core, a pack, this machine only or Try later. You can read a skill's `SKILL.md` first, and AFK warns before replacing a skill installed from another repository. This replaces **Add from a repository**, **Add source** and the Try later install dialog.
+- Installed Skills lists enabled skills by default. The availability filter offers **Include disabled** and **Disabled only**.
+- Rows under **Missing here** have **Install**, **Turn on** or **Run install command**, so you can catch up one skill at a time.
 - **Kit.** One list of the skills that travel with you, with tabs for This machine, Core, Packs and Try later. Core holds always-on skills grouped by repository. This machine lists installed skills that aren't in your kit yet; send each to Core, a pack or **This machine only**, or remove it.
 - **`afk sync`** makes a machine match the kit. It shows the plan, installs missing Core skills, turns Core skills back on, and never removes anything. A tool's saved install command runs only when you approve it (`--run-tools`, or yes in the prompt or app).
 - **`afk kit`** compares the kit with this machine. `afk kit add`, `drop`, `keep`, `follow`, `unfollow` and `check` change it. Following a Core repository offers its new skills; AFK never installs them for you.

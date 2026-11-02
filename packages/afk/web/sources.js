@@ -86,9 +86,8 @@ function sourceMatches(source,query){
 function sourceMenuItem(label,action,extra=''){return `<button type="button" role="menuitem" ${extra} onclick="this.closest('[popover]').hidePopover();${action}">${esc(label)}</button>`}
 function sourceMenu(source,i){
   const id='source-menu-'+i;
-  const items=(source.skills===undefined?sourceMenuItem('Install all skills…',`showInstallation('source',${i},true)`):'')
-    +sourceMenuItem('Copy install command',`copyInstall(${i})`)
-    +sourceMenuItem('Add to Core…',`openCoreForm(favoriteSources[${i}].source)`)
+  const items=sourceMenuItem('Copy install command',`copyInstall(${i})`)
+    +sourceMenuItem('Add to Core…',`installFromSource(${i},'core')`)
     +sourceMenuItem('Add to pack…',`addSourceToPack(${i})`)
     +sourceMenuItem('Create pack',`createProfileFromSource(${i})`)
     +sourceMenuItem('Edit',`editSource(${i})`)
@@ -110,7 +109,7 @@ function sourceRow(source,i){
   const expanded=source.skills!==undefined&&expandedSources.has(source.source);
   const description=source.description?`<span class="source-description">${esc(source.description)}</span>`:'';
   const skills=expanded?`<ul class="source-skill-tags" id="source-skills-${i}">${source.skills.map(name=>`<li class="tag">${esc(name)}</li>`).join('')}</ul>`:'';
-  return `<article class="source-item" data-od-id="favorite-source-${i}"><div class="source-item-main"><h3>${esc(source.name)}</h3><div class="source-item-meta">${sourceReference(source)}${description}</div>${skills}</div><div class="source-item-selection">${sourceSelection(source,i)}</div><div class="source-item-actions">${button('Install',`showInstallation('source',${i})`)}${sourceMenu(source,i)}</div></article>`;
+  return `<article class="source-item" data-od-id="favorite-source-${i}"><div class="source-item-main"><h3>${esc(source.name)}</h3><div class="source-item-meta">${sourceReference(source)}${description}</div>${skills}</div><div class="source-item-selection">${sourceSelection(source,i)}</div><div class="source-item-actions">${button('Install',`installFromSource(${i})`)}${sourceMenu(source,i)}</div></article>`;
 }
 function renderSourceList(){
   const host=$('sourceList');if(!host)return;
@@ -131,7 +130,7 @@ function renderSourcesPanel(){
   const search=favoriteSources.length?`<div class="source-list-tools"><label class="source-search"><span class="sr-only">Search sources</span><input type="search" id="sourceSearch" placeholder="Search sources…" value="${esc(sourceQuery)}" oninput="setSourceQuery(this.value)"></label>${button('Copy links','copySourceLinks()','','title="Copy the links of the sources shown, one per line"')}</div>`:'';
   const list=favoriteSources.length?`${search}<div class="source-list" id="sourceList"></div>`:`<div class="empty" data-od-id="sources-empty"><h2>Nothing to try yet</h2><p class="sub">Save a name and repository link to keep it close. Bookmarks do not install or enable skills.</p></div>`;
   const toolbar=`<section class="source-destination" data-od-id="installation-destination"><div class="toolbar"><label>Installation destination<select onchange="installScope=this.value;renderKit()">${scopeOptions(installScope)}</select></label><details class="source-options"><summary>Agent selection · optional</summary><label>Installation agent<select onchange="installAgent=this.value"><option value="interactive" ${installAgent==='interactive'?'selected':''}>Choose interactively in CLI</option>${['codex','claude-code','cursor','opencode'].map(a=>`<option value="${a}" ${installAgent===a?'selected':''}>${a}</option>`).join('')}</select></label></details>${button('Copy all sources script','copyInstallAll()','',favoriteSources.length?'':'disabled')}</div><p class="hint">Try a source here without adding it to your kit. Copy commands to run yourself, or use Install to run Skills CLI.</p></section>`;
-  return `<div class="inline kit-panel-actions">${button('Add source','editSource()')}</div>`+toolbar+list;
+  return `<div class="inline kit-panel-actions">${button('Add to try later',"showInstallSkills({to:'later'})")}</div>`+toolbar+list;
 }
 async function createProfileFromSource(index){
   const source=favoriteSources[index];
@@ -218,95 +217,3 @@ function saveSource(i){
   return saveForm(()=>savePatch({favoriteSources:next}),'Bookmark saved. No skills installed.','sourceError');
 }
 function removeSource(index){return operation(async()=>{await savePatch({favoriteSources:currentSettings.favoriteSources.filter((_,position)=>position!==index)});toast('Bookmark removed. Installed skills unchanged.')})}
-
-let installationTarget,installationRunning=false,installationPicker;
-function showInstallation(kind,index,all=false){
-  const item=favoriteSources[index];
-  const label=item.name;
-  const allowsAll=item.skills===undefined;
-  const installsAll=allowsAll&&all;
-  installationTarget={kind,label,scope:installScope,allowsAll,source:item.source};
-  installationPicker=allowsAll&&!installsAll?{kind:'installation',selected:new Set(),loading:false,loaded:false}:undefined;
-  const chosen=installAgent==='interactive'?'universal':installAgent;
-  modal('Install '+esc(label),`<p>Install through Skills CLI. Installation can replace existing skills and make them available. Use Update in Installed Skills to preserve an existing skill’s disabled state.</p><label>Installation folder<select id="installationScope" onchange="setInstallationScope(this.value)">${scopeOptions(installScope)}</select></label><p id="installationFolder" class="hint">${esc(installationFolderHint(installScope))}</p><label>Installation agent<select id="installationAgent">${['universal','codex','claude-code','cursor','opencode'].map(agent=>`<option value="${agent}" ${chosen===agent?'selected':''}>${agent==='universal'?'Universal · .agents/skills':agent}</option>`).join('')}</select></label>${installationPicker?`<section id="installationSelection"><div class="installation-discovery-actions">${button('Find skills','discoverInstallationSkills()','','id="findInstallationSkills"')}${button('Install all instead…','chooseInstallationAll()','text')}<span id="installationDiscoveryStatus" class="hint" role="status" aria-live="polite"></span></div><div id="installationDiscovery"></div></section>`:installsAll?'<section id="installationSelection"><p>Install all skills currently available in this repository.</p></section>':''}<p class="hint">The copied script keeps its current behavior. This action runs without terminal prompts. Closing this dialog does not stop installation.</p><div id="installationOutput" role="status" aria-live="polite"></div><p id="installationError" class="field-error" role="alert"></p>`,button('Cancel installation','cancelInstallation()','text danger','id="cancelInstallation" hidden')+button('Close','closeModal()','text')+button(installsAll?'Install all skills':'Install','executeInstallation()','primary','id="startInstallation"'));
-  if($('cancelInstallation')){$('cancelInstallation').disabled=false;$('cancelInstallation').textContent='Cancel installation';}
-  if(installationPicker)discoverInstallationSkills();
-  pollInstallation();
-}
-function chooseInstallationAll(){
-  if(installationRunning||!installationTarget?.allowsAll)return;
-  installationPicker=undefined;
-  $('installationSelection').innerHTML='<p>Install all skills currently available in this repository.</p>';
-  $('installationError').textContent='';
-  $('startInstallation').textContent='Install all skills';
-  updateInstallationSelection();
-  $('startInstallation').focus();
-}
-function installationFolderHint(scope){return scope==='Global'?'Your home folder, available to every project.':projects.find(project=>project.name===scope)?.path||''}
-function setInstallationScope(value){
-  if(!installationTarget||installationRunning)return;
-  installationTarget.scope=value;
-  $('installationFolder').textContent=installationFolderHint(value);
-}
-function updateInstallationSelection(){
-  const control=$('startInstallation');
-  if(control)control.disabled=installationRunning||!!installationPicker&&(installationPicker.loading||!installationPicker.loaded||!installationPicker.selected.size);
-}
-async function discoverInstallationSkills(){
-  const picker=installationPicker,target=installationTarget,body=$('sheetContent').firstElementChild;
-  if(!picker||picker.loading)return;
-  const current=()=>installationPicker===picker&&installationTarget===target&&$('sheet').open&&body.isConnected;
-  picker.loading=true;$('findInstallationSkills').disabled=true;$('installationError').textContent='';
-  $('installationDiscoveryStatus').textContent='Finding skills…';updateInstallationSelection();
-  try{
-    const result=await request('discover',{source:target.source});if(!current())return;
-    if(!Array.isArray(result.names)||result.names.some(name=>!validSkillSelection([name])))throw Error('The source returned an invalid skill list.');
-    picker.loaded=true;
-    renderMembers(result.names,'Skills to install',false,[...picker.selected],result.descriptions||{},picker,result.paths||{});
-  }catch(error){if(current()){$('installationDiscovery').textContent='';$('installationError').textContent=error.message}}
-  finally{if(current()){picker.loading=false;$('installationDiscoveryStatus').textContent='';$('findInstallationSkills').disabled=false;updateInstallationSelection()}}
-}
-function renderInstallation(result){
-  const output=$('installationOutput');if(!output||!result)return;
-  if(result.label!==installationTarget.label||result.scope!==installationTarget.scope){if(!result.pending)return;}
-  if(!output.querySelector('[data-install-summary]'))output.innerHTML='<div data-install-summary><p class="meta install-context"></p><div class="install-progress"><div class="install-progress-row"><strong class="install-phase"></strong><span class="meta install-count"></span></div><div class="install-bar" role="progressbar" aria-label="Sources installed" aria-valuemin="0"><span></span></div></div><p class="install-note" hidden>Completed installations and any partial files are kept. Review the output before retrying.</p></div><details><summary>Skills CLI output</summary><pre></pre></details>';
-  const summary=output.querySelector('[data-install-summary]');
-  const failed=!result.pending&&!!result.code,done=!result.pending&&!result.code;
-  const percent=result.total?Math.min(100,Math.round(result.completed/result.total*100)):0;
-  const bar=summary.querySelector('.install-bar');
-  summary.querySelector('.install-context').textContent=`${result.label} · ${result.scope} · ${result.agent}`;
-  summary.querySelector('.install-progress').dataset.state=result.pending?'pending':failed?'failed':'done';
-  summary.querySelector('.install-phase').textContent=(done?'✓ ':'')+result.phase;
-  summary.querySelector('.install-count').textContent=`${result.completed} of ${result.total} installed`;
-  bar.setAttribute('aria-valuemax',result.total);bar.setAttribute('aria-valuenow',result.completed);
-  bar.firstElementChild.style.width=percent+'%';
-  summary.querySelector('.install-note').hidden=!failed;
-  output.querySelector('pre').textContent=result.output||'Preparing…';
-  const cancel=$('cancelInstallation');cancel.hidden=!result.pending;
-  if($('startInstallation'))$('startInstallation').disabled=result.pending;
-  if(installationPicker)updateInstallationSelection();
-  if($('installationSelection'))$('installationSelection').querySelectorAll('input,button').forEach(control=>control.disabled=result.pending);
-  if($('installationAgent'))$('installationAgent').disabled=result.pending;
-  if($('installationScope'))$('installationScope').disabled=result.pending;
-}
-async function pollInstallation(){
-  try{const result=await request('skills/install-state',{});installationRunning=!!result?.pending;renderInstallation(result);if(result?.pending&&$('installationOutput'))setTimeout(pollInstallation,1000)}catch{}
-}
-async function executeInstallation(){
-  if(installationRunning){await pollInstallation();return}
-  const target={...installationTarget},agent=$('installationAgent').value;
-  if(installationPicker&&(installationPicker.loading||!installationPicker.loaded||!installationPicker.selected.size)){$('installationError').textContent='Choose at least one skill to install.';return}
-  if(!agent){$('installationError').textContent='Choose an installation agent first.';return}
-  $('installationError').textContent='';installationRunning=true;$('cancelInstallation').disabled=false;$('cancelInstallation').textContent='Cancel installation';
-  renderInstallation({label:target.label,scope:target.scope,agent,pending:true,phase:'Preparing installation…',output:'',completed:0,total:1});
-  const timer=setTimeout(pollInstallation,1000);
-  try{
-    const data={scope:target.scope,agent,source:target.source,...(installationPicker?{skills:[...installationPicker.selected]}:{})};
-    const result=await request(target.kind+'/install',data);renderInstallation(result);await refresh();toast(result.code===0?'Installation complete.':result.cancelled?'Installation cancelled. Completed changes are kept.':'Installation stopped. Review the output.');
-  }catch(error){$('installationError')&&($('installationError').textContent=error.message);if($('startInstallation'))$('startInstallation').disabled=false;if($('installationAgent'))$('installationAgent').disabled=false;if($('installationScope'))$('installationScope').disabled=false;}
-  finally{clearTimeout(timer);installationRunning=false;updateInstallationSelection()}
-}
-async function cancelInstallation(){
-  const control=$('cancelInstallation');if(control){control.disabled=true;control.textContent='Cancelling…'}
-  try{const result=await request('skills/install-cancel',{});if(!result.cancelled)toast(result.reason);await pollInstallation()}catch(error){toast(error.message)}
-}

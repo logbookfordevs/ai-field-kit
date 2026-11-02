@@ -16,7 +16,7 @@ import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
-import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type SyncPlan } from "./kit.js";
+import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate, type SyncPlan } from "./kit.js";
 import { portableSettings } from "./local-state.js";
 import { fingerprint, migrateSettings, sourceIdentity, type MigrationChoices } from "./migration.js";
 
@@ -28,6 +28,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "project/remove": ["name"], "source/install": ["source", "scope", "agent"],
     "pack/remove": ["id"], "pack/read": ["id"], "pack/manifest": ["id"],
     "kit/add": ["to"], "kit/drop": ["name"], "kit/machine-only": ["name"], "kit/follow": ["source"],
+    "kit/install-preview": ["source"], "kit/install-read": ["source", "name"], "kit/install": ["source", "to"],
     activation: ["id", "scope"], "project/save": ["name", "path"],
     invocation: ["name", "scope"], "skill/toggle": ["name", "scope"],
     "skills/update": ["scope"], "skills/delete-preview": ["scope"], "skills/bulk": ["scope", "action"],
@@ -39,7 +40,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
-    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "project/save": ["previous"],
+    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "project/save": ["previous"],
     "skill/read": ["file", "folder"], "rules/save": ["expectedHash"], folders: ["path"],
   };
   for (const key of requiredText[operation] ?? []) {
@@ -145,6 +146,105 @@ export class FieldworkOperations {
       ...(description ? { description } : {}), ...(origin ? { origin } : {}), ...(sourceNames ? { sourceNames } : {}),
       enabled: existing?.enabled ?? [], ready: existing?.ready ?? false,
     };
+  }
+
+  private async installCandidates(settings: Settings, source: string, scope = "Global"): Promise<InstallCandidate[]> {
+    const names = await this.preparation.discover(source);
+    const directory = await this.preparation.directory(source);
+    const paths = await this.preparation.paths(source);
+    const inventory = await this.library.inventory(settings, scope);
+    return await Promise.all(names.map(async name => {
+      const { description } = await readNativeMetadata(join(directory, name));
+      const entry = inventory.find(item => item.name === name);
+      const tool = toolOwner(settings, name);
+      const pack = settings.profiles.find(profile => profile.skills.includes(name));
+      const inKit = settings.kit?.core.some(item => item.skills.includes(name)) ? "Core" : pack?.name;
+      const state: InstallCandidate["state"] = tool ? "tool" : !entry ? "new" : entry.source && sourceIdentity(entry.source) === sourceIdentity(source) ? "installed" : "conflict";
+      return {
+        name, description, state,
+        ...(paths[name] ? { path: paths[name] } : {}),
+        ...(tool ? { tool: tool.name } : {}),
+        ...(state === "conflict" && entry?.source ? { installedFrom: entry.source } : {}),
+        ...(inKit ? { inKit } : {}),
+      };
+    }));
+  }
+
+  private async installWithDestination(data: Record<string, unknown>): Promise<unknown> {
+    const { store, library } = this;
+    const settings = await store.read();
+    const source = String(data.source).trim(), to = String(data.to);
+    const names = data.names === undefined ? [] : data.names;
+    if (!Array.isArray(names) || !names.every(skillName) || new Set(names).size !== names.length) throw new Error("Choose unique skill names.");
+    const replace = data.replace === undefined ? [] : data.replace;
+    if (!Array.isArray(replace) || !replace.every(skillName)) throw new Error("Provide replace as an array of skill names.");
+    const pack = settings.profiles.find(profile => profile.id === to);
+    if (!["core", "machine", "later", "new-pack"].includes(to) && !pack) throw new Error("Choose a destination: core, machine, later, new-pack, or a pack ID.");
+    if (data.scope !== undefined && data.scope !== "Global" && to !== "machine") throw new Error("Only This machine can install into a project. Core and packs start from Global.");
+    const scope = String(data.scope ?? "Global");
+    if (scope !== "Global" && !settings.projects.some(project => project.name === scope)) throw new Error("Choose a configured project.");
+    if (to !== "later" && !names.length) throw new Error("Choose at least one skill.");
+    const finish = async (extra: Record<string, unknown> = {}): Promise<unknown> => {
+      const latest = await store.read();
+      return { ok: true, to, ...extra, status: kitStatus(latest, await library.inventory(latest, "Global")) };
+    };
+
+    if (to === "later") {
+      const existing = settings.favoriteSources.find(item => sourceIdentity(item.source) === sourceIdentity(source));
+      if (existing) { if (existing.skills) { if (names.length) existing.skills = [...new Set([...existing.skills, ...names])]; else delete existing.skills; } }
+      else settings.favoriteSources.push({ name: source.replace(/#.*$/, "").replace(/\.git$/, "").replace(/\/+$/, "").split(/[/:]/).filter(Boolean).pop() ?? source, source, ...(names.length ? { skills: names } : {}) });
+      await store.save(settings);
+      return await finish();
+    }
+
+    const candidates = await this.installCandidates(settings, source, scope);
+    for (const name of names) {
+      const candidate = candidates.find(item => item.name === name);
+      if (!candidate) throw new Error(`${name} is not in this repository.`);
+      if (candidate.tool) throw new Error(`${name} is installed by ${candidate.tool}. Use that tool instead.`);
+    }
+
+    if (to === "new-pack" || pack) {
+      const groups = pack ? profileGroups(pack).map(group => ({ source: group.source, skills: [...group.skills] })) : [];
+      const fresh = names.filter(name => !pack?.skills.includes(name));
+      if (!fresh.length) return await finish();
+      const known = groups.find(group => sourceIdentity(group.source) === sourceIdentity(source));
+      if (known) known.skills.push(...fresh);
+      else groups.push({ source, skills: fresh });
+      const packName = typeof data.packName === "string" ? data.packName.trim() : "";
+      if (!pack && !packName) throw new Error("Name the new pack.");
+      const next = this.packFrom(pack, pack?.id ?? "profile-" + randomUUID(), pack?.name ?? packName, groups, {});
+      await this.prepareMembers(settings, [{ source, skills: fresh }]);
+      next.ready = true;
+      for (const member of next.skills) { try { await library.locate(settings, member); } catch { next.ready = false; } }
+      await this.replacePack(settings, next, profileGroups(next));
+      settings.machineOnly = settings.machineOnly.filter(name => !fresh.includes(name));
+      await store.save(settings);
+      return await finish({ id: next.id });
+    }
+
+    const conflicts = candidates.filter(item => names.includes(item.name) && item.state === "conflict" && !replace.includes(item.name));
+    if (conflicts.length) throw new Error(`Already installed from another repository: ${conflicts.map(item => `${item.name} (${item.installedFrom ?? "unknown source"})`).join(", ")}. Choose to replace them, or leave them out.`);
+    const toInstall = names.filter(name => candidates.find(item => item.name === name)!.state !== "installed");
+    let install: InstallProgress | undefined;
+    if (toInstall.length) {
+      this.installController = new AbortController();
+      try {
+        install = await installSkills(store, settings, [{ source, skills: toInstall }], scope, String(data.agent ?? "universal"), `Install from ${source}`, value => { this.skillInstall = value; }, this.installController.signal, this.installRunner);
+        this.skillInstall = install;
+      } finally { this.installController = null; }
+      if (install.code !== 0) {
+        const latest = await store.read();
+        return { ok: false, to, install, status: kitStatus(latest, await library.inventory(latest, "Global")) };
+      }
+    }
+    const latest = await store.read();
+    if (to === "core") {
+      for (const name of names) addToCore(latest, name, source);
+      latest.machineOnly = latest.machineOnly.filter(name => !names.includes(name));
+    } else if (scope === "Global") latest.machineOnly = [...new Set([...latest.machineOnly, ...names])];
+    await store.save(latest);
+    return await finish(install ? { install } : {});
   }
 
   private packManifest(settings: Settings, id: string): SkillStack {
@@ -313,10 +413,28 @@ export class FieldworkOperations {
       if (!changed) throw new Error(`${name} is not in the kit.`);
       return { ok: true };
     }
+    if (operation === "kit/install-preview") return { source: data.source, candidates: await this.installCandidates(settings, String(data.source)) };
+    if (operation === "kit/install-read") {
+      if (!skillName(data.name)) throw new Error("Choose a valid skill name.");
+      if (!(await preparation.discover(String(data.source))).includes(data.name)) throw new Error(`${data.name} is not in this repository.`);
+      const path = join(await preparation.directory(String(data.source)), data.name, "SKILL.md");
+      if ((await stat(path)).size > 500_000) throw new Error("This file is too large to preview.");
+      return { content: await readFile(path, "utf8") };
+    }
+    if (operation === "kit/install") return await this.installWithDestination(data);
     if (operation === "kit/sync") {
       const inventory = await library.inventory(settings, "Global");
       const current = kitStatus(settings, inventory);
       if (JSON.stringify(current.plan) !== JSON.stringify(data.expected as SyncPlan | undefined)) throw new Error("This machine or your kit changed since you reviewed the plan. Review it again.");
+      if (data.only !== undefined) {
+        const { only } = data;
+        if (!Array.isArray(only) || !only.length || !only.every(skillName)) throw new Error("Provide only as an array of skill names.");
+        current.plan = {
+          install: current.plan.install.map(group => ({ source: group.source, skills: group.skills.filter(name => only.includes(name)) })).filter(group => group.skills.length),
+          enable: current.plan.enable.filter(name => only.includes(name)),
+          tools: current.plan.tools.filter(tool => tool.skills.some(name => only.includes(name))),
+        };
+      }
       const approved = data.runTools === undefined ? [] : data.runTools;
       if (!Array.isArray(approved) || !approved.every(id => Number.isSafeInteger(id))) throw new Error("Provide runTools as an array of tool IDs.");
       const enabled: { name: string; ok: boolean; error?: string }[] = [];

@@ -141,7 +141,7 @@ describe("favorite-source UI and copied commands", () => {
     evaluate("toggleSourceSkills(0)");
     expect(field("sourceList").innerHTML).not.toContain('<li class="tag">review</li>');
     const menu = evaluate<string>("sourceMenu(favoriteSources[1],1)");
-    for (const action of ["showInstallation('source',1,true)", "copyInstall(1)", "openCoreForm(favoriteSources[1].source)", "addSourceToPack(1)", "createProfileFromSource(1)", "editSource(1)", "removeSource(1)"]) expect(menu).toContain(action);
+    for (const action of ["copyInstall(1)", "installFromSource(1,'core')", "addSourceToPack(1)", "createProfileFromSource(1)", "editSource(1)", "removeSource(1)"]) expect(menu).toContain(action);
     expect(evaluate<string>("sourceMenu(favoriteSources[0],0)")).not.toContain("Install all skills");
   });
 
@@ -171,38 +171,6 @@ describe("favorite-source UI and copied commands", () => {
     field("sourceDescription").value = "   ";
     await evaluate<Promise<void>>("saveSource(-1)");
     expect((patch as { favoriteSources: FavoriteSource[] }).favoriteSources.at(-1)).toEqual({ name: "Docs", source: "owner/docs" });
-  });
-
-  it("requires an explicit target before starting installation without changing copied commands", async () => {
-    const requests: string[] = [];
-    context.request = async (path: string) => { requests.push(path); };
-    evaluate("installationTarget={kind:'source',label:'Selected',scope:'Global',source:'owner/toolkit'}");
-    await evaluate<Promise<void>>("executeInstallation()");
-    expect(requests).toEqual([]);
-    expect(field("installationError").textContent).toBe("Choose an installation agent first.");
-    expect(evaluate<string>("installCommand('owner/toolkit')")).not.toContain("--yes");
-  });
-
-  it("opens the install dialog on the page's destination and lets the folder change for that install only", async () => {
-    const requests: { path: string; data: unknown }[] = [];
-    let html = "";
-    context.scopeOptions = (value: string) => `<selected ${value}>`;
-    context.modal = (_title: string, body: string) => { html = body; field("sheet").open = true; };
-    context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return path === "source/install" ? { code: 0 } : null; };
-    context.setTimeout = () => 1; context.clearTimeout = () => {}; context.refresh = async () => {}; context.toast = () => {};
-    evaluate("installScope='Studio'");
-    evaluate("showInstallation('source',0)");
-    expect(html).toContain('id="installationScope"');
-    expect(html).toContain("<selected Studio>");
-    expect(html).toContain("/work/demo studio");
-    field("installationFolder");
-    evaluate("setInstallationScope('Global')");
-    expect(field("installationFolder").textContent).toContain("home folder");
-    expect(evaluate("installScope")).toBe("Studio");
-    field("installationAgent").value = "codex";
-    evaluate("renderInstallation=()=>{};pollInstallation=async()=>{}");
-    await evaluate<Promise<void>>("executeInstallation()");
-    expect(requests.find(request => request.path === "source/install")?.data).toEqual({ source: "owner/toolkit", scope: "Global", agent: "codex" });
   });
 
   it("keeps selected skill names and leaves all-skill bookmarks open to the CLI picker", () => {
@@ -326,37 +294,6 @@ describe("favorite-source UI and copied commands", () => {
   });
 });
 
-it("discovers and installs an explicit run-only selection for an all-skills bookmark", async () => {
-  const requests: { path: string; data: unknown }[] = [];
-  context.request = async (path: string, data: unknown) => {
-    requests.push({ path, data });
-    return path === "discover" ? { names: ["review", "video"], paths: { video: "media/video" } } : { code: 0 };
-  };
-  context.setTimeout = () => 1;context.clearTimeout = () => {};context.refresh = async () => {};context.toast = () => {};
-  evaluate("installationTarget={kind:'source',label:'All',source:'owner/other',scope:'Global'};installationPicker={kind:'installation',selected:new Set(),loading:false,loaded:false};renderInstallation=()=>{};pollInstallation=async()=>{}");
-  field("sheet").open = true;
-  field("installationAgent").value = "codex";
-  await evaluate<Promise<void>>("discoverInstallationSkills()");
-  expect(field("startInstallation").disabled).toBe(true);
-  await evaluate<Promise<void>>("executeInstallation()");
-  expect(requests).toHaveLength(1);
-  evaluate("memberChanged({value:'video',checked:true})");
-  expect(field("startInstallation").disabled).toBe(false);
-  await evaluate<Promise<void>>("executeInstallation()");
-  expect(requests.at(-1)).toEqual({ path: "source/install", data: { source: "owner/other", scope: "Global", agent: "codex", skills: ["video"] } });
-  expect(sources[1]).not.toHaveProperty("skills");
-});
-it("ignores installation discovery after the dialog closes", async () => {
-  let resolve: (value: unknown) => void = () => {};
-  context.request = () => new Promise(accept => { resolve = accept; });
-  evaluate("installationTarget={kind:'source',source:'owner/other',scope:'Global'};installationPicker={kind:'installation',selected:new Set(),loading:false,loaded:false}");
-  field("sheet").open = true;
-  const pending = evaluate<Promise<void>>("discoverInstallationSkills()");
-  field("sheet").open = false;
-  resolve({ names: ["video"] });await pending;
-  expect(evaluate("installationPicker.loaded")).toBe(false);
-});
-
 it("shows useful selection actions and clearing exits the selected-only view", async () => {
   evaluate("editSource(1);setSourceMode('selected')"); field("sourceLink").value = "owner/other";
   await evaluate<Promise<void>>("discoverSourceSkills()");
@@ -375,49 +312,6 @@ it("shows useful selection actions and clearing exits the selected-only view", a
   expect(evaluate<string[]>("visibleMembers()")).toEqual(["review", "video"]);
   expect(field("selectShownMembers").hidden).toBe(false);
   expect(field("selectedOnlyControl").hidden).toBe(true);
-});
-
-it("opens install-all without discovery and keeps installation behind target confirmation", async () => {
-  const requests: { path: string; data: unknown }[] = [];
-  context.scopeOptions = () => "";
-  context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return null; };
-  evaluate("showInstallation('source',1,true)");
-  expect(requests.every(request => request.path === "skills/install-state")).toBe(true);
-  expect(evaluate("installationPicker")).toBeUndefined();
-  field("installationAgent").value = "cursor";
-  evaluate("setInstallationScope('Studio');renderInstallation=()=>{};pollInstallation=async()=>{}");
-  context.setTimeout = () => 1; context.clearTimeout = () => {}; context.refresh = async () => {}; context.toast = () => {};
-  context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return { code: 0 }; };
-  await evaluate<Promise<void>>("executeInstallation()");
-  expect(requests.at(-1)).toEqual({ path: "source/install", data: { source: "owner/other", scope: "Studio", agent: "cursor" } });
-  expect(sources[1]).not.toHaveProperty("skills");
-});
-
-it.each(["success", "failure"])("switches to all during discovery and ignores its late %s", async outcome => {
-  let accept: (value: unknown) => void = () => {}, decline: (error: Error) => void = () => {};
-  context.request = () => new Promise((resolve, reject) => { accept = resolve; decline = reject; });
-  evaluate("installationTarget={kind:'source',source:'owner/other',scope:'Global',allowsAll:true};installationPicker={kind:'installation',selected:new Set(),loading:false,loaded:false}");
-  field("sheet").open = true;
-  const pending = evaluate<Promise<void>>("discoverInstallationSkills()");
-  expect(field("startInstallation").disabled).toBe(true);
-  evaluate("chooseInstallationAll()");
-  const summary = field("installationSelection").innerHTML;
-  expect(field("startInstallation").disabled).toBe(false);
-  expect(field("startInstallation").textContent).toBe("Install all skills");
-  if (outcome === "success") accept({ names: ["late"] }); else decline(new Error("Late discovery error"));
-  await pending;
-  expect(evaluate("installationPicker")).toBeUndefined();
-  expect(field("installationSelection").innerHTML).toBe(summary);
-  expect(field("installationError").textContent).toBe("");
-});
-
-it("does not allow install-all to widen a bookmark's saved selection", () => {
-  context.scopeOptions = () => "";
-  context.request = async () => null;
-  evaluate("showInstallation('source',0,true);chooseInstallationAll()");
-  expect(evaluate("installationTarget.allowsAll")).toBe(false);
-  expect(field("startInstallation").textContent).not.toBe("Install all skills");
-  expect(sources[0]!.skills).toEqual(["review"]);
 });
 
 it("warns on ambiguous tree URLs without rewriting the user's branch or folder", () => {

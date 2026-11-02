@@ -1,5 +1,5 @@
 import { installFromUrl } from "./install-cli.js";
-import { runKit, runMigrate, runSync } from "./kit-cli.js";
+import { runAdd, runKit, runMigrate, runSync } from "./kit-cli.js";
 import { parseUiOptions } from "./ui-options.js";
 import { startBackground, backgroundStatus, stopBackground, restartBackground } from "./background.js";
 import { updateAfk } from "./update.js";
@@ -26,6 +26,7 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk stop                           Stop the background app
   afk restart                        Restart the background app on its current port
   afk skills update [name] [-g | -p <project>]  Update skills, preserving availability
+  afk add <repository>               Install skills and decide where they go
   afk kit                            Compare your kit with this machine
   afk kit add <skill>... [--pack <name>]  Make skills travel with you
   afk kit drop <skill> [--pack <name>]    Stop tracking a skill; its files stay
@@ -128,6 +129,7 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     console.log(pkg.version); return 0;
   }
   if (command === "install") return installFromUrl(argv.slice(1), store);
+  if (command === "add") return runAdd(argv.slice(1), store);
   if (command === "kit") return runKit(argv.slice(1), store);
   if (command === "sync") return runSync(argv.slice(1), store);
   if (command === "migrate") return runMigrate(argv.slice(1), store);

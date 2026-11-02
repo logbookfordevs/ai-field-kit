@@ -8,7 +8,7 @@ function renderMembers(names,title,local,checked=[],descriptions={},picker=profi
   picker.names=isSource?[...new Set([...names,...checked])]:names;
   picker.selected=new Set(checked.filter(n=>picker.names.includes(n)));picker.query='';picker.selectedOnly=false;
   picker.unavailable=new Set(isSource?checked.filter(n=>!names.includes(n)):[]);
-  const hint=picker.kind==='installation'?'Choose skills for this installation. The bookmark stays unchanged.':picker.kind==='pack'?'Only this selection changes. Nothing is installed.':isSource?'Only the bookmark selection is saved. Nothing is installed.':local?'Existing skill availability stays unchanged.':'New skills are downloaded disabled; existing skills stay as they are.';
+  const hint=picker.kind==='installation'?'Tick what you want. Read a skill first if you’re unsure.':picker.kind==='pack'?'Only this selection changes. Nothing is installed.':isSource?'Only the bookmark selection is saved. Nothing is installed.':local?'Existing skill availability stays unchanged.':'New skills are downloaded disabled; existing skills stay as they are.';
   const isPack=picker.kind==='pack';
   const search=`<input id="memberSearch" type="search" aria-label="${isSource?'Find skills':'Find members'}" placeholder="${isSource?'Search skills…':'Search members…'}" oninput="memberPicker.query=this.value;renderMemberList()" autocomplete="off">`;
   const results=`<div id="memberResults" class="member-results" role="group" aria-label="${isSource?'Selected source skills':'Pack members'}"></div>`;
@@ -28,7 +28,7 @@ function visibleMembers(){
 function memberRow(name){
   const description=memberDescription(name),unavailable=memberPicker.unavailable.has(name),path=memberPicker.paths[name];
   const folder=path?.split('/').at(-1),differentFolder=folder&&folder!=='.'&&folder!==name;
-  return `<label class="check member-leaf"><input class="member-check" type="checkbox" value="${esc(name)}" ${memberPicker.selected.has(name)?'checked':''} onchange="memberChanged(this)"><span><strong>${esc(name)}</strong>${differentFolder?`<small class="member-path">Folder: ${esc(folder)}</small>`:''}${description?`<small class="member-description">${esc(description)}</small>`:''}${unavailable?'<small class="field-error">Not found in the latest scan</small>':''}</span></label>`;
+  return `<label class="check member-leaf"><input class="member-check" type="checkbox" value="${esc(name)}" ${memberPicker.selected.has(name)?'checked':''} onchange="memberChanged(this)"><span><strong>${esc(name)}</strong>${differentFolder?`<small class="member-path">Folder: ${esc(folder)}</small>`:''}${description?`<small class="member-description">${esc(description)}</small>`:''}${unavailable?'<small class="field-error">Not found in the latest scan</small>':''}${memberPicker.rowExtra?memberPicker.rowExtra(name):''}</span></label>`;
 }
 function memberTree(names){
   const root={folders:new Map(),names:[],members:[]};

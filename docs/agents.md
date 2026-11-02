@@ -140,7 +140,7 @@ JSON
 
 Read the saved command and replace `123` with the actual tool ID. An empty update
 command reuses install. Inspect output and exit status to verify execution.
-Use `source/install` or `kit/sync` for authorized installation, and inspect
+Use `kit/install`, `source/install` or `kit/sync` for authorized installation, and inspect
 `skills/install-state` for progress and results. `skills/install-cancel` stops
 remaining installation work while keeping completed or partial files.
 Use `afk skills update [name] -g` or `afk skills update [name] -p <project>` for

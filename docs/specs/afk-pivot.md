@@ -329,19 +329,24 @@ Skills shows effective native invocation metadata and the behavior restored by
 clearing an override. Narrow screens keep a compact section selector and app
 utilities available while scrolling.
 
-### Installing saved sources and syncing
+### Installing and syncing
 
-Install runs Skills CLI for a saved source, and sync runs it for missing Core skills, using
-the chosen scope and an explicit agent. Copied scripts retain their existing interactive
-behavior. App installation skips prompts after the user chooses the target, processes
-sources sequentially and retains progress/output during the session. Closing the dialog
-does not cancel the job. Cancellation stops the child process and later sources;
-completed or partial files remain. Installation can replace existing skills and
-make them available; the protected Installed Skills updater is the path for
-preserving an existing disabled state. Saving or editing a bookmark or pack still
-does not install anything. `afk install <url>` saves a manifest as a pack and then installs
-it; a manifest selecting one skill from two sources is rejected. Agent operations expose the
-same installation actions.
+**Install skills** and `afk add <repository>` are the one place to install from. Both list a
+repository's skills from a temporary download, can show each `SKILL.md`, and then ask for a
+destination: Core, a pack, this machine (or a project), or Try later. The destination is not
+preselected the first time; the last choice and agent are remembered in the browser. Skills
+CLI performs installation, processes one source at a time, and retains progress and output
+during the session. Closing the dialog does not cancel the job. Cancellation stops the child
+process; completed or partial files remain. A failed installation adds nothing to the kit.
+
+Skills already installed from the same repository are adopted without reinstalling. Replacing
+a skill installed from another repository needs explicit approval. A tool's skills are refused.
+Packs download and keep their on or off state.
+
+`afk sync` and **Sync this machine** apply a reviewed plan to Global. Rows under **Missing here**
+catch up one skill by sending that same plan with `only`. Tool commands run only when approved.
+Syncing never removes a skill. `source/install` remains for agents that install a bookmark
+directly; saving or editing a bookmark still installs nothing.
 
 ### Portable configuration and local state
 

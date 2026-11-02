@@ -54,6 +54,7 @@ node --check packages/afk/web/members.js
 node --check packages/afk/web/sources.js
 node --check packages/afk/web/packs.js
 node --check packages/afk/web/kit.js
+node --check packages/afk/web/install.js
 node --check packages/afk/web/invocation-info.js
 ```
 

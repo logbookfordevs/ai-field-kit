@@ -1,7 +1,16 @@
 let kitStatus={core:[],sources:[],tools:[],undecided:[],machineOnly:[],plan:{install:[],enable:[],tools:[]}},migrationRequired=false,kitTab='machine',kitUpstream;
+const kitDisclosures=new Map();
+function setKitDisclosure(key,open){kitDisclosures.set(key,open)}
+function kitDisclosureAttrs(key,openByDefault=false){return `data-kit-disclosure="${esc(key)}" ontoggle="setKitDisclosure(this.dataset.kitDisclosure,this.open)" ${kitDisclosures.get(key)??openByDefault?'open':''}`}
 function countOf(count,word){return count+" "+word+(count===1?"":"s")}
 function planCount(plan=kitStatus.plan){return plan.install.reduce((total,group)=>total+group.skills.length,0)+plan.enable.length+plan.tools.reduce((total,tool)=>total+tool.skills.length,0)}
 function kitAttention(){return kitStatus.undecided.length+planCount()}
+function sourceLabel(source){return source.trim().replace(/^https?:\/\/github\.com\//,'').replace(/^git@github\.com:/,'').replace(/\.git$/,'').replace(/\/+$/,'')}
+function kitSourceHeading(source,count){return `<div class="kit-source"><h3 title="${esc(source)}">${esc(sourceLabel(source))}</h3><span class="meta">${countOf(count,'skill')}</span></div>`}
+function kitSourceLink(source){
+  const url=sourceWebUrl(source),label=esc(sourceLabel(source));
+  return url?`<a class="kit-source-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(source)}">${label}<span aria-hidden="true"> ↗</span><span class="sr-only"> (opens in a new tab)</span></a>`:`<span class="kit-source-link" title="${esc(source)}">${label}</span>`;
+}
 function setKitTab(tab){kitTab=tab;renderKit();$('kitTab-'+tab)?.focus()}
 function kitTabKey(event){
   const order=['machine','core','packs','later'],at=order.indexOf(kitTab);
@@ -15,7 +24,7 @@ function kitTabs(){
 }
 function renderKit(){
   const pending=planCount()>0;
-  const action=button(pending?`Sync this machine · ${planCount()}`:'This machine matches','reviewSync()','primary',pending?'data-od-id="sync-machine"':'disabled data-od-id="sync-machine"');
+  const action=`<div class="inline">${button('Install skills','showInstallSkills()','','data-od-id="install-skills"')}${button(pending?`Sync this machine · ${planCount()}`:'Nothing to sync','reviewSync()','primary',pending?'data-od-id="sync-machine"':'disabled data-od-id="sync-machine"')}</div>`;
   const panels={machine:renderMachinePanel,core:renderCorePanel,packs:renderPacksPanel,later:renderSourcesPanel};
   $('view').innerHTML=head('Kit','The skills that travel with you, compared with this machine.',action)+kitTabs()+`<div id="kitPanel" role="tabpanel" aria-labelledby="kitTab-${kitTab}">${panels[kitTab]()}</div>`;
   if(kitTab==='later')renderSourceList();
@@ -29,17 +38,18 @@ function undecidedActions(item){
 function undecidedGroups(){
   const groups=new Map();
   for(const item of kitStatus.undecided){
-    const key=item.installable?item.source:'';
-    groups.set(key,[...(groups.get(key)||[]),item]);
+    const key=item.installable?sourceLabel(item.source).toLowerCase():'';
+    const group=groups.get(key)||{source:item.installable?item.source:'',items:[]};
+    group.items.push(item);groups.set(key,group);
   }
-  return [...groups].sort(([a],[b])=>(a===''?1:0)-(b===''?1:0)||a.localeCompare(b));
+  return [...groups].sort(([a],[b])=>(a===''?1:0)-(b===''?1:0)||a.localeCompare(b)).map(([,group])=>[group.source,group.items]);
 }
 function renderUndecided(){
   if(!kitStatus.undecided.length)return '';
   const groups=undecidedGroups().map(([source,items])=>{
-    const title=source?`<code class="path">${esc(source)}</code>`:'<span class="meta">No repository source. Another machine can’t install these, unless a tool brings them.</span>';
+    const title=source?kitSourceHeading(source,items.length):`<div class="kit-source"><h3>No repository source</h3><span class="meta">Another machine can’t install these, unless a tool brings them.</span></div>`;
     const all=source&&items.length>1?button('Add all to Core',`addToKit(${esc(JSON.stringify(items.map(item=>item.name)))},'core')`,'text'):'';
-    return `<section class="kit-group"><div class="kit-group-head"><h3>${title}</h3>${all}</div>${items.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code></div><div class="kit-actions">${undecidedActions(item)}</div></div>`).join('')}</section>`;
+    return `<section class="kit-group"><div class="kit-group-head">${title}${all}</div>${items.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code></div><div class="kit-actions">${undecidedActions(item)}</div></div>`).join('')}</section>`;
   }).join('');
   return `<section class="kit-section" data-od-id="kit-undecided"><h2>Not in your kit</h2><p class="sub">Installed here, but not going anywhere with you yet. Decide once and AFK stops asking.</p>${groups}</section>`;
 }
@@ -49,25 +59,26 @@ function renderMissing(){
   const tools=kitStatus.tools.filter(tool=>tool.missing.length);
   if(!missing.length&&!off.length&&!tools.length)return '';
   const rows=[
-    ...missing.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code><span class="meta">${esc(item.source)}</span></div><div class="kit-actions">${button('Drop from kit',`dropFromKit('${esc(item.name)}','core')`,'text')}</div></div>`),
-    ...off.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code><span class="meta">Installed, turned off here</span></div><div class="kit-actions">${button('Drop from kit',`dropFromKit('${esc(item.name)}','core')`,'text')}</div></div>`),
-    ...tools.map(tool=>`<div class="kit-row"><div class="kit-row-name"><strong>${esc(tool.name)}</strong><span class="meta">Brings ${tool.missing.map(esc).join(', ')}</span></div><div class="kit-actions">${button('Open in Tools',"navigate('Tools')",'text')}</div></div>`),
+    ...missing.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code><span class="meta">${esc(sourceLabel(item.source))}</span></div><div class="kit-actions">${kitCatchUpButton(item.name,'Install')}${button('Drop from kit',`dropFromKit('${esc(item.name)}','core')`,'text')}</div></div>`),
+    ...off.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code><span class="meta">Installed, turned off here</span></div><div class="kit-actions">${kitCatchUpButton(item.name,'Turn on')}${button('Drop from kit',`dropFromKit('${esc(item.name)}','core')`,'text')}</div></div>`),
+    ...tools.map(tool=>`<div class="kit-row"><div class="kit-row-name"><strong>${esc(tool.name)}</strong><span class="meta">Brings ${tool.missing.map(esc).join(', ')}</span></div><div class="kit-actions">${button('Run install command',`runTool(${tool.id},false)`)}</div></div>`),
   ].join('');
-  return `<section class="kit-section" data-od-id="kit-missing"><h2>Missing here</h2><p class="sub">In your kit, but not ready on this machine. Sync shows exactly what it will do first.</p><section class="kit-group">${rows}</section></section>`;
+  const catchUp=missing.length+off.length+tools.length>1?button('Install all…','reviewSync()','text'):'';
+  return `<section class="kit-section" data-od-id="kit-missing"><div class="kit-group-head"><h2>Missing here</h2>${catchUp}</div><p class="sub">In your kit, but not ready on this machine.</p><section class="kit-group">${rows}</section></section>`;
 }
 function renderUpstream(){
   if(!kitStatus.sources.some(source=>source.follow))return '';
   const offers=kitUpstream?.sources||[];
   const rows=offers.map(entry=>entry.error
-    ?`<section class="kit-group"><div class="kit-group-head"><h3><code class="path">${esc(entry.source)}</code></h3></div><p class="field-error" role="status">${esc(entry.error)}</p></section>`
-    :`<section class="kit-group"><div class="kit-group-head"><h3><code class="path">${esc(entry.source)}</code></h3></div>${entry.names.map(name=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(name)}</code><span class="meta">${esc(entry.descriptions?.[name]||'')}</span></div><div class="kit-actions">${button('Add to Core',`acceptUpstream(${kitUpstream.sources.indexOf(entry)},'${esc(name)}')`)}</div></div>`).join('')}</section>`).join('');
+    ?`<section class="kit-group"><div class="kit-group-head"><div class="kit-source"><h3 title="${esc(entry.source)}">${esc(sourceLabel(entry.source))}</h3></div></div><p class="field-error" role="status">${esc(entry.error)}</p></section>`
+    :`<section class="kit-group"><div class="kit-group-head">${kitSourceHeading(entry.source,entry.names.length)}</div>${entry.names.map(name=>`<div class="kit-row"><div class="kit-row-name is-stacked"><code>${esc(name)}</code>${entry.descriptions?.[name]?`<span class="meta kit-row-note" title="${esc(entry.descriptions[name])}">${esc(entry.descriptions[name])}</span>`:''}</div><div class="kit-actions">${button('Add to Core',`acceptUpstream(${kitUpstream.sources.indexOf(entry)},'${esc(name)}')`)}</div></div>`).join('')}</section>`).join('');
   const checked=kitUpstream&&!offers.length?'<p class="sub">No new skills in the repositories you follow.</p>':'';
-  return `<section class="kit-section" data-od-id="kit-following"><div class="kit-group-head"><h2>New from sources you follow</h2>${button(kitUpstream==='loading'?'Checking…':'Check now','checkUpstream()','text',kitUpstream==='loading'?'disabled':'')}</div>${checked}${rows}</section>`;
+  return `<section class="kit-section" data-od-id="kit-following"><div class="kit-group-head"><h2>New from sources you follow</h2><div class="kit-actions">${kitUpstream&&kitUpstream!=='loading'?button('Clear','clearUpstream()','text'):''}${button(kitUpstream==='loading'?'Checking…':'Check now','checkUpstream()','text',kitUpstream==='loading'?'disabled':'')}</div></div>${checked}${rows}</section>`;
 }
 function renderMachinePanel(){
   const sections=renderUndecided()+renderMissing()+renderUpstream();
-  const clear=!kitAttention()?`<div class="kit-clear"><h2>${kitStatus.core.length||kitStatus.tools.length?'This machine matches your kit':'Your kit is empty'}</h2><p class="sub">${kitStatus.core.length||kitStatus.tools.length?'Everything in Core is installed and on.':'Install skills as usual and they’ll appear here for you to keep, or add them from Core.'}</p></div>`:'';
-  const local=kitStatus.machineOnly.length?`<details class="section-help"><summary>${plural(kitStatus.machineOnly.length,'skill')} kept on this machine only</summary>${kitStatus.machineOnly.map(name=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(name)}</code></div><div class="kit-actions">${button('Ask again',`keepOnMachine('${esc(name)}',false)`,'text')}</div></div>`).join('')}</details>`:'';
+  const clear=!kitAttention()?`<div class="kit-clear"><h2>${kitStatus.core.length||kitStatus.tools.length?'This machine matches your kit':'Your kit is empty'}</h2><p class="sub">${kitStatus.core.length||kitStatus.tools.length?'Everything in Core is installed and on.':'Use Install skills to start, or install them your usual way and they’ll appear here for you to sort.'}</p></div>`:'';
+  const local=kitStatus.machineOnly.length?`<details class="section-help" ${kitDisclosureAttrs('machine-only')}><summary>${countOf(kitStatus.machineOnly.length,'skill')} kept on this machine only</summary>${kitStatus.machineOnly.map(name=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(name)}</code></div><div class="kit-actions">${button('Ask again',`keepOnMachine('${esc(name)}',false)`,'text')}</div></div>`).join('')}</details>`:'';
   return clear+sections+local;
 }
 function renderCorePanel(){
@@ -76,13 +87,32 @@ function renderCorePanel(){
     const items=kitStatus.core.filter(item=>item.source===source.source);
     const follow=button(source.follow?'Following · stop':'Follow new skills',`toggleFollow(${index})`,'text');
     const issues=items.filter(item=>item.status!=='on').length;
-    const summary=`${esc(source.name||repositoryName(source.source))} <span class="meta">${countOf(items.length,'skill')}${issues?` · ${issues} not ready here`:''}${source.follow?' · following':''}</span>`;
-    return `<details class="kit-group" ${issues?'open':''}><summary>${summary}</summary><div class="kit-group-head"><code class="path">${esc(source.source)}</code>${follow}</div>${items.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code>${status[item.status]?`<span class="meta">${status[item.status]}</span>`:''}</div><div class="kit-actions">${button('Drop',`dropFromKit('${esc(item.name)}','core')`,'text')}</div></div>`).join('')}</details>`;
+    const summary=`${esc(source.name||sourceLabel(source.source))} <span class="meta">${countOf(items.length,'skill')}${issues?` · ${issues} not ready here`:''}${source.follow?' · following':''}</span>`;
+    return `<details class="kit-group" ${kitDisclosureAttrs(source.source,issues>0)}><summary>${summary}</summary><div class="kit-group-head">${kitSourceLink(source.source)}${follow}</div>${items.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code>${status[item.status]?`<span class="meta">${status[item.status]}</span>`:''}</div><div class="kit-actions">${button('Drop',`dropFromKit('${esc(item.name)}','core')`,'text')}</div></div>`).join('')}</details>`;
   }).join('');
   const tools=kitStatus.tools.length?`<section class="kit-section"><h2>From your tools</h2><p class="sub">These tools install and update their own skills. Your kit tracks the tool.</p><section class="kit-group">${kitStatus.tools.map(tool=>`<div class="kit-row"><div class="kit-row-name"><strong>${esc(tool.name)}</strong><span class="meta">${tool.provides.map(esc).join(', ')}</span></div><div class="kit-actions">${button('Open in Tools',"navigate('Tools')",'text')}</div></div>`).join('')}</section></section>`:'';
   const empty=kitStatus.sources.length?'':'<div class="empty"><h2>Core is empty</h2><p class="sub">Core is what you want on every machine, always on. Add skills you’ve installed from This machine, or choose them from a repository.</p></div>';
-  const actions=`<div class="inline kit-panel-actions">${kitStatus.core.length?button('Export JSON',"exportPack('core')",'text'):''}${button('Add from a repository','openCoreForm()')}</div>`;
+  const actions=`<div class="inline kit-panel-actions">${kitStatus.core.length?button('Export JSON',"exportPack('core')",'text'):''}${button('Install skills',"showInstallSkills({to:'core'})")}</div>`;
   return actions+empty+(groups?`<section class="kit-section">${groups}</section>`:'')+tools;
+}
+const kitCatchingUp=new Set();
+function kitCatchUpButton(name,label){
+  const busy=kitCatchingUp.has(name);
+  return button(busy?'Working…':label,`catchUpSkill('${esc(name)}')`,'',busy?'disabled':'');
+}
+async function catchUpSkill(name){
+  if(kitCatchingUp.has(name))return;
+  kitCatchingUp.add(name);
+  if(section==='Kit')renderKit();
+  try{
+    const result=await request('kit/sync',{expected:kitStatus.plan,only:[name],agent:installAgentChoice()});
+    const failed=result.enabled.find(item=>!item.ok);
+    if(result.install?.code){
+      modal('Could not install '+esc(name),`<p>Skills CLI stopped. Review its output, then retry.</p><pre>${esc(result.install.output||result.install.phase)}</pre>`,button('Close','closeModal()'));
+    }else if(failed)toast(failed.error);
+    else toast(name+' is ready on this machine.');
+  }catch(error){toast(error.message)}
+  finally{kitCatchingUp.delete(name);await refresh().catch(error=>toast(error.message))}
 }
 function addToKit(names,to){
   const list=Array.isArray(names)?names:[names];
@@ -121,10 +151,11 @@ function toggleFollow(index){
 }
 async function checkUpstream(){
   kitUpstream='loading';renderKit();
-  try{kitUpstream=await request('kit/upstream')}
+  try{kitUpstream=await request('kit/upstream',{})}
   catch(error){kitUpstream=undefined;toast(error.message)}
   if(section==='Kit'&&!migrationRequired)renderKit();
 }
+function clearUpstream(){kitUpstream=undefined;renderKit()}
 function acceptUpstream(index,name){
   const entry=kitUpstream.sources[index];
   return operation(async()=>{
@@ -160,7 +191,7 @@ async function applySync(){
       ...result.enabled.filter(item=>!item.ok).map(item=>`<p class="field-error">${esc(item.name)}: ${esc(item.error)}</p>`),
       ...result.tools.map(tool=>`<details ${tool.code?'open':''}><summary>${esc(tool.name)} · exit ${tool.code}</summary><pre>${esc(tool.output)}</pre></details>`),
       ...result.skippedTools.map(tool=>`<p class="hint">${esc(tool.name)} was not run.</p>`),
-      `<p>${planCount(result.status.plan)?`${plural(planCount(result.status.plan),'skill')} still different from your kit.`:'This machine matches your kit.'}</p>`,
+      `<p>${planCount(result.status.plan)?`${countOf(planCount(result.status.plan),'skill')} still different from your kit.`:'This machine matches your kit.'}</p>`,
     ];
     if($('syncOutput'))$('syncOutput').innerHTML=lines.join('');
     if(control.isConnected)control.textContent='Done';
@@ -173,7 +204,7 @@ async function applySync(){
 let migrationChoice={core:null,follow:new Set(),skipTools:new Set()},migrationPreview,migrationVersion=0;
 function renderMigration(){
   const stacks=currentSettings.stacks||[];
-  const coreOptions=stacks.map(stack=>`<label class="check"><input type="radio" name="migrationCore" value="${esc(stack.manifest.id)}" ${migrationChoice.core===stack.manifest.id?'checked':''} onchange="setMigrationCore(this.value)"><span>${esc(stack.manifest.name)} <span class="meta">${plural(stack.manifest.sources.reduce((total,group)=>total+group.skills.length,0),'skill')}</span></span></label>`).join('');
+  const coreOptions=stacks.map(stack=>`<label class="check"><input type="radio" name="migrationCore" value="${esc(stack.manifest.id)}" ${migrationChoice.core===stack.manifest.id?'checked':''} onchange="setMigrationCore(this.value)"><span>${esc(stack.manifest.name)} <span class="meta">${countOf(stack.manifest.sources.reduce((total,group)=>total+group.skills.length,0),'skill')}</span></span></label>`).join('');
   const chosen=stacks.find(stack=>stack.manifest.id===migrationChoice.core);
   const follow=chosen?`<fieldset class="profile-source"><legend>Follow a repository · optional</legend><p class="hint">Skills you’ve installed from a followed repository join Core, and new ones are offered later.</p>${chosen.manifest.sources.map((group,index)=>`<label class="check"><input type="checkbox" ${migrationChoice.follow.has(group.source)?'checked':''} onchange="setMigrationFollow(${index},this.checked)"><span>${esc(group.name)} <code class="path">${esc(group.source)}</code></span></label>`).join('')}</fieldset>`:'';
   $('view').innerHTML=`<div class="migration">${head('Move to your kit','Stacks, profiles and bookmarks become one kit. Nothing is written until you confirm, and your old file is kept.')}<fieldset class="profile-source"><legend>Which stack do you want on every machine?</legend>${coreOptions}<label class="check"><input type="radio" name="migrationCore" value="" ${migrationChoice.core===null?'checked':''} onchange="setMigrationCore('')"><span>None for now</span></label><p class="hint">That stack becomes Core. The others become packs you turn on when you need them.</p></fieldset>${follow}<div id="migrationReport" class="migration-report"><p class="sub">Checking…</p></div><p id="migrationError" class="field-error" role="alert"></p><div class="inline">${button('Move to my kit','applyMigration()','primary','id="applyMigration" disabled')}</div></div>`;
@@ -203,7 +234,7 @@ async function loadMigrationPreview(){
 function migrationReportHtml(report){
   const coreCount=report.core.reduce((total,entry)=>total+entry.skills.length,0);
   const list=items=>`<ul>${items.map(item=>`<li>${item}</li>`).join('')}</ul>`;
-  return `<h3>What will change</h3>${list([...report.stacks.map(stack=>`${esc(stack.name)} → ${stack.becomes==='core'?'Core':'a pack'}`),`Core: ${plural(coreCount,'skill')}`,`Packs: ${report.packs.map(pack=>esc(pack.name)).join(', ')||'none'}`])}${report.added.length?`<h3>Joining Core from repositories you follow</h3><p><code>${report.added.map(item=>esc(item.name)).join(', ')}</code></p>`:''}${report.missingHere.length?`<h3>In Core, missing on this machine</h3><p><code>${report.missingHere.map(esc).join(', ')}</code></p>`:''}${report.tools.length?`<h3>Skills your tools bring</h3><fieldset class="profile-source">${report.tools.map(tool=>`<label class="check"><input type="checkbox" ${tool.linked?'checked':''} onchange="setMigrationTool(${esc(JSON.stringify(tool.name))},this.checked)"><span>${esc(tool.name)} <code>${tool.provides.map(esc).join(', ')}</code></span></label>`).join('')}</fieldset>`:''}<h3>Staying exactly as they are</h3><p>${plural(report.preserved.sources,'bookmark')}, ${plural(report.preserved.tools,'tool')}, ${plural(report.preserved.projects,'project')}, ${plural(report.preserved.rulesDestinations,'rule destination')}, which packs are on, and invocation preferences. No skill files move.</p>${report.dropped.savedSkills?`<h3>Retired</h3><p>Your saved skills list stays only in the kept copy of the old file.</p>`:''}${report.warnings.length?`<h3>Check these</h3><ul>${report.warnings.map(warning=>`<li class="migration-warning">${esc(warning)}</li>`).join('')}</ul>`:''}<p class="hint">If this settings file is shared, update AFK on your other machines before using it there.</p>`;
+  return `<h3>What will change</h3>${list([...report.stacks.map(stack=>`${esc(stack.name)} → ${stack.becomes==='core'?'Core':'a pack'}`),`Core: ${countOf(coreCount,'skill')}`,`Packs: ${report.packs.map(pack=>esc(pack.name)).join(', ')||'none'}`])}${report.added.length?`<h3>Joining Core from repositories you follow</h3><p><code>${report.added.map(item=>esc(item.name)).join(', ')}</code></p>`:''}${report.missingHere.length?`<h3>In Core, missing on this machine</h3><p><code>${report.missingHere.map(esc).join(', ')}</code></p>`:''}${report.tools.length?`<h3>Skills your tools bring</h3><fieldset class="profile-source">${report.tools.map(tool=>`<label class="check"><input type="checkbox" ${tool.linked?'checked':''} onchange="setMigrationTool(${esc(JSON.stringify(tool.name))},this.checked)"><span>${esc(tool.name)} <code>${tool.provides.map(esc).join(', ')}</code></span></label>`).join('')}</fieldset>`:''}<h3>Staying exactly as they are</h3><p>${countOf(report.preserved.sources,'bookmark')}, ${countOf(report.preserved.tools,'tool')}, ${countOf(report.preserved.projects,'project')}, ${countOf(report.preserved.rulesDestinations,'rule destination')}, which packs are on, and invocation preferences. No skill files move.</p>${report.dropped.savedSkills?`<h3>Retired</h3><p>Your saved skills list stays only in the kept copy of the old file.</p>`:''}${report.warnings.length?`<h3>Check these</h3><ul>${report.warnings.map(warning=>`<li class="migration-warning">${esc(warning)}</li>`).join('')}</ul>`:''}<p class="hint">If this settings file is shared, update AFK on your other machines before using it there.</p>`;
 }
 async function applyMigration(){
   const control=$('applyMigration');

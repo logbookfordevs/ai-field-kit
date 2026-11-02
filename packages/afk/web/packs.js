@@ -98,20 +98,8 @@ function focusPackSource(focusSource){
   const focus=focusSource===undefined?-1:packDraft.choices.findIndex(choice=>choice.source===focusSource);
   if(focus>=0){choosePackSkills(focus);$('packChooseSkills-'+focus).scrollIntoView?.({block:'center'})}
 }
-function openCoreForm(focusSource){
-  const version=++packDialogVersion;
-  packDraft={choices:packFormChoices([]),version,pickers:new Map(),core:true};
-  modal('Add to Core',`<p>Choose skills that should be on every machine. Installed here on your next sync.</p>${packSourcesFields(packDraft.choices,0)}<p id="packError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Add to Core',`saveCoreForm(${version})`,'primary'));
-  focusPackSource(focusSource);
-}
 function selectedPackSources(){
   return [...document.querySelectorAll('[data-pack-source]:checked')].map(input=>packDraft.choices[Number(input.dataset.packSource)]);
-}
-function saveCoreForm(version){
-  if(!packDialogCurrent(version))return;
-  const selected=selectedPackSources();
-  if(!selected.length||selected.some(source=>!source.skills.length)){$('packError').textContent='Choose at least one skill for each selected source.';return}
-  return saveForm(async()=>{for(const source of selected)await request('kit/add',{names:source.skills,to:'core',source:source.source})},'Added to Core. Sync to install them here.','packError');
 }
 function savePackForm(version){
   if(!packDialogCurrent(version))return;

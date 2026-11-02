@@ -17,6 +17,16 @@ export interface KitStatus {
   plan: SyncPlan;
 }
 
+export interface InstallCandidate {
+  name: string;
+  description: string;
+  state: "new" | "installed" | "conflict" | "tool";
+  path?: string;
+  tool?: string;
+  installedFrom?: string;
+  inKit?: string;
+}
+
 export function isRepositorySource(source: string | undefined): source is string {
   return Boolean(source) && !source!.startsWith("/") && !source!.startsWith("~") && !source!.startsWith(".") && !source!.startsWith("file:");
 }

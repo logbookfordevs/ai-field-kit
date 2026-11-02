@@ -26,6 +26,7 @@ The kit is the skills that travel with you, stored once in your settings file. I
 **Packs** and **Try later**. See the [kit guide](../../docs/kit.md).
 
 ```sh
+afk add <repository> [--skill <name>]... [--core | --pack <name> | --here | --later]
 afk kit
 afk kit add <skill>... [--pack <name>] [--source <repo>]
 afk kit drop <skill> [--pack <name>]
@@ -79,7 +80,7 @@ Your old file is kept permanently as `~/.afk/backups/pre-kit-*.json` and can be 
 
 ## Installed Skills
 
-Filter by availability, effective invocation, recorded source, pack
+The list shows enabled skills by default; the availability filter can include disabled skills or show only those. Filter also by effective invocation, recorded source, pack
 membership or name within the selected scope. **Clear filters** resets these
 filters while retaining the scope. Bulk selections survive filtering.
 Automatic discovery token estimates count available automatic skills separately

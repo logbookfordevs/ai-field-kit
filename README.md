@@ -33,7 +33,7 @@ skill activation.
 | Section | Purpose | Scope |
 | --- | --- | --- |
 | Kit | The skills that travel with you: Core, packs, and skills to try later, compared with this machine | One kit per settings file; packs are turned on per target |
-| Installed Skills | Inspect and update local files, filter skills, manage availability and invocation, delete stored copies | Global or a selected project |
+| Installed Skills | Inspect and update local files, filter skills (enabled ones by default), manage availability and invocation, delete stored copies | Global or a selected project |
 | Agent rules | Edit shared rules and references, preview and sync managed regions | Shared document; explicit destination files |
 | Tools | Save and explicitly run install/update commands | Always global |
 | Settings | Choose the AFK folder, import/export, define project folders | One configuration |
@@ -43,6 +43,9 @@ this computer and lets you decide about skills that aren't in it yet. **Core** h
 the skills you want always on, grouped by repository. **Packs** are named groups you
 turn on when needed. **Try later** keeps repository bookmarks. See the
 [Kit guide](docs/kit.md).
+
+Install from a repository with **Install skills** or `afk add <repository>`, which asks
+whether a skill belongs in Core, a pack, on this machine only or under Try later.
 
 Run `afk sync` on a new machine to install missing Core skills and turn Core skills
 back on. Sync shows its plan first, never removes anything, and runs a tool's saved
