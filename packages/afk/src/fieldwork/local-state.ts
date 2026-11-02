@@ -10,6 +10,7 @@ export interface LocalState {
   preferences: Settings["preferences"];
   managedLinks: Settings["managedLinks"];
   independentSkills: Settings["independentSkills"];
+  machineOnly?: string[];
   ruleReceipts: NonNullable<Settings["agentRules"]>["receipts"];
 }
 
@@ -26,12 +27,13 @@ export function localState(settings: Settings, home: string): LocalState {
     preferences: settings.preferences,
     managedLinks: settings.managedLinks,
     independentSkills: settings.independentSkills,
+    machineOnly: settings.machineOnly ?? [],
     ruleReceipts: settings.agentRules?.receipts ?? {},
   };
 }
 
 export function portableSettings(settings: Settings): Record<string, unknown> {
-  const { preferences: _preferences, managedLinks: _links, independentSkills: _skills, ...portable } = structuredClone(settings);
+  const { preferences: _preferences, managedLinks: _links, independentSkills: _skills, machineOnly: _machineOnly, ...portable } = structuredClone(settings);
   return {
     ...portable,
     profiles: portable.profiles.map(({ enabled: _enabled, ready: _ready, ...profile }) => profile),
@@ -50,6 +52,7 @@ export function applyLocalState(settings: Settings, state: LocalState | undefine
   settings.managedLinks = state?.managedLinks ?? {};
   settings.independentSkills = state?.independentSkills ?? {};
   settings.preferences = state?.preferences ?? {};
+  settings.machineOnly = state?.machineOnly ?? [];
   if (settings.agentRules) settings.agentRules.receipts = state?.ruleReceipts ?? {};
   return settings;
 }

@@ -3,6 +3,7 @@
 Current documentation for the Fieldwork app in this checkout:
 
 - [App guide and CLI reference](../packages/afk/README.md)
+- [The kit: Core, packs and sync](kit.md)
 - [Settings and storage](settings.md)
 - [Development and verification](development.md)
 - [Product specification](specs/afk-pivot.md)

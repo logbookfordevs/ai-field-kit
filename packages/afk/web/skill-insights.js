@@ -43,7 +43,7 @@ function matchesProfileFilter(entry){
 }
 function matchesSkillFilters(entry){
   const availability=typeof availabilityFilter==='undefined'?'':availabilityFilter;
-  return matchesProfileFilter(entry)&&(!availability||(availability==='available'?entry.available:!entry.available))&&entry.name.toLowerCase().includes(query.trim().toLowerCase())&&(!invocationFilter||invocationSummary(entry.invocation)===invocationFilter)&&(!sourceFilter||(entry.source||'__local')===sourceFilter);
+  return matchesProfileFilter(entry)&&(availability==='all'||(availability==='disabled'?!entry.available:entry.available))&&entry.name.toLowerCase().includes(query.trim().toLowerCase())&&(!invocationFilter||invocationSummary(entry.invocation)===invocationFilter)&&(!sourceFilter||(entry.source||'__local')===sourceFilter);
 }
 function showSkillTokenEstimate(){
   if(!inspectedSkill)return;
@@ -54,7 +54,7 @@ function showSkillTokenEstimate(){
 }
 
 function matchesNestedSkillFilters(entry){
-  const hasManagedFilter=Boolean(availabilityFilter||sourceFilter||profileFilter),search=query.trim().toLowerCase();
+  const hasManagedFilter=Boolean(availabilityFilter==='disabled'||sourceFilter||profileFilter),search=query.trim().toLowerCase();
   if(hasManagedFilter)return false;
   return (entry.name.toLowerCase().includes(search)||entry.folder.toLowerCase().includes(search))&&(!invocationFilter||invocationSummary(entry.invocation)===invocationFilter);
 }

@@ -52,8 +52,30 @@ export interface Profile {
   source: string;
   skills: string[];
   groups?: ProfileGroup[];
+  description?: string;
+  origin?: string;
+  sourceNames?: Record<string, string>;
   enabled: string[];
   ready: boolean;
+}
+
+export interface KitSource {
+  source: string;
+  name?: string;
+  skills: string[];
+  follow?: boolean;
+}
+
+export interface Kit {
+  core: KitSource[];
+}
+
+export interface Tool {
+  id: number;
+  name: string;
+  install: string;
+  update: string;
+  provides?: string[];
 }
 
 export const LOCAL_PROFILE_SOURCE = "Local skill selection";
@@ -80,15 +102,21 @@ export interface FavoriteSource {
   skills?: string[];
 }
 
+export const SETTINGS_VERSION = 2;
+
 export interface Settings {
-  version: 1;
+  version: 1 | 2;
   configurationId?: string;
+  /** Version 1 only; read so migration can carry it forward. */
   savedSkills?: SavedSkills[];
   profiles: Profile[];
   projects: { name: string; path: string }[];
-  tools: { id: number; name: string; install: string; update: string }[];
+  tools: Tool[];
   favoriteSources: FavoriteSource[];
+  /** Version 1 only; read so migration can carry it forward. */
   stacks?: SavedStack[];
+  kit?: Kit;
+  machineOnly: string[];
   preferences: Record<string, string>;
   managedLinks: Record<string, string>;
   independentSkills: Record<string, string[]>;
@@ -97,7 +125,7 @@ export interface Settings {
 }
 
 export function emptySettings(): Settings {
-  return { version: 1, profiles: [], projects: [], tools: [], favoriteSources: [], preferences: {}, managedLinks: {}, independentSkills: {} };
+  return { version: SETTINGS_VERSION, profiles: [], projects: [], tools: [], favoriteSources: [], kit: { core: [] }, machineOnly: [], preferences: {}, managedLinks: {}, independentSkills: {} };
 }
 
 export function expandPath(path: string, home = homedir()): string {
@@ -116,11 +144,36 @@ function nonempty(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0 && !containsControl(value);
 }
 
+export function requiresMigrationChoice(settings: Pick<Settings, "version" | "stacks">): boolean {
+  return settings.version === 1 && Boolean(settings.stacks?.length);
+}
+
+function upgradeStackless(settings: Settings): void {
+  settings.version = SETTINGS_VERSION;
+  settings.kit ??= { core: [] };
+  delete settings.stacks;
+  delete settings.savedSkills;
+}
+
+function validateKit(value: unknown): asserts value is Kit {
+  const core = (value as Kit | null)?.core;
+  if (!Array.isArray(core)) throw new Error("The kit needs a core list.");
+  for (const entry of core) {
+    if (!entry || !nonempty(entry.source) || entry.source.startsWith("-") || (entry.name !== undefined && !nonempty(entry.name)) || (entry.follow !== undefined && typeof entry.follow !== "boolean") || !Array.isArray(entry.skills) || !entry.skills.every(skillName)) throw new Error("Core sources need a repository reference and valid skill names.");
+    if (!entry.skills.length && !entry.follow) throw new Error("A core source needs at least one skill unless it is followed.");
+  }
+  const names = core.flatMap(entry => entry.skills);
+  if (new Set(names).size !== names.length) throw new Error("Each core skill can come from only one source.");
+  if (new Set(core.map(entry => entry.source)).size !== core.length) throw new Error("Each core source can appear only once.");
+}
+
+export const MIGRATION_REQUIRED = "These settings use the old stacks format. Run `afk migrate` to review the change, or open the AFK app, before making changes.";
+
 export function validateSettings(value: unknown): Settings {
   if (!value || typeof value !== "object") throw new Error("Choose an AFK settings file.");
   const data = structuredClone(value) as Record<string, unknown>;
-  if (data.version !== 1 || !Array.isArray(data.profiles) || !Array.isArray(data.projects) || !Array.isArray(data.tools) || !Array.isArray(data.favoriteSources)) {
-    throw new Error("Unsupported settings format. Expected AFK settings version 1.");
+  if ((data.version !== 1 && data.version !== SETTINGS_VERSION) || !Array.isArray(data.profiles) || !Array.isArray(data.projects) || !Array.isArray(data.tools) || !Array.isArray(data.favoriteSources)) {
+    throw new Error("Unsupported settings format. Expected AFK settings version 1 or 2. Update AFK if this file came from a newer version.");
   }
   const profiles = data.profiles as Profile[];
   for (const profile of profiles) {
@@ -132,6 +185,8 @@ export function validateSettings(value: unknown): Settings {
   data.preferences ??= {};
   data.managedLinks ??= {};
   data.independentSkills ??= {};
+  data.machineOnly ??= [];
+  if (data.version === SETTINGS_VERSION) data.kit ??= { core: [] };
   if (data.agentRules && typeof data.agentRules === "object") (data.agentRules as AgentRulesSettings).receipts ??= {};
   const projects = data.projects as Settings["projects"];
   const tools = data.tools as Settings["tools"];
@@ -147,9 +202,20 @@ export function validateSettings(value: unknown): Settings {
   }
   if (!tools.every(t => t && Number.isSafeInteger(t.id) && nonempty(t.name) && typeof t.install === "string" && t.install.trim() && !t.install.includes("\0") && typeof t.update === "string" && !t.update.includes("\0"))) throw new Error("Tools need names and install commands.");
   if (new Set(tools.map(t => t.id)).size !== tools.length) throw new Error("Tool identifiers must be unique.");
+  if (!tools.every(t => t.provides === undefined || (Array.isArray(t.provides) && t.provides.length > 0 && t.provides.every(skillName) && new Set(t.provides).size === t.provides.length))) throw new Error("A tool's provided skills must be unique, valid skill names.");
+  const provided = tools.flatMap(t => t.provides ?? []);
+  if (new Set(provided).size !== provided.length) throw new Error("Each skill can be provided by only one tool.");
   if (!sources.every(s => s && nonempty(s.name) && nonempty(s.source) && !s.source.startsWith("-"))) throw new Error("Sources need names and repository references.");
   if (!sources.every(s => s.description === undefined || (nonempty(s.description) && s.description.length <= 280))) throw new Error("Source descriptions must be short text without control characters.");
   if (!sources.every(s => s.skills === undefined || (Array.isArray(s.skills) && s.skills.length > 0 && s.skills.every(skillName) && new Set(s.skills).size === s.skills.length))) throw new Error("Choose at least one valid, unique skill for each selected source.");
+  if (data.version === SETTINGS_VERSION && (data.stacks !== undefined || data.savedSkills !== undefined)) throw new Error("Version 2 settings use kit and packs instead of stacks and saved skills.");
+  if (!Array.isArray(data.machineOnly) || !data.machineOnly.every(skillName)) throw new Error("Invalid machine-only skills.");
+  if (data.kit !== undefined) validateKit(data.kit);
+  for (const profile of profiles) {
+    if (profile.description !== undefined && !nonempty(profile.description)) throw new Error("Pack descriptions must be text without control characters.");
+    if (profile.origin !== undefined && !nonempty(profile.origin)) throw new Error("Pack origins must be text without control characters.");
+    if (profile.sourceNames !== undefined && (!profile.sourceNames || typeof profile.sourceNames !== "object" || Array.isArray(profile.sourceNames) || !Object.values(profile.sourceNames).every(nonempty))) throw new Error("Pack source names must be text without control characters.");
+  }
   if (data.stacks !== undefined) {
     if (!Array.isArray(data.stacks)) throw new Error("Stacks must be an array of saved manifests.");
     const stacks = data.stacks.map(validateSavedStack);
@@ -178,6 +244,7 @@ export function validateSettings(value: unknown): Settings {
 
 const BACKUP_LIMIT = 20;
 const BACKUP_NAME = /^settings-[0-9A-Za-z-]+\.json$/;
+const PERMANENT_BACKUP_NAME = /^pre-kit-[0-9A-Za-z-]+\.json$/;
 
 export interface BackupSummary {
   name: string;
@@ -215,6 +282,7 @@ export class SettingsStore {
   async read(): Promise<Settings> {
     try {
       const settings = validateSettings(JSON.parse(await this.readPortable()));
+      if (settings.version === 1 && !requiresMigrationChoice(settings)) upgradeStackless(settings);
       const legacy = !settings.configurationId;
       settings.configurationId ??= this.identifier(true);
       let state: LocalState | undefined;
@@ -253,12 +321,20 @@ export class SettingsStore {
     return join(this.home, ".afk/local", id + ".json");
   }
 
-  async save(settings: Settings, options: { replace?: boolean } = {}): Promise<void> {
+  async save(settings: Settings, options: { replace?: boolean; migrating?: boolean } = {}): Promise<void> {
     settings.configurationId ??= this.identifier();
+    if (settings.version === 1) {
+      if (requiresMigrationChoice(settings)) throw new Error(MIGRATION_REQUIRED);
+      upgradeStackless(settings);
+    }
     const validated = validateSettings(settings);
     await mkdir(dirname(this.path), { recursive: true });
     const serialized = `${JSON.stringify(portableSettings(validated), null, 2)}\n`;
     const existing = await this.existingPortable();
+    if (existing?.legacy) {
+      if (existing.legacy === "stacks" && !options.migrating && !options.replace) throw new Error(MIGRATION_REQUIRED);
+      await this.preserveLegacy(existing.text);
+    }
     if (existing !== undefined && existing.text !== serialized) {
       if (!options.replace && existing.configurationId !== undefined && existing.configurationId !== validated.configurationId) throw new Error("Refusing to overwrite a different AFK configuration. Restore a backup with `afk settings backups`, or import the configuration deliberately.");
       await this.snapshot(existing.text);
@@ -281,18 +357,37 @@ export class SettingsStore {
     } finally { await rm(temporary, { force: true }); await rm(localTemporary, { force: true }); }
   }
 
-  private async existingPortable(): Promise<{ text: string; configurationId?: string } | undefined> {
+  private async existingPortable(): Promise<{ text: string; configurationId?: string; legacy?: "stacks" | "plain" } | undefined> {
     let text: string;
     try { text = await readFile(this.path, "utf8"); }
     catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined; throw error; }
     try {
-      const id = (JSON.parse(text) as { configurationId?: unknown }).configurationId;
-      return typeof id === "string" ? { text, configurationId: id } : { text };
+      const parsed = JSON.parse(text) as { configurationId?: unknown; version?: unknown; stacks?: unknown };
+      const legacy = parsed.version === 1 ? { legacy: Array.isArray(parsed.stacks) && parsed.stacks.length ? "stacks" as const : "plain" as const } : {};
+      return { text, ...(typeof parsed.configurationId === "string" ? { configurationId: parsed.configurationId } : {}), ...legacy };
     } catch { return { text }; }
   }
 
   get backupFolder(): string {
     return join(this.home, ".afk/backups");
+  }
+
+  /** The fingerprint a migration review is tied to; a file edited since then must be reviewed again. */
+  async portableText(): Promise<string | undefined> {
+    return (await this.existingPortable())?.text;
+  }
+
+  // Lives outside the rotation so a migration can always be undone, however many saves follow it.
+  private async preserveLegacy(text: string): Promise<string> {
+    const folder = this.backupFolder;
+    await mkdir(folder, { recursive: true });
+    for (const name of await readdir(folder)) {
+      if (PERMANENT_BACKUP_NAME.test(name) && await readFile(join(folder, name), "utf8") === text) return join(folder, name);
+    }
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const path = join(folder, `pre-kit-${stamp}-${randomUUID().slice(0, 8)}.json`);
+    await writeFile(path, text, { mode: 0o600, flag: "wx" });
+    return path;
   }
 
   private async snapshot(text: string): Promise<void> {
@@ -313,7 +408,8 @@ export class SettingsStore {
 
   async backups(): Promise<BackupSummary[]> {
     const summaries: BackupSummary[] = [];
-    for (const name of (await this.backupNames()).reverse()) {
+    const permanent = await readdir(this.backupFolder).then(names => names.filter(name => PERMANENT_BACKUP_NAME.test(name)).sort().reverse(), () => [] as string[]);
+    for (const name of [...permanent, ...(await this.backupNames()).reverse()]) {
       try {
         const settings = validateSettings(JSON.parse(await readFile(join(this.backupFolder, name), "utf8")));
         summaries.push({ name, savedAt: (await lstat(join(this.backupFolder, name))).mtime.toISOString(), configurationId: settings.configurationId, profiles: settings.profiles.length, stacks: settings.stacks?.length ?? 0, sources: settings.favoriteSources.length, projects: settings.projects.length, tools: settings.tools.length });
@@ -323,7 +419,7 @@ export class SettingsStore {
   }
 
   async restoreBackup(name: string): Promise<void> {
-    if (!BACKUP_NAME.test(name)) throw new Error("Choose a backup name from `afk settings backups`.");
+    if (!BACKUP_NAME.test(name) && !PERMANENT_BACKUP_NAME.test(name)) throw new Error("Choose a backup name from `afk settings backups`.");
     let text: string;
     try { text = await readFile(join(this.backupFolder, name), "utf8"); }
     catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new Error("That backup no longer exists."); throw error; }
@@ -475,6 +571,7 @@ export class SettingsStore {
     if (destination === this.path) return;
     const current = await this.read();
     const selected = validateSettings(JSON.parse(await readFile(destination, "utf8")));
+    if (selected.version === 1 && !requiresMigrationChoice(selected)) upgradeStackless(selected);
     const sameConfiguration = Boolean(current.configurationId) && isDeepStrictEqual(portableSettings(current), portableSettings(selected));
     const hasActiveProfiles = current.profiles.some(profile => profile.enabled.length > 0);
     const hasRulesReceipts = Object.keys(current.agentRules?.receipts ?? {}).length > 0;

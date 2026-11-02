@@ -157,7 +157,7 @@ describe("settings editor schema", () => {
   it("serializes as a versioned schema and marks local ownership state read-only", () => {
     const schema = JSON.parse(JSON.stringify(settingsSchema)) as typeof settingsSchema;
     expect(schema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
-    expect(schema.properties.version.const).toBe(1);
+    expect(schema.properties.version.const).toBe(2);
     expect(schema.required).toContain("favoriteSources");
     expect(schema.properties.profiles.readOnly).toBe(true);
     expect(schema.properties.managedLinks.readOnly).toBe(true);

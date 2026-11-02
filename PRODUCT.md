@@ -7,7 +7,7 @@ brand
 ## Users
 
 Developers who use coding agents and want a small personal workspace for skill
-availability, reusable skill groups, and saved tool commands. They need to see
+availability, a kit of skills that follows them between machines, and saved tool commands. They need to see
 which scope an action affects and keep occasional skills ready without repeatedly
 installing and uninstalling them.
 
@@ -15,17 +15,17 @@ installing and uninstalling them.
 
 AI Field Kit manages the skills and tools a developer actually uses. Its CLI opens
 a local web app and provides headless management operations, protected skill updates
-and background lifecycle commands alongside profile reading and activation.
+and background lifecycle commands alongside kit management, sync, and pack reading and activation.
 
-The product has six sections: Profiles, Installed Skills, Sources & Stacks,
-Tools, Agent rules, and Settings. Profile definitions are shared; activation is global or
-project-specific. Tools are always global. Configuration lives in one file whose
+The product has five sections: Kit, Installed Skills, Agent rules, Tools, and
+Settings. The kit holds Core (always-on skills), packs and skills to try later. Pack
+definitions are shared; activation is global or project-specific. Core is global
+only. Tools are always global. Configuration lives in one file whose
 location the user chooses.
 
 Skills CLI owns repository preparation and external install/update behavior. AFK
-owns local availability, profile grouping, source bookmarks and portable declarative
-stacks, inspection, and supported invocation
-preferences. Agent rules owns one local canonical document, references, and explicit
+owns local availability, the portable kit (Core, packs and source bookmarks), reconciling
+a machine with the kit, inspection, and supported invocation preferences. Agent rules owns one local canonical document, references, and explicit
 managed-region sync to chosen files. It does not own catalogs, rule layers, hooks, MCP setup, custom-agent
 provisioning, or a general extension framework.
 
@@ -39,7 +39,7 @@ concrete about files, scopes, and command execution.
 
 Avoid generic AI SaaS dashboards, skill marketplaces, broad setup frameworks,
 configuration taxonomies, and productivity claims without evidence. Do not make
-simple bookmarks or skill groups feel like a package-management platform.
+simple bookmarks or skill packs feel like a package-management platform.
 
 ## Design Principles
 

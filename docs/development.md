@@ -52,7 +52,9 @@ node --check packages/afk/web/rules.js
 node --check packages/afk/web/onboarding.js
 node --check packages/afk/web/members.js
 node --check packages/afk/web/sources.js
-node --check packages/afk/web/stacks.js
+node --check packages/afk/web/packs.js
+node --check packages/afk/web/kit.js
+node --check packages/afk/web/install.js
 node --check packages/afk/web/invocation-info.js
 ```
 
@@ -71,9 +73,16 @@ settings, availability, invocation metadata, Skills CLI preparation, and local A
 `operation-catalog.ts` exposes their current payload guidance. `doctor.ts` checks
 schema and local consistency without mutation, and `settings-schema.ts` supplies
 editor guidance while the runtime validator owns cross-field validation.
-`stacks.ts` owns the versioned manifest contract, bounded HTTPS JSON fetching and
-sequential script generation. `skill-install.ts` runs explicit saved-source and
-stack installation jobs through Skills CLI; state/cancellation operations bypass
+`stacks.ts` still owns the versioned manifest contract and bounded HTTPS JSON
+fetching. Its script generation and stack storage are gone; manifests are the
+publish format for packs. `kit.ts` compares the kit with one machine's Global
+inventory and builds the sync plan. `kit-cli.ts` implements `afk kit`, `afk sync`
+and `afk migrate`. `migration.ts` is a pure mapping from version 1 stacks to Core
+and packs, with `assertNothingLost` as its last check; `SettingsStore.save` is the
+single gate that refuses writes to a version 1 file with stacks. Pack definitions
+must stay byte-identical across migration because machine-local activation is keyed
+by their hash. `skill-install.ts` runs explicit saved-source and kit sync
+installation jobs through Skills CLI; state/cancellation operations bypass
 the mutation queue. Use temporary homes and a local repository for browser tests. Keep its exported schema synchronized with
 `docs/schemas/skill-stack.v1.schema.json`; the schema regression checks equality.
 `rules.ts` owns canonical rule files and managed destination regions; `bundle.ts`
@@ -109,7 +118,7 @@ repository's `afk-release` skill only when explicitly requested; the existing ta
 workflow publishes npm and creates a GitHub Release.
 
 The app and `afk skills update` use the protected staged updater, which delegates
-to Skills CLI and only updates installations it tracks. Profile preparation does
+to Skills CLI and only updates installations it tracks. Pack preparation does
 not establish tracking receipts for those copies. Direct `npx skills update`
 bypasses AFK’s availability protection. Native invocation files and links are
 tested; discovery inside live agent conversations is a separate verification step.

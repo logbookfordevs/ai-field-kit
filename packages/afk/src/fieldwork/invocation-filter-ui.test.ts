@@ -6,18 +6,25 @@ const html = readFileSync(new URL("../../web/index.html", import.meta.url), "utf
 const listScript = html.slice(html.indexOf("function renderSkillList()"), html.indexOf("function skillRow("));
 const summaryScript = html.slice(html.indexOf("function invocationSummary("), html.indexOf("function preferenceSelect("));
 
-function filter(mode: string, query = "", withNested = false) {
+it("explains hidden disabled skills instead of claiming there are none", () => {
+  const fields = filter("", "", false, [{ name: "resting", available: false, invocation: { claude: "Automatic allowed", codex: "Automatic allowed" } }]);
+  expect(fields.skillList.innerHTML).toContain("Include disabled");
+  expect(fields.skillList.innerHTML).not.toContain("No skills on this machine");
+  expect(fields.skillCount.textContent).toContain("1 disabled hidden");
+});
+
+function filter(mode: string, query = "", withNested = false, entries?: { name: string; available: boolean; invocation: { claude: string; codex: string } }[]) {
   const fields = { skillCount: { textContent: "" }, skillList: { innerHTML: "" } };
-  const inventory = [
-    { name: "Manual", invocation: { claude: "Manual only", codex: "Manual only" } },
-    { name: "Auto", invocation: { claude: "Automatic allowed", codex: "Automatic allowed" } },
-    { name: "Mixed", invocation: { claude: "Manual only", codex: "Automatic allowed" } },
-    { name: "Unreadable", invocation: { claude: "Unknown", codex: "Unknown" } },
+  const inventory = entries ?? [
+    { name: "Manual", available: true, invocation: { claude: "Manual only", codex: "Manual only" } },
+    { name: "Auto", available: true, invocation: { claude: "Automatic allowed", codex: "Automatic allowed" } },
+    { name: "Mixed", available: true, invocation: { claude: "Manual only", codex: "Automatic allowed" } },
+    { name: "Unreadable", available: true, invocation: { claude: "Unknown", codex: "Unknown" } },
   ];
   const nested = withNested ? [{ name: "Synced", folder: "synced/account", description: "", invocation: { claude: "Manual only", codex: "Manual only" } }] : [];
   const context = createContext({
     invocationFilter: mode, profiles: [], profileFilter: "", sourceFilter: "", availabilityFilter: "", query, scope: "Global", inventory: () => inventory, nestedInventory: () => nested, scopePath: () => "~/.agents/skills/",
-    $: (id: keyof typeof fields) => fields[id], isAvailable: () => true,
+    $: (id: keyof typeof fields) => fields[id], isAvailable: (entry: { available: boolean }) => entry.available,
     esc: String, skillRow: (skill: { name: string }) => `[${skill.name}]`,
     button: (label: string) => label, invocationModeIcon: () => "",
   });
@@ -43,7 +50,7 @@ describe("installed invocation filter", () => {
   });
 
   it("includes all modes when the filter is cleared", () => {
-    expect(filter("").skillCount.textContent).toBe("4 entries · 4 available");
+    expect(filter("").skillCount.textContent).toBe("4 enabled");
   });
 
   it("lists subfolder skills below the inventory and alone when only they match", () => {

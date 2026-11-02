@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, extname, join, relative, sep } from "node:path";
 import { inflateRawSync } from "node:zlib";
+import { migrateSettings } from "./migration.js";
 import { containsControl, expandPath, SettingsStore, validateSettings, type Settings } from "./settings.js";
 import { portableSettings as portableConfiguration } from "./local-state.js";
 import { referenceErrors, validateRulesFiles } from "./rules.js";
@@ -147,7 +148,8 @@ export function inspectBundle(base64: string): InspectedBundle {
   const archive = decodeArchive(base64);
   const settingsFile = archive.find(file => file.path === "settings.json");
   if (!settingsFile) throw new Error("Bundle needs settings.json.");
-  const settings = validateSettings(JSON.parse(settingsFile.content));
+  const parsed = validateSettings(JSON.parse(settingsFile.content));
+  const settings = parsed.version === 1 ? migrateSettings(parsed, {}, []).settings : parsed;
   const files = archive.filter(file => file.path !== "settings.json");
   if (!files.some(file => file.path === "AGENTS.md")) throw new Error("Bundle needs AGENTS.md.");
   validateReferences(files);

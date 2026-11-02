@@ -1,7 +1,7 @@
 import { lstat, readFile, readlink, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { RulesWorkspace } from "./rules.js";
-import { expandPath, type Settings, type SettingsStore, validateSettings } from "./settings.js";
+import { requiresMigrationChoice, expandPath, type Settings, type SettingsStore, validateSettings } from "./settings.js";
 import { SkillLibrary } from "./skills.js";
 
 export interface DoctorIssue {
@@ -15,7 +15,7 @@ export interface DoctorReport {
   ok: boolean;
   settingsPath: string;
   issues: DoctorIssue[];
-  checked: { profiles: number; projects: number; managedLinks: number; rulesDestinations: number; stacks: number };
+  checked: { profiles: number; projects: number; managedLinks: number; rulesDestinations: number; core: number };
 }
 
 function errorText(error: unknown): string { return error instanceof Error ? error.message : String(error); }
@@ -24,7 +24,7 @@ function missing(error: unknown): boolean { return ["ENOENT", "ENOTDIR"].include
 export async function doctor(store: SettingsStore): Promise<DoctorReport> {
   const report: DoctorReport = {
     ok: true, settingsPath: store.path, issues: [],
-    checked: { profiles: 0, projects: 0, managedLinks: 0, rulesDestinations: 0, stacks: 0 },
+    checked: { profiles: 0, projects: 0, managedLinks: 0, rulesDestinations: 0, core: 0 },
   };
   const issue = (severity: DoctorIssue["severity"], code: string, path: string, message: string): void => {
     report.issues.push({ severity, code, path, message });
@@ -44,15 +44,8 @@ export async function doctor(store: SettingsStore): Promise<DoctorReport> {
   try { validateSettings(input); settings = await store.read(); }
   catch (error) { issue("error", "settings_invalid", store.path, errorText(error)); return report; }
 
-  report.checked.stacks = settings.stacks?.length ?? 0;
-  for (const stack of settings.stacks ?? []) {
-    const owners = new Map<string, string>();
-    for (const group of stack.manifest.sources) for (const name of group.skills) {
-      const previous = owners.get(name);
-      if (previous && previous !== group.source) issue("warning", "stack_skill_collision", store.path, `Stack ${stack.manifest.id} selects ${name} from multiple repositories. Review before running its script.`);
-      owners.set(name, group.source);
-    }
-  }
+  if (requiresMigrationChoice(settings)) issue("warning", "migration_required", store.path, "These settings use the old stacks format. Run `afk migrate` to review moving them to the kit format.");
+  report.checked.core = (settings.kit?.core ?? []).reduce((total, entry) => total + entry.skills.length, 0);
   const library = new SkillLibrary(store);
   for (const project of settings.projects) {
     report.checked.projects++;

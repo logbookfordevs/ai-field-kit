@@ -5,7 +5,7 @@ import { stdin, stdout } from "node:process";
 import { FieldworkOperations } from "./operations.js";
 import { fetchStack, manifestUrl } from "./stacks.js";
 import { installSkills, type InstallRunner } from "./skill-install.js";
-import type { SettingsStore } from "./settings.js";
+import type { Profile, SettingsStore } from "./settings.js";
 
 export const INSTALL_HELP = `Install a version 1 skill stack from a direct HTTPS JSON manifest
 
@@ -15,7 +15,7 @@ Agents: universal, codex, claude-code, cursor, opencode.
 Omitted targets are selected interactively, followed by a manifest review.
 --yes skips confirmation and requires both an agent and scope.
 Bare domain/path URLs use HTTPS. HTML guides are not manifests.
-The confirmed stack is saved in Sources & Stacks before installation.
+The confirmed manifest is saved as a pack in your kit before installation.
 Sources run sequentially through Skills CLI; existing skills may be replaced.
 Completed or partial installations remain if a later source fails or is cancelled.`;
 
@@ -67,11 +67,12 @@ export async function installFromUrl(args: string[], store: SettingsStore, depen
   const manifest = await (dependencies.fetch ?? fetchStack)(origin);
   await store.initialize();
   const reviewedSettings = await store.read();
-  const expected = reviewedSettings.stacks?.find(stack => stack.manifest.id === manifest.id) ?? null;
+  const packId = `stack-${manifest.id}`;
+  const expected = reviewedSettings.profiles.find(profile => profile.id === packId) ?? null;
   log(`${manifest.name}\nManifest: ${origin}`);
   for (const group of manifest.sources) log(`  ${group.name}: ${group.source}\n    ${group.skills.join(", ")}`);
-  if (expected) log(`The saved stack "${expected.manifest.name}" (${manifest.id}) will be replaced with this manifest and URL.`);
-  log("Confirming saves this stack in Sources & Stacks, even if installation later fails.");
+  if (expected) log(`The saved pack "${expected.name}" (${manifest.id}) will be replaced with this manifest and URL.`);
+  log("Confirming saves this as a pack in your kit, even if installation later fails.");
   let terminal: ReturnType<typeof createInterface> | undefined;
   const ask = dependencies.ask ?? ((question: string) => {
     terminal ??= createInterface({ input: stdin, output: stdout });
@@ -89,13 +90,14 @@ export async function installFromUrl(args: string[], store: SettingsStore, depen
     const path = project === "~" ? store.home : project?.startsWith("~/") ? resolve(store.home, project.slice(2)) : project ? resolve(project) : undefined;
     if (path && !(await stat(path)).isDirectory()) throw new Error("Choose an existing project folder.");
     log(`Target: ${agent}, ${path ?? "Global"}\nSkills CLI may replace existing skills. Completed or partial installations remain on failure.`);
-    if (!yes && !["y", "yes"].includes((await ask("Install this stack? [y/N]: ")).trim().toLowerCase())) { log("Installation cancelled; no skills installed."); return 0; }
+    if (!yes && !["y", "yes"].includes((await ask("Install this manifest? [y/N]: ")).trim().toLowerCase())) { log("Installation cancelled; no skills installed."); return 0; }
   } finally { terminal?.close(); }
   const operations = new FieldworkOperations(store);
   try {
-    await operations.run("stack/save", { stack: { manifest, origin }, expected });
+    const { pack } = await operations.run("pack/import-preview", { manifest }) as { pack: Profile };
+    await operations.run("pack/import", { pack: { ...pack, origin }, expected });
   } finally { await operations.close(); }
-  log(`Saved ${manifest.name} in Sources & Stacks.`);
+  log(`Saved ${manifest.name} as a pack in your kit.`);
   const settings = await store.read();
   if (project) {
     const path = project === "~" ? store.home : project.startsWith("~/") ? resolve(store.home, project.slice(2)) : resolve(project);

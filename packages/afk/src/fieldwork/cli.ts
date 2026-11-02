@@ -1,4 +1,5 @@
 import { installFromUrl } from "./install-cli.js";
+import { runAdd, runKit, runMigrate, runSync } from "./kit-cli.js";
 import { parseUiOptions } from "./ui-options.js";
 import { startBackground, backgroundStatus, stopBackground, restartBackground } from "./background.js";
 import { updateAfk } from "./update.js";
@@ -25,12 +26,18 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk stop                           Stop the background app
   afk restart                        Restart the background app on its current port
   afk skills update [name] [-g | -p <project>]  Update skills, preserving availability
+  afk add <repository>               Install skills and decide where they go
+  afk kit                            Compare your kit with this machine
+  afk kit add <skill>... [--pack <name>]  Make skills travel with you
+  afk kit drop <skill> [--pack <name>]    Stop tracking a skill; its files stay
+  afk sync [--agent <agent>] [--yes] [--run-tools]  Make this machine match your kit
+  afk migrate [--core <stack-id>] [--apply]  Move old stacks settings to the kit format
   afk install <url> [--agent <agent>] [-g | -p <folder>] [--yes]
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
-  afk profiles use <name-or-id>              Read a group without enabling it
-  afk profiles enable <name-or-id> [scope]
-  afk profiles disable <name-or-id> [scope]
+  afk packs use <name-or-id>                 Read a pack without turning it on
+  afk packs enable <name-or-id> [scope]
+  afk packs disable <name-or-id> [scope]
   afk skills get <name> [scope]
   afk settings path                  Print the selected settings file path
   afk settings show                  Read settings as JSON
@@ -122,6 +129,10 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     console.log(pkg.version); return 0;
   }
   if (command === "install") return installFromUrl(argv.slice(1), store);
+  if (command === "add") return runAdd(argv.slice(1), store);
+  if (command === "kit") return runKit(argv.slice(1), store);
+  if (command === "sync") return runSync(argv.slice(1), store);
+  if (command === "migrate") return runMigrate(argv.slice(1), store);
   if (command === "update") return updateAfk(argv.slice(1));
   if (command === "manage") return manage(argv.slice(1), store);
   if (command === "settings" && action === "schema") {
@@ -142,12 +153,12 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
   }
   await store.initialize();
   const library = new SkillLibrary(store);
-  if (command === "profiles") {
-    if (!id || extra !== undefined || (action === "use" && target !== undefined)) throw new Error("Provide a profile name or ID and optional scope for enable or disable.");
+  if (command === "packs" || command === "profiles") {
+    if (!id || extra !== undefined || (action === "use" && target !== undefined)) throw new Error("Provide a pack name or ID and optional scope for enable or disable.");
     const settings = await store.read();
     if (action === "use") { console.log(await library.readGroup(settings, id)); return 0; }
     if (action === "enable" || action === "disable") { await library.activate(settings, id, target ?? "Global", action === "enable"); return 0; }
-    throw new Error("Choose profiles use, enable, or disable.");
+    throw new Error("Choose packs use, enable, or disable.");
   }
   if (command === "skills" && action === "update") {
     let scope = "Global", hasScope = false;

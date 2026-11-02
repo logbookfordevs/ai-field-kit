@@ -1,7 +1,7 @@
 # Manage AFK with an agent
 
-The `afk-cli` skill lets your agent manage the same local skills, profiles,
-favorites, tools, Agent rules, and settings as the web app. AFK bundles the skill
+The `afk-cli` skill lets your agent manage the same local skills, kit, packs,
+sources, tools, Agent rules, and settings as the web app. AFK bundles the skill
 and its workflow references. Run `afk guide` to get the absolute `SKILL.md` path,
 then have your agent read that file. This works without installing the skill into
 the agent's skill directory; `afk --help` includes this instruction.
@@ -50,14 +50,14 @@ afk manage skill/read --input - <<'JSON'
 JSON
 ```
 
-Read the actual `name`, profile `id`, project name, and destination IDs from
+Read the actual `name`, pack `id`, project name, and destination IDs from
 state. A saved project name is a scope; `Global` is the default for the focused
-profile/skill commands.
+pack/skill commands.
 
 ## Edit simple definitions
 
-Agents can edit favorite sources, tool definitions, and inactive project
-definitions in settings. Preserve profiles, invocation preferences, managed
+Agents can edit favorite sources, tool definitions (including `provides`), the
+`kit`, and inactive project definitions in settings. Preserve packs, invocation preferences, managed
 links, independent availability, and Agent-rules ownership records. Use AFK
 operations for their physical effects.
 
@@ -88,25 +88,46 @@ For example, that file can contain
 `{"name":"Workbench","path":"/absolute/path/to/project"}`. Editing an existing
 project also supplies its current name as `previous`.
 
-## Prepare, activate, or read a profile
+## Use the kit
 
-Ask your agent to discover a source and save a profile with selected skill names.
-The `discover` and `profile/save` operations handle source inspection and the
-profile definition. Skills download when the profile is first enabled, or at save
-time with `prepare: true`. Saving does not activate the profile. Disable all targets before
-editing or removing an existing definition.
+Run `afk kit` to compare the kit with this machine, or `kit/state` for the same data and the
+exact sync plan as JSON. Add and drop skills with `afk kit add` and `afk kit drop`, or
+`kit/add` and `kit/drop`. These change the kit, not the installed files. Use
+`afk manage describe kit/add` for the payload.
+
+`afk sync` (`kit/sync`) makes this machine match the kit. Review the plan with the user
+first. Sync installs missing Core skills and turns Core skills back on; it never removes
+anything. A tool's saved install command runs only after the user approves it: pass
+`--run-tools`, or list the tool IDs in `runTools`. Without that, those commands are
+skipped.
+
+If a write fails with a message that settings use the old stacks format, run
+`afk migrate`. It is a dry run and writes nothing. Show the report, let the user choose
+which stack becomes Core (`--core <stack-id>`), and add `--apply` only after they approve.
+See [Move from stacks](kit.md#move-from-stacks).
+
+## Prepare, turn on, or read a pack
+
+Ask your agent to discover a source and save a pack with selected skill names.
+The `discover` and `pack/save` operations handle source inspection and the
+pack definition. Skills download when the pack is first turned on, or at save
+time with `prepare: true`. Saving does not turn the pack on. A pack that is on can be edited;
+turn it off everywhere before removing it.
 
 ```sh
-afk profiles enable "My profile" Global
-afk profiles disable "My profile" Global
-afk profiles use "My profile"
+afk packs enable "My pack" Global
+afk packs disable "My pack" Global
+afk packs use "My pack"
 ```
 
-Use the profile name, matched without case sensitivity, or its ID. Quote names containing spaces. Duplicate names require an ID. With the `afk-cli` skill installed, `/afk-cli use profile "My profile"` asks the agent to read the same group. Enabling exposes prepared skills through
-owned links; disabling withdraws those links while preserving other owners and
+Use the pack name, matched without case sensitivity, or its ID. Quote names containing spaces. Duplicate names require an ID. `afk profiles` works as an alias. With the `afk-cli` skill installed, `/afk-cli use pack "My pack"` asks the agent to read the same group. Turning on exposes prepared skills through
+owned links; turning off withdraws those links while preserving other owners and
 existing files. `use` prints locally prepared member instructions, including
 disabled members. The calling agent must read that output; the command leaves
 availability unchanged. Invocation policy is a separate `invocation` operation.
+
+Use `pack/manifest` to turn a pack (or `core`) into a publishable manifest, and
+`pack/import-preview` then `pack/import` to save a reviewed manifest as a pack.
 
 Favorite sources are bookmarks. Adding a favorite does not prepare or install
 skills. Tool definitions also stay passive until an authorized `tool/run`:
@@ -119,7 +140,7 @@ JSON
 
 Read the saved command and replace `123` with the actual tool ID. An empty update
 command reuses install. Inspect output and exit status to verify execution.
-Use `source/install` or `stack/install` for authorized installation, and inspect
+Use `kit/install`, `source/install` or `kit/sync` for authorized installation, and inspect
 `skills/install-state` for progress and results. `skills/install-cancel` stops
 remaining installation work while keeping completed or partial files.
 Use `afk skills update [name] -g` or `afk skills update [name] -p <project>` for
@@ -182,10 +203,10 @@ not maintain AFK's local pointer. `settings export` and `import` transfer settin
 only. `bundle/export`, `bundle/preview`, and `bundle/import` transfer the portable
 folder with saved rules and references.
 
-Review local project/destination mappings before import. Disable active profiles
-and individual skills and resolve managed links first. ZIP import also requires
+Review local project/destination mappings before import. Turn packs off,
+disable individual skills and resolve managed links first. ZIP import also requires
 disconnecting managed rule destinations before replacing their ownership. Imported
-configuration does not install skills, execute tools, or sync rules. Prepare,
-activate, and preview/sync the requested effects separately on the receiving
+configuration does not install skills, execute tools, or sync rules. Turn on packs, run `afk sync`,
+and preview/sync rules the requested effects separately on the receiving
 machine. A storage provider can transport the folder; AFK does not reconcile
 concurrent edits or apply another machine's ownership automatically.

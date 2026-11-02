@@ -36,16 +36,19 @@ it("calculates inspected full content only after the explicit request",()=>{
   expect(ui.fields.skillTokenDetails.innerHTML).toContain("Full instructions: ~100 tokens");
 });
 
-it("filters available and disabled entries independently of invocation",()=>{
+it("lists enabled skills by default, with filters to include or isolate disabled ones",()=>{
   const ui=fixture();
+  const shown=()=>ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)");
+  expect(shown()).toEqual(["auto","local"]);
+  ui.run("availabilityFilter='all'");
+  expect(shown()).toEqual(["auto","disabled","local"]);
   ui.run("availabilityFilter='disabled'");
-  expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["disabled"]);
-  ui.run("availabilityFilter='available'");
-  expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["auto","local"]);
+  expect(shown()).toEqual(["disabled"]);
 });
 
 it("filters saved profile membership including disabled profiles and overlapping members",()=>{
   const ui=fixture();
+  ui.run("availabilityFilter='all'");
   ui.context.profiles=[
     {id:"studio",name:"Studio",skills:["auto","disabled"],enabled:[]},
     {id:"review",name:"Review",skills:["auto"],enabled:["Global"]},
@@ -86,7 +89,9 @@ it("keeps nested skills out of managed-only filters and groups them by folder",(
   expect(ui.run("nestedSkillGroups(nested).map(group=>[group.folder,group.skills.length])")).toEqual([["synced/acct",2],["team",1]]);
   ui.run("query='SYNCED';invocationFilter='manual only'");
   expect(ui.run("nested.filter(matchesNestedSkillFilters).map(entry=>entry.name)")).toEqual(["docx"]);
-  ui.run("query='';invocationFilter='';availabilityFilter='available'");
+  ui.run("query='';invocationFilter='';availabilityFilter='all'");
+  expect(ui.run<unknown[]>("nested.filter(matchesNestedSkillFilters)")).toHaveLength(3);
+  ui.run("availabilityFilter='disabled'");
   expect(ui.run("nested.filter(matchesNestedSkillFilters)")).toEqual([]);
   expect(ui.run("shortFolderPath('synced/937583ee-01ae-4eb2-a899-07800134a783_0ac2e7dd')")).toBe("synced/937583ee…e7dd");
 });

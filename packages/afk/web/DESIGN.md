@@ -1,6 +1,6 @@
 ---
 name: AFK Fieldwork
-description: A quiet paper ledger for local skills, shared profiles, saved commands, and agent rules.
+description: A quiet paper ledger for local skills, your kit, saved commands, and agent rules.
 colors:
   bg: "#f3eddf"
   surface: "#fffaf0"
@@ -203,7 +203,7 @@ Bundled Poppins loads normal 400, 500, and 600; Plex Mono loads normal 400 and 6
 ### Hierarchy
 
 - **Headline:** Page titles use the frontmatter headline role; at the mobile breakpoint they use the mobile-headline role.
-- **Title:** Section titles use the title role. Profile-name links retain that size with 1.3 leading and subtle negative tracking. Dialog titles use the dialog-title role.
+- **Title:** Section titles use the title role. Pack-name links retain that size with 1.3 leading and subtle negative tracking. Dialog titles use the dialog-title role.
 - **Item title:** Skill and tool names use the item-title role.
 - **Body:** The body role establishes the default rhythm. Paragraphs cap at 65ch; page descriptions cap at 60ch and use 14px supporting text.
 - **Control / label:** Buttons use the control role, with primary weight 600. Native field labels use the label role with a 6px gap. Supporting metadata, hints, and form errors use 13px; hints have 1.5 leading. Table labels and status text use sentence case Poppins at 13px/1.5. Mobile native fields become 16px.
@@ -217,15 +217,15 @@ Bundled Poppins loads normal 400, 500, and 600; Plex Mono loads normal 400 and 6
 
 The desktop shell is a 228px sticky rail beside a flexible workspace. The rail fills the viewport height. Main content caps at 1320px, with `20px clamp(20px,4vw,56px) 40px` padding. The top context row and footer use quiet horizontal rules. Page headings pair title/description with an action; their margin is `24px 0`.
 
-Ledgers start with an Ink top rule and use quiet row dividers. Standard rows use `14px 16px` padding. Profiles use `16px` padding, a 24px gap, and `minmax(0,1.15fr) minmax(320px,1fr)` columns. A vertical rule with 28px inset separates scope controls from profile details. Settings pair a 200–280px description column with a flexible form column. Repeated gaps draw from the frontmatter spacing steps rather than a fabricated universal scale.
+Ledgers start with an Ink top rule and use quiet row dividers. Standard rows use `14px 16px` padding. Packs use `16px` padding, a 24px gap, and `minmax(0,1.15fr) minmax(320px,1fr)` columns. A vertical rule with 28px inset separates scope controls from pack details. Settings pair a 200–280px description column with a flexible form column. Repeated gaps draw from the frontmatter spacing steps rather than a fabricated universal scale.
 
-At 1180px and below, skill/tool and destination column headers disappear and rows rearrange into labeled groups. Destinations retain a 44px selection column, file identity and actions on the first row, and status/last-sync metadata below. At 1000px and below, the rail narrows to 184px; profiles, settings blocks, and notes become single-column, with profile scope moving below a horizontal rule.
+At 1180px and below, skill/tool and destination column headers disappear and rows rearrange into labeled groups. Destinations retain a 44px selection column, file identity and actions on the first row, and status/last-sync metadata below. At 1000px and below, the rail narrows to 184px; profiles, settings blocks, and notes become single-column, with pack scope moving below a horizontal rule.
 
-At 760px and below, the rail becomes a compact sticky header with the 26px brand, a native Section select, and a More control for a native utilities popover. The desktop navigation, counts, top context row, and rail footer disappear. Main gutters are 16px; page headings use `20px 0 18px` margins. Profile and ledger rows use `14px 0`; the scope select and 130px action share one row. Tool commands and source actions rearrange; settings paths wrap below project names. Dialog bodies use 18px padding and 14px gaps, ordinary dialogs widen to viewport minus 16px and cap at 92vh, and toasts use 12px side and bottom offsets. At 480px Welcome columns stack; the header stays sticky. At 360px the Section select narrows from 150px to 130px.
+At 760px and below, the rail becomes a compact sticky header with the 26px brand, a native Section select, and a More control for a native utilities popover. The desktop navigation, counts, top context row, and rail footer disappear. Main gutters are 16px; page headings use `20px 0 18px` margins. Pack and ledger rows use `14px 0`; the scope select and 130px action share one row. Tool commands and source actions rearrange; settings paths wrap below project names. Dialog bodies use 18px padding and 14px gaps, ordinary dialogs widen to viewport minus 16px and cap at 92vh, and toasts use 12px side and bottom offsets. At 480px Welcome columns stack; the header stays sticky. At 360px the Section select narrows from 150px to 130px.
 
 The rule workbench pairs a 232px file list with a flexible editor, separated by a quiet vertical rule and a 24px editor inset. At 1000px the file column narrows to 190px. At 760px the workbench becomes one column: file buttons wrap above the editor, the vertical rule becomes a horizontal divider, and the editor loses its side inset. Editor minimum height falls from 420px to 300px. Destination rows stack identity, status, last sync, and actions beside the retained selection column; the sync action fills the available width.
 
-**The Ledger Reflows Rule.** Narrow layouts move related controls below their item while a compact Section select preserves access to all six sections.
+**The Ledger Reflows Rule.** Narrow layouts move related controls below their item while a compact Section select preserves access to all five sections.
 
 ## Elevation & Depth
 
@@ -267,9 +267,9 @@ Desktop section controls have transparent backgrounds and left-aligned labels, w
 
 Skill members are compact bordered mono tags with a 6px wrapping gap. Path cards group a path and related action on a quiet light panel; mobile stacks their contents. Ordinary content lists use rules rather than repeating elevated cards.
 
-### Profile Ledger
+### Pack Ledger
 
-A profile groups its linked name, members, preparation text, and manual-read action beside its selected target and activation state. Scope selection updates the displayed target; action labels and adjacent state text express the selected scope. On narrow screens that scope block follows the profile details. Keep preparation, activation, and manual reading visibly distinct.
+A pack groups its linked name, members, preparation text, and read-once action beside its selected target and on/off state ("On globally", "Off in Project"). Scope selection updates the displayed target; action labels and adjacent state text express the selected scope. On narrow screens that scope block follows the pack details. Keep preparation, turning on, and reading once visibly distinct.
 
 ### Switches
 
@@ -299,7 +299,7 @@ Sync previews and conflict comparisons extend the native dialog to a 900px deskt
 
 Import review uses the same wide dialog and ordinary labeled inputs. Project folder mappings precede destination mappings; each destination is a quiet ruled group (10px vertical padding) with an unchecked selection control and a local-file-path input. Conflict dialogs put the destination identity and consequences before the comparison. Both decisions use outlined buttons; the replacement action uses a Rust Deep outline and text. Each decision pairs a heading with explanatory prose, then stacks its action below at the mobile breakpoint. Configuration/rule import remains distinct from destination sync, with adjacent errors. The rules folder context and Settings JSON actions use collapsed native details; the main Settings view keeps the AFK folder and ZIP actions visible. Favorite sources keeps installation destination and the copy-all action visible, with optional Installation agent selection inside native details.
 
-### Profile Member Picker
+### Pack Member Picker
 
 The native dialog separates repository and local sources with a compact radio group; its radio controls remain 18px wide beside their labels. A labeled search field, selection count, Selected only toggle, and text actions sit above a scrolling checkbox list capped at `min(36vh,360px)`. Rows have 48px minimum targets; descriptions use 13px/1.5 Poppins and clamp to two lines. Search filters names and descriptions while retaining checked members; selected-only state uses Ocean fill plus `aria-pressed`. An empty result explains how to adjust the filters. Favorite-source dialogs reuse this picker after choosing Choose skills; All skills keeps it hidden. Source rows show All skills or a native disclosure containing the selected names.
 
@@ -316,7 +316,7 @@ Welcome extends the native dialog to `min(720px,calc(100vw - 32px))`. A 16px int
 ### Do:
 
 - **Do** use ocean actions, light controls, ink hierarchy, and quiet ruled ledgers.
-- **Do** preserve the separate profile details, scope control, and explicit state text.
+- **Do** preserve the separate pack details, scope control, and explicit state text.
 - **Do** retain the native mobile Section select and More utilities and stack row controls when space narrows.
 - **Do** keep command and path text wrapping, visible focus, native dialogs, and reduced-motion support.
 - **Do** keep save errors next to the entered form and retain the entered values.
@@ -324,38 +324,25 @@ Welcome extends the native dialog to `min(720px,calc(100vw - 32px))`. A 16px int
 
 ### Don't:
 
-- **Don't** replace operational ledgers with elevated decorative card grids. Sources & Stacks has an approved flat paper gallery with a List alternative.
+- **Don't** replace operational ledgers with elevated decorative card grids.
 - **Don't** use Rust Deep as the ordinary primary-action fill.
 - **Don't** make state depend only on color or motion.
 - **Don't** promote inherited text-glyph icons into reusable design rules.
 
 Not canonized: folder navigation retains a Unicode chevron. The craft floor excludes text-glyph icons from reusable design rules; this documentation does not create a token or preview for it. It remains untouched because this handoff owns documentation only.
 
-### Sources & Stacks
+### Kit
 
-Sources and Stacks sit in underline tabs (arrow keys switch) below the shared
-installation destination; saving a stack opens the Stacks tab. Sources render as a compact ruled list under a full-width search field that
-matches names, links, descriptions and selected skills. Each row stacks the name
-over the mono link and optional muted description, with the selection, an outlined
-Install and a ⋯ menu popover on the right; selected skills expand inline as mono
-tags. At 760px the selection and actions move below the text. Stacks default to the
-ruled list; a right-aligned Cards/List toggle above them switches to a flat paper card gallery for the
-current page session and does not change saved definitions or installation targets. Sources and Stacks
-retain distinct headings. Desktop cards use two equal columns with a 16px gap,
-20px insets, Surface fill, a Rule border and 8px corners, without elevation.
-At 1000px the gallery becomes one column; mobile insets reduce to 16px. Titles,
-repository paths and selection disclosures lead; actions follow a quiet divider
-at the bottom. Long paths wrap and mobile actions use two columns.
+The Kit page (`web/kit.js`, with pack rows from `web/packs.js`) has a page heading whose primary action is "Sync this machine" with a count of pending changes. When nothing differs the action is disabled and reads "This machine matches". Four underline tabs follow: This machine, Core, Packs and Try later. They use `role="tablist"`, arrow keys move between them, and each label carries a count (the first shows items needing attention). At 760px the tab row scrolls horizontally without wrapping.
 
-A wrapping page-action group contains Add source, Create stack and Import stack.
-Each stack identifies its source count, selected member count, and local or remote
-provenance. A native disclosure groups members under their original repositories.
-Source cards add an Add to stack text action that opens a native dialog of radio choices (each saved stack, then New stack); stacks with a refresh origin or that already include the source carry a quiet hint line. A linked stack card adds a ruled Profile block: its state, an Out of date warning when picks differ, and a scope select with Turn on/Turn off. Profile rows show From stack as a text link. Stack cards also offer Turn into profile (Update profile once linked) as a text action; its dialog names the profile and lists source groups, and a collision or an active linked profile disables the save with the reason. Stack controls install, copy a script, edit, export JSON, explicitly refresh a remote
-manifest, or remove the saved definition.
+Content is flat and ruled, never carded. A `.kit-section` has a 20px heading, a muted one-line explanation and 28px of space below. A `.kit-group` has an Ink top rule (later groups use the quiet Rule color), a 14px semibold heading that is usually a mono repository path, and rows beneath. In Core each repository is a native disclosure that opens by itself when some skills are not ready here. Its summary gives the name and a muted count with "following" and "not ready here" notes; the follow action sits in the opened head.
 
-Import uses the native dialog with JSON/HTTPS choices and retains invalid input.
-Creation lists every saved source and saves explicit skill selections, including
-one-off choices from all-skills bookmarks. An Add a repository field and Find skills
-button sit below the list; new repositories are marked New source and listed in review. Review shows the proposed source groups
-and saved version before complete replacement. Refreshing and saving remain
-separate from installation and profile activation.
+A `.kit-row` is a flex row with a 44px minimum height and a quiet top rule: the mono skill name and muted status text on the left, text-button actions on the right. At 760px the actions move below the name. In This machine, skills not yet in the kit are grouped by repository with the actions Core, Pack…, This machine only and Remove. Skills with no repository source sit in a last group that explains why another machine can't install them, and offer Link to a tool… instead of Core. Skills kept on this machine only collapse into a native details disclosure with an Ask again action. When the machine matches, a short block with an Ink top rule replaces the lists.
+
+The install dialog is a native dialog reusing the member picker. A repository field and Find skills sit above the picker; each row can add a warning line in Rust Deep for a skill from another repository, muted state lines, and a native Read SKILL.md disclosure. Destinations are a two-column grid of bordered radio cards (`.install-destination`), one column at 480px, with the checked card marked by an Ink border and inset ring. The primary action names exactly what it will do, and stays disabled until the choice is complete. Missing-here rows carry an outlined Install, Turn on or Run install command.
+
+The sync review is a native dialog (`.sync-plan`). It has one section per repository listing the skills to install, a "Turn back on" section, and for each tool a ruled `.sync-tool` block with an unchecked checkbox naming the tool's saved install command. Nothing runs unless the box is checked. Progress and results replace the plan in place, with a collapsed output disclosure per tool that opens when the tool failed.
+
+Packs use the Pack Ledger, with Import pack and Create pack at the top right. Try later keeps the compact source list with search, and its Install and ⋯ menu actions.
+
+The migration screen (`.migration`, 760px maximum) replaces the page while settings still hold stacks. It asks which stack should be on every machine with radio choices and a "None for now" option, offers optional follow choices for the chosen stack's repositories, and shows a ruled `.migration-report` of what will change, refreshed after each choice. Warnings use the danger color. Apply stays disabled until a report has loaded, and errors appear next to the control.

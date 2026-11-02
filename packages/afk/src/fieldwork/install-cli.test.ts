@@ -21,7 +21,7 @@ it("normalizes bare manifest URLs while retaining the HTTPS URL policy", () => {
   expect(installManifestUrl("atlas.logbookfordevs.com/stack.json")).toBe("https://atlas.logbookfordevs.com/stack.json");
   for (const url of ["http://example.com/stack.json", "https://user:pass@example.com/stack.json", "https://example.com/stack.json#fragment"]) expect(() => installManifestUrl(url)).toThrow();
 });
-it("fetches and installs explicit members across original repositories and saves the stack with its origin without creating a profile", async () => {
+it("fetches and installs explicit members across original repositories and saves a pack that stays off, with its origin", async () => {
   const store = await fixture(), calls: string[][] = [];
   const code = await installFromUrl(["example.com/stack.json", "--agent", "codex", "-g", "--yes"], store, {
     log: () => {}, runner: async (cwd, env, args) => { expect(cwd).toBe(store.home); expect(env.HOME).toBe(store.home); calls.push(args); return 0; },
@@ -31,7 +31,8 @@ it("fetches and installs explicit members across original repositories and saves
     ["owner/one", "--skill", "review", "-g", "--agent", "codex", "--yes"],
     ["other/two", "--skill", "build", "--skill", "verify", "-g", "--agent", "codex", "--yes"],
   ]);
-  const settings = await store.read(); expect(settings.stacks).toEqual([{ manifest, origin: "https://example.com/stack.json" }]); expect(settings.profiles).toEqual([]);
+  const settings = await store.read();
+  expect(settings.profiles).toEqual([expect.objectContaining({ id: "stack-test", name: "Test stack", origin: "https://example.com/stack.json", skills: ["review", "build", "verify"], enabled: [], sourceNames: { "owner/one": "One", "other/two": "Two" } })]);
 });
 it("accepts a project folder without registering it in settings", async () => {
   const store = await fixture();
@@ -44,14 +45,14 @@ it("reviews the manifest and target before interactive confirmation, and declini
   const runner = vi.fn(async () => 0);
   const ask = vi.fn(async () => { expect(output.join("\n")).toContain("owner/one"); return answers.shift()!; });
   expect(await installFromUrl(["example.com/stack.json"], store, { interactive: true, ask, log: text => output.push(text), runner })).toBe(0);
-  expect(ask).toHaveBeenCalledTimes(4); expect(runner).not.toHaveBeenCalled(); expect((await store.read()).stacks ?? []).toEqual([]);
+  expect(ask).toHaveBeenCalledTimes(4); expect(runner).not.toHaveBeenCalled(); expect((await store.read()).profiles).toEqual([]);
 });
 it("reports partial failure and does not start later sources", async () => {
   const store = await fixture(), output: string[] = []; let calls = 0;
   manifest.sources.push({ name: "Three", source: "owner/three", skills: ["three"] });
   try {
     const code = await installFromUrl(["example.com/stack.json", "--agent", "universal", "-g", "--yes"], store, { log: text => output.push(text), runner: async () => ++calls === 1 ? 0 : 7 });
-    expect(code).toBe(1); expect(calls).toBe(2); expect((await store.read()).stacks?.[0]?.manifest.id).toBe("test"); expect(output.join("\n")).toContain("1/3 sources completed");
+    expect(code).toBe(1); expect(calls).toBe(2); expect((await store.read()).profiles[0]?.id).toBe("stack-test"); expect(output.join("\n")).toContain("1/3 sources completed");
   } finally { manifest.sources.pop(); }
 });
 it("rejects incomplete automation and conflicting options before fetching or installing", async () => {
@@ -83,25 +84,25 @@ it("keeps redirects disabled when fetching manifests", async () => {
 it("replaces a reviewed saved ID without duplicating it and preserves unrelated settings", async () => {
   const store = await fixture(); await store.initialize();
   const settings = await store.read();
-  settings.stacks = [{ manifest: { ...manifest, name: "Old selection" }, origin: "https://old.example/stack.json" }];
+  settings.profiles = [{ id: "stack-test", name: "Old selection", source: "owner/one", skills: ["review"], origin: "https://old.example/stack.json", enabled: [], ready: false }];
   settings.projects.push({ name: "Existing", path: store.home });
   await store.save(settings);
   await installFromUrl(["example.com/stack.json", "-a", "codex", "-g", "-y"], store, { log: () => {}, runner: async () => 0 });
   const saved = await store.read();
-  expect(saved.stacks).toEqual([{ manifest, origin: "https://example.com/stack.json" }]);
+  expect(saved.profiles).toEqual([expect.objectContaining({ id: "stack-test", name: "Test stack", origin: "https://example.com/stack.json" })]);
   expect(saved.projects).toEqual(settings.projects);
 });
-it("rejects a changed saved stack after review before starting installation", async () => {
+it("rejects a changed saved pack after review before starting installation", async () => {
   const store = await fixture(), runner = vi.fn(async () => 0);
   await expect(installFromUrl(["example.com/stack.json", "-a", "codex", "-g"], store, {
     interactive: true, log: () => {}, runner,
     ask: async () => {
       const settings = await store.read();
-      settings.stacks = [{ manifest: { ...manifest, name: "Concurrent edit" } }];
+      settings.profiles = [{ id: "stack-test", name: "Concurrent edit", source: "owner/one", skills: ["review"], enabled: [], ready: false }];
       await store.save(settings);
       return "yes";
     },
   })).rejects.toThrow(/changed since review/);
   expect(runner).not.toHaveBeenCalled();
-  expect((await store.read()).stacks?.[0]?.manifest.name).toBe("Concurrent edit");
+  expect((await store.read()).profiles[0]?.name).toBe("Concurrent edit");
 });

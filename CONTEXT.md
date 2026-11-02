@@ -1,16 +1,24 @@
 # Domain Glossary
 
-**Profile**:
-A shared named selection of skills prepared for group activation or on-demand reading.
-_Avoid_: Category, setup preset, project-owned profile
+**Kit**:
+The skills that travel with a user, stored once in the settings file and shared by every machine that uses it. It holds Core, packs and tool-provided skills.
+_Avoid_: Backup, install plan, catalog
 
-**Profile Member**:
-A skill selected as part of a profile.
-_Avoid_: Catalog skill, profile package policy
+**Core**:
+The always-on skills in the kit, grouped by original repository. Global only.
+_Avoid_: Default pack, starter set, stack
+
+**Pack**:
+A shared named group of skills, possibly from several repositories, that is turned on per target or read once.
+_Avoid_: Profile, stack, category, setup preset, project-owned pack
+
+**Pack Member**:
+A skill selected as part of a pack.
+_Avoid_: Catalog skill, package policy
 
 **Activation Target**:
-Global or a named project where a profile's members are made available.
-_Avoid_: Profile owner, installation source
+Global or a named project where a pack's members are made available.
+_Avoid_: Pack owner, installation source
 
 **Global Scope**:
 The user's home-level skill availability shared across agent work.
@@ -26,26 +34,34 @@ _Avoid_: Enabled skill, remote-only member
 
 **Availability**:
 Whether a skill is exposed in the selected scope's discovery locations.
-_Avoid_: Invocation mode, profile definition
+_Avoid_: Invocation mode, pack definition
 
 **Independent Activation**:
-Skill availability maintained outside profile membership.
-_Avoid_: Profile activation, catalog ownership
+Skill availability maintained outside pack membership.
+_Avoid_: Pack activation, catalog ownership
 
 **On-demand Reading**:
-Retrieving a profile's member instructions for the calling agent without changing availability.
+Retrieving a pack's member instructions for the calling agent without changing availability.
 _Avoid_: Chat injection, automatic invocation
 
 **Invocation Preference**:
 A supported native setting controlling whether an available skill may be selected automatically.
 _Avoid_: Enabled state, availability
 
+**Machine-only Skill**:
+An installed skill the user chose to keep on one machine. It is recorded in that machine's local state, never in the portable settings file, and the kit stops asking about it.
+_Avoid_: Private skill, ignored skill
+
+**Sync**:
+Making one machine match the kit: installing missing Core skills, turning Core skills back on, and offering tool install commands. It never removes anything.
+_Avoid_: Backup, restore, mirror
+
 **Favorite Source**:
-A shared bookmark to a skill repository used to generate copyable installation commands.
-_Avoid_: Catalog entry, profile
+A shared bookmark to a skill repository, shown as Try later in the kit.
+_Avoid_: Catalog entry, pack
 
 **Tool Entry**:
-A global saved tool name and install/update commands run explicitly by the user.
+A global saved tool name, install/update commands run explicitly by the user, and optionally the skills it provides.
 _Avoid_: Installed tool, project tool
 
 **Configuration**:

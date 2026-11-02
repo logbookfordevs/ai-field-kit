@@ -96,13 +96,13 @@ describe("AFK agent CLI", () => {
     const catalog = await command(store, ["manage", "describe"]);
     expect(catalog.code).toBe(0);
     const descriptions = json<{ operations: { operation: string; input: Record<string, string> }[] }>(catalog.stdout);
-    expect(descriptions.operations.map(entry => entry.operation)).toEqual(expect.arrayContaining(["state", "profile/save", "activation", "skill/availability", "rules/preview", "rules/sync", "tool/run"]));
+    expect(descriptions.operations.map(entry => entry.operation)).toEqual(expect.arrayContaining(["state", "pack/save", "activation", "skill/availability", "rules/preview", "rules/sync", "tool/run"]));
     const sync = await command(store, ["manage", "describe", "rules/sync"]);
     expect(sync.code).toBe(0);
     expect(json(sync.stdout)).toMatchObject({ operation: "rules/sync", input: { ids: expect.any(String), preview: expect.any(String) } });
     const schema = await command(store, ["settings", "schema"]);
     expect(schema.code).toBe(0);
-    expect(json(schema.stdout)).toMatchObject({ type: "object", properties: { version: { const: 1 }, favoriteSources: { type: "array" }, tools: { type: "array" } } });
+    expect(json(schema.stdout)).toMatchObject({ type: "object", properties: { version: { const: 2 }, favoriteSources: { type: "array" }, tools: { type: "array" } } });
     expectFailure(await command(store, ["manage", "describe", "missing-operation"]));
     expect(await readFile(store.path, "utf8")).toBe(before);
   });
@@ -180,7 +180,7 @@ describe("AFK agent CLI", () => {
     await expect(access(destination)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
-  it("creates and reads a local profile and guards active definitions", async () => {
+  it("creates and reads a local pack and guards replacing an active configuration", async () => {
     const { home, store } = await fixture();
     const skill = join(home, ".agents/skills/.disabled/render");
     await mkdir(skill, { recursive: true });
@@ -191,13 +191,13 @@ describe("AFK agent CLI", () => {
     const discovery = await manage(store, "discover", { local: true });
     expect(json(discovery.stdout)).toMatchObject({ names: ["render"], descriptions: { render: "Render fixture" } });
     const definition = { name: "Video", source: "Local skill selection", skills: ["render"] };
-    expect((await manage(store, "profile/save", definition)).code).toBe(0);
+    expect((await manage(store, "pack/save", definition)).code).toBe(0);
     const profile = (await store.read()).profiles[0]!;
     expect(profile).toMatchObject({ ...definition, ready: true, enabled: [] });
-    expect(json<{ content: string }>((await manage(store, "profile/read", { id: profile.id })).stdout).content).toContain("Fixture instruction");
+    expect(json<{ content: string }>((await manage(store, "pack/read", { id: profile.id })).stdout).content).toContain("Fixture instruction");
     expect((await command(store, ["profiles", "use", profile.id])).stdout).toContain("Fixture instruction");
     expect((await command(store, ["profiles", "use", "video"])).stdout).toContain("Fixture instruction");
-    expect(json<{ content: string }>((await manage(store, "profile/read", { id: "VIDEO" })).stdout).content).toContain("Fixture instruction");
+    expect(json<{ content: string }>((await manage(store, "pack/read", { id: "VIDEO" })).stdout).content).toContain("Fixture instruction");
     expect((await command(store, ["skills", "get", "render"])).stdout).toContain("Fixture instruction");
     expect((await store.read()).profiles[0]?.enabled).toEqual([]);
 
@@ -209,12 +209,11 @@ describe("AFK agent CLI", () => {
     expect(await readlink(join(project, ".agents/skills/render"))).toBe(skill);
     const activated = await readFile(store.path, "utf8");
     expectFailure(await manage(store, "activation", { id: profile.id, scope: "Demo" }));
-    expectFailure(await manage(store, "profile/save", { ...definition, id: profile.id, name: "Changed" }));
-    expectFailure(await manage(store, "profile/remove", { id: profile.id }));
+    expectFailure(await manage(store, "pack/remove", { id: profile.id }));
     expectFailure(await manage(store, "import", { settings: emptySettings() }));
     expect(await readFile(store.path, "utf8")).toBe(activated);
     expect((await command(store, ["profiles", "disable", profile.id, "Demo"])).code).toBe(0);
-    expect((await manage(store, "profile/remove", { id: profile.id })).code).toBe(0);
+    expect((await manage(store, "pack/remove", { id: profile.id })).code).toBe(0);
     expect((await store.read()).profiles).toEqual([]);
     expect(await readFile(join(skill, "SKILL.md"), "utf8")).toContain("Fixture instruction");
   });
@@ -333,8 +332,8 @@ describe("AFK agent CLI", () => {
     const before = await readFile(store.path, "utf8");
     const malformed = join(home, "malformed.json");
     await writeFile(malformed, "{broken");
-    expectFailure(await command(store, ["manage", "profile/save", "--input", malformed]));
-    expectFailure(await manage(store, "profile/save", []));
+    expectFailure(await command(store, ["manage", "pack/save", "--input", malformed]));
+    expectFailure(await manage(store, "pack/save", []));
     expectFailure(await command(store, ["manage", "state", "--unknown"]));
     expectFailure(await command(store, ["manage", "missing-operation"]));
     expect(await readFile(store.path, "utf8")).toBe(before);

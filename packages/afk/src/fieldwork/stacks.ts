@@ -87,27 +87,3 @@ export async function fetchStack(origin: string): Promise<SkillStack> {
   catch { throw new Error("The URL did not return valid JSON. Use a direct HTTPS JSON manifest URL."); }
   return validateStack(value);
 }
-
-export function missingStackSources(stack: SkillStack, installed: ReadonlySet<string>): SkillStack["sources"] {
-  return stack.sources.flatMap(group => {
-    const skills = group.skills.filter(name => !installed.has(name));
-    return skills.length ? [{ ...group, skills }] : [];
-  });
-}
-
-export function stackInstallScript(stack: SkillStack, target: string, agent: string, projects: { name: string; path: string }[], installed?: ReadonlySet<string>): string {
-  const manifest = validateStack(stack);
-  const sources = installed ? missingStackSources(manifest, installed) : manifest.sources;
-  if (!sources.length) throw new Error("Every skill in this stack is already installed in " + target + ".");
-  const quote = (value: string): string => {
-    if (!value.trim() || [...value].some(character => { const code = character.codePointAt(0)!; return code < 32 || (code >= 127 && code <= 159) || (code >= 0xd800 && code <= 0xdfff); })) throw new Error("Use command values without control characters or invalid Unicode.");
-    return "'" + value.replaceAll("'", "'\"'\"'") + "'";
-  };
-  if (!["interactive", "codex", "claude-code", "cursor", "opencode"].includes(agent)) throw new Error("Choose a supported installation agent.");
-  const path = projects.find(project => project.name === target)?.path;
-  if (target !== "Global" && !path) throw new Error("Choose a configured project with a local folder.");
-  const directory = path === "~" ? '"$HOME"' : path?.startsWith("~/") ? '"$HOME"/' + quote(path.slice(2)) : path ? quote(path) : "";
-  const prefix = target === "Global" ? "" : "cd -- " + directory + " && ";
-  const commands = sources.map(group => "(" + prefix + "npx skills add " + quote(group.source) + group.skills.map(name => " --skill " + quote(name)).join("") + (target === "Global" ? " -g" : "") + (agent === "interactive" ? "" : " --agent " + quote(agent)) + ")");
-  return "#!/bin/sh\nset -e\n# Run manually. Each source is installed sequentially; prompts remain enabled.\n" + commands.join("\n") + "\n";
-}
