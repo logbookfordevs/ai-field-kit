@@ -1,10 +1,38 @@
-# Looking for AFK before 2.0?
+# Coming from an earlier AFK?
 
-AFK 2.0 is a different, smaller product. To keep the previous catalogs and setup behavior, install a release before 2.0 or fork its tagged source.
+Moving from stacks, profiles or saved skill lists? [Move them to your kit](/docs?chapter=legacy#migrate).
+
+AFK 2.0 is a different, smaller product than AFK 1.x. To keep the previous catalogs and setup behavior, install a release before 2.0 or fork its tagged source.
+
+<h2 id="migrate">Move from stacks and profiles</h2>
+
+The kit replaces stacks, profiles and the saved skills list. Settings move to version 2, and older AFK versions reject them.
+
+- **Update every machine** that shares the settings file first.
+- A file **without** stacks upgrades silently the next time AFK saves it.
+- A file **with** stacks can be read, but AFK refuses every save until you migrate. The app shows **Move to your kit**; the command is `afk migrate`.
+
+```bash Move to the kit
+afk migrate
+afk migrate --core <stack-id>
+afk migrate --core <stack-id> --follow <source> --skip-tool <name> --apply
+```
+
+Without `--apply`, the command prints what would change and writes nothing.
+
+- `--core <stack-id>` makes that stack your Core. Omit it for an empty Core. AFK never picks one for you.
+- Every other stack becomes a pack. Profiles are packs already, with the same IDs and on or off state.
+- `--follow <source>` follows a Core repository. `--skip-tool <name>` stops a tool from being linked to the skills AFK suggests for it.
+- Source bookmarks become Try later. Tools, projects, rule destinations and invocation preferences are unchanged. The saved skills list is retired.
+- Migration never moves, installs or deletes skill files.
+
+Before it writes, AFK keeps the old file permanently as `~/.afk/backups/pre-kit-*.json`. Restore it with `afk settings restore <name>`. Settings or ZIP files from version 1 import with an empty Core.
+
+`afk profiles` still works as an alias for `afk packs`. Agents using `profile/*` operations should use `pack/*`; the `stack/*` and saved-skills operations are gone. Run `afk manage describe` for the current list.
 
 <h2 id="what-changed">What changed in 2.0</h2>
 
-The CLI now opens a local web app for Profiles, Installed Skills, Sources & Stacks, Tools, Agent rules, and Settings. Catalog management and broad setup orchestration have been removed.
+The CLI now opens a local web app for Kit, Installed Skills, Agent rules, Tools, and Settings. Catalog management and broad setup orchestration have been removed.
 
 Legacy layered rules, hooks, MCP configuration and custom-agent provisioning are no longer managed by AFK. Agent rules now provides one shared Markdown document with explicit managed-region sync. Existing files are not automatically purged or migrated.
 

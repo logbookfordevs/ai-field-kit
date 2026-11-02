@@ -1,0 +1,165 @@
+# Keep one kit. Bring it to every machine.
+
+Your kit is the list of skills that travels with you. It lives in your settings file, so every machine that shares the file sees the same kit. AFK compares that list with each machine instead of replaying a saved install plan.
+
+The **Kit** page has four tabs:
+
+- **This machine** shows where your kit and this computer differ.
+- **Core** holds the skills you want always on.
+- **Packs** holds groups you turn on when needed. See [Packs](/docs?chapter=packs).
+- **Try later** keeps repository bookmarks.
+
+<div className="docs-callout"><strong>The kit is a list, not a copy</strong><p>Adding or dropping a skill changes only the list. Skill files are installed on each machine, through Skills CLI, when you install or sync.</p></div>
+
+<h2 id="machine">See what differs on this machine</h2>
+
+**This machine** groups what needs a decision:
+
+- **Not in your kit** lists installed Global skills that aren't in Core, a pack, a tool or machine-only. Decide once and AFK stops asking.
+- **Missing here** lists Core skills that aren't ready on this machine, and tools whose skills are missing.
+- **New from sources you follow** lists skills a followed repository has added. Choose **Check now** to look.
+
+When nothing differs, the tab says this machine matches your kit.
+
+<h2 id="decide">Decide about a skill that isn't in your kit</h2>
+
+For each skill under **Not in your kit**, choose:
+
+- **Core**, to keep it on every machine. **Add all to Core** takes every skill from that repository.
+- **Pack…**, to add it to an existing pack.
+- **This machine only**, to keep it here and stop being asked. This choice stays on this machine; it is never written to the portable file.
+- **Remove**, to review and delete it from this machine.
+
+A skill without a repository source can't go to Core, because another machine couldn't install it. Choose **Link to a tool…** if a saved tool installs it, or keep it on this machine only.
+
+<h2 id="core">Keep Core skills always on</h2>
+
+Core is the skills you want on every machine, always on. It is grouped by original repository, and each skill belongs to one Core repository. Core is Global only; use a [pack](/docs?chapter=packs) for a project.
+
+AFK ships no default Core. You choose what goes in it. Add skills from **This machine**, with **Install skills**, or from the terminal:
+
+```bash Add an installed skill to Core
+afk kit add review
+afk kit add review --pack 'Video tools'
+```
+
+Adding uses the repository the skill was installed from. Pass `--source <repository>` to name it, for example for a skill offered by a followed repository. **Drop** removes a skill from Core and keeps its files. Other machines then list it under **Not in your kit**. **Export JSON** publishes Core as a [manifest](/docs?chapter=packs#manifest).
+
+**From your tools** lists tools that bring their own skills. Your kit tracks the tool instead of each skill. See [Tools](/docs?chapter=tools#provides).
+
+<h2 id="follow">Follow a repository</h2>
+
+Choose **Follow new skills** on a Core repository, or run `afk kit follow <repository>`. **Check now**, or `afk kit check`, lists skills the repository has added since. AFK offers them and never installs them automatically. Choose **Add to Core** for the ones you want.
+
+<h2 id="install">Install skills from a repository</h2>
+
+**Install skills** on the Kit page, or `afk add <repository>`, is one place to install from. Skills CLI does the work.
+
+1. Enter a repository URL or `owner/repository` reference, then choose **Find skills**.
+2. Select the skills you want. Use **Read SKILL.md** to read one before anything is installed.
+3. Choose where they go, and an installation agent if needed.
+
+| Destination | What happens |
+| --- | --- |
+| Core | Installs now and joins Core. Other machines see it as missing until they sync. |
+| A pack | Downloads into an existing or new pack. The pack stays on or off as it was. |
+| This machine | Installs here and stays out of the kit. Choose a project to install there instead. |
+| Try later | Saves a bookmark and installs nothing. With no skills picked, it covers the whole repository. |
+
+AFK remembers your last destination and agent. A failed installation adds nothing to the kit.
+
+Skills already installed from that repository are adopted without reinstalling. A skill installed from another repository is left unticked, with a warning, because installing replaces it. Ticking it approves the replacement. A skill a tool installs is left out, and AFK names the tool.
+
+```bash Install from the terminal
+afk add owner/repo
+afk add owner/repo --skill review --core --yes
+afk add owner/repo --skill review --pack 'Video tools' --yes
+afk add owner/repo --skill review --here --project 'Demo Studio' --yes
+afk add owner/repo --later --yes
+```
+
+Without a skill and destination, a terminal asks for them. Unattended runs need `--skill` or `--all`, a destination and `--yes`. Pass `--replace` to approve replacing a skill installed from another repository. For a published manifest URL, use [`afk install`](/docs?chapter=kit#cli-install).
+
+<h2 id="branches">Use a specific branch</h2>
+
+For a branch name containing a slash, enter an explicit repository reference:
+
+```text Branch source reference
+https://github.com/owner/repository#feat/my-branch
+```
+
+Skills CLI treats only the first segment after `/tree/` as the branch, so a URL like `https://github.com/owner/repository/tree/feat/my-branch` is read as branch `feat` and folder `my-branch`. Use `#` followed by the exact branch name. The fragment is a Skills CLI source reference; opening it in a browser does not select that branch on GitHub.
+
+<h2 id="catch-up">Catch up one skill</h2>
+
+Each row under **Missing here** has its own action:
+
+- **Install** installs a missing Core skill through Skills CLI.
+- **Turn on** makes an installed Core skill available again.
+- **Run install command** runs a tool's saved command. AFK shows the command first.
+
+**Install all…** opens the sync review for everything at once.
+
+<h2 id="sync">Sync a machine</h2>
+
+**Sync this machine** on the Kit page, or `afk sync` in a terminal, makes this machine match your kit. It shows the plan, then asks before changing anything:
+
+- It installs missing Core skills through Skills CLI, grouped by repository.
+- It turns Core skills back on that are installed but off.
+- It lists tools whose skills are missing. A tool's saved command runs only when you approve it.
+
+```bash Sync from the terminal
+afk sync
+afk sync --agent codex --yes
+afk sync --run-tools
+```
+
+Sync never removes anything. Skills that aren't in your kit are left alone. `--yes` skips the confirmation for skills, not for tool commands; approve those interactively, with `--run-tools`, or by ticking them in the app's review. The agent defaults to `universal`; the other choices are `codex`, `claude-code`, `cursor` and `opencode`.
+
+On a new machine, open the same settings file, then sync. Packs start off; turn on the ones you need.
+
+<h2 id="save">Save a repository to try later</h2>
+
+**Try later** keeps repository bookmarks. Saving one installs nothing.
+
+Choose **Add to try later** to open **Install skills** with Try later selected. Leave the skills unpicked to cover the whole repository, or pick specific skills. An explicit selection does not grow when upstream adds skills.
+
+Each bookmark offers **Install**, which opens **Install skills** with that repository and selection. Its menu also offers **Add to Core…**, **Add to pack…**, **Create pack**, **Edit** and **Remove bookmark**. **Create pack** opens a pack draft and keeps the bookmark. Removing a bookmark leaves installed skills alone.
+
+Search covers names, links, descriptions and selected skills. **Copy links** copies the links of the bookmarks shown, one per line.
+
+<h2 id="copy">Copy installation commands</h2>
+
+- **Copy install command** copies one bookmark's Skills CLI command, respecting its selection.
+- **Copy all sources script** copies every bookmark, in sequence.
+
+Choose the installation destination and optional agent above the list before copying. Those choices affect the generated commands, not where bookmarks are saved. Copying runs nothing; run the text in your terminal when you are ready.
+
+<h2 id="cli-install">Install a published manifest</h2>
+
+`afk install <url>` reviews a published manifest, saves it as a pack and installs its skills through Skills CLI, without opening the web app:
+
+```bash Install a shared pack
+afk install https://example.com/stack.json
+afk install example.com/stack.json --agent codex -g --yes
+```
+
+See the [CLI reference](/docs?chapter=reference#install-stack) for agents, URL limits and partial failures. To review a manifest without installing anything, use **Import pack** in [Packs](/docs?chapter=packs#import).
+
+<h2 id="commands">Kit commands</h2>
+
+```bash Kit commands
+afk kit
+afk kit add <skill>... [--pack <name>] [--source <repository>]
+afk kit drop <skill> [--pack <name>]
+afk kit keep <skill>
+afk kit follow <repository>
+afk kit unfollow <repository>
+afk kit check
+```
+
+`afk kit` compares the kit with this machine. These commands change the list and install nothing; run `afk sync` for that. Square brackets mark optional arguments.
+
+<h2 id="migrate">Coming from stacks</h2>
+
+Settings that still hold stacks must be moved to the kit before AFK can save them. Run `afk migrate` for a dry run, or use **Move to your kit** in the app. See [Move from stacks and profiles](/docs?chapter=legacy#migrate).

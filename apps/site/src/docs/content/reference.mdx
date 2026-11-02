@@ -1,6 +1,6 @@
 # A small command surface.
 
-The web app is the main interface. These commands let a terminal or agent manage local settings and skills, run protected updates, and control the background app.
+The web app is the main interface. These commands let a terminal or agent manage your kit and local skills, run protected updates, and control the background app.
 
 <h2 id="launch">Open and close</h2>
 
@@ -65,17 +65,59 @@ are separate and are not included. This is a snapshot, not a peak or historical 
 A server started with an older AFK version still reports its URL and PID, but memory
 is shown as unavailable. Stop and restart it after updating to enable the metric.
 
-<h2 id="install-stack">Install a stack from a URL</h2>
+<h2 id="kit">Compare and change your kit</h2>
 
-AFK 2.0.6 and newer can install a curated stack directly, without a profile or the web app.
+```bash Kit commands
+afk kit
+afk kit add <skill>... [--pack <name>] [--source <repository>]
+afk kit drop <skill> [--pack <name>]
+afk kit keep <skill>
+afk kit follow <repository>
+afk kit unfollow <repository>
+afk kit check
+```
 
-```bash Review and install a stack
+`afk kit` compares your kit with this machine. Without `--pack`, `add` adds to Core
+and `drop` removes the skill from Core and every pack, keeping its files. `add` uses the repository the skill was installed from unless you pass
+`--source`. `keep` marks a skill as this machine only. `check` lists new skills in
+followed repositories. None of these install anything. See [Your kit](/docs?chapter=kit).
+
+<h2 id="add">Install from a repository</h2>
+
+```bash Install and choose a destination
+afk add <repository> [--skill <name>]... [--all]
+        [--core | --pack <name> | --here | --later]
+        [--project <name>] [--agent <agent>] [--replace] [--yes]
+```
+
+Skills CLI does the installing. `--core` installs and adds to Core. `--pack` downloads
+into that pack, created if new; the pack stays on or off as it was. `--here` installs on
+this machine only, or into `--project`. `--later` saves a Try later bookmark and installs
+nothing. `--replace` approves replacing a skill installed from another repository.
+`--yes` needs the skills and destination spelled out. Without them, a terminal asks.
+
+<h2 id="sync">Sync this machine</h2>
+
+```bash Make this machine match your kit
+afk sync [--agent <agent>] [--yes] [--run-tools]
+```
+
+Sync shows the plan, installs missing Core skills and turns Core skills back on. It
+never removes anything. `--yes` skips the confirmation for skills. Tool commands run
+only when approved in the prompt or with `--run-tools`. The agent defaults to
+`universal`; the others are `codex`, `claude-code`, `cursor` and `opencode`.
+
+<h2 id="install-stack">Install a pack from a manifest URL</h2>
+
+AFK 2.0.6 and newer can install a published manifest directly, without the web app.
+
+```bash Review and install a manifest
 afk install https://example.com/stack.json
 ```
 
 Review the repositories and selected skills, choose an agent and Global/project
-folder, then confirm. The confirmed manifest and URL are saved in Sources & Stacks
-before Skills CLI runs. Reload an open app using the same settings file to see it.
+folder, then confirm. The confirmed manifest and URL are saved as a pack before
+Skills CLI runs. Reload an open app using the same settings file to see it.
 
 ```bash Install with an explicit target
 afk install example.com/stack.json --agent codex -g --yes
@@ -87,44 +129,57 @@ npx @logbookfordevs/afk install https://example.com/stack.json --agent codex -g 
 `claude-code`, `cursor`, and `opencode`. Project scope accepts an existing folder
 without registering a project. Bare domain/path arguments use HTTPS; pass a direct
 JSON manifest, not an HTML guide. HTTP, credentials, fragments and redirects are
-rejected. Requests have a 15-second timeout and 1 MB response limit.
+rejected. Requests have a 15-second timeout and 1 MB response limit. A manifest
+that selects one skill from two sources is rejected.
 
-A matching saved stack ID is replaced after review without creating a duplicate.
+A pack with the same ID is replaced after review without creating a duplicate.
 Declining confirmation saves nothing. Failed installations exit nonzero and stop
-later sources, retaining the saved stack and completed or partial skill files.
-The saved stack does not prove installation succeeded. Installation may replace
+later sources, keeping the saved pack and completed or partial skill files.
+The saved pack does not prove installation succeeded. Installation may replace
 existing skills; use protected skill updates to preserve availability.
 
 <h2 id="reading">Read without activating</h2>
 
 ```bash Reading commands
-afk profiles use 'Video tools'
+afk packs use 'Video tools'
 afk skills get <skill-name> [scope]
 afk skills update -g
 afk skills update <skill-name> -g
 afk skills update -p 'Demo Studio'
 ```
 
-Use a profile name or ID. Names are case-insensitive; duplicate names require an ID. Profiles print prepared local member guidance and resource directories. Skill get prints SKILL.md from the selected scope.
+Use a pack name or ID. Names are case-insensitive; duplicate names require an ID. `afk packs use` prints each stored member's instructions and resource directory without turning the pack on. `afk profiles` still works as an alias. Skill get prints SKILL.md from the selected scope. Skills a tool provides update through that tool.
 
 Square brackets describe optional arguments; do not type the brackets literally.
 
-<h2 id="activation">Enable or disable one target</h2>
+<h2 id="activation">Turn a pack on or off</h2>
 
 ```bash Example project target
-afk profiles enable 'Video tools' 'Demo Studio'
-afk profiles disable 'Video tools' 'Demo Studio'
+afk packs enable 'Video tools' 'Demo Studio'
+afk packs disable 'Video tools' 'Demo Studio'
 ```
 
-Omit the target for Global. A project target must match its configured name. Disable affects only AFK-owned exposure in that target and preserves other owners.
+Omit the target for Global. A project target must match its configured name. Turning off affects only AFK-owned exposure in that target and preserves other owners.
 
-<h2 id="configuration">Export settings</h2>
+<h2 id="configuration">Export and restore settings</h2>
 
-```bash Export to a new file
+```bash Settings files
 afk settings export /path/to/export.json
+afk settings backups
+afk settings restore <name>
 ```
 
-Import and file-location selection live in Settings. Export does not install skills or run saved commands.
+Import and file-location selection live in Settings. Export does not install skills or run saved commands. AFK keeps the previous settings file before each save; `backups` lists those copies and `restore` brings one back after keeping the current file.
+
+<h2 id="migrate">Move from stacks</h2>
+
+```bash Move old settings to the kit
+afk migrate
+afk migrate --core <stack-id>
+afk migrate --core <stack-id> --follow <source> --skip-tool <name> --apply
+```
+
+Without `--apply`, migration is a dry run and writes nothing. See [Move from stacks and profiles](/docs?chapter=legacy#migrate).
 
 <h2 id="manage">Manage AFK from an agent</h2>
 
@@ -140,13 +195,14 @@ afk manage describe
 afk doctor --json
 ```
 
-Editable JSON stores definitions. Use managed operations for activation,
+Editable JSON stores definitions. Use managed operations for the kit, sync, activation,
 installation, deletion, invocation changes, rule sync and relocating the AFK
 folder. Describe an operation first to get its current input contract:
 
 ```bash Inspect an operation before using it
 afk manage describe workspace
-afk manage describe stack/install
+afk manage describe kit/state
+afk manage describe pack/import-preview
 afk manage describe rules/preview
 ```
 

@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { generateDocsExports, toMarkdown } from './docs-exports.ts';
-import { chapters, retiredChapters } from '../src/docs/chapters.ts';
+import { chapterAliases, chapters, retiredChapters } from '../src/docs/chapters.ts';
 import { assistantUrl, isPublicDocsHost, publicOrigin } from '../src/docs/doc-links.ts';
 
 test('exports every chapter, an index, and the full manual without UI controls', async () => {
   const assets = await generateDocsExports();
-  assert.equal(assets.size, chapters.length + retiredChapters.length + 2);
+  assert.equal(assets.size, chapters.length + Object.keys(chapterAliases).length + retiredChapters.length + 2);
   for (const { id } of chapters) {
     const path = `/docs/${id}.md`;
     const text = assets.get(path);
@@ -27,6 +27,14 @@ test('retired Markdown URLs remain available and point readers to a deliberate v
     assert.ok(text.includes(`${publicOrigin}/docs/start.md`));
     assert.ok(text.includes(`${publicOrigin}/docs/legacy.md`));
   }
+});
+
+test('renamed chapter Markdown URLs serve the chapter that replaced them', async () => {
+  const assets = await generateDocsExports();
+  for (const [alias, target] of Object.entries(chapterAliases)) {
+    assert.equal(assets.get(`/docs/${alias}.md`), assets.get(`/docs/${target}.md`));
+  }
+  assert.ok(toMarkdown('<a href="/docs?chapter=profiles#read">Read</a>').includes(`${publicOrigin}/docs/packs.md#read`));
 });
 
 test('Markdown keeps code intact, exports collapsed content, and resolves doc links', () => {

@@ -1,0 +1,132 @@
+# Keep packs ready. Turn them on by target.
+
+A pack is a named group of skills, possibly from several repositories. Turn it on for Global or a project, or read its instructions once without turning it on. Packs live in the **Packs** tab of your [kit](/docs?chapter=kit).
+
+Packs replace the earlier profiles and stacks. Demo Studio and Global can use the same pack without sharing on or off state.
+
+<h2 id="create">Create a pack</h2>
+
+Open **Kit → Packs → Create pack**. Name the pack, then choose skills from a repository or from skills already on this machine. Choose **Find skills**, select the ones you need, and choose **Save pack**.
+
+Other ways in:
+
+- **Install skills**, with a pack as the destination. See [Install skills](/docs?chapter=kit#install).
+- **Add to pack…** or **Create pack** on a Try later bookmark.
+- **Pack…** on a skill under **Not in your kit**.
+- `afk kit add <skill> --pack <name>` for a skill that is already installed.
+
+Editing a repository pack lets you add more repositories. Each skill belongs to one source in a pack; a pack that selects one skill from two sources is rejected.
+
+Repository skills download once through Skills CLI, in an isolated workspace, into shared disabled storage:
+
+```text Shared disabled storage
+~/.agents/skills/.disabled/<skill>/
+```
+
+<div className="docs-callout"><strong>Saving does not turn a pack on</strong><p>Already available skills stay available. A pack whose skills aren't stored yet shows **Skills not downloaded yet** and offers **Download skills**.</p></div>
+
+Skills are identified by name. Two repositories with the same skill name do not get separate storage. Check existing members before reusing a name from another source.
+
+<h2 id="enable">Turn a pack on for a project</h2>
+
+Add the project's folder in **Settings** first. Then choose its name in the pack's **Turn on for** selector and choose **Turn on in project**. Choose **Global** for global availability.
+
+Changing the selector only changes the target shown. It does not turn anything on. Global and project state are independent, and more than one pack can be on in the same target. The row shows where else the pack is on.
+
+```bash Turn a pack on or off
+afk packs enable 'Video tools' 'Demo Studio'
+afk packs disable 'Video tools' 'Demo Studio'
+```
+
+Omit the target for Global.
+
+<h2 id="physical">Understand the physical change</h2>
+
+Turning a pack on in a project exposes shared copies through AFK-owned links:
+
+```text Project discovery links — schematic paths
+<project>/.agents/skills/<skill>
+<project>/.claude/skills/<skill>
+```
+
+No second download is needed. Global uses:
+
+```text Global discovery links
+~/.agents/skills/<skill>
+~/.claude/skills/<skill>
+```
+
+Existing active skills can stay where they are. Supported project invocation overrides use an isolated copy instead; see [Settings & storage](/docs?chapter=settings#storage).
+
+<h2 id="disable">Turn off without breaking another pack</h2>
+
+Turning a pack off removes only AFK-owned exposure in the chosen target. Stored skill files stay ready.
+
+| Other owner | What happens |
+| --- | --- |
+| Another pack that is on needs the skill | Its exposure is kept. |
+| The skill is on independently | Independent availability is preserved. |
+| A user file already existed at the path | It is not removed because the pack names it. |
+
+The project inventory excludes global-only entries. An agent may still discover Global skills while working in a project.
+
+<h2 id="read">Read with your agent</h2>
+
+**Read once** offers a terminal command using the pack's name:
+
+```bash Read a named pack
+afk packs use 'Video tools'
+```
+
+Or ask an agent with the **afk-cli** skill to use `/afk-cli use pack Video tools`. Names match without case sensitivity; IDs also work. If names are duplicated, AFK gives the ID instead.
+
+It prints the stored instructions and resource folders without turning anything on. There is no remote fetch while reading, no slash-command registration and no injection into another chat. [Follow the complete flow](/docs?chapter=agent).
+
+<h2 id="edit">Edit or remove</h2>
+
+Select a pack's name to inspect it, then choose **Edit pack**. A pack that is on can be edited. It stays on, added skills are exposed, and dropped skills lose only AFK-owned links. If an edit fails, AFK restores the pack.
+
+**Remove pack** is available once the pack is off everywhere. Removing deletes its definition, not stored skill files.
+
+<h2 id="missing">Restore missing members</h2>
+
+You can delete stored members while their pack is off. The pack keeps its selection. Turning on a repository pack downloads missing members from its saved source first. If that fails, the pack stays off. A pack built from skills on this machine has no download source: restore its files or edit its members before turning it on. Packs that are on protect their members from deletion.
+
+<h2 id="portable">Packs travel as definitions</h2>
+
+The settings file carries pack names, sources and selected members. On or off state, downloaded copies and link ownership stay on each machine. On a new machine, packs start off and not downloaded; opening the settings file downloads nothing. Choose **Download skills** or turn the pack on where you need it.
+
+<h2 id="group">Choose Core or a pack</h2>
+
+Use **Core** for skills you want on every machine, always on, Global only. Use a **pack** for skills you want ready but on only for some work, Global or a project, or read once. [Compare them in the kit](/docs?chapter=kit#core).
+
+<h2 id="import">Import a shared pack</h2>
+
+Choose **Import pack**, then paste manifest JSON or enter a direct HTTPS URL to its JSON file. Choose **Review pack**, check its sources and selected skills, then choose **Save pack**. Only the manifest is fetched. No skills are installed or turned on.
+
+For GitHub, use the raw JSON file URL rather than the repository's HTML page. Redirects are not accepted. Requests have a 15-second timeout and a 1 MB limit. An imported manifest becomes a pack with the ID `stack-<manifest id>`.
+
+To review and install in one step from a terminal, use [`afk install`](/docs?chapter=reference#install-stack).
+
+<h2 id="refresh">Review manifest updates</h2>
+
+A pack imported from a URL keeps it as its origin and offers **Refresh from its link**. AFK fetches the manifest again and shows the change before replacing your saved edits. Nothing changes until you review and save. A pack that is on stays on and picks up the changes.
+
+Refreshing does not update installed skills. Use [Update skills](/docs?chapter=skills#update) for that.
+
+<h2 id="manifest">Share a pack as a manifest</h2>
+
+**Export JSON** on a pack, or on Core, downloads a versioned manifest you can store in a repository or share directly. It is available when every source is a repository. Agents can use the `pack/manifest` operation with a pack ID or `core`.
+
+The format is still named `skill-stack.v1`. Version 1 includes:
+
+- `version`: `1`.
+- `id` and `name`: a stable identifier and display name.
+- `description`: optional context.
+- `sources`: ordered groups, each with a `name`, original `source` reference and nonempty `skills` list of explicit skill names.
+
+Manifests contain selections, not shell commands. Wildcards and unknown fields are rejected.
+
+For publisher details, see the [manifest contract](https://github.com/logbookfordevs/ai-field-kit/blob/main/docs/kit.md#share-a-pack-with-a-manifest),
+[JSON Schema](https://github.com/logbookfordevs/ai-field-kit/blob/main/docs/schemas/skill-stack.v1.schema.json)
+and [example manifest](https://github.com/logbookfordevs/ai-field-kit/blob/main/docs/examples/skill-stack.v1.json).

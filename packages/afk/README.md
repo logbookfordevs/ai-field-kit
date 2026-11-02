@@ -259,10 +259,10 @@ Use `-p <folder>` for a project without registering it in AFK. No web
 app is required. See [direct installation](../../docs/kit.md#install-directly-from-a-manifest)
 for limits, partial failures, and npm/local-checkout invocation. This command requires AFK 2.0.6 or newer.
 
-All-skills source bookmarks offer **Install all skills…** on the card and
-**Install all instead…** in the picker. Both skip AFK skill discovery while
-keeping agent and folder confirmation. Saved selections and packs retain their
-explicit members.
+**Install** on a Try later bookmark opens **Install skills** for that repository,
+with the bookmark's saved selection ticked. Use **Select all** there to install
+every skill the repository has. Saved selections and packs retain their explicit
+members.
 
 For a GitHub branch containing `/`, use a source reference such as
 `https://github.com/owner/repository#feat/my-branch`. Skills CLI interprets

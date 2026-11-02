@@ -33,6 +33,7 @@ This changelog tracks meaningful updates by version and date.
 
 - `afk install <url>` saves the manifest as a pack (`stack-<id>`) and then installs it. A manifest that selects one skill from two sources is rejected.
 - The Installed Skills filter is now Pack.
+- The website and field manual describe the kit: **Your kit** and **Packs** chapters replace Profiles and Sources & Stacks, the CLI reference covers `afk kit`, `afk add`, `afk sync` and `afk migrate`, and Earlier versions explains moving from stacks and profiles. Old `?chapter=profiles` and `?chapter=sources` links open the new chapters.
 
 ### Removed
 
