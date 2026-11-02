@@ -11,6 +11,30 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+### Breaking
+
+- **Settings move to version 2, and older AFK versions reject them.** Update AFK on every machine that shares a settings file before opening it there. A file that still has stacks can be read but not changed until you migrate it with `afk migrate` (a dry run until you add `--apply`) or the app's **Move to your kit** screen. Files without stacks upgrade silently on their next save. Migration keeps a permanent copy of the old file as `~/.afk/backups/pre-kit-*.json`, outside the 20-file rotation; restore it with `afk settings restore`. It never moves skill files.
+- **Stacks, profiles and the saved skills list are replaced by the kit.** The app now has five sections: Kit, Installed Skills, Agent rules, Tools and Settings. You choose which stack becomes Core when you migrate; the others become packs, and AFK ships no default Core. Old settings and ZIP imports open with an empty Core.
+- Operations changed: `profile/save|remove|read` are `pack/save|remove|read`, and every `stack/*` operation and the saved-skills operations are gone, along with `onlyMissing`. Run `afk manage describe` for the new list.
+
+### Added
+
+- **Kit.** One list of the skills that travel with you, with tabs for This machine, Core, Packs and Try later. Core holds always-on skills grouped by repository. This machine lists installed skills that aren't in your kit yet; send each to Core, a pack or **This machine only**, or remove it.
+- **`afk sync`** makes a machine match the kit. It shows the plan, installs missing Core skills, turns Core skills back on, and never removes anything. A tool's saved install command runs only when you approve it (`--run-tools`, or yes in the prompt or app).
+- **`afk kit`** compares the kit with this machine. `afk kit add`, `drop`, `keep`, `follow`, `unfollow` and `check` change it. Following a Core repository offers its new skills; AFK never installs them for you.
+- **Packs** are what profiles and stacks became: named groups across one or more repositories, turned on per Global or project, or read once. A pack that is on can now be edited without turning it off; added skills are exposed and dropped ones lose only AFK-owned links. `afk packs` works, and `afk profiles` remains as an alias.
+- Packs and Core can be exported as a `skill-stack.v1` manifest, and manifests are imported as packs. The manifest format is unchanged.
+- Tools can list the skills they provide. The kit tracks the tool, Installed Skills labels those skills, and skill updates skip them; update them with the tool's command.
+
+### Changed
+
+- `afk install <url>` saves the manifest as a pack (`stack-<id>`) and then installs it. A manifest that selects one skill from two sources is rejected.
+- The Installed Skills filter is now Pack.
+
+### Removed
+
+- Saved skills lists, stack install scripts, and the Sources & Stacks page. Source bookmarks remain as Try later.
+
 ## v2.0.7 - 2026-10-28
 
 ### Added

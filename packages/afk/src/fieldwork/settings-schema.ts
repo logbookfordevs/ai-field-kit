@@ -8,22 +8,13 @@ const selectedSkills = { ...skillNames, minItems: 1, uniqueItems: true };
 export const settingsSchema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   title: "AFK settings",
-  description: "Editor guidance for AFK settings version 1. AFK's validateSettings remains authoritative for cross-field rules, including unique identifiers and valid activation scopes. A valid document does not verify integration with an agent.",
+  description: "Editor guidance for AFK settings version 2. AFK's validateSettings remains authoritative for cross-field rules, including unique identifiers and valid activation scopes. A valid document does not verify integration with an agent.",
   $defs: stackSchema.$defs,
   type: "object",
   required: ["version", "profiles", "projects", "tools", "favoriteSources"],
   properties: {
     configurationId: { ...skillName, readOnly: true, description: "Stable configuration identity; machine-local state is associated with it." },
-    savedSkills: {
-      type: "array", readOnly: true, description: "Manually reviewed installed-skill snapshots; use snapshot operations to replace them.",
-      items: {
-        type: "object", required: ["scope", "savedAt", "skills"], properties: {
-          scope: nonempty, savedAt: { type: "string", format: "date-time" },
-          skills: { type: "array", items: { type: "object", required: ["name", "available", "invocation"], properties: { name: skillName, source: nonempty, available: { type: "boolean" }, invocation: { enum: ["", "Manual only", "Automatic allowed"] } } } },
-        },
-      },
-    },
-    version: { const: 1, readOnly: true, description: "AFK-managed format version." },
+    version: { const: 2, readOnly: true, description: "AFK-managed format version." },
     profiles: {
       type: "array", readOnly: true,
       description: "AFK-managed definitions, preparation and activation state. Use AFK profile operations to preserve physical skills and ownership receipts.",
@@ -60,6 +51,7 @@ export const settingsSchema = {
           name: nonempty,
           install: { type: "string", pattern: "^(?![\\s\\S]*\\u0000)(?=[\\s\\S]*\\S)[\\s\\S]+$" },
           update: { type: "string", pattern: "^[^\\u0000]*$", description: "An empty command reuses install." },
+          provides: { ...selectedSkills, description: "Skills this tool installs and updates. The kit tracks the tool instead of each skill." },
         },
       },
     },
@@ -74,11 +66,20 @@ export const settingsSchema = {
         },
       },
     },
-    stacks: {
-      type: "array", description: "User-editable declarative stacks. Saving never installs or activates skills. IDs must be unique.",
-      items: {
-        type: "object", additionalProperties: false, required: ["manifest"],
-        properties: { manifest: stackSchema, origin: { type: "string", format: "uri", pattern: "^https://" } },
+    kit: {
+      type: "object", required: ["core"], description: "The skills that travel with you. Saving never installs anything; `afk sync` reconciles a machine with this list.",
+      properties: {
+        core: {
+          type: "array", description: "Always-on skills, grouped by original repository.",
+          items: {
+            type: "object", required: ["source", "skills"], additionalProperties: false,
+            properties: {
+              source: { ...nonempty, allOf: [{ pattern: "^[^-]" }] }, name: nonempty,
+              skills: { type: "array", items: skillName, uniqueItems: true },
+              follow: { type: "boolean", description: "Offer skills this repository adds upstream. They are never installed automatically." },
+            },
+          },
+        },
       },
     },
     preferences: {

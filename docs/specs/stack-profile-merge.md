@@ -1,13 +1,30 @@
 # Idea: merge Profiles into Stacks
 
-Status: idea, not scheduled. Profiles and Stacks stay separate for now.
+Status: done. Superseded by [the kit guide](../kit.md) and
+[ADR 0011](../adr/0011-kit-replaces-stacks-and-profiles.md). This file is kept as the
+original proposal.
 
-Done since: profiles accept several sources (`groups`), and a stack can be turned
-into a linked profile (`stack-<id>`) and updated from it. The collision rule below
-is settled: a profile rejects a skill selected from two sources. Stack cards act as
-the linked profile (state, Turn on/off per scope, out-of-date marker), and saving a
-stack updates a linked profile that is off everywhere. Still open: one stored object,
-Install preparing instead of installing, and edits syncing links while on.
+## What shipped
+
+Profiles and stacks merged into **packs**, and a new **kit** (Core, packs, Try later)
+sits above them. It differs from this proposal in a few ways:
+
+- The noun is **Pack**, not Stack. The manifest keeps the `skill-stack.v1` name and is the
+  publish format for packs. `afk profiles` is an alias of `afk packs`.
+- Packs stay in the settings `profiles` array. IDs and member data are unchanged so
+  machine-local activation, keyed by a hash of the definition, survives. New optional
+  `description`, `origin` and `sourceNames` fields are not hashed.
+- There is no local-group rewrite. Local skills stay in a pack as a "Local skill
+  selection" source, and such a pack can't be exported as a manifest.
+- A pack that is on can be edited: added skills are exposed, dropped skills lose only
+  AFK-owned links, and a failure restores it.
+- Stack storage, stack install and saved skills lists are gone. `afk install <url>` saves
+  a manifest as a pack with ID `stack-<manifest id>`, then installs it. A manifest that
+  selects one skill from two sources is rejected.
+- Pages: Kit replaces Profiles and Sources & Stacks, with tabs for This machine, Core,
+  Packs and Try later.
+
+The rest of this file is the proposal as written.
 
 ## Why
 

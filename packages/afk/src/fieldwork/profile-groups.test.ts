@@ -34,12 +34,7 @@ beforeEach(async () => {
     if (!directory) throw new Error(`Unexpected source ${source}`);
     return directory;
   });
-  const settings = emptySettings();
-  settings.stacks = [{ manifest: { version: 1, id: "creative", name: "Creative", sources: [
-    { name: "Art", source: "owner/art", skills: ["draw", "paint"] },
-    { name: "QA", source: "owner/qa", skills: ["review"] },
-  ] } }];
-  await store.save(settings);
+  await store.save(emptySettings());
   operations = new FieldworkOperations(store);
 });
 
@@ -49,9 +44,11 @@ afterEach(async () => {
   await Promise.all(folders.splice(0).map(path => rm(path, { recursive: true, force: true })));
 });
 
-describe("multi-source profiles", () => {
-  it("turns a stack into a profile without downloading anything", async () => {
-    expect(await operations.run("profile/save", { stack: "creative" })).toEqual({ ok: true, id: "stack-creative" });
+const creative = { name: "Creative", groups: [{ source: "owner/art", skills: ["draw", "paint"] }, { source: "owner/qa", skills: ["review"] }] };
+
+describe("multi-source packs", () => {
+  it("saves a pack without downloading anything", async () => {
+    await operations.run("pack/save", { ...creative, id: "stack-creative" });
     const profile = (await store.read()).profiles[0]!;
     expect(profile).toMatchObject({
       id: "stack-creative", name: "Creative", source: "owner/art", skills: ["draw", "paint", "review"],
@@ -63,7 +60,7 @@ describe("multi-source profiles", () => {
   });
 
   it("prepares each skill from its own source when asked to prepare", async () => {
-    await operations.run("profile/save", { stack: "creative", prepare: true });
+    await operations.run("pack/save", { ...creative, id: "stack-creative", prepare: true });
     expect((await store.read()).profiles[0]?.ready).toBe(true);
     const stored = join(home, ".agents/skills/.disabled");
     expect(await readFile(join(stored, "draw/SKILL.md"), "utf8")).toContain("draw from art");
@@ -71,7 +68,7 @@ describe("multi-source profiles", () => {
   });
 
   it("downloads missing members from their own source when the profile is first enabled", async () => {
-    await operations.run("profile/save", { stack: "creative" });
+    await operations.run("pack/save", { ...creative, id: "stack-creative" });
     await operations.run("activation", { id: "stack-creative", scope: "Global", enabled: true });
     const stored = join(home, ".agents/skills/.disabled");
     expect(await readFile(join(stored, "draw/SKILL.md"), "utf8")).toContain("draw from art");
@@ -80,7 +77,7 @@ describe("multi-source profiles", () => {
   });
 
   it("activates every member across sources and keeps activation after reloading", async () => {
-    await operations.run("profile/save", { stack: "creative" });
+    await operations.run("pack/save", { ...creative, id: "stack-creative" });
     await operations.run("activation", { id: "stack-creative", scope: "Global", enabled: true });
     for (const skill of ["draw", "paint", "review"]) expect(await readlink(join(home, ".agents/skills", skill))).toBe(join(home, ".agents/skills/.disabled", skill));
     expect((await store.read()).profiles[0]?.enabled).toEqual(["Global"]);
@@ -88,32 +85,25 @@ describe("multi-source profiles", () => {
     expect((await store.read()).profiles[0]?.enabled).toEqual([]);
   });
 
-  it("updates the same profile from the stack later, but only while it is off everywhere", async () => {
-    await operations.run("profile/save", { stack: "creative" });
+  it("edits a pack that is on without turning it off", async () => {
+    await operations.run("pack/save", { ...creative, id: "stack-creative" });
     await operations.run("activation", { id: "stack-creative", scope: "Global", enabled: true });
-    await expect(operations.run("profile/save", { stack: "creative" })).rejects.toThrow("Disable every scope");
-    await operations.run("activation", { id: "stack-creative", scope: "Global", enabled: false });
-    const settings = await store.read();
-    settings.stacks![0]!.manifest.sources = [{ name: "Art", source: "owner/art", skills: ["paint"] }];
-    await store.save(settings);
-    await operations.run("profile/save", { stack: "creative", name: "Creative work" });
+    await operations.run("pack/save", { id: "stack-creative", name: "Creative work", source: "owner/art", skills: ["paint"] });
     const profiles = (await store.read()).profiles;
     expect(profiles).toHaveLength(1);
-    expect(profiles[0]).toMatchObject({ id: "stack-creative", name: "Creative work", source: "owner/art", skills: ["paint"] });
+    expect(profiles[0]).toMatchObject({ id: "stack-creative", name: "Creative work", source: "owner/art", skills: ["paint"], enabled: ["Global"] });
     expect(profiles[0]).not.toHaveProperty("groups");
+    expect(await readlink(join(home, ".agents/skills/paint"))).toBe(join(home, ".agents/skills/.disabled/paint"));
+    await expect(readlink(join(home, ".agents/skills/draw"))).rejects.toThrow();
   });
 
   it("rejects a skill selected from two sources without preparing anything", async () => {
-    await expect(operations.run("profile/save", { name: "Clash", groups: [{ source: "owner/art", skills: ["draw"] }, { source: "owner/qa", skills: ["draw"] }] }))
+    await expect(operations.run("pack/save", { name: "Clash", groups: [{ source: "owner/art", skills: ["draw"] }, { source: "owner/qa", skills: ["draw"] }] }))
       .rejects.toThrow("draw is selected from owner/art and owner/qa");
     expect((await store.read()).profiles).toEqual([]);
     expect(SourcePreparation.prototype.directory).not.toHaveBeenCalled();
   });
 
-  it("rejects stack input combined with explicit members and unknown stacks", async () => {
-    await expect(operations.run("profile/save", { stack: "creative", skills: ["draw"] })).rejects.toThrow("takes its members from the stack");
-    await expect(operations.run("profile/save", { stack: "missing" })).rejects.toThrow("Stack not found");
-  });
 });
 
 describe("multi-source profile settings", () => {

@@ -14,39 +14,76 @@ pnpm afk:build
 node packages/afk/dist/index.js
 ```
 
-AFK opens a local web app. Its six sections are Profiles, Installed Skills,
-Sources & Stacks, Tools, Agent rules, and Settings. Nothing is published online.
+AFK opens a local web app. Its five sections are Kit, Installed Skills,
+Agent rules, Tools, and Settings. Nothing is published online.
 Use **Exit AFK** in the header to stop the local server. Exiting preserves saved
 configuration and skill activation; the browser tab shows a closed screen.
 
-## Profiles
+## Kit
+
+The kit is the skills that travel with you, stored once in your settings file. Its tabs are
+**This machine** (what differs here), **Core** (always-on skills grouped by repository),
+**Packs** and **Try later**. See the [kit guide](../../docs/kit.md).
+
+```sh
+afk kit
+afk kit add <skill>... [--pack <name>] [--source <repo>]
+afk kit drop <skill> [--pack <name>]
+afk kit keep <skill>
+afk kit follow <repo>
+afk kit check
+afk sync [--agent <agent>] [--yes] [--run-tools]
+```
+
+`afk sync` shows its plan, installs missing Core skills through Skills CLI, and turns Core
+skills back on. It never removes anything. A tool's saved install command runs only when
+you approve it. A tool can list the skills it installs in `provides`; the kit tracks the
+tool, and those skills update through the tool's own command.
+
+Installed skills that aren't in your kit appear in This machine. Send each to Core, a
+pack, or **This machine only**, or remove it. Skills without a repository source can't go to Core.
+
+### Packs
 
 Create a shared group from local skills or a repository. Skills CLI prepares
 repository contents in a private temporary workspace; only selected members are
 kept under `~/.agents/skills/.disabled/`. Existing skill availability is preserved.
 
-Choose Global or a project beside a profile's activation button. Enabling adds
+Choose Global or a project beside a pack's button. Turning it on adds
 symlinks on that scope's `.agents/skills` and `.claude/skills` discovery paths.
-Disabling removes AFK-owned exposure, preserving other profile owners and existing
-user files. Stored instructions remain available for reading.
+Turning it off removes AFK-owned exposure, preserving other pack owners and existing
+user files. A pack that is on can be edited without turning it off. Stored
+instructions remain available for reading.
 
 ```sh
-afk profiles use <profile-id>
-afk profiles enable <profile-id> 'Project name'
-afk profiles disable <profile-id> 'Project name'
+afk packs use <pack-id>
+afk packs enable <pack-id> 'Project name'
+afk packs disable <pack-id> 'Project name'
 ```
 
-Use the profile identifier shown in the app’s copied command; it is not necessarily
+`afk profiles` is an alias. Use the pack identifier shown in the app’s copied command; it is not necessarily
 the display name. `use` prints every member's instructions and resource directory for an agent to
-read. It does not enable skills, register a slash command, or inject another chat.
+read. It does not turn skills on, register a slash command, or inject another chat.
+
+### Move from stacks
+
+> **Breaking:** settings are now version 2, which older AFK versions reject. Update AFK on
+> every machine that shares a settings file.
+
+A settings file that still has stacks can be read but not changed until you migrate. Run
+`afk migrate` for a dry run, or use the app's **Move to your kit** screen. Choose the stack
+that becomes Core with `--core <stack-id>`; the others become packs. Add `--apply` to write.
+Your old file is kept permanently as `~/.afk/backups/pre-kit-*.json` and can be restored with
+`afk settings restore`. Skill files are never moved. See the
+[guide](../../docs/kit.md#move-from-stacks).
 
 ## Installed Skills
 
-Filter by availability, effective invocation, recorded source, saved profile
+Filter by availability, effective invocation, recorded source, pack
 membership or name within the selected scope. **Clear filters** resets these
 filters while retaining the scope. Bulk selections survive filtering.
 Automatic discovery token estimates count available automatic skills separately
-for Codex and Claude and follow only the Profile filter. Inspect offers an
+for Codex and Claude and follow only the Pack filter. Inspect offers an
 on-demand estimate for full instructions or a supporting file. These are rough
 text-length estimates, not tokenizer counts or billing.
 
@@ -60,39 +97,34 @@ an isolated local copy when overridden, preserving the shared original.
 updates are staged in isolation and preserve availability and invocation settings.
 Progress, output and cancellation are available in the dialog.
 `afk skills update [name] -g` or `afk skills update [name] -p <project>` uses the same
-workflow. Only installations tracked by Skills CLI can update.
+workflow. Only installations tracked by Skills CLI can update. Skills a tool provides update
+through the tool.
 
 Select skills for bulk enable, disable, invocation or deletion. Deletion reviews
-stored files and links before a second click confirms removal. Enabled profiles
-and other scopes remain protected; disabled profile definitions keep their members
-and repository profiles can restore missing members when enabled.
+stored files and links before a second click confirms removal. Packs that are on
+and other scopes remain protected; packs that are off keep their members
+and repository packs can restore missing members when turned on.
 **Claude sharing** links the scope’s Claude skills folder to its canonical agents
 folder; disconnecting removes only that folder link, preserving the stored skills.
 
-## Sources & Stacks
+## Try later
 
-Save repository bookmarks for all skills or use **Choose skills** to find and
+The Try later tab keeps repository bookmarks. Save one for all skills or use **Choose skills** to find and
 select specific names. Search retains your selections. Copy an install
 command or a sequential install-all script; each command respects the bookmark’s
 selection. Choose a destination and agent when generating commands.
-Adding and removing bookmarks do not install or uninstall skills. The default
-card gallery has a List alternative. Create profile opens a draft using the saved
-selection, or all current discovered members, while keeping the bookmark.
+Adding and removing bookmarks do not install or uninstall skills. Create pack opens
+a draft using the saved selection, or all current discovered members, while keeping the bookmark.
 
-Stacks group explicit skill selections from multiple original repositories. Create
-one from any saved source, choosing explicit members, import pasted JSON, or fetch a direct HTTPS
-manifest URL. Review the groups before saving. Copy install script uses the chosen
-destination and agent, sequentially; copying does not execute it.
-Install runs here after target review; All skills bookmarks offer a one-off picker
-that leaves the bookmark unchanged. Progress and output are retained during the
-server session, and cancellation keeps completed or partial installations. Refresh manifest reviews
-remote changes before replacing saved edits and does not update installed skills.
-See the [publisher schema and example](../../docs/skill-stacks.md).
+Packs and Core can be shared as a manifest. **Import pack** accepts pasted JSON or a direct
+HTTPS manifest URL and shows a review before saving. **Export JSON** publishes a pack or
+Core. **Refresh from its link** reviews remote changes before replacing saved edits and does
+not update installed skills. See the [publisher schema and example](../../docs/kit.md#share-a-pack-with-a-manifest).
 
 ## Tools
 
-Tools are always global. Save a name, install command, and optional update command.
-An empty update command reuses install. Run explicitly from your home folder and
+Tools are always global. Save a name, install command, optional update command, and
+optionally the skills the tool provides. An empty update command reuses install. Run explicitly from your home folder and
 inspect the exit status and output. Install all and Update all review commands
 and run them sequentially, reporting failures while continuing with other tools.
 Keep the tab open for the batch to finish. Removing an entry does not uninstall the tool.
@@ -117,7 +149,7 @@ provide a synchronization service. A small machine-local pointer remembers the
 chosen settings location.
 
 Add projects through folder browsing. Import reviews local folder mappings and
-leaves profiles inactive until explicitly prepared and enabled. Saved tool commands
+leaves packs off until explicitly prepared and turned on. A version 1 file imports with an empty Core. Saved tool commands
 never run during import. JSON export contains configuration only; AFK folder ZIP
 export includes saved rules and references. ZIP import reviews destination mappings
 and leaves agent files unchanged until an explicit sync.
@@ -141,8 +173,8 @@ candidate with `afk settings validate`, and inspect local consistency with
 `afk doctor --json`. Doctor never repairs files or runs commands automatically.
 
 `afk manage describe` lists the shared operations. Run a selected operation with
-`afk manage <operation> --input <JSON file|->` for profile preparation, activation,
-invocation, tools, rules preview/sync, and portable imports. These run without a
+`afk manage <operation> --input <JSON file|->` for pack preparation, activation,
+the kit, invocation, tools, rules preview/sync, and portable imports. These run without a
 browser and return JSON. See the [agent guide](../../docs/agents.md) for payloads,
 skill installation, and preservation rules.
 
@@ -215,20 +247,20 @@ and native allocations. It excludes the browser tab and child tool processes.
 Older running servers show memory as unavailable until restarted after updating.
 `afk restart` is available in AFK 2.0.3 and newer.
 
-### Install a curated stack (2.0.6+)
+### Install a curated pack (2.0.6+)
 
 Run `afk install https://example.com/stack.json` to review a version 1 manifest,
-choose an agent and destination, save it in Sources & Stacks, and install its
-selections through Skills CLI. The saved stack remains on installation failure;
-reload an open app to see it.
+choose an agent and destination, save it as a pack in your kit, and install its
+selections through Skills CLI. The saved pack remains on installation failure;
+reload an open app to see it. A manifest that selects one skill from two sources is rejected.
 For automation: `afk install example.com/stack.json --agent codex -g --yes`.
-Use `-p <folder>` for a project without registering it in AFK. No profile or web
-app is required. See [stack installation](../../docs/skill-stacks.md#install-directly-from-a-manifest)
+Use `-p <folder>` for a project without registering it in AFK. No web
+app is required. See [direct installation](../../docs/kit.md#install-directly-from-a-manifest)
 for limits, partial failures, and npm/local-checkout invocation. This command requires AFK 2.0.6 or newer.
 
 All-skills source bookmarks offer **Install all skills…** on the card and
 **Install all instead…** in the picker. Both skip AFK skill discovery while
-keeping agent and folder confirmation. Saved selections and stacks retain their
+keeping agent and folder confirmation. Saved selections and packs retain their
 explicit members.
 
 For a GitHub branch containing `/`, use a source reference such as

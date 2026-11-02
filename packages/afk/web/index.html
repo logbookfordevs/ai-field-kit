@@ -389,10 +389,6 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 .source-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px 20px;padding:14px 0;border-bottom:1px solid var(--border)}
 .source-item-main{min-width:0}
 .source-item-main h3{font-size:16px;margin:0 0 4px;overflow-wrap:anywhere}
-.source-stack-tags{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:8px 0 0;padding:0}
-.source-stack-tag{min-height:24px;padding:0 9px;border:1px solid var(--border);border-radius:999px;background:var(--warm);font-size:12px;font-weight:500;letter-spacing:0;color:var(--fg)}
-.source-stack-tag:hover{border-color:var(--control-border);background:var(--surface)}
-.source-stack-tag::before{content:"";display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:var(--accent)}
 .source-item-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;min-width:0}
 .source-item-meta .path{font-size:12px;overflow-wrap:anywhere}
 .source-description{color:var(--muted);font-size:13px}
@@ -415,9 +411,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
 .page-tabs [role=tab]:hover{background:none;color:var(--fg)}
 .page-tabs [role=tab][aria-selected=true]{color:var(--fg);font-weight:600;border-bottom-color:var(--fg)}
 .page-tabs .meta{margin-left:4px}
-.stack-toolbar{display:flex;justify-content:flex-end;margin-bottom:12px}
-.stack-group{padding:12px 0;border-top:1px solid var(--border);margin-top:12px}
-.stack-group h3{font-size:14px;margin:0 0 6px}
+.pack-group{padding:12px 0;border-top:1px solid var(--border);margin-top:12px}
+.pack-group h3{font-size:14px;margin:0 0 6px}
 .source-selection-summary,.source-members{display:block;margin-top:8px}
 .source-members{font:400 13px/1.5 var(--font-body)}
 .source-members summary{width:fit-content}
@@ -571,26 +566,20 @@ input,textarea{caret-color:var(--focus)}
 .profile-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .profile-source{border:0;padding:0;margin:0;min-width:0}
 .profile-source legend{font-size:14px;font-weight:500;margin-bottom:6px}
-.stack-skill-selection{padding:16px 0;border-bottom:1px solid var(--border)}
-.member-selection.stack-member-toolbar{border-block:0;padding:4px 0;gap:4px 12px}
-.member-selection.stack-member-toolbar>span{font-size:13px}
-.stack-member-toolbar button{font-size:12px}
-.member-selection.stack-member-toolbar button[aria-pressed=true]{background:transparent;color:var(--fg);font-weight:600;text-decoration-thickness:2px}
-@media(max-width:480px){.member-selection.stack-member-toolbar>span{flex-basis:100%}.member-selection.stack-member-toolbar{column-gap:16px}}
-.stack-add-source{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;margin-top:16px}
-.stack-profile{margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:grid;gap:8px}
-.stack-profile-state{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;margin:0}
-.stack-profile-controls{display:flex;gap:8px;align-items:center}
-.stack-profile-controls select{flex:1;min-width:0;min-height:40px}
-.stack-profile-controls button{flex:none;min-height:40px;font-size:13px}
-.profile-stack-link{min-height:32px;font-size:13px}
+.pack-skill-selection{padding:16px 0;border-bottom:1px solid var(--border)}
+.member-selection.pack-member-toolbar{border-block:0;padding:4px 0;gap:4px 12px}
+.member-selection.pack-member-toolbar>span{font-size:13px}
+.pack-member-toolbar button{font-size:12px}
+.member-selection.pack-member-toolbar button[aria-pressed=true]{background:transparent;color:var(--fg);font-weight:600;text-decoration-thickness:2px}
+@media(max-width:480px){.member-selection.pack-member-toolbar>span{flex-basis:100%}.member-selection.pack-member-toolbar{column-gap:16px}}
+.pack-add-source{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;margin-top:16px}
 .profile-group-source{margin:12px 0 4px;font-family:var(--font-mono);overflow-wrap:anywhere}
-.stack-source-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;border-bottom:1px solid var(--border)}
-.stack-source-choice .check{min-width:0;gap:12px}
-.stack-source-choice .check>span{overflow-wrap:anywhere}
-.stack-source-choice input[type=checkbox]{flex:0 0 18px;width:18px;min-width:18px;height:18px;min-height:0;margin:0}
-.stack-source-choice>button{white-space:nowrap}
-@media(max-width:480px){.stack-source-choice{gap:8px}.stack-source-choice>button{font-size:12px;padding-inline:4px}}
+.pack-source-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;border-bottom:1px solid var(--border)}
+.pack-source-choice .check{min-width:0;gap:12px}
+.pack-source-choice .check>span{overflow-wrap:anywhere}
+.pack-source-choice input[type=checkbox]{flex:0 0 18px;width:18px;min-width:18px;height:18px;min-height:0;margin:0}
+.pack-source-choice>button{white-space:nowrap}
+@media(max-width:480px){.pack-source-choice{gap:8px}.pack-source-choice>button{font-size:12px;padding-inline:4px}}
 .profile-source .check{border:0;padding:8px 12px 8px 0;min-height:44px}
 .profile-source input[type=radio]{flex:0 0 18px;min-width:18px;width:18px;height:18px;min-height:0;accent-color:var(--accent)}
 #repositoryFields{display:grid;gap:12px;justify-items:start}
@@ -755,12 +744,33 @@ dialog.welcome{width:min(720px,calc(100vw - 32px))}
 .update-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--fg);border-radius:50%;animation:update-spin .8s linear infinite;flex-shrink:0}
 @keyframes update-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.update-spinner{animation:none}}
- .saved-skill-tabs{border-bottom:1px solid var(--border);gap:0!important;flex-wrap:nowrap!important}
-.saved-skill-tabs .skill-view-tab{border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--muted);padding:12px 20px;margin-bottom:-1px;min-height:48px}
-.saved-skill-tabs .skill-view-tab[aria-pressed=true]{border-bottom-color:var(--accent);color:var(--fg);background:var(--surface);font-weight:600}
-.saved-skill-tabs .skill-view-tab:hover{background:var(--surface);color:var(--fg)}
-@media(max-width:760px){.saved-skill-tabs .skill-view-tab{padding:12px 10px;font-size:13px}}
-.saved-skill-tabs,.saved-skill-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.saved-skill-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(160px,1fr) auto;gap:20px;padding:16px 0;border-bottom:1px solid var(--border);align-items:center}.saved-skill-row .check{align-items:flex-start;border-bottom:0;padding:0}.saved-skill-row code,.saved-restore-review code{display:block;margin-top:6px;overflow-wrap:anywhere}.saved-restore-review{padding:12px 0;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px 16px}.saved-restore-review code,.saved-restore-review p{flex-basis:100%}.project-row>div{min-width:0}.project-row .path{display:block;margin-top:6px}.skills-heading .page-actions{display:flex;gap:8px;flex-wrap:wrap}@media(max-width:1000px){.saved-skill-row{grid-template-columns:1fr}.saved-skill-row>div{padding-left:30px}}@media(max-width:760px){.project-row{display:flex;flex-direction:column;align-items:flex-start}.skills-heading .page-actions{width:100%}.saved-skill-tabs button{flex:1}.saved-skill-row>div{padding-left:0}}
+.kit-panel-actions{justify-content:flex-end;margin:0 0 16px}
+.kit-section{margin:0 0 28px}
+.kit-section>h2{font-size:20px;margin:0 0 4px}
+.kit-section>.sub{margin:0 0 12px}
+.kit-group{border-top:1px solid var(--fg);padding:10px 0 4px}
+.kit-group+.kit-group{border-top-color:var(--border)}
+.kit-group>summary{min-height:44px;display:list-item;padding:10px 0;font-weight:600;font-size:14px;cursor:pointer;overflow-wrap:anywhere}
+.kit-group-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;margin-bottom:4px}
+.kit-group-head h2{font-size:20px;margin:0}
+.kit-group-head h3{font-size:14px;margin:0;overflow-wrap:anywhere}
+.kit-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 16px;min-height:44px;padding:4px 0;border-top:1px solid var(--border)}
+.kit-row code{font:400 13px/1.55 var(--font-mono);overflow-wrap:anywhere}
+.kit-row-name{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;min-width:0}
+.kit-actions{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.kit-actions button{min-height:36px;font-size:13px;padding-inline:10px}
+.kit-clear{padding:24px 0;border-top:1px solid var(--fg)}
+.kit-clear h2{font-size:20px;margin:0 0 4px}
+.sync-plan{display:grid;gap:14px}
+.sync-plan h3{font-size:14px;margin:0 0 4px}
+.sync-plan ul{margin:0;padding-left:20px;overflow-wrap:anywhere}
+.sync-tool{border-top:1px solid var(--border);padding-top:10px}
+.migration{max-width:760px}
+.migration-report{border-top:1px solid var(--fg);margin-top:20px;padding-top:12px}
+.migration-report h3{font-size:14px;margin:14px 0 4px}
+.migration-report ul{margin:0;padding-left:20px;overflow-wrap:anywhere}
+.migration-warning{color:var(--danger)}
+@media(max-width:760px){.page-tabs{overflow-x:auto;gap:0}.page-tabs [role=tab]{flex:none;white-space:nowrap;padding:0 8px}.kit-row{align-items:flex-start;flex-direction:column;padding:10px 0}.kit-panel-actions{justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -795,12 +805,13 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refocus=id=>document.querySelector(`[data-od-id="${id}"]`)?.focus();
 
-let section='Profiles',scope='Global',query='',invocationFilter='',sourceFilter='',availabilityFilter='',profileFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
+let section='Kit',scope='Global',query='',invocationFilter='',sourceFilter='',availabilityFilter='',profileFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
 let projects=[],profiles=[],tools=[];
 const independent={Global:[]};
 let preferences={},individualOff={};
 let favoriteSources=[],installScope='Global',installAgent='interactive';
-const sections=[{id:'Installed Skills',short:'Skills'},{id:'Profiles',short:'Profiles'},{id:'Sources & Stacks',short:'Sources'},{id:'Agent rules',short:'Rules'},{id:'Tools',short:'Tools'},{id:'Settings',short:'Settings'}];
+let projectStatuses={},portableConfiguration;
+const sections=[{id:'Kit',short:'Kit'},{id:'Installed Skills',short:'Skills'},{id:'Agent rules',short:'Rules'},{id:'Tools',short:'Tools'},{id:'Settings',short:'Settings'}];
 
 function toast(message,action){
   const el=$('toast');
@@ -818,11 +829,10 @@ function scopeOptions(value){return scopeNames().map(n=>`<option ${n===value?'se
 function slug(s){return s.toLowerCase().replaceAll(' ','-')}
 
 function navCount(id){
-  if(id==='Profiles')return profiles.length;
+  if(id==='Kit')return kitAttention()||'';
   if(id==='Installed Skills')return inventory().length;
   if(id==='Tools')return tools.length;
   if(id==='Agent rules')return rules.files.length;
-  if(id==='Sources & Stacks')return favoriteSources.length+(currentSettings?.stacks?.length||0);
   return '';
 }
 
@@ -842,52 +852,45 @@ function render(){
   }).join('');
   $('crumb').textContent=section;
   $('mobileSection').innerHTML=sections.map(s=>`<option value="${s.id}" ${s.id===section?'selected':''}>${s.short}</option>`).join('');
-  ({Profiles:renderProfiles,'Installed Skills':renderSkills,'Sources & Stacks':renderSources,Tools:renderTools,'Agent rules':renderRules,Settings:renderAfkSettings})[section]();
+  if(migrationRequired)renderMigration();
+  else ({Kit:renderKit,'Installed Skills':renderSkills,Tools:renderTools,'Agent rules':renderRules,Settings:renderAfkSettings})[section]();
   if(typeof renderTour==='function')renderTour();
 }
 
 function head(title,sub,action=''){return `<header class="page-head" data-od-id="page-heading"><div><h1>${title}</h1><p class="sub">${sub}</p></div>${action}</header>`}
 
-function renderProfiles(){
+function renderPacksPanel(){
   const active=profiles.filter(p=>p.enabled.length).length;
   const list=profiles.length
-    ?`<div class="ledger">${profiles.map(profileRow).join('')}</div>`
-    :`<div class="empty"><h2>No profiles yet</h2><p class="sub">Create a group from a repository or skills already on this machine.</p></div>`;
-  $('view').innerHTML=head('Profiles','Enable a skill group for your work, or read its instructions with your agent.',button('Create profile','createProfile()','primary','data-od-id="create-profile"'))
-    +`<div class="ledger-label"><span class="meta">${profiles.length} groups · ${active} active</span><span class="meta">Shared across projects</span></div>${list}`
-    +`<details class="section-help"><summary>How profiles work</summary><p class="sub">Skills stay stored when disabled. Enabling makes them available in the selected scope; reading a group leaves activation unchanged.</p></details>`;
+    ?`<div class="ledger">${[...profiles].sort((a,b)=>byName(a.name,b.name)).map(profileRow).join('')}</div>`
+    :`<div class="empty"><h2>No packs yet</h2><p class="sub">A pack is a group of skills you turn on when you need them. Create one from a repository or skills already on this machine.</p></div>`;
+  return `<div class="inline kit-panel-actions">${button('Import pack','importPack()')}${button('Create pack','createProfile()','primary','data-od-id="create-profile"')}</div>`
+    +`<div class="ledger-label"><span class="meta">${profiles.length} ${profiles.length===1?'pack':'packs'} · ${active} on</span><span class="meta">Shared across projects</span></div>${list}`
+    +`<details class="section-help"><summary>How packs work</summary><p class="sub">Skills stay stored when a pack is off. Turning it on makes them available in the selected scope; reading a pack once leaves it off.</p></details>`;
 }
 
 function profileRow(p){
   const target=selectedTargets[p.id]||'Global',isGlobal=target==='Global',on=p.enabled.includes(target);
   const others=p.enabled.filter(s=>s!==target),shown=p.skills.slice(0,3),extra=p.skills.length-shown.length;
-  const toggleLabel=`${on?'Disable':'Enable'} ${isGlobal?'globally':'in project'}`;
+  const toggleLabel=`Turn ${on?'off':'on'} ${isGlobal?'globally':'in project'}`;
   const prepAction=p.ready
-    ?button('Read group once',`invoke('${p.id}')`,'text',`data-od-id="profile-${p.id}-read"`)
-    :button('Install profile skills',`retryPreparation('${p.id}')`,'text',`data-od-id="profile-${p.id}-retry"`);
+    ?button('Read once',`invoke('${p.id}')`,'text',`data-od-id="profile-${p.id}-read"`)
+    :button('Download skills',`retryPreparation('${p.id}')`,'text',`data-od-id="profile-${p.id}-retry"`);
   return `<article class="profile row" data-od-id="profile-${p.id}">
     <div class="profile-main">
-      <div class="profile-title"><button type="button" class="profile-name" onclick="inspectProfile('${p.id}')" aria-label="Inspect ${esc(p.name)}">${esc(p.name)}</button><span class="meta">${p.skills.length} skill${p.skills.length===1?'':'s'}${p.groups?` · ${p.groups.length} sources`:''}</span>${profileStackLabel(p)}</div>
+      <div class="profile-title"><button type="button" class="profile-name" onclick="inspectProfile('${p.id}')" aria-label="Inspect ${esc(p.name)}">${esc(p.name)}</button><span class="meta">${p.skills.length} skill${p.skills.length===1?'':'s'}${p.groups?` · ${p.groups.length} sources`:''}</span></div>${p.description?`<p class="sub">${esc(p.description)}</p>`:''}
       <ul class="tags" aria-label="Members">${shown.map(s=>`<li class="tag">${esc(s)}</li>`).join('')}${extra>0?`<li class="tag more">+${extra} more</li>`:''}</ul>
       <div class="prep">${p.ready?'': '<span class="status warn">Skills not downloaded yet</span>'}${prepAction}</div>
     </div>
     <div class="profile-scope">
-      <div class="scope-control"><label>Enable for<select data-od-id="profile-${p.id}-scope" aria-label="Scope for ${esc(p.name)}" onchange="setTarget('${p.id}',this.value)">${scopeOptions(target)}</select></label><button type="button" data-od-id="profile-${p.id}-toggle" onclick="activate('${p.id}')">${toggleLabel}</button></div>
-      <p class="scope-state"><strong>${on?'Enabled':'Not enabled'} ${isGlobal?'globally':'in '+esc(target)}</strong></p>
-      ${others.length?`<p class="meta">Also active: ${others.map(esc).join(' · ')}</p>`:''}
+      <div class="scope-control"><label>Turn on for<select data-od-id="profile-${p.id}-scope" aria-label="Scope for ${esc(p.name)}" onchange="setTarget('${p.id}',this.value)">${scopeOptions(target)}</select></label><button type="button" data-od-id="profile-${p.id}-toggle" onclick="activate('${p.id}')">${toggleLabel}</button></div>
+      <p class="scope-state"><strong>${on?'On':'Off'} ${isGlobal?'globally':'in '+esc(target)}</strong></p>
+      ${others.length?`<p class="meta">Also on: ${others.map(esc).join(' · ')}</p>`:''}
     </div>
   </article>`;
 }
 
-function profileStackLabel(p){
-  if(!p.id.startsWith('stack-'))return '';
-  const stack=savedStacks().find(stack=>'stack-'+stack.manifest.id===p.id);
-  if(!stack)return '<span class="meta">Stack removed</span>';
-  const outdated=stackProfileOutdated(stack,p)?' <span class="status warn">Out of date</span>':'';
-  return `<button type="button" class="text profile-stack-link" onclick="openProfileStack()">From stack · ${esc(stack.manifest.name)}</button>${outdated}`;
-}
-function openProfileStack(){sourcesTab='stacks';navigate('Sources & Stacks')}
-function setTarget(id,value){selectedTargets[id]=value;renderProfiles();refocus(`profile-${id}-scope`)}
+function setTarget(id,value){selectedTargets[id]=value;renderKit();refocus(`profile-${id}-scope`)}
 
 function modal(title,body,foot=''){
   $('sheetContent').innerHTML=`<header class="dialog-head"><div><h2 id="sheetTitle">${title}</h2></div><button type="button" class="close" onclick="closeModal()">Close</button></header><div class="dialog-body">${body}</div>${foot?`<div class="dialog-foot">${foot}</div>`:''}`;
@@ -897,41 +900,38 @@ function modal(title,body,foot=''){
 function closeModal(){$('sheet').close()}
 
 function inspectProfile(id){
-  const p=profiles.find(p=>p.id===id),locked=p.enabled.length>0;
-  const memberRows=names=>names.map(s=>`<div class="check"><span><strong>${esc(s)}</strong><small>${esc((inventories.Global||[]).find(entry=>entry.name===s)?.path||"Not prepared locally")}</small></span>${button('Inspect',`inspectSkill('${s}','${id}')`,'text')}</div>`).join('');
-  const members=p.groups?p.groups.map(group=>`<p class="table-label profile-group-source">${esc(group.source)}</p>${memberRows(group.skills)}`).join(''):memberRows(p.skills);
-  const stackIndex=savedStacks().findIndex(stack=>'stack-'+stack.manifest.id===p.id);
-  const editable=!p.groups||stackIndex>=0;
-  const lockNote=locked
-    ?`Active in ${p.enabled.map(esc).join(', ')}. Membership edits and removal unlock after every scope is disabled.`
-    :'No scope enabled. Prepared members stay stored and ready.';
-  const foot=(p.ready?'':button('Install profile skills',`retryPreparation('${id}')`,'push'))
-    +button('Remove definition',`removeProfile('${id}')`,'text danger',locked?'disabled':'')
-    +button(p.groups?'Edit in stack':'Edit profile',`editProfile('${id}')`,'',locked||!editable?'disabled':'');
+  const p=profiles.find(p=>p.id===id),on=p.enabled.length>0;
+  const memberRows=names=>names.map(s=>`<div class="check"><span><strong>${esc(s)}</strong><small>${esc((inventories.Global||[]).find(entry=>entry.name===s)?.path||"Not downloaded yet")}</small></span><span class="inline">${button('Inspect',`inspectSkill('${s}','${id}')`,'text')}${p.skills.length>1?button('Drop',`dropFromKit('${s}','${id}')`,'text'):''}</span></div>`).join('');
+  const members=p.groups?p.groups.map(group=>`<p class="table-label profile-group-source">${esc(p.sourceNames?.[group.source]||group.source)}</p>${memberRows(group.skills)}`).join(''):memberRows(p.skills);
+  const state=on?`On in ${p.enabled.map(esc).join(', ')}. Editing keeps it on. Turn it off everywhere to remove it.`:'Off everywhere. Downloaded skills stay stored and ready.';
+  const repository=!profileUsesOnlyLocal(p);
+  const foot=(p.ready?'':button('Download skills',`retryPreparation('${id}')`,'push'))
+    +button('Remove pack',`removeProfile('${id}')`,'text danger',on?'disabled':'')
+    +(p.origin?button('Refresh from its link',`refreshPack('${id}')`,'text'):'')
+    +(repository?button('Export JSON',`exportPack('${id}')`,'text'):'')
+    +button('Edit pack',`editProfile('${id}')`);
   const origin=p.groups?`${p.groups.length} sources`:esc(p.source);
-  const groupNote=p.groups?(stackIndex>=0?'<p class="hint">Edit the stack, then use Update profile on it to change these members.</p>':'<p class="hint">The stack this profile came from was removed, so its members can’t be edited here.</p>'):'';
-  modal(esc(p.name),`<p class="sub">Shared definition · ${origin}</p>${groupNote}<div><div class="members-head"><span class="table-label">Members in local storage</span><span class="table-label">${p.skills.length}</span></div><div class="list">${members}</div></div><p class="sub">${lockNote}</p>`,foot,'Profile');
+  modal(esc(p.name),`<p class="sub">${origin}${p.origin?` · from ${esc(p.origin)}`:''}</p>${p.description?`<p>${esc(p.description)}</p>`:''}<div><div class="members-head"><span class="table-label">Skills</span><span class="table-label">${p.skills.length}</span></div><div class="list">${members}</div></div><p class="sub">${state}</p>`,foot,'Pack');
 }
+function profileUsesOnlyLocal(p){return (p.groups||[{source:p.source}]).every(group=>group.source==='Local skill selection')}
 
 function editProfile(id){
   const p=profiles.find(p=>p.id===id);
-  if(!p||p.enabled.length)return;
-  if(!p.groups)return createProfile(p);
-  const index=savedStacks().findIndex(stack=>'stack-'+stack.manifest.id===p.id);
-  if(index<0){toast('Edit multi-source profiles through the stack they came from.');return}
-  closeModal();sourcesTab='stacks';navigate('Sources & Stacks');editStack(index);
+  if(!p)return;
+  if(profileUsesOnlyLocal(p))return createProfile(p);
+  openPackForm(p);
 }
 
 let editing=null,profilePicker;
 function createProfile(p=null,isNew=false){
   editing=isNew?null:p;
   profilePicker={mode:p?.source==='Local skill selection'?'local':'repository',names:[],selected:new Set(p?.skills||[]),query:'',selectedOnly:false,version:0,descriptions:{}};
-  modal(p&&!isNew?'Edit profile':'Create a profile',
-    `<label>Profile name<input id="profileName" value="${p?esc(p.name):''}" placeholder="e.g. Video tools" oninput="this.removeAttribute('aria-invalid');$('nameError').textContent=''" aria-describedby="nameError"><span class="field-error" id="nameError"></span></label>
+  modal(p&&!isNew?'Edit pack':'Create a pack',
+    `<label>Pack name<input id="profileName" value="${p?esc(p.name):''}" placeholder="e.g. Video tools" oninput="this.removeAttribute('aria-invalid');$('nameError').textContent=''" aria-describedby="nameError"><span class="field-error" id="nameError"></span></label>
     <fieldset class="profile-source"><legend>Choose skills from</legend><div class="inline"><label class="check"><input type="radio" name="profileSource" value="repository" ${profilePicker.mode==='repository'?'checked':''} onchange="setProfileMode(this.value)"><span>Repository</span></label><label class="check"><input type="radio" name="profileSource" value="local" ${profilePicker.mode==='local'?'checked':''} onchange="setProfileMode(this.value)"><span>This machine</span></label></div></fieldset>
     <div id="repositoryFields" ${profilePicker.mode==='local'?'hidden':''}><label>Repository<input id="source" value="${p&&p.source!=='Local skill selection'?esc(p.source):''}" placeholder="Repository URL or owner/repository" oninput="resetDiscovery()"></label>${button('Find skills','discover()','','id="discoverMembers"')}</div>
     <div id="discovery"></div><p id="profileError" class="field-error" role="alert"></p>`,
-    button('Cancel','closeModal()','text')+`<button type="button" class="primary" id="saveProfile" disabled onclick="saveProfile()">Save profile</button>`);
+    button('Cancel','closeModal()','text')+`<button type="button" class="primary" id="saveProfile" disabled onclick="saveProfile()">Save pack</button>`);
   if(profilePicker.mode==='local')renderMembers((inventories.Global||[]).map(s=>s.name),'Skills on this machine',true,p?.skills||[]);
   else if(p)renderMembers(p.skills,'Profile members',false,p.skills);
   else resetDiscovery();
@@ -945,10 +945,10 @@ function resetDiscovery(){
   profilePicker.version++;profilePicker.names=[];profilePicker.selected.clear();
   $('discoverMembers').disabled=false;
   $('saveProfile').disabled=true;
-  $('discovery').innerHTML='<p class="sub">Find the repository’s skills, then choose the ones for this profile. New skills are downloaded disabled.</p>';
+  $('discovery').innerHTML='<p class="sub">Find the repository’s skills, then choose the ones for this pack. New skills stay off until you turn the pack on.</p>';
 }
 async function copyCommand(fieldId='invocationCommand'){
-  try{await navigator.clipboard.writeText($(fieldId).value);toast('Entry command copied. Activation unchanged.')}
+  try{await navigator.clipboard.writeText($(fieldId).value);toast('Entry command copied.')}
   catch{$(fieldId).select();toast('Select and copy the command.')}
 }
 
@@ -962,15 +962,14 @@ function renderSkills(){
   if(profileFilter&&!['__any','__none'].includes(profileFilter)&&!installedProfiles().some(profile=>profile.id===profileFilter))profileFilter='';
   const sharingStatus=skillSharing[scope]?.status;
   const sharingLabel=sharingStatus==='connected'?'Sharing on':sharingStatus==='conflict'?'Needs attention':'Sharing off';
-  $('view').innerHTML=`<header class="skills-heading"><h1>Installed Skills</h1><label class="skills-scope">Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label><div class="page-actions">${button(skillActionLabel('Save installed skills','save'),'reviewInstalledSnapshot()')}${inventory().length?button(skillActionLabel('Update skills','update'),'showSkillUpdate()','primary','data-od-id="update-skills"'):''}</div></header>${savedSkillNavigation()}`;
-  if(skillsView==='saved'){renderSavedSkills();return}
+  $('view').innerHTML=`<header class="skills-heading"><h1>Installed Skills</h1><label class="skills-scope">Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label><div class="page-actions">${inventory().length?button(skillActionLabel('Update skills','update'),'showSkillUpdate()','primary','data-od-id="update-skills"'):''}</div></header>`;
   $('view').insertAdjacentHTML('beforeend',`
       <div class="skills-filters">
         <label class="search">Find a skill<i class="filter-dot" aria-hidden="true"></i><span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
         <label>Availability<i class="filter-dot" aria-hidden="true"></i><select id="availabilityFilter" onchange="availabilityFilter=this.value;renderSkillList()"><option value="">All availability</option><option value="available" ${availabilityFilter==='available'?'selected':''}>Available</option><option value="disabled" ${availabilityFilter==='disabled'?'selected':''}>Disabled</option></select></label>
         <label>Invocation<i class="filter-dot" aria-hidden="true"></i><select id="invocationFilter" onchange="invocationFilter=this.value;renderSkillList()"><option value="">All modes</option>${['manual only','automatic allowed','varies by agent','unknown'].map(mode=>`<option value="${mode}" ${invocationFilter===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label>
         <label>Source<i class="filter-dot" aria-hidden="true"></i><select id="sourceFilter" onchange="sourceFilter=this.value;renderSkillList()"><option value="">All sources</option>${installedSourceOptions()}</select></label>
-        <label>Profile<i class="filter-dot" aria-hidden="true"></i><select id="profileFilter" onchange="profileFilter=this.value;renderSkillList()"><option value="">All skills</option><option value="__any" ${profileFilter==='__any'?'selected':''}>In any profile</option><option value="__none" ${profileFilter==='__none'?'selected':''}>No profile</option>${installedProfileOptions()}</select></label>
+        <label>Pack<i class="filter-dot" aria-hidden="true"></i><select id="profileFilter" onchange="profileFilter=this.value;renderSkillList()"><option value="">All skills</option><option value="__any" ${profileFilter==='__any'?'selected':''}>In any pack</option><option value="__none" ${profileFilter==='__none'?'selected':''}>No pack</option>${installedProfileOptions()}</select></label>
         ${button('Clear filters','clearSkillFilters()','text',`id="clearSkillFilters" ${query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter?'':'hidden'}`)}
       </div>
       <div class="skills-utilities"><span class="sharing-state" data-status="${esc(sharingStatus||'missing')}">${esc(sharingLabel)}</span>${button('Claude sharing','reviewClaudeSharing()','text')}<span id="skillsDiscoverySummary">${skillTokenSummary()}</span><span class="skills-folder"><button type="button" class="text" popovertarget="skillsFolderDetails">Folder details</button><div id="skillsFolderDetails" class="skill-invoc-popover skills-folder-popover" popover aria-label="Skill folders"><strong>Skill folders · ${esc(scope)}</strong><code class="path">${esc(scopePath())}</code>${sharingStatus==='connected'?`<code class="path">${esc(scope==='Global'?'~/.claude/skills/':(projects.find(project=>project.name===scope)?.path||'')+'/.claude/skills/')} <span class="meta">Shared folder link</span></code>`:''}</div></span></div>
@@ -978,7 +977,7 @@ function renderSkills(){
   renderSkillList();
 }
 
-function setScope(value){restoreSelection.clear();selectedSkills.clear();sourceFilter='';scope=value;render();$('scopeSelect').focus()}
+function setScope(value){selectedSkills.clear();sourceFilter='';scope=value;render();$('scopeSelect').focus()}
 
 function clearSkillFilters(){
   query='';invocationFilter='';sourceFilter='';availabilityFilter='';profileFilter='';renderSkills();$('skillSearch').focus();
@@ -1000,7 +999,7 @@ function renderSkillList(){
   $('skillCount').textContent=(filtered?`${list.length} of ${all.length} shown`:`${all.length} entries · ${available} available`)+nestedCount;
   if(!list.length&&nested.length){$('skillList').innerHTML=nestedSkillSection(nested);return}
   if(!list.length){
-    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'No skill entries in this project'}</h2><p class="sub">${filtered?'Try another profile, availability, source, invocation mode or skill name.':scope==='Global'?'Create a profile from a source repository to prepare skills locally.':'Global-only skills are excluded. Enable a profile for this project to create its links.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):button('Go to Profiles',"navigate('Profiles')")}</div>`;
+    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'No skill entries in this project'}</h2><p class="sub">${filtered?'Try another pack, availability, source, invocation mode or skill name.':scope==='Global'?'Add skills to your kit, then sync this machine.':'Global-only skills are excluded. Turn a pack on for this project to create its links.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):button('Go to Kit',"navigate('Kit')")}</div>`;
     return;
   }
   $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row table-label" aria-hidden="true"><span>Skill</span><span>Availability</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>${nestedSkillSection(nested)}`;
@@ -1022,16 +1021,16 @@ function nestedSkillRow(s){
 }
 
 function skillRow(s){
-  const held=s.owners.length>0,enabled=isAvailable(s);
+  const held=s.owners.length>0,enabled=isAvailable(s),tool=tools.find(tool=>tool.provides?.includes(s.name));
   const invocationHint=preferenceHint(s.name);
     return `<article class="skill-row row" data-od-id="skill-${s.name}">
     <div class="skill-name"><input type="checkbox" data-skill-select="${esc(s.name)}" aria-label="Select ${esc(s.name)}" ${selectedSkills.has(s.name)?'checked':''} ${skillBulkBusy?'disabled':''} onchange="selectSkill('${s.name}',this.checked)"><div><h3>${esc(s.name)}</h3>${scope!=='Global'?`<span class="meta">${s.shared?'Shared skill':'Project-local skill'}</span>`:''}</div></div>
     <div class="skill-avail">
       <button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held||skillBulkBusy?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>
-      ${held?`<span class="hint">Managed by ${s.owners.map(esc).join(', ')} · change in Profiles</span>`:''}
+      ${held?`<span class="hint">Managed by ${s.owners.map(esc).join(', ')} · change in Kit</span>`:''}${tool?`<span class="hint">Installed by ${esc(tool.name)} · update in Tools</span>`:''}
     </div>
     <div class="skill-invoc">${invocationInfo(s.name,invocationHint)}${preferenceSelect(s.name,skillBulkBusy?'disabled':'')}</div>
-    <div class="skill-actions">${button('Update',`showSkillUpdate('${s.name}')`,'text',skillBulkBusy?'disabled':'')}${button('Inspect',`inspectSkill('${s.name}')`,'text',`data-od-id="skill-${s.name}-inspect"`)}${button('Delete',`reviewSkillDeletion('${s.name}')`,'text danger',skillBulkBusy?'disabled':'')}</div>
+    <div class="skill-actions">${tool?button('Update',`runTool(${tool.id},true)`,'text',skillBulkBusy?'disabled':''):button('Update',`showSkillUpdate('${s.name}')`,'text',skillBulkBusy?'disabled':'')}${button('Inspect',`inspectSkill('${s.name}')`,'text',`data-od-id="skill-${s.name}-inspect"`)}${button('Delete',`reviewSkillDeletion('${s.name}')`,'text danger',skillBulkBusy?'disabled':'')}</div>
   </article>`;
 }
 
@@ -1069,6 +1068,7 @@ function renderTools(){
     <div class="tool-name">
       <h3>${esc(t.name)}</h3>
       ${t.last?`<span class="status ${t.last.ok?'on':'warn'}">${esc(t.last.label)}</span>`:'<span class="meta">Not run this session</span>'}
+      ${t.provides?.length?`<span class="meta">Brings ${t.provides.map(esc).join(', ')}</span>`:''}
       <div class="links">${button('Edit',`editTool(${t.id})`,'text')}${button('Remove',`removeTool(${t.id})`,'text')}</div>
     </div>
     <dl class="cmds">
@@ -1091,6 +1091,8 @@ function editTool(id){
     `<label>Name<input id="toolName" value="${t?esc(t.name):''}" placeholder="e.g. Skills CLI"></label>
      <label>Install command<textarea id="installCmd" placeholder="npm install -g …">${t?esc(t.install):''}</textarea></label>
      <label>Update command · optional<textarea id="updateCmd" placeholder="Leave empty to reuse the install command">${t?esc(t.update):''}</textarea></label>
+     <label>Skills it brings · optional<input id="toolProvides" value="${t?.provides?esc(t.provides.join(', ')):''}" placeholder="skill-one, skill-two"></label>
+     <p class="hint">Your kit tracks this tool instead of those skills, and updates them with its command.</p>
      <p class="field-error" id="toolError" role="alert"></p>
      <p class="hint">Commands are saved data until you explicitly run them.</p>`,
     button('Cancel','closeModal()','text')+button('Save tool',`saveTool(${id||0})`,'primary'),'Global tool');
@@ -1127,7 +1129,7 @@ function renderSettings(){
         </div>
       </section>
       <section class="settings-block" data-od-id="projects-settings">
-        <div><h2>Projects</h2><p class="sub">Save the folder here; enable groups from Profiles.</p></div>
+        <div><h2>Projects</h2><p class="sub">Save the folder here; turn packs on from Kit.</p></div>
         <div class="settings-body">
           <div class="project-list">${projects.map((p,i)=>`<div class="project-row"><div><strong>${esc(p.name)}</strong><code class="path">${esc(p.path)}</code>${projectStatuses[p.name]&&projectStatuses[p.name]!=='present'?`<p class="field-error" role="status">${projectStatuses[p.name]==='missing'?'Project folder not found':projectStatuses[p.name]==='not-folder'?'This path is not a folder':'Project folder cannot be read'}. Choose another folder or remove the project definition.</p>`:''}</div><div class="inline">${button('Edit',`editProject(${i})`,'text')}${projectStatuses[p.name]&&projectStatuses[p.name]!=='present'?button('Choose folder',`chooseProjectFolder(${i})`):''}${button('Remove',`removeProject(${i})`,'text')}</div></div>`).join('')}</div>
           <div>${button('Add project',"browse('project')")}</div>
@@ -1143,7 +1145,7 @@ let browseMode='',folder='~';
 function browse(mode){browseMode=mode;folder='~';folderModal()}
 
 function useFolder(){
-  modal('Name this project',`<label>Project name<input id="projectName" value="${esc(folder.split('/').pop())}"></label><p class="path">${esc(folder)}</p><p class="hint">Adding a project does not enable any profile.</p>`,
+  modal('Name this project',`<label>Project name<input id="projectName" value="${esc(folder.split('/').pop())}"></label><p class="path">${esc(folder)}</p><p class="hint">Adding a project does not turn on any pack.</p>`,
     button('Cancel','closeModal()','text')+button('Save project','saveProject()','primary'),'New project');
 }
 
@@ -1151,7 +1153,7 @@ function saveProject(){
   const name=$('projectName').value.trim();
   if(!name||projects.some(p=>p.name===name)){toast('Choose a unique project name.');$('projectName').focus();return}
   projects.push({name,path:folder});independent[name]=[];
-  closeModal();render();toast('Project defined. Profile activation unchanged.');
+  closeModal();render();toast('Project defined. Packs unchanged.');
 }
 
 const safeId=v=>typeof v==='string'&&/^[-a-zA-Z0-9_]+$/.test(v);
@@ -1177,12 +1179,12 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 </script>
 <script src="/members.js"></script>
 <script src="/sources.js"></script>
-<script src="/stacks.js"></script>
+<script src="/packs.js"></script>
+<script src="/kit.js"></script>
 <script src="/invocation-info.js"></script>
 <script src="/rules.js"></script>
 <script src="/onboarding.js"></script>
 <script src="/skill-insights.js"></script>
-<script src="/saved-skills.js"></script>
 <script src="/app-update.js"></script>
 <script src="/runtime-status.js"></script>
 <script src="/client.js"></script>

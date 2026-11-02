@@ -9,8 +9,8 @@ export function resolveProfile(settings: Settings, reference: string): Settings[
   const byId = settings.profiles.find(profile => profile.id === reference);
   if (byId) return byId;
   const matches = settings.profiles.filter(profile => profile.name.toLowerCase() === reference.trim().toLowerCase());
-  if (matches.length > 1) throw new Error(`Multiple profiles are named "${reference}". Use a profile ID: ${matches.map(profile => profile.id).join(", ")}.`);
-  if (!matches[0]) throw new Error("Profile not found. Use a profile name or ID.");
+  if (matches.length > 1) throw new Error(`Multiple packs are named "${reference}". Use a pack ID: ${matches.map(profile => profile.id).join(", ")}.`);
+  if (!matches[0]) throw new Error("Pack not found. Use a pack name or ID.");
   return matches[0];
 }
 
@@ -206,7 +206,7 @@ export class SkillLibrary {
   }
 
   async toggle(settings: Settings, name: string, scope: string): Promise<void> {
-    if (settings.profiles.some(p => p.enabled.includes(scope) && p.skills.includes(name))) throw new Error("Disable the owning profiles first.");
+    if (settings.profiles.some(p => p.enabled.includes(scope) && p.skills.includes(name))) throw new Error("Turn the owning packs off first.");
     const root = this.root(settings, scope);
     const active = join(root, name);
     const disabled = join(root, ".disabled", name);

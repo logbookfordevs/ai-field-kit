@@ -7,7 +7,7 @@ async function request(path,data){
 }
 async function refresh(){
   const state=await request('state');
-  currentSettings=state.settings;inventories=state.inventories;nestedInventories=state.nestedInventories||{};skillSharing=state.skillSharing||{};settingsPath=state.settingsPath;afkHome=state.home;savedSkillComparisons=state.savedSkillComparisons||{};projectStatuses=state.projectStatuses||{};portableConfiguration=state.portableSettings;
+  currentSettings=state.settings;inventories=state.inventories;nestedInventories=state.nestedInventories||{};skillSharing=state.skillSharing||{};settingsPath=state.settingsPath;afkHome=state.home;projectStatuses=state.projectStatuses||{};portableConfiguration=state.portableSettings;kitStatus=state.kit;migrationRequired=Boolean(state.migration?.required);
   ({profiles,projects,tools,favoriteSources,preferences}=currentSettings);
   toolRuns=state.toolRuns||{};
   tools=tools.map(tool=>({...tool,last:toolRuns[tool.id]?{ok:toolRuns[tool.id].code===0,label:toolRuns[tool.id].pending?'Running…':'Last run · exit '+toolRuns[tool.id].code}:null}));
@@ -27,7 +27,7 @@ nestedInventory=()=>nestedInventories[scope]||[];
 isAvailable=entry=>entry.available;
 activate=id=>operation(async()=>{
   const profile=profiles.find(p=>p.id===id),target=selectedTargets[id]||'Global';
-  if(!profile.enabled.includes(target)&&!profile.ready)toast('Preparing missing profile members before enabling…');
+  if(!profile.enabled.includes(target)&&!profile.ready)toast('Downloading missing skills before turning this pack on…');
   await request('activation',{id,scope:target,enabled:!profile.enabled.includes(target)});
 });
 toggleSkill=name=>operation(()=>request('skill/toggle',{name,scope}));
@@ -44,13 +44,13 @@ function profileUsageCommands(profile){
   const duplicates=profiles.filter(item=>item.name.toLowerCase()===profile.name.toLowerCase()).length>1;
   const reference=duplicates?profile.id:profile.name;
   const argument=/^[a-zA-Z0-9._-]+$/.test(reference)?reference:"'"+reference.replaceAll("'", "'\\''")+"'";
-  return {command:'afk profiles use '+argument,skill:'/afk-cli use profile '+argument,duplicates};
+  return {command:'afk packs use '+argument,skill:'/afk-cli use pack '+argument,duplicates};
 }
 invoke=async id=>{
   try{
-    const profile=profiles.find(p=>p.id===id),data=await request('profile/read',{id});
+    const profile=profiles.find(p=>p.id===id),data=await request('pack/read',{id});
     const usage=profileUsageCommands(profile);
-    modal('Use '+esc(profile.name)+' with your agent',`<p>Ask your agent to run the AFK command, or invoke the installed afk-cli skill. Both read this profile for the current conversation without enabling it.</p>${usage.duplicates?'<p class="hint">This name belongs to multiple profiles, so these commands use its ID.</p>':''}<label>AFK command<span class="inline"><input id="invocationCommand" readonly value="${esc(usage.command)}">${button('Copy command','copyCommand()','primary')}</span></label><p class="table-label">OR</p><label>Agent skill<span class="inline"><input id="invocationSkillCommand" readonly value="${esc(usage.skill)}">${button('Copy skill usage',"copyCommand('invocationSkillCommand')")}</span></label><p class="hint">Requires the afk-cli skill installed in your agent.</p><details><summary>Preview group instructions</summary><pre>${esc(data.content)}</pre></details>`);
+    modal('Use '+esc(profile.name)+' with your agent',`<p>Ask your agent to run the AFK command, or invoke the installed afk-cli skill. Both read this pack for the current conversation without turning it on.</p>${usage.duplicates?'<p class="hint">This name belongs to multiple packs, so these commands use its ID.</p>':''}<label>AFK command<span class="inline"><input id="invocationCommand" readonly value="${esc(usage.command)}">${button('Copy command','copyCommand()','primary')}</span></label><p class="table-label">OR</p><label>Agent skill<span class="inline"><input id="invocationSkillCommand" readonly value="${esc(usage.skill)}">${button('Copy skill usage',"copyCommand('invocationSkillCommand')")}</span></label><p class="hint">Requires the afk-cli skill installed in your agent.</p><details><summary>Preview pack instructions</summary><pre>${esc(data.content)}</pre></details>`);
   }catch(error){toast(error.message)}
 };
 async function saveForm(action,message,errorId){
@@ -63,8 +63,9 @@ async function saveForm(action,message,errorId){
 async function savePatch(patch){await request('settings',{settings:{...currentSettings,...patch}})}
 saveTool=id=>{
   const name=$('toolName').value.trim(),install=$('installCmd').value.trim(),update=$('updateCmd').value.trim();
+  const provides=[...new Set($('toolProvides').value.split(/[\s,]+/).filter(Boolean))];
   if(!name||!install){$('toolError').textContent=!name?'Name the tool.':'Add an install command.';return}
-  const next=currentSettings.tools.filter(tool=>tool.id!==id).concat({id:id||Date.now(),name,install,update});
+  const next=currentSettings.tools.filter(tool=>tool.id!==id).concat({id:id||Date.now(),name,install,update,...(provides.length?{provides}:{})});
   return saveForm(()=>savePatch({tools:next}),'Tool saved. No command executed.','toolError');
 };
 removeTool=id=>operation(async()=>{await savePatch({tools:currentSettings.tools.filter(tool=>tool.id!==id)});toast('Entry removed. Installed tool unchanged.')});
@@ -142,13 +143,13 @@ useFolder=()=>{
 saveProject=()=>{
   const name=$('projectName').value.trim();
   if(!name||projects.some(project=>project.name===name)){toast('Choose a unique project name.');return}
-  return saveForm(()=>request('project/save',{name,path:folder}),'Project saved. Profile activation unchanged.','projectError');
+  return saveForm(()=>request('project/save',{name,path:folder}),'Project saved. Packs unchanged.','projectError');
 };
 configuration=()=>structuredClone(portableConfiguration||currentSettings);
 exportSettings=()=>{
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(configuration(),null,2)],{type:'application/json'}));a.download='settings.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
-showNotes=()=>modal('AFK — Fieldwork','<p>Your local workspace for skills, shared profiles, favorite sources, global tool commands, and shared agent rules.</p><p class="sub">Settings and rule files live together in the AFK folder you choose. Sources can install skills here or copy installation commands; skill updates preserve availability.</p>',button('Show Welcome','showWelcome()','text')+button('Take a quick tour','startTour()','primary'));
+showNotes=()=>modal('AFK — Fieldwork','<p>Your agent setup, portable across machines: the skills in your kit, your tool commands and your agent rules.</p><p class="sub">Settings and rule files live together in the AFK folder you choose. Syncing brings a machine in line with your kit; skill updates preserve availability.</p>',button('Show Welcome','showWelcome()','text')+button('Take a quick tour','startTour()','primary'));
 refresh().then(()=>{maybeWelcome();checkAppVersion()}).catch(error=>{$('view').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`});
 discover=async()=>{
   const picker=profilePicker,source=$('source').value.trim(),version=++picker.version;
@@ -161,22 +162,22 @@ discover=async()=>{
 };
 saveProfile=async()=>{
   const name=$('profileName').value.trim(),skills=[...profilePicker.selected],source=profilePicker.mode==='local'?'Local skill selection':$('source').value.trim();
-  if(!name){$('nameError').textContent='Name this profile.';$('profileName').setAttribute('aria-invalid','true');$('profileName').focus();return}
+  if(!name){$('nameError').textContent='Name this pack.';$('profileName').setAttribute('aria-invalid','true');$('profileName').focus();return}
   const form=$('sheetContent').firstElementChild,control=$('saveProfile');control.disabled=true;control.textContent=profilePicker.mode==='local'?'Saving…':'Preparing…';$('profileError').textContent='';
-  try{await request('profile/save',{id:editing?.id,name,skills,source});if(form.isConnected)closeModal();await refresh();toast('Profile saved. Activation stays unchanged.')}
-  catch(error){if(form.isConnected){$('profileError').textContent=error.message;control.disabled=false;control.textContent='Save profile'}else toast(error.message)}
+  try{await request('pack/save',{id:editing?.id,name,skills,source});if(form.isConnected)closeModal();await refresh();toast('Pack saved.')}
+  catch(error){if(form.isConnected){$('profileError').textContent=error.message;control.disabled=false;control.textContent='Save pack'}else toast(error.message)}
 };
 
-removeProfile=id=>operation(async()=>{await request('profile/remove',{id});closeModal()});
-retryPreparation=id=>operation(async()=>{const {name,source,skills,groups}=profiles.find(p=>p.id===id);await request('profile/save',{id,name,prepare:true,...(groups?{groups}:{source,skills})})});
+removeProfile=id=>operation(async()=>{await request('pack/remove',{id});closeModal()});
+retryPreparation=id=>operation(async()=>{const {name,source,skills,groups}=profiles.find(p=>p.id===id);await request('pack/save',{id,name,prepare:true,...(groups?{groups}:{source,skills})})});
 setPreference=(name,mode)=>operation(()=>request('invocation',{name,scope,mode}));
 importSettings=async file=>{
   $('importFile').value='';if(!file)return;
   try{
     const data=JSON.parse(await file.text());
-    if(data.version!==1||!Array.isArray(data.projects))throw Error('Choose an AFK settings version 1 export.');
+    if(![1,2].includes(data.version)||!Array.isArray(data.projects))throw Error('Choose an AFK settings export.');
     window.pendingImport=data;
-    modal('Review imported configuration',`<p>Remap project folders for this machine. Import leaves profiles inactive until you prepare them.</p>${data.projects.map((project,index)=>`<label>${esc(project.name)}<input class="remap" data-index="${index}" value="${esc(project.path)}"></label>`).join('')}`,button('Cancel','closeModal()','text')+button('Import configuration','applyImport()','primary'));
+    modal('Review imported configuration',`<p>Remap project folders for this machine. Import leaves packs off until you turn them on.</p>${data.projects.map((project,index)=>`<label>${esc(project.name)}<input class="remap" data-index="${index}" value="${esc(project.path)}"></label>`).join('')}`,button('Cancel','closeModal()','text')+button('Import configuration','applyImport()','primary'));
   }catch(error){toast(error.message)}
 };
 applyImport=()=>operation(async()=>{
@@ -186,7 +187,7 @@ applyImport=()=>operation(async()=>{
 });
 editProject=index=>{
   const project=projects[index];
-  modal('Edit project',`<label>Name<input id="projectName" value="${esc(project.name)}"></label><label>Folder<input id="projectPath" value="${esc(project.path)}"></label><p class="hint">Disable this project's profiles before changing its folder.</p>`,button('Cancel','closeModal()','text')+button('Save project',`renameProject(${index})`,'primary'));
+  modal('Edit project',`<label>Name<input id="projectName" value="${esc(project.name)}"></label><label>Folder<input id="projectPath" value="${esc(project.path)}"></label><p class="hint">Turn this project's packs off before changing its folder.</p>`,button('Cancel','closeModal()','text')+button('Save project',`renameProject(${index})`,'primary'));
 };
 renameProject=index=>operation(async()=>{
   await request('project/save',{previous:projects[index].name,name:$('projectName').value.trim(),path:$('projectPath').value.trim()});closeModal();
@@ -249,7 +250,7 @@ async function applyClaudeSharing(enabled){
 
 let selectedSkills=new Set(),selectedSkillScope='Global',skillBulkBusy=false,bulkDeleteReview;
 function skillActionLabel(label,action){
-  const paths={update:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.6-2L20 8M4 16l2.3 3A7 7 0 0 0 18 17"/>',save:'<path d="M6 4h12v17l-6-4-6 4V4Z"/>'};
+  const paths={update:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.6-2L20 8M4 16l2.3 3A7 7 0 0 0 18 17"/>'};
   return `<svg class="skill-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths[action]}</svg><span>${label}</span>`;
 }
 

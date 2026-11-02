@@ -46,6 +46,7 @@ async function digest(path: string): Promise<string> {
 
 export async function updateSkills(store: SettingsStore, settings: Settings, scope: string, progress: (value: UpdateProgress) => void, runner: UpdateRunner = run, signal?: AbortSignal, selectedNames?: string[]): Promise<UpdateProgress> {
   if (selectedNames && (!selectedNames.length || !selectedNames.every(skillName) || new Set(selectedNames).size !== selectedNames.length)) throw new Error("Select unique skill names.");
+  const toolOwned = new Map(settings.tools.flatMap(tool => (tool.provides ?? []).map(name => [name, tool.name] as const)));
   const library = new SkillLibrary(store), root = library.root(settings, scope);
   const temporary = await mkdtemp(join(tmpdir(), "afk-skill-update-"));
   const home = join(temporary, "home"), project = join(temporary, "project");
@@ -65,8 +66,9 @@ export async function updateSkills(store: SettingsStore, settings: Settings, sco
     if (!receiptText) throw new Error("Skills CLI has no update receipt for this scope. Install tracked skills through Skills CLI first.");
     const stagedReceipt = scope === "Global" ? join(home, ".agents/.skill-lock.json") : join(project, "skills-lock.json");
     const inventory = await library.inventory(settings, scope);
-    const entries = selectedNames ? inventory.filter(entry => selectedNames.includes(entry.name)) : inventory;
+    const entries = selectedNames ? inventory.filter(entry => selectedNames.includes(entry.name)) : inventory.filter(entry => !toolOwned.has(entry.name));
     if (selectedNames && entries.length !== selectedNames.length) throw new Error("A selected skill is missing from this scope.");
+    for (const name of selectedNames ?? []) if (toolOwned.has(name)) throw new Error(`${name} is managed by ${toolOwned.get(name)}. Update it from Tools.`);
     const originalReceipt = JSON.parse(receiptText) as { skills: Record<string, unknown> };
     if (!originalReceipt.skills || typeof originalReceipt.skills !== "object" || Array.isArray(originalReceipt.skills)) throw new Error("Skills CLI update receipt is invalid.");
     if (selectedNames?.some(name => !Object.hasOwn(originalReceipt.skills, name))) throw new Error("This skill has no Skills CLI update receipt. Reinstall it from its source through Skills CLI first.");

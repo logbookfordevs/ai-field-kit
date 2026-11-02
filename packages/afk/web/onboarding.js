@@ -1,9 +1,8 @@
 let welcomeActive=false,welcomeDismissedHere=false,tourStep=-1;
 let tourDimmerFrame;
 const tourSteps=[
-  {section:'Installed Skills',copy:'See the skills installed on this machine, switch their availability, and choose how agents invoke them. Save installed skills to keep a portable list you can restore elsewhere; the files stay on this machine.'},
-  {section:'Profiles',copy:'Group skills for a particular kind of work. Enable a profile globally or for a project, or use Read group once to read its instructions without changing activation.'},
-  {section:'Sources & Stacks',copy:'Bookmark skill repositories in Sources, and collect selected skills from multiple sources in Stacks. Choose what to install when you need it.'},
+  {section:'Kit',copy:'Your kit is what travels with you. Core skills stay on everywhere, packs are ready for when you need them, and this page shows where this machine differs. Sync it when you choose.'},
+  {section:'Installed Skills',copy:'See the skills installed on this machine, switch their availability, and choose how agents invoke them. the files stay on this machine.'},
   {section:'Agent rules',copy:'Write shared instructions for your agents here. Preview and sync them to the agents or files you choose.'},
   {section:'Tools',copy:'Keep installation and update commands for your tools in one place. Run a command when you choose to install or update a tool.'},
   {section:'Settings',copy:'Choose where your AFK folder lives and add the project folders you work in. Your configuration can travel between machines; project files stay where they are.'},
@@ -70,13 +69,12 @@ function showWelcome(){
   modal('Welcome to AFK 2.0',
     `<p class="welcome-intro">Keep your skills ready. Bring them into your work when you need them.</p>
     <p class="hint">Want to keep your configuration somewhere else? ${button('Choose AFK folder in Settings',"welcomeGo('Settings')",'text')}</p>
-    <section class="welcome-section"><h3>Start with a skill group</h3><p>A profile groups skills from a repository or this machine. New downloads stay disabled until you enable them.</p>
-      <dl class="welcome-actions"><div><dt>Enable for a project or Global</dt><dd>Make the group available to your agent. Disable it later; the files stay ready.</dd></div><div><dt>Read group once</dt><dd>Copy a command for your agent to read the group’s instructions. Activation stays unchanged.</dd></div></dl></section>
+    <section class="welcome-section"><h3>Build your kit from what you already use</h3><p>AFK lists the skills on this machine and asks which should travel with you. On another machine, one sync brings them back.</p>
+      <dl class="welcome-actions"><div><dt>Core</dt><dd>Skills you want on every machine, always on.</dd></div><div><dt>Packs</dt><dd>Groups you turn on for a project or Global when you need them, or read once with your agent.</dd></div></dl></section>
     <section class="welcome-section"><h3>Write your agent rules once</h3><p>Edit and save AGENTS.md here, then preview and sync it to Codex, Claude, or a custom file. AFK preserves text outside its marked region and backs up existing files.</p></section>
     <details class="welcome-extra"><summary>Skills, tools, and your portable setup</summary><ul>
       <li><strong>Installed Skills:</strong> inspect instructions, switch availability, and choose manual or automatic invocation.</li>
-      <li><strong>Sources &amp; Stacks:</strong> bookmark repositories or save a group of selected skills from multiple sources. Choose what to install here, or copy install commands to run yourself.</li>
-      <li><strong>Tools:</strong> save global install and update commands. Running one is an explicit action.</li>
+      <li><strong>Tools:</strong> save global install and update commands, and the skills a tool brings with it. Running one is an explicit action.</li>
       <li><strong>Settings:</strong> define project folders and choose where settings and rule files live. Export the AFK folder to take them with you.</li>
     </ul></details>`,
     button('I’ll explore','closeModal()','text')+button('Take a quick tour','startTour()','primary'));
@@ -92,9 +90,7 @@ function rememberWelcome(){
 }
 
 function welcomeGo(target){
-  const startsProfile=target==='Profiles'&&!profiles.length;
   rememberWelcome();closeModal();navigate(target);
-  if(startsProfile)createProfile();
 }
 
 $('sheet').addEventListener('cancel',rememberWelcome);

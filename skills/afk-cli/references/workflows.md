@@ -8,41 +8,39 @@ Resolve the file with `afk settings path`; read current JSON with `afk settings 
 
 AFK snapshots `settings.json` into `~/.afk/backups/` before a save replaces it. `afk settings backups` lists them; `afk settings restore <name>` restores one after snapshotting the current file. A save refused with "different AFK configuration" means the file on disk belongs to another configuration: check the backups instead of forcing the write.
 
-Direct edits are for `favoriteSources`, `stacks`, `tools`, and inactive project definitions. Preserve the rest of the current document, especially `profiles`, `preferences`, `managedLinks`, `independentSkills`, and `agentRules` destinations/receipts. Prepare a candidate, validate it, check that the original has not changed, then replace it. Prefer `project/save` for project changes because it handles renames and associated state. Profile preparation, activation, invocation, rule ownership, and import use AFK operations.
+Direct edits are for `favoriteSources`, `tools` (including `provides`), `kit`, and inactive project definitions. Preserve the rest of the current document, especially `profiles` (the packs), `preferences`, `managedLinks`, `independentSkills`, and `agentRules` destinations/receipts. Prepare a candidate, validate it, check that the original has not changed, then replace it. Prefer `project/save` for project changes because it handles renames and associated state. Pack preparation, activation, invocation, rule ownership, and import use AFK operations.
 
 `afk doctor --json` checks schema and local drift, including rule references. It is read-only. Read its findings and repair each through the relevant workflow; a clean report does not prove a running agent has loaded instructions.
 
-## Profiles and skills
+## Kit and packs
 
-Use `state` for inventories, profile IDs, readiness, and enabled targets. Scope is `Global` or an exact saved project name. A project inventory lists that project's files; globally available skills can still be discoverable there.
+Use `state` for inventories, pack IDs, readiness, and enabled targets, and `kit/state` for the kit compared with this machine. Scope is `Global` or an exact saved project name. Core is Global only.
 
-- Create/edit: discover repository or Global members with `discover`, choose explicit skill names, then `profile/save`. Saving a remote profile prepares missing selected copies in shared disabled storage; it preserves existing copies. Inspect existing names before reusing them across sources. For several repositories, pass `groups` (`[{source, skills}]`, each skill from one source), or `stack` with a saved stack ID to create or update profile `stack-<id>` from its current picks. Disable every enabled target before changing members or removing a profile.
-- Activate: use `afk profiles enable <id> [scope]` / `disable`, or `activation`. Activation is additive and owns discovery links. Disable preserves overlapping profiles, independent availability, and preexisting files.
-- `/afk-cli use profile <name>` means read that profile for this conversation. Match names without case sensitivity; quote names containing spaces when passing them to the shell. Use an ID to resolve duplicate names.
-- Read a group for this conversation: run `afk profiles use <name-or-id>` or `profile/read`, then read the returned instructions and relevant supporting resources. This includes prepared disabled members and leaves activation unchanged.
+- Compare: `afk kit` or `kit/state`. It lists Core status, tool-owned skills, installed skills not yet in the kit, and the sync plan.
+- Add or drop: `afk kit add <skill>... [--pack <name>] [--source <repo>]` and `afk kit drop <skill>`. These edit the kit and install nothing. A skill without a repository source cannot go to Core; link it to a tool (`provides`) or run `afk kit keep <skill>` to keep it on this machine only.
+- Sync: show the plan from `kit/state`, then run `afk sync` or `kit/sync` with that exact plan. Sync installs missing Core skills and turns Core skills back on. It removes nothing. Run a tool's install command only after the user approves that command, with `--run-tools` or `runTools`.
+- Follow: `afk kit follow <repo>`, then `afk kit check` lists new upstream skills. Add the ones the user chooses; nothing installs automatically.
+- Create/edit a pack: discover repository or Global members with `discover`, choose explicit skill names, then `pack/save`. Saving a remote pack prepares missing selected copies in shared disabled storage and preserves existing copies. For several repositories pass `groups` (`[{source, skills}]`, each skill from one source). A pack that is on can be edited. Turn it off everywhere before removing it.
+- Turn on or off: `afk packs enable <id> [scope]` / `disable`, or `activation`. This is additive and owns discovery links. Turning off preserves overlapping packs, independent availability, and preexisting files.
+- `/afk-cli use pack <name>` means read that pack for this conversation. Match names without case sensitivity; quote names containing spaces when passing them to the shell. Use an ID to resolve duplicate names.
+- Read a pack for this conversation: run `afk packs use <name-or-id>` or `pack/read`, then read the returned instructions and relevant supporting resources. This includes prepared disabled members and leaves activation unchanged.
+- Share: `pack/manifest` returns a pack or `core` as a manifest. `pack/import-preview` then `pack/import` saves a reviewed manifest, passing both `pack` and `expected` unchanged. Neither installs anything.
 - Inspect a skill: `afk skills get <name> [scope]` reads SKILL.md; `skill/read` also lists supporting files and can read a chosen relative file.
-- Set individual availability with `skill/availability`, supplying the desired `enabled` boolean. Retries preserve that state. Disable profiles that own the skill before changing its individual availability. Invocation uses `invocation` and is independent of availability. Inspect the supported modes and current override before changing them; a project override can create an isolated copy, and reset restores its original/shared metadata behavior.
+- Set individual availability with `skill/availability`, supplying the desired `enabled` boolean. Retries preserve that state. Turn off packs that own the skill before changing its individual availability. Invocation uses `invocation` and is independent of availability. Inspect the supported modes and current override before changing them; a project override can create an isolated copy, and reset restores its original/shared metadata behavior.
 
-Verify inventories and enabled targets after availability changes, native metadata after invocation changes, and actual output after reads. Disabling a skill does not erase instructions already read in a conversation.
+Verify inventories and enabled targets after availability changes, native metadata after invocation changes, and actual output after reads. Turning a skill off does not erase instructions already read in a conversation.
 
-## Sources, stacks and tools
+### Migration
 
-Sources are bookmarks in `favoriteSources`: saving one neither installs skills nor prepares a profile. Omit `skills` to select all; an explicit selection is a nonempty unique list of skill names. Changing the source requires reviewing that selection. Generate Skills CLI installation commands from the saved source/selection, destination, and optional agent; execute only when installation is requested.
+If a write fails with the message that settings use the old stacks format, run `afk migrate` with no `--apply`. Show the dry run and let the user choose which stack becomes Core (`--core <stack-id>`), which repositories to follow, and which tools to link. Pass `--apply` only after the user approves that exact report. The old file is kept under `~/.afk/backups/pre-kit-*`. Remind the user that every machine sharing the file must update AFK.
 
-Stacks live in optional `stacks` entries as `{manifest,origin?}`. Each version-one
-manifest has `id`, `name`, optional `description`, and ordered `sources` groups of
-`{name,source,skills}` with explicit selected names. When authoring a manifest,
-read the [version-one schema](https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/docs/schemas/skill-stack.v1.schema.json)
-and [complete example](https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/docs/examples/skill-stack.v1.json).
-Import JSON or a direct HTTPS JSON URL through `stack/preview`. Inspect its proposed stack and existing snapshot,
-then pass both unchanged to `stack/save`. For refresh, preview the saved origin
-with its ID; compare all groups and local edits before replacement. Use
-`stack/script` for the selected scope/agent and `stack/remove` with the inspected
-existing snapshot. These operations manage definitions or return text; they do
-not install skills, create profiles, or change activation. Manifest refresh changes
-selections; installed package updates remain a separate Skills CLI action.
+## Sources and tools
 
-Tools are global definitions in `tools`. Saving or removing an entry changes management only. `tool/run` executes the saved install command from the home directory; `update: true` selects update, falling back to install when empty. Inspect the saved command and use this operation when execution is authorized. Verify its returned output and exit code separately from saving the definition.
+Sources are bookmarks in `favoriteSources`, shown as Try later: saving one neither installs skills nor prepares a pack. Omit `skills` to select all; an explicit selection is a nonempty unique list of skill names. Changing the source requires reviewing that selection. Generate Skills CLI installation commands from the saved source/selection, destination, and optional agent; execute only when installation is requested with `source/install`.
+
+When authoring a manifest, read the [version-one schema](https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/docs/schemas/skill-stack.v1.schema.json) and [complete example](https://raw.githubusercontent.com/logbookfordevs/ai-field-kit/main/docs/examples/skill-stack.v1.json).
+
+Tools are global definitions in `tools`. An optional `provides` lists the skills the tool installs; the kit then tracks the tool, and `skills/update` skips or refuses those skills. Saving or removing an entry changes management only. `tool/run` executes the saved install command from the home directory, and only after the user approves it; `update: true` selects update, falling back to install when empty. Inspect the saved command and use this operation when execution is authorized. Verify its returned output and exit code separately from saving the definition.
 
 For installed-skill updates, use `skills/update` with the requested scope, or `afk skills update [name] -g` / `afk skills update [name] -p <project>`. Provide `names` to update only selected skills; omit it for all tracked skills. AFK delegates to Skills CLI in isolation and preserves availability and saved invocation preferences. Inspect `skills/update-state` for progress, output and exit code. In the active app session, `skills/update-cancel` stops preparation or downloading; once file replacement starts it finishes safely. Skills CLI receipts determine which installations can update; running it directly bypasses AFK availability protection.
 
@@ -58,10 +56,10 @@ Use `rules/disconnect` with the chosen cleanup behavior: remove unchanged owned 
 
 ## Portable configuration
 
-Use `workspace` or `location` to choose/move the AFK folder/settings file; AFK copies canonical Markdown and records the local pointer. Inspect the resolved path afterward, including any `AFK_SETTINGS` override. For switching ownership, disable active profiles/skills and disconnect managed destinations first. Let AFK enforce its preconditions rather than clearing receipts by hand.
+Use `workspace` or `location` to choose/move the AFK folder/settings file; AFK copies canonical Markdown and records the local pointer. Inspect the resolved path afterward, including any `AFK_SETTINGS` override. For switching ownership, turn packs off, disable active skills and disconnect managed destinations first. Let AFK enforce its preconditions rather than clearing receipts by hand.
 
-`afk settings export <file>` exports configuration only and refuses to overwrite an existing file. Use `import` for reviewed settings JSON; disable profiles and individual skills and resolve managed links first. Import resets readiness, activation, and link/individual receipts while retaining local rules ownership. Review local project paths and prepare/enable profiles intentionally afterward.
+`afk settings export <file>` exports configuration only and refuses to overwrite an existing file. Use `import` for reviewed settings JSON; turn packs off, disable individual skills and resolve managed links first. Import resets readiness, activation, and link/individual receipts while retaining local rules ownership. A version 1 file imports with an empty Core. Review local project paths and turn packs on intentionally afterward.
 
-Use `bundle/export`, `bundle/preview`, and `bundle/import` for the portable AFK folder, including saved Markdown. Preview the archive and supply reviewed local destination and project mappings. Disable active profiles/skills and disconnect rules before replacing the folder. Import resets local ownership and does not execute tools, install skills, or sync rule destinations. Verify saved files and state, then prepare, activate, and preview/sync only the requested effects.
+Use `bundle/export`, `bundle/preview`, and `bundle/import` for the portable AFK folder, including saved Markdown. Preview the archive and supply reviewed local destination and project mappings. Turn packs off, disable active skills and disconnect rules before replacing the folder. Import resets local ownership and does not execute tools, install skills, or sync rule destinations. Verify saved files and state, then turn on packs, run `afk sync`, and preview/sync rules only for the requested effects.
 
 Transport through Git or a synced folder belongs to the chosen provider. AFK does not commit/push files, fetch rules repositories, or reconcile concurrent machines; ownership and destination paths remain machine-local.

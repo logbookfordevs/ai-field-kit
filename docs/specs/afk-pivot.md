@@ -5,47 +5,90 @@ Approved direction: 2026-10-01.
 
 ## Purpose and boundaries
 
-AFK manages local skills, shared profiles, source bookmarks, portable stacks, and tool
+AFK manages local skills, a portable kit (Core, shared packs and source bookmarks), and tool
 commands. The CLI opens a local web app and exposes focused reading/activation
 operations. Catalogs, setup presets, conditional rule layers, hooks, MCP configuration, custom-agent
 provisioning, and general setup orchestration are outside its scope.
 
-The six sections are Profiles, Installed Skills, Sources & Stacks, Tools,
-Agent rules, and Settings. Tools, Agent rules and Settings have no project picker. Profiles put the target
+The five sections are Kit, Installed Skills, Agent rules, Tools, and Settings. Tools,
+Agent rules and Settings have no project picker. The Kit's Packs tab puts the target
 beside each activation action; Installed Skills uses a page-level inventory scope.
 
-## Profiles
+## Kit
 
-Definitions are shared and reusable. A definition stores a name and identifier,
-selected skill names, readiness, and enabled targets, plus either one source
-reference or `groups` of `{source, skills}` for several repositories (`source`
-repeats the first group and `skills` lists every member in order, so older readers
-still see valid members). Each skill comes from exactly one source. Create from a
-repository, existing Global skills, or a saved stack: **Turn into profile** copies the
-stack's current picks into profile `stack-<id>`, and **Update profile** replaces them
-later while the profile is off everywhere. Stack edits update a linked profile only when it
-is off everywhere; otherwise the stack card and profile row mark it out of date. The
-stack card also shows the linked profile's state and turns it on or off per scope. Multi-source profiles are edited through their stack.
+The kit is the set of skills that travels with the user, stored once in the settings
+file (`kit.core` plus the packs). A machine is reconciled against it; the kit is not an
+install plan. Its page has tabs: **This machine**, **Core**, **Packs** and **Try later**.
+
+**Core** is always-on skills grouped by repository, stored as `{source, name?, skills,
+follow?}`. It is Global only, and a skill belongs to one Core source. AFK ships no default
+Core. **Follow** is a flag on a Core source: checking upstream offers new skills and never
+installs them.
+
+**This machine** compares the kit with the Global inventory. Core skills that are missing
+or off are listed with a sync action. Installed, available Global skills that are not in
+Core, a pack, a tool's `provides` or the machine-only list are shown as not in the kit.
+Each can go to Core, a pack, **This machine only**, or be removed. A skill without a
+repository source can't go to Core; it must be linked to a tool or kept machine-only.
+Machine-only choices are stored in the machine-local state, not the portable file.
+
+A tool entry may list `provides`, the skills it installs. The kit tracks the tool instead of
+those skills. Installed Skills labels them, and skill updates skip them or reject them by
+name; users update them with the tool's command.
+
+**Sync** (`afk sync`, `kit/sync`) takes an exact plan from `kit/state` and rejects a plan that
+no longer matches. It installs missing Core skills through Skills CLI, turns off Core skills
+back on, and never removes anything. A tool's install command runs only when the user
+approves it: `runTools` in the operation, `--run-tools`, or an interactive yes. Dropping a
+skill from the kit keeps its files; other machines then show it as not in the kit.
+
+**Try later** is the source bookmarks described below.
+
+### Move from stacks
+
+Settings version 2 adds `kit` and rejects `stacks` and `savedSkills`. A version 1 file
+with stacks can be read, but `SettingsStore.save` refuses every write until it is
+migrated, through the app's **Move to your kit** screen or `afk migrate` (a dry run
+unless `--apply`). The user chooses which stack becomes Core; others become packs.
+Pack definitions are unchanged, so machine-local activation survives. `migration/apply`
+rejects a file that changed since the dry run, `assertNothingLost` guards the write, and
+the old file is kept as `~/.afk/backups/pre-kit-*.json`, outside the backup rotation and
+restorable with `afk settings restore`. Migration never moves skill files. A version 1 file
+without stacks upgrades on its next save. Older AFK versions reject version 2.
+
+## Packs
+
+Packs are the earlier profiles and stacks. They are stored in the `profiles` settings
+array, so IDs and member data are unchanged. A definition stores a name and identifier,
+selected skill names, readiness, and enabled targets, plus either one source reference or
+`groups` of `{source, skills}` for several repositories (`source` repeats the first group
+and `skills` lists every member in order). Each skill comes from exactly one source.
+Optional `description`, `origin` and `sourceNames` are display metadata and are not part of
+the definition hash that ties machine-local activation to a pack. Create a pack from a
+repository, existing Global skills, or a pasted or fetched manifest.
+
+A pack that is on can be edited. It stays on, added skills are exposed in each enabled
+target, dropped skills lose only AFK-owned links, and a failure restores the previous pack.
 
 Repository discovery delegates to Skills CLI in an isolated temporary workspace
 and home. Users select members; only selected missing copies are retained under
 `~/.agents/skills/.disabled/`. Existing available skills are preserved. Saving a
-remote profile prepares its members; there is no remote-only invocation path.
-Failures are visible, and the profile is not saved as ready on failure. Any selected
+remote pack prepares its members; there is no remote-only invocation path.
+Failures are visible, and the pack is not saved as ready on failure. Any selected
 copies already prepared remain available for retry.
 
 Global and project activation are independent. Selecting a target changes the
 shown state only. Enabling creates owned discovery links; disabling withdraws only
-owned exposure, preserving overlapping profiles, independent activation, and
+owned exposure, preserving overlapping packs, independent activation, and
 preexisting user files. Activation is additive, with no focus mode.
 
-Disable a profile in every target before editing or removing it. Removal deletes
+Turn a pack off in every target before removing it. Removal deletes
 the definition, not stored skill files. Skill names identify stored copies; another
 source with the same name does not get a separate namespace. Review existing
 members before reusing names across sources.
 
-**Use with your agent** opens guidance and a copyable command for the profile ID.
-`afk profiles use <name-or-id>` reads all locally prepared member instructions, including
+**Read once** opens guidance and a copyable command for the pack ID.
+`afk packs use <name-or-id>` (`afk profiles` is an alias) reads all locally prepared member instructions, including
 disabled members, and prints supporting resource directories. It does not change
 activation, register a slash command, or inject another chat. A calling agent must
 run the command and read its output. Instructions already read stay in that
@@ -64,9 +107,9 @@ separate In subfolders group, one disclosure per folder, up to four folder
 levels deep. Dot folders, symlinked folders and the inside of a skill's own
 folder are not searched. These entries show description and invocation metadata
 and support Inspect only; they are excluded from selection, availability,
-invocation changes, updates, deletion, profiles, saved lists and the discovery
+invocation changes, updates, deletion, packs and the discovery
 estimate, because the tool that created the folder owns them. Name search and
-the invocation filter apply to them; availability, source and profile filters
+the invocation filter apply to them; availability, source and pack filters
 hide them. The state operation returns them as `nestedInventories`, and
 `skill/read` reads one when given its `folder`.
 
@@ -86,20 +129,20 @@ An empty Claude skills directory can be replaced after review; populated folders
 files and unrelated links are preserved and reported as conflicts. Disconnecting
 removes only the folder link, keeping all canonical skill files. This local
 filesystem state is inspected directly, rather than exported as a portable
-configuration preference. Profile and individual activation avoid duplicate
+configuration preference. Pack and individual activation avoid duplicate
 operations when the discovery folders share one underlying directory.
 
 The invocation filter uses effective Claude/Codex metadata, including differences
 between agents and unknown metadata. It combines with availability, recorded
-source, saved profile membership and
+source, pack membership and
 name search within the selected scope without changing skill state. The discovery
-estimate counts available automatic skills and follows only the Profile filter.
-Other filters change the list only; profile membership includes disabled profiles.
+estimate counts available automatic skills and follows only the Pack filter.
+Other filters change the list only; pack membership includes packs that are off.
 
 Inspection reads real SKILL.md and supporting files inside the selected skill
-folder. Individual availability is separate from profiles; disable owning profiles
-before toggling a member directly. Independently available skills survive profile
-disable. Existing files are not replaced merely because a profile names the skill.
+folder. Individual availability is separate from packs; turn owning packs off
+before toggling a member directly. Independently available skills survive a pack
+turning off. Existing files are not replaced merely because a pack names the skill.
 
 Invocation settings are distinct from availability. Manual and Automatic write
 Claude's `disable-model-invocation` and Codex's `allow_implicit_invocation` policy.
@@ -119,10 +162,10 @@ updates bypass this protection; untracked prepared copies remain untracked.
 
 Permanent deletion is separate from disabling. Delete beside Inspect opens a review of
 the affected folders and links; a second click on Delete permanently confirms it.
-No typed skill name or second dialog is required. Enabled profiles block deletion;
-disabled definitions retain their members. Deleting Global storage marks affected
-profiles unprepared; enabling a repository profile restores missing members before
-activation. Local-only profiles require restoring files or editing membership.
+No typed skill name or second dialog is required. Packs that are on block deletion;
+packs that are off retain their members. Deleting Global storage marks affected
+packs unprepared; turning on a repository pack restores missing members before
+activation. Local-only packs require restoring files or editing membership.
 Available physical copies and AFK-owned links
 to same-scope disabled storage can be deleted without a separate disable step.
 Owned availability links are reviewed and removed together with the storage;
@@ -141,12 +184,12 @@ absolute entry-file path without opening the app or reading settings. CLI help
 instructs agents to read that file before management; skill installation is optional.
 
 The skill complements the app with a hybrid interface. Agents can edit
-source bookmarks, stacks, saved tools, and inactive project definitions while preserving
-managed fields. Settings schema is editor guidance; validation checks structure,
+source bookmarks, the kit, saved tools (including `provides`), and inactive project
+definitions while preserving managed fields. Settings schema is editor guidance; validation checks structure,
 and read-only doctor reports schema and local filesystem drift.
 
 Headless `manage` operations use the same execution layer as the web app, accept
-JSON file/stdin payloads, and return JSON. Profiles, invocation changes, skill
+JSON file/stdin payloads, and return JSON. Packs, the kit and sync, invocation changes, skill
 availability, rule regions, ownership, location changes, and imports use these
 operations. Rule sync requires an unchanged reviewed preview; explicit conflict
 replacement also requires its reviewed region and preview. A saved tool runs
@@ -157,11 +200,11 @@ These checks establish saved local state, not that a running agent has discovere
 new instructions. Concurrent processes and storage providers remain independent
 writers; the workflow rechecks original files before replacing simple definitions.
 
-## Sources & Stacks
+## Try later (source bookmarks)
 
 Shared bookmarks store a name, source reference, an optional user-written
-description (never fetched) and optional selected skill names. Sources render as
-a compact searchable list; secondary actions sit in a per-row menu.
+description (never fetched) and optional selected skill names. They render as
+a compact searchable list in the Try later tab; secondary actions sit in a per-row menu.
 All skills is the default and omits `skills`; Choose skills saves a nonempty,
 unique list of names. Both modes support adding, editing, removing, copying one
 install command, and copying a sequential install-all script. The source reference
@@ -169,10 +212,10 @@ remains visible below the name for text selection and copying. Each command uses
 the saved selection rather than expanding it to all.
 Changing the source link clears its previous selection. Discovery stages files in
 temporary storage, shows descriptions and supports search with retained selection;
-saving a bookmark does not prepare a profile or copy skills into user inventory.
+saving a bookmark does not prepare a pack or copy skills into user inventory.
 When Skills CLI reports original repository paths, the picker groups skills into
 expandable folders with selection counts. Search includes folder paths and opens
-matching branches. The same tree appears when choosing remote profile members.
+matching branches. The same tree appears when choosing remote pack members.
 Sources without folder metadata retain a flat list; AFK does not infer folders
 from skill names. Folder paths are temporary discovery metadata, not bookmark
 configuration.
@@ -183,24 +226,19 @@ New upstream skills do not join an explicit selection automatically.
 Command generation can select Global/project destination and an optional agent.
 Copying commands never executes them. Separate Install actions run Skills CLI
 after target review; removing bookmarks does not uninstall anything.
-The Cards/List switch affects both collections. Create profile opens a draft
-with the source name and selected members, or discovers all current members for
-All skills. Review and saving are explicit; the bookmark and activation remain
-unchanged. Profiles retain explicit selections rather than following later source edits.
+Create pack opens a draft with the source name and selected members, or discovers
+all current members for All skills. Review and saving are explicit; the bookmark and
+activation remain unchanged. Packs retain explicit selections rather than following
+later source edits.
 
-Stacks add named, versioned selections across original repositories alongside the
-existing bookmarks. The optional settings `stacks` array preserves compatibility
-with old settings. Import accepts pasted JSON or a direct HTTPS JSON URL. Both
-paths validate the same manifest and show a review before saving. An origin URL
-enables explicit refresh; the proposed complete replacement is reviewed against
-current selections, and stale saves are rejected. A source card's Add to stack action chooses an existing or new stack, then opens that form with the source selected and its skill picker open. Create and Edit share the
-source-selection form, which can also add a repository: after review, saving the stack also
-saves each selected new repository as a bookmark with the same explicit picks (equivalent
-references reuse the existing choice); Edit prefills saved groups, name and description while retaining the identifier and refresh origin. Edit JSON remains
-available separately. Create/edit/export/remove and copy-script actions never
-install, activate, or create profiles. Doctor validates
-stacks without network requests and warns about selected-name collisions across
-repositories. The [manifest contract](../skill-stacks.md) owns publisher details.
+Packs can be published and shared as `skill-stack.v1` manifests. Import accepts pasted
+JSON or a direct HTTPS JSON URL. Both paths validate the same manifest and show a review
+before saving it as a pack with the ID `stack-<manifest id>`. An origin URL enables
+explicit refresh; the proposed replacement is reviewed against the saved pack, and stale
+saves are rejected. **Export JSON** on a pack or Core returns a manifest; a pack with
+skills from this machine only can't be exported. Importing and exporting never install,
+turn on, or change skills. Doctor validates manifests without network requests. The
+[kit guide](../kit.md) owns publisher details.
 
 ## Tools
 
@@ -224,15 +262,16 @@ receipts. Default and custom locations, precedence, physical paths, and import
 semantics are detailed in [Settings and storage](../settings.md).
 
 Add projects through a home-rooted folder browser with ancestor and parent
-navigation, then select the folder and name it. Project creation does not enable
-profiles. Rename preserves target names/preferences; changing a folder requires
-its profiles to be disabled first.
+navigation, then select the folder and name it. Project creation does not turn on
+packs. Rename preserves target names/preferences; changing a folder requires
+its packs to be off first.
 
 Export downloads JSON. Import reviews folder mappings, replaces configuration,
-clears local ownership receipts and individual activation state, and marks profiles
-inactive/unprepared. Current profiles must be disabled first. Imported preferences
-are stored but not applied to native files automatically. Saved tool commands do
-not run. Prepare and enable intentionally on the destination machine.
+clears local ownership receipts and individual activation state, and marks packs
+off and unprepared. Current packs must be turned off first. A version 1 file imports
+with an empty Core. Imported preferences are stored but not applied to native files
+automatically. Saved tool commands do not run. Turn packs on and run `afk sync`
+intentionally on the destination machine.
 
 A storage provider may sync the chosen settings file. AFK does not sync files,
 reconcile concurrent machines, or automatically apply another machine's activation.
@@ -280,28 +319,30 @@ separate verification/delivery work.
 ## First access and interface guidance
 
 The local app opens a dismissible Welcome after its first successful load. It
-explains profile activation versus group reading and saved rules versus destination
+explains pack activation versus reading a pack once and saved rules versus destination
 sync, with actions leading to the actual workflow. Dismissal is stored in settings
 and survives a server restart or port change. About AFK can reopen it.
 
-Profile creation has separate repository and local modes, searchable names and
+Pack creation has separate repository and local modes, searchable names and
 descriptions, and a selection count. Filtering retains chosen members. Installed
 Skills shows effective native invocation metadata and the behavior restored by
 clearing an override. Narrow screens keep a compact section selector and app
 utilities available while scrolling.
 
-### Installing saved sources and stacks
+### Installing saved sources and syncing
 
-Install runs Skills CLI for a saved source or stack, using the chosen scope and an
-explicit agent. Copied scripts retain their existing interactive behavior. App
-installation skips prompts after the user chooses the target, processes sources
-sequentially and retains progress/output during the session. Closing the dialog
+Install runs Skills CLI for a saved source, and sync runs it for missing Core skills, using
+the chosen scope and an explicit agent. Copied scripts retain their existing interactive
+behavior. App installation skips prompts after the user chooses the target, processes
+sources sequentially and retains progress/output during the session. Closing the dialog
 does not cancel the job. Cancellation stops the child process and later sources;
 completed or partial files remain. Installation can replace existing skills and
 make them available; the protected Installed Skills updater is the path for
-preserving an existing disabled state. Saving or editing a bookmark/stack still
-does not install anything. Agent operations expose the same installation actions.
+preserving an existing disabled state. Saving or editing a bookmark or pack still
+does not install anything. `afk install <url>` saves a manifest as a pack and then installs
+it; a manifest selecting one skill from two sources is rejected. Agent operations expose the
+same installation actions.
 
 ### Portable configuration and local state
 
-An AFK folder carries definitions, canonical rules and optional manually saved installed-skill lists. Profile activation, readiness, invocation preferences and ownership receipts persist separately under the machine home, keyed by configuration identity. Reusing the folder on another machine does not install skills or enable profiles. Installed Skills separates local inventory from saved-list comparison; restoration is explicitly selected and reapplies saved availability and invocation. Project folder repair updates a mapping only and never transfers project files.
+An AFK folder carries definitions (the kit, packs, bookmarks, tools), and canonical rules. Pack activation, readiness, invocation preferences, machine-only choices and ownership receipts persist separately under the machine home, keyed by configuration identity. Reusing the folder on another machine does not install skills or turn on packs; `afk sync` reconciles Core with that machine after review. Project folder repair updates a mapping only and never transfers project files.

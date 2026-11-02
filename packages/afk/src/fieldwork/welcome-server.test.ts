@@ -33,7 +33,7 @@ it("persists welcome dismissal across server sessions without losing serialized 
   expect((await store.read()).welcomeDismissed).toBeUndefined();
 
   const responses = await Promise.all([
-    post("/api/profile/save", { name: "Example profile", source: "Local skill selection", skills: ["example"] }),
+    post("/api/pack/save", { name: "Example profile", source: "Local skill selection", skills: ["example"] }),
     post("/api/welcome", {}),
   ]);
   expect(responses.map(response => response.status)).toEqual([200, 200]);

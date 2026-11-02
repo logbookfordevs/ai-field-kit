@@ -1,4 +1,4 @@
-![AFK 2.0 — a paper field notebook for skills, profiles, tools and shared rules](docs/assets/afk-readme-hero-v2.webp)
+![AFK 2.0 — a paper field notebook for your skill kit, tools and shared rules](docs/assets/afk-readme-hero-v2.webp)
 
 # AI Field Kit — AFK 2.0
 
@@ -7,8 +7,9 @@
 > or fork its tagged source from the [pre-2.0 releases](https://github.com/logbookfordevs/ai-field-kit/releases).
 
 AFK is a local web workspace for the skills and tools you use with coding agents.
-Keep reusable skill profiles ready, enable them globally or for a project, and
-read a whole profile on demand without enabling it.
+Keep a kit of skills that travels with you across machines, group the occasional
+ones into packs, turn a pack on globally or for a project, and read a whole pack
+on demand without turning it on.
 
 AFK 2.0 is released. Unreleased changes in this checkout are listed under
 **Next Release** in the [changelog](CHANGELOG.md).
@@ -31,33 +32,46 @@ skill activation.
 
 | Section | Purpose | Scope |
 | --- | --- | --- |
-| Profiles | Prepare selected skills once, enable a group, or read its instructions | Shared definitions; activation per target |
+| Kit | The skills that travel with you: Core, packs, and skills to try later, compared with this machine | One kit per settings file; packs are turned on per target |
 | Installed Skills | Inspect and update local files, filter skills, manage availability and invocation, delete stored copies | Global or a selected project |
-| Sources & Stacks | Save repository bookmarks or multi-source selections, copy commands or run installation | Shared definitions; installation targets Global or a project |
-| Tools | Save and explicitly run install/update commands | Always global |
 | Agent rules | Edit shared rules and references, preview and sync managed regions | Shared document; explicit destination files |
+| Tools | Save and explicitly run install/update commands | Always global |
 | Settings | Choose the AFK folder, import/export, define project folders | One configuration |
 
-Profiles prepare repository skills through Skills CLI in a private temporary
-workspace. Newly selected copies stay disabled under your home agents directory.
-Activation creates links in the selected discovery paths; disabling removes only
-AFK-owned exposure. Existing files and skills needed by another profile are preserved.
+The Kit page has four tabs. **This machine** shows what differs between your kit and
+this computer and lets you decide about skills that aren't in it yet. **Core** holds
+the skills you want always on, grouped by repository. **Packs** are named groups you
+turn on when needed. **Try later** keeps repository bookmarks. See the
+[Kit guide](docs/kit.md).
 
-**Use with your agent** shows instructions and a copyable command. AFK prints
-the group's instructions for the calling agent to read; it does not inject another
+Run `afk sync` on a new machine to install missing Core skills and turn Core skills
+back on. Sync shows its plan first, never removes anything, and runs a tool's saved
+install command only when you approve it.
+
+Packs prepare repository skills through Skills CLI in a private temporary
+workspace. Newly selected copies stay disabled under your home agents directory.
+Turning a pack on creates links in the selected discovery paths; turning it off
+removes only AFK-owned exposure. Existing files and skills needed by another pack are preserved.
+A pack that is on can be edited without turning it off.
+
+**Read once** shows a pack's instructions and a copyable command. AFK prints
+the instructions for the calling agent to read; it does not inject another
 chat or register a slash command.
 
-Sources and stacks offer copied commands or explicit Install actions with progress.
 Installed Skills updates preserve availability and invocation preferences; its
-Profile filter also scopes the automatic discovery token estimate. Source cards
-can create a profile draft without removing the bookmark. Tools run saved commands
+Pack filter also scopes the automatic discovery token estimate. Skills that a tool
+installs are labeled and update through the tool. Tools run saved commands
 only when you choose Install or Update, individually or in a reviewed batch.
 Removing a tool entry does not uninstall it.
 
-Stack publishers can use the [versioned manifest contract](docs/skill-stacks.md) and
-[example](docs/examples/skill-stack.v1.json). Import pasted JSON or a direct HTTPS
-manifest URL, review it, then copy its sequential Skills CLI script or install
-through the app.
+Publishers can share a pack or Core with the [versioned manifest contract](docs/kit.md#share-a-pack-with-a-manifest)
+and [example](docs/examples/skill-stack.v1.json). Import pasted JSON or a direct HTTPS
+manifest URL, review it, then save it as a pack.
+
+> **Breaking change:** settings are now version 2. Older AFK versions reject them, so
+> update AFK on every machine that shares a settings file. Files that still hold
+> stacks are not written until you run `afk migrate` or use the app's
+> **Move to your kit** screen. See [Move to the kit](docs/kit.md#move-from-stacks).
 
 ## Manage AFK through your agent
 
@@ -73,6 +87,7 @@ The [agent guide](docs/agents.md) explains installation and workflows.
 
 - [App guide and CLI reference](packages/afk/README.md)
 - [Managing AFK with an agent](docs/agents.md)
+- [The kit: Core, packs and sync](docs/kit.md)
 - [Settings, storage, and import/export](docs/settings.md)
 - [Agent rules and conflict handling](docs/specs/agent-rules.md)
 - [Development and verification](docs/development.md)
