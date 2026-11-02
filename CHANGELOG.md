@@ -11,9 +11,13 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.1.0 - 2026-11-02
+
 ### Breaking
 
 - **Settings move to version 2, and older AFK versions reject them.** Update AFK on every machine that shares a settings file before opening it there. A file that still has stacks can be read but not changed until you migrate it with `afk migrate` (a dry run until you add `--apply`) or the app's **Move to your kit** screen. Files without stacks upgrade silently on their next save. Migration keeps a permanent copy of the old file as `~/.afk/backups/pre-kit-*.json`, outside the 20-file rotation; restore it with `afk settings restore`. It never moves skill files.
+- **Update the `afk-cli` skill your agents load** with `afk skills update afk-cli -g`. Older copies describe the removed `stack/*` and `profile/*` operations. `afk guide` always points to the copy bundled with AFK.
+- **Saved skills lists are retired.** Settings without stacks upgrade on the next save without a prompt, and any saved list is kept only in the permanent `~/.afk/backups/pre-kit-*.json` copy, restorable with `afk settings restore`.
 - **Stacks, profiles and the saved skills list are replaced by the kit.** The app now has five sections: Kit, Installed Skills, Agent rules, Tools and Settings. You choose which stack becomes Core when you migrate; the others become packs, and AFK ships no default Core. Old settings and ZIP imports open with an empty Core.
 - Operations changed: `profile/save|remove|read` are `pack/save|remove|read`, and every `stack/*` operation and the saved-skills operations are gone, along with `onlyMissing`. Run `afk manage describe` for the new list.
 
