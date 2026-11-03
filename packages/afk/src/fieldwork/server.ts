@@ -7,6 +7,9 @@ import { SettingsStore } from "./settings.js";
 import { FieldworkOperations } from "./operations.js";
 import { AppUpdates } from "./app-update.js";
 import { operationCatalog } from "./operation-catalog.js";
+import { startSchedule } from "./skill-schedule.js";
+import { DuplicateCopyError } from "./skills.js";
+import type { UpdateProgress } from "./skill-update.js";
 
 async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
   let text = "";
@@ -64,7 +67,7 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
         if ((request.method !== "POST" && !(request.method === "GET" && isRead)) || !Object.hasOwn(operationCatalog, operation)) {
           send({ error: "Unknown operation." }, 404); return;
         }
-        const updateReads = ["state", "rules/state", "bundle/export", "skills/update-state", "skills/install-state", "skills/restore-state", "skills/update-cancel", "skills/install-cancel", "skills/restore-cancel"];
+        const updateReads = ["state", "rules/state", "bundle/export", "skills/update-state", "skills/schedule-state", "skills/install-state", "skills/restore-state", "skills/update-cancel", "skills/install-cancel", "skills/restore-cancel"];
         if (request.method === "POST" && !updateReads.includes(operation) && (updatingRequested || (await updates.state(store.home))?.pending)) throw new Error("AFK is updating. Wait for the app to restart before making changes.");
         const data = request.method === "POST" ? await body(request) : {};
         send(await operations.run(operation, data)); return;
@@ -82,7 +85,8 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
     };
     void handle().catch(error => {
       if (!response.headersSent) response.writeHead(400, { "Content-Type": "application/json" });
-      response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Operation failed." }));
+      const duplicate = error instanceof DuplicateCopyError ? { code: error.code, skill: error.skill, scope: error.scope } : {};
+      response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Operation failed.", ...duplicate }));
     });
   });
   await new Promise<void>((accept, reject) => { server.once("error", error => {
@@ -91,9 +95,15 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
   }); server.listen(port, "127.0.0.1", accept); });
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("Could not start AFK.");
+  const schedule = startSchedule(operations.schedule, {
+    update: async () => await operations.run("skills/update", { scope: "Global" }) as UpdateProgress,
+    blocked: async () => updatingRequested || operations.skillUpdatePending || Boolean((await updates.state(store.home))?.pending),
+    onError: error => console.error(error),
+  });
   closeApp = () => {
     shutdown ??= (async () => {
       await new Promise<void>((accept, reject) => server.close(error => error ? reject(error) : accept()));
+      await schedule.stop();
       await operations.close();
     })();
     return shutdown;

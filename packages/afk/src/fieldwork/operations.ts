@@ -1,5 +1,6 @@
 import { installSkills, type InstallProgress, type InstallRunner } from "./skill-install.js";
 import { updateSkills, type UpdateProgress } from "./skill-update.js";
+import { SkillUpdateSchedule } from "./skill-schedule.js";
 import { sharingState, setSharing } from "./sharing.js";
 import { deleteSkill, previewDeletion } from "./deletion.js";
 import { fetchStack, manifestUrl, validateStack, type SkillStack } from "./stacks.js";
@@ -9,6 +10,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { spawn } from "node:child_process";
 import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
+import { resolveDuplicate } from "./duplicates.js";
 import { SourcePreparation } from "./preparation.js";
 import { SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
@@ -30,7 +32,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "kit/add": ["to"], "kit/drop": ["name"], "kit/machine-only": ["name"], "kit/follow": ["source"],
     "kit/install-preview": ["source"], "kit/install-read": ["source", "name"], "kit/install": ["source", "to"],
     activation: ["id", "scope"], "project/save": ["name", "path"],
-    invocation: ["name", "scope"], "skill/toggle": ["name", "scope"],
+    invocation: ["name", "scope"], "skill/toggle": ["name", "scope"], "skill/resolve-duplicate": ["name", "scope", "keep"],
     "skills/update": ["scope"], "skills/delete-preview": ["scope"], "skills/bulk": ["scope", "action"],
     "skills-sharing/state": ["scope"], "skills-sharing/set": ["scope"],
     "skill/delete-preview": ["name", "scope"], "skill/delete": ["name", "scope"],
@@ -89,10 +91,16 @@ export class FieldworkOperations {
   installRunner: InstallRunner | undefined;
   private mutations: Promise<void> = Promise.resolve();
   private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number }> = {};
+  readonly schedule: SkillUpdateSchedule;
 
   constructor(readonly store: SettingsStore) {
     this.library = new SkillLibrary(store);
     this.rules = new RulesWorkspace(store);
+    this.schedule = new SkillUpdateSchedule(store.home);
+  }
+
+  get skillUpdatePending(): boolean {
+    return Boolean(this.skillUpdate?.pending);
   }
 
   private async prepareMembers(settings: Settings, groups: ProfileGroup[]): Promise<void> {
@@ -264,7 +272,7 @@ export class FieldworkOperations {
   run(operation: string, data: Record<string, unknown> = {}): Promise<unknown> {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const action = (): Promise<unknown> => this.apply(operation as Operation, data);
-    if (["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel"].includes(operation)) return action();
+    if (["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule"].includes(operation)) return action();
     const result = this.mutations.then(action);
     this.mutations = result.then(() => undefined, () => undefined);
     return result;
@@ -299,6 +307,8 @@ export class FieldworkOperations {
       this.installController?.abort(); return { cancelled: true };
     }
     if (operation === "skills/update-state") return this.skillUpdate;
+    if (operation === "skills/schedule-state") { validateInput(operation, data); return await this.schedule.state(); }
+    if (operation === "skills/schedule") { validateInput(operation, data); return await this.schedule.choose(data); }
     if (operation === "skills/update-cancel") {
       validateInput(operation, data);
       if (!this.skillUpdate?.pending) return { cancelled: false, reason: "No skill update is running." };
@@ -771,6 +781,11 @@ export class FieldworkOperations {
     if (operation === "skill/delete-preview") return await previewDeletion(store, settings, String(data.name), String(data.scope));
     if (operation === "skill/delete") {
       await deleteSkill(store, settings, String(data.name), String(data.scope), data.expected, data.confirmed === true);
+      return { ok: true };
+    }
+    if (operation === "skill/resolve-duplicate") {
+      if (data.keep !== "installed" && data.keep !== "stored") throw new Error("Choose installed or stored.");
+      await resolveDuplicate(store, settings, String(data.name), String(data.scope), data.keep);
       return { ok: true };
     }
     if (operation === "skill/toggle") {

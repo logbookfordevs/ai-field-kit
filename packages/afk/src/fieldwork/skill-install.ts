@@ -3,6 +3,8 @@ import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { containsControl, skillName, type Settings, type SettingsStore } from "./settings.js";
+import { adoptInstalled } from "./duplicates.js";
+import { SkillLibrary } from "./skills.js";
 
 export interface InstallProgress {
   pending: boolean;
@@ -48,6 +50,7 @@ export async function installSkills(store: SettingsStore, settings: Settings, so
   const append = (text: string): void => { state.output = output.append(text); report(); };
   try {
     report();
+    const before = new Set((await new SkillLibrary(store).duplicates(settings, scope)).map(copy => copy.name));
     for (const group of sources) {
       signal?.throwIfAborted();
       state.phase = `Installing source ${state.completed + 1} of ${state.total}`; report();
@@ -58,7 +61,11 @@ export async function installSkills(store: SettingsStore, settings: Settings, so
       if (code !== 0) { state.code = code; state.phase = "Installation stopped; review the output"; break; }
       state.completed++; report();
     }
-    if (state.code === undefined) { state.code = 0; state.phase = "Installation complete"; }
+    if (state.code === undefined) {
+      const adopted = await adoptInstalled(store, scope, before, sources.flatMap(group => group.skills ?? []));
+      if (adopted.length) append(`\nReplaced the older stored ${adopted.length === 1 ? "copy" : "copies"} of ${adopted.join(", ")} with this installation.\n`);
+      state.code = 0; state.phase = "Installation complete";
+    }
   } catch (error) {
     if (signal?.aborted) state.cancelled = true;
     state.code = state.cancelled ? 130 : 1;

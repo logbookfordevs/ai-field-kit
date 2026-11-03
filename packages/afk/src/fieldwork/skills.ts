@@ -1,7 +1,9 @@
 import type { Dirent } from "node:fs";
 import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { resolve, join } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { expandPath, skillName, type Settings, type SettingsStore } from "./settings.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
 
@@ -27,6 +29,17 @@ export interface SkillEntry {
   invocation: SkillInvocation;
   defaultInvocation: SkillInvocation;
   invocationInherited: boolean;
+  duplicate?: { identical: boolean };
+}
+
+export interface DuplicateCopy { name: string; live: string; stored: string; identical: boolean }
+export type DuplicateKeep = "installed" | "stored";
+
+export class DuplicateCopyError extends Error {
+  readonly code = "duplicate-copy";
+  constructor(readonly skill: string, readonly scope: string) {
+    super(`Two different copies of ${skill} exist in ${scope}: the installed one and an older stored one. Choose which one to keep.`);
+  }
 }
 
 export interface NestedSkillEntry {
@@ -45,6 +58,29 @@ async function exists(path: string): Promise<boolean> {
     if (code === "ENOENT" || code === "ENOTDIR") return false;
     throw error;
   }
+}
+
+// AFK's own bookkeeping files and invocation edits don't make two copies of a skill different.
+async function comparableFiles(path: string): Promise<Map<string, string>> {
+  const files = new Map<string, string>();
+  const hash = (content: string | Buffer): string => createHash("sha256").update(content).digest("hex");
+  const walk = async (folder: string, prefix = ""): Promise<void> => {
+    for (const entry of await readdir(folder, { withFileTypes: true })) {
+      if (entry.name.startsWith(".afk-")) continue;
+      const file = join(folder, entry.name), key = prefix + entry.name;
+      if (entry.isDirectory()) await walk(file, key + "/");
+      else if (entry.isSymbolicLink()) files.set(key, "link:" + await readlink(file));
+      else files.set(key, hash(await readFile(file)));
+    }
+  };
+  await walk(path);
+  try {
+    const backup = JSON.parse(await readFile(join(path, ".afk-invocation-original.json"), "utf8")) as { skill: string; metadata: string | null };
+    files.set("SKILL.md", hash(backup.skill));
+    if (backup.metadata === null) files.delete("agents/openai.yaml");
+    else files.set("agents/openai.yaml", hash(backup.metadata));
+  } catch { /* Without an invocation backup the files are compared as they are. */ }
+  return files;
 }
 
 async function sharedDiscoveryFolder(root: string): Promise<boolean> {
@@ -109,6 +145,10 @@ export class SkillLibrary {
       }));
       for (const entry of entries) if (entry) result.push(entry);
     }
+    for (const copy of await this.duplicates(settings, scope)) {
+      const entry = result.find(item => item.name === copy.name);
+      if (entry) entry.duplicate = { identical: copy.identical };
+    }
     return result.sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -141,6 +181,60 @@ export class SkillLibrary {
     throw new Error(`Skill ${name} is not prepared in ${scope}.`);
   }
 
+  // An installer can write a real folder where AFK expects its link, leaving an older stored copy of the same skill behind.
+  async duplicate(settings: Settings, name: string, scope: string): Promise<DuplicateCopy | undefined> {
+    if (!skillName(name)) return undefined;
+    const root = this.root(settings, scope), live = join(root, name), stored = join(root, ".disabled", name);
+    if (!await exists(join(live, "SKILL.md")) || !await exists(join(stored, "SKILL.md"))) return undefined;
+    if ((await lstat(live)).isSymbolicLink() || (await lstat(stored)).isSymbolicLink()) return undefined;
+    return { name, live, stored, identical: isDeepStrictEqual(await comparableFiles(live), await comparableFiles(stored)) };
+  }
+
+  async duplicates(settings: Settings, scope: string): Promise<DuplicateCopy[]> {
+    let names: string[];
+    try { names = await readdir(join(this.root(settings, scope), ".disabled")); }
+    catch (error) { if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) return []; throw error; }
+    const copies = await Promise.all(names.map(name => this.duplicate(settings, name, scope)));
+    return copies.filter((copy): copy is DuplicateCopy => copy !== undefined);
+  }
+
+  // Keeps one copy in stored storage and links the live path to it, so links from packs and projects stay valid.
+  async consolidate(settings: Settings, name: string, scope: string, keep: DuplicateKeep): Promise<void> {
+    const copy = await this.duplicate(settings, name, scope);
+    if (!copy) throw new Error(`${name} has no second copy in ${scope}.`);
+    const parked = join(this.root(settings, scope), ".disabled", `.afk-replaced-${randomUUID()}`);
+    const outgoing = keep === "installed" ? copy.stored : copy.live;
+    const originalLinks = { ...settings.managedLinks };
+    const originalIndividuals = [...(settings.independentSkills[scope] ?? [])];
+    const revert = async (): Promise<void> => {
+      if (await exists(copy.live) && (await lstat(copy.live)).isSymbolicLink()) await rm(copy.live);
+      if (keep === "installed" && await exists(copy.stored)) await rename(copy.stored, copy.live);
+      await rename(parked, outgoing);
+      settings.managedLinks = originalLinks;
+      settings.independentSkills[scope] = originalIndividuals;
+    };
+    await rename(outgoing, parked);
+    try {
+      if (keep === "installed") await rename(copy.live, copy.stored);
+      await symlink(copy.stored, copy.live, "dir");
+      const packOwned = settings.profiles.some(profile => profile.enabled.includes(scope) && profile.skills.includes(name));
+      if (packOwned) settings.managedLinks[copy.live] = copy.stored;
+      else settings.independentSkills[scope] = [...new Set([...originalIndividuals, name])];
+      await this.store.save(settings);
+    } catch (error) {
+      await revert();
+      throw error;
+    }
+    await rm(parked, { recursive: true, force: true });
+  }
+
+  // Agents load the top-level entry; a physical install there can coexist with an older stored copy of the same name.
+  async locateLoaded(settings: Settings, name: string, scope = "Global"): Promise<string> {
+    const loaded = join(this.root(settings, scope), name);
+    if (skillName(name) && await exists(join(loaded, "SKILL.md"))) return loaded;
+    return this.locate(settings, name, scope);
+  }
+
   async readGroup(settings: Settings, id: string): Promise<string> {
     const profile = resolveProfile(settings, id);
     const groups = await Promise.all(profile.skills.map(async name => {
@@ -165,7 +259,12 @@ export class SkillLibrary {
       for (const destination of destinations) {
         if (enabled) {
         if (await exists(destination)) {
-          if (await realpath(destination) !== await realpath(source)) throw new Error(`${name} already exists in ${scope}. Existing files were preserved.`);
+          if (await realpath(destination) !== await realpath(source)) {
+            const copy = destination === join(root, name) && source === join(root, ".disabled", name) ? await this.duplicate(settings, name, scope) : undefined;
+            if (!copy) throw new Error(`${name} already exists in ${scope}. Existing files were preserved.`);
+            if (!copy.identical) throw new DuplicateCopyError(name, scope);
+            await this.consolidate(settings, name, scope, "stored");
+          }
           continue;
         }
         operations.push({ path: destination, source, create: true });
@@ -212,6 +311,9 @@ export class SkillLibrary {
     const disabled = join(root, ".disabled", name);
     await mkdir(join(root, ".disabled"), { recursive: true });
     const enabled = await exists(active);
+    const copy = enabled ? await this.duplicate(settings, name, scope) : undefined;
+    if (copy && !copy.identical) throw new DuplicateCopyError(name, scope);
+    if (copy) await this.consolidate(settings, name, scope, "stored");
     if (!enabled) {
       const source = await this.locate(settings, name, scope);
       const alias = join(root, "../../.claude/skills", name);

@@ -160,6 +160,22 @@ copies. Concurrent local edits abort application. Progress and output remain
 available for the current app session after closing the dialog. Direct Skills CLI
 updates bypass this protection; untracked prepared copies remain untracked.
 
+A skill has one stored copy per scope. When an installation writes a real folder at a
+skill's live path while AFK already stores a copy under that name, the installed copy wins:
+AFK moves it into storage, deletes the older copy and links the live path to it, so links from
+packs and projects stay valid, and the saved invocation choice is applied again. A duplicate
+that already exists is resolved when turning the skill off or turning a pack on: identical
+copies (ignoring AFK's own files and invocation edits) are merged silently, and different
+copies ask which one to keep (`skill/resolve-duplicate`). Installed Skills and doctor flag
+remaining duplicates.
+
+Automatic skill updates (Settings, `skills/schedule`) run the same Global update daily or
+weekly at a local time. The schedule and last automatic result are machine-local, outside
+the portable settings. The app checks every minute and runs only while it is open; a slot
+missed while closed runs once shortly after the next start. Saving a changed schedule waits
+for the next slot rather than running at once. A due run waits while another skill update or
+an app update is pending. A failed run is recorded and retried at the next slot, not sooner.
+
 Permanent deletion is separate from disabling. Delete beside Inspect opens a review of
 the affected folders and links; a second click on Delete permanently confirms it.
 No typed skill name or second dialog is required. Packs that are on block deletion;

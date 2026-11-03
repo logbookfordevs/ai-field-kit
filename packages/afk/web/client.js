@@ -2,7 +2,7 @@ let currentSettings, inventories={}, nestedInventories={}, skillSharing={}, afkH
 async function request(path,data){
   const response=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:{'X-AFK-Token':window.afkToken,'Content-Type':'application/json'},...(data===undefined?{}:{body:JSON.stringify(data)})});
   const result=await response.json();
-  if(!response.ok)throw Error(result.error||'Operation failed.');
+  if(!response.ok)throw Object.assign(Error(result.error||'Operation failed.'),{code:result.code,skill:result.skill,scope:result.scope});
   return result;
 }
 async function refresh(){
@@ -16,7 +16,24 @@ async function refresh(){
 }
 async function operation(action){
   try{await action();await refresh()}
-  catch(error){await refresh().catch(()=>{});toast(error.message);console.error(error)}
+  catch(error){
+    await refresh().catch(()=>{});
+    if(error.code==='duplicate-copy'){showDuplicateChoice(error.skill,error.scope,action);return}
+    toast(error.message);console.error(error);
+  }
+}
+let duplicateChoice=null;
+function showDuplicateChoice(name,target,retry){
+  duplicateChoice={name,scope:target,retry};
+  modal('Two copies of '+esc(name),`<p>This skill was installed again while AFK still had an older copy stored. Agents use the installed one.</p><p class="hint">AFK keeps one and deletes the other. Packs, projects and your Manual/Automatic choice keep working.</p>`,button('Cancel','closeModal()','text')+button('Keep stored copy',"resolveDuplicateChoice('stored')")+button('Keep installed copy',"resolveDuplicateChoice('installed')",'primary'));
+}
+function resolveDuplicateChoice(keep){
+  const {name,scope:target,retry}=duplicateChoice;duplicateChoice=null;closeModal();
+  operation(async()=>{
+    await request('skill/resolve-duplicate',{name,scope:target,keep});
+    if(retry)await retry();
+    toast(keep==='installed'?'Kept the installed copy of '+name+'.':'Kept the stored copy of '+name+'.');
+  });
 }
 async function persist(){
   const settings={...currentSettings,projects,tools:tools.map(({last,...tool})=>tool),favoriteSources,preferences};

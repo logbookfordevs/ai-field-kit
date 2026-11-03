@@ -102,6 +102,18 @@ describe("Fieldwork skill availability", () => {
     expect((await library.inventory(settings, "Global"))[0]?.available).toBe(true);
   });
 
+  it("applies Global invocation to the available copy when a stale stored copy shares its name", async () => {
+    const { library, store, settings, home, stored } = await fixture();
+    const live = join(home, ".agents/skills/render"); await mkdir(live);
+    await writeFile(join(live, "SKILL.md"), "---\nname: render\ndescription: Reinstalled\n---\nNew instruction\n");
+    const staleCopy = await readFile(join(stored, "SKILL.md"), "utf8");
+    await setInvocation(store, settings, "render", "Global", "Manual only");
+    expect(await readFile(join(live, "SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
+    expect(await readFile(join(stored, "SKILL.md"), "utf8")).toBe(staleCopy);
+    const [entry] = await library.inventory(settings, "Global");
+    expect(entry?.invocation).toMatchObject({ claude: "Manual only", codex: "Manual only" });
+  });
+
   it("lets project invocation change repeatedly without touching the shared copy", async () => {
     const { library, store, settings, stored, project } = await fixture();
     await library.activate(settings, "video", "Demo", true);
