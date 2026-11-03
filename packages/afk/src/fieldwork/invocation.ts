@@ -19,7 +19,7 @@ function frontmatter(skill: string) {
 export async function setInvocation(store: SettingsStore, settings: Settings, name: string, scope: string, mode: string): Promise<void> {
   if (!["", "Manual only", "Automatic allowed"].includes(mode)) throw new Error("Choose a supported invocation mode.");
   const library = new SkillLibrary(store);
-  const originalPath = await library.locate(settings, name, scope);
+  const originalPath = await library.locateLoaded(settings, name, scope);
   const source = scope !== "Global" ? (await library.inventory(settings, scope)).find(entry => entry.name === name)?.source : undefined;
   const override = join(library.root(settings, scope), ".afk-overrides", name);
   const info = await lstat(originalPath);

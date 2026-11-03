@@ -56,6 +56,7 @@ node --check packages/afk/web/packs.js
 node --check packages/afk/web/kit.js
 node --check packages/afk/web/install.js
 node --check packages/afk/web/invocation-info.js
+node --check packages/afk/web/skill-schedule.js
 ```
 
 The test command runs skill/settings/server, rule-sync and portable ZIP regressions,

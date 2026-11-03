@@ -11,6 +11,15 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+### Added
+
+- **Automatic skill updates.** Settings can update your Global skills daily or weekly at a time you choose, using the same protected update as **Update skills**. It runs only while AFK is open, and catches up shortly after start if a run was missed while AFK was closed. The schedule is per machine; agents can set it with `skills/schedule`.
+
+### Fixed
+
+- **Installing a skill AFK had already stored no longer leaves two copies.** The fresh installation replaces the older stored copy, and packs, project links and your Manual/Automatic choice keep working. Existing duplicates show as **Two copies** in Installed Skills with a **Resolve** action. Turning such a skill off, or turning on a pack that contains it, now asks which copy to keep instead of failing; identical copies merge without asking. Doctor also reports them.
+- **Manual/Automatic now applies to the copy agents load.** When a skill was installed through Skills CLI after a pack had already stored a copy of it, AFK edited the hidden stored copy. The setting looked saved, but agents still read the unchanged installed copy, and the invocation filter still listed it as Automatic.
+
 ## v2.1.0 - 2026-11-02
 
 ### Breaking

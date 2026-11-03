@@ -254,6 +254,10 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code-b
 .settings-block:first-of-type{border-top-color:var(--fg)}
 .settings-block .sub{font-size:13px}
 .settings-body{display:grid;gap:14px;align-content:start;min-width:0}
+.settings-body>.switch{justify-self:start}
+.duplicate-hint{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.duplicate-hint button{min-height:32px}
+.schedule-fields{min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;max-width:560px}
 .path-card{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 12px 12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
 .project-list{border-top:1px solid var(--border)}
 .project-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
@@ -1046,7 +1050,7 @@ function skillRow(s){
     <div class="skill-name"><input type="checkbox" data-skill-select="${esc(s.name)}" aria-label="Select ${esc(s.name)}" ${selectedSkills.has(s.name)?'checked':''} ${skillBulkBusy?'disabled':''} onchange="selectSkill('${s.name}',this.checked)"><div><h3>${esc(s.name)}</h3>${scope!=='Global'?`<span class="meta">${s.shared?'Shared skill':'Project-local skill'}</span>`:''}</div></div>
     <div class="skill-avail">
       <button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held||skillBulkBusy?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>
-      ${held?`<span class="hint">Managed by ${s.owners.map(esc).join(', ')} · change in Kit</span>`:''}${tool?`<span class="hint">Installed by ${esc(tool.name)} · update in Tools</span>`:''}
+      ${held?`<span class="hint">Managed by ${s.owners.map(esc).join(', ')} · change in Kit</span>`:''}${tool?`<span class="hint">Installed by ${esc(tool.name)} · update in Tools</span>`:''}${s.duplicate?`<span class="hint duplicate-hint">Two copies ${button('Resolve',`showDuplicateChoice('${s.name}',scope)`,'text',skillBulkBusy?'disabled':'')}</span>`:''}
     </div>
     <div class="skill-invoc">${invocationInfo(s.name,invocationHint)}${preferenceSelect(s.name,skillBulkBusy?'disabled':'')}</div>
     <div class="skill-actions">${tool?button('Update',`runTool(${tool.id},true)`,'text',skillBulkBusy?'disabled':''):button('Update',`showSkillUpdate('${s.name}')`,'text',skillBulkBusy?'disabled':'')}${button('Inspect',`inspectSkill('${s.name}')`,'text',`data-od-id="skill-${s.name}-inspect"`)}${button('Delete',`reviewSkillDeletion('${s.name}')`,'text danger',skillBulkBusy?'disabled':'')}</div>
@@ -1205,6 +1209,7 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 <script src="/rules.js"></script>
 <script src="/onboarding.js"></script>
 <script src="/skill-insights.js"></script>
+<script src="/skill-schedule.js"></script>
 <script src="/app-update.js"></script>
 <script src="/runtime-status.js"></script>
 <script src="/client.js"></script>

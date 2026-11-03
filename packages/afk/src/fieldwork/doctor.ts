@@ -111,6 +111,14 @@ export async function doctor(store: SettingsStore): Promise<DoctorReport> {
     }
   }
 
+  for (const scope of ["Global", ...settings.projects.map(project => project.name)]) {
+    try {
+      for (const copy of await library.duplicates(settings, scope)) {
+        issue("warning", "skill_duplicate_copy", copy.live, `${copy.name} has a second, ${copy.identical ? "identical" : "different"} copy in stored storage (${copy.stored}). Resolve it in Installed Skills or with skill/resolve-duplicate.`);
+      }
+    } catch (error) { if (!missing(error)) issue("error", "skill_duplicate_unreadable", scope, errorText(error)); }
+  }
+
   const rules = new RulesWorkspace(store);
   let hasRules = settings.agentRules !== undefined;
   for (const path of [join(rules.folder, "AGENTS.md"), join(rules.folder, "references")]) {

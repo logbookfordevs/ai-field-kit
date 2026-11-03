@@ -101,6 +101,11 @@ Progress, output and cancellation are available in the dialog.
 workflow. Only installations tracked by Skills CLI can update. Skills a tool provides update
 through the tool.
 
+**Automatic skill updates** in Settings runs that same update for Global skills daily or
+weekly at a local time you choose. It runs only while AFK is open; a run missed while AFK was
+closed happens shortly after it starts. The schedule is stored per machine in
+`~/.afk/skill-update-schedule.json`, with the last automatic result and its output.
+
 Select skills for bulk enable, disable, invocation or deletion. Deletion reviews
 stored files and links before a second click confirms removal. Packs that are on
 and other scopes remain protected; packs that are off keep their members
