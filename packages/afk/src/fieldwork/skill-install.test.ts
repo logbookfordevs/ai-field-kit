@@ -1,9 +1,10 @@
 import { afterEach, expect, it } from "vitest";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SettingsStore } from "./settings.js";
 import { installSkills, type InstallRunner, type InstallProgress } from "./skill-install.js";
+import { SkillLibrary } from "./skills.js";
 const homes: string[] = [];
 afterEach(async () => { await Promise.all(homes.map(home => rm(home, { recursive: true, force: true }))); homes.length = 0; });
 async function fixture() {
@@ -60,4 +61,39 @@ it("rejects interactive agents, missing project paths and malformed selections b
   await expect(installSkills(f.store, f.settings, [{ source: "one" }], "Global", "interactive", "Studio", () => {}, undefined, runner)).rejects.toThrow(/explicit/);
   await expect(installSkills(f.store, f.settings, [{ source: "one" }], "Missing", "codex", "Studio", () => {}, undefined, runner)).rejects.toThrow(/configured project/);
   await expect(installSkills(f.store, f.settings, [{ source: "one", skills: [] }], "Global", "codex", "Studio", () => {}, undefined, runner)).rejects.toThrow(/valid sources/);
+});
+
+async function installFreshSkill(home: string, name: string): Promise<void> {
+  const folder = join(home, ".agents/skills", name);
+  await mkdir(folder, { recursive: true });
+  await writeFile(join(folder, "SKILL.md"), `---\nname: ${name}\ndescription: Fresh copy from the source.\n---\n\nBody\n`);
+}
+it("restores saved invocation choices onto freshly installed skills", async () => {
+  const f = await fixture();
+  f.settings.preferences["Global|wizard"] = "Manual only";
+  f.settings.preferences["Global|review"] = "Automatic allowed";
+  const result = await installSkills(f.store, f.settings, [{ source: "owner/repo" }], "Global", "universal", "Sync this machine", () => {}, undefined, async () => {
+    await installFreshSkill(f.home, "wizard"); await installFreshSkill(f.home, "review"); await installFreshSkill(f.home, "untouched");
+    return 0;
+  });
+  const inventory = await new SkillLibrary(f.store).inventory(await f.store.read(), "Global");
+  const invocation = (name: string) => inventory.find(entry => entry.name === name)?.invocation;
+  expect(result).toMatchObject({ code: 0, phase: "Installation complete" });
+  expect(invocation("wizard")).toEqual({ claude: "Manual only", codex: "Manual only" });
+  expect(invocation("review")).toEqual({ claude: "Automatic allowed", codex: "Automatic allowed" });
+  expect(result.output).toContain("wizard");
+  expect(await readFile(join(f.home, ".agents/skills/untouched/SKILL.md"), "utf8")).not.toContain("disable-model-invocation");
+  expect((await f.store.read()).preferences["Global|wizard"]).toBe("Manual only");
+});
+it("keeps a successful installation when a saved choice cannot be restored", async () => {
+  const f = await fixture();
+  f.settings.preferences["Global|broken"] = "Manual only";
+  const result = await installSkills(f.store, f.settings, [{ source: "owner/repo" }], "Global", "universal", "Test", () => {}, undefined, async () => {
+    const folder = join(f.home, ".agents/skills/broken");
+    await mkdir(folder, { recursive: true });
+    await writeFile(join(folder, "SKILL.md"), "no frontmatter here\n");
+    return 0;
+  });
+  expect(result).toMatchObject({ code: 0, phase: "Installation complete" });
+  expect(result.output).toMatch(/Could not restore.*broken/s);
 });

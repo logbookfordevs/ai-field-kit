@@ -1052,7 +1052,7 @@ function skillRow(s){
       <button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held||skillBulkBusy?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>
       ${held?`<span class="hint">Managed by ${s.owners.map(esc).join(', ')} · change in Kit</span>`:''}${tool?`<span class="hint">Installed by ${esc(tool.name)} · update in Tools</span>`:''}${s.duplicate?`<span class="hint duplicate-hint">Two copies ${button('Resolve',`showDuplicateChoice('${s.name}',scope)`,'text',skillBulkBusy?'disabled':'')}</span>`:''}
     </div>
-    <div class="skill-invoc">${invocationInfo(s.name,invocationHint)}${preferenceSelect(s.name,skillBulkBusy?'disabled':'')}</div>
+    <div class="skill-invoc">${invocationInfo(s.name,invocationHint)}${preferenceSelect(s.name,skillBulkBusy?'disabled':'')}${preferenceDriftNotice(s.name)}</div>
     <div class="skill-actions">${tool?button('Update',`runTool(${tool.id},true)`,'text',skillBulkBusy?'disabled':''):button('Update',`showSkillUpdate('${s.name}')`,'text',skillBulkBusy?'disabled':'')}${button('Inspect',`inspectSkill('${s.name}')`,'text',`data-od-id="skill-${s.name}-inspect"`)}${button('Delete',`reviewSkillDeletion('${s.name}')`,'text danger',skillBulkBusy?'disabled':'')}</div>
   </article>`;
 }
@@ -1078,9 +1078,20 @@ function invocationModeIcon(policy){
   };
   return `<span class="skill-invoc-mode" data-invocation-mode="${mode}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${paths[mode]}</svg></span>`;
 }
+function preferenceDrift(name){
+  const saved=preferences[scope+'|'+name],policy=inventory().find(e=>e.name===name)?.invocation;
+  const known=policy?[policy.claude,policy.codex].filter(mode=>mode!=='Unknown'):[];
+  return saved&&known.some(mode=>mode!==saved)?saved:'';
+}
+function preferenceDriftNotice(name){
+  const saved=preferenceDrift(name);
+  return saved?`<span class="hint duplicate-hint">Files differ from your choice ${button('Reapply',`setPreference('${name}','${saved}')`,'text',skillBulkBusy?'disabled':'')}</span>`:'';
+}
 function preferenceHint(name){
   const entry=inventory().find(e=>e.name===name),policy=entry?.invocation;
   if(!policy)return 'Inspect the skill to check its invocation settings.';
+  const saved=preferenceDrift(name);
+  if(saved)return `You chose ${saved.toLowerCase()}, but the skill files say ${policy.claude===policy.codex?policy.claude.toLowerCase():`Claude: ${policy.claude.toLowerCase()} · Codex: ${policy.codex.toLowerCase()}`}. Agents follow the files. This usually happens after the skill is reinstalled. Reapply to make them match.`;
   if(policy.claude!==policy.codex)return `Claude: ${policy.claude.toLowerCase()} · Codex: ${policy.codex.toLowerCase()}`;
   if(policy.claude==='Unknown')return 'Could not read invocation metadata. Inspect the skill before changing it.';
   return entry.invocationInherited?'Inherited from Global':'';

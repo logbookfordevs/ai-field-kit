@@ -105,3 +105,19 @@ export async function setInvocation(store: SettingsStore, settings: Settings, na
     throw error;
   }
 }
+
+export interface InvocationRestore { restored: string[]; failed: { name: string; error: string }[] }
+
+export async function restoreInvocations(store: SettingsStore, settings: Settings, scope: string): Promise<InvocationRestore> {
+  const result: InvocationRestore = { restored: [], failed: [] };
+  const entries = await new SkillLibrary(store).inventory(settings, scope);
+  for (const [key, mode] of Object.entries(settings.preferences)) {
+    const [preferenceScope, name] = key.split("|");
+    const entry = entries.find(candidate => candidate.name === name);
+    if (preferenceScope !== scope || !entry?.available) continue;
+    if (entry.invocation.claude === mode && entry.invocation.codex === mode) continue;
+    try { await setInvocation(store, settings, entry.name, scope, mode); result.restored.push(entry.name); }
+    catch (error) { result.failed.push({ name: entry.name, error: error instanceof Error ? error.message : "Unknown error." }); }
+  }
+  return result;
+}

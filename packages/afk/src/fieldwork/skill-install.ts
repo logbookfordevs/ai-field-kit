@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { containsControl, skillName, type Settings, type SettingsStore } from "./settings.js";
 import { adoptInstalled } from "./duplicates.js";
+import { restoreInvocations } from "./invocation.js";
 import { SkillLibrary } from "./skills.js";
 
 export interface InstallProgress {
@@ -65,6 +66,14 @@ export async function installSkills(store: SettingsStore, settings: Settings, so
       const adopted = await adoptInstalled(store, scope, before, sources.flatMap(group => group.skills ?? []));
       if (adopted.length) append(`\nReplaced the older stored ${adopted.length === 1 ? "copy" : "copies"} of ${adopted.join(", ")} with this installation.\n`);
       state.code = 0; state.phase = "Installation complete";
+    }
+    try {
+      const restored = await restoreInvocations(store, settings, scope);
+      if (restored.restored.length) append(`\nRestored your invocation choice for ${restored.restored.join(", ")}.\n`);
+      for (const failure of restored.failed) append(`\nCould not restore your invocation choice for ${failure.name}: ${failure.error}\n`);
+    } catch (error) {
+      signal?.throwIfAborted();
+      append(`\nCould not restore your invocation choices: ${error instanceof Error ? error.message : "Unknown error."}\n`);
     }
   } catch (error) {
     if (signal?.aborted) state.cancelled = true;
