@@ -15,6 +15,8 @@ Remove what the library replaces: the Drive-hosted settings location and *Move c
 - [ ] Retired operations no longer appear in `afk manage describe` or the CLI help.
 - [ ] No dead code remains for the retired surfaces.
 - [ ] Docs and the `afk-cli` skill describe the library, backup, restore, agent folders and projects.
+- [ ] "Start a new library" (first run and Backup screen) runs the migration from the UI: preview, then apply, through new operations wrapping `planLibraryInit`/`applyLibraryInit` (gap found after ticket 09).
+- [ ] Adding an agent folder links tool skills too, not only stored skills (gap found after ticket 09).
 - [ ] All test suites, typecheck and lint pass.
 
 ## Blocked By
