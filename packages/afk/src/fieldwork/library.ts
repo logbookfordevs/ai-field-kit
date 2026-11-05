@@ -179,7 +179,7 @@ export class Library {
     return this.enqueue(async () => {
       await prepare?.();
       await this.git("Saving the library", "--literal-pathspecs", "add", "-A", "--", ...paths);
-      await this.git("Saving the library", "commit", "--quiet", "--no-verify", "-m", message);
+      await this.git("Saving the library", "--literal-pathspecs", "commit", "--quiet", "--no-verify", "-m", message, "--only", "--", ...paths);
     });
   }
 

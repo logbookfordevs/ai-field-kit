@@ -90,6 +90,20 @@ describe("resolving an edit made outside AFK", () => {
     expect(await git(library.root, "status", "--porcelain")).toBe("");
   });
 
+  it("Keep edit commits only the chosen skill, even when another edit is already staged in Git", async () => {
+    await store("alpha");
+    await store("beta");
+    await writeFile(join(library.skillPath("beta"), "SKILL.md"), skillText("beta", "Unreviewed staged edit."));
+    await git(library.root, "add", "skills/beta");
+    await writeFile(join(library.skillPath("alpha"), "SKILL.md"), skillText("alpha", "Chosen edit."));
+
+    await checks.keep("edited:alpha");
+
+    expect((await git(library.root, "show", "--name-only", "--format=", "HEAD")).split("\n")).toEqual(["skills/alpha/SKILL.md"]);
+    expect((await checks.list()).map(item => item.id)).toEqual(["edited:beta"]);
+    expect(await readFile(join(library.skillPath("beta"), "SKILL.md"), "utf8")).toContain("Unreviewed staged edit.");
+  });
+
   it("Discard restores the saved files, removes new ones, and makes no commit", async () => {
     await store("kami");
     const before = await commits();
