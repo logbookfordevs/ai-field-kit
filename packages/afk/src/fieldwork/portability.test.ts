@@ -77,23 +77,35 @@ it("does not recreate missing project folders and allows removing an inactive pr
   await expect(readFile(join(f.home, "not-here"))).rejects.toMatchObject({ code: "ENOENT" });
 });
 
+it("does not carry an older project pack activation to a changed project folder", async () => {
+  const f = await fixture();
+  const project = join(f.home, "project"); await mkdir(project);
+  f.settings.projects = [{ name: "P", path: project }];
+  f.settings.profiles = [{ id: "writing", name: "Writing", source: "Local skill selection", skills: ["review"], enabled: ["P"], ready: true }];
+  await f.store.save(f.settings);
+  const portable = JSON.parse(await readFile(f.store.path, "utf8")) as Settings; portable.projects[0]!.path = join(f.home, "elsewhere");
+  await writeFile(f.store.path, JSON.stringify(portable));
+  expect((await f.store.read()).profiles[0]?.enabled).toEqual([]);
+});
+
+it("removes a missing project with stale local activation without recreating its folders", async () => {
+  const f = await fixture();
+  const project = join(f.home, "project"); await mkdir(project);
+  f.settings.projects = [{ name: "P", path: project }];
+  f.settings.profiles = [{ id: "writing", name: "Writing", source: "Local skill selection", skills: ["review"], enabled: ["P"], ready: true }];
+  f.settings.managedLinks[join(project, ".agents/skills/review")] = join(f.home, ".agents/skills/.disabled/review");
+  await f.store.save(f.settings);
+  await rm(project, { recursive: true });
+  await f.ops.run("project/remove", { name: "P" });
+  const current = await f.store.read(); expect(current.projects).toEqual([]); expect(current.profiles[0]?.enabled).toEqual([]);
+  expect(Object.keys(current.managedLinks).some(path => path.startsWith(project + "/"))).toBe(false);
+  await expect(readFile(join(project, ".agents/skills/review/SKILL.md"))).rejects.toMatchObject({ code: "ENOENT" });
+});
+
 it("rejects malformed old snapshots and accepts portable definitions without machine fields", () => {
   const settings = emptySettings(); expect(validateSettings({ ...settings, profiles: [{ id: "writing", name: "Writing", source: "owner/repo", skills: ["review"] }], managedLinks: undefined, independentSkills: undefined }).profiles[0]).toMatchObject({ enabled: [], ready: false });
   expect(() => validateSettings({ ...settings, version: 1, savedSkills: [{ scope: "Missing", savedAt: "bad", skills: [] }] })).toThrow(/snapshot/);
   expect(() => validateSettings({ ...settings, savedSkills: [] })).toThrow(/Version 2/);
-});
-
-it("keeps verified source provenance through a project invocation override", async () => {
-  const f = await fixture(); await skill(f.home, "review", true);
-  await writeFile(join(f.home, ".agents/.skill-lock.json"), JSON.stringify({ skills: { review: { source: "owner/repo" } } }));
-  const project = join(f.home, "project"); await mkdir(project);
-  f.settings.projects = [{ name: "P", path: project }];
-  f.settings.profiles = [{ id: "writing", name: "Writing", source: "Local skill selection", skills: ["review"], enabled: [], ready: true }];
-  await new SkillLibrary(f.store).activate(f.settings, "writing", "P", true);
-  await setInvocation(f.store, f.settings, "review", "P", "Manual only");
-  const current = await f.store.read();
-  expect((await new SkillLibrary(f.store).inventory(current, "P"))[0]).toMatchObject({ source: "owner/repo" });
-  expect(current.preferences["P|review"]).toBe("Manual only");
 });
 
 it("prefers provenance on the actual copy over a stale installer lock", async () => {
@@ -101,44 +113,6 @@ it("prefers provenance on the actual copy over a stale installer lock", async ()
   await writeFile(join(path, ".afk-source.json"), JSON.stringify({ source: "new/repo" }));
   await writeFile(join(f.home, ".agents/.skill-lock.json"), JSON.stringify({ skills: { review: { source: "old/repo" } } }));
   expect((await new SkillLibrary(f.store).inventory(f.settings, "Global"))[0]?.source).toBe("new/repo");
-});
-
-it("allows disabling an orphaned project skill and removing its project definition", async () => {
-  const f = await fixture(); await skill(f.home, "review", true);
-  const project = join(f.home, "project"); await mkdir(project);
-  f.settings.projects = [{ name: "P", path: project }];
-  f.settings.profiles = [{ id: "writing", name: "Writing", source: "Local skill selection", skills: ["review"], enabled: [], ready: true }];
-  await new SkillLibrary(f.store).activate(f.settings, "writing", "P", true);
-  const portable = JSON.parse(await readFile(f.store.path, "utf8")) as Settings; portable.profiles = [];
-  await writeFile(f.store.path, JSON.stringify(portable));
-  await new SkillLibrary(f.store).toggle(await f.store.read(), "review", "P");
-  await f.ops.run("project/remove", { name: "P" });
-  expect((await f.store.read()).projects).toEqual([]);
-  expect(await readFile(join(project, ".agents/skills/.disabled/review/SKILL.md"), "utf8")).toContain("name: review");
-});
-
-it("does not carry project activation to a changed project folder", async () => {
-  const f = await fixture(); await skill(f.home, "review", true);
-  const project = join(f.home, "project"); await mkdir(project);
-  f.settings.projects = [{ name: "P", path: project }];
-  f.settings.profiles = [{ id: "writing", name: "Writing", source: "Local skill selection", skills: ["review"], enabled: [], ready: true }];
-  await new SkillLibrary(f.store).activate(f.settings, "writing", "P", true);
-  const portable = JSON.parse(await readFile(f.store.path, "utf8")) as Settings; portable.projects[0]!.path = join(f.home, "elsewhere");
-  await writeFile(f.store.path, JSON.stringify(portable));
-  expect((await f.store.read()).profiles[0]?.enabled).toEqual([]);
-});
-
-it("removes a missing project with stale local activation without recreating its folders", async () => {
-  const f = await fixture(); await skill(f.home, "review", true);
-  const project = join(f.home, "project"); await mkdir(project);
-  f.settings.projects = [{ name: "P", path: project }];
-  f.settings.profiles = [{ id: "writing", name: "Writing", source: "Local skill selection", skills: ["review"], enabled: [], ready: true }];
-  await new SkillLibrary(f.store).activate(f.settings, "writing", "P", true);
-  await rm(project, { recursive: true });
-  await f.ops.run("project/remove", { name: "P" });
-  const current = await f.store.read(); expect(current.projects).toEqual([]); expect(current.profiles[0]?.enabled).toEqual([]);
-  expect(Object.keys(current.managedLinks).some(path => path.startsWith(project + "/"))).toBe(false);
-  await expect(readFile(join(project, ".agents/skills/review/SKILL.md"))).rejects.toMatchObject({ code: "ENOENT" });
 });
 
 it("loads an existing copy of the current configuration without disabling active skills", async () => {

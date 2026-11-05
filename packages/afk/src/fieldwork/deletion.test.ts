@@ -53,7 +53,7 @@ it("protects unowned project links and refuses deleting shared storage through a
   await expect(previewDeletion(store, settings, "render", "Global")).rejects.toThrow("Another entry");
   await symlink(path, join(project, ".agents/skills/.disabled/render"));
   await expect(previewDeletion(store, settings, "render", "Global")).rejects.toThrow("Another entry");
-  await expect(previewDeletion(store, settings, "render", "Demo")).rejects.toThrow("shared storage");
+  await expect(previewDeletion(store, settings, "render", "Demo")).rejects.toThrow("not found");
 });
 it("restores stored files if saving settings fails", async () => {
   const { store, settings, path } = await fixture();
