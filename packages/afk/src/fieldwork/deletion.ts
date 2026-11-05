@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { lstat, readdir, readFile, readlink, realpath, rename, rm } from "node:fs/promises";
+import { lstat, readdir, readFile, readlink, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { SkillLibrary, type SkillEntry } from "./skills.js";
 import { skillName, type Settings, type SettingsStore } from "./settings.js";
@@ -92,7 +92,8 @@ export async function previewDeletion(store: SettingsStore, settings: Settings, 
     const target = info.isSymbolicLink() ? await readlink(candidate) : "";
     const receipt = settings.managedLinks[candidate];
     const owned = candidate === entry.path && ownActiveLink
-      || receipt !== undefined && resolve(candidate, "..", target) === resolve(receipt);
+      || receipt !== undefined && resolve(candidate, "..", target) === resolve(receipt)
+      || scope !== "Global" && info.isSymbolicLink() && allowedLinks.has(candidate);
     if (!allowedLinks.has(candidate) || !info.isSymbolicLink() || !owned) {
       throw new Error(`Another entry still uses this storage: ${candidate}. Disable or remove that link first.`);
     }
@@ -151,4 +152,17 @@ export async function deleteSkill(store: SettingsStore, settings: Settings, name
     throw error;
   }
   for (const item of moved) await rm(item.staged, { recursive: true });
+  if (scope !== "Global") await forgetProjectLock(join(new SkillLibrary(store).root(settings, scope), "../../skills-lock.json"), name);
+}
+
+// The project's lock file is committed with the project, so a deleted skill must not stay listed for the next install.
+async function forgetProjectLock(path: string, name: string): Promise<void> {
+  try {
+    const lock = JSON.parse(await readFile(path, "utf8")) as { skills?: Record<string, unknown> };
+    if (!lock.skills || !Object.hasOwn(lock.skills, name)) return;
+    delete lock.skills[name];
+    await writeFile(path, JSON.stringify(lock, null, 2) + "\n");
+  } catch (error) {
+    if (!["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "") && !(error instanceof SyntaxError)) throw error;
+  }
 }

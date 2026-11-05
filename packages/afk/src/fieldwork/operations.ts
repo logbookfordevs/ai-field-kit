@@ -10,6 +10,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { runCommand as run, type CommandResult } from "./command-runner.js";
 import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
+import { trackToolRun } from "./tool-run.js";
 import { resolveDuplicate } from "./duplicates.js";
 import { SourcePreparation } from "./preparation.js";
 import { SkillLibrary } from "./skills.js";
@@ -18,6 +19,7 @@ import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
+import { migrateProject } from "./project-skills.js";
 import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate, type SyncPlan } from "./kit.js";
 import { portableSettings } from "./local-state.js";
 import { agentFolderState, changeAgentFolders } from "./agent-folder-operations.js";
@@ -63,6 +65,9 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     if (data.action === "invocation" && (typeof data.mode !== "string" || !["", "Manual only", "Automatic allowed"].includes(data.mode))) throw new Error("Choose a supported invocation mode.");
   }
   if (operation === "invocation" && typeof data.mode !== "string") throw new Error("Provide an invocation mode.");
+  const inProject = typeof data.scope === "string" && data.scope !== "Global";
+  if (inProject && (operation === "skill/toggle" || operation === "skill/availability" || operation === "skills/bulk" && (data.action === "enable" || data.action === "disable"))) throw new Error("A project's skills are always on. Delete a skill to remove it from the project.");
+  if (inProject && operation === "activation" && data.enabled === true) throw new Error("Packs are Global only. A project keeps its own skills.");
   if (operation === "tool/run" && !Number.isSafeInteger(data.id)) throw new Error("Provide a numeric saved tool ID.");
   if (operation === "rules/preview" || operation === "rules/sync") {
     if (!Array.isArray(data.ids) || !data.ids.length || !data.ids.every(skillName) || new Set(data.ids).size !== data.ids.length) throw new Error("Choose unique rule destination IDs.");
@@ -87,8 +92,10 @@ export class FieldworkOperations {
   private skillUpdate: UpdateProgress | null = null;
   installRunner: InstallRunner | undefined;
   private mutations: Promise<void> = Promise.resolve();
-  private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number }> = {};
+  private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number; warnings?: string[] }> = {};
   readonly schedule: SkillUpdateSchedule;
+  private projectsReady: Promise<void> | undefined;
+  private projectMigration: { migrated: string[]; kept: { project: string; skills: string[] }[]; failed: { project: string; error: string }[] } = { migrated: [], kept: [], failed: [] };
 
   constructor(readonly store: SettingsStore) {
     this.library = new SkillLibrary(store);
@@ -266,9 +273,26 @@ export class FieldworkOperations {
     return validateStack({ version: 1, id: pack.id.replace(/^stack-/, ""), name: pack.name, ...(pack.description ? { description: pack.description } : {}), sources: groups.map(group => ({ name: pack.sourceNames?.[group.source] ?? label(group.source), source: group.source, skills: group.skills })) });
   }
 
+  // Earlier versions parked, copied and linked skills inside projects; the first answer waits until every present project is back to its own files.
+  private async migrateProjects(): Promise<void> {
+    try {
+      const names = (await this.store.read()).projects.map(project => project.name);
+      for (const name of names) {
+        const settings = await this.store.read();
+        if ((await projectStatus(this.store, settings))[name] !== "present") continue;
+        try {
+          const result = await migrateProject(this.store, settings, name);
+          if (result.migrated) this.projectMigration.migrated.push(name);
+          if (result.kept.length) this.projectMigration.kept.push({ project: name, skills: result.kept });
+        } catch (error) { this.projectMigration.failed.push({ project: name, error: error instanceof Error ? error.message : "Migration failed." }); }
+      }
+    } catch { /* The requested operation reports unreadable settings itself. */ }
+  }
+
   run(operation: string, data: Record<string, unknown> = {}): Promise<unknown> {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
-    const action = (): Promise<unknown> => this.apply(operation as Operation, data);
+    const ready = this.projectsReady ??= this.migrateProjects();
+    const action = async (): Promise<unknown> => { await ready; return this.apply(operation as Operation, data); };
     const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "agent-folders/state"].includes(operation);
     const result = direct ? action() : this.mutations.then(action);
     if (!direct) this.mutations = result.then(() => undefined, () => undefined);
@@ -469,12 +493,13 @@ export class FieldworkOperations {
           this.skillInstall = install;
         } finally { this.installController = null; }
       }
-      const tools: { id: number; name: string; code: number; output: string }[] = [];
+      const tools: { id: number; name: string; code: number; output: string; reapplied?: string[]; warnings?: string[] }[] = [];
       const skippedTools = current.plan.tools.filter(tool => !approved.includes(tool.id));
       for (const tool of current.plan.tools.filter(tool => approved.includes(tool.id))) {
         toolRuns[tool.id] = { pending: true, output: "Running…" };
         try {
-          const result = await runTool(process.env.SHELL || "/bin/sh", ["-c", tool.command], store.home, this.lifecycle.signal);
+          const finish = await trackToolRun(store, { name: tool.name, provides: tool.skills });
+          const result = await finish(await runTool(process.env.SHELL || "/bin/sh", ["-c", tool.command], store.home, this.lifecycle.signal));
           toolRuns[tool.id] = { pending: false, ...result };
           tools.push({ id: tool.id, name: tool.name, ...result });
         } catch (error) {
@@ -543,7 +568,7 @@ export class FieldworkOperations {
         try { for (const name of profile.skills) await library.locate(settings, name); }
         catch { profile.ready = false; }
       }
-      return { settings, migration: { required: settings.version === 1 }, kit: kitStatus(settings, inventories.Global ?? []), portableSettings: portableSettings(settings), settingsPath: store.path, home: store.home, inventories, nestedInventories, skillSharing, projectStatuses, toolRuns };
+      return { settings, migration: { required: settings.version === 1 }, kit: kitStatus(settings, inventories.Global ?? []), portableSettings: portableSettings(settings), settingsPath: store.path, home: store.home, inventories, nestedInventories, skillSharing, projectStatuses, projectMigration: this.projectMigration, toolRuns };
     }
     if (operation === "rules/save") {
       return await rules.saveFiles(data.files as RulesFile[], typeof data.expectedHash === "string" ? data.expectedHash : undefined);
@@ -681,7 +706,9 @@ export class FieldworkOperations {
         }
         previous.name = data.name; previous.path = data.path;
       } else settings.projects.push({ name: data.name, path: data.path });
-      await store.save(settings); return { ok: true };
+      await store.save(settings);
+      if ((await projectStatus(store, settings))[data.name] === "present") await migrateProject(store, settings, data.name);
+      return { ok: true };
     }
     if (operation === "project/remove") {
       const project = settings.projects.find(project => project.name === data.name);
@@ -843,7 +870,8 @@ export class FieldworkOperations {
       const command = data.update === true ? tool.update || tool.install : tool.install;
       toolRuns[tool.id] = { pending: true, output: "Running…" };
       try {
-        const result = await runTool(process.env.SHELL || "/bin/sh", ["-c", command], store.home, this.lifecycle.signal);
+        const finish = await trackToolRun(store, tool);
+        const result = await finish(await runTool(process.env.SHELL || "/bin/sh", ["-c", command], store.home, this.lifecycle.signal));
         toolRuns[tool.id] = { pending: false, ...result }; return result;
       } catch (error) {
         toolRuns[tool.id] = { pending: false, code: 1, output: error instanceof Error ? error.message : "Command could not start." }; throw error;
