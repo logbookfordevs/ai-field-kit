@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import { dirname, resolve, join, sep } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { expandPath, skillName, type Settings, type SettingsStore } from "./settings.js";
+import { Library } from "./library.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
 
 export function resolveProfile(settings: Settings, reference: string): Settings["profiles"][number] {
@@ -99,8 +100,18 @@ async function installedSources(path: string): Promise<Record<string, string>> {
   } catch { return {}; }
 }
 
+/** Skills CLI's global lock: under XDG state for the real home, otherwise inside the given home. */
+export function globalLockPath(home: string): string {
+  const stateHome = home === homedir() ? process.env.XDG_STATE_HOME : undefined;
+  return stateHome ? join(stateHome, "skills/.skill-lock.json") : join(home, ".agents/.skill-lock.json");
+}
+
 export class SkillLibrary {
-  constructor(readonly store: SettingsStore) {}
+  readonly library: Library;
+
+  constructor(readonly store: SettingsStore) {
+    this.library = new Library(store.home);
+  }
 
   root(settings: Settings, scope: string): string {
     if (scope === "Global") return join(this.store.home, ".agents/skills");
@@ -134,12 +145,16 @@ export class SkillLibrary {
     if (scope !== "Global") return this.projectInventory(settings, scope);
     const root = this.root(settings, scope);
     const result: SkillEntry[] = [];
-    const stateHome = this.store.home === homedir() ? process.env.XDG_STATE_HOME : undefined;
-    const globalReceipt = stateHome ? join(stateHome, "skills/.skill-lock.json") : join(this.store.home, ".agents/.skill-lock.json");
+    const globalReceipt = globalLockPath(this.store.home);
     const sources = await installedSources(scope === "Global" ? globalReceipt : join(root, "../../skills-lock.json"));
     const globalSources = scope === "Global" ? sources : await installedSources(globalReceipt);
-    for (const disabled of [false, true]) {
-      const directory = disabled ? join(root, ".disabled") : root;
+    const librarySources: Record<string, string> = {};
+    if (scope === "Global") for (const name of await this.library.names()) {
+      const source = (await this.library.record(name))?.source;
+      if (source) librarySources[name] = source;
+    }
+    const folders = [{ directory: root, disabled: false }, ...(scope === "Global" ? [{ directory: join(this.library.root, "skills"), disabled: true }] : []), { directory: join(root, ".disabled"), disabled: true }];
+    for (const { directory, disabled } of folders) {
       let names: string[];
       try { names = await readdir(directory); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") continue; throw error; }
       const entries = await Promise.all(names.filter(name => skillName(name) && !name.startsWith(".") && !result.some(entry => entry.name === name)).map(async name => {
@@ -162,7 +177,7 @@ export class SkillLibrary {
           : await readOriginalInvocation(path, metadata.invocation);
         let preparedSource: string | undefined;
         try { const receipt = JSON.parse(await readFile(join(path, ".afk-source.json"), "utf8")) as { source?: unknown }; if (typeof receipt.source === "string") preparedSource = receipt.source; } catch { /* Older prepared copies have no provenance receipt. */ }
-        const source = preparedSource ?? sources[name] ?? (invocationInherited ? globalSources[name] : undefined);
+        const source = librarySources[name] ?? preparedSource ?? sources[name] ?? (invocationInherited ? globalSources[name] : undefined);
         return { name, path, ...(source ? { source } : {}), owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited };
       }));
       for (const entry of entries) if (entry) result.push(entry);
@@ -197,6 +212,7 @@ export class SkillLibrary {
   async locate(settings: Settings, name: string, scope = "Global"): Promise<string> {
     if (!skillName(name)) throw new Error("Invalid skill name.");
     const root = this.root(settings, scope);
+    if (scope === "Global" && await this.library.has(name)) return this.library.skillPath(name);
     for (const directory of scope === "Global" ? [join(root, ".disabled", name), join(root, name)] : [join(root, name)]) {
       if (await exists(join(directory, "SKILL.md"))) return directory;
     }
@@ -329,6 +345,7 @@ export class SkillLibrary {
 
   async toggle(settings: Settings, name: string, scope: string): Promise<void> {
     if (settings.profiles.some(p => p.enabled.includes(scope) && p.skills.includes(name))) throw new Error("Turn the owning packs off first.");
+    if (scope === "Global" && await this.library.has(name)) return this.toggleStored(settings, name);
     const root = this.root(settings, scope);
     const active = join(root, name);
     const disabled = join(root, ".disabled", name);
@@ -398,6 +415,21 @@ export class SkillLibrary {
       if (removesAlias) await symlink(ownedTarget!, alias, "dir");
       for (const path of movedLinks) { await rm(path); await symlink(active, path, "dir"); }
       settings.managedLinks = originalLinks;
+      throw error;
+    }
+  }
+
+  // A stored skill is on while AFK's links to it exist; turning it off removes them and moves no files.
+  private async toggleStored(settings: Settings, name: string): Promise<void> {
+    const on = await this.library.linked(name);
+    const original = [...(settings.independentSkills.Global ?? [])];
+    if (on) await this.library.unlink(name);
+    else await this.library.link(name);
+    settings.independentSkills.Global = on ? original.filter(member => member !== name) : [...new Set([...original, name])];
+    try { await this.store.save(settings); }
+    catch (error) {
+      settings.independentSkills.Global = original;
+      if (on) await this.library.link(name); else await this.library.unlink(name);
       throw error;
     }
   }

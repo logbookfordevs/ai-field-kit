@@ -1,6 +1,7 @@
 import { cp, lstat, mkdir, readFile, readlink, rm, symlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
+import type { InvocationChoice } from "./library.js";
 import { SkillLibrary } from "./skills.js";
 import type { Settings, SettingsStore } from "./settings.js";
 
@@ -48,9 +49,34 @@ async function setProjectInvocation(store: SettingsStore, settings: Settings, na
   }
 }
 
+/** Writes a saved choice into a skill folder's files, keeping the one-time backup used to reset to the default. */
+export async function writeInvocationChoice(path: string, mode: "Manual only" | "Automatic allowed"): Promise<void> {
+  const skill = await readFile(join(path, "SKILL.md"), "utf8");
+  const metadata = await readOptional(join(path, "agents/openai.yaml"));
+  const parsed = frontmatter(skill);
+  const agent = parseDocument(metadata ?? "{}");
+  if (agent.errors.length) throw new Error("agents/openai.yaml is invalid YAML.");
+  parsed.document.set("disable-model-invocation", mode === "Manual only");
+  agent.setIn(["policy", "allow_implicit_invocation"], mode !== "Manual only");
+  if (await readOptional(join(path, ".afk-invocation-original.json")) === null) await writeFile(join(path, ".afk-invocation-original.json"), JSON.stringify({ skill, metadata }), { mode: 0o600 });
+  await mkdir(join(path, "agents"), { recursive: true });
+  await writeFile(join(path, "SKILL.md"), `---\n${parsed.document.toString()}---\n${parsed.body}`);
+  await writeFile(join(path, "agents/openai.yaml"), agent.toString());
+}
+
 export async function setInvocation(store: SettingsStore, settings: Settings, name: string, scope: string, mode: string): Promise<void> {
   if (!["", "Manual only", "Automatic allowed"].includes(mode)) throw new Error("Choose a supported invocation mode.");
   if (scope !== "Global") return setProjectInvocation(store, settings, name, scope, mode);
+  const stored = new SkillLibrary(store).library;
+  if (scope !== "Global" || !await stored.has(name)) return changeInvocation(store, settings, name, scope, mode);
+  const choice = mode as InvocationChoice;
+  await stored.change(`Set ${name} to ${choice || "its default invocation"}`, async () => {
+    await changeInvocation(store, settings, name, scope, choice);
+    await stored.writeRecord(name, { ...await stored.record(name), invocation: choice });
+  });
+}
+
+async function changeInvocation(store: SettingsStore, settings: Settings, name: string, scope: string, mode: string): Promise<void> {
   const library = new SkillLibrary(store);
   const originalPath = await library.locateLoaded(settings, name, scope);
   const source = scope !== "Global" ? (await library.inventory(settings, scope)).find(entry => entry.name === name)?.source : undefined;

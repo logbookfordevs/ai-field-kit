@@ -15,6 +15,7 @@ import { SettingsStore, validateSettings } from "./settings.js";
 import { settingsSchema } from "./settings-schema.js";
 import { portableSettings } from "./local-state.js";
 import { SkillLibrary } from "./skills.js";
+import { applyLibraryInit, confirmLibraryInit, planLibraryInit, type LibraryInitPlan } from "./library-init.js";
 import { startFieldwork } from "./server.js";
 
 const HELP = `AFK — local skills, tools, and agent rules
@@ -33,6 +34,8 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk kit drop <skill> [--pack <name>]    Stop tracking a skill; its files stay
   afk sync [--agent <agent>] [--yes] [--run-tools]  Make this machine match your kit
   afk migrate [--core <stack-id>] [--apply]  Move old stacks settings to the kit format
+  afk library init [--apply]         Move Core skills into ~/.afk/library; dry run without --apply
+  afk library confirm                Delete the originals kept after library init
   afk install <url> [--agent <agent>] [-g | -p <folder>] [--yes]
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
@@ -127,6 +130,28 @@ async function manage(argv: string[], store: SettingsStore): Promise<number> {
   } finally { process.removeListener("SIGINT", cancelUpdate); await operations.close(); }
 }
 
+function describeLibraryInit(plan: LibraryInitPlan, applied: boolean): string {
+  const lines = [applied ? `Library started at ${plan.library}.` : `Dry run: nothing changed. Run afk library init --apply to start the library at ${plan.library}.`];
+  for (const skill of plan.skills) lines.push(`  ${skill.name} (${skill.on ? "on" : "off"}${skill.record.invocation ? `, ${skill.record.invocation}` : ""}) from ${skill.from}`);
+  if (plan.rules.length) lines.push(`Rules: ${plan.rules.join(", ")}`);
+  if (plan.missing.length) lines.push(`Not on this machine: ${plan.missing.join(", ")}`);
+  if (plan.toolSkills.length) lines.push(`Provided by tools, left in place: ${plan.toolSkills.join(", ")}`);
+  lines.push(applied ? `Originals kept in ${plan.backup}. Run afk library confirm to delete them.` : `Originals would be kept in ${plan.backup}.`);
+  return lines.join("\n");
+}
+
+async function libraryCommand(argv: string[], store: SettingsStore): Promise<number> {
+  const [action, option, extra] = argv;
+  await store.initialize();
+  if (action === "init" && extra === undefined && (option === undefined || option === "--apply")) {
+    const apply = option === "--apply";
+    console.log(describeLibraryInit(apply ? await applyLibraryInit(store) : await planLibraryInit(store), apply));
+    return 0;
+  }
+  if (action === "confirm" && option === undefined) { console.log(`Deleted ${await confirmLibraryInit(store)}.`); return 0; }
+  throw new Error("Use afk library init [--apply] or afk library confirm.");
+}
+
 async function run(argv: string[], store: SettingsStore): Promise<number> {
   const [command, action, id, target, extra] = argv;
   if (["--help", "help", "-h"].includes(command ?? "")) { console.log(HELP); return 0; }
@@ -141,6 +166,7 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
   if (command === "migrate") return runMigrate(argv.slice(1), store);
   if (command === "update") return updateAfk(argv.slice(1));
   if (command === "manage") return manage(argv.slice(1), store);
+  if (command === "library") return libraryCommand(argv.slice(1), store);
   if (command === "settings" && action === "schema") {
     if (id !== undefined) throw new Error("Use settings schema without additional arguments.");
     json(settingsSchema); return 0;
