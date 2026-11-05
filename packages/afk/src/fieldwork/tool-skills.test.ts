@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Library } from "./library.js";
+import { applyLibraryInit } from "./library-init.js";
 import { FieldworkOperations } from "./operations.js";
 import { emptySettings, SettingsStore, type Settings } from "./settings.js";
 import type { SkillEntry } from "./skills.js";
@@ -131,6 +132,19 @@ describe("after a tool run", () => {
     expect(skill).toContain("disable-model-invocation: true");
     expect(skill).toContain("Fresh.");
     expect((await entry("wiz"))?.invocation).toEqual({ claude: "Manual only", codex: "Manual only" });
+  });
+
+  it("applies the choice saved after library init, not the frozen settings.json", async () => {
+    await configure({ ...toolWrites(writesWiz), kit: { core: [] }, preferences: { "Global|wiz": "Automatic allowed" } });
+    await installedByTool();
+    await applyLibraryInit(store);
+    await operations.run("invocation", { name: "wiz", scope: "Global", mode: "Manual only" });
+    await rm(agents("wiz"), { recursive: true });
+
+    const result = await operations.run("tool/run", { id: 1 }) as { reapplied: string[] };
+
+    expect(result.reapplied).toEqual(["wiz"]);
+    expect(await readFile(agents("wiz/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
   });
 
   it("leaves the skills alone when no choice is saved", async () => {

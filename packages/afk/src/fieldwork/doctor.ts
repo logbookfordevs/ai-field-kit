@@ -1,5 +1,6 @@
 import { lstat, readFile, readlink, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { Library } from "./library.js";
 import { RulesWorkspace } from "./rules.js";
 import { requiresMigrationChoice, expandPath, type Settings, type SettingsStore, validateSettings } from "./settings.js";
 import { SkillLibrary } from "./skills.js";
@@ -60,7 +61,9 @@ export async function doctor(store: SettingsStore): Promise<DoctorReport> {
   const checkedExposures = new Set<string>();
   const checkExposure = async (name: string, scope: string, owner: string): Promise<void> => {
     const root = library.root(settings, scope);
-    for (const path of [join(root, name), join(root, "../../.claude/skills", name)]) {
+    const storage = new Library(store.home);
+    const exposures = scope === "Global" && await storage.storage(name) ? await storage.links(name) : [join(root, name), join(root, "../../.claude/skills", name)];
+    for (const path of exposures) {
       if (checkedExposures.has(path)) continue;
       checkedExposures.add(path);
       try {

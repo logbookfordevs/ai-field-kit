@@ -348,8 +348,9 @@ export class SkillLibrary {
       const shared = enabled ? await this.locate(settings, name) : join(this.root(settings, "Global"), ".disabled", name);
       const override = join(root, ".afk-overrides", name);
       const source = scope !== "Global" && await exists(join(override, "SKILL.md")) ? override : shared;
-      const destinations = await sharedDiscoveryFolder(root)
-        ? [join(root, name)]
+      const stored = scope === "Global" ? await this.library.location(name) : undefined;
+      const destinations = stored ? await this.library.links(name)
+        : await sharedDiscoveryFolder(root) ? [join(root, name)]
         : [join(root, name), join(root, "../../.claude/skills", name)];
       for (const destination of destinations) {
         if (enabled) {
@@ -365,11 +366,11 @@ export class SkillLibrary {
         operations.push({ path: destination, source, create: true });
       } else {
         const otherOwner = settings.profiles.some(p => p.id !== profile.id && p.enabled.includes(scope) && p.skills.includes(name));
-        if (otherOwner || settings.independentSkills[scope]?.includes(name) || !settings.managedLinks[destination] || !(await exists(destination))) continue;
+        if (otherOwner || settings.independentSkills[scope]?.includes(name) || (!stored && !settings.managedLinks[destination]) || !(await exists(destination))) continue;
         const stat = await lstat(destination);
         if (!stat.isSymbolicLink()) continue;
         const target = resolve(destination, "..", await readlink(destination));
-        if (target !== settings.managedLinks[destination]) continue;
+        if (target !== (stored ?? settings.managedLinks[destination])) continue;
         operations.push({ path: destination, source: target, create: false });
       }
     }

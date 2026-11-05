@@ -2,6 +2,7 @@ import { lstat, mkdir, mkdtemp, readFile, readdir, readlink, rm, symlink, writeF
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { doctor } from "./doctor.js";
 import { applyLibraryInit, planLibraryInit } from "./library-init.js";
 import { FieldworkOperations } from "./operations.js";
 import { emptySettings, SettingsStore } from "./settings.js";
@@ -115,6 +116,34 @@ describe("packs after library init", () => {
     expect(await readlink(join(agents, "gamma"))).toBe(join(home, ".afk/packs-cache/gamma"));
     expect(await readlink(join(claude, "gamma"))).toBe(join(home, ".afk/packs-cache/gamma"));
     await operations.close();
+  });
+
+  it("links a pack into every enabled agent folder and removes those links when it turns off", async () => {
+    const operations = new FieldworkOperations(store);
+    const cursor = join(home, ".cursor/skills");
+    await operations.run("agent-folders/disable", { path: "~/.claude/skills" });
+    await operations.run("agent-folders/enable", { path: "~/.cursor/skills" });
+    expect(await readlink(join(cursor, "gamma"))).toBe(join(home, ".afk/packs-cache/gamma"));
+    expect(await readlink(join(cursor, "mine"))).toBe(join(home, ".afk/machine/mine"));
+
+    await operations.run("activation", { id: pack.id, scope: "Global", enabled: false });
+    expect(await present(join(cursor, "gamma"))).toBe(false);
+    expect(await present(join(claude, "gamma"))).toBe(false);
+
+    await operations.run("activation", { id: pack.id, scope: "Global", enabled: true });
+    expect(await readlink(join(cursor, "gamma"))).toBe(join(home, ".afk/packs-cache/gamma"));
+    expect(await readlink(join(agents, "gamma"))).toBe(join(home, ".afk/packs-cache/gamma"));
+    expect(await present(join(claude, "gamma"))).toBe(false);
+    await operations.close();
+  });
+
+  it("checks a pack's exposure in the enabled agent folders, not a fixed Claude Code folder", async () => {
+    const operations = new FieldworkOperations(store);
+    await operations.run("agent-folders/disable", { path: "~/.claude/skills" });
+    await operations.close();
+
+    const exposure = (await doctor(store)).issues.filter(issue => issue.code.startsWith("skill_exposure"));
+    expect(exposure).toEqual([]);
   });
 
   it("prepares a missing pack skill into the cache, never .disabled", async () => {
