@@ -179,6 +179,20 @@ describe("an interrupted or refused restore", () => {
     await expect(restorer().restore(remote)).rejects.toThrow(/already exists/);
   });
 
+  it("keeps every restored Core skill on when the retry follows a failed settings save", async () => {
+    await sourceLibrary();
+    const save = store.save.bind(store);
+    store.save = async () => { throw new Error("injected settings save failure"); };
+    await expect(restorer().restore(remote)).rejects.toThrow(/injected/);
+    store.save = save;
+
+    const summary = await restorer().restore(remote);
+
+    expect(summary.linked).toEqual(["alpha", "beta"]);
+    expect((await store.read()).independentSkills.Global).toEqual(["alpha", "beta"]);
+    expect((await new Backup(library()).status()).restoring).toBeUndefined();
+  });
+
   it("refuses to restore over a machine that already has a library", async () => {
     await sourceLibrary();
     await restorer().restore(remote);

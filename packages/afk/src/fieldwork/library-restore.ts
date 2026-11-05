@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { runCommand } from "./command-runner.js";
 import { Library, type GitRunner, type LibrarySettings } from "./library.js";
 import { checkRemoteUrl } from "./library-backup.js";
-import { deployLibrary, type AsideMove } from "./library-deploy.js";
+import { coreNames, deployLibrary, type AsideMove } from "./library-deploy.js";
 import { recordedInvocations } from "./library-settings.js";
 import { clearRestorePending, markRestorePending, pendingRestore } from "./restore-pending.js";
 import type { SettingsStore, Tool } from "./settings.js";
@@ -123,13 +123,14 @@ export class Restore {
     }
     const { packs, tools } = await this.contents();
     const deployed = await deployLibrary(this.library, this.options.now ? { now: this.options.now } : {});
+    const linked = await this.restoredCore();
     const settings = await this.store.read();
-    settings.independentSkills.Global = [...new Set([...(settings.independentSkills.Global ?? []), ...deployed.linked])].sort();
+    settings.independentSkills.Global = [...new Set([...(settings.independentSkills.Global ?? []), ...linked])].sort();
     await this.store.save(settings);
     await clearRestorePending(home);
     return {
       repository: url,
-      linked: deployed.linked,
+      linked,
       adopted: deployed.adopted,
       movedAside: deployed.movedAside,
       choices: Object.values(await recordedInvocations(this.store.home)).filter(Boolean).length,
@@ -137,6 +138,13 @@ export class Restore {
       packs,
       tools,
     };
+  }
+
+  // Read back from the library and its links rather than from this attempt, so a retry after a failed save turns on the same skills.
+  private async restoredCore(): Promise<string[]> {
+    const stored = new Set(await this.library.names()), linked: string[] = [];
+    for (const name of coreNames(await this.library.readSettings())) if (stored.has(name) && await this.library.linked(name)) linked.push(name);
+    return linked.sort();
   }
 
   private async contents(): Promise<{ packs: string[]; tools: Tool[] }> {
