@@ -46,8 +46,11 @@ nestedInventory=()=>nestedInventories[scope]||[];
 isAvailable=entry=>entry.available;
 activate=id=>operation(async()=>{
   const profile=profiles.find(p=>p.id===id),target=selectedTargets[id]||'Global';
-  if(!profile.enabled.includes(target)&&!profile.ready)toast('Downloading missing skills before turning this pack on…');
-  await request('activation',{id,scope:target,enabled:!profile.enabled.includes(target)});
+  const downloading=!profile.enabled.includes(target)&&!profile.ready;
+  if(downloading)toast('Downloading missing skills before turning this pack on…');
+  const timer=downloading?setInterval(()=>request('skills/install-state',{}).then(progress=>{if(progress?.pending)toast(progress.phase+(progress.lastLine?' · '+progress.lastLine:''))}).catch(()=>{}),1500):undefined;
+  try{await request('activation',{id,scope:target,enabled:!profile.enabled.includes(target)})}
+  finally{clearInterval(timer)}
 });
 toggleSkill=name=>operation(()=>request('skill/toggle',{name,scope}));
 inspectSkill=async(name,fromProfile,file='SKILL.md',folder)=>{
