@@ -150,7 +150,7 @@ function machineOnlyRow(name){
 function renderMachineTab(){
   const names=kitStatus.machineOnly.filter(skillsMatch).sort((a,b)=>a.localeCompare(b));
   const others=otherMachineSkills().filter(entry=>skillsMatch(entry.name));
-  const kept=names.length?`<section class="kit-section">${skillsLedger(names.map(machineOnlyRow))}</section>`:'';
+  const kept=names.length?`<section class="kit-section"><p class="sub">Kept on this machine only, outside your library and backup.</p>${skillsLedger(names.map(machineOnlyRow))}</section>`:'';
   const loose=others.length?`<section class="kit-section"><h2>Other skills here</h2><p class="sub">Installed on this machine but not sorted yet. Turn one on to review it.</p>${skillsLedger(others.map(entry=>skillsRow(entry)))}</section>`:'';
   const nested=typeof nestedSkillSection==='function'?nestedSkillSection(nestedInventories.Global||[]):'';
   const empty=kept||loose||nested?'':'<div class="empty"><h2>Nothing kept on this machine only</h2><p class="sub">Skills you keep here stay out of your library and backup. Choose This machine only for one in To review.</p></div>';
@@ -213,7 +213,7 @@ function renderKit(){
   const scopes=projects.length?`<label class="skills-scope">Scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>`:'';
   const update=globalSkills().length?button(skillActionLabel('Update all','update'),'showSkillUpdate()','','data-od-id="update-skills"'):'';
   const sync=button(pending?`Sync this machine · ${planCount()}`:'Nothing to sync','reviewSync()',pending?'primary':'',pending?'data-od-id="sync-machine"':'disabled data-od-id="sync-machine"');
-  const actions=`<div class="inline skills-page-actions">${button('Install skills','showInstallSkills()','primary','data-od-id="install-skills"')}${update}${sync}</div>`;
+  const actions=`<div class="inline skills-page-actions">${button('Install skills','showInstallSkills()',pending?'':'primary','data-od-id="install-skills"')}${update}${sync}</div>`;
   const searchable=skillsTab!=='later';
   $('view').innerHTML=head('Skills','Your library and this machine in one place. Core is backed up in full, packs as definitions, and machine-only skills stay here.',actions)
     +`<div class="skills-toolbar">${scopes}${searchable?skillsSearch():''}</div>`
