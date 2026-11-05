@@ -40,6 +40,15 @@ export async function migrateProject(store: SettingsStore, settings: Settings, s
   const kept: string[] = [], movedAside: AsideMove[] = [], backups: string[] = [];
   let changed = false;
 
+  // Migration moves and deletes what these folders hold, so it never reaches them through a link to somewhere else.
+  const project = resolve(root, "../..");
+  for (const container of [parked, overrides]) {
+    if (await entryType(container) === "missing") continue;
+    for (let path = container; path !== project && inside(path, project); path = dirname(path)) {
+      if (await entryType(path) === "link") throw new Error(`${path} is a link to another folder, so AFK left it and what it holds alone. Replace the link with a real folder or remove it, then open the project again.`);
+    }
+  }
+
   const targetOf = async (link: string): Promise<string> => resolve(dirname(link), await readlink(link));
   const dropLink = async (link: string, ownedBy: (target: string) => boolean): Promise<void> => {
     if (await entryType(link) !== "link" || !ownedBy(await targetOf(link))) return;

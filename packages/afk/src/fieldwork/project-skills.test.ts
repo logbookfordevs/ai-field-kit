@@ -183,6 +183,32 @@ it("migrates .afk-overrides by restoring the original files, then reapplies the 
   expect(entry?.invocation).toMatchObject({ claude: "Manual only" });
 });
 
+it.each([".afk-overrides", ".disabled"])("leaves a folder outside the project alone when %s is a link to it, and reports the link", async container => {
+  const f = await fixture();
+  const outside = await mkdtemp(join(tmpdir(), "afk-project-outside-")); homes.push(outside);
+  await f.write(join(outside, "unrelated"), "unrelated", "UNIQUE OUTSIDE COPY");
+  await mkdir(f.root, { recursive: true });
+  await symlink(outside, join(f.root, container), "dir");
+
+  await expect(migrateProject(f.store, await f.store.read(), "Studio")).rejects.toThrow(join(f.root, container));
+
+  expect(await readFile(join(outside, "unrelated/SKILL.md"), "utf8")).toContain("UNIQUE OUTSIDE COPY");
+  expect(await readdir(outside)).toEqual(["unrelated"]);
+  expect(await readlink(join(f.root, container))).toBe(outside);
+});
+
+it("leaves a folder outside the project alone when the project's skills folder is a link and holds .afk-overrides", async () => {
+  const f = await fixture();
+  const outside = await mkdtemp(join(tmpdir(), "afk-project-outside-")); homes.push(outside);
+  await f.write(join(outside, ".afk-overrides/unrelated"), "unrelated", "UNIQUE OUTSIDE COPY");
+  await mkdir(join(f.project, ".agents"), { recursive: true });
+  await symlink(outside, f.root, "dir");
+
+  await expect(migrateProject(f.store, await f.store.read(), "Studio")).rejects.toThrow(f.root);
+
+  expect(await readFile(join(outside, ".afk-overrides/unrelated/SKILL.md"), "utf8")).toContain("UNIQUE OUTSIDE COPY");
+});
+
 it("turns off existing pack activations in a project and removes only AFK's links and copies", async () => {
   const f = await fixture();
   const library = await f.write(join(f.home, ".agents/skills/.disabled/review"), "review", "Library");
