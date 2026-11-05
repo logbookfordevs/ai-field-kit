@@ -180,6 +180,22 @@ export class Backup {
     return (await this.waitingIds()).length;
   }
 
+  /** Skills whose files or record changed in saves the remote does not have yet. */
+  async unpushedSkills(): Promise<string[]> {
+    const ids = await this.waitingIds();
+    if (!ids.length) return [];
+    const tracked = await this.git("Reading the remote", "rev-parse", "--verify", "--quiet", `refs/remotes/${REMOTE}/${await this.git("Reading the branch", "symbolic-ref", "--short", "HEAD")}`).catch(() => "");
+    const changed = tracked
+      ? await this.git("Reading waiting changes", "diff", "--name-only", `${tracked}..HEAD`)
+      : await this.git("Reading waiting changes", "ls-tree", "-r", "--name-only", "HEAD");
+    const names = new Set<string>();
+    for (const path of changed.split("\n")) {
+      const name = /^skills\/([^/]+)\//.exec(path)?.[1] ?? /^\.afk\/skills\/([^/]+)\.json$/.exec(path)?.[1];
+      if (name) names.add(name);
+    }
+    return [...names];
+  }
+
   private async push(): Promise<BackupStatus> {
     const settled = async (): Promise<BackupStatus> => ({ ...await this.status(), pushing: false });
     if (!await this.remoteUrl() || await this.waiting() === 0) return settled();

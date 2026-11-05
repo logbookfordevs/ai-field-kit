@@ -169,6 +169,18 @@ describe("history and going back", () => {
     ]);
   });
 
+  it("names the skills whose files or choices changed in saves not pushed yet", async () => {
+    await save("Add alpha", "alpha");
+    await save("Add gamma", "gamma");
+    await backup.connect(remote);
+    await save("Add beta", "beta");
+    await library.change("Choose manual for gamma", async () => { await library.writeRecord("gamma", { invocation: "Manual only" }); });
+
+    expect((await backup.unpushedSkills()).sort()).toEqual(["beta", "gamma"]);
+    await backup.saveNow();
+    expect(await backup.unpushedSkills()).toEqual([]);
+  });
+
   it("restores an earlier save as a new commit that can itself be undone", async () => {
     await save("Add alpha");
     await save("Add beta");
@@ -320,11 +332,16 @@ describe("the backup operations", () => {
     const operations = new FieldworkOperations(store);
     try {
       await operations.run("backup/connect", { url: remote });
-      const state = await operations.run("backup/state") as { status: { state: string; remote: string }; history: { id: string }[]; contents: { coreSkills: number } };
+      await save("Add alpha", "alpha");
+      const brief = await operations.run("backup/state", { brief: true }) as { unpushed: string[] };
+      expect(brief.unpushed).toEqual(["alpha"]);
+      await operations.run("backup/save");
+      const state = await operations.run("backup/state") as { status: { state: string; remote: string }; history: { id: string }[]; contents: { coreSkills: number }; unpushed: string[] };
 
       expect(state.status).toMatchObject({ state: "saved", remote });
-      expect(state.history).toHaveLength(1);
-      expect(state.contents.coreSkills).toBe(0);
+      expect(state.unpushed).toEqual([]);
+      expect(state.history).toHaveLength(2);
+      expect(state.contents.coreSkills).toBe(1);
       await expect(operations.run("backup/connect", { url: "https://u:p@example.com/r.git" })).rejects.toThrow();
       await expect(operations.run("backup/restore", { id: "nope" })).rejects.toThrow();
       expect(await operations.run("backup/disconnect")).toMatchObject({ state: "off" });

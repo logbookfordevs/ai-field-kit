@@ -381,8 +381,8 @@ export class FieldworkOperations {
   private async applyBackup(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
     const { backup } = this;
     if (operation === "backup/state") {
-      const status = await backup.status(), attention = await backup.checks.list();
-      return data.brief === true ? { status, attention } : { status, attention, history: await backup.history(), contents: await backup.contents() };
+      const status = await backup.status(), attention = await backup.checks.list(), unpushed = await backup.unpushedSkills();
+      return data.brief === true ? { status, attention, unpushed } : { status, attention, unpushed, history: await backup.history(), contents: await backup.contents() };
     }
     const resolutions: Partial<Record<Operation, () => Promise<void>>> = {
       "backup/keep": () => backup.checks.keep(String(data.id)),
