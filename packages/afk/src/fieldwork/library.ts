@@ -12,6 +12,8 @@ export interface SkillRecord {
   skillPath?: string;
   revision?: string;
   invocation: InvocationChoice;
+  /** Set once the user edited a skill that updates from its repository: stopped keeps their version, replace lets updates overwrite it. */
+  updates?: "stopped" | "replace";
 }
 
 export interface LibrarySettings {

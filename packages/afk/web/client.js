@@ -276,15 +276,22 @@ function skillActionLabel(label,action){
   return `<svg class="skill-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths[action]}</svg><span>${label}</span>`;
 }
 
-function selectSkill(name,selected){if(selected)selectedSkills.add(name);else selectedSkills.delete(name);renderSkillList();document.querySelector(`[data-skill-select="${name}"]`)?.focus()}
-function selectShownSkills(){for(const skill of inventory())if(matchesSkillFilters(skill))selectedSkills.add(skill.name);renderSkillList()}
-function clearSkillSelection(){selectedSkills.clear();renderSkillList()}
+function onSkillsPage(){return Boolean($('skillsPanel'))}
+function redrawSkills(){if(onSkillsPage())renderSkillsPanel();else renderSkillList()}
+function shownSkills(){return onSkillsPage()?skillsTabEntries():inventory().filter(matchesSkillFilters)}
+function selectSkill(name,selected){
+  if(selected)selectedSkills.add(name);else selectedSkills.delete(name);
+  if(onSkillsPage())return refreshSkillSelection();
+  renderSkillList();document.querySelector(`[data-skill-select="${name}"]`)?.focus();
+}
+function selectShownSkills(){for(const skill of shownSkills())selectedSkills.add(skill.name);redrawSkills()}
+function clearSkillSelection(){selectedSkills.clear();redrawSkills()}
 function renderSkillSelection(shown){
   if($('scopeSelect'))$('scopeSelect').disabled=skillBulkBusy;
   const hidden=[...selectedSkills].filter(name=>!shown.some(skill=>skill.name===name)).length;
   const disabled=skillBulkBusy?'disabled':'';
   const count=selectedSkills.size;
-  $('skillSelection').innerHTML=count?`<div class="skill-bulk" role="group" aria-label="Selected skill actions"><strong class="bulk-count">${count} selected${skillBulkBusy?' · Applying…':''}${hidden?' · '+hidden+' hidden by filters':''} · ${esc(scope)}</strong>${scope==='Global'?button('Enable',"applySkillBulk('enable')",'',disabled)+button('Disable',"applySkillBulk('disable')",'',disabled):''}<label><span class="sr-only">Invocation for selected skills</span><select ${disabled} aria-label="Invocation for selected skills" onchange="if(this.value)applySkillBulk('invocation',this.value==='default'?'':this.value)"><option value="">Change invocation…</option><option>Manual only</option><option>Automatic allowed</option><option value="default">Restore defaults</option></select></label>${button(skillActionLabel('Update selected','update'),'showSkillUpdate([...selectedSkills])','primary',disabled)}${button('Delete selected','reviewBulkSkillDeletion()','text danger',disabled)}${button('Clear selection','clearSkillSelection()','text',disabled)}</div>`:'';
+  $('skillSelection').innerHTML=count?`<div class="skill-bulk" role="group" aria-label="Selected skill actions"><strong class="bulk-count">${count} selected${skillBulkBusy?' · Applying…':''}${hidden?' · '+hidden+' hidden by filters':''} · ${esc(scope)}</strong>${scope==='Global'?button('Turn on',"applySkillBulk('enable')",'',disabled)+button('Turn off',"applySkillBulk('disable')",'',disabled):''}<label><span class="sr-only">Invocation for selected skills</span><select ${disabled} aria-label="Invocation for selected skills" onchange="if(this.value)applySkillBulk('invocation',this.value==='default'?'':this.value)"><option value="">Change invocation…</option><option>Manual only</option><option>Automatic allowed</option><option value="default">Restore defaults</option></select></label>${button(skillActionLabel('Update selected','update'),'showSkillUpdate([...selectedSkills])','primary',disabled)}${button('Delete selected','reviewBulkSkillDeletion()','text danger',disabled)}${button('Clear selection','clearSkillSelection()','text',disabled)}</div>`:'';
   if(shown.length)$('skillSelection').innerHTML+=`<p>${button('Select shown','selectShownSkills()','text',disabled)}</p>`;
 }
 function showSkillBulkResult(result,target){
@@ -294,15 +301,15 @@ function showSkillBulkResult(result,target){
 }
 async function applySkillBulk(action,mode){
   if(skillBulkBusy||!selectedSkills.size)return;
-  const target=scope,names=[...selectedSkills];skillBulkBusy=true;renderSkillList();
+  const target=scope,names=[...selectedSkills];skillBulkBusy=true;redrawSkills();
   try{const result=await request('skills/bulk',{names,scope:target,action,...(action==='invocation'?{mode}:{})});showSkillBulkResult(result,target);await refresh()}
   catch(error){toast(error.message);await refresh().catch(()=>{})}
-  finally{skillBulkBusy=false;if($('skillList'))renderSkillList()}
+  finally{skillBulkBusy=false;if($('skillList')||onSkillsPage())redrawSkills()}
 }
 async function reviewBulkSkillDeletion(){
   if(skillBulkBusy||!selectedSkills.size)return;
   const target=scope,names=[...selectedSkills];
-  skillBulkBusy=true;bulkDeleteReview=undefined;renderSkillList();
+  skillBulkBusy=true;bulkDeleteReview=undefined;redrawSkills();
   modal('Review selected deletions',`<p role="status">Checking ${names.length} selected skills in ${esc(target)} and their storage links…</p><p>You can close this review while the checks finish.</p>`,button('Close','closeModal()'));
   const loadingPanel=$('sheetContent').firstElementChild;
   try{
@@ -314,7 +321,7 @@ async function reviewBulkSkillDeletion(){
   }catch(error){
     if($('sheet').open&&$('sheetContent').firstElementChild===loadingPanel)modal('Could not review deletions',`<p role="alert">${esc(error.message)}</p>`,button('Close','closeModal()'));
     else toast(error.message);
-  }finally{skillBulkBusy=false;if($('skillList'))renderSkillList()}
+  }finally{skillBulkBusy=false;if($('skillList')||onSkillsPage())redrawSkills()}
 }
 async function finishBulkSkillDeletion(){
   if(skillBulkBusy||!bulkDeleteReview)return;
@@ -322,7 +329,7 @@ async function finishBulkSkillDeletion(){
   try{
     await saveForm(async()=>{result=await request('skills/bulk',{names:review.names,scope:review.scope,action:'delete',expected:review,confirmed:true});for(const item of result.items)if(item.ok)selectedSkills.delete(item.name)},'Reviewed skills deleted.','bulkDeleteError');
     if(result?.failed)showSkillBulkResult(result,review.scope);
-  }finally{skillBulkBusy=false;if($('skillList'))renderSkillList()}
+  }finally{skillBulkBusy=false;if($('skillList')||onSkillsPage())redrawSkills()}
 }
 
 let skillUpdateRunning=false,skillUpdateNames;

@@ -154,7 +154,10 @@ async function updateStoredSkills(store: SettingsStore, settings: Settings, prog
     if (selectedNames && (!selectedNames.length || !selectedNames.every(skillName) || new Set(selectedNames).size !== selectedNames.length)) throw new Error("Select unique skill names.");
     const toolOwned = new Map(settings.tools.flatMap(tool => (tool.provides ?? []).map(name => [name, tool.name] as const)));
     for (const name of selectedNames ?? []) if (toolOwned.has(name)) throw new Error(`${name} is managed by ${toolOwned.get(name)}. Update it from Tools.`);
-    const stored = (await library.storedNames()).filter(name => selectedNames ? selectedNames.includes(name) : !toolOwned.has(name));
+    const kept = new Set<string>();
+    for (const name of await library.storedNames()) if ((await library.record(name))?.updates === "stopped") kept.add(name);
+    for (const name of selectedNames ?? []) if (kept.has(name)) throw new Error(`You kept your version of ${name}. Let updates replace your edits from its editor to update it again.`);
+    const stored = (await library.storedNames()).filter(name => selectedNames ? selectedNames.includes(name) : !toolOwned.has(name) && !kept.has(name));
     if (selectedNames && stored.length !== selectedNames.length) throw new Error("A selected skill is missing from this scope.");
     await mkdir(stagedRoot, { recursive: true });
     const snapshots: { name: string; path: string; before: string; staged: string; source: string; skillPath?: string; revision?: string }[] = [];

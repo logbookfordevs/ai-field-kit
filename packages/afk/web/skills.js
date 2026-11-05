@@ -75,6 +75,8 @@ function skillMenu(name,items){
   return `<button type="button" class="source-menu-trigger" popovertarget="${esc(id)}" aria-label="More actions for ${esc(name)}" aria-haspopup="menu">⋯</button><div id="${esc(id)}" class="skill-invoc-popover skills-folder-popover source-menu" popover role="menu">${buttons}</div>`;
 }
 
+function skillEditLabel(entry){return entry.tool||entry.readOnly||entry.storage==='pack'||!entry.storage?'View files':'Edit files'}
+
 function skillsRow(entry,{menu=[],note=''}={}){
   const name=esc(entry.name),held=entry.owners.length>0,busy=skillBulkBusy?'disabled':'';
   const tool=tools.find(item=>item.provides?.includes(entry.name));
@@ -82,12 +84,15 @@ function skillsRow(entry,{menu=[],note=''}={}){
   const switchControl=`<button type="button" role="switch" class="switch" aria-checked="${entry.available}" ${held||skillBulkBusy?'disabled':''} aria-label="${name} on this machine" onclick="toggleSkill('${name}')" data-od-id="skill-${name}-switch"><span class="track" aria-hidden="true"></span><span>${entry.available?'On':'Off'}</span></button>`;
   const notes=[
     held?`<span class="hint">In ${entry.owners.map(esc).join(', ')} · turn the pack on or off in Packs</span>`:'',
+    entry.updatesStopped?'<span class="hint">Your version · updates stopped</span>':'',
     entry.duplicate?`<span class="hint duplicate-hint">Two copies ${button('Resolve',`showDuplicateChoice('${name}','Global')`,'text',busy)}</span>`:'',
   ].join('');
-  const update=tool?button('Update',`runTool(${tool.id},true)`,'text',busy):button('Update',`showSkillUpdate('${name}')`,'text',busy);
-  const menuItems=[...menu,...(tool?[]:[['Delete',`reviewSkillDeletion('${name}')`,true]])];
+  const stopped=entry.updatesStopped?'disabled title="You kept your own version. Let updates replace your edits from Edit files to update it again."':busy;
+  const update=tool?button('Update',`runTool(${tool.id},true)`,'text',busy):button('Update',`showSkillUpdate('${name}')`,'text',stopped);
+  const menuItems=[[skillEditLabel(entry),`editSkill('${name}')`],...menu,...(tool?[]:[['Delete',`reviewSkillDeletion('${name}')`,true]])];
+  const select=`<input type="checkbox" data-skill-select="${name}" aria-label="Select ${name}" ${selectedSkills.has(entry.name)?'checked':''} ${busy} onchange="selectSkill('${name}',this.checked)">`;
   return `<article class="skill-row row" data-od-id="skill-${name}">
-    <div class="skill-name"><div><h3>${name}</h3><p class="skill-meta">${skillBackupChip(entry)}${note?`<span class="meta">${note}</span>`:''}</p></div></div>
+    <div class="skill-name">${select}<div><h3>${name}</h3><p class="skill-meta">${skillBackupChip(entry)}${note?`<span class="meta">${note}</span>`:''}</p></div></div>
     <div class="skill-avail">${switchControl}${notes}</div>
     <div class="skill-invoc">${invocationInfo(entry.name,hint)}${preferenceSelect(entry.name,busy)}${preferenceDriftNotice(entry.name)}</div>
     <div class="skill-actions">${update}${button('Inspect',`inspectSkill('${name}')`,'text',`data-od-id="skill-${name}-inspect"`)}${skillMenu(entry.name,menuItems)}</div>
@@ -201,14 +206,28 @@ function skillsPanelHtml(){
   const panels={core:renderCoreTab,packs:()=>renderPacksPanel()+renderPackSkills(),machine:renderMachineTab,later:renderSourcesPanel,review:renderReviewTab};
   return panels[skillsTab]();
 }
+function skillsTabEntries(){
+  const names=[];
+  if(skillsTab==='core')names.push(...kitStatus.core.map(item=>item.name),...libraryOnlySkills().map(entry=>entry.name),...kitStatus.tools.flatMap(tool=>tool.provides));
+  if(skillsTab==='packs')names.push(...profiles.flatMap(pack=>pack.skills));
+  if(skillsTab==='machine')names.push(...kitStatus.machineOnly,...otherMachineSkills().map(entry=>entry.name));
+  return [...new Set(names)].filter(skillsMatch).map(globalSkill).filter(Boolean);
+}
+function refreshSkillSelection(){
+  if($('skillSelection'))renderSkillSelection(skillsTabEntries());
+}
 function renderSkillsPanel(){
   const panel=$('skillsPanel');
   if(!panel)return;
   panel.innerHTML=skillsPanelHtml();
   if(skillsTab==='later')renderSourceList();
+  refreshSkillSelection();
 }
 function renderKit(){
   if(scope!=='Global')return renderSkills();
+  if(selectedSkillScope!==scope){selectedSkills.clear();selectedSkillScope=scope}
+  const installed=new Set(globalSkills().map(entry=>entry.name));
+  for(const name of selectedSkills)if(!installed.has(name))selectedSkills.delete(name);
   const pending=planCount()>0;
   const scopes=projects.length?`<label class="skills-scope">Scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>`:'';
   const update=globalSkills().length?button(skillActionLabel('Update all','update'),'showSkillUpdate()','','data-od-id="update-skills"'):'';
@@ -217,6 +236,7 @@ function renderKit(){
   const searchable=skillsTab!=='later';
   $('view').innerHTML=head('Skills','Your library and this machine in one place. Core is backed up in full, packs as definitions, and machine-only skills stay here.',actions)
     +`<div class="skills-toolbar">${scopes}${searchable?skillsSearch():''}</div>`
-    +skillsTabs()+`<div id="skillsPanel" role="tabpanel" aria-labelledby="skillsTab-${skillsTab}">${skillsPanelHtml()}</div>`;
+    +skillsTabs()+`<div id="skillSelection"></div><div id="skillsPanel" role="tabpanel" aria-labelledby="skillsTab-${skillsTab}">${skillsPanelHtml()}</div>`;
   if(skillsTab==='later')renderSourceList();
+  refreshSkillSelection();
 }
