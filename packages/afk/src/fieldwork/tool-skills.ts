@@ -76,6 +76,13 @@ export class ToolSkills {
     return linked;
   }
 
+  /** Removes a link to a tool's skill from one folder; real folders and other links stay. */
+  async unlinkFrom(folder: string, name: string): Promise<void> {
+    const live = await this.live(name), path = join(folder, name);
+    if (!live || path === live || !await exists(path) || !(await lstat(path)).isSymbolicLink()) return;
+    if (resolve(folder, await readlink(path)) === live) await rm(path);
+  }
+
   async toggle(settings: Settings, name: string): Promise<void> {
     const live = await this.live(name);
     if (live) return this.turnOff(settings, name, live);

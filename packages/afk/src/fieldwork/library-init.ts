@@ -143,9 +143,18 @@ async function planStoredSkills(library: Library, settings: Settings, agents: st
   }
 }
 
-/** Builds the library's first commit from this machine and replaces the original folders with links. */
-export async function applyLibraryInit(store: SettingsStore, runner?: GitRunner): Promise<LibraryInitPlan> {
+function samePlan(plan: LibraryInitPlan, expected: unknown): boolean {
+  const comparable = (value: unknown): string => {
+    const { backup: _backup, ...rest } = (value ?? {}) as Partial<LibraryInitPlan>;
+    return JSON.stringify(rest);
+  };
+  return comparable(plan) === comparable(expected);
+}
+
+/** Builds the library's first commit from this machine and replaces the original folders with links. With `expected`, refuses a plan that changed since it was reviewed. */
+export async function applyLibraryInit(store: SettingsStore, runner?: GitRunner, expected?: unknown): Promise<LibraryInitPlan> {
   const plan = await planLibraryInit(store, runner);
+  if (expected !== undefined && !samePlan(plan, expected)) throw new Error("This machine's skills changed since the preview. Review the new plan before starting the library.");
   const library = new Library(store.home, runner);
   const settings = await store.read();
   const ruleFiles = (await new RulesWorkspace(store).files()).filter(file => plan.rules.includes(file.path));

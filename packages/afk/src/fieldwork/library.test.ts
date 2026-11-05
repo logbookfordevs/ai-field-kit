@@ -178,3 +178,34 @@ describe("Core skills in the library", () => {
     expect(await commits()).toHaveLength(1);
   });
 });
+
+describe("Start a new library from the app", () => {
+  it("previews the move without writing, then applies the reviewed plan", async () => {
+    const operations = new FieldworkOperations(store);
+    try {
+      const preview = await operations.run("library/init-preview") as { library: string; skills: { name: string }[]; missing: string[] };
+      expect(preview.skills.map(entry => entry.name)).toEqual(["alpha", "beta"]);
+      expect(preview.missing).toEqual(["gone"]);
+      expect(await present(join(home, ".afk/library"))).toBe(false);
+
+      const applied = await operations.run("library/init", { expected: preview }) as { backup: string };
+      expect(await readlink(join(home, ".agents/skills/alpha"))).toBe(join(home, ".afk/library/skills/alpha"));
+      expect(await present(join(applied.backup, ".agents/skills/alpha/SKILL.md"))).toBe(true);
+      expect(await commits()).toEqual(["Start library with 2 Core skills"]);
+      expect(await operations.run("backup/state", { brief: true })).toMatchObject({ status: { library: true } });
+    } finally { await operations.close(); }
+  });
+
+  it("refuses a plan that changed since the preview and leaves the machine as it was", async () => {
+    const operations = new FieldworkOperations(store);
+    try {
+      const preview = await operations.run("library/init-preview");
+      await mkdir(join(home, ".agents/skills/.disabled/delta"), { recursive: true });
+      await writeFile(join(home, ".agents/skills/.disabled/delta/SKILL.md"), skill("delta"));
+
+      await expect(operations.run("library/init", { expected: preview })).rejects.toThrow(/changed/i);
+      expect(await present(join(home, ".afk/library"))).toBe(false);
+      expect((await lstat(join(home, ".agents/skills/alpha"))).isDirectory()).toBe(true);
+    } finally { await operations.close(); }
+  });
+});

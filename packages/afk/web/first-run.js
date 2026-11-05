@@ -1,11 +1,11 @@
-let firstRun={step:'choose',path:'restore',repositories:[],listError:'',error:'',summary:null,ticked:new Set(),ran:[],failed:[]};
+let firstRun={step:'choose',path:'restore',repositories:[],listError:'',error:'',summary:null,plan:null,started:null,ticked:new Set(),ran:[],failed:[]};
 
 function firstRunCount(count,word){return count+' '+word+(count===1?'':'s')}
 
 function firstRunShow(title,body,foot=''){modal(title,`<div data-first-run="${firstRun.step}" aria-live="polite">${body}</div>`,foot)}
 
 function showFirstRun(){
-  firstRun={step:'choose',path:'restore',repositories:[],listError:'',error:'',summary:null,ticked:new Set(),ran:[],failed:[]};
+  firstRun={step:'choose',path:'restore',repositories:[],listError:'',error:'',summary:null,plan:null,started:null,ticked:new Set(),ran:[],failed:[]};
   renderFirstRunChoice();
 }
 
@@ -34,7 +34,7 @@ async function firstRunSkip(){
 
 async function firstRunChoose(path){
   firstRun.path=path;firstRun.error='';
-  if(path==='fresh'){renderFirstRunFresh();return}
+  if(path==='fresh')return firstRunLoadPlan();
   firstRun.step='pick';
   firstRunShow('Which repository is your library?','<p class="sub">Looking up your repositories…</p>',button('Cancel',"firstRunCancel()",'text'));
   try{firstRun.repositories=await request('restore/repositories',{});firstRun.listError=''}
@@ -42,14 +42,64 @@ async function firstRunChoose(path){
   renderFirstRunPick();
 }
 
+async function firstRunLoadPlan(){
+  firstRun.step='fresh';firstRun.plan=null;firstRun.error='';
+  firstRunShow('Start a new library','<p class="sub">Checking this machine’s skills. Nothing changes yet.</p>',button('Back','renderFirstRunChoice()','text'));
+  try{firstRun.plan=await request('library/init-preview',{})}catch(error){firstRun.error=error.message}
+  renderFirstRunFresh();
+}
+
+function showStartLibrary(){
+  showFirstRun();
+  return firstRunChoose('fresh');
+}
+
+function firstRunNames(title,entries,note=''){
+  if(!entries.length)return '';
+  const names=entries.map(entry=>typeof entry==='string'?entry:entry.name);
+  return `<p class="small"><b>${esc(title)} · ${names.length}</b>${note?' '+esc(note):''}<br>${esc(names.join(', '))}</p>`;
+}
+
 function renderFirstRunFresh(){
   firstRun.step='fresh';
+  const {plan,error}=firstRun;
+  const problem=error?`<p class="error" role="alert">${esc(error)}</p>`:'';
+  if(!plan){firstRunShow('Start a new library',problem,button('Back','renderFirstRunChoice()','text'));return}
+  const lists=[
+    firstRunNames('Core skills',plan.skills,'move into the library and are saved in your backup.'),
+    firstRunNames('Pack skills',plan.packSkills,'are kept by AFK; their packs are saved, not their files.'),
+    firstRunNames('This machine only',[...plan.machineSkills,...plan.offToolSkills],'are kept by AFK on this machine and not saved.'),
+    firstRunNames('Provided by tools',plan.toolSkills,'stay where their tools put them.'),
+    firstRunNames('Missing from this machine',plan.missing,'are in Core but not installed here, so they are skipped.'),
+    firstRunNames('Agent rules',plan.rules,'are copied into the library.'),
+  ].join('');
   firstRunShow('Start a new library',
-    `<p>AFK moves this machine's Core skills, packs, tools and choices into a Git repository, then keeps it saved.</p>
-    <p>Run this in a terminal, review the plan, then add <code>--apply</code> when it looks right:</p>
-    <pre class="first-run-command">afk library init --apply</pre>
-    <p class="hint">Then open Backup to create a private GitHub repository or connect any Git remote. Skill files are not scanned for secrets, so the repository must stay private.</p>`,
-    button('Back','renderFirstRunChoice()','text')+button('Open Backup',"firstRunGo('Backup')",'primary'));
+    `<p>AFK moves this machine’s skills into a library at <code>${esc(plan.library)}</code> and links them back where your agents look for them.</p>${lists||'<p class="small">No skills to move yet. The library starts empty.</p>'}
+    <p class="hint">The original folders are kept in <code>${esc(plan.backup)}</code> until you delete them.</p>${problem}`,
+    button('Back','renderFirstRunChoice()','text')+button('Start the library','firstRunStartLibrary()','primary'));
+}
+
+async function firstRunStartLibrary(){
+  const plan=firstRun.plan;
+  if(!plan)return;
+  firstRun.step='starting';firstRun.error='';
+  firstRunShow('Starting your library','<p class="sub">Moving skills into the library and linking them back…</p>');
+  try{firstRun.started=await request('library/init',{expected:plan})}
+  catch(error){firstRun.error=error.message;renderFirstRunFresh();return}
+  try{await request('welcome',{})}catch{}
+  currentSettings.welcomeDismissed=true;
+  await refresh().catch(()=>{});
+  renderFirstRunStarted();
+}
+
+function renderFirstRunStarted(){
+  firstRun.step='started';
+  const {started}=firstRun;
+  firstRunShow('Your library is ready',
+    `<p>${esc(firstRunCount(started.skills.length,'Core skill'))} now live in your library, and every AFK change is saved there.</p>
+    <p class="small">Your original folders are in <code>${esc(started.backup)}</code>. Delete them with <code>afk library confirm</code> once everything works.</p>
+    <p class="hint">Next, open Backup to create a private GitHub repository or connect any Git remote. Skill files are not scanned for secrets, so the repository must stay private.</p>`,
+    button('Open Skills',"firstRunGo('Skills')",'text')+button('Open Backup',"firstRunGo('Backup')",'primary'));
 }
 
 function renderFirstRunPick(){
@@ -123,7 +173,7 @@ async function firstRunRunTools(skip=false){
 
 function firstRunGo(target){
   closeModal();
-  navigate(target==='Skills'?(sections.includes('Skills')?'Skills':'Installed Skills'):target);
+  navigate(target);
 }
 
 function renderFirstRunDone(){

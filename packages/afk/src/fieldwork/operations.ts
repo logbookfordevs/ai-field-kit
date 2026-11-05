@@ -21,6 +21,7 @@ import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
 import { Library, type GitRunner } from "./library.js";
+import { applyLibraryInit, planLibraryInit } from "./library-init.js";
 import { Backup } from "./library-backup.js";
 import { Restore } from "./library-restore.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
@@ -400,6 +401,12 @@ export class FieldworkOperations {
 
   private async applyBackup(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
     const { backup } = this;
+    if (operation === "library/init-preview") { validateInput(operation, data); return await planLibraryInit(this.store, this.restoreRunner); }
+    if (operation === "library/init") {
+      validateInput(operation, data);
+      if (typeof data.expected !== "object" || data.expected === null) throw new Error("Provide expected as the library/init-preview result.");
+      return await applyLibraryInit(this.store, this.restoreRunner, data.expected);
+    }
     if (operation === "backup/state") {
       const status = await backup.status(), attention = await backup.checks.list(), unpushed = await backup.unpushedSkills();
       return data.brief === true ? { status, attention, unpushed } : { status, attention, unpushed, history: await backup.history(), contents: await backup.contents() };
@@ -460,7 +467,7 @@ export class FieldworkOperations {
       return { cancelled: true };
     }
     validateInput(operation, data);
-    if (operation.startsWith("backup/")) return this.applyBackup(operation, data);
+    if (operation.startsWith("backup/") || operation.startsWith("library/")) return this.applyBackup(operation, data);
     if (operation.startsWith("restore/")) return this.applyRestore(operation, data);
     const { store, library, rules, preparation, toolRuns } = this;
     const settings = await store.read();
@@ -937,7 +944,7 @@ export class FieldworkOperations {
     }
     if (operation === "agent-folders/state") return await agentFolderState(store.home);
     if (operation === "agent-folders/enable" || operation === "agent-folders/disable" || operation === "agent-folders/remove" || operation === "agent-folders/add") {
-      return await changeAgentFolders(store.home, operation.slice("agent-folders/".length) as "enable" | "disable" | "add" | "remove", data);
+      return await changeAgentFolders(store, operation.slice("agent-folders/".length) as "enable" | "disable" | "add" | "remove", data);
     }
     if (operation === "skill/adopt") {
       if (!skillName(data.name)) throw new Error("Choose a valid skill name.");
