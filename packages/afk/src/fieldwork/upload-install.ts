@@ -29,8 +29,15 @@ interface Held { id: string; directory: string; skills: UploadedSkill[] }
 
 const maximumEncoded = Math.ceil(MAX_UPLOAD_BYTES / 3) * 4 + 4;
 
+// One character class and a separate padding check: a grouped, repeated pattern exhausts the regexp stack on a few megabytes.
+function base64(value: string): boolean {
+  if (value.length % 4 !== 0) return false;
+  const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
+  return /^[A-Za-z0-9+/]*$/.test(value.slice(0, value.length - padding));
+}
+
 function decode(value: unknown, label: string): Buffer {
-  if (typeof value !== "string" || value.length > maximumEncoded || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) throw new Error(`${label} is not valid or is too large. Skills can total at most ${MAX_UPLOAD_BYTES / 1024 / 1024} MB.`);
+  if (typeof value !== "string" || value.length > maximumEncoded || !base64(value)) throw new Error(`${label} is not valid or is too large. Skills can total at most ${MAX_UPLOAD_BYTES / 1024 / 1024} MB.`);
   return Buffer.from(value, "base64");
 }
 

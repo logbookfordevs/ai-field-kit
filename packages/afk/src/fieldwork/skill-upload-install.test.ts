@@ -106,6 +106,20 @@ describe("previewing an upload", () => {
     expect(await git("status", "--porcelain")).toBe("");
   });
 
+  it("reads a valid file of several megabytes, well under the upload limit", async () => {
+    const data = Buffer.concat([Buffer.from(skill("large")), Buffer.alloc(5 * 1024 * 1024, 65)]).toString("base64");
+
+    const found = await operations.run("kit/upload-preview", { files: [{ path: "large/SKILL.md", base64: data }] }) as Preview;
+
+    expect(found.candidates.map(candidate => candidate.name)).toEqual(["large"]);
+  });
+
+  it("rejects text that is not base64", async () => {
+    for (const base64 of ["abc", "ab=c", "a===", "ab$c", "=abc"]) {
+      await expect(operations.run("kit/upload-preview", { files: [{ path: "large/SKILL.md", base64 }] }), base64).rejects.toThrow(/not valid/);
+    }
+  });
+
   it("asks for exactly one kind of upload", async () => {
     await expect(operations.run("kit/upload-preview", {})).rejects.toThrow(/zip|folder/i);
     await expect(operations.run("kit/upload-preview", { archive: "AAAA", folder: outside })).rejects.toThrow(/one/i);
