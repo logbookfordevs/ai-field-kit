@@ -70,7 +70,7 @@ Without --apply this is a dry run: nothing is written.
 --core        The stack that becomes Core. Omit it for an empty Core; other stacks become packs.
 --follow      A Core repository to follow. Its installed skills join Core.
 --skip-tool   A tool not to link to its suggested skills.
---apply       Write the change. The old file is kept permanently and can be restored with afk settings restore.`;
+--apply       Write the change. The old file is kept permanently in ~/.afk/backups; copy it back over settings.json to undo.`;
 
 export async function runMigrate(args: string[], store: SettingsStore, dependencies: CliDependencies = {}): Promise<number> {
   const log = dependencies.log ?? console.log;

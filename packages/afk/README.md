@@ -14,16 +14,24 @@ pnpm afk:build
 node packages/afk/dist/index.js
 ```
 
-AFK opens a local web app. Its five sections are Kit, Installed Skills,
-Agent rules, Tools, and Settings. Nothing is published online.
+AFK opens a local web app with Skills, Agent rules, Tools, Settings and Backup. Nothing is published online.
 Use **Exit AFK** in the header to stop the local server. Exiting preserves saved
 configuration and skill activation; the browser tab shows a closed screen.
 
-## Kit
+## Your library
 
-The kit is the skills that travel with you, stored once in your settings file. Its tabs are
-**This machine** (what differs here), **Core** (always-on skills grouped by repository),
-**Packs** and **Try later**. See the [kit guide](../../docs/kit.md).
+Your skills, packs, tools, bookmarks, invocation choices and agent rules live in a library:
+a Git repository at `~/.afk/library` where every change is one save. Start one from the app
+(**Start a new library**) or from a terminal; **Backup** then sends it to a private GitHub
+repository or any Git remote, and **Restore my library** brings it back on a new machine.
+The Skills page has the tabs **Core**, **Packs**, **This machine only**, **Try later** and
+**To review**. See the [library guide](../../docs/kit.md).
+
+```sh
+afk library init [--apply]
+afk library confirm
+afk library connect <owner/repo | url> [--run-tools <id,id|all>]
+```
 
 ```sh
 afk add <repository> [--skill <name>]... [--core | --pack <name> | --here | --later]
@@ -33,15 +41,12 @@ afk kit drop <skill> [--pack <name>]
 afk kit keep <skill>
 afk kit follow <repo>
 afk kit check
-afk sync [--agent <agent>] [--yes] [--run-tools]
 ```
 
-`afk sync` shows its plan, installs missing Core skills through Skills CLI, and turns Core
-skills back on. It never removes anything. A tool's saved install command runs only when
-you approve it. A tool can list the skills it installs in `provides`; the kit tracks the
+A Core skill missing on this machine installs from its own row. A tool can list the skills it installs in `provides`; the kit tracks the
 tool, and those skills update through the tool's own command.
 
-Installed skills that aren't in your kit appear in This machine. Send each to Core, a
+Skills installed outside AFK appear in To review. Send each to Core, a
 pack, or **This machine only**, or remove it. Skills without a repository source can't go to Core.
 
 ### Packs
@@ -74,27 +79,19 @@ read. It does not turn skills on, register a slash command, or inject another ch
 A settings file that still has stacks can be read but not changed until you migrate. Run
 `afk migrate` for a dry run, or use the app's **Move to your kit** screen. Choose the stack
 that becomes Core with `--core <stack-id>`; the others become packs. Add `--apply` to write.
-Your old file is kept permanently as `~/.afk/backups/pre-kit-*.json` and can be restored with
-`afk settings restore`. Skill files are never moved. See the
+Your old file is kept permanently as `~/.afk/backups/pre-kit-*.json`; copy it back over
+`settings.json` to undo. Skill files are never moved. See the
 [guide](../../docs/kit.md#move-from-stacks).
 
-## Installed Skills
+## Skills
 
-The list shows enabled skills by default; the availability filter can include disabled skills or show only those. Filter also by effective invocation, recorded source, pack
-membership or name within the selected scope. **Clear filters** resets these
-filters while retaining the scope. Bulk selections survive filtering.
-Automatic discovery token estimates count available automatic skills separately
-for Codex and Claude and follow only the Pack filter. Inspect offers an
-on-demand estimate for full instructions or a supporting file. These are rough
-text-length estimates, not tokenizer counts or billing.
+Filter by name, and inspect, edit, update or delete each skill from its row. Choose Manual
+or Automatic invocation; AFK writes Claude frontmatter and Codex's `agents/openai.yaml`
+policy, and reapplies the choice after every install, update, restore, edit and tool run.
+A project's view lists only that project's own skills, which are always on. Automatic
+discovery token estimates are rough text-length estimates, not tokenizer counts or billing.
 
-Inventory follows the selected scope's `.agents/skills` directory. Project views
-exclude global-only entries. Inspect instructions, toggle individual availability,
-and choose native invocation preferences. Manual and Automatic preferences write
-Claude frontmatter and Codex's `agents/openai.yaml` policy. Project symlinks get
-an isolated local copy when overridden, preserving the shared original.
-
-**Update skills**, or Update on one row, runs the protected Skills CLI workflow:
+**Update all**, or Update on one row, runs the protected Skills CLI workflow:
 updates are staged in isolation and preserve availability and invocation settings.
 Progress, output and cancellation are available in the dialog.
 `afk skills update [name] -g` or `afk skills update [name] -p <project>` uses the same
@@ -137,35 +134,28 @@ Keep the tab open for the batch to finish. Removing an entry does not uninstall 
 
 ## Agent rules
 
-Edit one `AGENTS.md` and supporting Markdown in your AFK folder. Type `{{` to
+Edit one `AGENTS.md` and supporting Markdown, saved in your library. Type `{{` to
 insert a reference. Save keeps the local document; Sync previews and applies saved
 rules to Codex, Claude or custom file destinations. Existing instructions outside
 AFK's marked region are preserved. Backups, conflict review and explicit replacement
 protect edits made by other tools. Broken markers and missing references block sync.
 
-Git or your storage provider can transport the folder. AFK does not fetch remote
+Your backup carries the rules to another machine. AFK does not fetch remote
 rules or automatically apply changes. Running agents may need a new conversation
 to pick up changed instructions.
 
 ## Settings
 
-One `settings.json` stores definitions and selected activation. Choose a location
-in the app, including a folder synced by your own storage provider. AFK does not
-provide a synchronization service. A small machine-local pointer remembers the
-chosen settings location.
-
-Add projects through folder browsing. Import reviews local folder mappings and
-leaves packs off until explicitly prepared and turned on. A version 1 file imports with an empty Core. Saved tool commands
-never run during import. JSON export contains configuration only; AFK folder ZIP
-export includes saved rules and references. ZIP import reviews destination mappings
-and leaves agent files unchanged until an explicit sync.
+Settings shows your library, the projects AFK manages, the agent folders your skills are
+linked into (`~/.agents/skills` always, Claude Code by default, plus other agents and
+custom folders), and automatic skill updates. Before you start a library, AFK keeps
+reading the `settings.json` it used before, including a location chosen in an earlier
+version.
 
 ```sh
 AFK_SETTINGS=/path/to/settings.json afk
 afk ui --no-open
 afk settings export /path/to/export.json
-afk settings backups
-afk settings restore <name>
 ```
 
 ## Manage from your agent
