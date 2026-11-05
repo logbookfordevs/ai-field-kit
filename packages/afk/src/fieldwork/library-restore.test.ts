@@ -1,0 +1,250 @@
+import { lstat, mkdir, mkdtemp, readFile, readdir, readlink, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { runCommand, type CommandResult, type CommandSpec } from "./command-runner.js";
+import { Library } from "./library.js";
+import { applyLibraryInit } from "./library-init.js";
+import { Backup } from "./library-backup.js";
+import { Restore } from "./library-restore.js";
+import { emptySettings, SettingsStore } from "./settings.js";
+
+let sourceHome: string;
+let home: string;
+let store: SettingsStore;
+let remote: string;
+let ghCalls: CommandSpec[];
+
+const quiet = { GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1", GIT_AUTHOR_NAME: "T", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "T", GIT_COMMITTER_EMAIL: "t@t" };
+const skill = (name: string, body = "Body"): string => `---\nname: ${name}\ndescription: ${name} skill\n---\n${body} of ${name}.\n`;
+const agents = (...path: string[]): string => join(home, ".agents/skills", ...path);
+const claude = (...path: string[]): string => join(home, ".claude/skills", ...path);
+const library = (): Library => new Library(home);
+const day = new Date(2026, 10, 5, 9, 30);
+
+async function present(path: string): Promise<boolean> {
+  try { await lstat(path); return true; } catch { return false; }
+}
+
+async function git(cwd: string, ...args: string[]): Promise<string> {
+  const result = await runCommand({ command: "git", args, step: "test git", cwd, env: { ...process.env, ...quiet, HOME: sourceHome } });
+  if (result.code !== 0) throw new Error(result.output);
+  return result.output.trim();
+}
+
+async function write(path: string, name: string, body?: string): Promise<void> {
+  await mkdir(path, { recursive: true });
+  await writeFile(join(path, "SKILL.md"), skill(name, body));
+}
+
+// Builds a real AFK library on another machine and pushes it to a bare repository.
+async function sourceLibrary(extra: (settings: ReturnType<typeof emptySettings>) => void = () => undefined): Promise<void> {
+  const source = new SettingsStore(sourceHome);
+  await source.initialize();
+  await write(join(sourceHome, ".agents/skills/alpha"), "alpha");
+  await write(join(sourceHome, ".agents/skills/beta"), "beta");
+  await mkdir(join(sourceHome, ".agents"), { recursive: true });
+  await writeFile(join(sourceHome, ".agents/.skill-lock.json"), JSON.stringify({ version: 3, skills: { alpha: { source: "owner/repo" }, beta: { source: "owner/repo" } } }));
+  const settings = emptySettings();
+  settings.kit = { core: [{ source: "owner/repo", skills: ["alpha", "beta"] }] };
+  settings.preferences = { "Global|alpha": "Manual only" };
+  settings.profiles = [{ id: "profile-docs", name: "Docs", source: "owner/docs", skills: ["delta"], enabled: [], ready: false }];
+  settings.tools = [{ id: 1, name: "Wizard", install: "echo install", update: "", provides: ["wiz"] }];
+  settings.favoriteSources = [{ name: "later", source: "owner/later" }];
+  extra(settings);
+  await source.save(settings);
+  await applyLibraryInit(source);
+  await mkdir(remote, { recursive: true });
+  await git(remote, "init", "--quiet", "--bare", "--initial-branch=main");
+  await new Backup(new Library(sourceHome)).connect(remote);
+}
+
+function restorer(runner?: (spec: CommandSpec) => Promise<CommandResult>, options: { signal?: AbortSignal } = {}): Restore {
+  return new Restore(store, runner ?? (async spec => {
+    if (spec.command !== "gh") return runCommand(spec);
+    ghCalls.push(spec);
+    return { code: 1, output: "gh is not available in tests", cancelled: false };
+  }), { now: () => day, ...options });
+}
+
+beforeEach(async () => {
+  sourceHome = await mkdtemp(join(tmpdir(), "afk-restore-source-"));
+  home = await mkdtemp(join(tmpdir(), "afk-restore-"));
+  remote = join(sourceHome, "remote.git");
+  ghCalls = [];
+  store = new SettingsStore(home);
+  await store.initialize();
+});
+
+afterEach(async () => {
+  await rm(sourceHome, { recursive: true, force: true });
+  await rm(home, { recursive: true, force: true });
+});
+
+describe("restoring a library into an empty home", () => {
+  it("clones the library, links Core skills into the enabled folders and keeps choices in their files", async () => {
+    await sourceLibrary();
+
+    const summary = await restorer().restore(remote);
+
+    expect(summary.linked).toEqual(["alpha", "beta"]);
+    expect(await readlink(agents("alpha"))).toBe(library().skillPath("alpha"));
+    expect(await readlink(claude("beta"))).toBe(library().skillPath("beta"));
+    expect(await readFile(agents("alpha/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
+    expect(await readFile(agents("beta/SKILL.md"), "utf8")).toBe(skill("beta"));
+    expect((await store.read()).preferences["Global|alpha"]).toBe("Manual only");
+  });
+
+  it("leaves the backup connected with nothing waiting and packs off", async () => {
+    await sourceLibrary();
+
+    await restorer().restore(remote);
+
+    const status = await new Backup(library()).status();
+    expect(status).toMatchObject({ state: "saved", waiting: 0, remote });
+    const settings = await store.read();
+    expect(settings.profiles.map(profile => [profile.name, profile.enabled])).toEqual([["Docs", []]]);
+    expect(settings.independentSkills.Global).toEqual(["alpha", "beta"]);
+    expect(await readdir(join(home, ".afk"))).not.toContainEqual(expect.stringMatching(/^\.restore-/));
+  });
+});
+
+describe("an interrupted or refused restore", () => {
+  it("leaves no partial library when the download is cancelled halfway", async () => {
+    await sourceLibrary();
+    const runner = async (spec: CommandSpec): Promise<CommandResult> => {
+      if (!spec.args.includes("clone")) return runCommand(spec);
+      const target = spec.args.at(-1)!;
+      await mkdir(join(target, ".git"), { recursive: true });
+      await writeFile(join(target, "half-written"), "partial");
+      return { code: 130, output: "", cancelled: true };
+    };
+
+    await expect(restorer(runner).restore(remote)).rejects.toThrow(/cancelled/);
+
+    expect(await present(library().root)).toBe(false);
+    expect(await present(join(home, ".afk"))).toBe(true);
+    expect((await readdir(join(home, ".afk"))).filter(name => name.startsWith(".restore-"))).toEqual([]);
+    expect(await present(agents("alpha"))).toBe(false);
+  });
+
+  it("leaves no partial library when the download fails and clears a folder an earlier crash left behind", async () => {
+    await mkdir(join(home, ".afk/.restore-crashed/.git"), { recursive: true });
+
+    await expect(restorer().restore(join(sourceHome, "missing.git"))).rejects.toThrow(/Could not reach/);
+
+    expect(await present(library().root)).toBe(false);
+    expect((await readdir(join(home, ".afk"))).filter(name => name.startsWith(".restore-"))).toEqual([]);
+  });
+
+  it("refuses a repository that is not an AFK library before cloning it", async () => {
+    const other = join(sourceHome, "dotfiles.git"), work = join(sourceHome, "dotfiles");
+    await mkdir(work, { recursive: true });
+    await git(work, "init", "--quiet", "--initial-branch=main");
+    await writeFile(join(work, "README.md"), "dotfiles");
+    await git(work, "add", "-A");
+    await git(work, "commit", "--quiet", "-m", "Start");
+    await git(sourceHome, "clone", "--quiet", "--bare", work, other);
+    const subcommands: string[] = [];
+
+    await expect(restorer(async spec => { subcommands.push(spec.args.find(arg => ["clone", "fetch", "ls-tree"].includes(arg)) ?? ""); return runCommand(spec); }).restore(other)).rejects.toThrow(/not an AFK library/);
+
+    expect(subcommands).not.toContain("clone");
+    expect(await present(library().root)).toBe(false);
+  });
+
+  it("refuses to restore over a machine that already has a library", async () => {
+    await sourceLibrary();
+    await restorer().restore(remote);
+
+    await expect(restorer().restore(remote)).rejects.toThrow(/already exists/);
+  });
+});
+
+describe("skills already on the machine", () => {
+  it("adopts an identical copy and moves a different one to a dated folder listed in the summary", async () => {
+    await sourceLibrary();
+    await write(agents("beta"), "beta");
+    await write(agents("alpha"), "alpha", "My own edits");
+    await mkdir(claude(), { recursive: true });
+    await symlink(agents("alpha"), claude("alpha"), "dir");
+
+    const summary = await restorer().restore(remote);
+
+    const aside = join(home, ".afk/restore-aside/2026-11-05");
+    expect(summary.adopted).toEqual(["beta"]);
+    expect(summary.movedAside).toEqual([{ name: "alpha", from: agents("alpha"), to: join(aside, ".agents/skills/alpha") }]);
+    expect(await readFile(join(aside, ".agents/skills/alpha/SKILL.md"), "utf8")).toContain("My own edits");
+    expect(await readlink(agents("alpha"))).toBe(library().skillPath("alpha"));
+    expect(await readlink(claude("alpha"))).toBe(library().skillPath("alpha"));
+    expect(await readlink(agents("beta"))).toBe(library().skillPath("beta"));
+    expect(await present(join(aside, ".agents/skills/beta"))).toBe(false);
+  });
+
+  it("removes a broken link that sat where a Core skill goes", async () => {
+    await sourceLibrary();
+    await mkdir(agents(), { recursive: true });
+    await symlink(join(home, "gone"), agents("beta"), "dir");
+
+    const summary = await restorer().restore(remote);
+
+    expect(summary.movedAside).toEqual([]);
+    expect(await readlink(agents("beta"))).toBe(library().skillPath("beta"));
+  });
+});
+
+describe("going back to an older save", () => {
+  async function dropBeta(): Promise<Backup> {
+    const backup = new Backup(library());
+    await library().change("Drop beta", async () => {
+      await rm(library().skillPath("beta"), { recursive: true });
+      const settings = (await library().readSettings())!;
+      await library().writeSettings({ ...settings, core: [{ source: "owner/repo", skills: ["alpha"] }] });
+    });
+    await library().unlink("beta");
+    return backup;
+  }
+
+  it("links the skills the older save brings back and unlinks the ones it removes", async () => {
+    await sourceLibrary();
+    await restorer().restore(remote);
+    const backup = await dropBeta();
+    const [dropped, original] = (await backup.history()).map(entry => entry.id);
+    expect(await present(agents("beta"))).toBe(false);
+
+    await backup.goBack(original!);
+    expect(await readlink(agents("beta"))).toBe(library().skillPath("beta"));
+    expect(await readlink(claude("beta"))).toBe(library().skillPath("beta"));
+
+    await backup.goBack(dropped!);
+    expect(await present(agents("beta"))).toBe(false);
+    expect(await present(claude("beta"))).toBe(false);
+    expect(await readlink(agents("alpha"))).toBe(library().skillPath("alpha"));
+  });
+
+  it("does not turn on a skill the user turned off for reasons the older save has nothing to do with", async () => {
+    await sourceLibrary();
+    await restorer().restore(remote);
+    const backup = await dropBeta();
+    const [, original] = (await backup.history()).map(entry => entry.id);
+    await library().unlink("alpha");
+
+    await backup.goBack(original!);
+
+    expect(await readlink(agents("beta"))).toBe(library().skillPath("beta"));
+    expect(await present(agents("alpha"))).toBe(false);
+  });
+
+  it("moves a different local copy aside when the older save brings its name back", async () => {
+    await sourceLibrary();
+    await restorer().restore(remote);
+    const backup = await dropBeta();
+    const [, original] = (await backup.history()).map(entry => entry.id);
+    await write(agents("beta"), "beta", "Written while it was gone");
+
+    await backup.goBack(original!);
+
+    expect(await readlink(agents("beta"))).toBe(library().skillPath("beta"));
+    expect(await readFile(join(home, ".afk/restore-aside", (await readdir(join(home, ".afk/restore-aside")))[0]!, ".agents/skills/beta/SKILL.md"), "utf8")).toContain("Written while it was gone");
+  });
+});

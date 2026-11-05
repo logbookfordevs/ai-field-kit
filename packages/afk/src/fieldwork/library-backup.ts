@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { runCommand } from "./command-runner.js";
 import type { GitRunner, Library } from "./library.js";
+import { coreNames, deployLibrary, type DeploySummary } from "./library-deploy.js";
 
 export type BackupState = "off" | "saved" | "waiting" | "failed";
 
@@ -130,19 +131,25 @@ export class Backup {
     });
   }
 
-  /** Restores the library to an earlier save as a new commit, so going back can itself be undone. */
-  async goBack(id: string): Promise<{ changed: boolean }> {
+  /** Restores the library to an earlier save as a new commit, so going back can itself be undone. Skills the save adds or removes are linked or unlinked. */
+  async goBack(id: string): Promise<{ changed: boolean; deployed: DeploySummary }> {
     if (!/^[0-9a-f]{7,40}$/i.test(id)) throw new Error("Choose a save from the history.");
     const target = await this.git("Finding the save", "rev-parse", "--verify", "--quiet", `${id}^{commit}`).catch(() => "");
     if (!target || !await this.isAncestor(target)) throw new Error("That is not a save in this library's history.");
     const subject = await this.git("Reading the save", "log", "-1", "--format=%s", target);
-    const before = await this.library.names();
+    const before = await this.library.names(), coreBefore = await this.onSkills();
     const head = await this.git("Reading the library", "rev-parse", "HEAD");
     await this.library.change(`Went back to "${subject}"`, async () => {
       await this.git("Restoring the save", "read-tree", "-u", "--reset", target);
     });
-    for (const name of before) if (!await this.library.has(name)) await this.library.unlink(name);
-    return { changed: await this.git("Reading the library", "rev-parse", "HEAD") !== head };
+    const after = await this.library.names(), coreAfter = await this.onSkills();
+    const differs = (first: string[], second: string[]): string[] => [...first.filter(name => !second.includes(name)), ...second.filter(name => !first.includes(name))];
+    const deployed = await deployLibrary(this.library, { names: [...new Set([...differs(before, after), ...differs(coreBefore, coreAfter)])].sort() });
+    return { changed: await this.git("Reading the library", "rev-parse", "HEAD") !== head, deployed };
+  }
+
+  private async onSkills(): Promise<string[]> {
+    return coreNames(await this.library.readSettings());
   }
 
   async contents(): Promise<BackupContents> {
