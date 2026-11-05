@@ -139,8 +139,8 @@ select.inv{border:1px solid var(--line);border-radius:3px;padding:4px 6px;font-s
   </div>
   <b>Direction</b>
   <div class="seg" id="dirSeg">
-    <button type="button" data-dir="a" aria-pressed="true">A · Kit + Installed Skills</button>
-    <button type="button" data-dir="b" aria-pressed="false">B · One Skills page</button>
+    <button type="button" data-dir="a" aria-pressed="false">A · Kit + Installed Skills</button>
+    <button type="button" data-dir="b" aria-pressed="true">B · One Skills page (chosen)</button>
   </div>
   <p class="dirnote" id="dirNote">A keeps today's two pages: Kit decides what travels, Installed Skills shows what this machine has. Familiar, but one skill appears in two places.</p>
 </div>
@@ -361,7 +361,7 @@ A **wizard** is a bash script that walks a human, step by step, through a manual
       <div data-srcpane="file" class="hidden" style="display:flex;flex-direction:column;gap:14px">
         <div class="drop"><b>Drop a .zip, a .skill file or a folder</b><span class="small muted">or</span><button type="button" class="btn">Choose file…</button></div>
         <div class="box">
-          <div class="check"><span>✓</span><span><b>meeting-notes</b> · found SKILL.md in meeting-notes.zip<br><span class="small muted">No source repository: it can't auto-update. Its files are stored in your library.</span></span></div>
+          <div class="check"><span>✓</span><span><b>meeting-notes</b> · found SKILL.md in meeting-notes.zip<br><span class="small muted">48 KB · No source repository: it can't auto-update. In Core or a pack, its files are saved in your backup; in a pack, turning the pack on just links it.</span></span></div>
         </div>
       </div>
 
@@ -389,7 +389,7 @@ A **wizard** is a bash script that walks a human, step by step, through a manual
 
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-let dir='a',step=0,path='restore';
+let dir='b',step=0,path='restore';
 const notes={a:"A keeps today's two pages: Kit decides what travels, Installed Skills shows what this machine has. Familiar, but one skill appears in two places.",b:"B merges Kit and Installed Skills into one Skills page grouped Core / Packs / This machine only / Try later. One place per skill, but a bigger change from today."};
 function showScreen(id){
   $$('#screenSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.screen===id));
@@ -436,7 +436,7 @@ document.addEventListener('click',e=>{
     $$('.src-repo-only').forEach(x=>x.classList.toggle('hidden',t.dataset.src!=='repo'));
   }
 });
-setDir('a');setStep(0);
+setDir('b');setStep(0);
 </script>
 </body>
 </html>

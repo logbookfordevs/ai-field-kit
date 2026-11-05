@@ -55,14 +55,14 @@ AFK owns the storage of the skills it manages and saves that setup to one privat
 | Saved in the repository | Stays on this machine only |
 | --- | --- |
 | Core skills, full files | Skills that are off |
-| Skills installed from a zip or folder (no source to fetch again) | Pack skill files (fetched when a pack is turned on) |
+| Uploaded skills (zip, `.skill` or folder), whether in Core or a pack | Pack skill files that come from a repository (fetched when the pack is turned on) |
 | Pack definitions | Machine-only skills |
 | Tool definitions | Pack activation |
 | Try later bookmarks | Project folder paths |
 | Manual/Automatic choices | Links and Agent-rules ownership receipts |
 | `AGENTS.md` and references | |
 
-On this machine, the saved part is 43 Core skills totalling 8.7 MB, against about 192 MB of installed skills. The heavy skills are all off or in packs.
+The rule: the repository saves what can't be downloaded again. On this machine, the saved part is 43 Core skills totalling 8.7 MB, against about 192 MB of installed skills. The heavy skills are all off or in packs.
 
 ### Repository layout
 
@@ -85,7 +85,7 @@ One JSON file per object keeps history readable and leaves room for multi-machin
 
 ### Storage and links
 
-AFK owns the storage, as Skills Manager does. A Core skill is a link `~/.agents/skills/<name>` → `<library>/skills/<name>`, plus the existing `~/.claude/skills/<name>` link. Pack skills live in a local cache next to the library and are linked the same way while the pack is on. A skill that is off has no link; the `.disabled` store retires for library skills.
+AFK owns the storage, as Skills Manager does. A Core skill, or an uploaded skill, is a link `~/.agents/skills/<name>` → `<library>/skills/<name>`, plus the existing `~/.claude/skills/<name>` link. Pack skills from a repository live in a local cache next to the library and are linked the same way while the pack is on. An uploaded pack skill is linked straight from the library; turning its pack on downloads nothing. A skill that is off has no link; the `.disabled` store retires for library skills.
 
 ### Skills AFK does not own
 
@@ -124,7 +124,7 @@ AFK asks *Restore my library* or *Start a new library*, and can be skipped to us
 ### Install
 
 1. **From a repository:** Skills CLI runs in an isolated temporary home, as the protected updater does, with a deadline and cancellation.
-2. **From a zip, `.skill` file or folder:** AFK finds each `SKILL.md`, shows what it found and notes that the skill can't auto-update.
+2. **From a zip, `.skill` file or folder:** AFK finds each `SKILL.md`, shows what it found and its size, and notes that the skill can't auto-update. For Core or a pack, its files are saved in the repository; the pack definition references that saved copy instead of a source. A pack with an uploaded skill can't be exported as a shareable manifest, as with machine-only skills today.
 3. Destinations as today: Core, a pack, this machine only, or Try later (repositories only).
 4. AFK copies the skills into the library or the pack cache, records their source, applies saved invocation choices, links them and commits.
 5. A failure leaves the library unchanged.
@@ -198,10 +198,8 @@ From the 2026-11-05 failures; they ship first:
 6. Tool skills stay outside the repository; restore lists tool commands for approval.
 7. A built-in editor: plain text with Markdown preview.
 8. AFK stays a local web app.
-
-## Open questions
-
-1. **Skills screen layout.** Keep Kit and Installed Skills as two pages (wireframe direction A), or merge them into one Skills page (direction B)?
+9. One Skills page (wireframe direction B): Core grouped by source, Packs, This machine only, Try later and To review as tabs. It replaces the separate Kit and Installed Skills pages.
+10. Uploaded skills can go to Core, a pack or this machine. In Core or a pack they are saved in full, because they can't be downloaded again.
 
 ## Slices
 
