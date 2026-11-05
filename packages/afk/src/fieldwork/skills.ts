@@ -11,6 +11,11 @@ import { offFolder, ToolSkills } from "./tool-skills.js";
 import { writeInvocationChoice } from "./invocation.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
 
+/** A Global skill is on when the user turned it on alone or an enabled pack owns it. */
+export function globalSkillOn(settings: Settings, name: string): boolean {
+  return Boolean(settings.independentSkills.Global?.includes(name)) || settings.profiles.some(profile => profile.enabled.includes("Global") && profile.skills.includes(name));
+}
+
 export function resolveProfile(settings: Settings, reference: string): Settings["profiles"][number] {
   const byId = settings.profiles.find(profile => profile.id === reference);
   if (byId) return byId;

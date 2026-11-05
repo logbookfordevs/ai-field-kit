@@ -15,7 +15,7 @@ import { adoptSkill, type AdoptDestination } from "./adopt.js";
 import { trackToolRun } from "./tool-run.js";
 import { resolveDuplicate } from "./duplicates.js";
 import { SourcePreparation } from "./preparation.js";
-import { SkillLibrary } from "./skills.js";
+import { globalSkillOn, SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
@@ -48,6 +48,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"], workspace: ["mode", "folder"], location: ["path"],
     "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
     "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"],
+    "backup/keep": ["id"], "backup/discard": ["id"], "backup/take-update": ["name"], "backup/restore-saved": ["name"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
     "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "project/save": ["previous"],
@@ -105,7 +106,7 @@ export class FieldworkOperations {
   private projectMigration: { migrated: string[]; kept: { project: string; skills: string[] }[]; failed: { project: string; error: string }[] } = { migrated: [], kept: [], failed: [] };
 
   constructor(readonly store: SettingsStore) {
-    this.backup = new Backup(new Library(store.home), undefined, { signal: this.lifecycle.signal });
+    this.backup = new Backup(new Library(store.home), undefined, { signal: this.lifecycle.signal, isOn: async name => globalSkillOn(await store.read(), name) });
     this.library = new SkillLibrary(store);
     this.rules = new RulesWorkspace(store);
     this.schedule = new SkillUpdateSchedule(store.home);
@@ -380,8 +381,19 @@ export class FieldworkOperations {
   private async applyBackup(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
     const { backup } = this;
     if (operation === "backup/state") {
-      const status = await backup.status();
-      return data.brief === true ? { status } : { status, history: await backup.history(), contents: await backup.contents() };
+      const status = await backup.status(), attention = await backup.checks.list();
+      return data.brief === true ? { status, attention } : { status, attention, history: await backup.history(), contents: await backup.contents() };
+    }
+    const resolutions: Partial<Record<Operation, () => Promise<void>>> = {
+      "backup/keep": () => backup.checks.keep(String(data.id)),
+      "backup/discard": () => backup.checks.discard(String(data.id)),
+      "backup/take-update": () => backup.checks.take(String(data.name)),
+      "backup/restore-saved": () => backup.checks.restore(String(data.name)),
+    };
+    const resolve = resolutions[operation];
+    if (resolve) {
+      await resolve();
+      return { status: await backup.status(), attention: await backup.checks.list() };
     }
     if (operation === "backup/connect") return backup.connect(String(data.url));
     if (operation === "backup/create") return backup.createRepository(String(data.name));
