@@ -81,6 +81,8 @@ export interface Tool {
 }
 
 export const LOCAL_PROFILE_SOURCE = "Local skill selection";
+/** Names the saved copy of uploaded skills in Core and pack definitions, which have no repository to point at. */
+export const UPLOADED_SOURCE = "Uploaded skill";
 
 export function profileGroups(profile: Pick<Profile, "source" | "skills" | "groups">): ProfileGroup[] {
   return profile.groups ?? [{ source: profile.source, skills: profile.skills }];

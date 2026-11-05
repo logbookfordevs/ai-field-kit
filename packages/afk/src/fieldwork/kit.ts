@@ -1,5 +1,5 @@
 import { sourceIdentity } from "./migration.js";
-import type { KitSource, Settings } from "./settings.js";
+import { UPLOADED_SOURCE, type KitSource, type Settings } from "./settings.js";
 import type { SkillEntry } from "./skills.js";
 
 export interface SyncPlan {
@@ -28,7 +28,7 @@ export interface InstallCandidate {
 }
 
 export function isRepositorySource(source: string | undefined): source is string {
-  return Boolean(source) && !source!.startsWith("/") && !source!.startsWith("~") && !source!.startsWith(".") && !source!.startsWith("file:");
+  return Boolean(source) && source !== UPLOADED_SOURCE && !source!.startsWith("/") && !source!.startsWith("~") && !source!.startsWith(".") && !source!.startsWith("file:");
 }
 
 export function toolOwner(settings: Pick<Settings, "tools">, name: string): Settings["tools"][number] | undefined {
@@ -53,7 +53,7 @@ export function kitStatus(settings: Settings, inventory: SkillEntry[]): KitStatu
       if (status === "missing") missing.push(name);
       if (status === "off") enable.push(name);
     }
-    if (missing.length) install.push({ source: entry.source, skills: missing });
+    if (missing.length && entry.source !== UPLOADED_SOURCE) install.push({ source: entry.source, skills: missing });
   }
   core.sort((a, b) => a.name.localeCompare(b.name));
 

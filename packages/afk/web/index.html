@@ -822,6 +822,7 @@ a.kit-source-link:hover{color:var(--fg)}
 .install-destination{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:10px 12px;border:1px solid var(--control-border);border-radius:6px;background:var(--surface);cursor:pointer}
 .install-destination:has(input:checked){border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
 .install-destination input{flex:0 0 18px;width:18px;height:18px;min-height:0;margin:2px 0 0;accent-color:var(--accent)}
+.install-destination[hidden]{display:none}
 .install-destination strong{display:block;font-size:14px}
 .install-destination small{display:block;font-size:13px;line-height:1.4;color:var(--muted)}
 .install-warning{display:block;font-size:13px;color:var(--danger)}
@@ -840,6 +841,9 @@ a.kit-source-link:hover{color:var(--fg)}
 .migration-report h3{font-size:14px;margin:14px 0 4px}
 .migration-report ul{margin:0;padding-left:20px;overflow-wrap:anywhere}
 .migration-warning{color:var(--danger)}
+.page-tabs.install-kinds{margin:0 0 4px}
+.upload-drop{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px;border:1px dashed var(--control-border);border-radius:6px;background:var(--surface)}
+.upload-drop.dragging{border-style:solid;border-color:var(--fg)}
 @media(max-width:480px){.install-destinations,.install-source{grid-template-columns:1fr}}
 @media(max-width:760px){.page-tabs{overflow-x:auto;gap:0}.page-tabs [role=tab]{flex:none;white-space:nowrap;padding:0 8px}.kit-row{align-items:flex-start;flex-direction:column;padding:10px 0 10px 12px}.kit-panel-actions{justify-content:flex-start}}
 </style>
