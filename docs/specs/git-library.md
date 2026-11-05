@@ -85,13 +85,48 @@ One JSON file per object keeps history readable and leaves room for multi-machin
 
 ### Storage and links
 
-AFK owns the storage, as Skills Manager does. A Core skill, or an uploaded skill, is a link `~/.agents/skills/<name>` → `<library>/skills/<name>`, plus the existing `~/.claude/skills/<name>` link. Pack skills from a repository live in a local cache next to the library and are linked the same way while the pack is on. An uploaded pack skill is linked straight from the library; turning its pack on downloads nothing. A skill that is off has no link; the `.disabled` store retires for library skills.
+AFK owns the storage, as Skills Manager does. A skill that is on is a link from each enabled agent folder (see [Agent folders](#agent-folders)) into its stored copy, for example `~/.agents/skills/<name>` → `<library>/skills/<name>`. Pack skills from a repository live in the pack cache and are linked the same way while the pack is on. An uploaded pack skill is linked straight from the library; turning its pack on downloads nothing.
 
-### Skills AFK does not own
+### On and off without a `.disabled` folder
 
-- **Tool-provided skills.** A tool's command installs and updates them. The repository saves the tool and the invocation choices for its skills. After a tool runs, AFK reapplies those choices to the files the tool wrote. They open read-only in the editor.
-- **Machine-only skills**, kept and listed as today, never saved. Keeping a skill machine-only can offer to bookmark its source in Try later.
-- **Skills installed outside AFK** appear for review, as today's "not in your kit": *Add to library* or *Keep on this machine*.
+AFK stores every Global skill it manages, so turning one off removes its links and moves nothing:
+
+| Skill | Stored in | Saved in backup |
+| --- | --- | --- |
+| Core, uploaded | `~/.afk/library/skills/` | Yes |
+| Pack skill from a repository | `~/.afk/packs-cache/` | No (definition only) |
+| Machine-only | `~/.afk/machine/` | No |
+
+- The Global `.disabled` store retires. Existing `.disabled` contents move into this storage during migration.
+- One stored copy per skill. Reinstalling a skill replaces that copy, so the "Two copies" case no longer arises for stored skills.
+- **Tool-provided skills** are the exception: a tool writes a real folder into an agent folder. Turning one off moves it to `~/.afk/off/`, outside every agent folder, and turning it on moves it back. Whether a tool's next update recreates a skill that is off must be tested per tool. The repository saves the tool and the invocation choices for its skills; after a tool runs, AFK reapplies those choices. They open read-only in the editor.
+- **Skills installed outside AFK** appear for review, as today's "not in your kit": *Add to library* (moved into storage and linked) or *Keep on this machine* (moved into `~/.afk/machine/` and linked). Keeping a skill machine-only can offer to bookmark its source in Try later.
+
+### Agent folders
+
+Agents don't all read the same folder. Skills CLI 1.7.6's agent table lists 80 agents; in projects most read `.agents/skills`, but globally only Codex, Cline, Warp and Zed read `~/.agents/skills`. Claude Code reads `~/.claude/skills`, Cursor `~/.cursor/skills`, Gemini CLI `~/.gemini/skills`, GitHub Copilot `~/.copilot/skills`, OpenCode `~/.config/opencode/skills`.
+
+**Settings → Agent folders** lists the folders AFK links skills into:
+
+- `~/.agents/skills` is always on, named as the shared folder with the agents that read it.
+- Known agents come from a table AFK ships (taken from Skills CLI's), each with its global and project folder. Agents detected on this machine (their config folder exists) are listed first, each with a switch.
+- **Add a folder** takes a name, a global path and an optional project path, for agents AFK doesn't know.
+- Every skill that is on gets a link in each enabled folder; turning a skill off removes all of them. Enabling a folder links every skill that is on; disabling it removes only AFK's links there.
+- The Manual/Automatic choice lives in the skill's files, so it applies through every link. It only affects agents that read those fields (Claude Code's `disable-model-invocation`, Codex's `agents/openai.yaml`); the Skills screen says so.
+- Enabled folders are saved in the backup as `~`-relative paths and recreated on restore.
+
+Today's fixed `~/.claude/skills` link becomes the Claude Code entry, on by default.
+
+### Projects
+
+A project has two kinds of skill:
+
+1. **Skills AFK exposes:** a pack or a library skill turned on for the project. They are links into AFK's storage, created in the project's enabled agent folders (`.agents/skills`, `.claude/skills`, plus any others turned on). Off removes the links. The project's `.disabled` folder isn't needed for them.
+2. **Project-owned skills:** real folders committed in the project's own repository, often shared with a team. AFK lists them but doesn't move or rewrite them, because any change would show up in the team's repository.
+
+AFK adds its links to the project's `.git/info/exclude`, which is local and never committed, so they don't appear as untracked files.
+
+The backup saves, per project name, which packs and skills are on. Project paths stay on the machine. After a restore, AFK offers to re-link each project once its folder is chosen.
 
 ## Flows
 
@@ -164,7 +199,10 @@ Two situations on this one machine need the user. AFK lists them under **Needs a
 - AFK folder ZIP export and import. The repository is the backup.
 - The `~/.afk/backups` rotation for settings. Git history replaces it.
 - Kit's sync plan and `afk sync` reinstalling Core from upstream. Restore replaces them.
-- The `.disabled` store and AFK's dependence on `~/.agents/.skill-lock.json` for library skills.
+- The Global `.disabled` store, replaced by AFK's storage and unlinking. Tool skills that are off use `~/.afk/off/`.
+- The project `.disabled` folder and `.afk-overrides` copies for skills AFK exposes.
+- The fixed `~/.claude/skills` link, replaced by the Claude Code entry in Agent folders.
+- AFK's dependence on `~/.agents/.skill-lock.json` for library skills.
 
 Core, packs, Try later, tools and Agent rules stay as concepts. Their data moves into `.afk/`.
 
@@ -172,7 +210,7 @@ Core, packs, Try later, tools and Agent rules stay as concepts. Their data moves
 
 `afk library init` (and *Start a new library*) builds the first commit from this machine:
 
-1. Copy every Core skill from its current location into `skills/`, and pack skills into the local cache.
+1. Copy every Core skill from its current location into `skills/`, pack skills into the pack cache, and machine-only skills and the Global `.disabled` contents into their storage.
 2. Write `.afk/` from the portable settings, the Skills CLI lock records for those skills, and this machine's invocation choices.
 3. Copy `AGENTS.md` and `references/` into `rules/`.
 4. Replace the existing skill folders with links, keeping the originals in a dated backup until the user confirms.
@@ -200,6 +238,13 @@ From the 2026-11-05 failures; they ship first:
 8. AFK stays a local web app.
 9. One Skills page (wireframe direction B): Core grouped by source, Packs, This machine only, Try later and To review as tabs. It replaces the separate Kit and Installed Skills pages.
 10. Uploaded skills can go to Core, a pack or this machine. In Core or a pack they are saved in full, because they can't be downloaded again.
+11. AFK stores every Global skill it manages, including machine-only ones; off means unlinked. The Global `.disabled` store retires.
+12. Agent folders: `~/.agents/skills` always, plus switchable known agents and custom folders, saved in the backup.
+
+## Open questions
+
+1. **Project-owned skills.** Proposed: AFK lists skills committed in a project's repository but doesn't turn them off or override their invocation, because that changes the team's repository. Today AFK can do both (via the project `.disabled` folder and `.afk-overrides`). Drop that, or keep it as an explicit per-project option?
+2. **Agents in the Manual/Automatic hint.** Only Claude Code and Codex read the invocation fields today. Should the Skills screen name which enabled agents ignore the choice?
 
 ## Slices
 
