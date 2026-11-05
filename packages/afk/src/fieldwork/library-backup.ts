@@ -152,7 +152,9 @@ export class Backup {
     const before = await this.library.names(), coreBefore = await this.onSkills();
     const head = await this.git("Reading the library", "rev-parse", "HEAD");
     await this.library.change(`Went back to "${subject}"`, async () => {
+      const folders = await this.library.folders();
       await this.git("Restoring the save", "read-tree", "-u", "--reset", target);
+      await this.library.followFolders(folders, await this.library.folders());
     });
     const after = await this.library.names(), coreAfter = await this.onSkills();
     const differs = (first: string[], second: string[]): string[] => [...first.filter(name => !second.includes(name)), ...second.filter(name => !first.includes(name))];

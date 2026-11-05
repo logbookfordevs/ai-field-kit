@@ -251,26 +251,31 @@ export class Library {
       const settings = await this.readSettings();
       if (!settings) throw new Error("The library has no settings yet.");
       await this.writeSettings({ ...settings, agentFolders: next });
-      const after = await this.folders();
-      const on = await this.onNames();
-      const removed = before.filter(folder => !after.includes(folder));
-      const added = after.filter(folder => !before.includes(folder));
-      const created = await this.pendingLinks(added, on, before.filter(folder => after.includes(folder)));
-      const dropped: PendingLink[] = [];
-      try {
-        for (const folder of removed) for (const name of on) {
-          const path = join(folder, name);
-          if (!await this.isOwnLink(path, name)) continue;
-          const target = resolve(dirname(path), await readlink(path));
-          await rm(path);
-          dropped.push({ path, target });
-        }
-        await this.createLinks(created);
-      } catch (error) {
-        for (const { path, target } of dropped) await symlink(target, path, "dir");
-        throw error;
-      }
+      await this.followFolders(before, await this.folders());
     });
+  }
+
+  /** Moves the links of every skill that is on from folders no longer enabled to newly enabled ones; a failure puts the links back. */
+  async followFolders(before: string[], after: string[]): Promise<void> {
+    const on = await this.onNames();
+    const removed = before.filter(folder => !after.includes(folder));
+    const added = after.filter(folder => !before.includes(folder));
+    if (!removed.length && !added.length) return;
+    const created = await this.pendingLinks(added, on, before.filter(folder => after.includes(folder)));
+    const dropped: PendingLink[] = [];
+    try {
+      for (const folder of removed) for (const name of on) {
+        const path = join(folder, name);
+        if (!await this.isOwnLink(path, name)) continue;
+        const target = resolve(dirname(path), await readlink(path));
+        await rm(path);
+        dropped.push({ path, target });
+      }
+      await this.createLinks(created);
+    } catch (error) {
+      for (const { path, target } of dropped) await symlink(target, path, "dir");
+      throw error;
+    }
   }
 
   /** Every skill AFK stores in the library, the pack cache or machine storage. */

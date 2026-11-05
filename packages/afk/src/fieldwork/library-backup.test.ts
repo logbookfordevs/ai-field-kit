@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -208,6 +208,22 @@ describe("history and going back", () => {
     await backup.goBack(alphaSave!.id);
 
     expect(await library.linked("beta")).toBe(false);
+  });
+
+  it("moves the links of skills that are on to the agent folders the earlier save had enabled", async () => {
+    await library.change("Add settings", () => library.writeSettings({ version: 1, core: [] }));
+    await save("Add sample", "sample");
+    await library.link("sample");
+    const earlier = await backup.lastChange();
+    await library.changeAgentFolders("Switch to Cursor", { enabled: ["~/.cursor/skills"], custom: [] });
+    expect(await lstat(join(home, ".cursor/skills/sample")).then(() => true, () => false)).toBe(true);
+
+    await backup.goBack(earlier);
+
+    expect((await library.agentFolders()).enabled).not.toContain("~/.cursor/skills");
+    expect(await readlink(join(home, ".claude/skills/sample"))).toBe(library.skillPath("sample"));
+    expect(await lstat(join(home, ".cursor/skills/sample")).then(() => true, () => false)).toBe(false);
+    expect(await library.linked("sample")).toBe(true);
   });
 
   it("refuses an id that is not a save in this library", async () => {
