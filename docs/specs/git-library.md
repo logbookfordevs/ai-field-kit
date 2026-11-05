@@ -1,6 +1,6 @@
 # Git-backed library
 
-Status: Proposed, for review. Not approved for implementation.
+Status: Approved 2026-11-05. Decision record: [ADR 0012](../adr/0012-git-library-replaces-drive-settings-and-kit-sync.md).
 Date: 2026-11-05. Scope slug: `git-library`.
 Research: [Skills Manager backup](../research/git-library/skills-manager-backup.md).
 Wireframes: [git-library-wireframes.html](git-library-wireframes.html).
@@ -116,6 +116,8 @@ Agents don't all read the same folder. Skills CLI 1.7.6's agent table lists 80 a
 - Enabled folders are saved in the backup as `~`-relative paths and recreated on restore.
 
 Today's fixed `~/.claude/skills` link becomes the Claude Code entry, on by default.
+
+Each agent is shown with its icon, as Skills Manager does. Its 52 agent icons (`public/agent-icons/`, mapped in `src/lib/agentIcons.ts`) are in an MIT repository; AFK can reuse them with that notice, or take each from the agent's own brand assets. The logos remain their owners' trademarks and are used only to identify the agent. Custom folders and agents without an icon get a lettered placeholder.
 
 ### Projects
 
@@ -242,6 +244,7 @@ From the 2026-11-05 failures; they ship first:
 12. Agent folders: `~/.agents/skills` always, plus switchable known agents and custom folders, saved in the backup.
 13. Projects: install, update, delete and Manual/Automatic for the project's own skills, editing its files directly. No packs, no on/off, no backup.
 14. Invocation is written for Claude Code's and Codex's mechanisms only. Which agents follow them is shown in a tooltip where known.
+15. Agent folders show each agent's icon.
 
 ## Slices
 
