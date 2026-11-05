@@ -176,3 +176,132 @@ describe("the install dialog", () => {
     expect(dialog).toMatch(/name="installTo" value="core" checked/);
   });
 });
+
+describe("the install dialog's Zip or folder source", () => {
+  const uploaded = [
+    { name: "wizard", description: "Casts spells", files: 3, bytes: 49152, state: "new" },
+    { name: "scribe", description: "Writes", files: 1, bytes: 900, state: "installed", installedFrom: "owner/repo" },
+    { name: "owned", description: "By a tool", files: 1, bytes: 10, state: "tool", tool: "Waypoint" },
+  ];
+
+  beforeEach(() => {
+    context.request = async (path: string, data: Record<string, unknown>) => {
+      requests.push({ path, data });
+      if (path === "kit/upload-preview") return { upload: "u1", candidates: uploaded };
+      return { ok: true, to: data.to, status: {} };
+    };
+  });
+
+  async function openFile(): Promise<void> {
+    evaluate("showInstallSkills({})");
+    evaluate("setInstallKind('file')");
+    await evaluate("previewUpload({archive:'AAAA',name:'wizard.zip'})");
+  }
+
+  it("offers the file source next to the repository source", () => {
+    evaluate("showInstallSkills({})");
+
+    expect(dialog).toContain("setInstallKind('repo')");
+    expect(dialog).toContain("setInstallKind('file')");
+  });
+
+  it("takes Try later away, because uploads have no repository to bookmark", () => {
+    evaluate("showInstallSkills({to:'later'})");
+
+    evaluate("setInstallKind('file')");
+
+    expect(field("installDestination-later").hidden).toBe(true);
+    expect(evaluate("installDialog.to")).toBe("");
+    expect(field("startInstall").disabled).toBe(true);
+
+    evaluate("setInstallKind('repo')");
+    expect(field("installDestination-later").hidden).toBe(false);
+  });
+
+  it("lists what was found with its size and says it cannot auto-update, leaving tool skills out", async () => {
+    await openFile();
+
+    expect(requests.at(-1)).toEqual({ path: "kit/upload-preview", data: { archive: "AAAA", name: "wizard.zip" } });
+    expect(evaluate("memberPicker.names.join()")).toBe("scribe,wizard");
+    expect(field("installSkipped").textContent).toContain("owned (Waypoint)");
+    const row = evaluate<string>("installRowExtra('wizard')");
+    expect(row).toContain("48 KB");
+    expect(row).not.toContain("readInstallSkill");
+    expect(field("uploadNote").hidden).toBe(false);
+    expect(evaluate<string>("installRowExtra('scribe')")).toContain("Installing replaces it");
+  });
+
+  it("installs the ticked skills to Core without an agent, and approves replacing only the installed ones", async () => {
+    await openFile();
+    evaluate("setInstallDestination('core');memberPicker.selected.add('wizard');memberPicker.selected.add('scribe');updateInstallationSelection()");
+    expect(field("startInstall").textContent).toBe("Install 2 skills to Core");
+
+    await evaluate("applyInstallSkills()");
+
+    expect(requests.at(-1)).toEqual({ path: "kit/upload-install", data: { upload: "u1", names: ["wizard", "scribe"], to: "core", replace: ["scribe"] } });
+  });
+
+  it("sends a new pack's name and an existing pack's ID", async () => {
+    await openFile();
+    evaluate("setInstallDestination('pack');memberPicker.selected.add('wizard');setInstallPack('new-pack')");
+    field("installPackName").value = "Helpers";
+    evaluate("updateInstallationSelection()");
+    await evaluate("applyInstallSkills()");
+    expect(requests.at(-1)?.data).toEqual({ upload: "u1", names: ["wizard"], to: "new-pack", packName: "Helpers" });
+
+    evaluate("installDialog.finished=false;setInstallPack('art')");
+    await evaluate("applyInstallSkills()");
+    expect(requests.at(-1)?.data).toEqual({ upload: "u1", names: ["wizard"], to: "art" });
+  });
+
+  it("installs to this machine only", async () => {
+    await openFile();
+    evaluate("setInstallDestination('machine');memberPicker.selected.add('wizard');updateInstallationSelection()");
+
+    await evaluate("applyInstallSkills()");
+
+    expect(requests.at(-1)).toEqual({ path: "kit/upload-install", data: { upload: "u1", names: ["wizard"], to: "machine" } });
+  });
+
+  it("shows why an upload was rejected and keeps nothing selectable", async () => {
+    context.request = async () => { throw new Error("This archive contains a symlink."); };
+    evaluate("showInstallSkills({})");
+    evaluate("setInstallKind('file')");
+
+    await evaluate("previewUpload({archive:'AAAA'})");
+
+    expect(field("installError").textContent).toBe("This archive contains a symlink.");
+    expect(evaluate("installDialog.found")).toBe(false);
+    expect(field("startInstall").disabled).toBe(true);
+  });
+
+  it("refuses files over the size limit before reading them", async () => {
+    evaluate("showInstallSkills({})");
+    evaluate("setInstallKind('file')");
+
+    await evaluate("chooseUploadFiles([{name:'big.zip',size:30*1024*1024}])");
+
+    expect(field("installError").textContent).toMatch(/too large/i);
+    expect(requests.some(item => item.path === "kit/upload-preview")).toBe(false);
+  });
+
+  it("builds a folder upload from the browser's relative paths", async () => {
+    evaluate("showInstallSkills({})");
+    evaluate("setInstallKind('file')");
+    evaluate("fileBase64=async file=>'b64:'+file.name");
+
+    await evaluate("chooseUploadFiles([{name:'SKILL.md',size:5,webkitRelativePath:'wizard/SKILL.md'},{name:'a.md',size:1,webkitRelativePath:'wizard/refs/a.md'}])");
+
+    expect(requests.at(-1)).toEqual({ path: "kit/upload-preview", data: { files: [{ path: "wizard/SKILL.md", base64: "b64:SKILL.md" }, { path: "wizard/refs/a.md", base64: "b64:a.md" }] } });
+  });
+
+  it("sends a single file as an archive", async () => {
+    evaluate("showInstallSkills({})");
+    evaluate("setInstallKind('file')");
+    evaluate("fileBase64=async file=>'b64:'+file.name");
+
+    await evaluate("chooseUploadFiles([{name:'wizard.skill',size:5}])");
+
+    expect(requests.at(-1)).toEqual({ path: "kit/upload-preview", data: { archive: "b64:wizard.skill", name: "wizard.skill" } });
+  });
+});
