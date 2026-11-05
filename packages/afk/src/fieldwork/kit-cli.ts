@@ -106,68 +106,6 @@ export async function runMigrate(args: string[], store: SettingsStore, dependenc
   } finally { await operations.close(); }
 }
 
-const SYNC_HELP = `Make this machine match your kit
-
-  afk sync [--agent <agent>] [--yes] [--run-tools]
-
-Shows the plan, then asks before changing anything.
---yes         Skip the confirmation for skills. Tool commands still need --run-tools.
---run-tools   Also run the saved install command of every tool whose skills are missing.
-Skills that aren't in your kit are never removed.`;
-
-export async function runSync(args: string[], store: SettingsStore, dependencies: CliDependencies = {}): Promise<number> {
-  const log = dependencies.log ?? console.log;
-  if (["--help", "-h", "help"].includes(args[0] ?? "")) { log(SYNC_HELP); return 0; }
-  let agent: string | undefined, yes = false, runTools = false;
-  for (let index = 0; index < args.length; index++) {
-    const option = args[index]!;
-    if (option === "--yes" || option === "-y") yes = true;
-    else if (option === "--run-tools") runTools = true;
-    else if (option === "--agent" || option === "-a") {
-      agent = args[++index];
-      if (!agent || agent.startsWith("-")) throw new Error(`Provide a value after ${option}.`);
-    } else throw new Error(`Unknown sync option: ${option}.\n${SYNC_HELP}`);
-  }
-  const interactive = dependencies.interactive ?? Boolean(stdin.isTTY && stdout.isTTY);
-  if (!yes && !interactive) throw new Error("Use an interactive terminal, or pass --yes after reviewing the plan with afk kit.");
-  await store.initialize();
-  const operations = new FieldworkOperations(store);
-  const { ask, close } = asker(dependencies);
-  try {
-    const kit = await operations.run("kit/state") as KitStatus;
-    const { plan } = kit;
-    if (!plan.install.length && !plan.enable.length && !plan.tools.length) {
-      log("This machine matches your kit.");
-      if (kit.undecided.length) log(`${plural(kit.undecided.length, "skill")} here aren't in your kit yet. See afk kit.`);
-      return 0;
-    }
-    for (const group of plan.install) log(`Install from ${group.source}: ${group.skills.join(", ")}`);
-    if (plan.enable.length) log(`Turn back on: ${plan.enable.join(", ")}`);
-    if ((plan.install.length || plan.enable.length) && !yes && !["y", "yes"].includes((await ask("Apply these changes? [y/N]: ")).trim().toLowerCase())) { log("Nothing changed."); return 0; }
-    const approved: number[] = [];
-    for (const tool of plan.tools) {
-      log(`\nTool ${tool.name} provides missing skills: ${tool.skills.join(", ")}\n  $ ${tool.command}`);
-      if (runTools) { approved.push(tool.id); continue; }
-      if (yes) { log("  Skipped. Add --run-tools to run saved commands."); continue; }
-      if (["y", "yes"].includes((await ask("Run this command? [y/N]: ")).trim().toLowerCase())) approved.push(tool.id);
-    }
-    const result = await operations.run("kit/sync", { expected: plan, ...(agent ? { agent } : {}), runTools: approved }) as {
-      install?: { output: string; code?: number; phase: string; cancelled?: boolean };
-      enabled: { name: string; ok: boolean; error?: string }[];
-      tools: { name: string; code: number; output: string }[];
-      status: KitStatus;
-    };
-    if (result.install) log(`${result.install.output}\n${result.install.phase}`);
-    for (const item of result.enabled.filter(entry => !entry.ok)) log(`Could not turn on ${item.name}: ${item.error}`);
-    for (const tool of result.tools) log(`${tool.name} exited with ${tool.code}\n${tool.output}`);
-    const remaining = result.status.plan;
-    const left = remaining.install.flatMap(group => group.skills).length + remaining.enable.length + remaining.tools.length;
-    log(left ? `\nStill different from your kit: ${describeStatus(result.status)}` : "\nThis machine matches your kit.");
-    const failed = Boolean(result.install?.code) || result.tools.some(tool => tool.code !== 0) || result.enabled.some(item => !item.ok);
-    return result.install?.cancelled ? 130 : failed ? 1 : 0;
-  } finally { close(); await operations.close(); }
-}
-
 const KIT_HELP = `Your kit: the skills that travel with you
 
   afk kit                                   Compare your kit with this machine
@@ -178,7 +116,7 @@ const KIT_HELP = `Your kit: the skills that travel with you
   afk kit unfollow <repository>
   afk kit check                             Look for new skills in followed repositories
 
-Adding uses the repository a skill was installed from. Nothing here installs anything; run afk sync for that.`;
+Adding uses the repository a skill was installed from. Nothing here installs anything; use afk add to install.`;
 
 export async function runKit(args: string[], store: SettingsStore, dependencies: CliDependencies = {}): Promise<number> {
   const log = dependencies.log ?? console.log;
@@ -207,7 +145,7 @@ export async function runKit(args: string[], store: SettingsStore, dependencies:
     }
     if (action === "add" && names.length) {
       await operations.run("kit/add", { names, to: pack ? await packId(pack) : "core", ...(source ? { source } : {}) });
-      log(`Added ${names.join(", ")} to ${pack ?? "Core"}. Other machines will see ${names.length === 1 ? "it" : "them"} as missing until they run afk sync.`);
+      log(`Added ${names.join(", ")} to ${pack ?? "Core"}. Your library saves ${names.length === 1 ? "it" : "them"} with your next backup.`);
       return 0;
     }
     if (action === "drop" && names.length === 1) {

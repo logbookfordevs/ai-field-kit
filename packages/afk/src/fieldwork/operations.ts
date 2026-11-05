@@ -28,7 +28,7 @@ import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
 import { migrateProject } from "./project-skills.js";
 import { Uploads } from "./upload-install.js";
-import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate, type SyncPlan } from "./kit.js";
+import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate } from "./kit.js";
 import { portableSettings } from "./local-state.js";
 import { agentFolderState, changeAgentFolders } from "./agent-folder-operations.js";
 import { fingerprint, migrateSettings, sourceIdentity, type MigrationChoices } from "./migration.js";
@@ -55,7 +55,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "backup/keep": ["id"], "backup/discard": ["id"], "backup/take-update": ["name"], "backup/restore-saved": ["name"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
-    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "kit/upload-preview": ["archive", "name", "folder"], "kit/upload-install": ["packName"], "project/save": ["previous"],
+    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/install": ["packName", "scope", "agent"], "kit/upload-preview": ["archive", "name", "folder"], "kit/upload-install": ["packName"], "project/save": ["previous"],
     "skill/read": ["file", "folder"], "skill/editor": ["file"], "skill/edit": ["updates"], "rules/save": ["expectedHash"], folders: ["path"], "agent-folders/add": ["project"],
   };
   for (const key of requiredText[operation] ?? []) {
@@ -586,52 +586,6 @@ export class FieldworkOperations {
     if (operation === "kit/install") return await this.installWithDestination(data);
     if (operation === "kit/upload-preview") return await this.uploads.preview(data);
     if (operation === "kit/upload-install") return await this.uploads.install(data);
-    if (operation === "kit/sync") {
-      const inventory = await library.inventory(settings, "Global");
-      const current = kitStatus(settings, inventory);
-      if (JSON.stringify(current.plan) !== JSON.stringify(data.expected as SyncPlan | undefined)) throw new Error("This machine or your kit changed since you reviewed the plan. Review it again.");
-      if (data.only !== undefined) {
-        const { only } = data;
-        if (!Array.isArray(only) || !only.length || !only.every(skillName)) throw new Error("Provide only as an array of skill names.");
-        current.plan = {
-          install: current.plan.install.map(group => ({ source: group.source, skills: group.skills.filter(name => only.includes(name)) })).filter(group => group.skills.length),
-          enable: current.plan.enable.filter(name => only.includes(name)),
-          tools: current.plan.tools.filter(tool => tool.skills.some(name => only.includes(name))),
-        };
-      }
-      const approved = data.runTools === undefined ? [] : data.runTools;
-      if (!Array.isArray(approved) || !approved.every(id => Number.isSafeInteger(id))) throw new Error("Provide runTools as an array of tool IDs.");
-      const enabled: { name: string; ok: boolean; error?: string }[] = [];
-      for (const name of current.plan.enable) {
-        try { await library.toggle(settings, name, "Global"); enabled.push({ name, ok: true }); }
-        catch (error) { enabled.push({ name, ok: false, error: error instanceof Error ? error.message : "Could not turn this skill on." }); }
-      }
-      let install: InstallProgress | undefined;
-      if (current.plan.install.length) {
-        this.installController = new AbortController();
-        try {
-          install = await installSkills(store, settings, current.plan.install, "Global", String(data.agent ?? "universal"), "Sync this machine", value => { this.skillInstall = value; }, AbortSignal.any([this.installController.signal, this.lifecycle.signal]), this.installRunner);
-          this.skillInstall = install;
-        } finally { this.installController = null; }
-      }
-      const tools: { id: number; name: string; code: number; output: string; reapplied?: string[]; warnings?: string[] }[] = [];
-      const skippedTools = current.plan.tools.filter(tool => !approved.includes(tool.id));
-      for (const tool of current.plan.tools.filter(tool => approved.includes(tool.id))) {
-        toolRuns[tool.id] = { pending: true, output: "Running…" };
-        try {
-          const finish = await trackToolRun(store, { name: tool.name, provides: tool.skills });
-          const result = await finish(await runTool(process.env.SHELL || "/bin/sh", ["-c", tool.command], store.home, this.lifecycle.signal));
-          toolRuns[tool.id] = { pending: false, ...result };
-          tools.push({ id: tool.id, name: tool.name, ...result });
-        } catch (error) {
-          const output = error instanceof Error ? error.message : "Command could not start.";
-          toolRuns[tool.id] = { pending: false, code: 1, output };
-          tools.push({ id: tool.id, name: tool.name, code: 1, output });
-        }
-      }
-      const latest = await store.read();
-      return { ...(install ? { install } : {}), enabled, tools, skippedTools, status: kitStatus(latest, await library.inventory(latest, "Global")) };
-    }
     if (operation === "pack/manifest") return { manifest: this.packManifest(settings, String(data.id)) };
     if (operation === "pack/import-preview") {
       if ((data.manifest === undefined) === (data.origin === undefined)) throw new Error("Provide pasted manifest JSON or its HTTPS URL, not both.");

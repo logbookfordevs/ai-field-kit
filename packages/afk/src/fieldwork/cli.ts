@@ -1,5 +1,5 @@
 import { installFromUrl } from "./install-cli.js";
-import { runAdd, runKit, runMigrate, runSync } from "./kit-cli.js";
+import { runAdd, runKit, runMigrate } from "./kit-cli.js";
 import { parseUiOptions } from "./ui-options.js";
 import { startBackground, backgroundStatus, stopBackground, restartBackground } from "./background.js";
 import { updateAfk } from "./update.js";
@@ -33,7 +33,6 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk kit                            Compare your kit with this machine
   afk kit add <skill>... [--pack <name>]  Make skills travel with you
   afk kit drop <skill> [--pack <name>]    Stop tracking a skill; its files stay
-  afk sync [--agent <agent>] [--yes] [--run-tools]  Make this machine match your kit
   afk migrate [--core <stack-id>] [--apply]  Move old stacks settings to the kit format
   afk library init [--apply]         Move Core, pack and machine-only skills into AFK storage; dry run without --apply
   afk library confirm                Delete the originals kept after library init
@@ -194,7 +193,6 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
   if (command === "install") return installFromUrl(argv.slice(1), store);
   if (command === "add") return runAdd(argv.slice(1), store);
   if (command === "kit") return runKit(argv.slice(1), store);
-  if (command === "sync") return runSync(argv.slice(1), store);
   if (command === "migrate") return runMigrate(argv.slice(1), store);
   if (command === "update") return updateAfk(argv.slice(1));
   if (command === "manage") return manage(argv.slice(1), store);

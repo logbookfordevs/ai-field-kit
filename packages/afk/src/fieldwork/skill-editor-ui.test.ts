@@ -29,7 +29,7 @@ function skill(name: string, extra: Record<string, unknown> = {}): Record<string
   return { name, path: `/home/.agents/skills/${name}`, owners: [], available: true, description: "", storage: "library", invocation: { claude: "Unknown", codex: "Unknown" }, defaultInvocation: { claude: "Unknown", codex: "Unknown" }, ...extra };
 }
 
-const empty = { core: [], sources: [], tools: [], undecided: [], machineOnly: [], plan: { install: [], enable: [], tools: [] } };
+const empty = { core: [], sources: [], tools: [], undecided: [], machineOnly: [] };
 
 beforeEach(() => {
   elements = {}; requests = []; responses = {}; failures = {}; toasts = []; dialog = { title: "", body: "", foot: "" };

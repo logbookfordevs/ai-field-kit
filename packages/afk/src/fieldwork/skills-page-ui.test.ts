@@ -11,7 +11,7 @@ let dialog: string;
 
 function evaluate<T>(code: string): T { return runInContext(code, context) as T; }
 
-const empty = { core: [], sources: [], tools: [], undecided: [], machineOnly: [], plan: { install: [], enable: [], tools: [] } };
+const empty = { core: [], sources: [], tools: [], undecided: [], machineOnly: [] };
 
 function skill(name: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
   return { name, path: `/home/.agents/skills/${name}`, owners: [], available: true, description: "", invocation: { claude: "Unknown", codex: "Unknown" }, defaultInvocation: { claude: "Unknown", codex: "Unknown" }, ...extra };
@@ -85,13 +85,10 @@ describe("the Skills page", () => {
     expect(openTab("core")).toBe("PROJECT");
   });
 
-  it("offers the sync and install actions, and says when there is nothing to sync", () => {
+  it("offers installing skills, and no machine sync", () => {
     setStatus(empty);
-    expect(openTab("core")).toContain("Nothing to sync");
-    expect(view.innerHTML).toContain("showInstallSkills()");
-
-    setStatus({ ...empty, plan: { install: [{ source: "me/core", skills: ["a", "b"] }], enable: ["c"], tools: [{ id: 1, name: "T", command: "x", skills: ["d"] }] } });
-    expect(openTab("core")).toContain("Sync this machine · 4");
+    expect(openTab("core")).toContain("showInstallSkills()");
+    expect(view.innerHTML).not.toContain("reviewSync()");
   });
 
   it("filters the rows of a tab by name", () => {
@@ -301,31 +298,27 @@ describe("checking followed sources", () => {
   });
 });
 
-describe("catching up and syncing", () => {
+describe("catching up a missing Core skill", () => {
   const behind = { ...empty,
-    core: [{ name: "absent", source: "me/core", follow: false, status: "missing" }],
-    sources: [{ source: "me/core", follow: false, skills: 1 }],
-    plan: { install: [{ source: "me/core", skills: ["absent"] }], enable: [], tools: [{ id: 7, name: "Waypoint", command: "curl waypoint.sh | bash", skills: ["waypoint"] }] },
+    core: [{ name: "absent", source: "me/core", follow: false, status: "missing" }, { name: "handmade", source: "Uploaded skill", follow: false, status: "missing" }],
+    sources: [{ source: "me/core", follow: false, skills: 1 }, { source: "Uploaded skill", follow: false, skills: 1 }],
   };
 
-  it("installs just that skill against the reviewed plan, then refreshes", async () => {
+  it("installs just that skill from its Core source, then refreshes", async () => {
     context.installAgentChoice = () => "codex";
     context.refresh = async () => {};
-    context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return { enabled: [] }; };
+    context.request = async (path: string, data: unknown) => { requests.push({ path, data }); return { code: 0, output: "", phase: "Installed" }; };
     setStatus(behind);
 
     await evaluate("catchUpSkill('absent')");
 
-    expect(requests).toEqual([{ path: "kit/sync", data: { expected: behind.plan, only: ["absent"], agent: "codex" } }]);
+    expect(requests).toEqual([{ path: "kit/install", data: { source: "me/core", names: ["absent"], to: "core", agent: "codex" } }]);
   });
 
-  it("shows every tool's exact command, unticked, before anything runs", () => {
+  it("offers no download for an uploaded skill, which has no repository", () => {
     setStatus(behind);
 
-    evaluate("reviewSync()");
-
-    expect(dialog).toContain("curl waypoint.sh | bash");
-    expect(dialog).not.toMatch(/data-sync-tool="7"[^>]*checked/);
-    expect(requests).toEqual([]);
+    expect(openTab("core")).toMatch(/catchUpSkill\('absent'\)/);
+    expect(openTab("core")).not.toMatch(/catchUpSkill\('handmade'\)/);
   });
 });

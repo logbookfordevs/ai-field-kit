@@ -104,7 +104,8 @@ function coreItemRow(item){
   const entry=globalSkill(item.name),name=esc(item.name);
   const drop=['Drop from Core',`dropFromKit('${name}','core')`];
   if(entry)return skillsRow(entry,{menu:[['Add to pack…',`addToPack('${name}')`],drop]});
-  return `<div class="kit-row"><div class="kit-row-name"><code>${name}</code><span class="meta">Missing on this machine</span></div><div class="kit-actions">${kitCatchUpButton(item.name,'Install')}${button('Drop from Core',`dropFromKit('${name}','core')`,'text')}</div></div>`;
+  const download=repositorySource(item.source)&&item.source!=='Uploaded skill'?kitCatchUpButton(item.name,'Install'):'';
+  return `<div class="kit-row"><div class="kit-row-name"><code>${name}</code><span class="meta">Missing on this machine</span></div><div class="kit-actions">${download}${button('Drop from Core',`dropFromKit('${name}','core')`,'text')}</div></div>`;
 }
 function coreSourceGroup(source,index){
   const items=kitStatus.core.filter(item=>item.source===source.source&&skillsMatch(item.name));
@@ -228,11 +229,9 @@ function renderKit(){
   if(selectedSkillScope!==scope){selectedSkills.clear();selectedSkillScope=scope}
   const installed=new Set(globalSkills().map(entry=>entry.name));
   for(const name of selectedSkills)if(!installed.has(name))selectedSkills.delete(name);
-  const pending=planCount()>0;
   const scopes=projects.length?`<label class="skills-scope">Scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label>`:'';
   const update=globalSkills().length?button(skillActionLabel('Update all','update'),'showSkillUpdate()','','data-od-id="update-skills"'):'';
-  const sync=button(pending?`Sync this machine · ${planCount()}`:'Nothing to sync','reviewSync()',pending?'primary':'',pending?'data-od-id="sync-machine"':'disabled data-od-id="sync-machine"');
-  const actions=`<div class="inline skills-page-actions">${button('Install skills','showInstallSkills()',pending?'':'primary','data-od-id="install-skills"')}${update}${sync}</div>`;
+  const actions=`<div class="inline skills-page-actions">${button('Install skills','showInstallSkills()','primary','data-od-id="install-skills"')}${update}</div>`;
   const searchable=skillsTab!=='later';
   $('view').innerHTML=head('Skills','Your library and this machine in one place. Core is backed up in full, packs as definitions, and machine-only skills stay here.',actions)
     +`<div class="skills-toolbar">${scopes}${searchable?skillsSearch():''}</div>`
