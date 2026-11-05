@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { runCommand as run, type CommandResult } from "./command-runner.js";
-import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, UPLOADED_SOURCE, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
+import { containsControl, isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, UPLOADED_SOURCE, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
 import { openSkillEditor, saveSkillEdit, type UpdatesChoice } from "./skill-editor.js";
 import { adoptSkill, type AdoptDestination } from "./adopt.js";
@@ -226,6 +226,8 @@ export class FieldworkOperations {
     const scope = String(data.scope ?? "Global");
     if (scope !== "Global" && !settings.projects.some(project => project.name === scope)) throw new Error("Choose a configured project.");
     if (to !== "later" && !names.length) throw new Error("Choose at least one skill.");
+    const bookmarkName = typeof data.name === "string" ? data.name.trim() : undefined;
+    if (data.name !== undefined && (to !== "later" || !bookmarkName || bookmarkName.length > 120 || containsControl(bookmarkName))) throw new Error("Give the bookmark a name of up to 120 characters, for Try later only.");
     const finish = async (extra: Record<string, unknown> = {}): Promise<unknown> => {
       const latest = await store.read();
       return { ok: true, to, ...extra, status: kitStatus(latest, await library.inventory(latest, "Global")) };
@@ -233,8 +235,11 @@ export class FieldworkOperations {
 
     if (to === "later") {
       const existing = settings.favoriteSources.find(item => sourceIdentity(item.source) === sourceIdentity(source));
-      if (existing) { if (existing.skills) { if (names.length) existing.skills = [...new Set([...existing.skills, ...names])]; else delete existing.skills; } }
-      else settings.favoriteSources.push({ name: source.replace(/#.*$/, "").replace(/\.git$/, "").replace(/\/+$/, "").split(/[/:]/).filter(Boolean).pop() ?? source, source, ...(names.length ? { skills: names } : {}) });
+      if (existing) {
+        if (bookmarkName) existing.name = bookmarkName;
+        if (existing.skills) { if (names.length) existing.skills = [...new Set([...existing.skills, ...names])]; else delete existing.skills; }
+      }
+      else settings.favoriteSources.push({ name: bookmarkName ?? source.replace(/#.*$/, "").replace(/\.git$/, "").replace(/\/+$/, "").split(/[/:]/).filter(Boolean).pop() ?? source, source, ...(names.length ? { skills: names } : {}) });
       await store.save(settings);
       return await finish();
     }

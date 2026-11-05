@@ -107,6 +107,19 @@ describe("the install dialog", () => {
     expect(field("startInstall").disabled).toBe(false);
   });
 
+  it("asks for a bookmark name, prefilled from the repository, and sends the one you type", async () => {
+    field("installSource").value = "mattpocock/skills";
+    evaluate("showInstallSkills({to:'later'})");
+
+    expect(field("installTarget").innerHTML).toContain('id="installBookmarkName"');
+    expect(field("installTarget").innerHTML).toContain('value="skills"');
+
+    field("installBookmarkName").value = "Matt Pocock";
+    await evaluate("applyInstallSkills()");
+
+    expect(requests.at(-1)).toEqual({ path: "kit/install", data: { source: "mattpocock/skills", names: [], to: "later", name: "Matt Pocock" } });
+  });
+
   it("approves replacing only the conflicts you ticked", async () => {
     await open("{source:'me/repo',to:'core'}");
     evaluate("memberPicker.selected.add('fresh');memberPicker.selected.add('taken');updateInstallationSelection()");

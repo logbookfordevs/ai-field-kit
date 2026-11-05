@@ -106,6 +106,7 @@ function installSourceChanged(){
   dialog.version++;dialog.found=false;dialog.finding=false;dialog.candidates=[];dialog.selected=[];
   installationPicker.selected=new Set();
   $('installationDiscovery').innerHTML='';$('installSkipped').hidden=true;$('installError').textContent='';
+  if(dialog.to==='later'&&dialog.bookmarkName===undefined)renderInstallTarget();
   updateInstallationSelection();
 }
 async function findInstallSkills(){
@@ -160,9 +161,15 @@ function renderInstallTarget(){
   if(dialog.to==='pack'){
     const options=[...profiles].sort((a,b)=>byName(a.name,b.name)).map(pack=>`<option value="${esc(pack.id)}" ${dialog.packTarget===pack.id?'selected':''}>${esc(pack.name)}</option>`).join('');
     host.innerHTML=`<label>Pack<select id="installPack" onchange="setInstallPack(this.value)"><option value="" ${dialog.packTarget?'':'selected'}>Choose a pack…</option>${options}<option value="new-pack" ${dialog.packTarget==='new-pack'?'selected':''}>New pack…</option></select></label><label id="installPackNameField" ${dialog.packTarget==='new-pack'?'':'hidden'}>New pack name<input id="installPackName" maxlength="120" oninput="updateInstallationSelection()"></label>`;
-  }else if(dialog.to==='machine'&&projects.length){
+  }else if(dialog.to==='later'){
+    host.innerHTML=`<label>Bookmark name<input id="installBookmarkName" maxlength="120" value="${esc(dialog.bookmarkName??bookmarkDefaultName($('installSource')?.value.trim()||dialog.source||''))}" oninput="installDialog.bookmarkName=this.value"></label>`;
+}else if(dialog.to==='machine'&&projects.length){
     host.innerHTML=`<label>Install into<select id="installScope" onchange="installDialog.scope=this.value;updateInstallationSelection()">${scopeOptions(dialog.scope)}</select></label><p class="hint">A project install stays with that project and outside your kit.</p>`;
   }else host.innerHTML='';
+}
+function bookmarkDefaultName(source){
+  const existing=favoriteSources.find(item=>item.source===source);
+  return existing?.name||source.replace(/#.*$/,'').replace(/\.git$/,'').replace(/\/+$/,'').split(/[/:]/).filter(Boolean).pop()||'';
 }
 function setInstallPack(value){
   installDialog.packTarget=value;
@@ -207,6 +214,7 @@ function installPayload(){
     source:$('installSource')?.value.trim()||dialog.source,names,to:packId||dialog.to,
     ...(packId==='new-pack'?{packName:$('installPackName').value.trim()}:{}),
     ...(dialog.to==='machine'&&dialog.scope!=='Global'?{scope:dialog.scope}:{}),
+    ...(dialog.to==='later'&&$('installBookmarkName')?.value.trim()?{name:$('installBookmarkName').value.trim()}:{}),
     ...(dialog.to!=='later'&&dialog.to!=='pack'?{agent:$('installAgent')?.value||installAgentChoice()}:{}),
     ...(conflicts.length&&dialog.to!=='pack'&&dialog.to!=='later'?{replace:conflicts}:{}),
   };

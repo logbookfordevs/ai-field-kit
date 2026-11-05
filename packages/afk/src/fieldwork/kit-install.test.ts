@@ -196,6 +196,14 @@ describe("installing with a destination", () => {
     expect((await store.read()).favoriteSources).toEqual([{ name: "Mine", source: "me/repo", skills: ["one", "two"] }]);
   });
 
+  it("Try later saves the name you give a bookmark, and renames an existing one", async () => {
+    await operations.run("kit/install", { source: "mattpocock/skills", names: [], to: "later", name: "Matt Pocock" });
+    expect((await store.read()).favoriteSources).toEqual([{ name: "Matt Pocock", source: "mattpocock/skills" }]);
+
+    await operations.run("kit/install", { source: "https://github.com/mattpocock/skills", names: [], to: "later", name: "Matt's skills" });
+    expect((await store.read()).favoriteSources).toEqual([{ name: "Matt's skills", source: "mattpocock/skills" }]);
+  });
+
   it("needs a known destination and at least one skill to install", async () => {
     await expect(operations.run("kit/install", { source: "me/repo", names: ["one"], to: "nowhere" })).rejects.toThrow(/destination/i);
     await expect(operations.run("kit/install", { source: "me/repo", names: [], to: "core" })).rejects.toThrow(/at least one/i);
