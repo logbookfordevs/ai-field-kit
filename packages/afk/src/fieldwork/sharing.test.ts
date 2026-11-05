@@ -61,7 +61,7 @@ it("replaces an empty folder but rejects a stale review when files arrive", asyn
   await setSharing(store, settings, "Global", true, await sharingState(store, settings, "Global"));
   expect((await sharingState(store, settings, "Global")).status).toBe("connected");
 });
-it.each(["Global", "Demo"])("supports individual and profile activation through the shared folder in %s", async scope => {
+it.each(["Global"])("supports individual and profile activation through the shared folder in %s", async scope => {
   const { home, store, settings, library } = await fixture();
   await setSharing(store, settings, scope, true, await sharingState(store, settings, scope));
   const root = library.root(settings, scope), stored = join(root, ".disabled/render");

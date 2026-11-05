@@ -896,7 +896,7 @@ function renderPacksPanel(){
 }
 
 function profileRow(p){
-  const target=selectedTargets[p.id]||'Global',isGlobal=target==='Global',on=p.enabled.includes(target);
+  const target='Global',isGlobal=true,on=p.enabled.includes(target);
   const others=p.enabled.filter(s=>s!==target),shown=p.skills.slice(0,3),extra=p.skills.length-shown.length;
   const toggleLabel=`Turn ${on?'off':'on'} ${isGlobal?'globally':'in project'}`;
   const prepAction=p.ready
@@ -909,14 +909,13 @@ function profileRow(p){
       <div class="prep">${p.ready?'': '<span class="status warn">Skills not downloaded yet</span>'}${prepAction}</div>
     </div>
     <div class="profile-scope">
-      <div class="scope-control"><label>Turn on for<select data-od-id="profile-${p.id}-scope" aria-label="Scope for ${esc(p.name)}" onchange="setTarget('${p.id}',this.value)">${scopeOptions(target)}</select></label><button type="button" data-od-id="profile-${p.id}-toggle" onclick="activate('${p.id}')">${toggleLabel}</button></div>
+      <div class="scope-control"><button type="button" data-od-id="profile-${p.id}-toggle" onclick="activate('${p.id}')">${toggleLabel}</button></div>
       <p class="scope-state"><strong>${on?'On':'Off'} ${isGlobal?'globally':'in '+esc(target)}</strong></p>
       ${others.length?`<p class="meta">Also on: ${others.map(esc).join(' · ')}</p>`:''}
     </div>
   </article>`;
 }
 
-function setTarget(id,value){selectedTargets[id]=value;renderKit();refocus(`profile-${id}-scope`)}
 
 function modal(title,body,foot=''){
   $('sheetContent').innerHTML=`<header class="dialog-head"><div><h2 id="sheetTitle">${title}</h2></div><button type="button" class="close" onclick="closeModal()">Close</button></header><div class="dialog-body">${body}</div>${foot?`<div class="dialog-foot">${foot}</div>`:''}`;
@@ -988,7 +987,7 @@ function renderSkills(){
   if(profileFilter&&!['__any','__none'].includes(profileFilter)&&!installedProfiles().some(profile=>profile.id===profileFilter))profileFilter='';
   const sharingStatus=skillSharing[scope]?.status;
   const sharingLabel=sharingStatus==='connected'?'Sharing on':sharingStatus==='conflict'?'Needs attention':'Sharing off';
-  $('view').innerHTML=`<header class="skills-heading"><h1>Installed Skills</h1><label class="skills-scope">Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label><div class="page-actions">${inventory().length?button(skillActionLabel('Update skills','update'),'showSkillUpdate()','primary','data-od-id="update-skills"'):''}</div></header>`;
+  $('view').innerHTML=`<header class="skills-heading"><h1>Installed Skills</h1><label class="skills-scope">Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label><div class="page-actions">${scope!=='Global'?button('Install into this project',"showInstallSkills({scope,to:'machine'})"):''}${inventory().length?button(skillActionLabel('Update skills','update'),'showSkillUpdate()','primary','data-od-id="update-skills"'):''}</div></header>`;
   $('view').insertAdjacentHTML('beforeend',`
       <div class="skills-filters">
         <label class="search">Find a skill<i class="filter-dot" aria-hidden="true"></i><span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
@@ -1030,10 +1029,10 @@ function renderSkillList(){
     return;
   }
   if(!list.length){
-    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'No skill entries in this project'}</h2><p class="sub">${filtered?'Try another pack, availability, source, invocation mode or skill name.':scope==='Global'?'Add skills to your kit, then sync this machine.':'Global-only skills are excluded. Turn a pack on for this project to create its links.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):button('Go to Kit',"navigate('Kit')")}</div>`;
+    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'This project has no skills of its own yet'}</h2><p class="sub">${filtered?'Try another pack, availability, source, invocation mode or skill name.':scope==='Global'?'Add skills to your kit, then sync this machine.':'Install skills into this project to keep them with its repository. Global skills still reach agents working here, but are not listed.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):scope==='Global'?button('Go to Kit',"navigate('Kit')"):button('Install into this project',"showInstallSkills({scope,to:'machine'})")}</div>`;
     return;
   }
-  $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row table-label" aria-hidden="true"><span>Skill</span><span>Availability</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>${nestedSkillSection(nested)}`;
+  $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row table-label" aria-hidden="true"><span>Skill</span><span>${scope==='Global'?'Availability':'Location'}</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>${nestedSkillSection(nested)}`;
 }
 
 function nestedSkillSection(entries){
@@ -1055,9 +1054,9 @@ function skillRow(s){
   const held=s.owners.length>0,enabled=isAvailable(s),tool=tools.find(tool=>tool.provides?.includes(s.name));
   const invocationHint=preferenceHint(s.name);
     return `<article class="skill-row row" data-od-id="skill-${s.name}">
-    <div class="skill-name"><input type="checkbox" data-skill-select="${esc(s.name)}" aria-label="Select ${esc(s.name)}" ${selectedSkills.has(s.name)?'checked':''} ${skillBulkBusy?'disabled':''} onchange="selectSkill('${s.name}',this.checked)"><div><h3>${esc(s.name)}</h3>${scope!=='Global'?`<span class="meta">${s.shared?'Shared skill':'Project-local skill'}</span>`:''}</div></div>
+    <div class="skill-name"><input type="checkbox" data-skill-select="${esc(s.name)}" aria-label="Select ${esc(s.name)}" ${selectedSkills.has(s.name)?'checked':''} ${skillBulkBusy?'disabled':''} onchange="selectSkill('${s.name}',this.checked)"><div><h3>${esc(s.name)}</h3></div></div>
     <div class="skill-avail">
-      <button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held||skillBulkBusy?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>
+      ${scope!=='Global'?'<span class="meta">In this project</span>':`<button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held||skillBulkBusy?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>`}
       ${held?`<span class="hint">Managed by ${s.owners.map(esc).join(', ')} · change in Kit</span>`:''}${tool?`<span class="hint">Installed by ${esc(tool.name)} · update in Tools</span>`:''}${s.duplicate?`<span class="hint duplicate-hint">Two copies ${button('Resolve',`showDuplicateChoice('${s.name}',scope)`,'text',skillBulkBusy?'disabled':'')}</span>`:''}
     </div>
     <div class="skill-invoc">${invocationInfo(s.name,invocationHint)}${preferenceSelect(s.name,skillBulkBusy?'disabled':'')}${preferenceDriftNotice(s.name)}</div>
@@ -1171,7 +1170,7 @@ function renderSettings(){
         </div>
       </section>
       <section class="settings-block" data-od-id="projects-settings">
-        <div><h2>Projects</h2><p class="sub">Save the folder here; turn packs on from Kit.</p></div>
+        <div><h2>Projects</h2><p class="sub">Adding a project lets AFK install, update and delete the skills in its own repository. Changes show up in the project’s Git status. Packs stay Global.</p></div>
         <div class="settings-body">
           <div class="project-list">${projects.map((p,i)=>`<div class="project-row"><div><strong>${esc(p.name)}</strong><code class="path">${esc(p.path)}</code>${projectStatuses[p.name]&&projectStatuses[p.name]!=='present'?`<p class="field-error" role="status">${projectStatuses[p.name]==='missing'?'Project folder not found':projectStatuses[p.name]==='not-folder'?'This path is not a folder':'Project folder cannot be read'}. Choose another folder or remove the project definition.</p>`:''}</div><div class="inline">${button('Edit',`editProject(${i})`,'text')}${projectStatuses[p.name]&&projectStatuses[p.name]!=='present'?button('Choose folder',`chooseProjectFolder(${i})`):''}${button('Remove',`removeProject(${i})`,'text')}</div></div>`).join('')}</div>
           <div>${button('Add project',"browse('project')")}</div>
@@ -1187,7 +1186,7 @@ let browseMode='',folder='~';
 function browse(mode){browseMode=mode;folder='~';folderModal()}
 
 function useFolder(){
-  modal('Name this project',`<label>Project name<input id="projectName" value="${esc(folder.split('/').pop())}"></label><p class="path">${esc(folder)}</p><p class="hint">Adding a project does not turn on any pack.</p>`,
+  modal('Name this project',`<label>Project name<input id="projectName" value="${esc(folder.split('/').pop())}"></label><p class="path">${esc(folder)}</p><p class="hint">AFK will manage the skills in this project’s repository; changes show up in its Git status.</p>`,
     button('Cancel','closeModal()','text')+button('Save project','saveProject()','primary'),'New project');
 }
 
