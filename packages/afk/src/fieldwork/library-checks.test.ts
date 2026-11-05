@@ -195,6 +195,53 @@ describe("replaced by Skills CLI", () => {
     expect(await readlink(join(home, ".agents/skills/statechart"))).toBe(library.skillPath("statechart"));
   });
 
+  it("Take the update moves a second, different copy to a dated recovery folder instead of deleting it", async () => {
+    await store("statechart");
+    await replaceLinkWithFolder("statechart", "New Agents copy.");
+    const claude = join(home, ".claude/skills/statechart");
+    await rm(claude);
+    await mkdir(claude, { recursive: true });
+    await writeFile(join(claude, "SKILL.md"), skillText("statechart", "UNIQUE CLAUDE EDIT."));
+
+    const result = await checks.take("statechart");
+
+    expect(await readFile(join(library.skillPath("statechart"), "SKILL.md"), "utf8")).toContain("New Agents copy.");
+    expect(result.movedAside.map(move => ({ name: move.name, from: move.from }))).toEqual([{ name: "statechart", from: claude }]);
+    expect(result.movedAside[0]!.to.startsWith(join(home, ".afk/restore-aside/"))).toBe(true);
+    expect(await readFile(join(result.movedAside[0]!.to, "SKILL.md"), "utf8")).toContain("UNIQUE CLAUDE EDIT.");
+    expect(await readlink(claude)).toBe(library.skillPath("statechart"));
+  });
+
+  it("Take the update drops a second copy that matches the one taken, keeping nothing aside", async () => {
+    await store("statechart");
+    await replaceLinkWithFolder("statechart", "Newer.");
+    const claude = join(home, ".claude/skills/statechart");
+    await rm(claude);
+    await mkdir(claude, { recursive: true });
+    await writeFile(join(claude, "SKILL.md"), skillText("statechart", "Newer."));
+
+    const result = await checks.take("statechart");
+
+    expect(result.movedAside).toEqual([]);
+    expect(await present(join(home, ".afk/restore-aside"))).toBe(false);
+    expect(await readlink(claude)).toBe(library.skillPath("statechart"));
+  });
+
+  it("Restore saved version moves a second copy that differs from both the saved and the reviewed one aside", async () => {
+    await store("statechart");
+    await replaceLinkWithFolder("statechart", "Newer.");
+    const claude = join(home, ".claude/skills/statechart");
+    await rm(claude);
+    await mkdir(claude, { recursive: true });
+    await writeFile(join(claude, "SKILL.md"), skillText("statechart", "UNIQUE CLAUDE EDIT."));
+
+    const result = await checks.restore("statechart");
+
+    expect(result.movedAside.map(move => move.from)).toEqual([claude]);
+    expect(await readFile(join(result.movedAside[0]!.to, "SKILL.md"), "utf8")).toContain("UNIQUE CLAUDE EDIT.");
+    expect(await readlink(claude)).toBe(library.skillPath("statechart"));
+  });
+
   it("refuses a folder that is not a skill, and keeps it", async () => {
     await store("statechart");
     const folder = join(home, ".agents/skills/statechart");

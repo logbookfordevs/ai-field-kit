@@ -1,7 +1,11 @@
 import { cp, lstat, mkdir, readFile, readdir, realpath, rename, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { moveAside, type AsideMove } from "./aside.js";
 import { writeInvocationChoice } from "./invocation.js";
 import type { Library } from "./library.js";
+import { sameSkillFiles } from "./skills.js";
+
+export interface Resolution { movedAside: AsideMove[] }
 
 export interface AttentionItem {
   id: string;
@@ -62,11 +66,12 @@ export class LocalChecks {
   }
 
   /** Keeps the new files Skills CLI wrote: stores them with the saved choice, relinks when the skill is on, and commits. */
-  async take(name: string): Promise<void> {
+  async take(name: string): Promise<Resolution> {
     const folders = await this.replacedFolders(name);
     const on = await this.isOn(name);
     const source = folders[0]!;
     if (!await exists(join(source, "SKILL.md"))) throw new Error(`The new ${name} folder has no SKILL.md, so AFK left it as it is.`);
+    const differing = await this.differing(name, folders);
     await this.library.change(`Took the Skills CLI update to ${name}`, async () => {
       const target = this.library.skillPath(name);
       await rm(target, { recursive: true, force: true });
@@ -74,13 +79,13 @@ export class LocalChecks {
       const choice = (await this.library.record(name))?.invocation;
       if (choice) await writeInvocationChoice(target, choice);
     });
-    await this.relink(name, folders, on);
+    return this.relink(name, folders, on, differing);
   }
 
   /** Removes the plain folder and puts the saved version's link back when the skill is on. */
-  async restore(name: string): Promise<void> {
+  async restore(name: string): Promise<Resolution> {
     const folders = await this.replacedFolders(name);
-    await this.relink(name, folders, await this.isOn(name));
+    return this.relink(name, folders, await this.isOn(name), await this.differing(name, folders));
   }
 
   /** Commits an edit made outside AFK, with the saved invocation choice applied to its files. */
@@ -132,14 +137,31 @@ export class LocalChecks {
     return folders;
   }
 
-  // The folders wait in a trash inside .git until the link is in place, so a failure puts them back.
-  private async relink(name: string, folders: string[], on: boolean): Promise<void> {
+  // The item shows the first folder; any other copy that matches neither it nor the saved files is the user's own and is kept.
+  private async differing(name: string, folders: string[]): Promise<Set<string>> {
+    const same = (left: string, right: string): Promise<boolean> => sameSkillFiles(left, right).catch(() => false);
+    const differing = new Set<string>();
+    for (const folder of folders.slice(1)) {
+      if (await same(folder, folders[0]!) || await same(folder, this.library.skillPath(name))) continue;
+      differing.add(folder);
+    }
+    return differing;
+  }
+
+  // The folders wait in a trash inside .git until the link is in place, so a failure puts them back; differing copies go aside instead.
+  private async relink(name: string, folders: string[], on: boolean, differing: Set<string>): Promise<Resolution> {
     const trash = join(this.library.root, ".git/afk-replaced");
-    const moved: [string, string][] = [];
+    const moved: [string, string][] = [], movedAside: AsideMove[] = [];
     await rm(trash, { recursive: true, force: true });
     await mkdir(trash, { recursive: true });
     try {
       for (const [index, folder] of folders.entries()) {
+        if (differing.has(folder)) {
+          const move = await moveAside(this.library.home, name, folder);
+          movedAside.push(move);
+          moved.push([folder, move.to]);
+          continue;
+        }
         const aside = join(trash, `${name}-${index}`);
         await rename(folder, aside);
         moved.push([folder, aside]);
@@ -150,6 +172,7 @@ export class LocalChecks {
       throw error;
     }
     await rm(trash, { recursive: true, force: true });
+    return { movedAside };
   }
 
   private async edit(id: string): Promise<Edit> {
