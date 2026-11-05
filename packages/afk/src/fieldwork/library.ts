@@ -1,6 +1,7 @@
 import { lstat, mkdir, readFile, readdir, readlink, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { runCommand, type CommandSpec } from "./command-runner.js";
+import { DEFAULT_ENABLED, expandHome, SHARED_FOLDER, type AgentFolderSettings } from "./agent-folders.js";
 import { skillName, type KitSource, type RulesDestination } from "./settings.js";
 
 export type InvocationChoice = "" | "Manual only" | "Automatic allowed";
@@ -16,6 +17,7 @@ export interface LibrarySettings {
   version: 1;
   core: KitSource[];
   agentRules: { destinations: RulesDestination[] };
+  agentFolders?: AgentFolderSettings;
 }
 
 export type GitRunner = (spec: CommandSpec) => Promise<{ code: number; output: string }>;
@@ -29,7 +31,7 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-/** Folders AFK links every skill that is on into. Ticket 12 makes this list configurable. */
+/** The folders a new library links into until the user changes them: the shared folder and Claude Code's. */
 export function agentSkillFolders(home: string): string[] {
   return [join(home, ".agents/skills"), join(home, ".claude/skills")];
 }
@@ -132,24 +134,99 @@ export class Library {
     return agentSkillFolders(this.home).map(folder => join(folder, name));
   }
 
-  async linked(name: string): Promise<boolean> {
-    return this.isOwnLink(this.links(name)[0]!, name);
+  async readSettings(): Promise<LibrarySettings | undefined> {
+    try { return JSON.parse(await readFile(join(this.root, ".afk/settings.json"), "utf8")) as LibrarySettings; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined; throw error; }
   }
 
-  /** Links a stored skill into every agent folder; an occupied destination stops before anything changes. */
+  async agentFolders(): Promise<AgentFolderSettings> {
+    const saved = (await this.readSettings())?.agentFolders;
+    return { enabled: saved?.enabled ?? [...DEFAULT_ENABLED], custom: saved?.custom ?? [] };
+  }
+
+  /** Every folder AFK links into: the shared folder, then the enabled ones, as absolute paths. */
+  async folders(): Promise<string[]> {
+    const { enabled } = await this.agentFolders();
+    return [SHARED_FOLDER, ...enabled.filter(path => path !== SHARED_FOLDER)].map(path => expandHome(this.home, path));
+  }
+
+  async linked(name: string): Promise<boolean> {
+    return this.isOwnLink(join(expandHome(this.home, SHARED_FOLDER), name), name);
+  }
+
+  /** Links a stored skill into every enabled folder; an occupied destination stops before anything changes. */
   async link(name: string): Promise<void> {
-    const target = this.skillPath(name);
-    const pending: string[] = [];
-    for (const path of await this.distinctLinks(name)) {
-      if (await this.isOwnLink(path, name)) continue;
-      if (await exists(path)) throw new Error(`${path} already exists. Existing files were preserved.`);
-      pending.push(path);
+    await this.createLinks(await this.pendingLinks(await this.folders(), [name]));
+  }
+
+  /** Removes only AFK's own links to a stored skill; the stored files never move. */
+  async unlink(name: string): Promise<void> {
+    for (const folder of await this.folders()) {
+      const path = join(folder, name);
+      if (await this.isOwnLink(path, name)) await rm(path);
     }
+  }
+
+  /** Saves the enabled folders and links or unlinks every skill that is on, as one commit. */
+  async changeAgentFolders(message: string, next: AgentFolderSettings): Promise<void> {
+    await this.change(message, async () => {
+      const before = await this.folders();
+      const settings = await this.readSettings();
+      if (!settings) throw new Error("The library has no settings yet.");
+      await this.writeSettings({ ...settings, agentFolders: next });
+      const after = await this.folders();
+      const on = await this.onNames();
+      const removed = before.filter(folder => !after.includes(folder));
+      const added = after.filter(folder => !before.includes(folder));
+      const created = await this.pendingLinks(added, on, before.filter(folder => after.includes(folder)));
+      const dropped: string[] = [];
+      try {
+        for (const folder of removed) for (const name of on) {
+          const path = join(folder, name);
+          if (await this.isOwnLink(path, name)) { await rm(path); dropped.push(path); }
+        }
+        await this.createLinks(created);
+      } catch (error) {
+        for (const path of dropped) await symlink(this.skillPath(basename(path)), path, "dir");
+        throw error;
+      }
+    });
+  }
+
+  private async onNames(): Promise<string[]> {
+    const on: string[] = [];
+    for (const name of await this.names()) if (await this.linked(name)) on.push(name);
+    return on;
+  }
+
+  private async identity(folder: string): Promise<string> {
+    try { return await realpath(folder); } catch { return folder; }
+  }
+
+  private async pendingLinks(folders: string[], names: string[], already: string[] = []): Promise<string[]> {
+    const seen = new Set<string>();
+    for (const folder of already) seen.add(await this.identity(folder));
+    const pending: string[] = [];
+    for (const folder of folders) {
+      const identity = await this.identity(folder);
+      if (seen.has(identity)) continue;
+      seen.add(identity);
+      for (const name of names) {
+        const path = join(folder, name);
+        if (await this.isOwnLink(path, name)) continue;
+        if (await exists(path)) throw new Error(`${path} already exists. Existing files were preserved.`);
+        pending.push(path);
+      }
+    }
+    return pending;
+  }
+
+  private async createLinks(pending: string[]): Promise<void> {
     const created: string[] = [];
     try {
       for (const path of pending) {
         await mkdir(dirname(path), { recursive: true });
-        await symlink(target, path, "dir");
+        await symlink(this.skillPath(basename(path)), path, "dir");
         created.push(path);
       }
     } catch (error) {
@@ -158,27 +235,10 @@ export class Library {
     }
   }
 
-  /** Removes only AFK's own links to a stored skill; the stored files never move. */
-  async unlink(name: string): Promise<void> {
-    for (const path of this.links(name)) if (await this.isOwnLink(path, name)) await rm(path);
-  }
-
   private enqueue<T>(work: () => Promise<T>): Promise<T> {
     const next = (Library.queues.get(this.root) ?? Promise.resolve()).then(work);
     Library.queues.set(this.root, next.catch(() => undefined));
     return next;
-  }
-
-  private async distinctLinks(name: string): Promise<string[]> {
-    const seen = new Set<string>(), result: string[] = [];
-    for (const folder of agentSkillFolders(this.home)) {
-      let identity = folder;
-      try { identity = await realpath(folder); } catch { /* A missing folder is created when linking. */ }
-      if (seen.has(identity)) continue;
-      seen.add(identity);
-      result.push(join(folder, name));
-    }
-    return result;
   }
 
   private async isOwnLink(path: string, name: string): Promise<boolean> {

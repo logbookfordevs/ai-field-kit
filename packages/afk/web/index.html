@@ -264,6 +264,17 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code-b
 .settings-block:first-of-type{border-top-color:var(--fg)}
 .settings-block .sub{font-size:13px}
 .settings-body{display:grid;gap:14px;align-content:start;min-width:0}
+.agent-folders{gap:20px}
+.agent-folder-list{margin:6px 0 0;padding:0;list-style:none;border-top:1px solid var(--border)}
+.agent-folder{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.agent-folder-main{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
+.agent-folder-main strong{font-weight:600;font-size:15px}
+.agent-folder-control{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.agent-icon{width:28px;height:28px;object-fit:contain;border-radius:6px}
+.agent-icon-letter{display:inline-grid;place-items:center;background:var(--warm);color:var(--fg);font:600 14px/1 var(--font-body)}
+.agent-always{white-space:nowrap}
+@media(max-width:640px){.agent-folder{grid-template-columns:36px minmax(0,1fr)}.agent-folder-control{grid-column:2;justify-content:flex-start}}
+
 .settings-body>.switch{justify-self:start}
 .duplicate-hint{display:flex;align-items:center;gap:8px;white-space:nowrap}
 .duplicate-hint button{min-height:32px}
@@ -1055,7 +1066,7 @@ function nestedSkillRow(s){
 
 function skillRow(s){
   const held=s.owners.length>0,enabled=isAvailable(s),tool=tools.find(tool=>tool.provides?.includes(s.name));
-  const invocationHint=preferenceHint(s.name);
+  const invocationHint=[preferenceHint(s.name),invocationMechanismHint()].filter(Boolean).join(' ');
     return `<article class="skill-row row" data-od-id="skill-${s.name}">
     <div class="skill-name"><input type="checkbox" data-skill-select="${esc(s.name)}" aria-label="Select ${esc(s.name)}" ${selectedSkills.has(s.name)?'checked':''} ${skillBulkBusy?'disabled':''} onchange="selectSkill('${s.name}',this.checked)"><div><h3>${esc(s.name)}</h3></div></div>
     <div class="skill-avail">
@@ -1231,6 +1242,7 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 <script src="/onboarding.js"></script>
 <script src="/skill-insights.js"></script>
 <script src="/skill-schedule.js"></script>
+<script src="/agent-folders.js"></script>
 <script src="/app-update.js"></script>
 <script src="/backup.js"></script>
 <script src="/runtime-status.js"></script>

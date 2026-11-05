@@ -113,7 +113,7 @@ export class LocalChecks {
 
   private async plainFolders(name: string): Promise<string[]> {
     const seen = new Set<string>(), found: string[] = [];
-    for (const path of this.library.links(name)) {
+    for (const path of (await this.library.folders()).map(folder => join(folder, name))) {
       const info = await lstat(path).catch(() => undefined);
       if (!info?.isDirectory()) continue;
       const identity = await realpath(path);

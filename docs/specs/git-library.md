@@ -104,7 +104,7 @@ AFK stores every Global skill it manages, so turning one off removes its links a
 
 ### Agent folders
 
-Agents don't all read the same folder. Skills CLI 1.7.6's agent table lists 80 agents; in projects most read `.agents/skills`, but globally only Codex, Cline, Warp and Zed read `~/.agents/skills`. Claude Code reads `~/.claude/skills`, Cursor `~/.cursor/skills`, Gemini CLI `~/.gemini/skills`, GitHub Copilot `~/.copilot/skills`, OpenCode `~/.config/opencode/skills`.
+Agents don't all read the same folder. Skills CLI 1.7.6's agent table lists 79 agents; in projects most read `.agents/skills`, but globally only Codex, Cline, Warp and Zed read `~/.agents/skills`. Claude Code reads `~/.claude/skills`, Cursor `~/.cursor/skills`, Gemini CLI `~/.gemini/skills`, GitHub Copilot `~/.copilot/skills`, OpenCode `~/.config/opencode/skills`.
 
 **Settings → Agent folders** lists the folders AFK links skills into:
 
