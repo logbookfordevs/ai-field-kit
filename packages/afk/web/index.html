@@ -287,7 +287,6 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code-b
 .duplicate-hint{display:flex;align-items:center;gap:8px;white-space:nowrap}
 .duplicate-hint button{min-height:32px}
 .schedule-fields{min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;max-width:560px}
-.path-card{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 12px 12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
 .project-list{border-top:1px solid var(--border)}
 .project-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .pref-list{margin:0;padding:0;list-style:none;border-top:1px solid var(--border)}
@@ -383,7 +382,6 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-
   .project-row{grid-template-columns:minmax(0,1fr) auto;row-gap:0}
   .project-row .path{grid-column:1;grid-row:2;font-size:12px}
   .project-row button{grid-row:1/3;grid-column:2}
-  .path-card{flex-direction:column;align-items:stretch}
   dialog{width:calc(100vw - 16px);max-height:92vh}
   .dialog-head,.dialog-body{padding-left:18px;padding-right:18px}
   .dialog-foot{padding:14px 18px}
@@ -547,12 +545,6 @@ dialog.wide code{overflow-wrap:anywhere}
 .options strong{font-weight:600}
 .options span{color:var(--muted);font-size:13px}
 .path-check{font-size:13px;min-height:20px}
-.map-row{display:grid;gap:4px;padding:10px 0;border-bottom:1px solid var(--border)}
-.map-row .check{border-bottom:0;padding:4px 0}
-.folder-files{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
-.portable{display:grid;gap:4px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px}
-.portable strong{font-weight:600}
-.bundle-row{display:grid;gap:6px}
 @media(max-width:1180px){
   .dests .ledger-head{display:none}
   .dest-row{grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:'sel name actions' '. status last';row-gap:10px}
@@ -685,7 +677,6 @@ input,textarea{caret-color:var(--focus)}
 #appUtilities{position:fixed;inset:70px 16px auto auto;margin:0;padding:8px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);color:var(--fg);width:220px}
 #appUtilities:popover-open{display:grid;gap:4px}
 #appUtilities button{justify-content:flex-start;border-color:transparent}
-.settings-json .inline{margin-top:12px}
 .source-options{min-width:210px}
 .source-options summary{font-size:14px}
 .source-options label{margin-top:12px}
@@ -853,10 +844,6 @@ a.kit-source-link:hover{color:var(--fg)}
 .install-phase{font-weight:600;margin:0 0 6px}
 .kit-clear{padding:24px 0;border-top:1px solid var(--fg)}
 .kit-clear h2{font-size:20px;margin:0 0 4px}
-.sync-plan{display:grid;gap:14px}
-.sync-plan h3{font-size:14px;margin:0 0 4px}
-.sync-plan ul{margin:0;padding-left:20px;overflow-wrap:anywhere}
-.sync-tool{border-top:1px solid var(--border);padding-top:10px}
 .migration{max-width:760px}
 .migration-report{border-top:1px solid var(--fg);margin-top:20px;padding-top:12px}
 .migration-report h3{font-size:14px;margin:14px 0 4px}
@@ -902,12 +889,12 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refocus=id=>document.querySelector(`[data-od-id="${id}"]`)?.focus();
 
-let section='Skills',scope='Global',query='',invocationFilter='',sourceFilter='',availabilityFilter='',profileFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
+let section='Skills',scope='Global',query='',invocationFilter='',sourceFilter='',selectedTargets={};
 let projects=[],profiles=[],tools=[];
 const independent={Global:[]};
 let preferences={},individualOff={};
 let favoriteSources=[],installScope='Global',installAgent='interactive';
-let projectStatuses={},portableConfiguration;
+let projectStatuses={};
 const sections=[{id:'Skills',short:'Skills'},{id:'Agent rules',short:'Rules'},{id:'Tools',short:'Tools'},{id:'Settings',short:'Settings'}];
 
 function toast(message,action){
@@ -1058,18 +1045,15 @@ function renderSkills(){
   const names=new Set(inventory().map(skill=>skill.name));
   for(const name of selectedSkills)if(!names.has(name))selectedSkills.delete(name);
   if(sourceFilter&&!inventory().some(entry=>(entry.source||'__local')===sourceFilter))sourceFilter='';
-  if(profileFilter&&!['__any','__none'].includes(profileFilter)&&!installedProfiles().some(profile=>profile.id===profileFilter))profileFilter='';
   const sharingStatus=skillSharing[scope]?.status;
   const sharingLabel=sharingStatus==='connected'?'Sharing on':sharingStatus==='conflict'?'Needs attention':'Sharing off';
   $('view').innerHTML=`<header class="skills-heading"><h1>Skills</h1><label class="skills-scope">Scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label><div class="page-actions">${scope!=='Global'?button('Install into this project',"showInstallSkills({scope,to:'machine'})"):''}${inventory().length?button(skillActionLabel('Update skills','update'),'showSkillUpdate()','primary','data-od-id="update-skills"'):''}</div></header>`;
   $('view').insertAdjacentHTML('beforeend',`
       <div class="skills-filters">
         <label class="search">Find a skill<i class="filter-dot" aria-hidden="true"></i><span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
-        <label>Availability<i class="filter-dot" aria-hidden="true"></i><select id="availabilityFilter" onchange="availabilityFilter=this.value;renderSkillList()"><option value="">Enabled</option><option value="all" ${availabilityFilter==='all'?'selected':''}>Include disabled</option><option value="disabled" ${availabilityFilter==='disabled'?'selected':''}>Disabled only</option></select></label>
         <label>Invocation<i class="filter-dot" aria-hidden="true"></i><select id="invocationFilter" onchange="invocationFilter=this.value;renderSkillList()"><option value="">All modes</option>${['manual only','automatic allowed','varies by agent','unknown'].map(mode=>`<option value="${mode}" ${invocationFilter===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label>
         <label>Source<i class="filter-dot" aria-hidden="true"></i><select id="sourceFilter" onchange="sourceFilter=this.value;renderSkillList()"><option value="">All sources</option>${installedSourceOptions()}</select></label>
-        <label>Pack<i class="filter-dot" aria-hidden="true"></i><select id="profileFilter" onchange="profileFilter=this.value;renderSkillList()"><option value="">All skills</option><option value="__any" ${profileFilter==='__any'?'selected':''}>In any pack</option><option value="__none" ${profileFilter==='__none'?'selected':''}>No pack</option>${installedProfileOptions()}</select></label>
-        ${button('Clear filters','clearSkillFilters()','text',`id="clearSkillFilters" ${query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter?'':'hidden'}`)}
+        ${button('Clear filters','clearSkillFilters()','text',`id="clearSkillFilters" ${query.trim()||invocationFilter||sourceFilter?'':'hidden'}`)}
       </div>
       <div class="skills-utilities"><span class="sharing-state" data-status="${esc(sharingStatus||'missing')}">${esc(sharingLabel)}</span>${button('Claude sharing','reviewClaudeSharing()','text')}<span id="skillsDiscoverySummary">${skillTokenSummary()}</span><span class="skills-folder"><button type="button" class="text" popovertarget="skillsFolderDetails">Folder details</button><div id="skillsFolderDetails" class="skill-invoc-popover skills-folder-popover" popover aria-label="Skill folders"><strong>Skill folders · ${esc(scope)}</strong><code class="path">${esc(scopePath())}</code>${sharingStatus==='connected'?`<code class="path">${esc(scope==='Global'?'~/.claude/skills/':(projects.find(project=>project.name===scope)?.path||'')+'/.claude/skills/')} <span class="meta">Shared folder link</span></code>`:''}</div></span></div>
       <div class="skills-list-meta"><span class="table-label" id="skillCount"></span><div id="skillSelection"></div></div><div id="skillList"></div>`);
@@ -1079,34 +1063,28 @@ function renderSkills(){
 function setScope(value){selectedSkills.clear();sourceFilter='';scope=value;render();$('scopeSelect').focus()}
 
 function clearSkillFilters(){
-  query='';invocationFilter='';sourceFilter='';availabilityFilter='';profileFilter='';renderSkills();$('skillSearch').focus();
+  query='';invocationFilter='';sourceFilter='';renderSkills();$('skillSearch').focus();
 }
 
 function renderSkillList(){
-  const activeFilters={skillSearch:query.trim(),availabilityFilter,invocationFilter,sourceFilter,profileFilter};
+  const activeFilters={skillSearch:query.trim(),invocationFilter,sourceFilter};
   for(const [id,value] of Object.entries(activeFilters))$(id)?.closest('label')?.classList.toggle('filter-active',Boolean(value));
   const clearFilters=$('clearSkillFilters');
-  if(clearFilters)clearFilters.hidden=!(query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter);
+  if(clearFilters)clearFilters.hidden=!(query.trim()||invocationFilter||sourceFilter);
   const all=inventory(),list=all.filter(matchesSkillFilters);
   const allNested=nestedInventory(),nested=allNested.filter(matchesNestedSkillFilters);
   const discovery=$('skillsDiscoverySummary');
   if(discovery)discovery.innerHTML=skillTokenSummary();
-  const filtered=Boolean(query.trim()||invocationFilter||sourceFilter||availabilityFilter||profileFilter);
-  const available=all.filter(s=>isAvailable(s)).length;
+  const filtered=Boolean(query.trim()||invocationFilter||sourceFilter);
   if(typeof renderSkillSelection==='function')renderSkillSelection(list);
   const nestedCount=allNested.length?` · ${filtered?`${nested.length} of ${allNested.length}`:allNested.length} in subfolders`:'';
-  const disabledCount=all.length-available;
-  $('skillCount').textContent=(filtered?`${list.length} of ${all.length} shown`:`${available} enabled${disabledCount?` · ${disabledCount} disabled hidden`:''}`)+nestedCount;
+  $('skillCount').textContent=(filtered?`${list.length} of ${all.length} shown`:`${all.length} skill${all.length===1?'':'s'}`)+nestedCount;
   if(!list.length&&nested.length){$('skillList').innerHTML=nestedSkillSection(nested);return}
-  if(!list.length&&!filtered&&all.length){
-    $('skillList').innerHTML=`<div class="empty"><h2>No enabled skills here</h2><p class="sub">${all.length} installed ${all.length===1?'skill is':'skills are'} disabled in ${esc(scope)}.</p>${button('Include disabled',"availabilityFilter='all';renderSkills()")}</div>`;
-    return;
-  }
   if(!list.length){
-    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'This project has no skills of its own yet'}</h2><p class="sub">${filtered?'Try another pack, availability, source, invocation mode or skill name.':scope==='Global'?'Add skills to your kit, then sync this machine.':'Install skills into this project to keep them with its repository. Global skills still reach agents working here, but are not listed.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):scope==='Global'?button('Install skills','showInstallSkills()'):button('Install into this project',"showInstallSkills({scope,to:'machine'})")}</div>`;
+    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':'This project has no skills of its own yet'}</h2><p class="sub">${filtered?'Try another source, invocation mode or skill name.':'Install skills into this project to keep them with its repository. Global skills still reach agents working here, but are not listed.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):button('Install into this project',"showInstallSkills({scope,to:'machine'})")}</div>`;
     return;
   }
-  $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row table-label" aria-hidden="true"><span>Skill</span><span>${scope==='Global'?'Availability':'Location'}</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>${nestedSkillSection(nested)}`;
+  $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row table-label" aria-hidden="true"><span>Skill</span><span>Location</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>${nestedSkillSection(nested)}`;
 }
 
 function nestedSkillSection(entries){
@@ -1125,16 +1103,12 @@ function nestedSkillRow(s){
 }
 
 function skillRow(s){
-  const held=s.owners.length>0,enabled=isAvailable(s),tool=tools.find(tool=>tool.provides?.includes(s.name));
   const invocationHint=[preferenceHint(s.name),invocationMechanismHint()].filter(Boolean).join(' ');
-    return `<article class="skill-row row" data-od-id="skill-${s.name}">
+  return `<article class="skill-row row" data-od-id="skill-${s.name}">
     <div class="skill-name"><input type="checkbox" data-skill-select="${esc(s.name)}" aria-label="Select ${esc(s.name)}" ${selectedSkills.has(s.name)?'checked':''} ${skillBulkBusy?'disabled':''} onchange="selectSkill('${s.name}',this.checked)"><div><h3>${esc(s.name)}</h3></div></div>
-    <div class="skill-avail">
-      ${scope!=='Global'?'<span class="meta">In this project</span>':`<button type="button" role="switch" class="switch" aria-checked="${enabled}" ${held||skillBulkBusy?'disabled':''} aria-label="${s.name} available in ${esc(scope)}" onclick="toggleSkill('${s.name}')" data-od-id="skill-${s.name}-switch"><span class="track" aria-hidden="true"></span><span>${enabled?'Available':'Disabled'}</span></button>`}
-      ${held?`<span class="hint">Managed by ${s.owners.map(esc).join(', ')} · change in Kit</span>`:''}${tool?`<span class="hint">Installed by ${esc(tool.name)} · update in Tools</span>`:''}${s.duplicate?`<span class="hint duplicate-hint">Two copies ${button('Resolve',`showDuplicateChoice('${s.name}',scope)`,'text',skillBulkBusy?'disabled':'')}</span>`:''}
-    </div>
+    <div class="skill-avail"><span class="meta">In this project</span>${s.duplicate?`<span class="hint duplicate-hint">Two copies ${button('Resolve',`showDuplicateChoice('${s.name}',scope)`,'text',skillBulkBusy?'disabled':'')}</span>`:''}</div>
     <div class="skill-invoc">${invocationInfo(s.name,invocationHint)}${preferenceSelect(s.name,skillBulkBusy?'disabled':'')}${preferenceDriftNotice(s.name)}</div>
-    <div class="skill-actions">${tool?button('Update',`runTool(${tool.id},true)`,'text',skillBulkBusy?'disabled':''):button('Update',`showSkillUpdate('${s.name}')`,'text',skillBulkBusy?'disabled':'')}${button('Inspect',`inspectSkill('${s.name}')`,'text',`data-od-id="skill-${s.name}-inspect"`)}${button('Delete',`reviewSkillDeletion('${s.name}')`,'text danger',skillBulkBusy?'disabled':'')}</div>
+    <div class="skill-actions">${button('Update',`showSkillUpdate('${s.name}')`,'text',skillBulkBusy?'disabled':'')}${button('Inspect',`inspectSkill('${s.name}')`,'text',`data-od-id="skill-${s.name}-inspect"`)}${button('Delete',`reviewSkillDeletion('${s.name}')`,'text danger',skillBulkBusy?'disabled':'')}</div>
   </article>`;
 }
 
@@ -1234,15 +1208,8 @@ function renderSettings(){
   const prefs=globalPrefs.length
     ?`<ul class="pref-list">${globalPrefs.map(([k,v])=>`<li><code>${esc(k.slice(7))}</code><span class="meta">${esc(v)}</span></li>`).join('')}</ul>`
     :'<p class="sub">No Global overrides. Every skill uses the setting in its SKILL.md.</p>';
-  $('view').innerHTML=head('Settings','One portable configuration. Projects define folders, never activation.')
-    +`<section class="settings-block" data-od-id="settings-file">
-        <div><h2>Configuration file</h2><p class="sub">Local save only. If the folder is synced, its provider handles synchronization.</p></div>
-        <div class="settings-body">
-          <div class="path-card"><code class="path">${esc(settingsPath)}</code>${button('Choose location',"browse('settings')")}</div>
-          <div class="inline">${button('Export JSON','exportSettings()')}${button('Import file',"$('importFile').click()")}</div>
-          <input id="importFile" type="file" accept=".json,application/json" hidden onchange="importSettings(this.files[0])">
-        </div>
-      </section>
+  $('view').innerHTML=head('Settings','Your library, projects, agent folders and automatic updates.')
+    +`<section class="settings-block" data-od-id="settings-library"></section>
       <section class="settings-block" data-od-id="projects-settings">
         <div><h2>Projects</h2><p class="sub">Adding a project lets AFK install, update and delete the skills in its own repository. Changes show up in the project’s Git status. Packs stay Global.</p></div>
         <div class="settings-body">

@@ -10,7 +10,7 @@ const entries=[
 ];
 function fixture(){
   const fields={skillTokenDetails:{innerHTML:""}};
-  const context=createContext({inventory:()=>entries,inventories:{Global:entries},scope:"Global",profiles: [], profileFilter: "", sourceFilter:"",availabilityFilter:"",query:"",invocationFilter:"",invocationSummary:()=>"automatic allowed",esc:String,$:()=>fields.skillTokenDetails});
+  const context=createContext({inventory:()=>entries,inventories:{Global:entries},scope:"Global",sourceFilter:"",query:"",invocationFilter:"",invocationSummary:()=>"automatic allowed",esc:String,$:()=>fields.skillTokenDetails});
   runInContext(script,context);
   return {context,fields,run:<T>(code:string)=>runInContext(code,context) as T};
 }
@@ -28,6 +28,14 @@ it("combines source, invocation and name filters and limits source options to in
   expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["local"]);
   expect(ui.run<string>("installedSourceOptions()")).toContain("Unknown / local");
 });
+it("ignores search, source and invocation filters in the discovery total",()=>{
+  const ui=fixture();
+  ui.context.button=(label:string)=>label;
+  const baseline=ui.run<string>("skillTokenSummary()");
+  ui.run("query='nothing-matches';sourceFilter='owner/b';invocationFilter='manual only'");
+  expect(ui.run<string>("skillTokenSummary()")).toBe(baseline);
+  expect(ui.run<string>("skillTokenSummary()")).not.toContain("Codex ~0");
+});
 it("calculates inspected full content only after the explicit request",()=>{
   const ui=fixture();
   ui.run("inspectedSkill={name:'auto',scope:'Global',file:'SKILL.md',content:'x'.repeat(400)}");
@@ -36,62 +44,16 @@ it("calculates inspected full content only after the explicit request",()=>{
   expect(ui.fields.skillTokenDetails.innerHTML).toContain("Full instructions: ~100 tokens");
 });
 
-it("lists enabled skills by default, with filters to include or isolate disabled ones",()=>{
-  const ui=fixture();
-  const shown=()=>ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)");
-  expect(shown()).toEqual(["auto","local"]);
-  ui.run("availabilityFilter='all'");
-  expect(shown()).toEqual(["auto","disabled","local"]);
-  ui.run("availabilityFilter='disabled'");
-  expect(shown()).toEqual(["disabled"]);
-});
-
-it("filters saved profile membership including disabled profiles and overlapping members",()=>{
-  const ui=fixture();
-  ui.run("availabilityFilter='all'");
-  ui.context.profiles=[
-    {id:"studio",name:"Studio",skills:["auto","disabled"],enabled:[]},
-    {id:"review",name:"Review",skills:["auto"],enabled:["Global"]},
-    {id:"missing",name:"Missing",skills:["not-installed"],enabled:[]},
-  ];
-  ui.run("profileFilter='__any'");
-  expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["auto","disabled"]);
-  ui.run("profileFilter='__none'");
-  expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["local"]);
-  ui.run("profileFilter='studio';availabilityFilter='disabled';sourceFilter='owner/b'");
-  expect(ui.run("inventory().filter(matchesSkillFilters).map(entry=>entry.name)")).toEqual(["disabled"]);
-  expect(ui.run("installedProfiles().map(profile=>profile.id)")).toEqual(["studio","review"]);
-  ui.context.inventory=()=>[entries[2]];
-  expect(ui.run("installedProfiles()")).toEqual([]);
-  expect(ui.run("inventory().filter(matchesSkillFilters)")).toEqual([]);
-});
-
-
-it("updates discovery totals only with profile membership and excludes disabled members",()=>{
-  const ui=fixture();
-  ui.context.button=(label:string)=>label;
-  ui.context.profiles=[{id:"disabled-only",skills:["disabled"]}];
-  expect(ui.run<string>("skillTokenSummary()")).not.toContain("Codex ~0");
-  ui.run("profileFilter='disabled-only'");
-  expect(ui.run<string>("skillTokenSummary()")).toContain("Codex ~0");
-  expect(ui.run<string>("skillTokenSummary()")).toContain("Claude ~0");
-  ui.run("profileFilter=''");
-  const baseline=ui.run<string>("skillTokenSummary()");
-  ui.run("query='nothing-matches';sourceFilter='owner/b';availabilityFilter='disabled';invocationFilter='manual only'");
-  expect(ui.run<string>("skillTokenSummary()")).toBe(baseline);
-  expect(ui.run<string>("skillTokenSummary()")).not.toContain("Codex ~0");
-});
-
-it("keeps nested skills out of managed-only filters and groups them by folder",()=>{
+it("keeps nested skills out of the source filter and groups them by folder",()=>{
   const ui=fixture();
   ui.run("invocationSummary=policy=>policy.claude==='Manual only'?'manual only':'automatic allowed'");
   ui.run("nested=[{name:'pdf',folder:'synced/acct',invocation:{claude:'Automatic allowed'}},{name:'docx',folder:'synced/acct',invocation:{claude:'Manual only'}},{name:'plan',folder:'team',invocation:{claude:'Manual only'}}]");
   expect(ui.run("nestedSkillGroups(nested).map(group=>[group.folder,group.skills.length])")).toEqual([["synced/acct",2],["team",1]]);
   ui.run("query='SYNCED';invocationFilter='manual only'");
   expect(ui.run("nested.filter(matchesNestedSkillFilters).map(entry=>entry.name)")).toEqual(["docx"]);
-  ui.run("query='';invocationFilter='';availabilityFilter='all'");
+  ui.run("query='';invocationFilter=''");
   expect(ui.run<unknown[]>("nested.filter(matchesNestedSkillFilters)")).toHaveLength(3);
-  ui.run("availabilityFilter='disabled'");
+  ui.run("sourceFilter='owner/a'");
   expect(ui.run("nested.filter(matchesNestedSkillFilters)")).toEqual([]);
   expect(ui.run("shortFolderPath('synced/937583ee-01ae-4eb2-a899-07800134a783_0ac2e7dd')")).toBe("synced/937583ee…e7dd");
 });

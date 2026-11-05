@@ -4,7 +4,9 @@ import { dirname, join, resolve } from "node:path";
 import { SkillLibrary } from "./skills.js";
 import { type Settings, type SettingsStore } from "./settings.js";
 
+/** A project's Claude folder can link to its `.agents/skills`; Global skills reach Claude Code through Agent folders instead. */
 export async function sharingState(store: SettingsStore, settings: Settings, scope: string) {
+  if (scope === "Global") throw new Error("Global skills reach Claude Code through Agent folders in Settings.");
   const source = new SkillLibrary(store).root(settings, scope);
   const destination = join(source, "../../.claude/skills");
   try {

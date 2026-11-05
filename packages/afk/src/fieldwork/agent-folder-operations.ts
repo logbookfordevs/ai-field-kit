@@ -1,6 +1,8 @@
 import { agentFolderCatalog, invocationAgents, SHARED_FOLDER, validateCustomFolder, type AgentFolder, type AgentFolderSettings } from "./agent-folders.js";
 import type { InvocationMechanism } from "./agent-table.js";
 import { Library } from "./library.js";
+import type { SettingsStore } from "./settings.js";
+import { ToolSkills } from "./tool-skills.js";
 
 export interface AgentFolderState {
   library: boolean;
@@ -17,9 +19,9 @@ export async function agentFolderState(home: string): Promise<AgentFolderState> 
   return { library: exists, folders, invocationAgents: invocationAgents(folders) };
 }
 
-/** Switches a folder, adds or removes a custom one, and links or unlinks every skill that is on there. */
-export async function changeAgentFolders(home: string, action: AgentFolderAction, data: Record<string, unknown>): Promise<AgentFolderState> {
-  const library = new Library(home);
+/** Switches a folder, adds or removes a custom one, and links or unlinks every skill that is on there, tool skills included. */
+export async function changeAgentFolders(store: SettingsStore, action: AgentFolderAction, data: Record<string, unknown>): Promise<AgentFolderState> {
+  const home = store.home, library = new Library(home);
   if (!await library.exists()) throw new Error("Start a library first with `afk library init`.");
   const saved = await library.agentFolders();
   const catalog = await agentFolderCatalog(home, saved);
@@ -53,6 +55,11 @@ export async function changeAgentFolders(home: string, action: AgentFolderAction
     }
   }
 
+  const before = await library.folders();
   await library.changeAgentFolders(message, next);
+  const after = await library.folders();
+  const tools = new ToolSkills(store), provided = (await store.read()).tools.flatMap(tool => tool.provides ?? []);
+  for (const folder of before.filter(folder => !after.includes(folder))) for (const name of provided) await tools.unlinkFrom(folder, name);
+  for (const name of provided) await tools.link(name);
   return agentFolderState(home);
 }

@@ -32,28 +32,31 @@ skill activation.
 
 | Section | Purpose | Scope |
 | --- | --- | --- |
-| Kit | The skills that travel with you: Core, packs, and skills to try later, compared with this machine | One kit per settings file; packs are turned on per target |
-| Installed Skills | Inspect and update local files, filter skills (enabled ones by default), manage availability and invocation, delete stored copies | Global or a selected project |
+| Skills | Core, packs, this machine only, Try later and skills to review in one page; inspect, edit, update and delete skills and choose how agents invoke them | Global, or a selected project's own skills |
 | Agent rules | Edit shared rules and references, preview and sync managed regions | Shared document; explicit destination files |
 | Tools | Save and explicitly run install/update commands | Always global |
-| Settings | Choose the AFK folder, import/export, define project folders | One configuration |
+| Backup | Save your library to a private Git repository, go back to an earlier save, review edits made outside AFK | Your library |
+| Settings | Your library, projects, agent folders and automatic updates | This machine |
 
-The Kit page has four tabs. **This machine** shows what differs between your kit and
-this computer and lets you decide about skills that aren't in it yet. **Core** holds
-the skills you want always on, grouped by repository. **Packs** are named groups you
-turn on when needed. **Try later** keeps repository bookmarks. See the
-[Kit guide](docs/kit.md).
+Your skills, packs, tools, bookmarks, invocation choices and agent rules live in a
+**library**: a Git repository at `~/.afk/library` where every change is one save.
+Start one from the app (**Start a new library**) or with `afk library init --apply`.
+**Backup** sends it to a private GitHub repository or any Git remote two minutes after
+each change, and **Restore my library** (or `afk library connect owner/repo`) brings it
+back on a new machine. See the [library guide](docs/kit.md).
+
+The Skills page has five tabs. **Core** holds the skills saved in full in your library,
+grouped by repository. **Packs** are named groups you turn on when needed. **This machine
+only** keeps skills that stay here. **Try later** keeps repository bookmarks. **To review**
+lists skills installed outside AFK so you can decide where they belong.
 
 Install from a repository with **Install skills** or `afk add <repository>`, which asks
-whether a skill belongs in Core, a pack, on this machine only or under Try later.
-
-Run `afk sync` on a new machine to install missing Core skills and turn Core skills
-back on. Sync shows its plan first, never removes anything, and runs a tool's saved
-install command only when you approve it.
+whether a skill belongs in Core, a pack, on this machine only or under Try later. You can
+also upload a zip, a `.skill` file or a folder.
 
 Packs prepare repository skills through Skills CLI in a private temporary
-workspace. Newly selected copies stay disabled under your home agents directory.
-Turning a pack on creates links in the selected discovery paths; turning it off
+workspace and keep them in AFK's pack storage. Turning a pack on links them into your
+agent folders; turning it off
 removes only AFK-owned exposure. Existing files and skills needed by another pack are preserved.
 A pack that is on can be edited without turning it off.
 
@@ -61,8 +64,7 @@ A pack that is on can be edited without turning it off.
 the instructions for the calling agent to read; it does not inject another
 chat or register a slash command.
 
-Installed Skills updates preserve availability and invocation preferences; its
-Pack filter also scopes the automatic discovery token estimate. Skills that a tool
+Skill updates preserve on/off state and invocation choices. Skills that a tool
 installs are labeled and update through the tool. Tools run saved commands
 only when you choose Install or Update, individually or in a reviewed batch.
 Removing a tool entry does not uninstall it.
@@ -118,7 +120,7 @@ AFK is a tool from [Logbook for Devs](https://logbookfordevs.com/).
 
 ## Update skills
 
-Use **Update skills** in Installed Skills, or `afk skills update -g` /
+Use **Update all** on the Skills page, or `afk skills update -g` /
 `afk skills update -p <project>`, to update tracked skills while preserving
 availability and AFK invocation preferences.
 

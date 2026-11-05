@@ -1,10 +1,10 @@
-let kitStatus={core:[],sources:[],tools:[],undecided:[],machineOnly:[],plan:{install:[],enable:[],tools:[]}},migrationRequired=false,kitUpstream;
+let kitStatus={core:[],sources:[],tools:[],undecided:[],machineOnly:[]},migrationRequired=false,kitUpstream;
 const kitDisclosures=new Map();
 function setKitDisclosure(key,open){kitDisclosures.set(key,open)}
 function kitDisclosureAttrs(key,openByDefault=false){return `data-kit-disclosure="${esc(key)}" ontoggle="setKitDisclosure(this.dataset.kitDisclosure,this.open)" ${kitDisclosures.get(key)??openByDefault?'open':''}`}
 function countOf(count,word){return count+" "+word+(count===1?"":"s")}
-function planCount(plan=kitStatus.plan){return plan.install.reduce((total,group)=>total+group.skills.length,0)+plan.enable.length+plan.tools.reduce((total,tool)=>total+tool.skills.length,0)}
-function kitAttention(){return kitStatus.undecided.length+planCount()}
+function missingCoreCount(){return kitStatus.core.filter(item=>item.status==='missing').length}
+function kitAttention(){return kitStatus.undecided.length+missingCoreCount()}
 function sourceLabel(source){return source.trim().replace(/^https?:\/\/github\.com\//,'').replace(/^git@github\.com:/,'').replace(/\.git$/,'').replace(/\/+$/,'')}
 function kitSourceHeading(source,count){return `<div class="kit-source"><h3 title="${esc(source)}">${esc(sourceLabel(source))}</h3><span class="meta">${countOf(count,'skill')}</span></div>`}
 function kitSourceLink(source){
@@ -45,18 +45,17 @@ async function catchUpSkill(name){
   kitCatchingUp.add(name);
   if(section==='Skills')renderKit();
   try{
-    const result=await request('kit/sync',{expected:kitStatus.plan,only:[name],agent:installAgentChoice()});
-    const failed=result.enabled.find(item=>!item.ok);
-    if(result.install?.code){
-      modal('Could not install '+esc(name),`<p>Skills CLI stopped. Review its output, then retry.</p><pre>${esc(result.install.output||result.install.phase)}</pre>`,button('Close','closeModal()'));
-    }else if(failed)toast(failed.error);
-    else toast(name+' is ready on this machine.');
+    const source=kitStatus.core.find(item=>item.name===name)?.source;
+    const result=await request('kit/install',{source,names:[name],to:'core',agent:installAgentChoice()});
+    if(result?.code){
+      modal('Could not install '+esc(name),`<p>Skills CLI stopped. Review its output, then retry.</p><pre>${esc(result.output||result.phase)}</pre>`,button('Close','closeModal()'));
+    }else toast(name+' is ready on this machine.');
   }catch(error){toast(error.message)}
   finally{kitCatchingUp.delete(name);await refresh().catch(error=>toast(error.message))}
 }
 function addToKit(names,to){
   const list=Array.isArray(names)?names:[names];
-  return operation(async()=>{await request('kit/add',{names:list,to});toast(`Added to ${to==='core'?'Core':'the pack'}. Other machines will see ${list.length===1?'it':'them'} as missing.`)});
+  return operation(async()=>{await request('kit/add',{names:list,to});toast(`Added to ${to==='core'?'Core':'the pack'}.`)});
 }
 function addToPack(name){
   if(!profiles.length){toast('Create a pack first, in the Packs tab.');return}
@@ -103,43 +102,6 @@ function acceptUpstream(index,name){
     entry.names=entry.names.filter(other=>other!==name);
     kitUpstream.sources=kitUpstream.sources.filter(item=>item.error||item.names.length);
   });
-}
-let syncReview;
-function reviewSync(){
-  const plan=kitStatus.plan;
-  if(!planCount())return;
-  syncReview=plan;
-  const install=plan.install.map(group=>`<section><h3><code class="path">${esc(group.source)}</code></h3><ul>${group.skills.map(name=>`<li><code>${esc(name)}</code></li>`).join('')}</ul></section>`).join('');
-  const enable=plan.enable.length?`<section><h3>Turn back on</h3><ul>${plan.enable.map(name=>`<li><code>${esc(name)}</code></li>`).join('')}</ul></section>`:'';
-  const toolRows=plan.tools.map(tool=>`<section class="sync-tool"><label class="check"><input type="checkbox" data-sync-tool="${tool.id}"><span>Run ${esc(tool.name)}’s install command, for ${tool.skills.map(esc).join(', ')}</span></label><pre>$ ${esc(tool.command)}</pre></section>`).join('');
-  const toolIntro=plan.tools.length?'<p class="hint">Saved commands can do anything your account can. They only run if you tick them.</p>':'';
-  const agent=plan.install.length?`<label>Installation agent<select id="syncAgent">${['universal','codex','claude-code','cursor','opencode'].map(value=>`<option value="${value}">${value==='universal'?'Universal · .agents/skills':value}</option>`).join('')}</select></label>`:'';
-  modal('Sync this machine',`<div class="sync-plan"><p>This brings this machine in line with your kit. Skills that aren’t in your kit are left alone.</p>${install}${enable}${toolIntro}${toolRows}${agent}</div><div id="syncOutput" role="status" aria-live="polite"></div><p id="syncError" class="field-error" role="alert"></p>`,button('Close','closeModal()','text')+button('Sync','applySync()','primary','id="startSync"'));
-}
-async function applySync(){
-  const expected=syncReview,control=$('startSync');
-  if(!expected||control.disabled)return;
-  const runTools=[...document.querySelectorAll('[data-sync-tool]:checked')].map(input=>Number(input.dataset.syncTool));
-  const agent=$('syncAgent')?.value;
-  control.disabled=true;control.textContent='Syncing…';$('syncError').textContent='';$('syncOutput').innerHTML='<p>Syncing. Closing this dialog does not stop it.</p>';
-  try{
-    const result=await request('kit/sync',{expected,runTools,...(agent?{agent}:{})});
-    await refresh();
-    const failedInstall=Boolean(result.install?.code);
-    const lines=[
-      ...(result.install?[`<p><strong>${esc(result.install.phase)}</strong></p>${result.install.output?`<details ${failedInstall?'open':''}><summary>Skills CLI output</summary><pre>${esc(result.install.output)}</pre></details>`:''}`]:[]),
-      ...result.enabled.filter(item=>!item.ok).map(item=>`<p class="field-error">${esc(item.name)}: ${esc(item.error)}</p>`),
-      ...result.tools.map(tool=>`<details ${tool.code?'open':''}><summary>${esc(tool.name)} · exit ${tool.code}</summary><pre>${esc(tool.output)}</pre></details>`),
-      ...result.skippedTools.map(tool=>`<p class="hint">${esc(tool.name)} was not run.</p>`),
-      `<p>${planCount(result.status.plan)?`${countOf(planCount(result.status.plan),'skill')} still different from your kit.`:'This machine matches your kit.'}</p>`,
-    ];
-    if($('syncOutput'))$('syncOutput').innerHTML=lines.join('');
-    if(control.isConnected)control.textContent='Done';
-  }catch(error){
-    if($('syncError'))$('syncError').textContent=error.message;
-    if($('syncOutput'))$('syncOutput').innerHTML='';
-    if(control.isConnected){control.disabled=false;control.textContent='Sync'}
-  }
 }
 let migrationChoice={core:null,follow:new Set(),skipTools:new Set()},migrationPreview,migrationVersion=0;
 function renderMigration(){

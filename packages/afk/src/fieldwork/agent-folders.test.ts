@@ -242,3 +242,23 @@ describe("agent folders without a library and over HTTP", () => {
     } finally { await app.close(); }
   });
 });
+
+describe("agent folders and tool skills", () => {
+  it("links a tool's skills into a folder when it is enabled, and removes only those links when disabled", async () => {
+    const wiz = join(home, ".agents/skills/wiz");
+    await mkdir(wiz, { recursive: true });
+    await writeFile(join(wiz, "SKILL.md"), skill("wiz"));
+    await store.save({ ...await store.read(), tools: [{ id: 1, name: "Wizard", install: "unused", update: "", provides: ["wiz"] }] });
+    await applyLibraryInit(store);
+    const operations = new FieldworkOperations(store);
+    try {
+      await operations.run("agent-folders/enable", { path: "~/.cursor/skills" });
+      expect(await readlink(join(home, ".cursor/skills/wiz"))).toBe(wiz);
+      expect(await readlink(join(home, ".cursor/skills/alpha"))).toBe(join(home, ".afk/library/skills/alpha"));
+
+      await operations.run("agent-folders/disable", { path: "~/.cursor/skills" });
+      expect(await present(join(home, ".cursor/skills/wiz"))).toBe(false);
+      expect(await readFile(join(wiz, "SKILL.md"), "utf8")).toBe(skill("wiz"));
+    } finally { await operations.close(); }
+  });
+});

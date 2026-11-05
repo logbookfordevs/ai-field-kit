@@ -205,17 +205,6 @@ describe("applying", () => {
       await store.save(settings);
     }
     expect(await readFile(result.backup, "utf8")).toBe(original);
-    expect((await readdir(join(home, ".afk/backups"))).filter(name => name.startsWith("settings-")).length).toBeLessThanOrEqual(20);
-  });
-
-  it("can roll back by restoring that copy", async () => {
-    await writeLegacy();
-    const original = await readFile(store.path, "utf8");
-    const result = await apply() as { backup: string };
-
-    await store.restoreBackup(result.backup.split("/").at(-1)!);
-
-    expect(await readFile(store.path, "utf8")).toBe(original);
   });
 
   it("refuses to apply when the settings file changed after the dry run", async () => {
@@ -306,22 +295,6 @@ describe("the write gate", () => {
     const copies = (await readdir(join(home, ".afk/backups"))).filter(name => name.startsWith("pre-kit-"));
     expect(copies).toHaveLength(1);
     expect(await readFile(join(home, ".afk/backups", copies[0]!), "utf8")).toBe(original);
-  });
-
-  it("recognises a stackless old copy of the same configuration when loading its folder", async () => {
-    const settings = legacySettings();
-    delete settings.stacks;
-    delete settings.savedSkills;
-    await writeLegacy(settings);
-    const target = join(home, ".agents/skills/.disabled/solo");
-    await mkdir(target, { recursive: true });
-    await writeFile(join(target, "SKILL.md"), "---\nname: solo\ndescription: solo\n---\n");
-    await operations.run("activation", { id: "profile-solo", scope: "Global", enabled: true });
-    const folder = join(home, "copy");
-    await mkdir(folder);
-    await writeFile(join(folder, "settings.json"), JSON.stringify({ ...settings, version: 1 }));
-
-    await expect(operations.run("workspace", { mode: "select", folder })).resolves.toEqual({ ok: true });
   });
 
   it("creates new settings in the new format", async () => {

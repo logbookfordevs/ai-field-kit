@@ -212,15 +212,14 @@ describe("what an upload cannot do", () => {
     await expect(operations.run("pack/manifest", { id: "core" })).rejects.toThrow(/uploaded/i);
   });
 
-  it("is not installable by sync or offered as a repository install", async () => {
+  it("shows as missing in Core when its files are gone", async () => {
     const { upload } = await preview();
     await operations.run("kit/upload-install", { upload, names: ["wizard"], to: "core" });
     await rm(join(home, ".afk/library/skills/wizard"), { recursive: true });
 
-    const state = await operations.run("kit/state") as { plan: { install: unknown[] }; core: { name: string; status: string }[] };
+    const state = await operations.run("kit/state") as { core: { name: string; status: string }[] };
 
     expect(state.core).toMatchObject([{ name: "wizard", status: "missing" }]);
-    expect(state.plan.install).toEqual([]);
   });
 
   it("is never updated automatically, because it has no source", async () => {

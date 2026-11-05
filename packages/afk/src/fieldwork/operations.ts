@@ -19,16 +19,15 @@ import { SourcePreparation } from "./preparation.js";
 import { globalSkillOn, SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
-import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
 import { Library, type GitRunner } from "./library.js";
+import { applyLibraryInit, planLibraryInit } from "./library-init.js";
 import { Backup } from "./library-backup.js";
 import { Restore } from "./library-restore.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
 import { migrateProject } from "./project-skills.js";
 import { Uploads } from "./upload-install.js";
-import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate, type SyncPlan } from "./kit.js";
-import { portableSettings } from "./local-state.js";
+import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate } from "./kit.js";
 import { agentFolderState, changeAgentFolders } from "./agent-folder-operations.js";
 import { fingerprint, migrateSettings, sourceIdentity, type MigrationChoices } from "./migration.js";
 
@@ -48,13 +47,13 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "skill/delete-preview": ["name", "scope"], "skill/delete": ["name", "scope"],
     "skill/availability": ["name", "scope"], "skill/read": ["name", "scope"], "skill/editor": ["name"], "skill/edit": ["name", "file"],
     "rules/existing": ["id"], "rules/adopt": ["id"], "rules/overwrite": ["id"],
-    "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"], workspace: ["mode", "folder"], location: ["path"],
-    "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
+    "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"],
+    "migration/apply": ["fingerprint"],
     "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"], "restore/inspect": ["repository"], "restore/start": ["repository"],
     "backup/keep": ["id"], "backup/discard": ["id"], "backup/take-update": ["name"], "backup/restore-saved": ["name"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
-    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "kit/upload-preview": ["archive", "name", "folder"], "kit/upload-install": ["packName"], "project/save": ["previous"],
+    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/install": ["packName", "scope", "agent"], "kit/upload-preview": ["archive", "name", "folder"], "kit/upload-install": ["packName"], "project/save": ["previous"],
     "skill/read": ["file", "folder"], "skill/editor": ["file"], "skill/edit": ["updates"], "rules/save": ["expectedHash"], folders: ["path"], "agent-folders/add": ["project"],
   };
   for (const key of requiredText[operation] ?? []) {
@@ -358,7 +357,7 @@ export class FieldworkOperations {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const ready = this.projectsReady ??= this.migrateProjects();
     const action = async (): Promise<unknown> => { await ready; return this.apply(operation as Operation, data); };
-    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel"].includes(operation);
+    const direct = ["state", "kit/state", "rules/state", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel"].includes(operation);
     const result = direct ? action() : this.mutations.then(action);
     if (!direct) this.mutations = result.then(() => undefined, () => undefined);
     const flight = this.nextFlight++;
@@ -400,6 +399,12 @@ export class FieldworkOperations {
 
   private async applyBackup(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
     const { backup } = this;
+    if (operation === "library/init-preview") { validateInput(operation, data); return await planLibraryInit(this.store, this.restoreRunner); }
+    if (operation === "library/init") {
+      validateInput(operation, data);
+      if (typeof data.expected !== "object" || data.expected === null) throw new Error("Provide expected as the library/init-preview result.");
+      return await applyLibraryInit(this.store, this.restoreRunner, data.expected);
+    }
     if (operation === "backup/state") {
       const status = await backup.status(), attention = await backup.checks.list(), unpushed = await backup.unpushedSkills();
       return data.brief === true ? { status, attention, unpushed } : { status, attention, unpushed, history: await backup.history(), contents: await backup.contents() };
@@ -460,7 +465,7 @@ export class FieldworkOperations {
       return { cancelled: true };
     }
     validateInput(operation, data);
-    if (operation.startsWith("backup/")) return this.applyBackup(operation, data);
+    if (operation.startsWith("backup/") || operation.startsWith("library/")) return this.applyBackup(operation, data);
     if (operation.startsWith("restore/")) return this.applyRestore(operation, data);
     const { store, library, rules, preparation, toolRuns } = this;
     const settings = await store.read();
@@ -474,9 +479,9 @@ export class FieldworkOperations {
       const text = (await store.portableText()) ?? "";
       if (fingerprint(text) !== data.fingerprint) throw new Error("The settings file changed since this dry run. Review the migration again.");
       const { settings: migrated, report } = migrateSettings(settings, this.migrationChoices(data), await library.inventory(settings, "Global"));
+      const backup = await store.preserveLegacy(text);
       await store.save(migrated, { migrating: true });
-      const copy = (await store.backups()).find(backup => backup.name.startsWith("pre-kit-") && backup.configurationId === settings.configurationId);
-      return { ok: true, report, ...(copy ? { backup: join(store.backupFolder, copy.name) } : {}) };
+      return { ok: true, report, backup };
     }
     if (operation === "source/install") {
       const source = settings.favoriteSources?.find(source => source.source === data.source);
@@ -579,52 +584,6 @@ export class FieldworkOperations {
     if (operation === "kit/install") return await this.installWithDestination(data);
     if (operation === "kit/upload-preview") return await this.uploads.preview(data);
     if (operation === "kit/upload-install") return await this.uploads.install(data);
-    if (operation === "kit/sync") {
-      const inventory = await library.inventory(settings, "Global");
-      const current = kitStatus(settings, inventory);
-      if (JSON.stringify(current.plan) !== JSON.stringify(data.expected as SyncPlan | undefined)) throw new Error("This machine or your kit changed since you reviewed the plan. Review it again.");
-      if (data.only !== undefined) {
-        const { only } = data;
-        if (!Array.isArray(only) || !only.length || !only.every(skillName)) throw new Error("Provide only as an array of skill names.");
-        current.plan = {
-          install: current.plan.install.map(group => ({ source: group.source, skills: group.skills.filter(name => only.includes(name)) })).filter(group => group.skills.length),
-          enable: current.plan.enable.filter(name => only.includes(name)),
-          tools: current.plan.tools.filter(tool => tool.skills.some(name => only.includes(name))),
-        };
-      }
-      const approved = data.runTools === undefined ? [] : data.runTools;
-      if (!Array.isArray(approved) || !approved.every(id => Number.isSafeInteger(id))) throw new Error("Provide runTools as an array of tool IDs.");
-      const enabled: { name: string; ok: boolean; error?: string }[] = [];
-      for (const name of current.plan.enable) {
-        try { await library.toggle(settings, name, "Global"); enabled.push({ name, ok: true }); }
-        catch (error) { enabled.push({ name, ok: false, error: error instanceof Error ? error.message : "Could not turn this skill on." }); }
-      }
-      let install: InstallProgress | undefined;
-      if (current.plan.install.length) {
-        this.installController = new AbortController();
-        try {
-          install = await installSkills(store, settings, current.plan.install, "Global", String(data.agent ?? "universal"), "Sync this machine", value => { this.skillInstall = value; }, AbortSignal.any([this.installController.signal, this.lifecycle.signal]), this.installRunner);
-          this.skillInstall = install;
-        } finally { this.installController = null; }
-      }
-      const tools: { id: number; name: string; code: number; output: string; reapplied?: string[]; warnings?: string[] }[] = [];
-      const skippedTools = current.plan.tools.filter(tool => !approved.includes(tool.id));
-      for (const tool of current.plan.tools.filter(tool => approved.includes(tool.id))) {
-        toolRuns[tool.id] = { pending: true, output: "Running…" };
-        try {
-          const finish = await trackToolRun(store, { name: tool.name, provides: tool.skills });
-          const result = await finish(await runTool(process.env.SHELL || "/bin/sh", ["-c", tool.command], store.home, this.lifecycle.signal));
-          toolRuns[tool.id] = { pending: false, ...result };
-          tools.push({ id: tool.id, name: tool.name, ...result });
-        } catch (error) {
-          const output = error instanceof Error ? error.message : "Command could not start.";
-          toolRuns[tool.id] = { pending: false, code: 1, output };
-          tools.push({ id: tool.id, name: tool.name, code: 1, output });
-        }
-      }
-      const latest = await store.read();
-      return { ...(install ? { install } : {}), enabled, tools, skippedTools, status: kitStatus(latest, await library.inventory(latest, "Global")) };
-    }
     if (operation === "pack/manifest") return { manifest: this.packManifest(settings, String(data.id)) };
     if (operation === "pack/import-preview") {
       if ((data.manifest === undefined) === (data.origin === undefined)) throw new Error("Provide pasted manifest JSON or its HTTPS URL, not both.");
@@ -659,9 +618,6 @@ export class FieldworkOperations {
     if (operation === "rules/state") {
       return await rules.state(settings);
     }
-    if (operation === "bundle/export") {
-      return await exportBundle(store);
-    }
     if (operation === "state") {
       const projectStatuses = await projectStatus(store, settings);
       const inventories: Record<string, Awaited<ReturnType<SkillLibrary["inventory"]>>> = {};
@@ -675,14 +631,14 @@ export class FieldworkOperations {
         }
         inventories[scope] = await library.inventory(settings, scope);
         nestedInventories[scope] = await library.nested(settings, scope);
-        skillSharing[scope] = await sharingState(store, settings, scope);
+        if (scope !== "Global") skillSharing[scope] = await sharingState(store, settings, scope);
       }
       for (const profile of settings.profiles) {
         if (!profile.ready) continue;
         try { for (const name of profile.skills) await library.locate(settings, name); }
         catch { profile.ready = false; }
       }
-      return { settings, migration: { required: settings.version === 1 }, kit: kitStatus(settings, inventories.Global ?? []), portableSettings: portableSettings(settings), settingsPath: store.path, home: store.home, inventories, nestedInventories, skillSharing, projectStatuses, projectMigration: this.projectMigration, toolRuns };
+      return { settings, migration: { required: settings.version === 1 }, kit: kitStatus(settings, inventories.Global ?? []), settingsPath: store.path, home: store.home, inventories, nestedInventories, skillSharing, projectStatuses, projectMigration: this.projectMigration, toolRuns };
     }
     if (operation === "rules/save") {
       return await rules.saveFiles(data.files as RulesFile[], typeof data.expectedHash === "string" ? data.expectedHash : undefined);
@@ -714,22 +670,6 @@ export class FieldworkOperations {
     if (operation === "rules/disconnect") {
       const updated = await rules.disconnect(settings, String(data.id), data.clean === true);
       return await rules.state(updated);
-    }
-    if (operation === "bundle/preview") {
-      return inspectBundle(String(data.base64));
-    }
-    if (operation === "bundle/import") {
-      const mappings = data.mappings;
-      const hasMapping = (value: unknown, key: "id" | "name"): boolean => {
-        if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-        const mapping = value as Record<string, unknown>;
-        return typeof mapping[key] === "string" && typeof mapping.path === "string";
-      };
-      if (!Array.isArray(mappings) || !(mappings as unknown[]).every(m => hasMapping(m, "id"))) throw new Error("Choose local destination mappings.");
-      const projects = data.projects;
-      if (projects !== undefined && (!Array.isArray(projects) || !(projects as unknown[]).every(p => hasMapping(p, "name")))) throw new Error("Choose valid project folder mappings.");
-      await applyBundle(store, String(data.base64), mappings as { id: string; path: string }[], projects as { name: string; path: string }[] | undefined);
-      return { ok: true };
     }
     if (operation === "welcome") {
       settings.welcomeDismissed = true;
@@ -842,14 +782,6 @@ export class FieldworkOperations {
       delete settings.independentSkills[String(data.name)];
       await store.save(settings); return { ok: true };
     }
-    if (operation === "location") { await store.relocate(String(data.path)); return { ok: true }; }
-    if (operation === "workspace") {
-      if (typeof data.folder !== "string" || !["move", "select", "create"].includes(String(data.mode))) throw new Error("Choose an AFK folder and action.");
-      if (data.mode === "move") return { ok: true, backup: await store.moveFolder(data.folder) };
-      if (data.mode === "select") await store.selectFolder(data.folder);
-      else await store.relocate(join(data.folder, "settings.json"));
-      return { ok: true };
-    }
     if (operation === "folders") {
       const path = resolve(String(data.path ?? store.home));
       if (!(await stat(path)).isDirectory()) throw new Error("Choose a folder.");
@@ -874,18 +806,6 @@ export class FieldworkOperations {
     }
     if (operation === "invocation") {
       await setInvocation(store, settings, String(data.name), String(data.scope), String(data.mode)); return { ok: true };
-    }
-    if (operation === "import") {
-      if (settings.profiles.some(p => p.enabled.length)) throw new Error("Disable current profiles before replacing the configuration.");
-      if (Object.keys(settings.managedLinks).length || Object.values(settings.independentSkills).some(names => names.length)) throw new Error("Disable active individual skills and resolve managed links before replacing the configuration.");
-      const parsed = validateSettings(data.settings);
-      const imported = parsed.version === 1 ? migrateSettings(parsed, {}, []).settings : parsed;
-      imported.managedLinks = {};
-      imported.independentSkills = {};
-      imported.profiles = imported.profiles.map(p => ({ ...p, enabled: [], ready: false }));
-      imported.agentRules = settings.agentRules;
-      imported.machineOnly = settings.machineOnly;
-      await store.save(imported, { replace: true }); return { ok: true };
     }
     if (operation === "skills/delete-preview" || operation === "skills/bulk") {
       const names = data.names as string[], scope = String(data.scope);
@@ -937,7 +857,7 @@ export class FieldworkOperations {
     }
     if (operation === "agent-folders/state") return await agentFolderState(store.home);
     if (operation === "agent-folders/enable" || operation === "agent-folders/disable" || operation === "agent-folders/remove" || operation === "agent-folders/add") {
-      return await changeAgentFolders(store.home, operation.slice("agent-folders/".length) as "enable" | "disable" | "add" | "remove", data);
+      return await changeAgentFolders(store, operation.slice("agent-folders/".length) as "enable" | "disable" | "add" | "remove", data);
     }
     if (operation === "skill/adopt") {
       if (!skillName(data.name)) throw new Error("Choose a valid skill name.");

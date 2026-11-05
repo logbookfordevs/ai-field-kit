@@ -67,7 +67,7 @@ export const settingsSchema = {
       },
     },
     kit: {
-      type: "object", required: ["core"], description: "The skills that travel with you. Saving never installs anything; `afk sync` reconciles a machine with this list.",
+      type: "object", required: ["core"], description: "The skills saved in full in your library. Saving never installs anything; a missing Core skill installs from its own row on the Skills page.",
       properties: {
         core: {
           type: "array", description: "Always-on skills, grouped by original repository.",

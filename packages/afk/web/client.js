@@ -7,7 +7,7 @@ async function request(path,data){
 }
 async function refresh(){
   const state=await request('state');
-  currentSettings=state.settings;inventories=state.inventories;nestedInventories=state.nestedInventories||{};skillSharing=state.skillSharing||{};settingsPath=state.settingsPath;afkHome=state.home;projectStatuses=state.projectStatuses||{};portableConfiguration=state.portableSettings;kitStatus=state.kit;migrationRequired=Boolean(state.migration?.required);
+  currentSettings=state.settings;inventories=state.inventories;nestedInventories=state.nestedInventories||{};skillSharing=state.skillSharing||{};afkHome=state.home;projectStatuses=state.projectStatuses||{};kitStatus=state.kit;migrationRequired=Boolean(state.migration?.required);
   ({profiles,projects,tools,favoriteSources,preferences}=currentSettings);
   toolRuns=state.toolRuns||{};
   tools=tools.map(tool=>({...tool,last:toolRuns[tool.id]?{ok:toolRuns[tool.id].code===0,label:toolRuns[tool.id].pending?'Running…':'Last run · exit '+toolRuns[tool.id].code}:null}));
@@ -43,7 +43,6 @@ async function persist(){
 }
 inventory=()=>inventories[scope]||[];
 nestedInventory=()=>nestedInventories[scope]||[];
-isAvailable=entry=>entry.available;
 activate=id=>operation(async()=>{
   const profile=profiles.find(p=>p.id===id),target=selectedTargets[id]||'Global';
   const downloading=!profile.enabled.includes(target)&&!profile.ready;
@@ -150,7 +149,7 @@ folderModal=async()=>{
     const data=await request('folders',{path:folder});folder=data.path;
     const parts=folder.split('/').filter(Boolean);
     const ancestors=[{name:'/',path:'/'}];parts.forEach((name,index)=>ancestors.push({name,path:'/'+parts.slice(0,index+1).join('/')}));
-    modal('Choose '+(browseMode.startsWith('project')?'project folder':'AFK folder'),`<div class="folder-path">${button('Parent',`chooseFolder(${JSON.stringify(data.parent).replaceAll('"','&quot;')})`,'',data.parent===folder?'disabled':'')}<nav aria-label="Folder breadcrumbs" class="folder-crumbs">${ancestors.map((part,index)=>`<button type="button" class="text" data-ancestor="${index}" ${part.path===folder?'aria-current="location"':''}>${esc(part.name)}</button>`).join('<span aria-hidden="true">/</span>')}</nav></div>${browseMode==='settings'?`<p class="hint">${data.settings?'This folder has AFK settings. Move your current setup here, or load the existing setup.':'Navigate to your preferred folder. Move your AFK files here or create a dedicated subfolder.'}</p><ul class="folder-files">${(data.files||[]).filter(name=>name==='settings.json'||name==='AGENTS.md').map(name=>`<li><code>${esc(name)}</code></li>`).join('')}</ul>`:''}<div class="list">${data.folders.map((name,index)=>`<button type="button" class="folder" data-folder-index="${index}"><span>${esc(name)}</span><span aria-hidden="true">›</span></button>`).join('')||'<p>No subfolders.</p>'}</div>`,button('Cancel','closeModal()','text')+(browseMode==='settings'?((data.settings?button('Load existing setup',`workspaceReview('select',${esc(JSON.stringify(folder))})`):button('Create AFK folder here','newWorkspaceFolder()'))+button('Move current setup here',`workspaceReview('move',${esc(JSON.stringify(folder))})`,'primary')):button('Use this folder','useFolder()','primary')));
+    modal('Choose project folder',`<div class="folder-path">${button('Parent',`chooseFolder(${JSON.stringify(data.parent).replaceAll('"','&quot;')})`,'',data.parent===folder?'disabled':'')}<nav aria-label="Folder breadcrumbs" class="folder-crumbs">${ancestors.map((part,index)=>`<button type="button" class="text" data-ancestor="${index}" ${part.path===folder?'aria-current="location"':''}>${esc(part.name)}</button>`).join('<span aria-hidden="true">/</span>')}</nav></div><div class="list">${data.folders.map((name,index)=>`<button type="button" class="folder" data-folder-index="${index}"><span>${esc(name)}</span><span aria-hidden="true">›</span></button>`).join('')||'<p>No subfolders.</p>'}</div>`,button('Cancel','closeModal()','text')+button('Use this folder','useFolder()','primary'));
     document.querySelectorAll('[data-ancestor]').forEach(element=>element.onclick=()=>chooseFolder(ancestors[Number(element.dataset.ancestor)].path));
     document.querySelectorAll('[data-folder-index]').forEach(element=>element.onclick=()=>chooseFolder(folder+'/'+data.folders[Number(element.dataset.folderIndex)]));
   }catch(error){toast(error.message)}
@@ -159,7 +158,6 @@ function chooseFolder(path){folder=path;folderModal()}
 const originalUseFolder=useFolder;
 useFolder=()=>{
   if(browseMode==='project-remap'){const project=remappingProject;return saveForm(()=>request('project/save',{previous:project.name,name:project.name,path:folder}),'Project folder updated.','projectError')}
-  if(browseMode==='settings'){workspaceReview('move',folder);return}
   originalUseFolder();
 };
 saveProject=()=>{
@@ -167,11 +165,7 @@ saveProject=()=>{
   if(!name||projects.some(project=>project.name===name)){toast('Choose a unique project name.');return}
   return saveForm(()=>request('project/save',{name,path:folder}),'Project saved. Packs unchanged.','projectError');
 };
-configuration=()=>structuredClone(portableConfiguration||currentSettings);
-exportSettings=()=>{
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(configuration(),null,2)],{type:'application/json'}));a.download='settings.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-};
-showNotes=()=>modal('AFK — Fieldwork','<p>Your agent setup, portable across machines: the skills in your kit, your tool commands and your agent rules.</p><p class="sub">Settings and rule files live together in the AFK folder you choose. Syncing brings a machine in line with your kit; skill updates preserve availability.</p>',button('Show Welcome','showWelcome()','text')+button('Take a quick tour','startTour()','primary'));
+showNotes=()=>modal('AFK — Fieldwork','<p>Your agent setup in one library: your skills, packs, tool commands and agent rules.</p><p class="sub">Everything lives in your library, a Git repository on this machine. Backup saves it to a private remote, and restore brings it back on a new machine.</p>',button('Show Welcome','showWelcome()','text')+button('Take a quick tour','startTour()','primary'));
 refresh().then(()=>{maybeWelcome();checkAppVersion()}).catch(error=>{$('view').innerHTML=`<div class="error" role="alert">${esc(error.message)}</div>`});
 discover=async()=>{
   const picker=profilePicker,source=$('source').value.trim(),version=++picker.version;
@@ -193,20 +187,6 @@ saveProfile=async()=>{
 removeProfile=id=>operation(async()=>{await request('pack/remove',{id});closeModal()});
 retryPreparation=id=>operation(async()=>{const {name,source,skills,groups}=profiles.find(p=>p.id===id);await request('pack/save',{id,name,prepare:true,...(groups?{groups}:{source,skills})})});
 setPreference=(name,mode)=>operation(()=>request('invocation',{name,scope,mode}));
-importSettings=async file=>{
-  $('importFile').value='';if(!file)return;
-  try{
-    const data=JSON.parse(await file.text());
-    if(![1,2].includes(data.version)||!Array.isArray(data.projects))throw Error('Choose an AFK settings export.');
-    window.pendingImport=data;
-    modal('Review imported configuration',`<p>Remap project folders for this machine. Import leaves packs off until you turn them on.</p>${data.projects.map((project,index)=>`<label>${esc(project.name)}<input class="remap" data-index="${index}" value="${esc(project.path)}"></label>`).join('')}`,button('Cancel','closeModal()','text')+button('Import configuration','applyImport()','primary'));
-  }catch(error){toast(error.message)}
-};
-applyImport=()=>operation(async()=>{
-  const settings=window.pendingImport;
-  settings.projects=settings.projects.map((project,index)=>({...project,path:document.querySelectorAll('.remap')[index].value}));
-  await request('import',{settings});closeModal();scope='Global';selectedTargets={};
-});
 editProject=index=>{
   const project=projects[index];
   modal('Edit project',`<label>Name<input id="projectName" value="${esc(project.name)}"></label><label>Folder<input id="projectPath" value="${esc(project.path)}"></label><p class="hint">Turn this project's packs off before changing its folder.</p>`,button('Cancel','closeModal()','text')+button('Save project',`renameProject(${index})`,'primary'));
@@ -243,7 +223,7 @@ async function reviewSkillDeletion(name){
   try{
     const preview=await request('skill/delete-preview',{name,scope});
     skillDeletionPreview=preview;
-    modal('Delete '+esc(name)+'?',`<p>This permanently deletes this skill copy and all its supporting files from ${esc(preview.scope)} storage. You can reinstall it later from its source.</p><p class="path">${esc(preview.path)}</p>${preview.available?'<p>This skill is available now. Deleting it also removes its availability in this scope.</p>':''}${preview.retainedCopies.length?`<p>Another copy will remain and may still appear in Installed Skills:</p><ul>${preview.retainedCopies.map(path=>`<li class="path">${esc(path)}</li>`).join('')}</ul>`:''}${preview.claudeSharesStorage?'<p>Claude shares this skills folder, so this deletion affects Claude too.</p>':''}${preview.copies.length?`<p>This separate Claude copy and all its supporting files will also be permanently deleted:</p><ul>${preview.copies.map(copy=>`<li class="path">${esc(copy.path)}</li>`).join('')}</ul>`:''}${preview.links.length?`<p>These availability links will also be removed (their targets are only deleted if listed above):</p><ul>${preview.links.map(link=>`<li class="path">${esc(link.path)}</li>`).join('')}</ul>`:''}<p id="deleteSkillError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()')+button('Delete permanently','finishSkillDeletion()','text danger'));
+    modal('Delete '+esc(name)+'?',`<p>This permanently deletes this skill copy and all its supporting files from ${esc(preview.scope)} storage. You can reinstall it later from its source.</p><p class="path">${esc(preview.path)}</p>${preview.available?'<p>This skill is available now. Deleting it also removes its availability in this scope.</p>':''}${preview.retainedCopies.length?`<p>Another copy will remain and may still appear on the Skills page:</p><ul>${preview.retainedCopies.map(path=>`<li class="path">${esc(path)}</li>`).join('')}</ul>`:''}${preview.claudeSharesStorage?'<p>Claude shares this skills folder, so this deletion affects Claude too.</p>':''}${preview.copies.length?`<p>This separate Claude copy and all its supporting files will also be permanently deleted:</p><ul>${preview.copies.map(copy=>`<li class="path">${esc(copy.path)}</li>`).join('')}</ul>`:''}${preview.links.length?`<p>These availability links will also be removed (their targets are only deleted if listed above):</p><ul>${preview.links.map(link=>`<li class="path">${esc(link.path)}</li>`).join('')}</ul>`:''}<p id="deleteSkillError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()')+button('Delete permanently','finishSkillDeletion()','text danger'));
   }catch(error){toast(error.message)}
 }
 async function finishSkillDeletion(){

@@ -88,12 +88,67 @@ describe("choosing how to start", () => {
     expect(welcomes).toBe(1);
   });
 
-  it("explains how to start a new library from the command line", async () => {
+});
+
+const plan = {
+  library: "/h/.afk/library",
+  backup: "/h/.afk/library-backups/2026-11-05",
+  skills: [{ name: "alpha", on: true }, { name: "beta", on: false }],
+  packSkills: [{ name: "docs-writer", on: false }],
+  machineSkills: [{ name: "local-only", on: true }],
+  offToolSkills: [],
+  missing: ["gone"],
+  toolSkills: ["waypoint"],
+  rules: ["AGENTS.md"],
+};
+
+describe("starting a new library", () => {
+  beforeEach(() => {
+    replies["library/init-preview"] = plan;
+    replies["library/init"] = plan;
     evaluate("showFirstRun()");
+  });
+
+  it("previews what moves and changes nothing until confirmed", async () => {
     await click("firstRunChoose('fresh')");
 
-    expect(screen()).toContain("afk library init --apply");
-    expect(asked("restore/start")).toEqual([]);
+    expect(asked("library/init-preview")).toHaveLength(1);
+    for (const name of ["alpha", "beta", "docs-writer", "local-only", "gone", "waypoint"]) expect(screen()).toContain(name);
+    expect(screen()).toContain("firstRunStartLibrary()");
+    expect(asked("library/init")).toEqual([]);
+  });
+
+  it("starts the library from the reviewed plan, then offers Backup", async () => {
+    await click("firstRunChoose('fresh')");
+    await click("firstRunStartLibrary()");
+
+    expect(asked("library/init")).toEqual([{ expected: plan }]);
+    expect(screen()).toContain(plan.backup);
+    expect(screen()).toContain("firstRunGo('Backup')");
+  });
+
+  it("shows why the preview failed and offers nothing to start", async () => {
+    replies["library/init-preview"] = new Error("A library already exists at /h/.afk/library.");
+    await click("firstRunChoose('fresh')");
+
+    expect(screen()).toContain("A library already exists");
+    expect(screen()).not.toContain("firstRunStartLibrary()");
+  });
+
+  it("stays on the preview and shows the reason when starting fails", async () => {
+    replies["library/init"] = new Error("This machine's skills changed since the preview.");
+    await click("firstRunChoose('fresh')");
+    await click("firstRunStartLibrary()");
+
+    expect(screen()).toContain("changed since the preview");
+    expect(screen()).toContain("firstRunStartLibrary()");
+  });
+
+  it("opens straight on the preview from the Backup screen", async () => {
+    await click("showStartLibrary()");
+
+    expect(asked("library/init-preview")).toHaveLength(1);
+    expect(screen()).toContain("firstRunStartLibrary()");
   });
 });
 

@@ -95,10 +95,12 @@ describe("the Backup screen", () => {
     expect(view.innerHTML).toContain("data-backup-warning");
   });
 
-  it("points to library init when there is no library", () => {
+  it("offers to start a new library or restore one when there is no library", () => {
     show({ status: { library: false, state: "off", waiting: 0, pushing: false } });
     evaluate("renderBackup()");
 
+    expect(view.innerHTML).toContain("showStartLibrary()");
+    expect(view.innerHTML).toContain("showFirstRun()");
     expect(view.innerHTML).not.toContain("createBackupRepository()");
   });
 

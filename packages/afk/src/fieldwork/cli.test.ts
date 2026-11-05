@@ -300,32 +300,6 @@ describe("AFK agent CLI", () => {
     expect(await readFile(store.path, "utf8")).toBe(before);
   });
 
-  it("preserves independently enabled skills during a rejected import and imports after disabling", async () => {
-    const { home, store } = await fixture();
-    const stored = join(home, ".agents/skills/.disabled/review");
-    await mkdir(stored, { recursive: true });
-    await writeFile(join(stored, "SKILL.md"), "---\nname: review\ndescription: Review fixture\n---\nFixture instruction\n");
-    const availability = { name: "review", scope: "Global", enabled: true };
-    expect((await manage(store, "skill/availability", availability)).code).toBe(0);
-    const active = join(home, ".agents/skills/review");
-    const alias = join(home, ".claude/skills/review");
-    expect(await readlink(active)).toBe(stored);
-    expect(await readlink(alias)).toBe(stored);
-    const before = await readFile(store.path, "utf8");
-    const imported = emptySettings();
-    imported.favoriteSources = [{ name: "Imported", source: "owner/toolkit" }];
-    expectFailure(await manage(store, "import", { settings: imported }));
-    expect(await readFile(store.path, "utf8")).toBe(before);
-    expect(await readlink(active)).toBe(stored);
-    expect(await readlink(alias)).toBe(stored);
-    expect((await manage(store, "skill/availability", { ...availability, enabled: false })).code).toBe(0);
-    expect((await manage(store, "import", { settings: imported })).code).toBe(0);
-    expect(await store.read()).toMatchObject(imported);
-    await expect(access(active)).rejects.toMatchObject({ code: "ENOENT" });
-    await expect(access(alias)).rejects.toMatchObject({ code: "ENOENT" });
-    expect(await readFile(join(stored, "SKILL.md"), "utf8")).toContain("Fixture instruction");
-  });
-
   it("rejects malformed JSON, arrays, unknown options, and unknown operations without mutations", async () => {
     const { home, store } = await fixture();
     const before = await readFile(store.path, "utf8");

@@ -2,7 +2,7 @@ import { lstat, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { KitStatus, SyncPlan } from "./kit.js";
+import type { KitStatus } from "./kit.js";
 import { FieldworkOperations } from "./operations.js";
 import { SourcePreparation } from "./preparation.js";
 import { emptySettings, SettingsStore, type Settings } from "./settings.js";
@@ -62,7 +62,6 @@ describe("comparing the kit with this machine", () => {
     ]);
     expect(kit.undecided.map(item => item.name)).toEqual(["stranger"]);
     expect(kit.undecided[0]).toMatchObject({ source: "someone/else", installable: true });
-    expect(kit.plan.install).toEqual([{ source: "me/core", skills: ["absent"] }]);
   });
 
   it("does not ask about pack members, tool skills or machine-only skills", async () => {
@@ -97,7 +96,7 @@ describe("comparing the kit with this machine", () => {
     expect(kit.undecided.map(item => [item.name, item.installable])).toEqual([["handmade", false], ["local-release", false]]);
   });
 
-  it("reports a Core skill turned off here, and plans to turn it back on", async () => {
+  it("reports a Core skill turned off here", async () => {
     await mkdir(join(home, ".agents/skills/.disabled/resting"), { recursive: true });
     await writeFile(join(home, ".agents/skills/.disabled/resting/SKILL.md"), "---\nname: resting\ndescription: resting\n---\n");
     await configure({ kit: { core: [{ source: "me/core", skills: ["resting"] }] } });
@@ -105,8 +104,6 @@ describe("comparing the kit with this machine", () => {
     const kit = await status();
 
     expect(kit.core[0]).toMatchObject({ name: "resting", status: "off" });
-    expect(kit.plan.enable).toEqual(["resting"]);
-    expect(kit.plan.install).toEqual([]);
   });
 
   it("treats a tool as the owner: one tool entry, not separate missing skills", async () => {
@@ -119,16 +116,7 @@ describe("comparing the kit with this machine", () => {
     const kit = await status();
 
     expect(kit.core).toEqual([]);
-    expect(kit.plan.install).toEqual([]);
     expect(kit.tools).toEqual([expect.objectContaining({ id: 1, missing: ["multi-review"] })]);
-    expect(kit.plan.tools).toEqual([{ id: 1, name: "Multi", command: "curl multi | bash", skills: ["multi-review"] }]);
-  });
-
-  it("reports an empty plan when the machine matches", async () => {
-    await skill("kept", "me/core");
-    await configure({ kit: { core: [{ source: "me/core", skills: ["kept"] }] } });
-
-    expect((await status()).plan).toEqual({ install: [], enable: [], tools: [] });
   });
 
   it("is included in the app state", async () => {
@@ -334,72 +322,6 @@ describe("packs", () => {
     await operations.run("pack/import", preview);
 
     await expect(operations.run("pack/import", preview)).rejects.toThrow(/changed/i);
-  });
-});
-
-describe("syncing", () => {
-  function runner(): (cwd: string, env: NodeJS.ProcessEnv, args: string[], output: (text: string) => void) => Promise<number> {
-    return async (_cwd, _env, args) => {
-      for (let index = 0; index < args.length; index++) if (args[index] === "--skill") await skill(args[index + 1]!, args[0]);
-      return 0;
-    };
-  }
-
-  beforeEach(() => { operations.installRunner = runner(); });
-
-  it("installs what is missing and leaves the rest alone", async () => {
-    await skill("kept", "me/core");
-    await configure({ kit: { core: [{ source: "me/core", skills: ["kept", "absent"] }] } });
-    const before = await status();
-
-    const result = await operations.run("kit/sync", { expected: before.plan }) as { status: KitStatus; install?: { code: number } };
-
-    expect(result.install?.code).toBe(0);
-    expect(result.status.core.map(item => item.status)).toEqual(["on", "on"]);
-    expect(result.status.plan).toEqual({ install: [], enable: [], tools: [] });
-  });
-
-  it("refuses a plan that no longer matches the machine", async () => {
-    await configure({ kit: { core: [{ source: "me/core", skills: ["absent"] }] } });
-    const stale: SyncPlan = { install: [{ source: "me/core", skills: ["other"] }], enable: [], tools: [] };
-
-    await expect(operations.run("kit/sync", { expected: stale })).rejects.toThrow(/changed/i);
-  });
-
-  it("never runs a tool's command unless that tool was approved", async () => {
-    await configure({ tools: [{ id: 1, name: "Marker", install: `touch ${join(home, "ran")}`, update: "", provides: ["marker"] }] });
-    const before = await status();
-
-    const skipped = await operations.run("kit/sync", { expected: before.plan }) as { tools: unknown[]; skippedTools: { id: number }[] };
-
-    expect(skipped.tools).toEqual([]);
-    expect(skipped.skippedTools).toEqual([expect.objectContaining({ id: 1 })]);
-    await expect(lstat(join(home, "ran"))).rejects.toThrow();
-
-    const approved = await operations.run("kit/sync", { expected: before.plan, runTools: [1] }) as { tools: { id: number; code: number }[] };
-
-    expect(approved.tools).toEqual([expect.objectContaining({ id: 1, code: 0 })]);
-    expect((await lstat(join(home, "ran"))).isFile()).toBe(true);
-  });
-
-  it("turns a Core skill back on", async () => {
-    await mkdir(join(home, ".agents/skills/.disabled/resting"), { recursive: true });
-    await writeFile(join(home, ".agents/skills/.disabled/resting/SKILL.md"), "---\nname: resting\ndescription: resting\n---\n");
-    await configure({ kit: { core: [{ source: "me/core", skills: ["resting"] }] } });
-
-    const result = await operations.run("kit/sync", { expected: (await status()).plan }) as { status: KitStatus };
-
-    expect(result.status.core[0]!.status).toBe("on");
-  });
-
-  it("stops and reports when an installation fails", async () => {
-    operations.installRunner = async () => 3;
-    await configure({ kit: { core: [{ source: "me/core", skills: ["absent"] }] } });
-
-    const result = await operations.run("kit/sync", { expected: (await status()).plan }) as { install: { code: number }; status: KitStatus };
-
-    expect(result.install.code).toBe(3);
-    expect(result.status.core[0]!.status).toBe("missing");
   });
 });
 

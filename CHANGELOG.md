@@ -11,7 +11,24 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+### Breaking
+
+- **Your library replaces the portable settings file.** Start one with **Start a new library** (first run, Backup or Settings) or `afk library init --apply`. AFK shows what will move first, then moves your Core skills into `~/.afk/library`, a Git repository with one save per change, and links them back where your agents look. The originals are kept in `~/.afk/library-backups` until you run `afk library confirm`. A settings location chosen in an earlier version still loads until then.
+- **Retired:** AFK folder ZIP export and import, settings JSON import and export in the app, choosing or moving the settings location (**Move current setup here**, **Load existing setup**), the `~/.afk/backups` rotation with `afk settings backups` and `afk settings restore`, Kit sync and `afk sync`, and the Global `~/.claude/skills` folder link. Backup and restore replace them, and Agent folders link Claude Code. The operations `kit/sync`, `bundle/export`, `bundle/preview`, `bundle/import`, `workspace`, `location` and `import` are gone. A pre-kit copy in `~/.afk/backups/pre-kit-*.json` stays; copy it back over `settings.json` to undo a migration.
+- **Update the `afk-cli` skill your agents load** with `afk skills update afk-cli -g`, so it describes the library instead of the retired commands.
+
 ### Added
+
+- **Backup.** Connect the library to a private GitHub repository (created with the GitHub CLI) or any Git remote. AFK saves two minutes after each change, keeps changes waiting when a save fails, lists every save, and lets you go back to an earlier one as a new save. **Needs attention** lists edits made outside AFK and skills Skills CLI replaced, each with its own choice.
+- **Restore my library** on a new or wiped machine, or `afk library connect owner/repo`. AFK checks the repository, links your Core skills, applies your agent folders and Manual/Automatic choices, keeps different local copies in a dated folder, and lists your tools for you to run.
+- **Agent folders** in Settings. `~/.agents/skills` is always linked and Claude Code is on by default; switch on other agents AFK knows, or add a custom folder. Switching a folder on links every skill that is on, including skills a tool installed.
+- **Install from a zip, a `.skill` file or a folder.** AFK checks the upload before writing anything, then saves the skills to Core, a pack or this machine. Uploaded skills are saved in full and never update automatically.
+- **Edit a skill's files** from a row's **⋯** menu, with a Markdown preview. Each save is one library save named after the skill. For a skill that updates from a repository, you choose once whether to keep your version or let updates replace your edits. Stored skills can be deleted too.
+
+### Changed
+
+- **One Skills page** replaces Kit and Installed Skills, with tabs Core, Packs, This machine only, Try later and To review. A Core skill missing here installs from its own row. Bulk selection works on every tab.
+- **Projects manage their own skills.** Adding a project lets AFK install, update, delete and set Manual/Automatic for the skills in that project's repository. Projects have no on/off and no packs; packs are Global.
 
 - **Automatic skill updates.** Settings can update your Global skills daily or weekly at a time you choose, using the same protected update as **Update skills**. It runs only while AFK is open, and catches up shortly after start if a run was missed while AFK was closed. The schedule is per machine; agents can set it with `skills/schedule`.
 
@@ -19,7 +36,7 @@ This changelog tracks meaningful updates by version and date.
 
 - **A stalled outside command can no longer hang AFK.** Installs, updates, repository reads, tool commands and AFK's own update now run with a silence limit and an overall limit, stop together with their child processes, and fail with a message naming the step. Install and update dialogs show the current source, elapsed time and last output line, and keep running when you close them. Closing AFK has a deadline too and logs anything it had to abandon.
 - **`afk status` explains a server that is running but not answering.** It prints the PID and the fix instead of `fetch failed`, and `afk stop --force` stops it and clears its record. `afk stop` offers to do so when run in a terminal.
-- **Installing a skill AFK had already stored no longer leaves two copies.** The fresh installation replaces the older stored copy, and packs, project links and your Manual/Automatic choice keep working. Existing duplicates show as **Two copies** in Installed Skills with a **Resolve** action. Turning such a skill off, or turning on a pack that contains it, now asks which copy to keep instead of failing; identical copies merge without asking. Doctor also reports them.
+- **Installing a skill AFK had already stored no longer leaves two copies.** The fresh installation replaces the older stored copy, and packs, project links and your Manual/Automatic choice keep working. Existing duplicates show as **Two copies** on the Skills page with a **Resolve** action. Turning such a skill off, or turning on a pack that contains it, now asks which copy to keep instead of failing; identical copies merge without asking. Doctor also reports them.
 - **Manual/Automatic now applies to the copy agents load.** When a skill was installed through Skills CLI after a pack had already stored a copy of it, AFK edited the hidden stored copy. The setting looked saved, but agents still read the unchanged installed copy, and the invocation filter still listed it as Automatic.
 
 ## v2.1.0 - 2026-11-02

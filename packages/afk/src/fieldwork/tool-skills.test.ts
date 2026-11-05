@@ -156,15 +156,6 @@ describe("after a tool run", () => {
     expect(await readFile(agents("wiz/SKILL.md"), "utf8")).not.toContain("disable-model-invocation");
   });
 
-  it("applies the choices after a sync approves the tool", async () => {
-    await configure({ ...toolWrites(writesWiz), kit: { core: [] }, preferences: { "Global|wiz": "Manual only" } });
-    const { plan } = await operations.run("kit/state") as { plan: unknown };
-
-    await operations.run("kit/sync", { expected: plan, runTools: [1] });
-
-    expect(await readFile(agents("wiz/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
-  });
-
   it("warns, naming the skill, when the run recreated a skill that is off", async () => {
     await configure(toolWrites(writesWiz));
     await mkdir(agents("wiz"), { recursive: true });

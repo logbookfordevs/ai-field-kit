@@ -281,44 +281,6 @@ describe("Agent rules managed regions", () => {
     const result = await rules.sync(settings, ["codex", "other"]);
     expect(result.preview.targets.map(target => target.status)).toEqual(["current", "current"]);
   });
-
-  it("moves the complete canonical workspace without deleting the original or syncing targets", async () => {
-    const { store, home, rules, target } = await fixture();
-    const original = store.path;
-    const destination = join(home, "Drive/afk/settings.json");
-    await store.relocate(destination);
-    expect(await readFile(join(dirname(destination), "AGENTS.md"), "utf8")).toContain("{{guide.md}}");
-    expect(await readFile(join(dirname(destination), "references/guide.md"), "utf8")).toContain("Development guidance");
-    expect(await readFile(original, "utf8")).toContain('"version"');
-    expect((await rules.state(await store.read())).folder).toBe(dirname(destination));
-    await expect(readFile(target)).rejects.toMatchObject({ code: "ENOENT" });
-  });
-
-  it("loads a relocated copy with synced rules and retains ownership", async () => {
-    const { store, home, rules, target } = await fixture();
-    await rules.sync(await store.read(), ["codex"]);
-    const before = await readFile(target, "utf8");
-    const original = store.path;
-    const destination = join(home, "Existing/afk/settings.json");
-    await store.relocate(destination);
-    await store.selectFolder(dirname(original));
-    expect(await readFile(target, "utf8")).toBe(before);
-    expect(Object.keys((await store.read()).agentRules!.receipts)).toContain("codex");
-  });
-
-  it("refuses workspace relocation reference symlinks and destination collisions before copying", async () => {
-    const { store, home } = await fixture();
-    const original = store.path;
-    const newFolder = join(home, "Destination"); await mkdir(newFolder);
-    await writeFile(join(newFolder, "AGENTS.md"), "User");
-    await expect(store.relocate(join(newFolder, "settings.json"))).rejects.toThrow("already exists");
-    expect(store.path).toBe(original);
-    await rm(join(newFolder, "AGENTS.md"));
-    await rm(join(dirname(original), "references"), { recursive: true });
-    await symlink(newFolder, join(dirname(original), "references"));
-    await expect(store.relocate(join(newFolder, "settings.json"))).rejects.toThrow("symbolic links");
-    await expect(readFile(join(newFolder, "AGENTS.md"))).rejects.toMatchObject({ code: "ENOENT" });
-  });
 });
 
 describe("Claude CLAUDE.md import", () => {
