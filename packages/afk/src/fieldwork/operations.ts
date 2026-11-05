@@ -45,6 +45,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "rules/disconnect": ["id"], workspace: ["mode", "folder"], location: ["path"],
     "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
     "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"],
+    "backup/keep": ["id"], "backup/discard": ["id"], "backup/take-update": ["name"], "backup/restore-saved": ["name"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
     "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "project/save": ["previous"],
@@ -339,8 +340,19 @@ export class FieldworkOperations {
   private async applyBackup(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
     const { backup } = this;
     if (operation === "backup/state") {
-      const status = await backup.status();
-      return data.brief === true ? { status } : { status, history: await backup.history(), contents: await backup.contents() };
+      const status = await backup.status(), attention = await backup.checks.list();
+      return data.brief === true ? { status, attention } : { status, attention, history: await backup.history(), contents: await backup.contents() };
+    }
+    const resolutions: Partial<Record<Operation, () => Promise<void>>> = {
+      "backup/keep": () => backup.checks.keep(String(data.id)),
+      "backup/discard": () => backup.checks.discard(String(data.id)),
+      "backup/take-update": () => backup.checks.take(String(data.name)),
+      "backup/restore-saved": () => backup.checks.restore(String(data.name)),
+    };
+    const resolve = resolutions[operation];
+    if (resolve) {
+      await resolve();
+      return { status: await backup.status(), attention: await backup.checks.list() };
     }
     if (operation === "backup/connect") return backup.connect(String(data.url));
     if (operation === "backup/create") return backup.createRepository(String(data.name));

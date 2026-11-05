@@ -69,6 +69,10 @@ export const operationCatalog = {
   "backup/create": { description: "Create a private GitHub repository with the GitHub CLI (its own sign-in is used), connect it and push. Skill files are not scanned for secrets, so the repository must stay private.", input: { name: "Repository name, for example afk-library." } },
   "backup/save": { description: "Save now: push every commit waiting locally. A failed push keeps the commits and reports why.", input: {} },
   "backup/restore": { description: "Go back to an earlier save. The library is restored to that point as a new commit, so going back can itself be undone.", input: { id: "Save id from backup/state history." } },
+  "backup/keep": { description: "Needs attention, edited outside AFK: commit the edit made to stored files without the editor, with the saved invocation choice applied. Automatic saving to the remote stays paused while such edits wait.", input: { id: "Item id from backup/state attention, for example edited:kami." } },
+  "backup/discard": { description: "Needs attention, edited outside AFK: put the saved version of the files back. No commit is made.", input: { id: "Item id from backup/state attention, for example edited:kami." } },
+  "backup/take-update": { description: "Needs attention, replaced by Skills CLI: move the plain folder's new files into the library, reapply the saved invocation choice, relink every agent folder and commit.", input: { name: "Skill name from a replaced item in backup/state attention." } },
+  "backup/restore-saved": { description: "Needs attention, replaced by Skills CLI: remove the plain folder and put the link to the saved version back. The folder's files are deleted.", input: { name: "Skill name from a replaced item in backup/state attention." } },
   "backup/disconnect": { description: "Disconnect the remote. Local commits and history stay.", input: {} },
   welcome: { description: "Remember dismissal of the Welcome dialog.", input: {} },
 } satisfies Record<string, OperationDescription>;

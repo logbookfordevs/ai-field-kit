@@ -40,8 +40,9 @@ export function libraryRoot(home: string): string {
 
 /** AFK's own Git repository of Core skills, their `.afk` records and small settings. */
 export class Library {
+  // Every instance of one library shares a queue, so a status check never sees another writer's half-finished change.
+  private static readonly queues = new Map<string, Promise<unknown>>();
   readonly root: string;
-  private queue: Promise<unknown> = Promise.resolve();
 
   constructor(readonly home: string, private readonly runner: GitRunner = runCommand) {
     this.root = libraryRoot(home);
@@ -81,9 +82,34 @@ export class Library {
 
   /** Runs one library change as exactly one commit; a failure restores the working tree to the last commit. */
   change<T>(message: string, mutate: () => Promise<T>): Promise<T> {
-    const next = this.queue.then(() => this.commitChange(message, mutate));
-    this.queue = next.catch(() => undefined);
-    return next;
+    return this.enqueue(() => this.commitChange(message, mutate));
+  }
+
+  /** Paths whose files differ from the last commit, as the library itself would list them. */
+  dirtyPaths(): Promise<string[]> {
+    return this.enqueue(async () => {
+      if (!await this.exists()) return [];
+      const output = await this.gitOutput("Checking the library", "status", "--porcelain", "-z", "-uall", "--no-renames");
+      return output.split("\0").filter(entry => entry.length > 3).map(entry => entry.slice(3));
+    });
+  }
+
+  /** Commits exactly these paths, leaving every other change in the library alone. */
+  commitPaths(message: string, paths: string[], prepare?: () => Promise<void>): Promise<void> {
+    return this.enqueue(async () => {
+      await prepare?.();
+      await this.git("Saving the library", "--literal-pathspecs", "add", "-A", "--", ...paths);
+      await this.git("Saving the library", "commit", "--quiet", "--no-verify", "-m", message);
+    });
+  }
+
+  /** Puts these paths back to how the last commit has them; no commit is made. */
+  restorePaths(paths: string[]): Promise<void> {
+    return this.enqueue(async () => {
+      await this.git("Restoring the library", "--literal-pathspecs", "clean", "-fdq", "--", ...paths);
+      const tracked = (await this.git("Restoring the library", "--literal-pathspecs", "ls-tree", "-r", "--name-only", "-z", "HEAD", "--", ...paths)).split("\0").filter(Boolean);
+      if (tracked.length) await this.git("Restoring the library", "--literal-pathspecs", "checkout", "HEAD", "--", ...tracked);
+    });
   }
 
   /** Creates the repository and its first commit; a failure removes everything it wrote. */
@@ -135,6 +161,12 @@ export class Library {
   /** Removes only AFK's own links to a stored skill; the stored files never move. */
   async unlink(name: string): Promise<void> {
     for (const path of this.links(name)) if (await this.isOwnLink(path, name)) await rm(path);
+  }
+
+  private enqueue<T>(work: () => Promise<T>): Promise<T> {
+    const next = (Library.queues.get(this.root) ?? Promise.resolve()).then(work);
+    Library.queues.set(this.root, next.catch(() => undefined));
+    return next;
   }
 
   private async distinctLinks(name: string): Promise<string[]> {
@@ -192,6 +224,10 @@ export class Library {
   }
 
   private async git(step: string, ...args: string[]): Promise<string> {
+    return (await this.gitOutput(step, ...args)).trim();
+  }
+
+  private async gitOutput(step: string, ...args: string[]): Promise<string> {
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       HOME: this.home,
@@ -205,6 +241,6 @@ export class Library {
     };
     const result = await this.runner({ command: "git", args: ["-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", ...args], step, cwd: this.root, env, timeoutMs: 60_000 });
     if (result.code !== 0) throw new Error(`${step} failed: ${result.output.trim().split("\n").at(-1) ?? `git exited with ${result.code}`}`);
-    return result.output.trim();
+    return result.output;
   }
 }
