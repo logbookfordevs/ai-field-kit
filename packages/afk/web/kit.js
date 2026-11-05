@@ -1,4 +1,4 @@
-let kitStatus={core:[],sources:[],tools:[],undecided:[],machineOnly:[],plan:{install:[],enable:[],tools:[]}},migrationRequired=false,kitTab='machine',kitUpstream;
+let kitStatus={core:[],sources:[],tools:[],undecided:[],machineOnly:[],plan:{install:[],enable:[],tools:[]}},migrationRequired=false,kitUpstream;
 const kitDisclosures=new Map();
 function setKitDisclosure(key,open){kitDisclosures.set(key,open)}
 function kitDisclosureAttrs(key,openByDefault=false){return `data-kit-disclosure="${esc(key)}" ontoggle="setKitDisclosure(this.dataset.kitDisclosure,this.open)" ${kitDisclosures.get(key)??openByDefault?'open':''}`}
@@ -10,24 +10,6 @@ function kitSourceHeading(source,count){return `<div class="kit-source"><h3 titl
 function kitSourceLink(source){
   const url=sourceWebUrl(source),label=esc(sourceLabel(source));
   return url?`<a class="kit-source-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(source)}">${label}<span aria-hidden="true"> ↗</span><span class="sr-only"> (opens in a new tab)</span></a>`:`<span class="kit-source-link" title="${esc(source)}">${label}</span>`;
-}
-function setKitTab(tab){kitTab=tab;renderKit();$('kitTab-'+tab)?.focus()}
-function kitTabKey(event){
-  const order=['machine','core','packs','later'],at=order.indexOf(kitTab);
-  const next={ArrowRight:order[(at+1)%order.length],ArrowLeft:order[(at+order.length-1)%order.length],Home:order[0],End:order[order.length-1]}[event.key];
-  if(!next)return;
-  event.preventDefault();setKitTab(next);
-}
-function kitTabs(){
-  const tabs=[['machine','This machine',kitAttention()||''],['core','Core',kitStatus.core.length],['packs','Packs',profiles.length],['later','Try later',favoriteSources.length]];
-  return `<div class="page-tabs" role="tablist" aria-label="Your kit">${tabs.map(([id,label,count])=>`<button type="button" role="tab" id="kitTab-${id}" aria-selected="${kitTab===id}" aria-controls="kitPanel" tabindex="${kitTab===id?0:-1}" onclick="setKitTab('${id}')" onkeydown="kitTabKey(event)">${label} <span class="meta">${count}</span></button>`).join('')}</div>`;
-}
-function renderKit(){
-  const pending=planCount()>0;
-  const action=`<div class="inline">${button('Install skills','showInstallSkills()','','data-od-id="install-skills"')}${button(pending?`Sync this machine · ${planCount()}`:'Nothing to sync','reviewSync()','primary',pending?'data-od-id="sync-machine"':'disabled data-od-id="sync-machine"')}</div>`;
-  const panels={machine:renderMachinePanel,core:renderCorePanel,packs:renderPacksPanel,later:renderSourcesPanel};
-  $('view').innerHTML=head('Kit','The skills that travel with you, compared with this machine.',action)+kitTabs()+`<div id="kitPanel" role="tabpanel" aria-labelledby="kitTab-${kitTab}">${panels[kitTab]()}</div>`;
-  if(kitTab==='later')renderSourceList();
 }
 function undecidedActions(item){
   const name=esc(item.name);
@@ -44,28 +26,6 @@ function undecidedGroups(){
   }
   return [...groups].sort(([a],[b])=>(a===''?1:0)-(b===''?1:0)||a.localeCompare(b)).map(([,group])=>[group.source,group.items]);
 }
-function renderUndecided(){
-  if(!kitStatus.undecided.length)return '';
-  const groups=undecidedGroups().map(([source,items])=>{
-    const title=source?kitSourceHeading(source,items.length):`<div class="kit-source"><h3>No repository source</h3><span class="meta">Another machine can’t install these, unless a tool brings them.</span></div>`;
-    const all=source&&items.length>1?button('Add all to Core',`addToKit(${esc(JSON.stringify(items.map(item=>item.name)))},'core')`,'text'):'';
-    return `<section class="kit-group"><div class="kit-group-head">${title}${all}</div>${items.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code></div><div class="kit-actions">${undecidedActions(item)}</div></div>`).join('')}</section>`;
-  }).join('');
-  return `<section class="kit-section" data-od-id="kit-undecided"><h2>Not in your kit</h2><p class="sub">Installed here, but not going anywhere with you yet. Decide once and AFK stops asking.</p>${groups}</section>`;
-}
-function renderMissing(){
-  const missing=kitStatus.core.filter(item=>item.status==='missing');
-  const off=kitStatus.core.filter(item=>item.status==='off');
-  const tools=kitStatus.tools.filter(tool=>tool.missing.length);
-  if(!missing.length&&!off.length&&!tools.length)return '';
-  const rows=[
-    ...missing.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code><span class="meta">${esc(sourceLabel(item.source))}</span></div><div class="kit-actions">${kitCatchUpButton(item.name,'Install')}${button('Drop from kit',`dropFromKit('${esc(item.name)}','core')`,'text')}</div></div>`),
-    ...off.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code><span class="meta">Installed, turned off here</span></div><div class="kit-actions">${kitCatchUpButton(item.name,'Turn on')}${button('Drop from kit',`dropFromKit('${esc(item.name)}','core')`,'text')}</div></div>`),
-    ...tools.map(tool=>`<div class="kit-row"><div class="kit-row-name"><strong>${esc(tool.name)}</strong><span class="meta">Brings ${tool.missing.map(esc).join(', ')}</span></div><div class="kit-actions">${button('Run install command',`runTool(${tool.id},false)`)}</div></div>`),
-  ].join('');
-  const catchUp=missing.length+off.length+tools.length>1?button('Install all…','reviewSync()','text'):'';
-  return `<section class="kit-section" data-od-id="kit-missing"><div class="kit-group-head"><h2>Missing here</h2>${catchUp}</div><p class="sub">In your kit, but not ready on this machine.</p><section class="kit-group">${rows}</section></section>`;
-}
 function renderUpstream(){
   if(!kitStatus.sources.some(source=>source.follow))return '';
   const offers=kitUpstream?.sources||[];
@@ -75,26 +35,6 @@ function renderUpstream(){
   const checked=kitUpstream&&!offers.length?'<p class="sub">No new skills in the repositories you follow.</p>':'';
   return `<section class="kit-section" data-od-id="kit-following"><div class="kit-group-head"><h2>New from sources you follow</h2><div class="kit-actions">${kitUpstream&&kitUpstream!=='loading'?button('Clear','clearUpstream()','text'):''}${button(kitUpstream==='loading'?'Checking…':'Check now','checkUpstream()','text',kitUpstream==='loading'?'disabled':'')}</div></div>${checked}${rows}</section>`;
 }
-function renderMachinePanel(){
-  const sections=renderUndecided()+renderMissing()+renderUpstream();
-  const clear=!kitAttention()?`<div class="kit-clear"><h2>${kitStatus.core.length||kitStatus.tools.length?'This machine matches your kit':'Your kit is empty'}</h2><p class="sub">${kitStatus.core.length||kitStatus.tools.length?'Everything in Core is installed and on.':'Use Install skills to start, or install them your usual way and they’ll appear here for you to sort.'}</p></div>`:'';
-  const local=kitStatus.machineOnly.length?`<details class="section-help" ${kitDisclosureAttrs('machine-only')}><summary>${countOf(kitStatus.machineOnly.length,'skill')} kept on this machine only</summary>${kitStatus.machineOnly.map(name=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(name)}</code></div><div class="kit-actions">${button('Ask again',`keepOnMachine('${esc(name)}',false)`,'text')}</div></div>`).join('')}</details>`:'';
-  return clear+sections+local;
-}
-function renderCorePanel(){
-  const status={on:'',off:'Off here',missing:'Missing here'};
-  const groups=kitStatus.sources.map((source,index)=>{
-    const items=kitStatus.core.filter(item=>item.source===source.source);
-    const follow=button(source.follow?'Following · stop':'Follow new skills',`toggleFollow(${index})`,'text');
-    const issues=items.filter(item=>item.status!=='on').length;
-    const summary=`${esc(source.name||sourceLabel(source.source))} <span class="meta">${countOf(items.length,'skill')}${issues?` · ${issues} not ready here`:''}${source.follow?' · following':''}</span>`;
-    return `<details class="kit-group" ${kitDisclosureAttrs(source.source,issues>0)}><summary>${summary}</summary><div class="kit-group-head">${kitSourceLink(source.source)}${follow}</div>${items.map(item=>`<div class="kit-row"><div class="kit-row-name"><code>${esc(item.name)}</code>${status[item.status]?`<span class="meta">${status[item.status]}</span>`:''}</div><div class="kit-actions">${button('Drop',`dropFromKit('${esc(item.name)}','core')`,'text')}</div></div>`).join('')}</details>`;
-  }).join('');
-  const tools=kitStatus.tools.length?`<section class="kit-section"><h2>From your tools</h2><p class="sub">These tools install and update their own skills. Your kit tracks the tool.</p><section class="kit-group">${kitStatus.tools.map(tool=>`<div class="kit-row"><div class="kit-row-name"><strong>${esc(tool.name)}</strong><span class="meta">${tool.provides.map(esc).join(', ')}</span></div><div class="kit-actions">${button('Open in Tools',"navigate('Tools')",'text')}</div></div>`).join('')}</section></section>`:'';
-  const empty=kitStatus.sources.length?'':'<div class="empty"><h2>Core is empty</h2><p class="sub">Core is what you want on every machine, always on. Add skills you’ve installed from This machine, or choose them from a repository.</p></div>';
-  const actions=`<div class="inline kit-panel-actions">${kitStatus.core.length?button('Export JSON',"exportPack('core')",'text'):''}${button('Install skills',"showInstallSkills({to:'core'})")}</div>`;
-  return actions+empty+(groups?`<section class="kit-section">${groups}</section>`:'')+tools;
-}
 const kitCatchingUp=new Set();
 function kitCatchUpButton(name,label){
   const busy=kitCatchingUp.has(name);
@@ -103,7 +43,7 @@ function kitCatchUpButton(name,label){
 async function catchUpSkill(name){
   if(kitCatchingUp.has(name))return;
   kitCatchingUp.add(name);
-  if(section==='Kit')renderKit();
+  if(section==='Skills')renderKit();
   try{
     const result=await request('kit/sync',{expected:kitStatus.plan,only:[name],agent:installAgentChoice()});
     const failed=result.enabled.find(item=>!item.ok);
@@ -153,7 +93,7 @@ async function checkUpstream(){
   kitUpstream='loading';renderKit();
   try{kitUpstream=await request('kit/upstream',{})}
   catch(error){kitUpstream=undefined;toast(error.message)}
-  if(section==='Kit'&&!migrationRequired)renderKit();
+  if(section==='Skills'&&!migrationRequired)renderKit();
 }
 function clearUpstream(){kitUpstream=undefined;renderKit()}
 function acceptUpstream(index,name){
@@ -242,7 +182,7 @@ async function applyMigration(){
   control.disabled=true;$('migrationError').textContent='';
   try{
     const result=await request('migration/apply',{...migrationPayload(),fingerprint:migrationPreview.fingerprint});
-    section='Kit';kitTab='machine';
+    section='Skills';skillsTab='review';
     await refresh();
     toast(result.backup?`Moved to your kit. Old file kept at ${result.backup}`:'Moved to your kit.');
   }catch(error){$('migrationError').textContent=error.message;control.disabled=false}

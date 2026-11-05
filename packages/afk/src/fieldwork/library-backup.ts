@@ -2,6 +2,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { runCommand } from "./command-runner.js";
+import { LocalChecks } from "./library-checks.js";
 import type { GitRunner, Library } from "./library.js";
 import { coreNames, deployLibrary, type DeploySummary } from "./library-deploy.js";
 
@@ -12,6 +13,8 @@ export interface BackupStatus {
   state: BackupState;
   remote?: string;
   waiting: number;
+  attention: number;
+  held: boolean;
   lastSavedAt?: number;
   error?: string;
   pushing: boolean;
@@ -34,6 +37,7 @@ interface BackupMemory { lastSavedAt?: number; error?: string }
 export interface BackupOptions {
   signal?: AbortSignal | undefined;
   now?: (() => number) | undefined;
+  isOn?: ((name: string) => Promise<boolean>) | undefined;
 }
 
 const REMOTE = "origin";
@@ -66,20 +70,23 @@ function failure(output: string): string {
 
 /** Saving the library to a Git remote. Git's own credentials are used; AFK never stores or passes a token. */
 export class Backup {
+  readonly checks: LocalChecks;
   private pushing: Promise<BackupStatus> | undefined;
   private readonly now: () => number;
 
   constructor(private readonly library: Library, private readonly runner: GitRunner = runCommand, private readonly options: BackupOptions = {}) {
     this.now = options.now ?? Date.now;
+    this.checks = new LocalChecks(library, options.isOn ?? (async () => false));
   }
 
   async status(): Promise<BackupStatus> {
-    if (!await this.library.exists()) return { library: false, state: "off", waiting: 0, pushing: false };
+    if (!await this.library.exists()) return { library: false, state: "off", waiting: 0, attention: 0, held: false, pushing: false };
     const remote = await this.remoteUrl(), memory = await this.memory(), pushing = this.pushing !== undefined;
-    if (!remote) return { library: true, state: "off", waiting: 0, pushing };
+    const items = await this.checks.list(), attention = items.length, held = items.some(item => item.kind === "edited");
+    if (!remote) return { library: true, state: "off", waiting: 0, attention, held, pushing };
     const waiting = await this.waiting();
     const state: BackupState = waiting === 0 ? "saved" : memory.error ? "failed" : "waiting";
-    return { library: true, state, remote, waiting, pushing, ...(memory.lastSavedAt === undefined ? {} : { lastSavedAt: memory.lastSavedAt }), ...(memory.error && waiting > 0 ? { error: memory.error } : {}) };
+    return { library: true, state, remote, waiting, attention, held, pushing, ...(memory.lastSavedAt === undefined ? {} : { lastSavedAt: memory.lastSavedAt }), ...(memory.error && waiting > 0 ? { error: memory.error } : {}) };
   }
 
   /** Points the library at a remote and sends everything saved so far. A failed first push still leaves it connected. */
@@ -180,6 +187,22 @@ export class Backup {
     return (await this.waitingIds()).length;
   }
 
+  /** Skills whose files or record changed in saves the remote does not have yet. */
+  async unpushedSkills(): Promise<string[]> {
+    const ids = await this.waitingIds();
+    if (!ids.length) return [];
+    const tracked = await this.git("Reading the remote", "rev-parse", "--verify", "--quiet", `refs/remotes/${REMOTE}/${await this.git("Reading the branch", "symbolic-ref", "--short", "HEAD")}`).catch(() => "");
+    const changed = tracked
+      ? await this.git("Reading waiting changes", "diff", "--name-only", `${tracked}..HEAD`)
+      : await this.git("Reading waiting changes", "ls-tree", "-r", "--name-only", "HEAD");
+    const names = new Set<string>();
+    for (const path of changed.split("\n")) {
+      const name = /^skills\/([^/]+)\//.exec(path)?.[1] ?? /^\.afk\/skills\/([^/]+)\.json$/.exec(path)?.[1];
+      if (name) names.add(name);
+    }
+    return [...names];
+  }
+
   private async push(): Promise<BackupStatus> {
     const settled = async (): Promise<BackupStatus> => ({ ...await this.status(), pushing: false });
     if (!await this.remoteUrl() || await this.waiting() === 0) return settled();
@@ -272,6 +295,7 @@ export function startBackup(backup: Backup, options: BackupScheduleOptions = {})
     if (status.state === "off") { seen = undefined; return; }
     const head = await backup.lastChange();
     if (head !== seen) { seen = head; lastActivity = now(); }
+    if (status.held) return;
     if (status.waiting === 0 || now() - lastActivity < quiet) return;
     lastActivity = now();
     await backup.saveNow();

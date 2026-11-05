@@ -150,4 +150,29 @@ describe("the install dialog", () => {
 
     expect(evaluate("installDialog.found")).toBe(false);
   });
+
+  it("opens from a Try later bookmark with its repository and saved selection, and still asks where it goes", async () => {
+    stored = JSON.stringify({ to: "later" });
+    evaluate("favoriteSources=[{name:'repo',source:'me/repo',skills:['fresh','taken']}]");
+    field("installSource").value = "me/repo";
+
+    evaluate("installFromSource(0)");
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(dialog).toContain('value="me/repo"');
+    expect(dialog).not.toMatch(/name="installTo" value="\w+" checked/);
+    expect(evaluate("[...memberPicker.selected].join()")).toBe("fresh");
+    expect(field("startInstall").textContent).toBe("Choose where it goes");
+    expect(field("startInstall").disabled).toBe(true);
+  });
+
+  it("keeps the destination a bookmark menu item names, such as Add to Core", async () => {
+    evaluate("favoriteSources=[{name:'repo',source:'me/repo',skills:['fresh']}]");
+    field("installSource").value = "me/repo";
+
+    evaluate("installFromSource(0,'core')");
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(dialog).toMatch(/name="installTo" value="core" checked/);
+  });
 });

@@ -3,9 +3,9 @@ let installDialog,installationPicker;
 function installPrefs(){try{return JSON.parse(localStorage.getItem('afk.install'))||{}}catch{return {}}}
 function saveInstallPrefs(patch){try{localStorage.setItem('afk.install',JSON.stringify({...installPrefs(),...patch}))}catch{/* Preferences are a convenience; private modes can refuse them. */}}
 function installAgentChoice(){return installPrefs().agent||'universal'}
-function showInstallSkills({source='',to,selected=[],scope:installScope='Global'}={}){
+function showInstallSkills({source='',to,selected=[],scope:installScope='Global',askDestination=false}={}){
   const prefs=installPrefs();
-  installDialog={source,selected,to:to||prefs.to||'',packTarget:profiles.length?'':'new-pack',scope:installScope,candidates:[],version:0,finding:false,found:false,running:false,finished:false};
+  installDialog={source,selected,to:to||(askDestination?'':prefs.to)||'',packTarget:profiles.length?'':'new-pack',scope:installScope,candidates:[],version:0,finding:false,found:false,running:false,finished:false};
   installationPicker={kind:'installation',selected:new Set(),names:[]};
   const destinations=installDestinations.map(([value,label,hint])=>`<label class="install-destination"><input type="radio" name="installTo" value="${value}" ${installDialog.to===value?'checked':''} onchange="setInstallDestination('${value}')"><span><strong>${label}</strong><small>${hint}</small></span></label>`).join('');
   const agents=['universal','codex','claude-code','cursor','opencode'].map(value=>`<option value="${value}" ${installAgentChoice()===value?'selected':''}>${value==='universal'?'Universal · .agents/skills':value}</option>`).join('');
@@ -17,7 +17,7 @@ function showInstallSkills({source='',to,selected=[],scope:installScope='Global'
 }
 function installFromSource(index,to){
   const source=favoriteSources[index];
-  if(source)showInstallSkills({source:source.source,to,selected:source.skills||[]});
+  if(source)showInstallSkills({source:source.source,to,selected:source.skills||[],askDestination:true});
 }
 function installSourceChanged(){
   const dialog=installDialog;

@@ -8,7 +8,13 @@ import { expandPath, skillName, type Settings, type SettingsStore } from "./sett
 import { Library, machineRoot, packCacheRoot, type Storage } from "./library.js";
 import { toolOwner } from "./kit.js";
 import { offFolder, ToolSkills } from "./tool-skills.js";
+import { writeInvocationChoice } from "./invocation.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
+
+/** A Global skill is on when the user turned it on alone or an enabled pack owns it. */
+export function globalSkillOn(settings: Settings, name: string): boolean {
+  return Boolean(settings.independentSkills.Global?.includes(name)) || settings.profiles.some(profile => profile.enabled.includes("Global") && profile.skills.includes(name));
+}
 
 export function resolveProfile(settings: Settings, reference: string): Settings["profiles"][number] {
   const byId = settings.profiles.find(profile => profile.id === reference);
@@ -32,6 +38,8 @@ export interface SkillEntry {
   invocation: SkillInvocation;
   defaultInvocation: SkillInvocation;
   invocationInherited: boolean;
+  /** Where AFK keeps a Global skill's one copy; absent for skills AFK does not store. */
+  storage?: Storage;
   /** Set for skills a tool writes; they open read-only in the editor. */
   tool?: string;
   readOnly?: boolean;
@@ -195,7 +203,8 @@ export class SkillLibrary {
         try { const receipt = JSON.parse(await readFile(join(path, ".afk-source.json"), "utf8")) as { source?: unknown }; if (typeof receipt.source === "string") preparedSource = receipt.source; } catch { /* Older prepared copies have no provenance receipt. */ }
         const source = librarySources[name] ?? preparedSource ?? sources[name] ?? (invocationInherited ? globalSources[name] : undefined);
         const tool = scope === "Global" ? toolOwner(settings, name) : undefined;
-        return { name, path, ...(source ? { source } : {}), owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited, ...(tool ? { tool: tool.name, readOnly: true } : {}) };
+        const storage = scope === "Global" ? await this.library.storage(name) : undefined;
+        return { name, path, ...(source ? { source } : {}), ...(storage ? { storage } : {}), owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited, ...(tool ? { tool: tool.name, readOnly: true } : {}) };
       }));
       for (const entry of entries) if (entry) result.push(entry);
     }
@@ -505,6 +514,8 @@ export class SkillLibrary {
       await mkdir(resolve(destination, ".."), { recursive: true });
       await cp(await realpath(from), destination, { recursive: true, dereference: true, errorOnExist: true, force: false });
       if (reference) await writeFile(join(destination, ".afk-source.json"), JSON.stringify({ source: reference }), { mode: 0o600 });
+      const mode = settings.preferences[`Global|${name}`];
+      if (cached && (mode === "Manual only" || mode === "Automatic allowed")) await writeInvocationChoice(destination, mode);
     }
   }
 }

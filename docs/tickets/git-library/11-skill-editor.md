@@ -16,6 +16,7 @@ Open a skill's files from the Skills page in an editor: file list, plain text, M
 - [ ] Saving an auto-updating skill asks first, and the choice is persisted.
 - [ ] Tool skills open read-only and cannot be saved.
 - [ ] Paths outside the skill folder cannot be read or written.
+- [ ] Bulk selection is back on the Global Skills tabs (regression found after ticket 10): select several skills and change invocation, turn on/off, update or delete them together, as the old Installed Skills page allowed.
 
 ## Blocked By
 - 10.
