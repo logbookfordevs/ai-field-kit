@@ -15,6 +15,7 @@ import { SettingsStore, validateSettings } from "./settings.js";
 import { settingsSchema } from "./settings-schema.js";
 import { portableSettings } from "./local-state.js";
 import { SkillLibrary } from "./skills.js";
+import type { RestoreSummary } from "./library-restore.js";
 import { applyLibraryInit, confirmLibraryInit, planLibraryInit, type LibraryInitPlan } from "./library-init.js";
 import { startFieldwork } from "./server.js";
 
@@ -36,6 +37,7 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk migrate [--core <stack-id>] [--apply]  Move old stacks settings to the kit format
   afk library init [--apply]         Move Core, pack and machine-only skills into AFK storage; dry run without --apply
   afk library confirm                Delete the originals kept after library init
+  afk library connect <owner/repo | url> [--run-tools <id,id|all>]  Restore your library on this machine; tools run only when named
   afk install <url> [--agent <agent>] [-g | -p <folder>] [--yes]
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
@@ -151,8 +153,35 @@ async function libraryCommand(argv: string[], store: SettingsStore): Promise<num
     console.log(describeLibraryInit(apply ? await applyLibraryInit(store) : await planLibraryInit(store), apply));
     return 0;
   }
+  if (action === "connect") return connectLibrary(argv.slice(1), store);
   if (action === "confirm" && option === undefined) { console.log(`Deleted ${await confirmLibraryInit(store)}.`); return 0; }
-  throw new Error("Use afk library init [--apply] or afk library confirm.");
+  throw new Error("Use afk library init [--apply], afk library confirm or afk library connect <owner/repo | url>.");
+}
+
+async function connectLibrary(argv: string[], store: SettingsStore): Promise<number> {
+  const [repository, flag, ids, ...rest] = argv;
+  if (!repository || repository.startsWith("-") || rest.length || (flag !== undefined && (flag !== "--run-tools" || !ids))) throw new Error("Use afk library connect <owner/repo | url> [--run-tools <id,id|all>].");
+  const operations = new FieldworkOperations(store);
+  try {
+    const summary = await operations.run("restore/start", { repository }) as RestoreSummary;
+    const lines = [`Restored ${summary.repository}.`, `  ${summary.linked.length} Core skill${summary.linked.length === 1 ? "" : "s"} linked into ${summary.folders.join(", ")}`, `  ${summary.choices} Manual/Automatic choice${summary.choices === 1 ? "" : "s"} kept in their files`];
+    if (summary.adopted.length) lines.push(`  Already here with identical files: ${summary.adopted.join(", ")}`);
+    for (const move of summary.movedAside) lines.push(`  ${move.name} differed; the library copy is used and yours moved to ${move.to}`);
+    if (summary.packs.length) lines.push(`  Packs are off: ${summary.packs.join(", ")}`);
+    const chosen = ids === "all" ? summary.tools.map(tool => tool.id) : (ids ?? "").split(",").filter(Boolean).map(Number);
+    const unknown = chosen.filter(id => !summary.tools.some(tool => tool.id === id));
+    for (const tool of summary.tools) lines.push(`  Tool ${tool.id}: ${tool.name}${tool.provides?.length ? ` (provides ${tool.provides.join(", ")})` : ""} — ${chosen.includes(tool.id) ? "running" : "not run"}`);
+    if (summary.tools.length && !chosen.length) lines.push("Tools did not run. Add --run-tools <id,id|all> to run the ones you want.");
+    console.log(lines.join("\n"));
+    if (unknown.length) throw new Error(`No saved tool has the ID ${unknown.join(", ")}.`);
+    let failed = false;
+    for (const id of chosen) {
+      const result = await operations.run("tool/run", { id }) as { code: number; output: string };
+      console.log(`Tool ${id} exited with ${result.code}.${result.code ? `\n${result.output.trim()}` : ""}`);
+      failed ||= result.code !== 0;
+    }
+    return failed ? 1 : 0;
+  } finally { await operations.close(); }
 }
 
 async function run(argv: string[], store: SettingsStore): Promise<number> {

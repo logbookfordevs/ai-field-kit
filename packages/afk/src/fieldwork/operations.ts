@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { runCommand as run, type CommandResult } from "./command-runner.js";
-import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
+import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, UPLOADED_SOURCE, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
 import { openSkillEditor, saveSkillEdit, type UpdatesChoice } from "./skill-editor.js";
 import { adoptSkill, type AdoptDestination } from "./adopt.js";
@@ -20,11 +20,13 @@ import { globalSkillOn, SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
-import { Library } from "./library.js";
+import { Library, type GitRunner } from "./library.js";
 import { Backup } from "./library-backup.js";
+import { Restore } from "./library-restore.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
 import { migrateProject } from "./project-skills.js";
+import { Uploads } from "./upload-install.js";
 import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate, type SyncPlan } from "./kit.js";
 import { portableSettings } from "./local-state.js";
 import { agentFolderState, changeAgentFolders } from "./agent-folder-operations.js";
@@ -38,7 +40,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "project/remove": ["name"], "source/install": ["source", "scope", "agent"],
     "pack/remove": ["id"], "pack/read": ["id"], "pack/manifest": ["id"],
     "kit/add": ["to"], "kit/drop": ["name"], "kit/machine-only": ["name"], "kit/follow": ["source"],
-    "kit/install-preview": ["source"], "kit/install-read": ["source", "name"], "kit/install": ["source", "to"],
+    "kit/install-preview": ["source"], "kit/install-read": ["source", "name"], "kit/install": ["source", "to"], "kit/upload-install": ["upload", "to"],
     activation: ["id", "scope"], "project/save": ["name", "path"],
     invocation: ["name", "scope"], "skill/toggle": ["name", "scope"], "skill/adopt": ["name", "to"], "skill/resolve-duplicate": ["name", "scope", "keep"],
     "skills/update": ["scope"], "skills/delete-preview": ["scope"], "skills/bulk": ["scope", "action"],
@@ -48,11 +50,11 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "rules/existing": ["id"], "rules/adopt": ["id"], "rules/overwrite": ["id"],
     "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"], workspace: ["mode", "folder"], location: ["path"],
     "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
-    "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"],
+    "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"], "restore/inspect": ["repository"], "restore/start": ["repository"],
     "backup/keep": ["id"], "backup/discard": ["id"], "backup/take-update": ["name"], "backup/restore-saved": ["name"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
-    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "project/save": ["previous"],
+    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "kit/upload-preview": ["archive", "name", "folder"], "kit/upload-install": ["packName"], "project/save": ["previous"],
     "skill/read": ["file", "folder"], "skill/editor": ["file"], "skill/edit": ["updates"], "rules/save": ["expectedHash"], folders: ["path"], "agent-folders/add": ["project"],
   };
   for (const key of requiredText[operation] ?? []) {
@@ -88,6 +90,12 @@ export async function runTool(command: string, args: string[], cwd: string, sign
   return { output: result.output, code: result.code };
 }
 
+function hasNoRepository(source: string): boolean {
+  return source === LOCAL_PROFILE_SOURCE || source === UPLOADED_SOURCE;
+}
+
+const UPLOADED_MANIFEST = "includes uploaded skills. They are saved in your library and have no repository to publish, so this can't be exported as a manifest.";
+
 export class FieldworkOperations {
   private readonly library: SkillLibrary;
   private readonly rules: RulesWorkspace;
@@ -100,16 +108,23 @@ export class FieldworkOperations {
   private updateController: AbortController | null = null;
   private skillUpdate: UpdateProgress | null = null;
   installRunner: InstallRunner | undefined;
+  restoreRunner: GitRunner | undefined;
+  private restoreController: AbortController | null = null;
   private mutations: Promise<void> = Promise.resolve();
   private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number; warnings?: string[] }> = {};
   readonly schedule: SkillUpdateSchedule;
   readonly backup: Backup;
+  private readonly uploads: Uploads;
   private projectsReady: Promise<void> | undefined;
   private projectMigration: { migrated: string[]; kept: { project: string; skills: string[] }[]; failed: { project: string; error: string }[] } = { migrated: [], kept: [], failed: [] };
 
   constructor(readonly store: SettingsStore) {
     this.backup = new Backup(new Library(store.home), undefined, { signal: this.lifecycle.signal, isOn: async name => globalSkillOn(await store.read(), name) });
     this.library = new SkillLibrary(store);
+    this.uploads = new Uploads(store, this.library, {
+      define: (existing, id, name, groups) => this.packFrom(existing, id, name, groups, {}),
+      save: (settings, pack) => this.replacePack(settings, pack, profileGroups(pack)),
+    });
     this.rules = new RulesWorkspace(store);
     this.schedule = new SkillUpdateSchedule(store.home);
   }
@@ -124,7 +139,7 @@ export class FieldworkOperations {
       const absent: string[] = [];
       for (const name of group.skills) {
         try { await this.library.locate(settings, name); continue; } catch { /* A missing member needs preparation. */ }
-        if (group.source === LOCAL_PROFILE_SOURCE) throw new Error(`Restore this local skill before adding it: ${name}. It has no repository source.`);
+        if (hasNoRepository(group.source)) throw new Error(`Restore this local skill before adding it: ${name}. It has no repository source.`);
         absent.push(name);
       }
       if (absent.length) downloads.push({ group, absent });
@@ -310,6 +325,7 @@ export class FieldworkOperations {
   private packManifest(settings: Settings, id: string): SkillStack {
     const label = (source: string): string => source.replace(/\.git$/, "").replace(/\/+$/, "").split(/[/:]/).filter(Boolean).pop() ?? source;
     if (id === "core") {
+      if (settings.kit?.core.some(entry => entry.source === UPLOADED_SOURCE && entry.skills.length)) throw new Error(`Core ${UPLOADED_MANIFEST}`);
       const sources = (settings.kit?.core ?? []).filter(entry => entry.skills.length).map(entry => ({ name: entry.name ?? label(entry.source), source: entry.source, skills: entry.skills }));
       if (!sources.length) throw new Error("Core has no skills to export yet.");
       return validateStack({ version: 1, id: "core", name: "Core", sources });
@@ -317,6 +333,7 @@ export class FieldworkOperations {
     const pack = settings.profiles.find(profile => profile.id === id);
     if (!pack) throw new Error("Pack not found.");
     const groups = profileGroups(pack);
+    if (groups.some(group => group.source === UPLOADED_SOURCE)) throw new Error(`${pack.name} ${UPLOADED_MANIFEST}`);
     if (groups.some(group => group.source === LOCAL_PROFILE_SOURCE)) throw new Error("This pack uses skills from this machine, which have no repository to publish.");
     return validateStack({ version: 1, id: pack.id.replace(/^stack-/, ""), name: pack.name, ...(pack.description ? { description: pack.description } : {}), sources: groups.map(group => ({ name: pack.sourceNames?.[group.source] ?? label(group.source), source: group.source, skills: group.skills })) });
   }
@@ -341,7 +358,7 @@ export class FieldworkOperations {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const ready = this.projectsReady ??= this.migrateProjects();
     const action = async (): Promise<unknown> => { await ready; return this.apply(operation as Operation, data); };
-    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state"].includes(operation);
+    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel"].includes(operation);
     const result = direct ? action() : this.mutations.then(action);
     if (!direct) this.mutations = result.then(() => undefined, () => undefined);
     const flight = this.nextFlight++;
@@ -366,6 +383,7 @@ export class FieldworkOperations {
     const abandoned = drained ? [] : [...new Set([...this.inFlight.values()].map(flight => flight.operation))];
     if (abandoned.length) console.error(`AFK shutdown deadline reached; abandoned: ${abandoned.join(", ")}`);
     await this.preparation.close();
+    await this.uploads.close();
     return { abandoned };
   }
 
@@ -405,6 +423,25 @@ export class FieldworkOperations {
     return backup.status();
   }
 
+  private async applyRestore(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
+    if (operation === "restore/cancel") {
+      if (!this.restoreController) return { cancelled: false, reason: "No restore is running." };
+      this.restoreController.abort(); return { cancelled: true };
+    }
+    const controller = new AbortController(), stop = (): void => controller.abort();
+    this.lifecycle.signal.addEventListener("abort", stop, { once: true });
+    if (operation === "restore/start") this.restoreController = controller;
+    try {
+      const restore = new Restore(this.store, this.restoreRunner, { signal: controller.signal });
+      if (operation === "restore/repositories") return await restore.repositories();
+      if (operation === "restore/inspect") return await restore.inspect(String(data.repository));
+      return await restore.restore(String(data.repository));
+    } finally {
+      this.lifecycle.signal.removeEventListener("abort", stop);
+      if (operation === "restore/start") this.restoreController = null;
+    }
+  }
+
   private async apply(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
     if (operation === "skills/install-state") { validateInput(operation, data); return this.skillInstall; }
     if (operation === "skills/install-cancel") {
@@ -424,6 +461,7 @@ export class FieldworkOperations {
     }
     validateInput(operation, data);
     if (operation.startsWith("backup/")) return this.applyBackup(operation, data);
+    if (operation.startsWith("restore/")) return this.applyRestore(operation, data);
     const { store, library, rules, preparation, toolRuns } = this;
     const settings = await store.read();
     if (operation === "migration/preview") {
@@ -539,6 +577,8 @@ export class FieldworkOperations {
       return { content: await readFile(path, "utf8") };
     }
     if (operation === "kit/install") return await this.installWithDestination(data);
+    if (operation === "kit/upload-preview") return await this.uploads.preview(data);
+    if (operation === "kit/upload-install") return await this.uploads.install(data);
     if (operation === "kit/sync") {
       const inventory = await library.inventory(settings, "Global");
       const current = kitStatus(settings, inventory);
@@ -740,7 +780,7 @@ export class FieldworkOperations {
       if (typeof data.description === "string" && !data.description.trim()) delete pack.description;
       const memberGroups = profileGroups(pack);
       for (const group of memberGroups) {
-        if (group.source === LOCAL_PROFILE_SOURCE) { for (const member of group.skills) await library.locate(settings, member); }
+        if (hasNoRepository(group.source)) { for (const member of group.skills) await library.locate(settings, member); }
         else if (data.prepare === true) await library.storePrepared(settings, await preparation.directory(group.source), group.skills, group.source);
       }
       let ready = true;
@@ -826,7 +866,7 @@ export class FieldworkOperations {
           try { await library.locate(settings, name); } catch { missing.push(name); }
         }
         const downloads = profileGroups(profile).map(group => ({ group, absent: group.skills.filter(name => missing.includes(name)) })).filter(item => item.absent.length);
-        for (const { group, absent } of downloads) if (group.source === LOCAL_PROFILE_SOURCE) throw new Error(`Restore these local skill files before enabling: ${absent.join(", ")}. They have no repository source.`);
+        for (const { group, absent } of downloads) if (hasNoRepository(group.source)) throw new Error(`Restore these local skill files before enabling: ${absent.join(", ")}. They have no repository source.`);
         if (downloads.length) await this.downloadPackSkills(settings, profile.name, downloads);
         profile.ready = true;
       }

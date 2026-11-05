@@ -12,11 +12,11 @@ import { startBackup } from "./library-backup.js";
 import { DuplicateCopyError } from "./skills.js";
 import type { UpdateProgress } from "./skill-update.js";
 
-async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
+async function body(request: IncomingMessage, limit = 8_000_000): Promise<Record<string, unknown>> {
   let text = "";
   for await (const chunk of request) {
     text += String(chunk);
-    if (text.length > 8_000_000) throw new Error("Request is too large.");
+    if (text.length > limit) throw new Error("Request is too large.");
   }
   const value: unknown = JSON.parse(text || "{}");
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid request.");
@@ -68,9 +68,9 @@ export async function startFieldwork(store = new SettingsStore(), port = 0, opti
         if ((request.method !== "POST" && !(request.method === "GET" && isRead)) || !Object.hasOwn(operationCatalog, operation)) {
           send({ error: "Unknown operation." }, 404); return;
         }
-        const updateReads = ["state", "rules/state", "bundle/export", "skills/update-state", "skills/schedule-state", "backup/state", "agent-folders/state", "skills/install-state", "skills/restore-state", "skills/update-cancel", "skills/install-cancel", "skills/restore-cancel"];
+        const updateReads = ["state", "rules/state", "bundle/export", "skills/update-state", "skills/schedule-state", "backup/state", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel", "skills/install-state", "skills/restore-state", "skills/update-cancel", "skills/install-cancel", "skills/restore-cancel"];
         if (request.method === "POST" && !updateReads.includes(operation) && (updatingRequested || (await updates.state(store.home))?.pending)) throw new Error("AFK is updating. Wait for the app to restart before making changes.");
-        const data = request.method === "POST" ? await body(request) : {};
+        const data = request.method === "POST" ? await body(request, operation === "kit/upload-preview" ? 40_000_000 : undefined) : {};
         send(await operations.run(operation, data)); return;
       }
       if (request.method !== "GET") { response.writeHead(405); response.end(); return; }
