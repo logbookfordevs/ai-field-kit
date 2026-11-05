@@ -1,11 +1,13 @@
 import { lstat, mkdir, mkdtemp, readFile, readdir, readlink, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommand } from "./command-runner.js";
 import { applyLibraryInit } from "./library-init.js";
+import { FieldworkOperations } from "./operations.js";
+import { SourcePreparation } from "./preparation.js";
 import { emptySettings, SettingsStore } from "./settings.js";
-import { installSkills, type InstallRunner } from "./skill-install.js";
+import { installSkills, type InstallProgress, type InstallRunner } from "./skill-install.js";
 
 let home: string;
 let store: SettingsStore;
@@ -175,5 +177,128 @@ describe("installing from a repository into storage", () => {
 
     expect(await present(join(home, ".afk/machine/wizard"))).toBe(false);
     expect(await readlink(join(agents, "wizard"))).toBe(join(home, ".afk/library/skills/wizard"));
+  });
+});
+
+describe("installing through the Install dialog's operation", () => {
+  let operations: FieldworkOperations;
+  beforeEach(() => {
+    vi.spyOn(SourcePreparation.prototype, "discover").mockResolvedValue(["wizard", "other"]);
+    vi.spyOn(SourcePreparation.prototype, "paths").mockResolvedValue({});
+    vi.spyOn(SourcePreparation.prototype, "directory").mockResolvedValue(join(home, "nowhere"));
+    operations = new FieldworkOperations(store);
+  });
+  afterEach(async () => { vi.restoreAllMocks(); await operations.close(); });
+
+  it("installs to Core as one commit that holds the skill, its record and the Core list", async () => {
+    operations.installRunner = skillsCli(["wizard"]);
+    const before = await commits();
+
+    const result = await operations.run("kit/install", { source: "owner/repo", names: ["wizard"], to: "core" }) as { ok: boolean };
+
+    expect(result.ok).toBe(true);
+    expect((await commits()).length).toBe(before.length + 1);
+    expect(await git("show", "--name-only", "--format=", "HEAD")).toContain("skills/wizard/SKILL.md");
+    expect((await store.read()).kit?.core).toContainEqual({ source: "owner/repo", skills: ["wizard"] });
+    expect(await json(join(home, ".afk/library/.afk/settings.json"))).toMatchObject({ core: [{ source: "owner/repo", skills: ["wizard"] }] });
+    expect(await git("status", "--porcelain")).toBe("");
+  });
+
+  it("installs to this machine without touching the library", async () => {
+    operations.installRunner = skillsCli(["wizard"]);
+    const before = await commits();
+
+    await operations.run("kit/install", { source: "owner/repo", names: ["wizard"], to: "machine" });
+
+    expect((await store.read()).machineOnly).toContain("wizard");
+    expect(await readlink(join(agents, "wizard"))).toBe(join(home, ".afk/machine/wizard"));
+    expect(await commits()).toEqual(before);
+  });
+
+  it("keeps Core unchanged when the install fails", async () => {
+    operations.installRunner = skillsCli(["wizard"], { code: 2 });
+    const before = await commits();
+
+    const result = await operations.run("kit/install", { source: "owner/repo", names: ["wizard"], to: "core" }) as { ok: boolean };
+
+    expect(result.ok).toBe(false);
+    expect((await store.read()).kit?.core).toEqual([]);
+    expect(await commits()).toEqual(before);
+    expect(await present(join(agents, "wizard"))).toBe(false);
+  });
+});
+
+describe("turning on a pack whose skills are not cached", () => {
+  let operations: FieldworkOperations;
+  let staged: string;
+  beforeEach(async () => {
+    staged = await mkdtemp(join(tmpdir(), "afk-staged-"));
+    await mkdir(join(staged, "epsilon"), { recursive: true });
+    await writeFile(join(staged, "epsilon/SKILL.md"), skill("epsilon"));
+    const settings = await store.read();
+    settings.preferences["Global|epsilon"] = "Manual only";
+    settings.profiles.push({ id: "profile-new", name: "New", source: "owner/new", skills: ["epsilon"], enabled: [], ready: false });
+    await store.save(settings);
+    operations = new FieldworkOperations(store);
+  });
+  afterEach(async () => { vi.restoreAllMocks(); await operations.close(); await rm(staged, { recursive: true, force: true }); });
+
+  it("downloads them into the pack cache with visible progress, applies the saved choice and links them", async () => {
+    const seen: (InstallProgress | null)[] = [];
+    vi.spyOn(SourcePreparation.prototype, "directory").mockImplementation(async (_source, run) => {
+      run?.onOutput?.("Cloning owner/new\n");
+      seen.push(await operations.run("skills/install-state") as InstallProgress | null);
+      return staged;
+    });
+
+    await operations.run("activation", { id: "profile-new", scope: "Global", enabled: true });
+
+    expect(seen[0]).toMatchObject({ pending: true, output: expect.stringContaining("Cloning owner/new"), phase: expect.stringContaining("New") });
+    expect(await operations.run("skills/install-state")).toMatchObject({ pending: false, code: 0 });
+    expect(await readFile(join(home, ".afk/packs-cache/epsilon/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
+    expect(await readlink(join(agents, "epsilon"))).toBe(join(home, ".afk/packs-cache/epsilon"));
+    expect(await present(join(home, ".afk/library/skills/epsilon"))).toBe(false);
+  });
+
+  it("stops when cancelled and leaves the pack off with nothing cached", async () => {
+    vi.spyOn(SourcePreparation.prototype, "directory").mockImplementation(async (_source, run) => {
+      await operations.run("skills/install-cancel");
+      run?.signal?.throwIfAborted();
+      return staged;
+    });
+
+    await expect(operations.run("activation", { id: "profile-new", scope: "Global", enabled: true })).rejects.toThrow();
+
+    expect(await present(join(home, ".afk/packs-cache/epsilon"))).toBe(false);
+    expect(await present(join(agents, "epsilon"))).toBe(false);
+    expect((await store.read()).profiles.find(profile => profile.id === "profile-new")?.enabled).toEqual([]);
+    expect(await operations.run("skills/install-state")).toMatchObject({ pending: false, cancelled: true });
+  });
+});
+
+describe("installing into a pack", () => {
+  it("stores one cached copy with the saved choice and commits the pack once", async () => {
+    const staged = await mkdtemp(join(tmpdir(), "afk-staged-"));
+    await mkdir(join(staged, "epsilon"), { recursive: true });
+    await writeFile(join(staged, "epsilon/SKILL.md"), skill("epsilon"));
+    vi.spyOn(SourcePreparation.prototype, "discover").mockResolvedValue(["epsilon"]);
+    vi.spyOn(SourcePreparation.prototype, "paths").mockResolvedValue({});
+    vi.spyOn(SourcePreparation.prototype, "directory").mockResolvedValue(staged);
+    const settings = await store.read();
+    settings.preferences["Global|epsilon"] = "Automatic allowed";
+    await store.save(settings);
+    const operations = new FieldworkOperations(store);
+    const before = await commits();
+
+    await operations.run("kit/install", { source: "owner/new", names: ["epsilon"], to: "new-pack", packName: "Fresh" });
+    await operations.close();
+    vi.restoreAllMocks();
+    await rm(staged, { recursive: true, force: true });
+
+    expect(await readFile(join(home, ".afk/packs-cache/epsilon/SKILL.md"), "utf8")).toContain("disable-model-invocation: false");
+    expect(await present(join(home, ".afk/library/skills/epsilon"))).toBe(false);
+    expect(await present(join(agents, "epsilon"))).toBe(false);
+    expect((await commits()).length).toBe(before.length + 1);
+    expect((await store.read()).profiles.map(profile => profile.name)).toContain("Fresh");
   });
 });
