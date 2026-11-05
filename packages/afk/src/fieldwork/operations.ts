@@ -19,7 +19,6 @@ import { SourcePreparation } from "./preparation.js";
 import { globalSkillOn, SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
-import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
 import { Library, type GitRunner } from "./library.js";
 import { applyLibraryInit, planLibraryInit } from "./library-init.js";
 import { Backup } from "./library-backup.js";
@@ -29,7 +28,6 @@ import { projectStatus } from "./projects.js";
 import { migrateProject } from "./project-skills.js";
 import { Uploads } from "./upload-install.js";
 import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate } from "./kit.js";
-import { portableSettings } from "./local-state.js";
 import { agentFolderState, changeAgentFolders } from "./agent-folder-operations.js";
 import { fingerprint, migrateSettings, sourceIdentity, type MigrationChoices } from "./migration.js";
 
@@ -49,8 +47,8 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "skill/delete-preview": ["name", "scope"], "skill/delete": ["name", "scope"],
     "skill/availability": ["name", "scope"], "skill/read": ["name", "scope"], "skill/editor": ["name"], "skill/edit": ["name", "file"],
     "rules/existing": ["id"], "rules/adopt": ["id"], "rules/overwrite": ["id"],
-    "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"], workspace: ["mode", "folder"], location: ["path"],
-    "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
+    "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"],
+    "migration/apply": ["fingerprint"],
     "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"], "restore/inspect": ["repository"], "restore/start": ["repository"],
     "backup/keep": ["id"], "backup/discard": ["id"], "backup/take-update": ["name"], "backup/restore-saved": ["name"],
   };
@@ -359,7 +357,7 @@ export class FieldworkOperations {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const ready = this.projectsReady ??= this.migrateProjects();
     const action = async (): Promise<unknown> => { await ready; return this.apply(operation as Operation, data); };
-    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel"].includes(operation);
+    const direct = ["state", "kit/state", "rules/state", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel"].includes(operation);
     const result = direct ? action() : this.mutations.then(action);
     if (!direct) this.mutations = result.then(() => undefined, () => undefined);
     const flight = this.nextFlight++;
@@ -481,9 +479,9 @@ export class FieldworkOperations {
       const text = (await store.portableText()) ?? "";
       if (fingerprint(text) !== data.fingerprint) throw new Error("The settings file changed since this dry run. Review the migration again.");
       const { settings: migrated, report } = migrateSettings(settings, this.migrationChoices(data), await library.inventory(settings, "Global"));
+      const backup = await store.preserveLegacy(text);
       await store.save(migrated, { migrating: true });
-      const copy = (await store.backups()).find(backup => backup.name.startsWith("pre-kit-") && backup.configurationId === settings.configurationId);
-      return { ok: true, report, ...(copy ? { backup: join(store.backupFolder, copy.name) } : {}) };
+      return { ok: true, report, backup };
     }
     if (operation === "source/install") {
       const source = settings.favoriteSources?.find(source => source.source === data.source);
@@ -620,9 +618,6 @@ export class FieldworkOperations {
     if (operation === "rules/state") {
       return await rules.state(settings);
     }
-    if (operation === "bundle/export") {
-      return await exportBundle(store);
-    }
     if (operation === "state") {
       const projectStatuses = await projectStatus(store, settings);
       const inventories: Record<string, Awaited<ReturnType<SkillLibrary["inventory"]>>> = {};
@@ -643,7 +638,7 @@ export class FieldworkOperations {
         try { for (const name of profile.skills) await library.locate(settings, name); }
         catch { profile.ready = false; }
       }
-      return { settings, migration: { required: settings.version === 1 }, kit: kitStatus(settings, inventories.Global ?? []), portableSettings: portableSettings(settings), settingsPath: store.path, home: store.home, inventories, nestedInventories, skillSharing, projectStatuses, projectMigration: this.projectMigration, toolRuns };
+      return { settings, migration: { required: settings.version === 1 }, kit: kitStatus(settings, inventories.Global ?? []), settingsPath: store.path, home: store.home, inventories, nestedInventories, skillSharing, projectStatuses, projectMigration: this.projectMigration, toolRuns };
     }
     if (operation === "rules/save") {
       return await rules.saveFiles(data.files as RulesFile[], typeof data.expectedHash === "string" ? data.expectedHash : undefined);
@@ -675,22 +670,6 @@ export class FieldworkOperations {
     if (operation === "rules/disconnect") {
       const updated = await rules.disconnect(settings, String(data.id), data.clean === true);
       return await rules.state(updated);
-    }
-    if (operation === "bundle/preview") {
-      return inspectBundle(String(data.base64));
-    }
-    if (operation === "bundle/import") {
-      const mappings = data.mappings;
-      const hasMapping = (value: unknown, key: "id" | "name"): boolean => {
-        if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-        const mapping = value as Record<string, unknown>;
-        return typeof mapping[key] === "string" && typeof mapping.path === "string";
-      };
-      if (!Array.isArray(mappings) || !(mappings as unknown[]).every(m => hasMapping(m, "id"))) throw new Error("Choose local destination mappings.");
-      const projects = data.projects;
-      if (projects !== undefined && (!Array.isArray(projects) || !(projects as unknown[]).every(p => hasMapping(p, "name")))) throw new Error("Choose valid project folder mappings.");
-      await applyBundle(store, String(data.base64), mappings as { id: string; path: string }[], projects as { name: string; path: string }[] | undefined);
-      return { ok: true };
     }
     if (operation === "welcome") {
       settings.welcomeDismissed = true;
@@ -803,14 +782,6 @@ export class FieldworkOperations {
       delete settings.independentSkills[String(data.name)];
       await store.save(settings); return { ok: true };
     }
-    if (operation === "location") { await store.relocate(String(data.path)); return { ok: true }; }
-    if (operation === "workspace") {
-      if (typeof data.folder !== "string" || !["move", "select", "create"].includes(String(data.mode))) throw new Error("Choose an AFK folder and action.");
-      if (data.mode === "move") return { ok: true, backup: await store.moveFolder(data.folder) };
-      if (data.mode === "select") await store.selectFolder(data.folder);
-      else await store.relocate(join(data.folder, "settings.json"));
-      return { ok: true };
-    }
     if (operation === "folders") {
       const path = resolve(String(data.path ?? store.home));
       if (!(await stat(path)).isDirectory()) throw new Error("Choose a folder.");
@@ -835,18 +806,6 @@ export class FieldworkOperations {
     }
     if (operation === "invocation") {
       await setInvocation(store, settings, String(data.name), String(data.scope), String(data.mode)); return { ok: true };
-    }
-    if (operation === "import") {
-      if (settings.profiles.some(p => p.enabled.length)) throw new Error("Disable current profiles before replacing the configuration.");
-      if (Object.keys(settings.managedLinks).length || Object.values(settings.independentSkills).some(names => names.length)) throw new Error("Disable active individual skills and resolve managed links before replacing the configuration.");
-      const parsed = validateSettings(data.settings);
-      const imported = parsed.version === 1 ? migrateSettings(parsed, {}, []).settings : parsed;
-      imported.managedLinks = {};
-      imported.independentSkills = {};
-      imported.profiles = imported.profiles.map(p => ({ ...p, enabled: [], ready: false }));
-      imported.agentRules = settings.agentRules;
-      imported.machineOnly = settings.machineOnly;
-      await store.save(imported, { replace: true }); return { ok: true };
     }
     if (operation === "skills/delete-preview" || operation === "skills/bulk") {
       const names = data.names as string[], scope = String(data.scope);

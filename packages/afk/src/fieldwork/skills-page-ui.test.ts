@@ -290,7 +290,7 @@ describe("checking followed sources", () => {
   });
 
   it("every body-less request in the web app is one the server allows as GET", () => {
-    const allowedGet = new Set(["state", "rules/state", "bundle/export", "status", "app/update-check", "app/update-state"]);
+    const allowedGet = new Set(["state", "rules/state", "status", "app/update-check", "app/update-state"]);
     const web = new URL("../../web/", import.meta.url);
     const bodyless = readdirSync(web).filter(name => /\.(js|html)$/.test(name)).flatMap(name => [...readFileSync(new URL(name, web), "utf8").matchAll(/request\('([^']+)'\)/g)].map(match => match[1]!));
 

@@ -389,49 +389,15 @@ $('sheet').addEventListener('close',()=>{$('sheet').classList.remove('wide')});
 
 function renderAfkSettings(){
   renderSettings();
-  const block=document.querySelector('[data-od-id="settings-file"]');
-  block.innerHTML=`<div><h2>AFK folder</h2><p class="sub">Settings, AGENTS.md and references live together. Choose a repository, Drive or iCloud folder if you want your provider to sync them.</p></div><div class="settings-body"><div class="path-card"><code class="path">${esc(afkFolder||settingsPath.replace(/\/settings\.json$/,''))}</code>${button('Choose folder',"browse('settings')")}</div><ul class="tree-list"><li><code>settings.json</code><span class="meta">Configuration</span><span>Saved</span></li><li><code>AGENTS.md</code><span class="meta">Shared agent rules</span><span>${savedText('AGENTS.md')===undefined?'Not created':'Saved'}</span></li><li><code>references/</code><span class="meta">Supporting Markdown</span><span>${plural(savedRefs().length,'file')}</span></li></ul><div class="bundle-row"><div class="inline">${button('Export AFK folder · ZIP','exportAfkBundle()')}${button('Import AFK folder · ZIP',"$('bundleFile').click()")}</div><p class="hint">Includes your saved rules and references. Import remaps destinations; it never syncs agent files.</p></div><details class="settings-json"><summary>Settings only · JSON</summary><p class="hint">JSON includes configuration only. Markdown files are included in the ZIP export.</p><div class="inline">${button('Export settings · JSON','exportSettings()')}${button('Import settings · JSON',"$('importFile').click()")}</div></details><input id="bundleFile" type="file" accept=".zip,application/zip" hidden onchange="importAfkBundle(this.files[0])"><input id="importFile" type="file" accept=".json,application/json" hidden onchange="importSettings(this.files[0])"></div>`;
+  const block=document.querySelector('[data-od-id="settings-library"]');
+  const started=backupState?.status?.library!==false;
+  const body=started
+    ?`<p class="sub">Core skills, packs, tools, Try later, invocation choices, agent folders and agent rules are saved in your library at <code>~/.afk/library</code>. Every change is one save, and Backup sends it to a private Git repository.</p>`
+    :`<p class="sub">This machine has no library yet. Starting one moves your skills into AFK’s storage and links them back, then Backup can save them to a private Git repository.</p>`;
+  const action=started?button('Open Backup',"navigate('Backup')"):button('Start a new library','showStartLibrary()','primary');
+  block.innerHTML=`<div><h2>Your library</h2>${body}</div><div class="settings-body"><div>${action}</div></div>`;
   renderSkillScheduleBlock();
   renderAgentFoldersBlock();
-}
-function downloadBase64(base64,name){
-  const bytes=Uint8Array.from(atob(base64),char=>char.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:'application/zip'})),a=document.createElement('a');
-  a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-async function exportAfkBundle(){
-  try{const result=await request('bundle/export');downloadBase64(result.base64,result.name);toast('AFK folder exported. Only saved rules are included.')}
-  catch(error){toast(error.message)}
-}
-let pendingRuleBundle=null;
-async function importAfkBundle(file){
-  $('bundleFile').value='';if(!file)return;
-  if(hasRuleEdits()){toast('Save your rule drafts before importing another AFK folder.');return}
-  try{
-    const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
-    const base64=btoa(binary),preview=await request('bundle/preview',{base64});pendingRuleBundle={base64,preview};
-    ruleModal('Review AFK folder import',`<p>This replaces your current configuration and canonical rule files. Your agent files are unchanged until you explicitly sync.</p><p>${plural(preview.files.length,'Markdown file')} · ${plural(preview.settings.projects.length,'project')}</p>${preview.settings.projects.map((p,i)=>`<label>${esc(p.name)} · local folder<input class="bundleProject" data-index="${i}" value="${esc(p.path||'')}"></label>`).join('')}<h3>Connect destinations on this machine</h3><p class="sub">Select the files you want to manage. Unselected destinations are left unconnected.</p>${preview.destinations.map((d,i)=>`<div class="map-row"><label class="check"><input class="bundleDestination" data-index="${i}" type="checkbox"><span>${esc(d.name)}</span></label><label>Local file path<input class="bundleDestinationPath" data-index="${i}" value="${esc(d.path||'')}"></label></div>`).join('')}<p id="ruleActionError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Import AFK folder','applyAfkBundle()','primary'),'Import preview · no agent writes');
-  }catch(error){toast(error.message)}
-}
-async function applyAfkBundle(){
-  const mappings=[...document.querySelectorAll('.bundleDestination:checked')].map(el=>({id:pendingRuleBundle.preview.destinations[Number(el.dataset.index)].id,path:document.querySelector(`.bundleDestinationPath[data-index="${el.dataset.index}"]`).value.trim()}));
-  const projects=[...document.querySelectorAll('.bundleProject')].map(el=>({...pendingRuleBundle.preview.settings.projects[Number(el.dataset.index)],path:el.value.trim()}));
-  try{
-    await request('bundle/import',{base64:pendingRuleBundle.base64,mappings,projects});await loadRules(true);closeModal();await refresh();toast('AFK folder imported. Agent files are unchanged; preview and sync when ready.');pendingRuleBundle=null;
-  }catch(error){$('ruleActionError').textContent=error.message}
-}
-function workspaceReview(mode,target){
-  if(hasRuleEdits()){toast('Save your rule drafts before changing the AFK folder.');return}
-  const selects=mode==='select';
-  modal(selects?'Use this AFK folder?':'Move your AFK folder?',`<p><code>${esc(target)}</code></p><p class="sub">${selects?'Load the settings, rules and references already in this folder. No agent files are synced. An unchanged copy of your current configuration keeps active skills and synced rules. Loading a different configuration requires disabling skills and disconnecting managed destinations first.':'Bring your settings, rules and references here, then use this location. Your current files win conflicts; reference files unique to either folder are kept. Skills stay in place. Existing AFK files are backed up here first; your original folder is retained. Other files stay untouched.'}</p><p id="ruleActionError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button(selects?'Load AFK folder':'Move AFK folder',`applyWorkspace('${mode}',${esc(JSON.stringify(target))})`,'primary'));
-}
-function newWorkspaceFolder(){
-  if(hasRuleEdits()){toast('Save your rule drafts before moving your AFK folder.');return}
-  modal('Create an AFK folder',`<p class="path">Inside ${esc(folder)}</p><label>Folder name<input id="workspaceName" value="afk" maxlength="80"></label><p class="hint">Copies your configuration, rules and references to this new folder. Existing folders are never overwritten.</p><p id="ruleActionError" class="field-error" role="alert"></p>`,button('Cancel','closeModal()','text')+button('Create and use folder','createWorkspaceFolder()','primary'));
-}
-function createWorkspaceFolder(){const name=$('workspaceName').value.trim();if(!name||/[\/\\\u0000-\u001f]/.test(name)||name==='.'||name==='..'){$('ruleActionError').textContent='Choose a simple folder name without slashes.';return}applyWorkspace('create',folder.replace(/\/$/,'')+'/'+name)}
-async function applyWorkspace(mode,target){
-  try{const result=await request('workspace',{folder:target,mode});await loadRules(true);closeModal();await refresh();toast(result.backup?'AFK folder changed. Previous files saved in '+result.backup:'AFK folder changed. Skills remain in place.')}
-  catch(error){$('ruleActionError').textContent=error.message}
 }
 
 function confirmRevertRules(){modal('Discard unsaved rule changes?', '<p>Your saved rules stay in the AFK folder. Unsaved text, added references and reference renames will be discarded.</p>',button('Keep editing','closeModal()','text')+button('Discard drafts','revertRuleDrafts()','primary'))}

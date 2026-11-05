@@ -4,7 +4,7 @@ const tourSteps=[
   {section:'Skills',copy:'Every skill in one place. Core travels with you and is backed up, packs turn on when you need them, and To review lists skills installed outside AFK. Switch each on or off and choose how agents invoke it.'},
   {section:'Agent rules',copy:'Write shared instructions for your agents here. Preview and sync them to the agents or files you choose.'},
   {section:'Tools',copy:'Keep installation and update commands for your tools in one place. Run a command when you choose to install or update a tool.'},
-  {section:'Settings',copy:'Choose where your AFK folder lives and add the project folders you work in. Your configuration can travel between machines; project files stay where they are.'},
+  {section:'Settings',copy:'See where your library lives, add the projects you work in, and choose which agent folders get your skills. Project skills stay in each project’s repository.'},
 ];
 
 function startTour(){
@@ -67,14 +67,14 @@ function showWelcome(){
   closeUtilities();
   modal('Welcome to AFK 2.0',
     `<p class="welcome-intro">Keep your skills ready. Bring them into your work when you need them.</p>
-    <p class="hint">Want to keep your configuration somewhere else? ${button('Choose AFK folder in Settings',"welcomeGo('Settings')",'text')}</p>
-    <section class="welcome-section"><h3>Build your kit from what you already use</h3><p>AFK lists the skills on this machine and asks which should travel with you. On another machine, one sync brings them back.</p>
+    <section class="welcome-section"><h3>Build your kit from what you already use</h3><p>AFK lists the skills on this machine and asks which belong in your library. Back the library up to a private Git repository, and restore it on a new machine.</p>
       <dl class="welcome-actions"><div><dt>Core</dt><dd>Skills you want on every machine, always on.</dd></div><div><dt>Packs</dt><dd>Groups you turn on for a project or Global when you need them, or read once with your agent.</dd></div></dl></section>
     <section class="welcome-section"><h3>Write your agent rules once</h3><p>Edit and save AGENTS.md here, then preview and sync it to Codex, Claude, or a custom file. AFK preserves text outside its marked region and backs up existing files.</p></section>
-    <details class="welcome-extra"><summary>Skills, tools, and your portable setup</summary><ul>
+    <details class="welcome-extra"><summary>Skills, tools, and your library</summary><ul>
       <li><strong>Skills:</strong> inspect instructions, switch skills on or off, and choose manual or automatic invocation.</li>
       <li><strong>Tools:</strong> save global install and update commands, and the skills a tool brings with it. Running one is an explicit action.</li>
-      <li><strong>Settings:</strong> define project folders and choose where settings and rule files live. Export the AFK folder to take them with you.</li>
+      <li><strong>Backup:</strong> every change is saved in your library, and AFK pushes it to your repository a couple of minutes later.</li>
+      <li><strong>Settings:</strong> add projects, choose which agent folders get your skills, and schedule updates.</li>
     </ul></details>`,
     button('I’ll explore','closeModal()','text')+button('Take a quick tour','startTour()','primary'));
   welcomeActive=true;$('sheet').classList.add('welcome');
@@ -86,10 +86,6 @@ function rememberWelcome(){
   welcomeActive=false;welcomeDismissedHere=true;$('sheet').classList.remove('welcome');
   currentSettings.welcomeDismissed=true;
   request('welcome',{}).catch(()=>toast('Could not remember your Welcome choice. It may appear again after restarting AFK.'));
-}
-
-function welcomeGo(target){
-  rememberWelcome();closeModal();navigate(target);
 }
 
 $('sheet').addEventListener('cancel',rememberWelcome);

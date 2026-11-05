@@ -64,11 +64,11 @@ export async function startFieldwork(store = new SettingsStore(), port = 0, opti
           response.once("finish", () => { void closeApp?.().catch(error => console.error(error)); });
           send({ ok: true }); return;
         }
-        const isRead = ["state", "rules/state", "bundle/export", "agent-folders/state"].includes(operation);
+        const isRead = ["state", "rules/state", "agent-folders/state"].includes(operation);
         if ((request.method !== "POST" && !(request.method === "GET" && isRead)) || !Object.hasOwn(operationCatalog, operation)) {
           send({ error: "Unknown operation." }, 404); return;
         }
-        const updateReads = ["state", "rules/state", "bundle/export", "library/init-preview", "skills/update-state", "skills/schedule-state", "backup/state", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel", "skills/install-state", "skills/restore-state", "skills/update-cancel", "skills/install-cancel", "skills/restore-cancel"];
+        const updateReads = ["state", "rules/state", "library/init-preview", "skills/update-state", "skills/schedule-state", "backup/state", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel", "skills/install-state", "skills/restore-state", "skills/update-cancel", "skills/install-cancel", "skills/restore-cancel"];
         if (request.method === "POST" && !updateReads.includes(operation) && (updatingRequested || (await updates.state(store.home))?.pending)) throw new Error("AFK is updating. Wait for the app to restart before making changes.");
         const data = request.method === "POST" ? await body(request, operation === "kit/upload-preview" ? 40_000_000 : undefined) : {};
         send(await operations.run(operation, data)); return;

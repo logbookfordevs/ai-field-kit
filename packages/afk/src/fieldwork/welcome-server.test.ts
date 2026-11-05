@@ -44,7 +44,7 @@ it("persists welcome dismissal across server sessions without losing serialized 
   expect(saved.projects).toEqual(settings.projects);
   expect(saved.favoriteSources).toEqual(settings.favoriteSources);
 
-  const rejectedImport = await post("/api/import", { settings: { ...saved, welcomeDismissed: "true" } });
+  const rejectedImport = await post("/api/settings", { settings: { ...saved, welcomeDismissed: "true" } });
   expect(rejectedImport.status).toBe(400);
   expect(await store.read()).toEqual(saved);
   await app.close();
