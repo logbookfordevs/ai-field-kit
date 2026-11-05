@@ -1,10 +1,11 @@
-import { lstat, mkdir, readlink, realpath, rename, rm, stat } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { lstat, readlink, realpath, rm, stat } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { Library, type LibrarySettings } from "./library.js";
 import { readLibrarySettings } from "./library-settings.js";
 import { sameSkillFiles } from "./skills.js";
+import { moveAside, type AsideMove } from "./aside.js";
 
-export interface AsideMove { name: string; from: string; to: string }
+export { asideRoot, type AsideMove } from "./aside.js";
 
 export interface DeploySummary {
   linked: string[];
@@ -19,17 +20,8 @@ export interface DeployOptions {
   now?: () => Date;
 }
 
-export function asideRoot(home: string): string {
-  return join(home, ".afk/restore-aside");
-}
-
 export function coreNames(settings: Pick<LibrarySettings, "core"> | undefined): string[] {
   return [...new Set((settings?.core ?? []).flatMap(entry => entry.skills))];
-}
-
-function dateFolder(now: Date): string {
-  const part = (value: number): string => String(value).padStart(2, "0");
-  return `${now.getFullYear()}-${part(now.getMonth() + 1)}-${part(now.getDate())}`;
 }
 
 async function lstatOrUndefined(path: string): Promise<Awaited<ReturnType<typeof lstat>> | undefined> {
@@ -55,10 +47,6 @@ async function distinctFolders(library: Library): Promise<string[]> {
   return folders;
 }
 
-async function freeSpot(path: string): Promise<string> {
-  for (let index = 2, candidate = path; ; candidate = `${path}-${index++}`) if (!await lstatOrUndefined(candidate)) return candidate;
-}
-
 /**
  * Makes this machine's agent folders match the library: skills the library lists as Core are linked,
  * and AFK's links to skills it no longer lists are removed. A copy already in an agent folder is adopted when its files
@@ -71,7 +59,7 @@ export async function deployLibrary(library: Library, options: DeployOptions = {
   const on = coreNames(settings).filter(name => stored.has(name));
   const pack = new Set(settings ? (await readLibrarySettings(library.home)).profiles.flatMap(profile => profile.skills) : []);
   const names = options.names ?? [...new Set([...stored, ...on])].sort();
-  const aside = join(asideRoot(library.home), dateFolder((options.now ?? (() => new Date()))()));
+  const now = (options.now ?? (() => new Date()))();
 
   const clear = async (name: string): Promise<void> => {
     const target = library.skillPath(name), copy = join(target, "SKILL.md");
@@ -86,11 +74,7 @@ export async function deployLibrary(library: Library, options: DeployOptions = {
         summary.adopted.push(name);
         continue;
       }
-      const inside = relative(library.home, path);
-      const to = await freeSpot(join(aside, inside.startsWith("..") ? basename(path) : inside));
-      await mkdir(dirname(to), { recursive: true });
-      await rename(path, to);
-      summary.movedAside.push({ name, from: path, to });
+      summary.movedAside.push(await moveAside(library.home, name, path, now));
     }
   };
 

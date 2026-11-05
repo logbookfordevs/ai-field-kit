@@ -8,6 +8,7 @@ import { Library } from "./library.js";
 import { applyLibraryInit } from "./library-init.js";
 import { Backup } from "./library-backup.js";
 import { Restore } from "./library-restore.js";
+import { writeInvocationChoice } from "./invocation.js";
 import { FieldworkOperations } from "./operations.js";
 import { emptySettings, SettingsStore } from "./settings.js";
 
@@ -185,6 +186,30 @@ describe("skills already on the machine", () => {
     expect(await readlink(claude("alpha"))).toBe(library().skillPath("alpha"));
     expect(await readlink(agents("beta"))).toBe(library().skillPath("beta"));
     expect(await present(join(aside, ".agents/skills/beta"))).toBe(false);
+  });
+
+  it("moves aside a local copy edited after an earlier Manual/Automatic change instead of treating it as identical", async () => {
+    await sourceLibrary();
+    await write(agents("beta"), "beta");
+    await writeInvocationChoice(agents("beta"), "Manual only");
+    await writeFile(agents("beta/SKILL.md"), skill("beta", "UNIQUE LOCAL EDIT"));
+
+    const summary = await restorer().restore(remote);
+
+    expect(summary.adopted).toEqual([]);
+    expect(summary.movedAside.map(move => move.name)).toEqual(["beta"]);
+    expect(await readFile(join(summary.movedAside[0]!.to, "SKILL.md"), "utf8")).toContain("UNIQUE LOCAL EDIT");
+  });
+
+  it("adopts a local copy whose only difference is AFK's Manual/Automatic change", async () => {
+    await sourceLibrary();
+    await write(agents("beta"), "beta");
+    await writeInvocationChoice(agents("beta"), "Manual only");
+
+    const summary = await restorer().restore(remote);
+
+    expect(summary.adopted).toEqual(["beta"]);
+    expect(summary.movedAside).toEqual([]);
   });
 
   it("removes a broken link that sat where a Core skill goes", async () => {
