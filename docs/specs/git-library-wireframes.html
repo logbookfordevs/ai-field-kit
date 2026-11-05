@@ -117,7 +117,6 @@ select.inv{border:1px solid var(--line);border-radius:3px;padding:4px 6px;font-s
   .side .ws{flex-basis:100%;padding:0 4px}
   .syncbox{margin-top:0;flex-basis:100%}
   .item{grid-template-columns:1fr auto;}
-  .item .c-src{display:none}
   .item .c-inv{grid-column:1/-1}
   .editor{grid-template-columns:1fr}
   .editor .files{border-right:none;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:wrap}
@@ -136,6 +135,8 @@ select.inv{border:1px solid var(--line);border-radius:3px;padding:4px 6px;font-s
     <button type="button" data-screen="skills" aria-pressed="false">2 · Skills & editor</button>
     <button type="button" data-screen="sync" aria-pressed="false">3 · Backup & history</button>
     <button type="button" data-screen="install" aria-pressed="false">4 · Install</button>
+    <button type="button" data-screen="folders" aria-pressed="false">5 · Agent folders</button>
+    <button type="button" data-screen="project" aria-pressed="false">6 · Project skills</button>
   </div>
   <b>Direction</b>
   <div class="seg" id="dirSeg">
@@ -150,6 +151,7 @@ select.inv{border:1px solid var(--line);border-radius:3px;padding:4px 6px;font-s
     <span class="ws">Personal workspace</span>
     <a href="#" data-nav="kit" class="dir-a">Kit</a>
     <a href="#" data-nav="skills" aria-current="page" id="navSkills">Installed Skills</a>
+    <a href="#" data-goto="project">Projects</a>
     <a href="#">Agent rules</a>
     <a href="#">Tools</a>
     <a href="#" data-nav="settings">Settings</a>
@@ -275,7 +277,7 @@ select.inv{border:1px solid var(--line);border-radius:3px;padding:4px 6px;font-s
         </div>
         <div class="box list">
           <div class="group-title"><span>mattpocock/skills <span class="muted">· 11 skills · follows new skills</span></span><button type="button" class="btn text small">Update source</button></div>
-          <div class="item"><div><h4>wizard</h4><span class="meta">updated Nov 5</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for wizard"><option>Manual only</option><option>Automatic allowed</option></select></span><span class="row-actions"><span class="chip">Backed up</span><button type="button" class="btn text" data-edit>Edit</button></span></div>
+          <div class="item"><div><h4>wizard</h4><span class="meta">updated Nov 5</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for wizard"><option>Manual only</option><option>Automatic allowed</option></select> <span class="small muted" title="Followed by Claude Code, Codex and Pi. Not read by Cursor or Gemini CLI.">ⓘ</span></span><span class="row-actions"><span class="chip">Backed up</span><button type="button" class="btn text" data-edit>Edit</button></span></div>
           <div class="item"><div><h4>domain-modeling</h4><span class="meta">updated Nov 5</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for domain-modeling"><option>Automatic allowed</option></select></span><span class="row-actions"><span class="chip">Backed up</span><button type="button" class="btn text" data-edit>Edit</button></span></div>
           <div class="group-title"><span>tw93/Kami <span class="muted">· 1 skill</span></span></div>
           <div class="item"><div><h4>kami</h4><span class="meta">SKILL.md changed outside AFK</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for kami"><option>Manual only</option></select></span><span class="row-actions"><span class="chip warn">Edited outside AFK</span><button type="button" class="btn text" data-goto="sync">Review</button></span></div>
@@ -339,6 +341,34 @@ A **wizard** is a bash script that walks a human, step by step, through a manual
         <div><span class="muted">Nov 3</span><span>Added <b>Genjutsu</b> to Try later <button type="button" class="btn text small">Go back to before this</button></span></div>
       </div>
       <p class="small muted">Going back is itself a new save, so it can be undone too.</p>
+    </section>
+
+    <!-- ============ 5. AGENT FOLDERS ============ -->
+    <section class="screen" id="s-folders" aria-labelledby="h-folders">
+      <div class="head"><div><h1 id="h-folders">Agent folders</h1><p class="sub">Settings → Agent folders. Every skill that is on gets a link in each folder below. Saved in your backup.</p></div><div class="row-actions"><button type="button" class="btn">Add a folder</button></div></div>
+      <div class="box list">
+        <div class="group-title"><span>Shared folder</span></div>
+        <div class="item"><div><h4><code>~/.agents/skills</code></h4><span class="meta">Read by Codex, Cline, Warp, Zed</span></div><span class="c-src"><span class="switch"><i></i>Always on</span></span><span class="c-inv small muted">43 links</span><span></span></div>
+        <div class="group-title"><span>Detected on this machine</span></div>
+        <div class="item"><div><h4>Claude Code</h4><span class="meta"><code>~/.claude/skills</code> · projects: <code>.claude/skills</code></span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv small muted">43 links · reads Manual/Automatic</span><span></span></div>
+        <div class="item"><div><h4>Cursor</h4><span class="meta"><code>~/.cursor/skills</code> · projects: <code>.agents/skills</code></span></div><span class="c-src"><span class="switch off"><i></i>Off</span></span><span class="c-inv small muted">Turning on adds 43 links</span><span></span></div>
+        <div class="item"><div><h4>Gemini CLI</h4><span class="meta"><code>~/.gemini/skills</code> · projects: <code>.agents/skills</code></span></div><span class="c-src"><span class="switch off"><i></i>Off</span></span><span class="c-inv small muted">Turning on adds 43 links</span><span></span></div>
+        <div class="group-title"><span>Your folders</span></div>
+        <div class="item"><div><h4>Team agent</h4><span class="meta"><code>~/.team-agent/skills</code> · added by you</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv small muted">43 links</span><span class="row-actions"><button type="button" class="btn text">Edit</button><button type="button" class="btn text">Remove</button></span></div>
+      </div>
+      <button type="button" class="btn text" style="align-self:flex-start">Show all 80 known agents</button>
+      <div class="note"><b>Turning a folder off</b> removes only AFK's links there; other files in it stay. Paths shown come from AFK's agent table, based on Skills CLI's.</div>
+    </section>
+
+    <!-- ============ 6. PROJECT SKILLS ============ -->
+    <section class="screen" id="s-project" aria-labelledby="h-project">
+      <div class="head"><div><h1 id="h-project">Projects</h1><p class="sub">Manage the skills a project keeps in its own repository. Changes edit the project's files, so they show up in its Git status. Not part of your backup.</p></div><div class="row-actions"><select class="inv" aria-label="Project"><option>lexamica-api · ~/Codes/lexamica/lexamica-api</option><option>ai-field-kit</option></select><button type="button" class="btn">Add project</button></div></div>
+      <div class="row-actions"><button type="button" class="btn" data-goto="install">Install into this project</button><button type="button" class="btn">Update all</button></div>
+      <div class="box list">
+        <div class="item"><div><h4>api-conventions</h4><span class="meta"><code>.agents/skills</code> · committed · from lexamica/skills</span></div><span class="c-src small muted">Also linked in <code>.claude/skills</code></span><span class="c-inv"><select class="inv" aria-label="Invocation for api-conventions"><option>Automatic allowed</option><option>Manual only</option></select></span><span class="row-actions"><button type="button" class="btn text">Update</button><button type="button" class="btn text" data-edit>Edit</button><button type="button" class="btn text">Delete</button></span></div>
+        <div class="item"><div><h4>release-checklist</h4><span class="meta"><code>.agents/skills</code> · committed · written by the team</span></div><span class="c-src small muted">Also linked in <code>.claude/skills</code></span><span class="c-inv"><select class="inv" aria-label="Invocation for release-checklist"><option>Manual only</option><option>Automatic allowed</option></select></span><span class="row-actions"><button type="button" class="btn text" disabled>Update</button><button type="button" class="btn text" data-edit>Edit</button><button type="button" class="btn text">Delete</button></span></div>
+      </div>
+      <div class="note"><b>No on/off and no packs here for now.</b> Global skills still reach agents working in this project; this list shows only the project's own.</div>
     </section>
 
     <!-- ============ 4. INSTALL ============ -->
