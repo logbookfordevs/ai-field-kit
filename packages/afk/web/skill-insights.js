@@ -16,34 +16,19 @@ function tokenSummaryLine(entries){
   return ['codex','claude'].map(agent=>{const value=automaticTokenEstimate(entries,agent);return `${agent==='codex'?'Codex':'Claude'}: ~${value.tokens.toLocaleString()} tokens · ${value.count} automatic skills`}).join(' / ');
 }
 function skillTokenSummary(){
-  const codex=automaticTokenEstimate(inventory().filter(matchesProfileFilter),'codex'),claude=automaticTokenEstimate(inventory().filter(matchesProfileFilter),'claude');
+  const codex=automaticTokenEstimate(inventory(),'codex'),claude=automaticTokenEstimate(inventory(),'claude');
   return button(`Discovery: Codex ~${codex.tokens.toLocaleString()} · Claude ~${claude.tokens.toLocaleString()} tokens`,'showDiscoveryEstimate()','text');
 }
 function showDiscoveryEstimate(){
   const project=scope!=='Global';
-  modal('Automatic discovery estimate',`<p><strong>${esc(scope)}${project?' only':''}${profileFilter?' · selected profile membership':''}</strong></p><p>${esc(tokenSummaryLine(inventory().filter(matchesProfileFilter)))}</p>${project?`<p>Including Global, same profile filter: ${esc(tokenSummaryLine([...(inventories.Global||[]),...inventory()].filter(matchesProfileFilter)))}</p>`:''}<p class="hint">Rough estimate: one token per four characters in available automatic skills’ names and descriptions. Agent formatting, model tokenizers, full instructions and supporting files are excluded. Unknown invocation modes are not counted. Shared skill names count once; Only the Profile filter applies to this estimate. Search, source, availability and invocation filters affect the list only. Available skills with automatic invocation contribute.</p>`);
+  modal('Automatic discovery estimate',`<p><strong>${esc(scope)}${project?' only':''}</strong></p><p>${esc(tokenSummaryLine(inventory()))}</p>${project?`<p>Including Global: ${esc(tokenSummaryLine([...(inventories.Global||[]),...inventory()]))}</p>`:''}<p class="hint">Rough estimate: one token per four characters in available automatic skills’ names and descriptions. Agent formatting, model tokenizers, full instructions and supporting files are excluded. Unknown invocation modes are not counted. Shared skill names count once. Search, source and invocation filters affect the list only. Available skills with automatic invocation contribute.</p>`);
 }
 function installedSourceOptions(){
   const sources=[...new Set(inventory().map(entry=>entry.source||'__local'))].sort();
   return sources.map(source=>`<option value="${esc(source)}" ${sourceFilter===source?'selected':''}>${esc(source==='__local'?'Unknown / local':source)}</option>`).join('');
 }
-function installedProfiles(){
-  const names=new Set(inventory().map(entry=>entry.name));
-  return profiles.filter(profile=>profile.skills.some(name=>names.has(name)));
-}
-function installedProfileOptions(){
-  return installedProfiles().map(profile=>`<option value="${esc(profile.id)}" ${profileFilter===profile.id?'selected':''}>${esc(profile.name)}</option>`).join('');
-}
-function matchesProfileFilter(entry){
-  if(!profileFilter)return true;
-  const membership=profiles.filter(profile=>profile.skills.includes(entry.name));
-  if(profileFilter==='__any')return membership.length>0;
-  if(profileFilter==='__none')return membership.length===0;
-  return membership.some(profile=>profile.id===profileFilter);
-}
 function matchesSkillFilters(entry){
-  const availability=typeof availabilityFilter==='undefined'?'':availabilityFilter;
-  return matchesProfileFilter(entry)&&(availability==='all'||(availability==='disabled'?!entry.available:entry.available))&&entry.name.toLowerCase().includes(query.trim().toLowerCase())&&(!invocationFilter||invocationSummary(entry.invocation)===invocationFilter)&&(!sourceFilter||(entry.source||'__local')===sourceFilter);
+  return entry.name.toLowerCase().includes(query.trim().toLowerCase())&&(!invocationFilter||invocationSummary(entry.invocation)===invocationFilter)&&(!sourceFilter||(entry.source||'__local')===sourceFilter);
 }
 function showSkillTokenEstimate(){
   if(!inspectedSkill)return;
@@ -54,7 +39,7 @@ function showSkillTokenEstimate(){
 }
 
 function matchesNestedSkillFilters(entry){
-  const hasManagedFilter=Boolean(availabilityFilter==='disabled'||sourceFilter||profileFilter),search=query.trim().toLowerCase();
+  const hasManagedFilter=Boolean(sourceFilter),search=query.trim().toLowerCase();
   if(hasManagedFilter)return false;
   return (entry.name.toLowerCase().includes(search)||entry.folder.toLowerCase().includes(search))&&(!invocationFilter||invocationSummary(entry.invocation)===invocationFilter);
 }

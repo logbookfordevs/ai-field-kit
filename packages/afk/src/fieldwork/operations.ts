@@ -631,7 +631,7 @@ export class FieldworkOperations {
         }
         inventories[scope] = await library.inventory(settings, scope);
         nestedInventories[scope] = await library.nested(settings, scope);
-        skillSharing[scope] = await sharingState(store, settings, scope);
+        if (scope !== "Global") skillSharing[scope] = await sharingState(store, settings, scope);
       }
       for (const profile of settings.profiles) {
         if (!profile.ready) continue;

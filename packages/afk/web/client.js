@@ -43,7 +43,6 @@ async function persist(){
 }
 inventory=()=>inventories[scope]||[];
 nestedInventory=()=>nestedInventories[scope]||[];
-isAvailable=entry=>entry.available;
 activate=id=>operation(async()=>{
   const profile=profiles.find(p=>p.id===id),target=selectedTargets[id]||'Global';
   const downloading=!profile.enabled.includes(target)&&!profile.ready;
