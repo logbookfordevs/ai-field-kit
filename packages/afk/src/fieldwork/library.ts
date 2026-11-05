@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { lstat, mkdir, readFile, readdir, readlink, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { runCommand, type CommandSpec } from "./command-runner.js";
 import { DEFAULT_ENABLED, expandHome, SHARED_FOLDER, type AgentFolderSettings } from "./agent-folders.js";
 import { sameSkillName, skillName, type KitSource, type RulesDestination } from "./settings.js";
@@ -255,27 +255,41 @@ export class Library {
     });
   }
 
-  /** Moves the links of every skill that is on from folders no longer enabled to newly enabled ones; a failure puts the links back. */
+  /** Moves the links of every skill that is on from folders no longer enabled to newly enabled ones; a failure, including the enclosing change's, puts the links back. */
   async followFolders(before: string[], after: string[]): Promise<void> {
-    const on = await this.onNames();
     const removed = before.filter(folder => !after.includes(folder));
     const added = after.filter(folder => !before.includes(folder));
     if (!removed.length && !added.length) return;
-    const created = await this.pendingLinks(added, on, before.filter(folder => after.includes(folder)));
+    const created = await this.pendingLinks(added, await this.onNames(), before.filter(folder => after.includes(folder)));
+    const enabled = new Set<string>();
+    for (const folder of after) enabled.add(await this.identity(folder));
     const dropped: PendingLink[] = [];
-    try {
-      for (const folder of removed) for (const name of on) {
-        const path = join(folder, name);
-        if (!await this.isOwnLink(path, name)) continue;
-        const target = resolve(dirname(path), await readlink(path));
-        await rm(path);
-        dropped.push({ path, target });
+    let made: string[] = [];
+    const putBack = async (): Promise<void> => {
+      for (const path of made.reverse()) if (await this.isOwnLink(path, basename(path))) await rm(path);
+      for (const { path, target } of dropped.reverse()) {
+        if (await exists(path)) continue;
+        await mkdir(dirname(path), { recursive: true });
+        await symlink(target, path, "dir");
       }
-      await this.createLinks(created);
+    };
+    try {
+      for (const folder of removed) {
+        if (enabled.has(await this.identity(folder))) continue;
+        for (const name of await this.entries(folder)) {
+          const path = join(folder, name);
+          if (!await this.isOwnLink(path, name)) continue;
+          const target = await readlink(path);
+          await rm(path);
+          dropped.push({ path, target });
+        }
+      }
+      made = await this.createLinks(created);
     } catch (error) {
-      for (const { path, target } of dropped) await symlink(target, path, "dir");
+      await putBack();
       throw error;
     }
+    if (changing.getStore()?.root === this.root) this.onRollback(putBack);
   }
 
   /** Every skill AFK stores in the library, the pack cache or machine storage. */
@@ -292,6 +306,13 @@ export class Library {
     const on: string[] = [];
     for (const name of await this.storedNames()) if (await this.linked(name)) on.push(name);
     return on;
+  }
+
+  private async entries(folder: string): Promise<string[]> {
+    try { return (await readdir(folder)).filter(name => skillName(name)); } catch (error) {
+      if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) return [];
+      throw error;
+    }
   }
 
   private async identity(folder: string): Promise<string> {
