@@ -77,6 +77,22 @@ async function fileInside(base: string, file: unknown): Promise<string> {
   return current;
 }
 
+// AFK rewrites these files with every save; a link anywhere on their path would carry that write out of the skill.
+async function checkManaged(base: string): Promise<void> {
+  for (const file of MANAGED) {
+    let current = base;
+    for (const part of file.split("/")) {
+      current = join(current, part);
+      let info;
+      try { info = await lstat(current); } catch (error) {
+        if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) break;
+        throw error;
+      }
+      if (info.isSymbolicLink()) throw new Error(`${file} in this skill is a link, and AFK writes only files inside the skill folder. Replace the link with a plain file first.`);
+    }
+  }
+}
+
 async function listFiles(base: string): Promise<string[]> {
   const files: string[] = [];
   const walk = async (directory: string, prefix: string): Promise<void> => {
@@ -154,6 +170,7 @@ export async function saveSkillEdit(store: SettingsStore, settings: Settings, ed
   if (located.readOnly) throw new Error(located.readOnly);
   const folder = await realpath(located.base);
   const target = await fileInside(folder, edit.file);
+  await checkManaged(folder);
   if ((await textOf(target)).content === null) throw new Error("Only plain text files can be saved here.");
   if (edit.file === "SKILL.md") checkFrontmatter(edit.content);
 

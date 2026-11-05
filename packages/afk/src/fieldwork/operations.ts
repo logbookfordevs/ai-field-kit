@@ -26,6 +26,7 @@ import { Restore } from "./library-restore.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
 import { migrateProject } from "./project-skills.js";
+import type { AsideMove } from "./aside.js";
 import { Uploads } from "./upload-install.js";
 import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate } from "./kit.js";
 import { agentFolderState, changeAgentFolders } from "./agent-folder-operations.js";
@@ -115,7 +116,7 @@ export class FieldworkOperations {
   readonly backup: Backup;
   private readonly uploads: Uploads;
   private projectsReady: Promise<void> | undefined;
-  private projectMigration: { migrated: string[]; kept: { project: string; skills: string[] }[]; failed: { project: string; error: string }[] } = { migrated: [], kept: [], failed: [] };
+  private projectMigration: { migrated: string[]; kept: { project: string; skills: string[] }[]; movedAside: { project: string; moves: AsideMove[] }[]; failed: { project: string; error: string }[] } = { migrated: [], kept: [], movedAside: [], failed: [] };
 
   constructor(readonly store: SettingsStore) {
     this.backup = new Backup(new Library(store.home), undefined, { signal: this.lifecycle.signal, isOn: async name => globalSkillOn(await store.read(), name) });
@@ -348,6 +349,7 @@ export class FieldworkOperations {
           const result = await migrateProject(this.store, settings, name);
           if (result.migrated) this.projectMigration.migrated.push(name);
           if (result.kept.length) this.projectMigration.kept.push({ project: name, skills: result.kept });
+          if (result.movedAside.length) this.projectMigration.movedAside.push({ project: name, moves: result.movedAside });
         } catch (error) { this.projectMigration.failed.push({ project: name, error: error instanceof Error ? error.message : "Migration failed." }); }
       }
     } catch { /* The requested operation reports unreadable settings itself. */ }
@@ -409,7 +411,7 @@ export class FieldworkOperations {
       const status = await backup.status(), attention = await backup.checks.list(), unpushed = await backup.unpushedSkills();
       return data.brief === true ? { status, attention, unpushed } : { status, attention, unpushed, history: await backup.history(), contents: await backup.contents() };
     }
-    const resolutions: Partial<Record<Operation, () => Promise<void>>> = {
+    const resolutions: Partial<Record<Operation, () => Promise<{ movedAside: AsideMove[] } | void>>> = {
       "backup/keep": () => backup.checks.keep(String(data.id)),
       "backup/discard": () => backup.checks.discard(String(data.id)),
       "backup/take-update": () => backup.checks.take(String(data.name)),
@@ -417,8 +419,8 @@ export class FieldworkOperations {
     };
     const resolve = resolutions[operation];
     if (resolve) {
-      await resolve();
-      return { status: await backup.status(), attention: await backup.checks.list() };
+      const resolution = await resolve();
+      return { status: await backup.status(), attention: await backup.checks.list(), ...(resolution ? { movedAside: resolution.movedAside } : {}) };
     }
     if (operation === "backup/connect") return backup.connect(String(data.url));
     if (operation === "backup/create") return backup.createRepository(String(data.name));

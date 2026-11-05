@@ -3,7 +3,7 @@ import { lstat, mkdir, readFile, readdir, readlink, realpath, rename, rm, symlin
 import { dirname, join, resolve } from "node:path";
 import { runCommand, type CommandSpec } from "./command-runner.js";
 import { DEFAULT_ENABLED, expandHome, SHARED_FOLDER, type AgentFolderSettings } from "./agent-folders.js";
-import { skillName, type KitSource, type RulesDestination } from "./settings.js";
+import { sameSkillName, skillName, type KitSource, type RulesDestination } from "./settings.js";
 
 export type InvocationChoice = "" | "Manual only" | "Automatic allowed";
 
@@ -30,7 +30,8 @@ interface PendingLink { path: string; target: string }
 export type GitRunner = (spec: CommandSpec) => Promise<{ code: number; output: string }>;
 
 const queues = new Map<string, Promise<unknown>>();
-const changing = new AsyncLocalStorage<string>();
+interface ChangeContext { root: string; undo: (() => Promise<unknown>)[]; after: (() => Promise<unknown>)[] }
+const changing = new AsyncLocalStorage<ChangeContext>();
 
 const GITIGNORE = ".DS_Store\nThumbs.db\n.afk-*\nnode_modules/\n";
 
@@ -60,6 +61,11 @@ export function machineRoot(home: string): string {
 
 export type Storage = "library" | "pack" | "machine";
 
+async function entries(folder: string): Promise<string[]> {
+  try { return await readdir(folder); }
+  catch (error) { if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) return []; throw error; }
+}
+
 /** AFK's own Git repository of Core skills, their `.afk` records and small settings. */
 export class Library {
   readonly root: string;
@@ -83,8 +89,22 @@ export class Library {
   async storage(name: string): Promise<Storage | undefined> {
     if (!skillName(name)) return undefined;
     if (await this.has(name)) return "library";
-    for (const storage of ["pack", "machine"] as const) if (await exists(join(this.storagePath(name, storage), "SKILL.md"))) return storage;
+    for (const storage of ["pack", "machine"] as const) {
+      const path = this.storagePath(name, storage);
+      if (await exists(join(path, "SKILL.md")) && (await entries(dirname(path))).includes(name)) return storage;
+    }
     return undefined;
+  }
+
+  /** A stored skill whose name differs from this one only in letter case, which a case-folding disk would treat as the same folder. */
+  async caseTwin(name: string): Promise<string | undefined> {
+    const stored = [
+      ...await this.names(),
+      ...await entries(packCacheRoot(this.home)),
+      ...await entries(machineRoot(this.home)),
+      ...(await entries(join(this.root, ".afk/skills"))).filter(file => file.endsWith(".json")).map(file => file.slice(0, -5)),
+    ];
+    return stored.find(other => other !== name && skillName(other) && sameSkillName(other, name));
   }
 
   async location(name: string): Promise<string | undefined> {
@@ -97,7 +117,7 @@ export class Library {
   }
 
   async has(name: string): Promise<boolean> {
-    return skillName(name) && await this.exists() && await exists(join(this.skillPath(name), "SKILL.md"));
+    return skillName(name) && await this.exists() && await exists(join(this.skillPath(name), "SKILL.md")) && (await this.names()).includes(name);
   }
 
   async names(): Promise<string[]> {
@@ -125,8 +145,24 @@ export class Library {
 
   /** Runs one library change as exactly one commit; a failure restores the working tree to the last commit. A change made inside another joins its commit. */
   change<T>(message: string, mutate: () => Promise<T>): Promise<T> {
-    if (changing.getStore() === this.root) return mutate();
+    if (changing.getStore()?.root === this.root) return mutate();
     return this.enqueue(() => this.commitChange(message, mutate));
+  }
+
+  /** Inside a change: undoes work outside the repository if the outermost change fails, newest step first. */
+  onRollback(step: () => Promise<unknown>): void {
+    this.context().undo.push(step);
+  }
+
+  /** Inside a change: runs once the outermost change has committed, such as removing copies kept for a rollback. */
+  afterCommit(step: () => Promise<unknown>): void {
+    this.context().after.push(step);
+  }
+
+  private context(): ChangeContext {
+    const context = changing.getStore();
+    if (context?.root !== this.root) throw new Error("This step runs only inside a library change.");
+    return context;
   }
 
   /** Paths whose files differ from the last commit, as the library itself would list them. */
@@ -143,7 +179,7 @@ export class Library {
     return this.enqueue(async () => {
       await prepare?.();
       await this.git("Saving the library", "--literal-pathspecs", "add", "-A", "--", ...paths);
-      await this.git("Saving the library", "commit", "--quiet", "--no-verify", "-m", message);
+      await this.git("Saving the library", "--literal-pathspecs", "commit", "--quiet", "--no-verify", "-m", message, "--only", "--", ...paths);
     });
   }
 
@@ -198,8 +234,9 @@ export class Library {
   }
 
   /** Links a stored skill into every enabled folder; an occupied destination stops before anything changes. */
-  async link(name: string): Promise<void> {
-    await this.createLinks(await this.pendingLinks(await this.folders(), [name]));
+  /** Returns the links it created; links that were already there are left out. */
+  async link(name: string): Promise<string[]> {
+    return this.createLinks(await this.pendingLinks(await this.folders(), [name]));
   }
 
   /** Removes only AFK's own links to a stored skill; the stored files never move. */
@@ -214,26 +251,31 @@ export class Library {
       const settings = await this.readSettings();
       if (!settings) throw new Error("The library has no settings yet.");
       await this.writeSettings({ ...settings, agentFolders: next });
-      const after = await this.folders();
-      const on = await this.onNames();
-      const removed = before.filter(folder => !after.includes(folder));
-      const added = after.filter(folder => !before.includes(folder));
-      const created = await this.pendingLinks(added, on, before.filter(folder => after.includes(folder)));
-      const dropped: PendingLink[] = [];
-      try {
-        for (const folder of removed) for (const name of on) {
-          const path = join(folder, name);
-          if (!await this.isOwnLink(path, name)) continue;
-          const target = resolve(dirname(path), await readlink(path));
-          await rm(path);
-          dropped.push({ path, target });
-        }
-        await this.createLinks(created);
-      } catch (error) {
-        for (const { path, target } of dropped) await symlink(target, path, "dir");
-        throw error;
-      }
+      await this.followFolders(before, await this.folders());
     });
+  }
+
+  /** Moves the links of every skill that is on from folders no longer enabled to newly enabled ones; a failure puts the links back. */
+  async followFolders(before: string[], after: string[]): Promise<void> {
+    const on = await this.onNames();
+    const removed = before.filter(folder => !after.includes(folder));
+    const added = after.filter(folder => !before.includes(folder));
+    if (!removed.length && !added.length) return;
+    const created = await this.pendingLinks(added, on, before.filter(folder => after.includes(folder)));
+    const dropped: PendingLink[] = [];
+    try {
+      for (const folder of removed) for (const name of on) {
+        const path = join(folder, name);
+        if (!await this.isOwnLink(path, name)) continue;
+        const target = resolve(dirname(path), await readlink(path));
+        await rm(path);
+        dropped.push({ path, target });
+      }
+      await this.createLinks(created);
+    } catch (error) {
+      for (const { path, target } of dropped) await symlink(target, path, "dir");
+      throw error;
+    }
   }
 
   /** Every skill AFK stores in the library, the pack cache or machine storage. */
@@ -280,7 +322,7 @@ export class Library {
     return pending;
   }
 
-  private async createLinks(pending: PendingLink[]): Promise<void> {
+  private async createLinks(pending: PendingLink[]): Promise<string[]> {
     const created: string[] = [];
     try {
       for (const { path, target } of pending) {
@@ -292,11 +334,12 @@ export class Library {
       for (const path of created) await rm(path, { force: true });
       throw error;
     }
+    return created;
   }
 
   private enqueue<T>(work: () => Promise<T>): Promise<T> {
-    if (changing.getStore() === this.root) return work();
-    const next = (queues.get(this.root) ?? Promise.resolve()).then(() => changing.run(this.root, work));
+    if (changing.getStore()?.root === this.root) return work();
+    const next = (queues.get(this.root) ?? Promise.resolve()).then(() => changing.run({ root: this.root, undo: [], after: [] }, work));
     queues.set(this.root, next.catch(() => undefined));
     return next;
   }
@@ -327,15 +370,21 @@ export class Library {
   private async commitChange<T>(message: string, mutate: () => Promise<T>): Promise<T> {
     if (!await this.exists()) throw new Error("Start a library first with `afk library init`.");
     if (await this.git("Checking the library", "status", "--porcelain")) throw new Error("The library has changes AFK did not make. Review them before changing it.");
+    const context = this.context();
+    let result: T;
     try {
-      const result = await mutate();
+      result = await mutate();
       await this.commit(message);
-      return result;
     } catch (error) {
+      for (const step of context.undo.splice(0).reverse()) await step().catch(() => undefined);
+      context.after.length = 0;
       await this.git("Restoring the library", "reset", "--hard", "--quiet", "HEAD");
       await this.git("Restoring the library", "clean", "-fd", "--quiet");
       throw error;
     }
+    context.undo.length = 0;
+    for (const step of context.after.splice(0)) await step().catch(() => undefined);
+    return result;
   }
 
   private async commit(message: string): Promise<void> {

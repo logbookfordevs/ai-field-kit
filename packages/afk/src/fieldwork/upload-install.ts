@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { addToCore, kitStatus, toolOwner } from "./kit.js";
 import { storeSkills, type StagedSkill } from "./library-install.js";
-import { expandPath, profileGroups, skillName, UPLOADED_SOURCE, type Profile, type ProfileGroup, type Settings, type SettingsStore } from "./settings.js";
+import { expandPath, profileGroups, sameSkillName, skillName, UPLOADED_SOURCE, type Profile, type ProfileGroup, type Settings, type SettingsStore } from "./settings.js";
 import { MAX_UPLOAD_BYTES, stageUpload, type UploadSource, type UploadedSkill } from "./skill-upload.js";
 import type { SkillLibrary } from "./skills.js";
 
@@ -29,8 +29,15 @@ interface Held { id: string; directory: string; skills: UploadedSkill[] }
 
 const maximumEncoded = Math.ceil(MAX_UPLOAD_BYTES / 3) * 4 + 4;
 
+// One character class and a separate padding check: a grouped, repeated pattern exhausts the regexp stack on a few megabytes.
+function base64(value: string): boolean {
+  if (value.length % 4 !== 0) return false;
+  const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
+  return /^[A-Za-z0-9+/]*$/.test(value.slice(0, value.length - padding));
+}
+
 function decode(value: unknown, label: string): Buffer {
-  if (typeof value !== "string" || value.length > maximumEncoded || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) throw new Error(`${label} is not valid or is too large. Skills can total at most ${MAX_UPLOAD_BYTES / 1024 / 1024} MB.`);
+  if (typeof value !== "string" || value.length > maximumEncoded || !base64(value)) throw new Error(`${label} is not valid or is too large. Skills can total at most ${MAX_UPLOAD_BYTES / 1024 / 1024} MB.`);
   return Buffer.from(value, "base64");
 }
 
@@ -74,6 +81,10 @@ export class Uploads {
 
     const settings = await this.store.read();
     const inventory = await this.skills.inventory(settings, "Global");
+    for (const { name } of skills) {
+      const twin = inventory.find(item => item.name !== name && sameSkillName(item.name, name))?.name ?? await this.skills.library.caseTwin(name);
+      if (twin) { await this.close(); throw new Error(`${name} differs from the installed ${twin} only in letter case, so both would share one folder. Rename it in SKILL.md, or name it ${twin} to replace that skill.`); }
+    }
     const candidates = skills.map(({ name, description, files, bytes }): UploadCandidate => {
       const tool = toolOwner(settings, name), entry = inventory.find(item => item.name === name);
       return { name, description, files, bytes, state: tool ? "tool" : entry ? "installed" : "new", ...(tool ? { tool: tool.name } : {}), ...(!tool && entry?.source ? { installedFrom: entry.source } : {}) };

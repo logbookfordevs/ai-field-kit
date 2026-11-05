@@ -138,7 +138,7 @@ async function backupAction(work,message){
   try{
     const status=await work();
     await loadBackup(true);
-    toast(status?.state==='failed'?'Not saved yet: '+(status.error||'the remote could not be reached')+'. Your changes are kept here.':message);
+    toast(status?.state==='failed'?'Not saved yet: '+(status.error||'the remote could not be reached')+'. Your changes are kept here.':typeof message==='function'?message():message);
   }catch(error){toast(error.message)}
   finally{backupBusy=false;renderBackupBox();if(section==='Backup')renderBackup()}
 }
@@ -148,8 +148,9 @@ connectBackupRemote=()=>backupAction(()=>request('backup/connect',{url:$('backup
 const attentionItem=index=>backupAttention()[index];
 keepEdit=index=>backupAction(async()=>{await request('backup/keep',{id:attentionItem(index).id})},'Edit kept and saved.');
 discardEdit=index=>{closeModal();return backupAction(async()=>{await request('backup/discard',{id:attentionItem(index).id})},'The saved version is back.')};
-takeSkillsUpdate=index=>backupAction(async()=>{await request('backup/take-update',{name:attentionItem(index).name})},'The update is stored and linked.');
-restoreSaved=index=>{closeModal();return backupAction(async()=>{await request('backup/restore-saved',{name:attentionItem(index).name})},'The saved version is linked again.')};
+const asideNote=moves=>moves?.length?` A different copy was kept in ${moves.map(move=>move.to).join(', ')}.`:'';
+takeSkillsUpdate=index=>{let moves=[];return backupAction(async()=>{moves=(await request('backup/take-update',{name:attentionItem(index).name}))?.movedAside},()=>'The update is stored and linked.'+asideNote(moves))};
+restoreSaved=index=>{closeModal();let moves=[];return backupAction(async()=>{moves=(await request('backup/restore-saved',{name:attentionItem(index).name}))?.movedAside},()=>'The saved version is linked again.'+asideNote(moves))};
 confirmDiscardEdit=index=>{
   const item=attentionItem(index);
   modal('Discard this edit?',`<p>The saved version of <b>${esc(item.name)}</b> comes back and your edit is deleted.</p><p class="hint">Nothing is saved to the remote, so this cannot be undone.</p>`,button('Cancel','closeModal()','text')+button('Discard',`discardEdit(${index})`,'primary','data-attention-confirm'));

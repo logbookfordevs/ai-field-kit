@@ -8,6 +8,9 @@ import { FieldworkOperations } from "./operations.js";
 import { SourcePreparation } from "./preparation.js";
 import { emptySettings, SettingsStore } from "./settings.js";
 import { makeZip } from "./zip.test-helper.js";
+import { Uploads } from "./upload-install.js";
+import { Library } from "./library.js";
+import { SkillLibrary } from "./skills.js";
 
 let home: string;
 let store: SettingsStore;
@@ -101,6 +104,20 @@ describe("previewing an upload", () => {
 
     expect(await commits()).toEqual(before);
     expect(await git("status", "--porcelain")).toBe("");
+  });
+
+  it("reads a valid file of several megabytes, well under the upload limit", async () => {
+    const data = Buffer.concat([Buffer.from(skill("large")), Buffer.alloc(5 * 1024 * 1024, 65)]).toString("base64");
+
+    const found = await operations.run("kit/upload-preview", { files: [{ path: "large/SKILL.md", base64: data }] }) as Preview;
+
+    expect(found.candidates.map(candidate => candidate.name)).toEqual(["large"]);
+  });
+
+  it("rejects text that is not base64", async () => {
+    for (const base64 of ["abc", "ab=c", "a===", "ab$c", "=abc"]) {
+      await expect(operations.run("kit/upload-preview", { files: [{ path: "large/SKILL.md", base64 }] }), base64).rejects.toThrow(/not valid/);
+    }
   });
 
   it("asks for exactly one kind of upload", async () => {
@@ -271,6 +288,39 @@ describe("what an upload cannot do", () => {
 
     expect(await commits()).toEqual(before);
     expect(await present(join(home, ".afk/library/skills/wizard"))).toBe(false);
+  });
+
+  it("keeps the replaced machine copy and its link when saving the pack fails after the files are stored", async () => {
+    const first = await preview("zip", "UNIQUE MACHINE ORIGINAL.");
+    await operations.run("kit/upload-install", { upload: first.upload, names: ["wizard"], to: "machine" });
+    const machine = join(home, ".afk/machine/wizard");
+    const uploads = new Uploads(store, new SkillLibrary(store), {
+      define: (_existing, id, name, groups) => ({ id, name, source: groups[0]!.source, skills: ["wizard"], enabled: [], ready: false }),
+      save: async () => { throw new Error("Pack save failed"); },
+    });
+    try {
+      const again = await uploads.preview({ archive: wizardZip("Replacement.").toString("base64"), name: "wizard.zip" });
+
+      await expect(uploads.install({ upload: again.upload, names: ["wizard"], replace: ["wizard"], to: "new-pack", packName: "New" })).rejects.toThrow(/Pack save failed/);
+
+      expect(await readFile(join(machine, "SKILL.md"), "utf8")).toContain("UNIQUE MACHINE ORIGINAL.");
+      expect(await present(join(home, ".afk/library/skills/wizard"))).toBe(false);
+      expect(await readlink(join(agents, "wizard"))).toBe(machine);
+      expect((await readdir(join(home, ".afk/machine"))).filter(name => name.startsWith(".afk-"))).toEqual([]);
+    } finally { await uploads.close(); }
+  });
+
+  it("refuses an upload whose name matches an installed skill apart from letter case, even when that skill is off", async () => {
+    const first = await preview("zip", "UNIQUE EXISTING ORIGINAL.");
+    await operations.run("kit/upload-install", { upload: first.upload, names: ["wizard"], to: "core" });
+    await new Library(home).unlink("wizard");
+    const before = await commits();
+    const archive = makeZip([{ path: "upload/SKILL.md", data: skill("Wizard", "Replacement without confirmation.") }]).toString("base64");
+
+    await expect(operations.run("kit/upload-preview", { archive, name: "upload.zip" })).rejects.toThrow(/letter case/i);
+
+    expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toContain("UNIQUE EXISTING ORIGINAL.");
+    expect(await commits()).toEqual(before);
   });
 
   it("needs the AFK library to exist first", async () => {

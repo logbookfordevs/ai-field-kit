@@ -213,6 +213,34 @@ describe("paths outside the skill folder", () => {
     expect(await readFile(join(outsideFolder, "secret.txt"), "utf8")).toBe("secret");
   });
 
+  it("refuses to save SKILL.md when a file AFK rewrites alongside it is a link out of the skill", async () => {
+    await store1("sample", { invocation: "Manual only", source: null });
+    const external = join(home, "outside.yaml");
+    await writeFile(external, "policy: {}\n");
+    await library.change("Link metadata", async () => {
+      await mkdir(join(library.skillPath("sample"), "agents"), { recursive: true });
+      await symlink(external, join(library.skillPath("sample"), "agents/openai.yaml"));
+    });
+    const before = await commits();
+
+    await expect(save("sample", "SKILL.md", skillText("sample", "Edited."))).rejects.toThrow(/link/i);
+
+    expect(await readFile(external, "utf8")).toBe("policy: {}\n");
+    expect(await readFile(join(library.skillPath("sample"), "SKILL.md"), "utf8")).not.toContain("Edited.");
+    expect(await commits()).toEqual(before);
+  });
+
+  it("refuses to save when the folder holding AFK's metadata is a link out of the skill", async () => {
+    await store1("sample", { invocation: "Manual only", source: null });
+    const external = join(home, "outside-agents");
+    await mkdir(external, { recursive: true });
+    await library.change("Link agents", () => symlink(external, join(library.skillPath("sample"), "agents")));
+
+    await expect(save("sample", "SKILL.md", skillText("sample", "Edited."))).rejects.toThrow(/link/i);
+
+    expect(await readdir(external)).toEqual([]);
+  });
+
   it("cannot reach a skill through a name that leaves the library", async () => {
     await expect(open("../outside")).rejects.toThrow();
     await expect(save("../outside", "SKILL.md", skillText("outside"))).rejects.toThrow();

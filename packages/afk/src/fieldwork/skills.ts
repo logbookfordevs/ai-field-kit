@@ -9,6 +9,7 @@ import { Library, machineRoot, packCacheRoot, type Storage } from "./library.js"
 import { toolOwner } from "./kit.js";
 import { offFolder, ToolSkills } from "./tool-skills.js";
 import { writeInvocationChoice } from "./invocation.js";
+import { withoutInvocationFields } from "./invocation-fields.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
 
 /** A Global skill is on when the user turned it on alone or an enabled pack owns it. */
@@ -90,12 +91,16 @@ async function comparableFiles(path: string): Promise<Map<string, string>> {
     }
   };
   await walk(path);
-  try {
-    const backup = JSON.parse(await readFile(join(path, ".afk-invocation-original.json"), "utf8")) as { skill: string; metadata: string | null };
-    files.set("SKILL.md", hash(backup.skill));
-    if (backup.metadata === null) files.delete("agents/openai.yaml");
-    else files.set("agents/openai.yaml", hash(backup.metadata));
-  } catch { /* Without an invocation backup the files are compared as they are. */ }
+  const regular = (key: string): boolean => files.get(key)?.startsWith("link:") === false;
+  if (regular("SKILL.md")) {
+    const metadata = regular("agents/openai.yaml") ? await readFile(join(path, "agents/openai.yaml"), "utf8") : null;
+    const comparable = withoutInvocationFields(await readFile(join(path, "SKILL.md"), "utf8"), metadata);
+    files.set("SKILL.md", hash(comparable.skill));
+    if (metadata !== null) {
+      if (comparable.metadata === null) files.delete("agents/openai.yaml");
+      else files.set("agents/openai.yaml", hash(comparable.metadata));
+    }
+  }
   return files;
 }
 

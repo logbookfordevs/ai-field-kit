@@ -1,5 +1,5 @@
 import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { writeInvocationChoice } from "./invocation.js";
 import { toolOwner } from "./kit.js";
 import { agentSkillFolders, Library, type GitRunner, type InvocationChoice, type SkillRecord, type Storage } from "./library.js";
@@ -64,14 +64,22 @@ async function isFolder(path: string): Promise<boolean> {
   catch { return false; }
 }
 
+// Two agent folders can be one folder through a link; an entry is identified by its real parent folder and its name.
+async function entryIdentity(path: string): Promise<string> {
+  try { return join(await realpath(dirname(path)), basename(path)); } catch { return path; }
+}
+
 // A pack or machine skill moves from `.disabled` or a real folder in `~/.agents/skills`; AFK's links to it go too.
 async function storedSkill(library: Library, name: string, live: string, disabled: string, packOn: boolean): Promise<StoredInitSkill | undefined> {
   const real = await isFolder(live);
   const from = await isFolder(disabled) ? disabled : real ? live : undefined;
   if (!from) return undefined;
-  const originals = [from];
+  const originals = [from], seen = new Set([await entryIdentity(from)]);
   for (const path of await library.links(name)) {
-    if (path !== from && (await isLinkTo(path, from) || await isLinkTo(path, live))) originals.push(path);
+    const identity = await entryIdentity(path);
+    if (seen.has(identity) || !(await isLinkTo(path, from) || await isLinkTo(path, live))) continue;
+    seen.add(identity);
+    originals.push(path);
   }
   const on = packOn || real || await isLinkTo(live, disabled);
   return { name, on, from, originals };
@@ -99,8 +107,7 @@ export async function planLibraryInit(store: SettingsStore, runner?: GitRunner):
       if (!from) { plan.missing.push(name); continue; }
       const seen = new Set<string>(), originals: string[] = [];
       for (const path of [...await library.links(name), stored]) {
-        let identity = path;
-        try { identity = join(await realpath(dirname(path)), name); } catch { /* A missing folder holds nothing to move. */ }
+        const identity = await entryIdentity(path);
         if (seen.has(identity)) continue;
         seen.add(identity);
         if (await exists(path)) originals.push(path);
