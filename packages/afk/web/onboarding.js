@@ -61,7 +61,7 @@ document.addEventListener('keydown',event=>{
 });
 
 function maybeWelcome(){
-  if(!currentSettings.welcomeDismissed&&!welcomeDismissedHere&&!$('sheet').open)showWelcome();
+  if(!currentSettings.welcomeDismissed&&!welcomeDismissedHere&&!$('sheet').open)void maybeFirstRun();
 }
 
 function showWelcome(){

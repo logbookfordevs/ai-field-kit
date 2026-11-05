@@ -1,7 +1,8 @@
 import { lstat, mkdir, mkdtemp, readFile, readdir, readlink, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { runFieldwork } from "./cli.js";
 import { runCommand, type CommandResult, type CommandSpec } from "./command-runner.js";
 import { Library } from "./library.js";
 import { applyLibraryInit } from "./library-init.js";
@@ -378,5 +379,45 @@ describe("restore operations", () => {
 
     expect(await present(library().root)).toBe(false);
     expect(await operations.run("restore/cancel")).toEqual({ cancelled: false, reason: "No restore is running." });
+  });
+});
+
+describe("afk library connect", () => {
+  const lines: string[] = [];
+  beforeEach(() => {
+    lines.length = 0;
+    vi.stubEnv("AFK_SETTINGS", undefined);
+    vi.spyOn(console, "log").mockImplementation((value: unknown) => { lines.push(String(value)); });
+  });
+  afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
+
+  it("restores, lists the tools and runs none unless they are named", async () => {
+    await sourceLibrary();
+
+    expect(await runFieldwork(["library", "connect", remote], store)).toBe(0);
+
+    expect(await readlink(agents("alpha"))).toBe(library().skillPath("alpha"));
+    expect(lines.join("\n")).toMatch(/Wizard.*wiz/);
+    expect(lines.join("\n")).toMatch(/--run-tools/);
+    expect(await present(agents("wiz"))).toBe(false);
+  });
+
+  it("runs the tools named with --run-tools and applies their choices", async () => {
+    await sourceLibrary();
+
+    expect(await runFieldwork(["library", "connect", remote, "--run-tools", "1"], store)).toBe(0);
+
+    expect(await readFile(agents("wiz/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
+    expect(await present(agents("other"))).toBe(false);
+  });
+
+  it("refuses a repository that is not a library with a clear message", async () => {
+    const errors: string[] = [];
+    vi.spyOn(console, "error").mockImplementation((value: unknown) => { errors.push(String(value)); });
+
+    expect(await runFieldwork(["library", "connect", join(sourceHome, "nothing.git")], store)).toBe(1);
+
+    expect(errors.join("\n")).toMatch(/Could not reach/);
+    expect(await present(library().root)).toBe(false);
   });
 });

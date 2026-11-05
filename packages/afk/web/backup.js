@@ -78,7 +78,7 @@ function renderBackup(){
   if(!state){$('view').innerHTML=head('Backup','Loading…');return}
   const status=state.status;
   if(!status.library){
-    $('view').innerHTML=head('Backup','Save your library to a private Git repository.')+`<div class="empty"><h2>No library yet</h2><p class="sub">Start a library first with <code>afk library init --apply</code>, then come back to back it up.</p></div>`;
+    $('view').innerHTML=head('Backup','Save your library to a private Git repository.')+`<div class="empty"><h2>No library yet</h2><p class="sub">Start a library first with <code>afk library init --apply</code>, then come back to back it up.</p>${button('Restore my library from a backup','showFirstRun()','','data-od-id="backup-restore"')}</div>`;
     return;
   }
   if(status.state==='off'){
