@@ -54,6 +54,8 @@ export async function readStaged(home: string, fallbackSource: string, names?: s
 export interface StoreOptions {
   /** Where new skills go; a skill already stored somewhere else is moved here, otherwise it stays where it is. */
   destination?: Storage;
+  /** Replaces files in place: links, on/off state and the Core list stay as they are. */
+  update?: boolean;
   /** Edits the settings inside the same commit as the copied files. */
   finalize?: (settings: Settings, names: string[]) => void;
 }
@@ -72,7 +74,7 @@ export async function storeSkills(store: SettingsStore, staged: StagedSkill[], o
   const names = staged.map(skill => skill.name);
   const shown = targets.some(target => target.to === "library") ? targets.filter(target => target.to === "library") : targets;
   const reinstall = shown.every(target => target.from === target.to);
-  const message = `${reinstall ? "Reinstall" : "Install"} ${shown.map(target => target.skill.name).join(", ")}`;
+  const message = `${options.update ? "Update" : reinstall ? "Reinstall" : "Install"} ${shown.map(target => target.skill.name).join(", ")}`;
 
   const undo: (() => Promise<void>)[] = [];
   const cleanup: string[] = [];
@@ -91,8 +93,9 @@ export async function storeSkills(store: SettingsStore, staged: StagedSkill[], o
         if (to !== "library") await writeFile(join(fresh, ".afk-source.json"), JSON.stringify({ source: skill.source }), { mode: 0o600 });
 
         const wasOn = await library.linked(skill.name);
-        if (from) await library.unlink(skill.name);
-        if (from) undo.push(async () => { if (wasOn) await library.link(skill.name); });
+        const moved = from !== undefined && from !== to;
+        if (moved) await library.unlink(skill.name);
+        if (moved) undo.push(async () => { if (wasOn) await library.link(skill.name); });
         const previous = from ? library.storagePath(skill.name, from) : undefined;
         const aside = previous ? join(dirname(previous), `.afk-old-${randomUUID()}`) : undefined;
         if (previous && aside) {
@@ -110,11 +113,12 @@ export async function storeSkills(store: SettingsStore, staged: StagedSkill[], o
         undo.push(() => rm(destination, { recursive: true, force: true }));
 
         if (to !== "machine") await library.writeRecord(skill.name, { source: skill.source, ...(skill.skillPath ? { skillPath: skill.skillPath } : {}), ...(skill.revision ? { revision: skill.revision } : {}), invocation: mode });
-        if (to !== "pack" || wasOn) {
+        if (!options.update && (to !== "pack" || wasOn)) {
           await library.link(skill.name);
           undo.push(() => library.unlink(skill.name));
         }
       }
+      if (options.update) return;
       const settings = await store.read();
       const independent = new Set(settings.independentSkills.Global ?? []);
       for (const { skill, to } of targets) if (to !== "pack") independent.add(skill.name);

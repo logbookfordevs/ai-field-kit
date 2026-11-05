@@ -3,11 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommand } from "./command-runner.js";
+import { Library } from "./library.js";
 import { applyLibraryInit } from "./library-init.js";
 import { FieldworkOperations } from "./operations.js";
 import { SourcePreparation } from "./preparation.js";
 import { emptySettings, SettingsStore } from "./settings.js";
 import { installSkills, type InstallProgress, type InstallRunner } from "./skill-install.js";
+import { updateSkills, type UpdateRunner } from "./skill-update.js";
 
 let home: string;
 let store: SettingsStore;
@@ -300,5 +302,103 @@ describe("installing into a pack", () => {
     expect(await present(join(agents, "epsilon"))).toBe(false);
     expect((await commits()).length).toBe(before.length + 1);
     expect((await store.read()).profiles.map(profile => profile.name)).toContain("Fresh");
+  });
+});
+
+describe("updating stored skills", () => {
+  const upstream = (version: string, revision: string, code = 0): UpdateRunner => async (_cwd, env, args) => {
+    expect(args.slice(-2)).toEqual(["-g", "-y"]);
+    const lockPath = join(String(env.HOME), ".agents/.skill-lock.json");
+    const entries = JSON.parse(await readFile(lockPath, "utf8")) as { skills: Record<string, { skillFolderHash?: string }> };
+    for (const name of Object.keys(entries.skills)) {
+      if (args.includes(name) || !args.some(arg => !arg.startsWith("-"))) {
+        await writeFile(join(String(env.HOME), ".agents/skills", name, "SKILL.md"), skill(name, version));
+        entries.skills[name]!.skillFolderHash = revision;
+      }
+    }
+    await writeFile(lockPath, JSON.stringify(entries));
+    return code;
+  };
+  const run = async (runner: UpdateRunner, names?: string[], signal?: AbortSignal) => updateSkills(store, await store.read(), "Global", () => {}, runner, signal, names);
+
+  beforeEach(async () => {
+    await install(skillsCli(["wizard", "other"]), ["wizard", "other"]);
+    await install(skillsCli(["local"]), ["local"], "machine");
+    const settings = await store.read();
+    settings.preferences["Global|wizard"] = "Manual only";
+    await store.save(settings);
+  });
+
+  it("replaces stored files, keeps the links, reapplies the choice and records the new revision in one commit", async () => {
+    const before = await commits();
+
+    const result = await run(upstream("2", "rev-2"));
+
+    expect(result).toMatchObject({ code: 0, updated: 3, pending: false });
+    const stored = join(home, ".afk/library/skills/wizard");
+    const text = await readFile(join(stored, "SKILL.md"), "utf8");
+    expect(text).toContain("version 2");
+    expect(text).toContain("disable-model-invocation: true");
+    expect(await readlink(join(agents, "wizard"))).toBe(stored);
+    expect(await readlink(join(claude, "wizard"))).toBe(stored);
+    expect(await json(join(home, ".afk/library/.afk/skills/wizard.json"))).toMatchObject({ revision: "rev-2", invocation: "Manual only" });
+    expect(await readFile(join(home, ".afk/machine/local/SKILL.md"), "utf8")).toContain("version 2");
+    expect((await commits()).length).toBe(before.length + 1);
+    expect((await commits())[0]).toMatch(/^Update /);
+    expect(await git("status", "--porcelain")).toBe("");
+  });
+
+  it("updates only the requested skill", async () => {
+    await run(upstream("2", "rev-2"), ["wizard"]);
+
+    expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toContain("version 2");
+    expect(await readFile(join(home, ".afk/library/skills/other/SKILL.md"), "utf8")).toContain("version 1");
+    expect(await json(join(home, ".afk/library/.afk/skills/other.json"))).toMatchObject({ revision: "rev-1" });
+  });
+
+  it("keeps a skill that is turned off off", async () => {
+    await new Library(home).unlink("other");
+
+    await run(upstream("2", "rev-2"));
+
+    expect(await present(join(agents, "other"))).toBe(false);
+    expect(await readFile(join(home, ".afk/library/skills/other/SKILL.md"), "utf8")).toContain("version 2");
+  });
+
+  it("leaves files, links and commits alone when the update fails", async () => {
+    const before = await commits();
+
+    const result = await run(upstream("2", "rev-2", 1));
+
+    expect(result.code).toBe(1);
+    expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toContain("version 1");
+    expect(await commits()).toEqual(before);
+  });
+
+  it("leaves everything alone when cancelled", async () => {
+    const before = await commits(), controller = new AbortController();
+
+    const result = await run(async (...args) => { const code = await upstream("2", "rev-2")(...args); controller.abort(); return code; }, undefined, controller.signal);
+
+    expect(result).toMatchObject({ cancelled: true, code: 130 });
+    expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toContain("version 1");
+    expect(await commits()).toEqual(before);
+  });
+
+  it("makes no commit when nothing changed upstream", async () => {
+    const before = await commits();
+
+    expect(await run(async () => 0)).toMatchObject({ code: 0, updated: 0 });
+
+    expect(await commits()).toEqual(before);
+  });
+
+  it("refuses to replace files that changed during the update", async () => {
+    await expect(run(async (...args) => {
+      await upstream("2", "rev-2")(...args);
+      await writeFile(join(home, ".afk/library/skills/other/SKILL.md"), skill("other", "edited"));
+      return 0;
+    })).rejects.toThrow("changed during");
+    expect(await readFile(join(home, ".afk/library/skills/other/SKILL.md"), "utf8")).toContain("edited");
   });
 });
