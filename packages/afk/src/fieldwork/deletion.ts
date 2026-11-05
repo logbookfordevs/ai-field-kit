@@ -2,6 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { lstat, readdir, readFile, readlink, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { SkillLibrary, type SkillEntry } from "./skills.js";
+import { dropFromCore } from "./kit.js";
+import type { Storage } from "./library.js";
 import { skillName, type Settings, type SettingsStore } from "./settings.js";
 
 async function fingerprint(path: string): Promise<string> {
@@ -31,11 +33,60 @@ async function entryAddress(path: string): Promise<string> {
   return join(await realpath(dirname(path)), basename(path));
 }
 
+/** A Global skill AFK stores itself: its one copy plus the links AFK made, with nothing else to untangle. */
+async function previewStoredDeletion(store: SettingsStore, settings: Settings, entry: SkillEntry, storage: Storage) {
+  const library = new SkillLibrary(store).library;
+  const name = entry.name;
+  const path = library.storagePath(name, storage);
+  if ((await lstat(path)).isSymbolicLink()) throw new Error("The stored entry is itself a link. Delete the physical copy where it lives.");
+  const profiles = settings.profiles.filter(profile => profile.skills.includes(name) && profile.enabled.length > 0);
+  if (profiles.length) throw new Error(`Disable these profiles before deleting this skill: ${profiles.map(profile => profile.name).join(", ")}.`);
+  const links: { path: string; target: string; fingerprint: string }[] = [];
+  for (const link of await library.links(name)) {
+    try {
+      if (!(await lstat(link)).isSymbolicLink() || await realpath(link) !== await realpath(path)) continue;
+      links.push({ path: link, target: await readlink(link), fingerprint: await fingerprint(link) });
+    } catch (error) {
+      if (!["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error;
+    }
+  }
+  return { name, scope: "Global", path, available: entry.available, links, copies: [], claudeSharesStorage: false, retainedCopies: [], fingerprint: await fingerprint(path), storage };
+}
+
+async function deleteStoredSkill(store: SettingsStore, settings: Settings, name: string, preview: { path: string; storage: Storage }): Promise<void> {
+  const library = new SkillLibrary(store).library;
+  const next = structuredClone(settings);
+  for (const profile of next.profiles) if (profile.skills.includes(name)) profile.ready = false;
+  delete next.preferences[`Global|${name}`];
+  next.independentSkills.Global = (next.independentSkills.Global ?? []).filter(member => member !== name);
+  next.machineOnly = next.machineOnly.filter(member => member !== name);
+  dropFromCore(next, name);
+  const wasOn = await library.linked(name);
+  const aside = join(dirname(preview.path), `.afk-delete-${randomUUID()}`);
+  const remove = async (): Promise<void> => {
+    await rename(preview.path, aside);
+    if (preview.storage === "library") await library.removeRecord(name);
+    await store.save(next);
+  };
+  await library.unlink(name);
+  try {
+    if (preview.storage === "library") await library.change(`Delete ${name}`, remove);
+    else await remove();
+  } catch (error) {
+    if (await lstat(aside).then(() => true, () => false)) await rename(aside, preview.path);
+    if (wasOn) await library.link(name);
+    throw error;
+  }
+  await rm(aside, { recursive: true, force: true });
+}
+
 export async function previewDeletion(store: SettingsStore, settings: Settings, name: string, scope: string, inventory?: SkillEntry[]) {
   if (!skillName(name)) throw new Error("Invalid skill name.");
   const library = new SkillLibrary(store);
   const entry = (inventory ?? await library.inventory(settings, scope)).find(skill => skill.name === name);
   if (!entry) throw new Error("Skill not found in the selected scope.");
+  const storage = scope === "Global" && !entry.tool ? await library.library.storage(name) : undefined;
+  if (storage) return previewStoredDeletion(store, settings, entry, storage);
   const root = library.root(settings, scope);
   const path = await realpath(entry.path);
   const entryIsLink = (await lstat(entry.path)).isSymbolicLink();
@@ -116,6 +167,7 @@ export async function deleteSkill(store: SettingsStore, settings: Settings, name
   if (confirmed !== true) throw new Error("Confirm permanent deletion after reviewing the affected files.");
   const preview = await previewDeletion(store, settings, name, scope);
   if (JSON.stringify(expected) !== JSON.stringify(preview)) throw new Error("The skill changed since review. Start deletion again to review its current files.");
+  if ("storage" in preview) return deleteStoredSkill(store, settings, name, preview);
   const staged = join(preview.path, "..", `.afk-delete-${randomUUID()}`);
   const next = structuredClone(settings);
   if (scope === "Global") {

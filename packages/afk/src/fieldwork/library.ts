@@ -115,6 +115,10 @@ export class Library {
     await this.writeJson(this.recordPath(name), record);
   }
 
+  async removeRecord(name: string): Promise<void> {
+    await rm(this.recordPath(name), { force: true });
+  }
+
   async writeSettings(settings: LibrarySettings): Promise<void> {
     await this.writeJson(join(this.root, ".afk/settings.json"), settings);
   }

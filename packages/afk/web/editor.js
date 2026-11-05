@@ -47,7 +47,7 @@ function editorFilesHtml(view){
 }
 function editorPaneToggle(){
   if(!editorIsMarkdown())return '';
-  return `<div class="editor-panes" role="group" aria-label="Editor view"><button type="button" data-editor-pane="edit" aria-pressed="${skillEditorPane==='edit'}" onclick="setEditorPane('edit')">Edit</button><button type="button" data-editor-pane="preview" aria-pressed="${skillEditorPane==='preview'}" onclick="setEditorPane('preview')">Preview</button></div>`;
+  return `<div class="editor-panes" role="group" aria-label="Editor view"><button type="button" data-editor-pane="edit" aria-pressed="${skillEditorPane==='edit'}" onclick="setEditorPane('edit')">${editorReadOnly()?'Source':'Edit'}</button><button type="button" data-editor-pane="preview" aria-pressed="${skillEditorPane==='preview'}" onclick="setEditorPane('preview')">Preview</button></div>`;
 }
 function editorBodyHtml(){
   const {view}=skillEditor,readOnly=editorReadOnly();
@@ -60,11 +60,11 @@ function editorBodyHtml(){
       <div class="files" aria-label="Files">${editorFilesHtml(view)}</div>
       <div class="editor">
         <div class="editor-head"><h2>${esc(view.file)}</h2><div class="editor-actions"><span class="status" id="editorStatus" role="status">${readOnly?'Read-only':'Saved'}</span>${editorPaneToggle()}</div></div>
+        <p id="editorError" class="field-error" role="alert"></p>
+        <p class="meta" id="editorInvocation">${editorInvocationNote(view)}</p>
         <textarea id="editorText" class="editor-text" aria-label="${esc(view.file)} source" spellcheck="false" ${readOnly?'readonly':''} oninput="editorInput()">${esc(skillEditor.saved)}</textarea>
         <div id="editorPreview" class="editor-preview" aria-label="Preview">${editorIsMarkdown()?editorMarkdown(skillEditor.saved):''}</div>
         <div id="editorAsk" class="editor-ask" role="group" aria-label="Updates" hidden></div>
-        <p id="editorError" class="field-error" role="alert"></p>
-        <p class="meta" id="editorInvocation">${editorInvocationNote(view)}</p>
         <p class="meta">Save makes one commit, “Edit ${esc(view.name)}”, and it is backed up with the next push.</p>
       </div>
     </div>
@@ -133,7 +133,7 @@ async function openEditorFile(file){
 function askEditorUpdates(){
   const {view}=skillEditor;
   const from=view.source?`<code>${esc(view.source)}</code>`:'its repository';
-  $('editorAsk').innerHTML=`<p><strong>This skill updates from ${from}.</strong> Updates would overwrite what you just changed.</p><div class="inline">${button('Keep my version',"commitSkillEditor('keep')",'primary')}${button('Let updates replace my edits',"commitSkillEditor('replace')")}${button('Cancel',"$('editorAsk').hidden=true",'text')}</div><p class="meta">Keeping your version stops this skill’s updates.</p>`;
+  $('editorAsk').innerHTML=`<p><strong>This skill updates from ${from}.</strong> Updates would overwrite what you just changed.</p><div class="inline">${button('Keep my version',"commitSkillEditor('keep')")}${button('Let updates replace my edits',"commitSkillEditor('replace')")}${button('Cancel',"$('editorAsk').hidden=true",'text')}</div><p class="meta">Keeping your version stops this skill’s updates.</p>`;
   $('editorAsk').hidden=false;
   $('editorAsk').querySelector?.('button')?.focus();
 }
