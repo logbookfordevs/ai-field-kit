@@ -2,7 +2,7 @@ import type { Dirent } from "node:fs";
 import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
-import { resolve, join } from "node:path";
+import { dirname, resolve, join, sep } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { expandPath, skillName, type Settings, type SettingsStore } from "./settings.js";
 import { Library } from "./library.js";
@@ -127,7 +127,29 @@ export class SkillLibrary {
     return join(expandPath(project.path, this.store.home), ".agents/skills");
   }
 
+  // A project lists only the skills it keeps in its own folder; links to Global storage and AFK's retired parking folders are not its own.
+  private async projectInventory(settings: Settings, scope: string): Promise<SkillEntry[]> {
+    const root = this.root(settings, scope);
+    const sources = await installedSources(join(root, "../../skills-lock.json"));
+    const foreign = [this.root(settings, "Global"), join(root, ".disabled"), join(root, ".afk-overrides")];
+    const linksToForeign = async (path: string): Promise<boolean> => {
+      if (!(await lstat(path)).isSymbolicLink()) return false;
+      const target = resolve(dirname(path), await readlink(path));
+      return foreign.some(folder => target === folder || target.startsWith(folder + sep));
+    };
+    let names: string[];
+    try { names = await readdir(root); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return []; throw error; }
+    const entries = await Promise.all(names.filter(name => skillName(name) && !name.startsWith(".")).map(async (name): Promise<SkillEntry | undefined> => {
+      const path = join(root, name);
+      if (!(await exists(join(path, "SKILL.md"))) || await linksToForeign(path)) return undefined;
+      const metadata = await readNativeMetadata(path);
+      return { name, path, ...(sources[name] ? { source: sources[name] } : {}), owners: [], stored: false, independent: true, available: true, shared: false, ...metadata, defaultInvocation: metadata.invocation, invocationInherited: false };
+    }));
+    return entries.filter((entry): entry is SkillEntry => entry !== undefined).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   async inventory(settings: Settings, scope: string): Promise<SkillEntry[]> {
+    if (scope !== "Global") return this.projectInventory(settings, scope);
     const root = this.root(settings, scope);
     const result: SkillEntry[] = [];
     const globalReceipt = globalLockPath(this.store.home);
@@ -199,7 +221,7 @@ export class SkillLibrary {
     if (!skillName(name)) throw new Error("Invalid skill name.");
     const root = this.root(settings, scope);
     if (scope === "Global" && await this.library.has(name)) return this.library.skillPath(name);
-    for (const directory of [join(root, ".disabled", name), join(root, name), ...(scope === "Global" ? [join(offFolder(this.store.home), name)] : [])]) {
+    for (const directory of scope === "Global" ? [join(root, ".disabled", name), join(root, name), join(offFolder(this.store.home), name)] : [join(root, name)]) {
       if (await exists(join(directory, "SKILL.md"))) return directory;
     }
     throw new Error(`Skill ${name} is not prepared in ${scope}.`);
@@ -215,6 +237,7 @@ export class SkillLibrary {
   }
 
   async duplicates(settings: Settings, scope: string): Promise<DuplicateCopy[]> {
+    if (scope !== "Global") return [];
     let names: string[];
     try { names = await readdir(join(this.root(settings, scope), ".disabled")); }
     catch (error) { if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) return []; throw error; }
@@ -271,7 +294,7 @@ export class SkillLibrary {
   async activate(settings: Settings, id: string, scope: string, enabled: boolean): Promise<void> {
     const profile = resolveProfile(settings, id);
     const root = this.root(settings, scope);
-    if (enabled && scope !== "Global" && !(await stat(resolve(root, "../.."))).isDirectory()) throw new Error("Choose an existing project folder in Settings.");
+    if (enabled && scope !== "Global") throw new Error("Packs are Global only. A project keeps its own skills.");
     const operations: { path: string; source: string; create: boolean }[] = [];
     for (const name of profile.skills) {
       const shared = enabled ? await this.locate(settings, name) : join(this.root(settings, "Global"), ".disabled", name);

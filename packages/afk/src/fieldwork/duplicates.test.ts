@@ -34,14 +34,12 @@ async function fixture() {
 it("keeps a fresh installation over the stored copy and reapplies the saved invocation", async () => {
   const f = await fixture();
   await setInvocation(f.store, f.settings, "sketch", "Global", "Manual only");
-  await f.library.activate(f.settings, "video", "Studio", true);
   const result = await installSkills(f.store, await f.store.read(), [{ source: "owner/tools", skills: ["sketch"] }], "Global", "universal", "Test", () => {}, undefined, async () => { await f.install("New instructions"); return 0; });
   expect(result.code).toBe(0);
   expect(result.output).toContain("Replaced the older stored copy of sketch");
   expect((await lstat(f.live)).isSymbolicLink()).toBe(true);
   expect(await readFile(join(f.stored, "SKILL.md"), "utf8")).toContain("New instructions");
   expect(await readFile(join(f.stored, "SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
-  expect(await realpath(join(f.project, ".agents/skills/sketch"))).toBe(await realpath(f.stored));
   expect((await readdir(join(f.root, ".disabled"))).filter(name => name.startsWith(".afk-replaced"))).toEqual([]);
   const [entry] = await f.library.inventory(await f.store.read(), "Global");
   expect(entry).toMatchObject({ available: true, invocation: { claude: "Manual only" } });
