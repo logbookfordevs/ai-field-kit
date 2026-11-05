@@ -20,6 +20,7 @@ import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
 import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate, type SyncPlan } from "./kit.js";
 import { portableSettings } from "./local-state.js";
+import { agentFolderState, changeAgentFolders } from "./agent-folder-operations.js";
 import { fingerprint, migrateSettings, sourceIdentity, type MigrationChoices } from "./migration.js";
 
 function validateInput(operation: Operation, data: Record<string, unknown>): void {
@@ -38,12 +39,12 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "skill/delete-preview": ["name", "scope"], "skill/delete": ["name", "scope"],
     "skill/availability": ["name", "scope"], "skill/read": ["name", "scope"],
     "rules/existing": ["id"], "rules/adopt": ["id"], "rules/overwrite": ["id"],
-    "rules/disconnect": ["id"], workspace: ["mode", "folder"], location: ["path"],
+    "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"], workspace: ["mode", "folder"], location: ["path"],
     "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
     "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "project/save": ["previous"],
-    "skill/read": ["file", "folder"], "rules/save": ["expectedHash"], folders: ["path"],
+    "skill/read": ["file", "folder"], "rules/save": ["expectedHash"], folders: ["path"], "agent-folders/add": ["project"],
   };
   for (const key of requiredText[operation] ?? []) {
     if (typeof data[key] !== "string" || !data[key].trim()) throw new Error(`Provide ${key} as a nonempty string.`);
@@ -268,7 +269,7 @@ export class FieldworkOperations {
   run(operation: string, data: Record<string, unknown> = {}): Promise<unknown> {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const action = (): Promise<unknown> => this.apply(operation as Operation, data);
-    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule"].includes(operation);
+    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "agent-folders/state"].includes(operation);
     const result = direct ? action() : this.mutations.then(action);
     if (!direct) this.mutations = result.then(() => undefined, () => undefined);
     const flight = this.nextFlight++;
@@ -795,6 +796,10 @@ export class FieldworkOperations {
       if (data.keep !== "installed" && data.keep !== "stored") throw new Error("Choose installed or stored.");
       await resolveDuplicate(store, settings, String(data.name), String(data.scope), data.keep);
       return { ok: true };
+    }
+    if (operation === "agent-folders/state") return await agentFolderState(store.home);
+    if (operation === "agent-folders/enable" || operation === "agent-folders/disable" || operation === "agent-folders/remove" || operation === "agent-folders/add") {
+      return await changeAgentFolders(store.home, operation.slice("agent-folders/".length) as "enable" | "disable" | "add" | "remove", data);
     }
     if (operation === "skill/toggle") {
       await library.toggle(settings, String(data.name), String(data.scope)); return { ok: true };

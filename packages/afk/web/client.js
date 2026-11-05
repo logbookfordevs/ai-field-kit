@@ -11,6 +11,7 @@ async function refresh(){
   ({profiles,projects,tools,favoriteSources,preferences}=currentSettings);
   toolRuns=state.toolRuns||{};
   tools=tools.map(tool=>({...tool,last:toolRuns[tool.id]?{ok:toolRuns[tool.id].code===0,label:toolRuns[tool.id].pending?'Running…':'Last run · exit '+toolRuns[tool.id].code}:null}));
+  agentFolderInfo=await request('agent-folders/state',{}).catch(()=>agentFolderInfo);
   await loadRules();
   render();
 }
