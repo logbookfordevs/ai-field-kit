@@ -54,7 +54,7 @@ beforeEach(async () => {
   home = await mkdtemp(join(tmpdir(), "afk-checks-"));
   library = new Library(home);
   await library.create("Start the library", async () => undefined);
-  checks = new LocalChecks(library);
+  checks = new LocalChecks(library, async () => true);
   remote = join(home, "remote.git");
   await mkdir(remote, { recursive: true });
   await git(remote, "init", "--quiet", "--bare", "--initial-branch=main");
@@ -295,6 +295,86 @@ describe("the Needs attention operations", () => {
       expect(await readFile(join(library.skillPath("statechart"), "SKILL.md"), "utf8")).toContain("Newer.");
       await expect(operations.run("backup/keep", { id: "edited:kami" })).rejects.toThrow(/no longer/i);
       await expect(operations.run("backup/restore-saved", { name: "../x" })).rejects.toThrow();
+    } finally { await operations.close(); }
+  });
+});
+
+describe("a replaced skill that was off", () => {
+  async function replacedWhile(on: boolean, settings: SettingsStore): Promise<string> {
+    await store("statechart");
+    const state = await settings.read();
+    state.independentSkills.Global = on ? ["statechart"] : [];
+    await settings.save(state);
+    if (!on) await library.unlink("statechart");
+    const folder = join(home, ".agents/skills/statechart");
+    await rm(folder, { force: true });
+    await mkdir(folder, { recursive: true });
+    await writeFile(join(folder, "SKILL.md"), skillText("statechart", "Newer."));
+    return folder;
+  }
+
+  it("Restore saved version relinks a skill that was on", async () => {
+    const settings = new SettingsStore(home);
+    await settings.initialize();
+    const operations = new FieldworkOperations(settings);
+    try {
+      const folder = await replacedWhile(true, settings);
+
+      await operations.run("backup/restore-saved", { name: "statechart" });
+
+      expect(await readlink(folder)).toBe(library.skillPath("statechart"));
+    } finally { await operations.close(); }
+  });
+
+  it("Restore saved version removes the plain folder and leaves the skill off", async () => {
+    const settings = new SettingsStore(home);
+    await settings.initialize();
+    const operations = new FieldworkOperations(settings);
+    try {
+      const folder = await replacedWhile(false, settings);
+      const before = await commits();
+
+      await operations.run("backup/restore-saved", { name: "statechart" });
+
+      expect(await present(folder)).toBe(false);
+      expect(await library.linked("statechart")).toBe(false);
+      expect(await commits()).toEqual(before);
+    } finally { await operations.close(); }
+  });
+
+  it("Take the update stores the new files and leaves the skill off", async () => {
+    const settings = new SettingsStore(home);
+    await settings.initialize();
+    const operations = new FieldworkOperations(settings);
+    try {
+      const folder = await replacedWhile(false, settings);
+
+      await operations.run("backup/take-update", { name: "statechart" });
+
+      expect(await readFile(join(library.skillPath("statechart"), "SKILL.md"), "utf8")).toContain("Newer.");
+      expect(await present(folder)).toBe(false);
+      expect(await library.linked("statechart")).toBe(false);
+    } finally { await operations.close(); }
+  });
+});
+
+describe("a folder Skills CLI wrote outside AFK", () => {
+  it("is never adopted by reading the inventory or the backup state", async () => {
+    const settings = new SettingsStore(home);
+    await settings.initialize();
+    const operations = new FieldworkOperations(settings);
+    try {
+      await store("statechart");
+      const folder = await replaceLinkWithFolder("statechart", "Newer.");
+      const before = await commits();
+
+      await operations.run("kit/state", {});
+      await operations.run("backup/state", { brief: true });
+
+      expect((await lstat(folder)).isSymbolicLink()).toBe(false);
+      expect(await readFile(join(library.skillPath("statechart"), "SKILL.md"), "utf8")).toBe(skillText("statechart"));
+      expect(await commits()).toEqual(before);
+      expect((await checks.list()).map(item => item.id)).toEqual(["replaced:statechart"]);
     } finally { await operations.close(); }
   });
 });

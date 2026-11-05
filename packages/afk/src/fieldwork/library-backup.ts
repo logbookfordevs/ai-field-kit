@@ -36,6 +36,7 @@ interface BackupMemory { lastSavedAt?: number; error?: string }
 export interface BackupOptions {
   signal?: AbortSignal | undefined;
   now?: (() => number) | undefined;
+  isOn?: ((name: string) => Promise<boolean>) | undefined;
 }
 
 const REMOTE = "origin";
@@ -74,7 +75,7 @@ export class Backup {
 
   constructor(private readonly library: Library, private readonly runner: GitRunner = runCommand, private readonly options: BackupOptions = {}) {
     this.now = options.now ?? Date.now;
-    this.checks = new LocalChecks(library);
+    this.checks = new LocalChecks(library, options.isOn ?? (async () => false));
   }
 
   async status(): Promise<BackupStatus> {

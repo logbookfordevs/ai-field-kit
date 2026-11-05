@@ -14,7 +14,7 @@ import { adoptSkill, type AdoptDestination } from "./adopt.js";
 import { trackToolRun } from "./tool-run.js";
 import { resolveDuplicate } from "./duplicates.js";
 import { SourcePreparation } from "./preparation.js";
-import { SkillLibrary } from "./skills.js";
+import { globalSkillOn, SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
@@ -105,7 +105,7 @@ export class FieldworkOperations {
   private projectMigration: { migrated: string[]; kept: { project: string; skills: string[] }[]; failed: { project: string; error: string }[] } = { migrated: [], kept: [], failed: [] };
 
   constructor(readonly store: SettingsStore) {
-    this.backup = new Backup(new Library(store.home), undefined, { signal: this.lifecycle.signal });
+    this.backup = new Backup(new Library(store.home), undefined, { signal: this.lifecycle.signal, isOn: async name => globalSkillOn(await store.read(), name) });
     this.library = new SkillLibrary(store);
     this.rules = new RulesWorkspace(store);
     this.schedule = new SkillUpdateSchedule(store.home);

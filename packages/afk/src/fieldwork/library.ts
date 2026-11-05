@@ -119,6 +119,7 @@ export class Library {
 
   /** Runs one library change as exactly one commit; a failure restores the working tree to the last commit. A change made inside another joins its commit. */
   change<T>(message: string, mutate: () => Promise<T>): Promise<T> {
+    if (changing.getStore() === this.root) return mutate();
     return this.enqueue(() => this.commitChange(message, mutate));
   }
 

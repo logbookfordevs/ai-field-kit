@@ -54,16 +54,17 @@ function group(paths: string[]): Edit[] {
 
 /** Things on this machine that need the user: stored files edited outside AFK, and links replaced by Skills CLI. */
 export class LocalChecks {
-  constructor(private readonly library: Library) {}
+  constructor(private readonly library: Library, private readonly isOn: (name: string) => Promise<boolean>) {}
 
   async list(): Promise<AttentionItem[]> {
     const edits = (await this.edits()).map(({ paths: _paths, ...item }) => item);
     return [...edits, ...await this.replacements()];
   }
 
-  /** Keeps the new files Skills CLI wrote: stores them with the saved choice, relinks and commits. */
+  /** Keeps the new files Skills CLI wrote: stores them with the saved choice, relinks when the skill is on, and commits. */
   async take(name: string): Promise<void> {
     const folders = await this.replacedFolders(name);
+    const on = await this.isOn(name);
     const source = folders[0]!;
     if (!await exists(join(source, "SKILL.md"))) throw new Error(`The new ${name} folder has no SKILL.md, so AFK left it as it is.`);
     await this.library.change(`Took the Skills CLI update to ${name}`, async () => {
@@ -73,12 +74,13 @@ export class LocalChecks {
       const choice = (await this.library.record(name))?.invocation;
       if (choice) await writeInvocationChoice(target, choice);
     });
-    await this.relink(name, folders);
+    await this.relink(name, folders, on);
   }
 
-  /** Puts the saved version's link back and removes the plain folder. */
+  /** Removes the plain folder and puts the saved version's link back when the skill is on. */
   async restore(name: string): Promise<void> {
-    await this.relink(name, await this.replacedFolders(name));
+    const folders = await this.replacedFolders(name);
+    await this.relink(name, folders, await this.isOn(name));
   }
 
   /** Commits an edit made outside AFK, with the saved invocation choice applied to its files. */
@@ -131,7 +133,7 @@ export class LocalChecks {
   }
 
   // The folders wait in a trash inside .git until the link is in place, so a failure puts them back.
-  private async relink(name: string, folders: string[]): Promise<void> {
+  private async relink(name: string, folders: string[], on: boolean): Promise<void> {
     const trash = join(this.library.root, ".git/afk-replaced");
     const moved: [string, string][] = [];
     await rm(trash, { recursive: true, force: true });
@@ -142,7 +144,7 @@ export class LocalChecks {
         await rename(folder, aside);
         moved.push([folder, aside]);
       }
-      await this.library.link(name);
+      if (on) await this.library.link(name);
     } catch (error) {
       for (const [folder, aside] of moved) { await rm(folder, { recursive: true, force: true }); await rename(aside, folder); }
       throw error;
