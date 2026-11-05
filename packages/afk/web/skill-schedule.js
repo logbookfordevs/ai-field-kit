@@ -11,7 +11,7 @@ function scheduleResultText(result){
 
 function renderScheduleResult(){
   const result=skillSchedule?.lastResult;
-  if(skillSchedule?.running)return '<p class="meta" role="status">Updating Global skills now… Progress also appears under Installed Skills → Update skills.</p>';
+  if(skillSchedule?.running)return '<p class="meta" role="status">Updating Global skills now… Progress also appears under Skills → Update all.</p>';
   if(!result)return '';
   const failed=result.code!==0&&!result.cancelled;
   const details=result.output?`<details ${failed?'open':''}><summary>Last run details</summary><pre>${esc(result.output)}</pre></details>`:'';
@@ -59,7 +59,7 @@ async function saveSkillSchedule(enabled=skillSchedule.enabled){
 function renderSkillScheduleBlock(){
   const block=document.createElement('section');
   block.className='settings-block';block.dataset.odId='skill-schedule';
-  block.innerHTML='<div><h2>Automatic skill updates</h2><p class="sub">Updates Global skills on this machine with the same protected update as Installed Skills. Runs only while AFK is open; a run missed while it was closed happens shortly after AFK starts.</p></div><div class="settings-body" id="skillScheduleBody"></div>';
+  block.innerHTML='<div><h2>Automatic skill updates</h2><p class="sub">Updates Global skills on this machine with the same protected update as the Skills page. Runs only while AFK is open; a run missed while it was closed happens shortly after AFK starts.</p></div><div class="settings-body" id="skillScheduleBody"></div>';
   document.querySelector('[data-od-id="projects-settings"]').before(block);
   renderSkillSchedule();
   loadSkillSchedule();
