@@ -343,7 +343,8 @@ export class FieldworkOperations {
     const { backup } = this;
     if (operation === "backup/state") {
       const status = await backup.status();
-      return data.brief === true ? { status } : { status, history: await backup.history(), contents: await backup.contents() };
+      const unpushed = await backup.unpushedSkills();
+      return data.brief === true ? { status, unpushed } : { status, unpushed, history: await backup.history(), contents: await backup.contents() };
     }
     if (operation === "backup/connect") return backup.connect(String(data.url));
     if (operation === "backup/create") return backup.createRepository(String(data.name));
