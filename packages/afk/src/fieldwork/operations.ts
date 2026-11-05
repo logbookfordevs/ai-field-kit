@@ -16,6 +16,8 @@ import { SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
+import { Library } from "./library.js";
+import { Backup } from "./library-backup.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
 import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate, type SyncPlan } from "./kit.js";
@@ -40,6 +42,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "rules/existing": ["id"], "rules/adopt": ["id"], "rules/overwrite": ["id"],
     "rules/disconnect": ["id"], workspace: ["mode", "folder"], location: ["path"],
     "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
+    "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
     "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "project/save": ["previous"],
@@ -51,7 +54,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   for (const key of optionalText[operation] ?? []) {
     if (data[key] !== undefined && typeof data[key] !== "string") throw new Error(`Provide ${key} as a string.`);
   }
-  for (const key of ["local", "update", "clean", "enabled", "confirmed", "prepare"]) {
+  for (const key of ["local", "update", "clean", "enabled", "confirmed", "prepare", "brief"]) {
     if (data[key] !== undefined && typeof data[key] !== "boolean") throw new Error(`Provide ${key} as true or false.`);
   }
   if (operation === "skills/delete-preview" || operation === "skills/bulk" || (operation === "skills/update" && data.names !== undefined)) {
@@ -88,8 +91,10 @@ export class FieldworkOperations {
   private mutations: Promise<void> = Promise.resolve();
   private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number }> = {};
   readonly schedule: SkillUpdateSchedule;
+  readonly backup: Backup;
 
   constructor(readonly store: SettingsStore) {
+    this.backup = new Backup(new Library(store.home), undefined, { signal: this.lifecycle.signal });
     this.library = new SkillLibrary(store);
     this.rules = new RulesWorkspace(store);
     this.schedule = new SkillUpdateSchedule(store.home);
@@ -268,7 +273,7 @@ export class FieldworkOperations {
   run(operation: string, data: Record<string, unknown> = {}): Promise<unknown> {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const action = (): Promise<unknown> => this.apply(operation as Operation, data);
-    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule"].includes(operation);
+    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save"].includes(operation);
     const result = direct ? action() : this.mutations.then(action);
     if (!direct) this.mutations = result.then(() => undefined, () => undefined);
     const flight = this.nextFlight++;
@@ -307,6 +312,20 @@ export class FieldworkOperations {
     return { core: (data.core as string | null | undefined) ?? null, ...(follow ? { follow } : {}), ...(skipTools ? { skipTools } : {}) };
   }
 
+  private async applyBackup(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
+    const { backup } = this;
+    if (operation === "backup/state") {
+      const status = await backup.status();
+      return data.brief === true ? { status } : { status, history: await backup.history(), contents: await backup.contents() };
+    }
+    if (operation === "backup/connect") return backup.connect(String(data.url));
+    if (operation === "backup/create") return backup.createRepository(String(data.name));
+    if (operation === "backup/save") return backup.saveNow();
+    if (operation === "backup/disconnect") return backup.disconnect();
+    await backup.goBack(String(data.id));
+    return backup.status();
+  }
+
   private async apply(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
     if (operation === "skills/install-state") { validateInput(operation, data); return this.skillInstall; }
     if (operation === "skills/install-cancel") {
@@ -325,6 +344,7 @@ export class FieldworkOperations {
       return { cancelled: true };
     }
     validateInput(operation, data);
+    if (operation.startsWith("backup/")) return this.applyBackup(operation, data);
     const { store, library, rules, preparation, toolRuns } = this;
     const settings = await store.read();
     if (operation === "migration/preview") {

@@ -8,6 +8,7 @@ import { FieldworkOperations } from "./operations.js";
 import { AppUpdates } from "./app-update.js";
 import { operationCatalog } from "./operation-catalog.js";
 import { startSchedule } from "./skill-schedule.js";
+import { startBackup } from "./library-backup.js";
 import { DuplicateCopyError } from "./skills.js";
 import type { UpdateProgress } from "./skill-update.js";
 
@@ -67,7 +68,7 @@ export async function startFieldwork(store = new SettingsStore(), port = 0, opti
         if ((request.method !== "POST" && !(request.method === "GET" && isRead)) || !Object.hasOwn(operationCatalog, operation)) {
           send({ error: "Unknown operation." }, 404); return;
         }
-        const updateReads = ["state", "rules/state", "bundle/export", "skills/update-state", "skills/schedule-state", "skills/install-state", "skills/restore-state", "skills/update-cancel", "skills/install-cancel", "skills/restore-cancel"];
+        const updateReads = ["state", "rules/state", "bundle/export", "skills/update-state", "skills/schedule-state", "backup/state", "skills/install-state", "skills/restore-state", "skills/update-cancel", "skills/install-cancel", "skills/restore-cancel"];
         if (request.method === "POST" && !updateReads.includes(operation) && (updatingRequested || (await updates.state(store.home))?.pending)) throw new Error("AFK is updating. Wait for the app to restart before making changes.");
         const data = request.method === "POST" ? await body(request) : {};
         send(await operations.run(operation, data)); return;
@@ -100,6 +101,7 @@ export async function startFieldwork(store = new SettingsStore(), port = 0, opti
     blocked: async () => updatingRequested || operations.skillUpdatePending || Boolean((await updates.state(store.home))?.pending),
     onError: error => console.error(error),
   });
+  const backupSchedule = startBackup(operations.backup, { onError: error => console.error(error) });
   closeApp = () => {
     shutdown ??= (async () => {
       const deadline = options.shutdownMs ?? 10_000;
@@ -110,6 +112,10 @@ export async function startFieldwork(store = new SettingsStore(), port = 0, opti
       const scheduled = await Promise.race([schedule.stop().then(() => true), new Promise<boolean>(accept => { timer = setTimeout(() => accept(false), deadline); })]);
       clearTimeout(timer);
       if (!scheduled) console.error("AFK shutdown deadline reached; abandoned: scheduled skill update");
+      let backupTimer: NodeJS.Timeout | undefined;
+      const backedUp = await Promise.race([backupSchedule.stop().then(() => true), new Promise<boolean>(accept => { backupTimer = setTimeout(() => accept(false), deadline); })]);
+      clearTimeout(backupTimer);
+      if (!backedUp) console.error("AFK shutdown deadline reached; abandoned: library backup");
       server.closeAllConnections();
       await closed;
     })();
