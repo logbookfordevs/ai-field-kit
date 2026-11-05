@@ -47,3 +47,26 @@ it("shows the install's phase, source, elapsed time and last output line, and fr
   runInContext("renderInstallProgress(done)", context);
   expect(output.text(".install-detail")).toBe("0:15");
 });
+
+it("reports the download's progress while turning on a pack that has to fetch its skills", async () => {
+  const start = client.indexOf("activate=id=>"), activate = client.slice(start, client.indexOf("toggleSkill=", start));
+  const toasts: string[] = [], requests: string[] = [];
+  let tick: () => void = () => {};
+  let finish: () => void = () => {};
+  const context = createContext({
+    profiles: [{ id: "p", name: "Pack", enabled: [], ready: false }], selectedTargets: {}, toast: (message: string) => toasts.push(message),
+    operation: (action: () => Promise<void>) => action(),
+    request: async (path: string) => { requests.push(path); if (path === "activation") await new Promise<void>(resolve => { finish = resolve; }); return path === "skills/install-state" ? { pending: true, phase: "Downloading skills for Pack", lastLine: "Cloning owner/repo" } : {}; },
+    setInterval: (callback: () => void) => { tick = callback; return 1; }, clearInterval: () => {},
+  });
+  runInContext(activate, context);
+  const running = runInContext("activate('p')", context) as Promise<void>;
+  await new Promise(resolve => setTimeout(resolve, 0));
+  tick();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  finish();
+  await running;
+
+  expect(toasts.at(-1)).toBe("Downloading skills for Pack · Cloning owner/repo");
+  expect(requests).toContain("skills/install-state");
+});
