@@ -19,8 +19,9 @@ import { globalSkillOn, SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
-import { Library } from "./library.js";
+import { Library, type GitRunner } from "./library.js";
 import { Backup } from "./library-backup.js";
+import { Restore } from "./library-restore.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
 import { migrateProject } from "./project-skills.js";
@@ -48,7 +49,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "rules/existing": ["id"], "rules/adopt": ["id"], "rules/overwrite": ["id"],
     "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"], workspace: ["mode", "folder"], location: ["path"],
     "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
-    "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"],
+    "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"], "restore/inspect": ["repository"], "restore/start": ["repository"],
     "backup/keep": ["id"], "backup/discard": ["id"], "backup/take-update": ["name"], "backup/restore-saved": ["name"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
@@ -105,6 +106,8 @@ export class FieldworkOperations {
   private updateController: AbortController | null = null;
   private skillUpdate: UpdateProgress | null = null;
   installRunner: InstallRunner | undefined;
+  restoreRunner: GitRunner | undefined;
+  private restoreController: AbortController | null = null;
   private mutations: Promise<void> = Promise.resolve();
   private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number; warnings?: string[] }> = {};
   readonly schedule: SkillUpdateSchedule;
@@ -353,7 +356,7 @@ export class FieldworkOperations {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const ready = this.projectsReady ??= this.migrateProjects();
     const action = async (): Promise<unknown> => { await ready; return this.apply(operation as Operation, data); };
-    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state"].includes(operation);
+    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel"].includes(operation);
     const result = direct ? action() : this.mutations.then(action);
     if (!direct) this.mutations = result.then(() => undefined, () => undefined);
     const flight = this.nextFlight++;
@@ -396,8 +399,8 @@ export class FieldworkOperations {
   private async applyBackup(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
     const { backup } = this;
     if (operation === "backup/state") {
-      const status = await backup.status(), attention = await backup.checks.list();
-      return data.brief === true ? { status, attention } : { status, attention, history: await backup.history(), contents: await backup.contents() };
+      const status = await backup.status(), attention = await backup.checks.list(), unpushed = await backup.unpushedSkills();
+      return data.brief === true ? { status, attention, unpushed } : { status, attention, unpushed, history: await backup.history(), contents: await backup.contents() };
     }
     const resolutions: Partial<Record<Operation, () => Promise<void>>> = {
       "backup/keep": () => backup.checks.keep(String(data.id)),
@@ -416,6 +419,25 @@ export class FieldworkOperations {
     if (operation === "backup/disconnect") return backup.disconnect();
     await backup.goBack(String(data.id));
     return backup.status();
+  }
+
+  private async applyRestore(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
+    if (operation === "restore/cancel") {
+      if (!this.restoreController) return { cancelled: false, reason: "No restore is running." };
+      this.restoreController.abort(); return { cancelled: true };
+    }
+    const controller = new AbortController(), stop = (): void => controller.abort();
+    this.lifecycle.signal.addEventListener("abort", stop, { once: true });
+    if (operation === "restore/start") this.restoreController = controller;
+    try {
+      const restore = new Restore(this.store, this.restoreRunner, { signal: controller.signal });
+      if (operation === "restore/repositories") return await restore.repositories();
+      if (operation === "restore/inspect") return await restore.inspect(String(data.repository));
+      return await restore.restore(String(data.repository));
+    } finally {
+      this.lifecycle.signal.removeEventListener("abort", stop);
+      if (operation === "restore/start") this.restoreController = null;
+    }
   }
 
   private async apply(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
@@ -437,6 +459,7 @@ export class FieldworkOperations {
     }
     validateInput(operation, data);
     if (operation.startsWith("backup/")) return this.applyBackup(operation, data);
+    if (operation.startsWith("restore/")) return this.applyRestore(operation, data);
     const { store, library, rules, preparation, toolRuns } = this;
     const settings = await store.read();
     if (operation === "migration/preview") {

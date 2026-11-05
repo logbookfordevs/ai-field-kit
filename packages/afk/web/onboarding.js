@@ -1,8 +1,7 @@
 let welcomeActive=false,welcomeDismissedHere=false,tourStep=-1;
 let tourDimmerFrame;
 const tourSteps=[
-  {section:'Kit',copy:'Your kit is what travels with you. Core skills stay on everywhere, packs are ready for when you need them, and this page shows where this machine differs. Sync it when you choose.'},
-  {section:'Installed Skills',copy:'See the skills installed on this machine, switch their availability, and choose how agents invoke them. the files stay on this machine.'},
+  {section:'Skills',copy:'Every skill in one place. Core travels with you and is backed up, packs turn on when you need them, and To review lists skills installed outside AFK. Switch each on or off and choose how agents invoke it.'},
   {section:'Agent rules',copy:'Write shared instructions for your agents here. Preview and sync them to the agents or files you choose.'},
   {section:'Tools',copy:'Keep installation and update commands for your tools in one place. Run a command when you choose to install or update a tool.'},
   {section:'Settings',copy:'Choose where your AFK folder lives and add the project folders you work in. Your configuration can travel between machines; project files stay where they are.'},
@@ -61,7 +60,7 @@ document.addEventListener('keydown',event=>{
 });
 
 function maybeWelcome(){
-  if(!currentSettings.welcomeDismissed&&!welcomeDismissedHere&&!$('sheet').open)showWelcome();
+  if(!currentSettings.welcomeDismissed&&!welcomeDismissedHere&&!$('sheet').open)void maybeFirstRun();
 }
 
 function showWelcome(){
@@ -73,7 +72,7 @@ function showWelcome(){
       <dl class="welcome-actions"><div><dt>Core</dt><dd>Skills you want on every machine, always on.</dd></div><div><dt>Packs</dt><dd>Groups you turn on for a project or Global when you need them, or read once with your agent.</dd></div></dl></section>
     <section class="welcome-section"><h3>Write your agent rules once</h3><p>Edit and save AGENTS.md here, then preview and sync it to Codex, Claude, or a custom file. AFK preserves text outside its marked region and backs up existing files.</p></section>
     <details class="welcome-extra"><summary>Skills, tools, and your portable setup</summary><ul>
-      <li><strong>Installed Skills:</strong> inspect instructions, switch availability, and choose manual or automatic invocation.</li>
+      <li><strong>Skills:</strong> inspect instructions, switch skills on or off, and choose manual or automatic invocation.</li>
       <li><strong>Tools:</strong> save global install and update commands, and the skills a tool brings with it. Running one is an explicit action.</li>
       <li><strong>Settings:</strong> define project folders and choose where settings and rule files live. Export the AFK folder to take them with you.</li>
     </ul></details>`,

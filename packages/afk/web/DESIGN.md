@@ -225,7 +225,7 @@ At 760px and below, the rail becomes a compact sticky header with the 26px brand
 
 The rule workbench pairs a 232px file list with a flexible editor, separated by a quiet vertical rule and a 24px editor inset. At 1000px the file column narrows to 190px. At 760px the workbench becomes one column: file buttons wrap above the editor, the vertical rule becomes a horizontal divider, and the editor loses its side inset. Editor minimum height falls from 420px to 300px. Destination rows stack identity, status, last sync, and actions beside the retained selection column; the sync action fills the available width.
 
-**The Ledger Reflows Rule.** Narrow layouts move related controls below their item while a compact Section select preserves access to all five sections.
+**The Ledger Reflows Rule.** Narrow layouts move related controls below their item while a compact Section select preserves access to every section.
 
 ## Elevation & Depth
 
@@ -331,9 +331,11 @@ Welcome extends the native dialog to `min(720px,calc(100vw - 32px))`. A 16px int
 
 Not canonized: folder navigation retains a Unicode chevron. The craft floor excludes text-glyph icons from reusable design rules; this documentation does not create a token or preview for it. It remains untouched because this handoff owns documentation only.
 
-### Kit
+### Skills
 
-The Kit page (`web/kit.js`, with pack rows from `web/packs.js`) has a page heading whose primary action is "Sync this machine" with a count of pending changes. When nothing differs the action is disabled and reads "This machine matches". Four underline tabs follow: This machine, Core, Packs and Try later. They use `role="tablist"`, arrow keys move between them, and each label carries a count (the first shows items needing attention). At 760px the tab row scrolls horizontally without wrapping.
+The Skills page (`web/skills.js`, using helpers from `web/kit.js` and pack rows from `web/packs.js`) replaces the separate Kit and Installed Skills pages. Its heading offers Install skills, Update all and "Sync this machine" with a count of pending changes; only one action is Ocean-filled (Sync when something differs, otherwise Install skills). A search field filters the rows of the open tab, and a Scope select appears when projects exist (a project shows its own skill ledger). Five underline tabs follow: Core, Packs, This machine only, Try later and To review. They use `role="tablist"`, arrow keys move between them, and each label carries a count. At 760px the tab row scrolls horizontally without wrapping.
+
+Installed skills use the skill ledger row: name with a backup chip below it, the on/off switch, the Manual/Automatic select with the information popover naming the agents that follow it, then Update, Inspect and a ⋯ menu (Add to pack, Drop from Core or pack, Delete). The backup chip (`.backup-chip`) reads Backed up, Saved · not pushed yet (dashed), Needs attention (Rust Deep), Outside library or Not in library, with the reason in its title. Core groups rows by source in native disclosures with Update source and Follow actions; tool skills and library skills without a source follow. Packs adds "Pack skills on this machine" below the Pack Ledger. To review keeps the compact decision rows: Add to library, Pack… or Link to a tool…, This machine only and Remove.
 
 Content is flat and ruled, never carded. A `.kit-section` has a 20px heading, a muted one-line explanation and 28px of space below. A `.kit-group` has an Ink top rule (later groups use the quiet Rule color), a 14px semibold heading that is usually a mono repository path, and rows beneath. In Core each repository is a native disclosure that opens by itself when some skills are not ready here. Its summary gives the name and a muted count with "following" and "not ready here" notes; the follow action sits in the opened head.
 

@@ -38,6 +38,8 @@ export interface SkillEntry {
   invocation: SkillInvocation;
   defaultInvocation: SkillInvocation;
   invocationInherited: boolean;
+  /** Where AFK keeps a Global skill's one copy; absent for skills AFK does not store. */
+  storage?: Storage;
   /** Set for skills a tool writes; they open read-only in the editor. */
   tool?: string;
   readOnly?: boolean;
@@ -201,7 +203,8 @@ export class SkillLibrary {
         try { const receipt = JSON.parse(await readFile(join(path, ".afk-source.json"), "utf8")) as { source?: unknown }; if (typeof receipt.source === "string") preparedSource = receipt.source; } catch { /* Older prepared copies have no provenance receipt. */ }
         const source = librarySources[name] ?? preparedSource ?? sources[name] ?? (invocationInherited ? globalSources[name] : undefined);
         const tool = scope === "Global" ? toolOwner(settings, name) : undefined;
-        return { name, path, ...(source ? { source } : {}), owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited, ...(tool ? { tool: tool.name, readOnly: true } : {}) };
+        const storage = scope === "Global" ? await this.library.storage(name) : undefined;
+        return { name, path, ...(source ? { source } : {}), ...(storage ? { storage } : {}), owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited, ...(tool ? { tool: tool.name, readOnly: true } : {}) };
       }));
       for (const entry of entries) if (entry) result.push(entry);
     }

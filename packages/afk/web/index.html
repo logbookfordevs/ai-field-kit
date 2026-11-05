@@ -87,6 +87,14 @@ kbd{font-size:12px;border:1px solid var(--border);border-bottom-width:2px;border
 .backup-panel,.backup-contents{display:grid;align-content:start;gap:8px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-lg,8px);background:var(--surface)}
 .backup-panel label{display:grid;gap:4px}
 .backup-save{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:center}
+.first-run-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:12px 0}
+.first-run-choice{display:grid;align-content:start;justify-items:start;gap:6px;min-height:44px;padding:16px;text-align:left;font-weight:400;border:1px solid var(--border);border-radius:var(--radius-lg,8px);background:var(--surface)}
+.first-run-choice:hover,.first-run-choice:focus-visible{border-color:var(--accent)}
+.first-run-repository{padding:10px 0}
+.first-run-url{display:grid;gap:4px;margin-top:12px}
+.first-run-command{margin:8px 0;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);overflow-x:auto}
+.first-run-aside{display:grid;gap:4px;margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:var(--radius-lg,8px);background:var(--bg)}
+.first-run-aside p{margin:0;overflow-wrap:anywhere}
 .attn{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 16px;align-items:center}
 .attn p{margin:2px 0 0}
 .attn .inline{flex-wrap:wrap;justify-content:flex-end}
@@ -766,6 +774,30 @@ dialog.welcome{width:min(720px,calc(100vw - 32px))}
 @keyframes update-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.update-spinner{animation:none}}
 .kit-panel-actions{justify-content:flex-end;margin:0 0 16px}
+.skills-page-actions{flex-wrap:wrap;justify-content:flex-end}
+.skills-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:12px 20px}
+.skills-toolbar .skills-search{flex:1 1 260px;max-width:420px;margin:0}
+.skills-toolbar .skills-scope{margin:0;flex:0 1 220px}
+.skills-toolbar .skills-scope select{width:100%}
+.skills-page .skill-row{grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr) 328px 220px}
+.skills-page .skill-actions{gap:4px}
+.skill-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:4px 0 0}
+.backup-chip{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font:500 12px/1.3 var(--font-body);color:var(--muted);white-space:nowrap}
+.backup-chip[data-state=backed]{color:var(--fg)}
+.backup-chip[data-state=saved]{color:var(--fg);border-style:dashed;border-color:var(--muted)}
+.backup-chip[data-state=attention]{color:var(--danger);border-color:var(--danger)}
+.review-title{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.kit-group .skills-page{margin-top:4px}
+.skills-pack-members{margin-top:32px}
+@media(max-width:1180px){.skills-page .skill-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'name actions' 'avail invoc'}}
+@media(max-width:760px){
+ .skills-page-actions{justify-content:flex-start}
+ .skills-page-actions button{flex:1 1 auto}
+ .skills-toolbar .skills-search,.skills-toolbar .skills-scope{flex:1 1 100%;max-width:none}
+ .skills-page .skill-row{grid-template-columns:minmax(0,1fr);grid-template-areas:'name' 'avail' 'invoc' 'actions'}
+ .review-row{flex-direction:column;align-items:stretch;padding-left:0}
+ .review-row .kit-actions{justify-content:flex-start}
+}
 .kit-section{margin:0 0 28px}
 .kit-section>h2{font-size:20px;margin:0 0 4px}
 .kit-section>.sub{margin:0 0 12px}
@@ -849,13 +881,13 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refocus=id=>document.querySelector(`[data-od-id="${id}"]`)?.focus();
 
-let section='Kit',scope='Global',query='',invocationFilter='',sourceFilter='',availabilityFilter='',profileFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
+let section='Skills',scope='Global',query='',invocationFilter='',sourceFilter='',availabilityFilter='',profileFilter='',selectedTargets={},settingsPath='~/Documents/AFK/settings.json';
 let projects=[],profiles=[],tools=[];
 const independent={Global:[]};
 let preferences={},individualOff={};
 let favoriteSources=[],installScope='Global',installAgent='interactive';
 let projectStatuses={},portableConfiguration;
-const sections=[{id:'Kit',short:'Kit'},{id:'Installed Skills',short:'Skills'},{id:'Agent rules',short:'Rules'},{id:'Tools',short:'Tools'},{id:'Settings',short:'Settings'}];
+const sections=[{id:'Skills',short:'Skills'},{id:'Agent rules',short:'Rules'},{id:'Tools',short:'Tools'},{id:'Settings',short:'Settings'}];
 
 function toast(message,action){
   const el=$('toast');
@@ -873,8 +905,7 @@ function scopeOptions(value){return scopeNames().map(n=>`<option ${n===value?'se
 function slug(s){return s.toLowerCase().replaceAll(' ','-')}
 
 function navCount(id){
-  if(id==='Kit')return kitAttention()||'';
-  if(id==='Installed Skills')return inventory().length;
+  if(id==='Skills')return kitAttention()||'';
   if(id==='Tools')return tools.length;
   if(id==='Agent rules')return rules.files.length;
   return '';
@@ -897,7 +928,7 @@ function render(){
   $('crumb').textContent=section;
   $('mobileSection').innerHTML=sections.map(s=>`<option value="${s.id}" ${s.id===section?'selected':''}>${s.short}</option>`).join('')+(section==='Backup'?'<option value="Backup" selected>Backup</option>':'');
   if(migrationRequired)renderMigration();
-  else ({Kit:renderKit,'Installed Skills':renderSkills,Tools:renderTools,'Agent rules':renderRules,Settings:renderAfkSettings,Backup:renderBackup})[section]();
+  else ({Skills:renderKit,Tools:renderTools,'Agent rules':renderRules,Settings:renderAfkSettings,Backup:renderBackup})[section]();
   if(typeof renderTour==='function')renderTour();
 }
 
@@ -1005,7 +1036,7 @@ function renderSkills(){
   if(profileFilter&&!['__any','__none'].includes(profileFilter)&&!installedProfiles().some(profile=>profile.id===profileFilter))profileFilter='';
   const sharingStatus=skillSharing[scope]?.status;
   const sharingLabel=sharingStatus==='connected'?'Sharing on':sharingStatus==='conflict'?'Needs attention':'Sharing off';
-  $('view').innerHTML=`<header class="skills-heading"><h1>Installed Skills</h1><label class="skills-scope">Inventory scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label><div class="page-actions">${scope!=='Global'?button('Install into this project',"showInstallSkills({scope,to:'machine'})"):''}${inventory().length?button(skillActionLabel('Update skills','update'),'showSkillUpdate()','primary','data-od-id="update-skills"'):''}</div></header>`;
+  $('view').innerHTML=`<header class="skills-heading"><h1>Skills</h1><label class="skills-scope">Scope<select id="scopeSelect" onchange="setScope(this.value)">${scopeOptions(scope)}</select></label><div class="page-actions">${scope!=='Global'?button('Install into this project',"showInstallSkills({scope,to:'machine'})"):''}${inventory().length?button(skillActionLabel('Update skills','update'),'showSkillUpdate()','primary','data-od-id="update-skills"'):''}</div></header>`;
   $('view').insertAdjacentHTML('beforeend',`
       <div class="skills-filters">
         <label class="search">Find a skill<i class="filter-dot" aria-hidden="true"></i><span class="search-field"><input type="search" id="skillSearch" value="${esc(query)}" oninput="query=this.value;renderSkillList()" placeholder="Search names" autocomplete="off"><kbd aria-hidden="true">/</kbd></span></label>
@@ -1047,7 +1078,7 @@ function renderSkillList(){
     return;
   }
   if(!list.length){
-    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'This project has no skills of its own yet'}</h2><p class="sub">${filtered?'Try another pack, availability, source, invocation mode or skill name.':scope==='Global'?'Add skills to your kit, then sync this machine.':'Install skills into this project to keep them with its repository. Global skills still reach agents working here, but are not listed.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):scope==='Global'?button('Go to Kit',"navigate('Kit')"):button('Install into this project',"showInstallSkills({scope,to:'machine'})")}</div>`;
+    $('skillList').innerHTML=`<div class="empty"><h2>${filtered?'No matching skills':scope==='Global'?'No skills on this machine':'This project has no skills of its own yet'}</h2><p class="sub">${filtered?'Try another pack, availability, source, invocation mode or skill name.':scope==='Global'?'Add skills to your kit, then sync this machine.':'Install skills into this project to keep them with its repository. Global skills still reach agents working here, but are not listed.'}</p>${filtered?button('Clear filters',"clearSkillFilters()"):scope==='Global'?button('Install skills','showInstallSkills()'):button('Install into this project',"showInstallSkills({scope,to:'machine'})")}</div>`;
     return;
   }
   $('skillList').innerHTML=`<div class="ledger skills"><div class="ledger-head skill-row table-label" aria-hidden="true"><span>Skill</span><span>${scope==='Global'?'Availability':'Location'}</span><span>Invocation · ${esc(scope)}</span><span></span></div>${list.map(skillRow).join('')}</div>${nestedSkillSection(nested)}`;
@@ -1196,7 +1227,7 @@ function renderSettings(){
       </section>
       <section class="settings-block" data-od-id="invocation-defaults">
         <div><h2>Invocation defaults</h2><p class="sub">Global overrides apply to every project that inherits them.</p></div>
-        <div class="settings-body">${prefs}<div>${button('Adjust in Installed Skills',"scope='Global';navigate('Installed Skills')",'text')}</div></div>
+        <div class="settings-body">${prefs}<div>${button('Adjust in Skills',"scope='Global';navigate('Skills')",'text')}</div></div>
       </section>`;
 }
 
@@ -1223,7 +1254,7 @@ $('sheet').addEventListener('close',()=>{
 
 document.addEventListener('keydown',e=>{
   const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
-  if(e.key==='/'&&!typing&&!$('sheet').open&&section==='Installed Skills'){e.preventDefault();$('skillSearch')?.focus()}
+  if(e.key==='/'&&!typing&&!$('sheet').open&&section==='Skills'){e.preventDefault();($('skillSearch')||$('skillsSearch'))?.focus()}
 });
 
 // State is loaded from the local AFK service.
@@ -1241,6 +1272,7 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 <script src="/packs.js"></script>
 <script src="/install.js"></script>
 <script src="/kit.js"></script>
+<script src="/skills.js"></script>
 <script src="/invocation-info.js"></script>
 <script src="/rules.js"></script>
 <script src="/onboarding.js"></script>
@@ -1249,6 +1281,7 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 <script src="/agent-folders.js"></script>
 <script src="/app-update.js"></script>
 <script src="/backup.js"></script>
+<script src="/first-run.js"></script>
 <script src="/runtime-status.js"></script>
 <script src="/client.js"></script>
 </body>

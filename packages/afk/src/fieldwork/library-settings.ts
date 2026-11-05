@@ -109,9 +109,10 @@ async function desiredFiles(library: Library, settings: Settings, current: Files
   const packSource = (name: string): string | undefined => settings.profiles.flatMap(profileGroups).find(group => group.skills.includes(name))?.source;
   const names = new Set([...await library.names(), ...[...current.keys()].filter(path => path.startsWith(".afk/skills/")).map(path => path.slice(12, -5))]);
   for (const key of Object.keys(settings.preferences)) if (key.startsWith("Global|")) names.add(key.slice(7));
+  const toolProvided = new Set(settings.tools.flatMap(tool => tool.provides ?? []));
   for (const name of names) {
     const storage = await library.storage(name);
-    if (storage !== "library" && storage !== "pack") continue;
+    if (storage !== "library" && storage !== "pack" && !toolProvided.has(name)) continue;
     const path = `.afk/skills/${name}.json`;
     const existing = current.has(path) ? JSON.parse(current.get(path)!) as SkillRecord : undefined;
     const invocation = choice(settings.preferences[`Global|${name}`]);

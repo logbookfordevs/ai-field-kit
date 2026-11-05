@@ -254,6 +254,16 @@ describe("skills installed outside AFK", () => {
     expect(await git("status", "--porcelain")).toBe("");
   });
 
+  it("tells the Skills page where each Global skill is stored", async () => {
+    const operations = new FieldworkOperations(store);
+    await operations.run("skill/adopt", { name: "loose", to: "library" });
+    const state = await operations.run("state") as { inventories: { Global: { name: string; storage?: string }[] } };
+    await operations.close();
+
+    const storage = Object.fromEntries(state.inventories.Global.map(entry => [entry.name, entry.storage ?? "none"]));
+    expect(storage).toMatchObject({ alpha: "library", loose: "library", gamma: "pack", mine: "machine", old: "machine", tooled: "none" });
+  });
+
   it("keeps an outside skill on this machine and can bookmark its source", async () => {
     const operations = new FieldworkOperations(store);
     await operations.run("skill/adopt", { name: "loose", to: "machine", bookmark: true });
