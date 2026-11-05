@@ -195,7 +195,7 @@ it("restores a deleted repository profile member before activation", async () =>
   const api = new FieldworkOperations(store);
   try {
     await api.run("activation", { id: "video", scope: "Global", enabled: true });
-    expect(fetch).toHaveBeenCalledWith("owner/video");
+    expect(fetch).toHaveBeenCalledWith("owner/video", expect.objectContaining({ onOutput: expect.any(Function) }));
     expect(await readFile(join(path, "SKILL.md"), "utf8")).toBe("Restored source instructions");
     expect((await store.read()).profiles[0]).toMatchObject({ ready: true, enabled: ["Global"] });
   } finally { await api.close(); }

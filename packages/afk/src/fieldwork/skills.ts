@@ -8,7 +8,13 @@ import { expandPath, skillName, type Settings, type SettingsStore } from "./sett
 import { Library, machineRoot, packCacheRoot, type Storage } from "./library.js";
 import { toolOwner } from "./kit.js";
 import { offFolder, ToolSkills } from "./tool-skills.js";
+import { writeInvocationChoice } from "./invocation.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
+
+/** A Global skill is on when the user turned it on alone or an enabled pack owns it. */
+export function globalSkillOn(settings: Settings, name: string): boolean {
+  return Boolean(settings.independentSkills.Global?.includes(name)) || settings.profiles.some(profile => profile.enabled.includes("Global") && profile.skills.includes(name));
+}
 
 export function resolveProfile(settings: Settings, reference: string): Settings["profiles"][number] {
   const byId = settings.profiles.find(profile => profile.id === reference);
@@ -508,6 +514,8 @@ export class SkillLibrary {
       await mkdir(resolve(destination, ".."), { recursive: true });
       await cp(await realpath(from), destination, { recursive: true, dereference: true, errorOnExist: true, force: false });
       if (reference) await writeFile(join(destination, ".afk-source.json"), JSON.stringify({ source: reference }), { mode: 0o600 });
+      const mode = settings.preferences[`Global|${name}`];
+      if (cached && (mode === "Manual only" || mode === "Automatic allowed")) await writeInvocationChoice(destination, mode);
     }
   }
 }
