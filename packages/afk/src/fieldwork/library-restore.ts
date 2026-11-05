@@ -2,15 +2,23 @@ import { randomUUID } from "node:crypto";
 import { lstat, mkdir, readdir, readFile, rename, rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { runCommand, type CommandResult } from "./command-runner.js";
+import { runCommand } from "./command-runner.js";
 import { Library, type GitRunner, type LibrarySettings } from "./library.js";
 import { checkRemoteUrl } from "./library-backup.js";
 import { deployLibrary, type AsideMove } from "./library-deploy.js";
+import { recordedInvocations } from "./library-settings.js";
 import type { SettingsStore, Tool } from "./settings.js";
 
 export interface RestoreOptions {
   signal?: AbortSignal | undefined;
   now?: (() => Date) | undefined;
+}
+
+export interface RepositoryChoice {
+  name: string;
+  url: string;
+  private: boolean;
+  pushedAt?: string;
 }
 
 export interface LibraryPreview {
@@ -32,6 +40,8 @@ export interface RestoreSummary {
 }
 
 const TEMPORARY = ".restore-";
+
+interface GitResult { code: number; output: string; cancelled?: boolean | undefined }
 
 async function exists(path: string): Promise<boolean> {
   try { await lstat(path); return true; } catch (error) {
@@ -59,9 +69,26 @@ export class Restore {
     this.library = new Library(store.home, runner);
   }
 
+  /** The signed-in GitHub account's repositories, from the GitHub CLI and its own sign-in. */
+  async repositories(): Promise<RepositoryChoice[]> {
+    let result: GitResult;
+    try {
+      result = await this.runner({ command: "gh", args: ["repo", "list", "--limit", "100", "--json", "nameWithOwner,url,isPrivate,pushedAt"], step: "Listing your GitHub repositories", cwd: this.store.home, env: { ...process.env, HOME: this.store.home, GH_PROMPT_DISABLED: "1", NO_COLOR: "1" }, signal: this.options.signal, timeoutMs: 60_000 });
+    } catch (error) {
+      throw new Error(`The GitHub CLI could not list your repositories: ${error instanceof Error ? error.message : "unknown error"}. Install it and run gh auth login, or paste a repository URL instead.`);
+    }
+    if (result.code !== 0) throw new Error(`The GitHub CLI could not list your repositories: ${failure(result.output)} Run gh auth login, or paste a repository URL instead.`);
+    let listed: { nameWithOwner: string; url: string; isPrivate: boolean; pushedAt?: string }[];
+    try { listed = JSON.parse(result.output) as typeof listed; } catch { throw new Error("The GitHub CLI returned a list AFK could not read. Paste a repository URL instead."); }
+    const likely = (name: string): number => /afk|library/i.test(name) ? 0 : 1;
+    return listed
+      .map(entry => ({ name: entry.nameWithOwner, url: `${entry.url.replace(/\.git$/, "")}.git`, private: entry.isPrivate, ...(entry.pushedAt ? { pushedAt: entry.pushedAt } : {}) }))
+      .sort((a, b) => likely(a.name) - likely(b.name) || (b.pushedAt ?? "").localeCompare(a.pushedAt ?? ""));
+  }
+
   /** Fetches only the tip of the repository into a scratch folder to confirm it is an AFK library; nothing is cloned. */
   async inspect(repository: string): Promise<LibraryPreview> {
-    const url = repositoryUrl(repository), scratch = await this.scratch();
+    const url = repositoryUrl(repository), scratch = await this.scratch("probe");
     try {
       await this.run(["init", "--quiet"], scratch, "Checking the repository");
       await this.run(["remote", "add", "origin", "--", url], scratch, "Checking the repository");
@@ -85,6 +112,7 @@ export class Restore {
   async restore(repository: string): Promise<RestoreSummary> {
     const url = repositoryUrl(repository);
     if (await exists(this.library.root)) throw new Error(`A library already exists at ${this.library.root}. Restore needs an empty machine.`);
+    await this.clearLeftovers();
     await this.inspect(url);
     await this.clone(url);
     const { packs, tools } = await this.contents();
@@ -97,7 +125,7 @@ export class Restore {
       linked: deployed.linked,
       adopted: deployed.adopted,
       movedAside: deployed.movedAside,
-      choices: 0,
+      choices: Object.values(await recordedInvocations(this.store.home)).filter(Boolean).length,
       folders: await this.library.folders(),
       packs,
       tools,
@@ -111,7 +139,7 @@ export class Restore {
 
   // The clone is built beside the final place and moved only when complete, so nothing half-written is ever the library.
   private async clone(url: string): Promise<void> {
-    const temporary = await this.scratch(), parent = join(this.store.home, ".afk");
+    const temporary = await this.scratch("clone"), parent = join(this.store.home, ".afk");
     try {
       const result = await this.git(["clone", "--quiet", "--no-hardlinks", "--", url, temporary], parent, "Downloading the library");
       if (result.cancelled) throw new Error("Restore was cancelled. Nothing was changed.");
@@ -124,13 +152,17 @@ export class Restore {
     }
   }
 
-  // A new scratch path under ~/.afk, on the same disk as the library; leftovers from a crashed run are cleared first.
-  private async scratch(): Promise<string> {
+  // A scratch path under ~/.afk, on the same disk as the library. A restore clears what a crashed one left behind.
+  private async scratch(kind: "probe" | "clone"): Promise<string> {
+    const parent = join(this.store.home, ".afk");
+    await mkdir(parent, { recursive: true });
+    return join(parent, `${TEMPORARY}${kind}-${randomUUID()}`);
+  }
+
+  private async clearLeftovers(): Promise<void> {
     const parent = join(this.store.home, ".afk");
     await mkdir(parent, { recursive: true });
     for (const name of await readdir(parent)) if (name.startsWith(TEMPORARY)) await rm(join(parent, name), { recursive: true, force: true });
-    const path = join(parent, `${TEMPORARY}${randomUUID()}`);
-    return path;
   }
 
   private async run(args: string[], cwd: string, step: string): Promise<void> {
@@ -139,7 +171,7 @@ export class Restore {
     if (result.code !== 0) throw new Error(`${step} failed: ${failure(result.output)}`);
   }
 
-  private git(args: string[], cwd: string, step: string): Promise<CommandResult> {
+  private git(args: string[], cwd: string, step: string): Promise<GitResult> {
     const home = this.store.home;
     return this.runner({
       command: "git",

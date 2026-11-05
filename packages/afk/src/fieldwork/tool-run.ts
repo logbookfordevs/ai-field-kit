@@ -25,6 +25,7 @@ export async function trackToolRun(store: SettingsStore, tool: { name: string; p
     for (const name of provided) {
       const live = await skills.live(name);
       if (!live) continue;
+      await skills.link(name);
       if (!before.has(name) && await skills.isOff(name)) warnings.push(`${name} is turned off, but ${tool.name} installed it again. It is available to agents until you turn it off.`);
       const mode = preferences[`Global|${name}`];
       if (mode !== "Manual only" && mode !== "Automatic allowed") continue;

@@ -7,6 +7,7 @@ import { Library } from "./library.js";
 import { applyLibraryInit } from "./library-init.js";
 import { Backup } from "./library-backup.js";
 import { Restore } from "./library-restore.js";
+import { FieldworkOperations } from "./operations.js";
 import { emptySettings, SettingsStore } from "./settings.js";
 
 let sourceHome: string;
@@ -21,6 +22,8 @@ const agents = (...path: string[]): string => join(home, ".agents/skills", ...pa
 const claude = (...path: string[]): string => join(home, ".claude/skills", ...path);
 const library = (): Library => new Library(home);
 const day = new Date(2026, 10, 5, 9, 30);
+
+const writesWiz = "mkdir -p .agents/skills/wiz && printf -- '---\\nname: wiz\\ndescription: wiz skill\\n---\\nFresh.\\n' > .agents/skills/wiz/SKILL.md";
 
 async function present(path: string): Promise<boolean> {
   try { await lstat(path); return true; } catch { return false; }
@@ -47,15 +50,16 @@ async function sourceLibrary(extra: (settings: ReturnType<typeof emptySettings>)
   await writeFile(join(sourceHome, ".agents/.skill-lock.json"), JSON.stringify({ version: 3, skills: { alpha: { source: "owner/repo" }, beta: { source: "owner/repo" } } }));
   const settings = emptySettings();
   settings.kit = { core: [{ source: "owner/repo", skills: ["alpha", "beta"] }] };
-  settings.preferences = { "Global|alpha": "Manual only" };
+  settings.preferences = { "Global|alpha": "Manual only", "Global|wiz": "Manual only" };
   settings.profiles = [{ id: "profile-docs", name: "Docs", source: "owner/docs", skills: ["delta"], enabled: [], ready: false }];
-  settings.tools = [{ id: 1, name: "Wizard", install: "echo install", update: "", provides: ["wiz"] }];
+  settings.tools = [{ id: 1, name: "Wizard", install: writesWiz, update: "", provides: ["wiz"] }, { id: 2, name: "Other", install: "mkdir -p .agents/skills/other && printf 'x' > .agents/skills/other/SKILL.md", update: "", provides: ["other"] }];
   settings.favoriteSources = [{ name: "later", source: "owner/later" }];
   extra(settings);
   await source.save(settings);
   await applyLibraryInit(source);
   await mkdir(remote, { recursive: true });
   await git(remote, "init", "--quiet", "--bare", "--initial-branch=main");
+  await new Library(sourceHome).changeAgentFolders("Use Cursor too", { enabled: ["~/.claude/skills", "~/.cursor/skills"], custom: [] });
   await new Backup(new Library(sourceHome)).connect(remote);
 }
 
@@ -88,6 +92,7 @@ describe("restoring a library into an empty home", () => {
     const summary = await restorer().restore(remote);
 
     expect(summary.linked).toEqual(["alpha", "beta"]);
+    expect(summary.choices).toBe(2);
     expect(await readlink(agents("alpha"))).toBe(library().skillPath("alpha"));
     expect(await readlink(claude("beta"))).toBe(library().skillPath("beta"));
     expect(await readFile(agents("alpha/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
@@ -129,7 +134,7 @@ describe("an interrupted or refused restore", () => {
   });
 
   it("leaves no partial library when the download fails and clears a folder an earlier crash left behind", async () => {
-    await mkdir(join(home, ".afk/.restore-crashed/.git"), { recursive: true });
+    await mkdir(join(home, ".afk/.restore-clone-crashed/.git"), { recursive: true });
 
     await expect(restorer().restore(join(sourceHome, "missing.git"))).rejects.toThrow(/Could not reach/);
 
@@ -246,5 +251,132 @@ describe("going back to an older save", () => {
 
     expect(await readlink(agents("beta"))).toBe(library().skillPath("beta"));
     expect(await readFile(join(home, ".afk/restore-aside", (await readdir(join(home, ".afk/restore-aside")))[0]!, ".agents/skills/beta/SKILL.md"), "utf8")).toContain("Written while it was gone");
+  });
+});
+
+describe("tools after a restore", () => {
+  let operations: FieldworkOperations;
+  beforeEach(() => { operations = new FieldworkOperations(store); });
+  afterEach(async () => { await operations.close(); });
+
+  it("keeps the tool skills' choices, applies the saved agent folders and runs no tool by itself", async () => {
+    await sourceLibrary();
+
+    const summary = await restorer().restore(remote);
+
+    expect(summary.folders).toEqual([agents(), claude(), join(home, ".cursor/skills")]);
+    expect(await readlink(join(home, ".cursor/skills/alpha"))).toBe(library().skillPath("alpha"));
+    expect(summary.tools.map(tool => [tool.id, tool.name, tool.provides])).toEqual([[1, "Wizard", ["wiz"]], [2, "Other", ["other"]]]);
+    expect((await store.read()).preferences["Global|wiz"]).toBe("Manual only");
+    expect(await present(agents("wiz"))).toBe(false);
+    expect(await present(agents("other"))).toBe(false);
+  });
+
+  it("applies the saved choice and links the skill into every enabled folder after a ticked tool runs", async () => {
+    await sourceLibrary();
+    await restorer().restore(remote);
+
+    const result = await operations.run("tool/run", { id: 1 }) as { code: number; reapplied: string[] };
+
+    expect(result).toMatchObject({ code: 0, reapplied: ["wiz"] });
+    expect(await readFile(agents("wiz/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
+    expect(await readlink(claude("wiz"))).toBe(agents("wiz"));
+    expect(await readlink(join(home, ".cursor/skills/wiz"))).toBe(agents("wiz"));
+    expect(await present(agents("other"))).toBe(false);
+  });
+});
+
+describe("tool skills and the enabled agent folders", () => {
+  let operations: FieldworkOperations;
+  beforeEach(() => { operations = new FieldworkOperations(store); });
+  afterEach(async () => { await operations.close(); });
+
+  it("links only into enabled folders, and turning the skill off and on follows them", async () => {
+    await sourceLibrary();
+    await restorer().restore(remote);
+    await library().changeAgentFolders("Drop Claude", { enabled: ["~/.cursor/skills"], custom: [] });
+    await operations.run("tool/run", { id: 1 });
+
+    expect(await readlink(join(home, ".cursor/skills/wiz"))).toBe(agents("wiz"));
+    expect(await present(claude("wiz"))).toBe(false);
+
+    await operations.run("skill/toggle", { name: "wiz", scope: "Global" });
+    expect(await present(agents("wiz"))).toBe(false);
+    expect(await present(join(home, ".cursor/skills/wiz"))).toBe(false);
+    expect(await present(join(home, ".afk/off/wiz/SKILL.md"))).toBe(true);
+
+    await operations.run("skill/toggle", { name: "wiz", scope: "Global" });
+    expect(await readlink(join(home, ".cursor/skills/wiz"))).toBe(agents("wiz"));
+  });
+});
+
+describe("choosing a repository", () => {
+  const listing = JSON.stringify([
+    { nameWithOwner: "leo/dotfiles", url: "https://github.com/leo/dotfiles", isPrivate: true, pushedAt: "2026-11-04T10:00:00Z" },
+    { nameWithOwner: "leo/afk-library", url: "https://github.com/leo/afk-library", isPrivate: true, pushedAt: "2026-11-01T10:00:00Z" },
+  ]);
+
+  it("lists repositories through the GitHub CLI with likely libraries first", async () => {
+    const runner = async (spec: CommandSpec): Promise<CommandResult> => { ghCalls.push(spec); return { code: 0, output: listing, cancelled: false }; };
+
+    const repositories = await restorer(runner).repositories();
+
+    expect(repositories.map(repository => repository.name)).toEqual(["leo/afk-library", "leo/dotfiles"]);
+    expect(repositories[0]).toMatchObject({ url: "https://github.com/leo/afk-library.git", private: true });
+    expect(ghCalls.map(call => [call.command, call.args[0]])).toEqual([["gh", "repo"]]);
+  });
+
+  it("says how to continue when the GitHub CLI is missing or signed out", async () => {
+    await expect(restorer().repositories()).rejects.toThrow(/gh auth login, or paste a repository URL/);
+  });
+
+  it("restores from a pasted owner/repo by asking GitHub, never a local path", async () => {
+    const seen: string[][] = [];
+    const runner = async (spec: CommandSpec): Promise<CommandResult> => { seen.push(spec.args); return spec.args.includes("fetch") ? { code: 128, output: "stopped here", cancelled: false } : runCommand(spec); };
+
+    await expect(restorer(runner).restore("leo/afk-library")).rejects.toThrow(/Could not reach/);
+
+    expect(seen.flat()).toContain("https://github.com/leo/afk-library.git");
+  });
+});
+
+describe("restore operations", () => {
+  let operations: FieldworkOperations;
+  beforeEach(() => { operations = new FieldworkOperations(store); });
+  afterEach(async () => { await operations.close(); });
+
+  it("inspects, restores and reports the tools to choose from without running any", async () => {
+    await sourceLibrary();
+
+    expect(await operations.run("restore/inspect", { repository: remote })).toMatchObject({ coreSkills: 2, packs: 1, tools: 2 });
+    const summary = await operations.run("restore/start", { repository: remote }) as { linked: string[]; tools: { id: number }[] };
+
+    expect(summary.linked).toEqual(["alpha", "beta"]);
+    expect(summary.tools.map(tool => tool.id)).toEqual([1, 2]);
+    expect(await present(agents("wiz"))).toBe(false);
+    const state = await operations.run("backup/state", { brief: true }) as { status: { library: boolean; state: string } };
+    expect(state.status).toMatchObject({ library: true, state: "saved" });
+  });
+
+  it("lists repositories through the GitHub CLI and refuses a repository that is not a library", async () => {
+    operations.restoreRunner = async spec => spec.command === "gh" ? { code: 0, output: "[]", cancelled: false } : runCommand(spec);
+
+    expect(await operations.run("restore/repositories")).toEqual([]);
+    await expect(operations.run("restore/inspect", { repository: join(sourceHome, "nothing.git") })).rejects.toThrow(/Could not reach/);
+    await expect(operations.run("restore/start", {})).rejects.toThrow(/repository/);
+  });
+
+  it("cancels a running restore and leaves no library", async () => {
+    await sourceLibrary();
+    operations.restoreRunner = async spec => {
+      if (!spec.args.includes("clone")) return runCommand(spec);
+      await operations.run("restore/cancel");
+      return { code: 130, output: "", cancelled: true };
+    };
+
+    await expect(operations.run("restore/start", { repository: remote })).rejects.toThrow(/cancelled/);
+
+    expect(await present(library().root)).toBe(false);
+    expect(await operations.run("restore/cancel")).toEqual({ cancelled: false, reason: "No restore is running." });
   });
 });

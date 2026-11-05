@@ -76,6 +76,10 @@ export const operationCatalog = {
   "backup/save": { description: "Save now: push every commit waiting locally. A failed push keeps the commits and reports why.", input: {} },
   "backup/restore": { description: "Go back to an earlier save. The library is restored to that point as a new commit, so going back can itself be undone.", input: { id: "Save id from backup/state history." } },
   "backup/disconnect": { description: "Disconnect the remote. Local commits and history stay.", input: {} },
+  "restore/repositories": { description: "List the signed-in GitHub account's repositories through the GitHub CLI so one can be chosen as the library to restore. Changes nothing.", input: {} },
+  "restore/inspect": { description: "Check that a repository is an AFK library, without cloning it, and count what it holds. Changes nothing.", input: { repository: "owner/repo on GitHub, or any Git remote URL." } },
+  "restore/start": { description: "Restore a saved library onto a machine that has none: clone it beside its final place and move it in only when complete, link Core skills, apply the saved agent folders, adopt identical local copies and move different ones to a dated folder. Runs no tool command; the result lists the tools to run with tool/run.", input: { repository: "owner/repo on GitHub, or any Git remote URL." } },
+  "restore/cancel": { description: "Stop a running restore. Nothing is left half-written.", input: {} },
   welcome: { description: "Remember dismissal of the Welcome dialog.", input: {} },
 } satisfies Record<string, OperationDescription>;
 

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { lstat, mkdir, readFile, readlink, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { agentSkillFolders } from "./library.js";
+import { agentSkillFolders, Library } from "./library.js";
 import { skillName, type Settings, type SettingsStore } from "./settings.js";
 
 interface OffOrigin {
@@ -33,18 +33,47 @@ export class ToolSkills {
     return exists(join(this.path(name), "SKILL.md"));
   }
 
-  /** The real folder a tool wrote into one of the agent folders, if any. */
-  async live(name: string): Promise<string | undefined> {
-    const seen = new Set<string>();
-    for (const folder of agentSkillFolders(this.store.home)) {
+  /** The enabled agent folders, then the default ones a tool may still write into. */
+  private async folders(): Promise<string[]> {
+    const enabled = await new Library(this.store.home).folders();
+    return [...enabled, ...agentSkillFolders(this.store.home).filter(folder => !enabled.includes(folder))];
+  }
+
+  private async distinct(folders: string[]): Promise<string[]> {
+    const seen = new Set<string>(), result: string[] = [];
+    for (const folder of folders) {
       let identity = folder;
       try { identity = await realpath(folder); } catch { /* A missing folder holds nothing. */ }
       if (seen.has(identity)) continue;
       seen.add(identity);
+      result.push(folder);
+    }
+    return result;
+  }
+
+  /** The real folder a tool wrote into one of the agent folders, if any. */
+  async live(name: string): Promise<string | undefined> {
+    for (const folder of await this.distinct(await this.folders())) {
       const path = join(folder, name);
       if (await exists(join(path, "SKILL.md")) && !(await lstat(path)).isSymbolicLink()) return path;
     }
     return undefined;
+  }
+
+  /** Links a skill a tool wrote into one folder into every other enabled folder that has nothing there yet. */
+  async link(name: string): Promise<string[]> {
+    const live = await this.live(name);
+    if (!live) return [];
+    const linked: string[] = [];
+    const home = await realpath(dirname(live));
+    for (const folder of await this.distinct(await new Library(this.store.home).folders())) {
+      const path = join(folder, name);
+      if (await realpath(folder).catch(() => folder) === home || await exists(path)) continue;
+      await mkdir(folder, { recursive: true });
+      await symlink(live, path, "dir");
+      linked.push(path);
+    }
+    return linked;
   }
 
   async toggle(settings: Settings, name: string): Promise<void> {
@@ -58,7 +87,7 @@ export class ToolSkills {
     const off = this.path(name), note = this.origin(name), parked = join(offFolder(this.store.home), `.afk-replaced-${randomUUID()}`);
     const originalLinks = { ...settings.managedLinks };
     const links: OffOrigin["links"] = [];
-    for (const folder of agentSkillFolders(this.store.home)) {
+    for (const folder of await this.distinct(await this.folders())) {
       const path = join(folder, name);
       if (path === live || !await exists(path) || !(await lstat(path)).isSymbolicLink()) continue;
       if (resolve(dirname(path), await readlink(path)) === live) links.push({ path, owned: Object.prototype.hasOwnProperty.call(originalLinks, path) });
@@ -121,6 +150,6 @@ export class ToolSkills {
 
   private async readOrigin(path: string): Promise<OffOrigin> {
     try { return JSON.parse(await readFile(path, "utf8")) as OffOrigin; }
-    catch { return { folder: agentSkillFolders(this.store.home)[0]!, links: [] }; }
+    catch { return { folder: (await new Library(this.store.home).folders())[0]!, links: [] }; }
   }
 }
