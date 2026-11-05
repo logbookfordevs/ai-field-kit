@@ -248,9 +248,4 @@ From the 2026-11-05 failures; they ship first:
 
 ## Slices
 
-1. Reliability pass: deadlines, shutdown deadline, honest `status`, visible progress.
-2. Local library: storage and links, `.afk/` records, portable invocation choices, migration. No remote yet.
-3. Install (repository, zip, folder) and update into the library.
-4. Backup: create or connect the repository, save and push, history, restore on an empty machine.
-5. Editor and local checks.
-6. Retire the replaced surfaces and update the docs.
+Tracked as tickets in [docs/tickets/git-library](../tickets/git-library/).
