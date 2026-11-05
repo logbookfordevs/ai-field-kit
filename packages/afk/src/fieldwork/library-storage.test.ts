@@ -96,6 +96,20 @@ describe("library init for packs, machine-only skills and .disabled", () => {
     expect(settings.profiles.find(profile => profile.id === pack.id)?.enabled).toEqual(["Global"]);
     expect(settings.machineOnly.sort()).toEqual(["mine", "old"]);
   });
+
+  it("moves each pack and machine skill once when the Claude folder links to the shared folder", async () => {
+    await rm(claude, { recursive: true });
+    await symlink("../.agents/skills", claude, "dir");
+    const settings = await store.read();
+    settings.managedLinks = { [join(agents, "gamma")]: join(agents, ".disabled/gamma") };
+    await store.save(settings);
+
+    await applyLibraryInit(store);
+
+    expect(await readlink(join(agents, "gamma"))).toBe(join(home, ".afk/packs-cache/gamma"));
+    expect(await readlink(join(agents, "mine"))).toBe(join(home, ".afk/machine/mine"));
+    expect(await readFile(join(home, ".afk/packs-cache/gamma/SKILL.md"), "utf8")).toContain("Body of gamma.");
+  });
 });
 
 describe("packs after library init", () => {
