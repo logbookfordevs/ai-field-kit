@@ -1,5 +1,5 @@
 import { cp, lstat, mkdir, readFile, readlink, rm, symlink, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { parseDocument } from "yaml";
 import type { InvocationChoice } from "./library.js";
 import { SkillLibrary } from "./skills.js";
@@ -19,7 +19,13 @@ function frontmatter(skill: string) {
 
 // A project's files belong to the project, so AFK writes the two native settings in place and keeps no backup beside them.
 async function setProjectInvocation(store: SettingsStore, settings: Settings, name: string, scope: string, mode: string): Promise<void> {
-  const path = join(new SkillLibrary(store).root(settings, scope), name);
+  const root = new SkillLibrary(store).root(settings, scope), path = join(root, name), project = resolve(root, "../..");
+  const guarded = [path, join(path, "SKILL.md"), join(path, "agents"), join(path, "agents/openai.yaml")];
+  for (let folder = root; folder !== project && folder.startsWith(project + sep); folder = dirname(folder)) guarded.push(folder);
+  for (const candidate of guarded) {
+    const info = await lstat(candidate).catch(() => undefined);
+    if (info?.isSymbolicLink()) throw new Error(`${candidate} is a link, so AFK won't write ${name}'s Manual/Automatic choice through it. Change it where the link points.`);
+  }
   const skill = await readFile(join(path, "SKILL.md"), "utf8");
   const metadata = await readOptional(join(path, "agents/openai.yaml"));
   const parsed = frontmatter(skill);

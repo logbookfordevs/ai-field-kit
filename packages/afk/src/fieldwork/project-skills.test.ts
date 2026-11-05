@@ -239,6 +239,37 @@ it("does not reset invocation fields through a skill's metadata file that is a l
   expect(await exists(join(own, ".afk-invocation-original.json"))).toBe(true);
 });
 
+it.each([
+  ["the skill folder", "."],
+  ["SKILL.md", "SKILL.md"],
+  ["the agents folder", "agents"],
+  ["agents/openai.yaml", "agents/openai.yaml"],
+])("never writes a saved Manual/Automatic choice through %s when it is a link", async (_label, linked) => {
+  const f = await fixture();
+  const outside = await mkdtemp(join(tmpdir(), "afk-project-outside-")); homes.push(outside);
+  const real = await f.write(join(outside, "sample"), "sample", "UNIQUE OUTSIDE SKILL");
+  await mkdir(join(real, "agents")); await writeFile(join(real, "agents/openai.yaml"), "policy: {}\n");
+  const own = join(f.root, "sample");
+  if (linked === ".") { await mkdir(f.root, { recursive: true }); await symlink(real, own, "dir"); }
+  else {
+    await f.write(own, "sample", "Project copy");
+    await mkdir(join(own, "agents"), { recursive: true }); await writeFile(join(own, "agents/openai.yaml"), "policy: {}\n");
+    await rm(join(own, linked), { recursive: true, force: true });
+    await symlink(join(real, linked), join(own, linked), linked === "agents" ? "dir" : "file");
+  }
+  const before = { skill: await readFile(join(real, "SKILL.md"), "utf8"), yaml: await readFile(join(real, "agents/openai.yaml"), "utf8") };
+  const settings = await f.store.read();
+  settings.independentSkills.Studio = ["sample"];
+  settings.preferences["Studio|sample"] = "Manual only";
+  await f.store.save(settings);
+
+  await migrateProject(f.store, await f.store.read(), "Studio");
+  await expect(setInvocation(f.store, await f.store.read(), "sample", "Studio", "Automatic allowed")).rejects.toThrow(/link/);
+
+  expect(await readFile(join(real, "SKILL.md"), "utf8")).toBe(before.skill);
+  expect(await readFile(join(real, "agents/openai.yaml"), "utf8")).toBe(before.yaml);
+});
+
 it("turns off existing pack activations in a project and removes only AFK's links and copies", async () => {
   const f = await fixture();
   const library = await f.write(join(f.home, ".agents/skills/.disabled/review"), "review", "Library");
