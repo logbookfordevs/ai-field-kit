@@ -6,6 +6,7 @@ import { expandPath, type Settings } from "./settings.js";
 export interface LocalState {
   version: 1;
   projectPaths?: Record<string, string>;
+  projects?: Settings["projects"];
   profiles: Record<string, { definition: string; enabled: string[]; ready: boolean }>;
   preferences: Settings["preferences"];
   managedLinks: Settings["managedLinks"];
@@ -23,6 +24,7 @@ export function localState(settings: Settings, home: string): LocalState {
   return {
     version: 1,
     projectPaths: Object.fromEntries(settings.projects.map(project => [project.name, expandPath(project.path, home)])),
+    projects: settings.projects,
     profiles: Object.fromEntries(settings.profiles.map(profile => [profile.id, { definition: definition(profile), enabled: profile.enabled, ready: profile.ready }])),
     preferences: settings.preferences,
     managedLinks: settings.managedLinks,

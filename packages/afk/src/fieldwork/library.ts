@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { lstat, mkdir, readFile, readdir, readlink, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { runCommand, type CommandSpec } from "./command-runner.js";
@@ -14,11 +15,16 @@ export interface SkillRecord {
 
 export interface LibrarySettings {
   version: 1;
+  configurationId?: string;
   core: KitSource[];
-  agentRules: { destinations: RulesDestination[] };
+  agentRules?: { destinations: RulesDestination[] };
+  welcomeDismissed?: true;
 }
 
 export type GitRunner = (spec: CommandSpec) => Promise<{ code: number; output: string }>;
+
+const queues = new Map<string, Promise<unknown>>();
+const changing = new AsyncLocalStorage<string>();
 
 const GITIGNORE = ".DS_Store\nThumbs.db\n.afk-*\nnode_modules/\n";
 
@@ -38,10 +44,19 @@ export function libraryRoot(home: string): string {
   return join(home, ".afk/library");
 }
 
+export function packCacheRoot(home: string): string {
+  return join(home, ".afk/packs-cache");
+}
+
+export function machineRoot(home: string): string {
+  return join(home, ".afk/machine");
+}
+
+export type Storage = "library" | "pack" | "machine";
+
 /** AFK's own Git repository of Core skills, their `.afk` records and small settings. */
 export class Library {
   readonly root: string;
-  private queue: Promise<unknown> = Promise.resolve();
 
   constructor(readonly home: string, private readonly runner: GitRunner = runCommand) {
     this.root = libraryRoot(home);
@@ -50,6 +65,25 @@ export class Library {
   skillPath(name: string): string {
     if (!skillName(name)) throw new Error("Invalid skill name.");
     return join(this.root, "skills", name);
+  }
+
+  storagePath(name: string, storage: Storage): string {
+    if (storage === "library") return this.skillPath(name);
+    if (!skillName(name)) throw new Error("Invalid skill name.");
+    return join(storage === "pack" ? packCacheRoot(this.home) : machineRoot(this.home), name);
+  }
+
+  /** Where AFK keeps its one copy of a skill: the library, the pack cache or machine storage. */
+  async storage(name: string): Promise<Storage | undefined> {
+    if (!skillName(name)) return undefined;
+    if (await this.has(name)) return "library";
+    for (const storage of ["pack", "machine"] as const) if (await exists(join(this.storagePath(name, storage), "SKILL.md"))) return storage;
+    return undefined;
+  }
+
+  async location(name: string): Promise<string | undefined> {
+    const storage = await this.storage(name);
+    return storage && this.storagePath(name, storage);
   }
 
   async exists(): Promise<boolean> {
@@ -79,10 +113,11 @@ export class Library {
     await this.writeJson(join(this.root, ".afk/settings.json"), settings);
   }
 
-  /** Runs one library change as exactly one commit; a failure restores the working tree to the last commit. */
+  /** Runs one library change as exactly one commit; a failure restores the working tree to the last commit. A change made inside another joins its commit. */
   change<T>(message: string, mutate: () => Promise<T>): Promise<T> {
-    const next = this.queue.then(() => this.commitChange(message, mutate));
-    this.queue = next.catch(() => undefined);
+    if (changing.getStore() === this.root) return mutate();
+    const next = (queues.get(this.root) ?? Promise.resolve()).then(() => changing.run(this.root, () => this.commitChange(message, mutate)));
+    queues.set(this.root, next.catch(() => undefined));
     return next;
   }
 
@@ -112,7 +147,8 @@ export class Library {
 
   /** Links a stored skill into every agent folder; an occupied destination stops before anything changes. */
   async link(name: string): Promise<void> {
-    const target = this.skillPath(name);
+    const target = await this.location(name);
+    if (!target) throw new Error(`${name} is not stored by AFK.`);
     const pending: string[] = [];
     for (const path of await this.distinctLinks(name)) {
       if (await this.isOwnLink(path, name)) continue;
@@ -152,7 +188,8 @@ export class Library {
   private async isOwnLink(path: string, name: string): Promise<boolean> {
     try {
       if (!(await lstat(path)).isSymbolicLink()) return false;
-      return resolve(dirname(path), await readlink(path)) === this.skillPath(name);
+      const target = resolve(dirname(path), await readlink(path));
+      return (["library", "pack", "machine"] as const).some(storage => target === this.storagePath(name, storage));
     } catch (error) {
       if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) return false;
       throw error;

@@ -5,6 +5,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { applyLocalState, localState, portableSettings, verifiedLegacyState, type LocalState } from "./local-state.js";
+import { Library } from "./library.js";
+import { librarySettingsActive, planLibrarySettings, readLibrarySettings, recordedInvocations } from "./library-settings.js";
 
 export interface SavedSkill {
   name: string;
@@ -280,6 +282,7 @@ export class SettingsStore {
   }
 
   async read(): Promise<Settings> {
+    if (await librarySettingsActive(this.home)) return this.readLibrary();
     try {
       const settings = validateSettings(JSON.parse(await this.readPortable()));
       if (settings.version === 1 && !requiresMigrationChoice(settings)) upgradeStackless(settings);
@@ -297,6 +300,42 @@ export class SettingsStore {
       return applyLocalState(settings, state, this.home);
     }
     catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptySettings(); throw error; }
+  }
+
+  // After library init the portable settings come from the library's `.afk/` files and `settings.json` is left as it was.
+  private async readLibrary(): Promise<Settings> {
+    const settings = await readLibrarySettings(this.home);
+    settings.configurationId ??= this.identifier();
+    let state: LocalState | undefined;
+    try { state = JSON.parse(await readFile(this.localPath(settings.configurationId), "utf8")) as LocalState; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    settings.projects = state?.projects ?? [];
+    const result = applyLocalState(validateSettings(settings), state, this.home);
+    for (const [name, invocation] of Object.entries(await recordedInvocations(this.home))) {
+      if (invocation) result.preferences[`Global|${name}`] = invocation;
+      else delete result.preferences[`Global|${name}`];
+    }
+    return validateSettings(result);
+  }
+
+  private async saveLibrary(settings: Settings): Promise<void> {
+    const local = this.localPath(settings.configurationId!);
+    let previous: string | undefined;
+    try { previous = await readFile(local, "utf8"); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    const writeLocal = async (text: string): Promise<void> => {
+      await mkdir(dirname(local), { recursive: true });
+      await writeFile(`${local}.${process.pid}.tmp`, text, { mode: 0o600 });
+      await rename(`${local}.${process.pid}.tmp`, local);
+    };
+    const next = `${JSON.stringify(localState(settings, this.home), null, 2)}\n`;
+    const change = await planLibrarySettings(this.home, settings);
+    if (!change) return writeLocal(next);
+    try {
+      await new Library(this.home).change(change.message, async () => { await change.apply(); await writeLocal(next); });
+    } catch (error) {
+      if (previous === undefined) await rm(local, { force: true }); else await writeLocal(previous);
+      throw error;
+    }
   }
 
   private async readPortable(): Promise<string> {
@@ -328,6 +367,7 @@ export class SettingsStore {
       upgradeStackless(settings);
     }
     const validated = validateSettings(settings);
+    if (await librarySettingsActive(this.home)) return this.saveLibrary(validated);
     await mkdir(dirname(this.path), { recursive: true });
     const serialized = `${JSON.stringify(portableSettings(validated), null, 2)}\n`;
     const existing = await this.existingPortable();

@@ -1,10 +1,11 @@
-import { cp, lstat, mkdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, relative } from "node:path";
+import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { dirname, join, relative, resolve } from "node:path";
 import { writeInvocationChoice } from "./invocation.js";
 import { toolOwner } from "./kit.js";
-import { agentSkillFolders, Library, type GitRunner, type InvocationChoice, type SkillRecord } from "./library.js";
+import { agentSkillFolders, Library, type GitRunner, type InvocationChoice, type SkillRecord, type Storage } from "./library.js";
+import { planLibrarySettings } from "./library-settings.js";
 import { RulesWorkspace } from "./rules.js";
-import type { SettingsStore } from "./settings.js";
+import { skillName, type Settings, type SettingsStore } from "./settings.js";
 import { globalLockPath } from "./skills.js";
 
 export interface LibraryInitSkill {
@@ -15,10 +16,19 @@ export interface LibraryInitSkill {
   record: SkillRecord;
 }
 
+export interface StoredInitSkill {
+  name: string;
+  on: boolean;
+  from: string;
+  originals: string[];
+}
+
 export interface LibraryInitPlan {
   library: string;
   backup: string;
   skills: LibraryInitSkill[];
+  packSkills: StoredInitSkill[];
+  machineSkills: StoredInitSkill[];
   missing: string[];
   toolSkills: string[];
   rules: string[];
@@ -42,6 +52,29 @@ function backupFolder(home: string): string {
   return join(home, ".afk/library-backups");
 }
 
+async function isLinkTo(path: string, target: string): Promise<boolean> {
+  try { return (await lstat(path)).isSymbolicLink() && resolve(dirname(path), await readlink(path)) === target; }
+  catch { return false; }
+}
+
+async function isFolder(path: string): Promise<boolean> {
+  try { return !(await lstat(path)).isSymbolicLink() && await exists(join(path, "SKILL.md")); }
+  catch { return false; }
+}
+
+// A pack or machine skill moves from `.disabled` or a real folder in `~/.agents/skills`; AFK's links to it go too.
+async function storedSkill(library: Library, name: string, live: string, disabled: string, packOn: boolean): Promise<StoredInitSkill | undefined> {
+  const real = await isFolder(live);
+  const from = await isFolder(disabled) ? disabled : real ? live : undefined;
+  if (!from) return undefined;
+  const originals = [from];
+  for (const path of library.links(name)) {
+    if (path !== from && (await isLinkTo(path, from) || await isLinkTo(path, live))) originals.push(path);
+  }
+  const on = packOn || real || await isLinkTo(live, disabled);
+  return { name, on, from, originals };
+}
+
 function choice(value: string | undefined): InvocationChoice {
   return value === "Manual only" || value === "Automatic allowed" ? value : "";
 }
@@ -53,7 +86,7 @@ export async function planLibraryInit(store: SettingsStore, runner?: GitRunner):
   const settings = await store.read();
   const lock = await lockEntries(globalLockPath(home));
   const [agents] = agentSkillFolders(home);
-  const plan: LibraryInitPlan = { library: library.root, backup: join(backupFolder(home), new Date().toISOString().replace(/[:.]/g, "-")), skills: [], missing: [], toolSkills: [], rules: [] };
+  const plan: LibraryInitPlan = { library: library.root, backup: join(backupFolder(home), new Date().toISOString().replace(/[:.]/g, "-")), skills: [], packSkills: [], machineSkills: [], missing: [], toolSkills: [], rules: [] };
 
   for (const entry of settings.kit?.core ?? []) {
     for (const name of entry.skills) {
@@ -81,8 +114,27 @@ export async function planLibraryInit(store: SettingsStore, runner?: GitRunner):
     }
   }
   plan.skills.sort((a, b) => a.name.localeCompare(b.name));
+  await planStoredSkills(library, settings, agents!, plan);
   plan.rules = (await new RulesWorkspace(store).files()).filter(file => file.path !== "AGENTS.md" || file.content).map(file => file.path);
   return plan;
+}
+
+async function planStoredSkills(library: Library, settings: Settings, agents: string, plan: LibraryInitPlan): Promise<void> {
+  const core = new Set((settings.kit?.core ?? []).flatMap(entry => entry.skills));
+  const taken = (name: string): boolean => core.has(name) || Boolean(toolOwner(settings, name));
+  const packMembers = new Set(settings.profiles.flatMap(profile => profile.skills).filter(name => !taken(name)));
+  for (const name of [...packMembers].sort()) {
+    const on = settings.profiles.some(profile => profile.enabled.includes("Global") && profile.skills.includes(name));
+    const skill = await storedSkill(library, name, join(agents, name), join(agents, ".disabled", name), on);
+    if (skill) plan.packSkills.push(skill);
+  }
+  let disabled: string[] = [];
+  try { disabled = (await readdir(join(agents, ".disabled"))).filter(name => skillName(name)); } catch { /* No .disabled folder. */ }
+  const machine = new Set([...settings.machineOnly, ...disabled].filter(name => !taken(name) && !packMembers.has(name)));
+  for (const name of [...machine].sort()) {
+    const skill = await storedSkill(library, name, join(agents, name), join(agents, ".disabled", name), false);
+    if (skill) plan.machineSkills.push(skill);
+  }
 }
 
 /** Builds the library's first commit from this machine and replaces the original folders with links. */
@@ -90,27 +142,49 @@ export async function applyLibraryInit(store: SettingsStore, runner?: GitRunner)
   const plan = await planLibraryInit(store, runner);
   const library = new Library(store.home, runner);
   const settings = await store.read();
-  const rules = new RulesWorkspace(store);
-
-  await library.create(`Start library with ${plan.skills.length} Core skill${plan.skills.length === 1 ? "" : "s"}`, async () => {
-    for (const skill of plan.skills) {
-      await mkdir(dirname(library.skillPath(skill.name)), { recursive: true });
-      await cp(skill.from, library.skillPath(skill.name), { recursive: true, dereference: true, errorOnExist: true, force: false });
-      if (skill.record.invocation) await writeInvocationChoice(library.skillPath(skill.name), skill.record.invocation);
-      await library.writeRecord(skill.name, skill.record);
-    }
-    await library.writeSettings({ version: 1, core: settings.kit?.core ?? [], agentRules: { destinations: settings.agentRules?.destinations ?? [] } });
-    for (const file of (await rules.files()).filter(file => plan.rules.includes(file.path))) {
-      const path = join(library.root, "rules", file.path);
-      await mkdir(dirname(path), { recursive: true });
-      await writeFile(path, file.content);
-    }
-  });
-
+  const ruleFiles = (await new RulesWorkspace(store).files()).filter(file => plan.rules.includes(file.path));
   const moved: [string, string][] = [];
   const linked: string[] = [];
+  const copied: string[] = [];
+  const stored: (readonly [StoredInitSkill, Exclude<Storage, "library">])[] = [...plan.packSkills.map(skill => [skill, "pack"] as const), ...plan.machineSkills.map(skill => [skill, "machine"] as const)];
+  const undo = async (): Promise<void> => {
+    for (const name of linked) await library.unlink(name);
+    for (const [original, destination] of moved.reverse()) await rename(destination, original);
+    for (const path of copied) await rm(path, { recursive: true, force: true });
+  };
+
   try {
-    for (const skill of plan.skills) {
+    for (const [skill, storage] of stored) {
+      const destination = library.storagePath(skill.name, storage);
+      await mkdir(dirname(destination), { recursive: true });
+      await cp(await realpath(skill.from), destination, { recursive: true, dereference: true, errorOnExist: true, force: false });
+      copied.push(destination);
+    }
+    await library.create(`Start library with ${plan.skills.length} Core skill${plan.skills.length === 1 ? "" : "s"}`, async () => {
+      for (const skill of plan.skills) {
+        await mkdir(dirname(library.skillPath(skill.name)), { recursive: true });
+        await cp(skill.from, library.skillPath(skill.name), { recursive: true, dereference: true, errorOnExist: true, force: false });
+        if (skill.record.invocation) await writeInvocationChoice(library.skillPath(skill.name), skill.record.invocation);
+        await library.writeRecord(skill.name, skill.record);
+      }
+      for (const [skill] of stored.filter(([, storage]) => storage === "pack")) {
+        const invocation = choice(settings.preferences[`Global|${skill.name}`]);
+        if (invocation) await writeInvocationChoice(library.storagePath(skill.name, "pack"), invocation);
+      }
+      await (await planLibrarySettings(store.home, settings))?.apply();
+      for (const file of ruleFiles) {
+        const path = join(library.root, "rules", file.path);
+        await mkdir(dirname(path), { recursive: true });
+        await writeFile(path, file.content);
+      }
+    });
+  } catch (error) {
+    await undo();
+    throw error;
+  }
+
+  try {
+    for (const skill of [...plan.skills, ...stored.map(([skill]) => skill)]) {
       for (const original of skill.originals) {
         const destination = join(plan.backup, relative(store.home, original));
         await mkdir(dirname(destination), { recursive: true });
@@ -123,12 +197,17 @@ export async function applyLibraryInit(store: SettingsStore, runner?: GitRunner)
       await library.link(skill.name);
       linked.push(skill.name);
     }
-    const on = plan.skills.filter(skill => skill.on).map(skill => skill.name);
+    for (const [skill, storage] of stored.filter(([skill]) => skill.on)) {
+      await library.link(skill.name);
+      linked.push(skill.name);
+      if (storage === "pack") for (const path of library.links(skill.name)) settings.managedLinks[path] = library.storagePath(skill.name, "pack");
+    }
+    const on = [...plan.skills, ...plan.machineSkills].filter(skill => skill.on).map(skill => skill.name);
     settings.independentSkills.Global = [...new Set([...(settings.independentSkills.Global ?? []), ...on])];
+    settings.machineOnly = [...new Set([...settings.machineOnly, ...plan.machineSkills.map(skill => skill.name)])];
     await store.save(settings);
   } catch (error) {
-    for (const name of linked) await library.unlink(name);
-    for (const [original, destination] of moved.reverse()) await rename(destination, original);
+    await undo();
     await rm(library.root, { recursive: true, force: true });
     throw error;
   }

@@ -10,6 +10,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { runCommand as run, type CommandResult } from "./command-runner.js";
 import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
+import { adoptSkill, type AdoptDestination } from "./adopt.js";
 import { resolveDuplicate } from "./duplicates.js";
 import { SourcePreparation } from "./preparation.js";
 import { SkillLibrary } from "./skills.js";
@@ -32,7 +33,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "kit/add": ["to"], "kit/drop": ["name"], "kit/machine-only": ["name"], "kit/follow": ["source"],
     "kit/install-preview": ["source"], "kit/install-read": ["source", "name"], "kit/install": ["source", "to"],
     activation: ["id", "scope"], "project/save": ["name", "path"],
-    invocation: ["name", "scope"], "skill/toggle": ["name", "scope"], "skill/resolve-duplicate": ["name", "scope", "keep"],
+    invocation: ["name", "scope"], "skill/toggle": ["name", "scope"], "skill/adopt": ["name", "to"], "skill/resolve-duplicate": ["name", "scope", "keep"],
     "skills/update": ["scope"], "skills/delete-preview": ["scope"], "skills/bulk": ["scope", "action"],
     "skills-sharing/state": ["scope"], "skills-sharing/set": ["scope"],
     "skill/delete-preview": ["name", "scope"], "skill/delete": ["name", "scope"],
@@ -51,7 +52,8 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   for (const key of optionalText[operation] ?? []) {
     if (data[key] !== undefined && typeof data[key] !== "string") throw new Error(`Provide ${key} as a string.`);
   }
-  for (const key of ["local", "update", "clean", "enabled", "confirmed", "prepare"]) {
+  if (operation === "skill/adopt" && !["library", "machine"].includes(String(data.to))) throw new Error("Choose library or machine.");
+  for (const key of ["local", "update", "clean", "enabled", "confirmed", "prepare", "bookmark"]) {
     if (data[key] !== undefined && typeof data[key] !== "boolean") throw new Error(`Provide ${key} as true or false.`);
   }
   if (operation === "skills/delete-preview" || operation === "skills/bulk" || (operation === "skills/update" && data.names !== undefined)) {
@@ -795,6 +797,10 @@ export class FieldworkOperations {
       if (data.keep !== "installed" && data.keep !== "stored") throw new Error("Choose installed or stored.");
       await resolveDuplicate(store, settings, String(data.name), String(data.scope), data.keep);
       return { ok: true };
+    }
+    if (operation === "skill/adopt") {
+      if (!skillName(data.name)) throw new Error("Choose a valid skill name.");
+      await adoptSkill(library, settings, data.name, data.to as AdoptDestination, data.bookmark === true); return { ok: true };
     }
     if (operation === "skill/toggle") {
       await library.toggle(settings, String(data.name), String(data.scope)); return { ok: true };

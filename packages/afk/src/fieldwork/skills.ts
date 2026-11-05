@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { resolve, join } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { expandPath, skillName, type Settings, type SettingsStore } from "./settings.js";
-import { Library } from "./library.js";
+import { Library, machineRoot, packCacheRoot, type Storage } from "./library.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
 
 export function resolveProfile(settings: Settings, reference: string): Settings["profiles"][number] {
@@ -84,6 +84,10 @@ async function comparableFiles(path: string): Promise<Map<string, string>> {
   return files;
 }
 
+export async function sameSkillFiles(first: string, second: string): Promise<boolean> {
+  return isDeepStrictEqual(await comparableFiles(first), await comparableFiles(second));
+}
+
 async function sharedDiscoveryFolder(root: string): Promise<boolean> {
   try { return await realpath(root) === await realpath(join(root, "../../.claude/skills")); }
   catch (error) {
@@ -98,6 +102,11 @@ async function installedSources(path: string): Promise<Record<string, string>> {
     return Object.fromEntries(Object.entries(receipt.skills ?? {}).flatMap(([name, entry]) =>
       typeof entry?.source === "string" ? [[name, entry.source]] : []));
   } catch { return {}; }
+}
+
+async function lockReceipts(path: string): Promise<Record<string, { skillPath?: unknown; skillFolderHash?: unknown }>> {
+  try { return (JSON.parse(await readFile(path, "utf8")) as { skills?: Record<string, { skillPath?: unknown; skillFolderHash?: unknown }> }).skills ?? {}; }
+  catch { return {}; }
 }
 
 /** Skills CLI's global lock: under XDG state for the real home, otherwise inside the given home. */
@@ -131,7 +140,7 @@ export class SkillLibrary {
       const source = (await this.library.record(name))?.source;
       if (source) librarySources[name] = source;
     }
-    const folders = [{ directory: root, disabled: false }, ...(scope === "Global" ? [{ directory: join(this.library.root, "skills"), disabled: true }] : []), { directory: join(root, ".disabled"), disabled: true }];
+    const folders = [{ directory: root, disabled: false }, ...(scope === "Global" ? [join(this.library.root, "skills"), packCacheRoot(this.store.home), machineRoot(this.store.home)].map(directory => ({ directory, disabled: true })) : []), { directory: join(root, ".disabled"), disabled: true }];
     for (const { directory, disabled } of folders) {
       let names: string[];
       try { names = await readdir(directory); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") continue; throw error; }
@@ -190,7 +199,8 @@ export class SkillLibrary {
   async locate(settings: Settings, name: string, scope = "Global"): Promise<string> {
     if (!skillName(name)) throw new Error("Invalid skill name.");
     const root = this.root(settings, scope);
-    if (scope === "Global" && await this.library.has(name)) return this.library.skillPath(name);
+    const stored = scope === "Global" ? await this.library.location(name) : undefined;
+    if (stored) return stored;
     for (const directory of [join(root, ".disabled", name), join(root, name)]) {
       if (await exists(join(directory, "SKILL.md"))) return directory;
     }
@@ -200,16 +210,21 @@ export class SkillLibrary {
   // An installer can write a real folder where AFK expects its link, leaving an older stored copy of the same skill behind.
   async duplicate(settings: Settings, name: string, scope: string): Promise<DuplicateCopy | undefined> {
     if (!skillName(name)) return undefined;
-    const root = this.root(settings, scope), live = join(root, name), stored = join(root, ".disabled", name);
+    const root = this.root(settings, scope), live = join(root, name);
+    const stored = (scope === "Global" ? await this.library.location(name) : undefined) ?? join(root, ".disabled", name);
     if (!await exists(join(live, "SKILL.md")) || !await exists(join(stored, "SKILL.md"))) return undefined;
     if ((await lstat(live)).isSymbolicLink() || (await lstat(stored)).isSymbolicLink()) return undefined;
     return { name, live, stored, identical: isDeepStrictEqual(await comparableFiles(live), await comparableFiles(stored)) };
   }
 
   async duplicates(settings: Settings, scope: string): Promise<DuplicateCopy[]> {
-    let names: string[];
-    try { names = await readdir(join(this.root(settings, scope), ".disabled")); }
-    catch (error) { if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) return []; throw error; }
+    const list = async (folder: string): Promise<string[]> => {
+      try { return await readdir(folder); }
+      catch (error) { if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) return []; throw error; }
+    };
+    const root = this.root(settings, scope);
+    const stored = scope === "Global" && await this.library.exists() ? await list(root) : [];
+    const names = [...new Set([...await list(join(root, ".disabled")), ...stored])];
     const copies = await Promise.all(names.map(name => this.duplicate(settings, name, scope)));
     return copies.filter((copy): copy is DuplicateCopy => copy !== undefined);
   }
@@ -218,6 +233,8 @@ export class SkillLibrary {
   async consolidate(settings: Settings, name: string, scope: string, keep: DuplicateKeep): Promise<void> {
     const copy = await this.duplicate(settings, name, scope);
     if (!copy) throw new Error(`${name} has no second copy in ${scope}.`);
+    const storage = scope === "Global" ? await this.library.storage(name) : undefined;
+    if (storage) return this.consolidateStored(settings, copy, storage, keep);
     const parked = join(this.root(settings, scope), ".disabled", `.afk-replaced-${randomUUID()}`);
     const outgoing = keep === "installed" ? copy.stored : copy.live;
     const originalLinks = { ...settings.managedLinks };
@@ -239,6 +256,37 @@ export class SkillLibrary {
       await this.store.save(settings);
     } catch (error) {
       await revert();
+      throw error;
+    }
+    await rm(parked, { recursive: true, force: true });
+  }
+
+  // AFK keeps one stored copy: a reinstall replaces it, and the installed folder becomes a link again.
+  private async consolidateStored(settings: Settings, copy: DuplicateCopy, storage: Storage, keep: DuplicateKeep): Promise<void> {
+    const { name, live, stored } = copy;
+    const parked = join(this.root(settings, "Global"), `.afk-replaced-${randomUUID()}`);
+    const packOwned = settings.profiles.some(profile => profile.enabled.includes("Global") && profile.skills.includes(name));
+    const replace = async (): Promise<void> => {
+      if (keep === "installed") {
+        await rm(stored, { recursive: true, force: true });
+        await cp(live, stored, { recursive: true, verbatimSymlinks: true });
+        if (storage === "library") {
+          const receipt = (await lockReceipts(globalLockPath(this.store.home)))[name];
+          const record = await this.library.record(name);
+          await this.library.writeRecord(name, { ...record, ...(typeof receipt?.skillPath === "string" ? { skillPath: receipt.skillPath } : {}), ...(typeof receipt?.skillFolderHash === "string" ? { revision: receipt.skillFolderHash } : {}), invocation: record?.invocation ?? "" });
+        }
+      }
+      await rename(live, parked);
+      await this.library.link(name);
+      if (packOwned) for (const path of this.library.links(name)) settings.managedLinks[path] = stored;
+      else settings.independentSkills.Global = [...new Set([...(settings.independentSkills.Global ?? []), name])];
+      await this.store.save(settings);
+    };
+    try {
+      if (storage === "library" && keep === "installed") await this.library.change(`Reinstall ${name}`, replace);
+      else await replace();
+    } catch (error) {
+      if (await exists(parked)) { await this.library.unlink(name); await rename(parked, live); }
       throw error;
     }
     await rm(parked, { recursive: true, force: true });
@@ -322,7 +370,7 @@ export class SkillLibrary {
 
   async toggle(settings: Settings, name: string, scope: string): Promise<void> {
     if (settings.profiles.some(p => p.enabled.includes(scope) && p.skills.includes(name))) throw new Error("Turn the owning packs off first.");
-    if (scope === "Global" && await this.library.has(name)) return this.toggleStored(settings, name);
+    if (scope === "Global" && await this.library.storage(name)) return this.toggleStored(settings, name);
     const root = this.root(settings, scope);
     const active = join(root, name);
     const disabled = join(root, ".disabled", name);
@@ -413,14 +461,15 @@ export class SkillLibrary {
 
   async storePrepared(settings: Settings, source: string, names: string[], reference?: string): Promise<void> {
     const root = this.root(settings, "Global");
+    const cached = await this.library.exists();
     for (const name of names) {
       if (!skillName(name)) throw new Error("Invalid skill name.");
       try { await this.locate(settings, name); continue; } catch { /* A missing member needs preparation. */ }
-      const destination = join(root, ".disabled", name);
+      const destination = cached ? this.library.storagePath(name, "pack") : join(root, ".disabled", name);
       if (await exists(destination)) throw new Error(`${name} has an incomplete stored copy. Inspect it before retrying.`);
       const from = join(source, name);
       if (!(await exists(join(from, "SKILL.md")))) throw new Error(`Installer did not prepare ${name}${reference ? ` from ${reference}` : ""}.`);
-      await mkdir(join(root, ".disabled"), { recursive: true });
+      await mkdir(resolve(destination, ".."), { recursive: true });
       await cp(await realpath(from), destination, { recursive: true, dereference: true, errorOnExist: true, force: false });
       if (reference) await writeFile(join(destination, ".afk-source.json"), JSON.stringify({ source: reference }), { mode: 0o600 });
     }
