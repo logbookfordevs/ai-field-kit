@@ -112,21 +112,20 @@ Agents don't all read the same folder. Skills CLI 1.7.6's agent table lists 80 a
 - Known agents come from a table AFK ships (taken from Skills CLI's), each with its global and project folder. Agents detected on this machine (their config folder exists) are listed first, each with a switch.
 - **Add a folder** takes a name, a global path and an optional project path, for agents AFK doesn't know.
 - Every skill that is on gets a link in each enabled folder; turning a skill off removes all of them. Enabling a folder links every skill that is on; disabling it removes only AFK's links there.
-- The Manual/Automatic choice lives in the skill's files, so it applies through every link. It only affects agents that read those fields (Claude Code's `disable-model-invocation`, Codex's `agents/openai.yaml`); the Skills screen says so.
+- The Manual/Automatic choice lives in the skill's files, so it applies through every link. AFK writes the two mechanisms that matter: Claude Code's `disable-model-invocation` frontmatter, which other agents such as Pi also follow, and Codex's `agents/openai.yaml`. Agents that read neither can't be controlled. Where AFK's agent table knows which mechanism an agent follows, a tooltip on the choice says so; otherwise it says nothing.
 - Enabled folders are saved in the backup as `~`-relative paths and recreated on restore.
 
 Today's fixed `~/.claude/skills` link becomes the Claude Code entry, on by default.
 
 ### Projects
 
-A project has two kinds of skill:
+Projects stay simple, like Skills Manager's project workspaces: AFK manages the skills that live in a project's own repository.
 
-1. **Skills AFK exposes:** a pack or a library skill turned on for the project. They are links into AFK's storage, created in the project's enabled agent folders (`.agents/skills`, `.claude/skills`, plus any others turned on). Off removes the links. The project's `.disabled` folder isn't needed for them.
-2. **Project-owned skills:** real folders committed in the project's own repository, often shared with a team. AFK lists them but doesn't move or rewrite them, because any change would show up in the team's repository.
-
-AFK adds its links to the project's `.git/info/exclude`, which is local and never committed, so they don't appear as untracked files.
-
-The backup saves, per project name, which packs and skills are on. Project paths stay on the machine. After a restore, AFK offers to re-link each project once its folder is chosen.
+- **Install, update, delete and the Manual/Automatic switch**, acting directly on the project's files. Installs go through Skills CLI in project mode, into the project's agent folders (`.agents/skills`, read by most agents in projects, plus `.claude/skills` and any others enabled).
+- These are the project's files, often shared with a team, so changes show up in the project's Git status by design. Adding a project to AFK is the opt-in to managing its skills; AFK can be used to maintain a team's skills.
+- No packs and no library skills in projects for now. Packs stay Global.
+- No turning project skills on and off, so the project `.disabled` folder and `.afk-overrides` copies retire. The Manual/Automatic switch edits the skill's own files.
+- Projects are not part of the backup. Their skills are already in the project's repository.
 
 ## Flows
 
@@ -200,7 +199,8 @@ Two situations on this one machine need the user. AFK lists them under **Needs a
 - The `~/.afk/backups` rotation for settings. Git history replaces it.
 - Kit's sync plan and `afk sync` reinstalling Core from upstream. Restore replaces them.
 - The Global `.disabled` store, replaced by AFK's storage and unlinking. Tool skills that are off use `~/.afk/off/`.
-- The project `.disabled` folder and `.afk-overrides` copies for skills AFK exposes.
+- Project on/off: the project `.disabled` folder and `.afk-overrides` copies.
+- Packs and shared library skills in projects. Packs are Global for now.
 - The fixed `~/.claude/skills` link, replaced by the Claude Code entry in Agent folders.
 - AFK's dependence on `~/.agents/.skill-lock.json` for library skills.
 
@@ -240,11 +240,8 @@ From the 2026-11-05 failures; they ship first:
 10. Uploaded skills can go to Core, a pack or this machine. In Core or a pack they are saved in full, because they can't be downloaded again.
 11. AFK stores every Global skill it manages, including machine-only ones; off means unlinked. The Global `.disabled` store retires.
 12. Agent folders: `~/.agents/skills` always, plus switchable known agents and custom folders, saved in the backup.
-
-## Open questions
-
-1. **Project-owned skills.** Proposed: AFK lists skills committed in a project's repository but doesn't turn them off or override their invocation, because that changes the team's repository. Today AFK can do both (via the project `.disabled` folder and `.afk-overrides`). Drop that, or keep it as an explicit per-project option?
-2. **Agents in the Manual/Automatic hint.** Only Claude Code and Codex read the invocation fields today. Should the Skills screen name which enabled agents ignore the choice?
+13. Projects: install, update, delete and Manual/Automatic for the project's own skills, editing its files directly. No packs, no on/off, no backup.
+14. Invocation is written for Claude Code's and Codex's mechanisms only. Which agents follow them is shown in a tooltip where known.
 
 ## Slices
 
