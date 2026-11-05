@@ -10,6 +10,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { runCommand as run, type CommandResult } from "./command-runner.js";
 import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
+import { trackToolRun } from "./tool-run.js";
 import { resolveDuplicate } from "./duplicates.js";
 import { SourcePreparation } from "./preparation.js";
 import { SkillLibrary } from "./skills.js";
@@ -90,7 +91,7 @@ export class FieldworkOperations {
   private skillUpdate: UpdateProgress | null = null;
   installRunner: InstallRunner | undefined;
   private mutations: Promise<void> = Promise.resolve();
-  private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number }> = {};
+  private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number; warnings?: string[] }> = {};
   readonly schedule: SkillUpdateSchedule;
   private projectsReady: Promise<void> | undefined;
   private projectMigration: { migrated: string[]; kept: { project: string; skills: string[] }[]; failed: { project: string; error: string }[] } = { migrated: [], kept: [], failed: [] };
@@ -491,12 +492,13 @@ export class FieldworkOperations {
           this.skillInstall = install;
         } finally { this.installController = null; }
       }
-      const tools: { id: number; name: string; code: number; output: string }[] = [];
+      const tools: { id: number; name: string; code: number; output: string; reapplied?: string[]; warnings?: string[] }[] = [];
       const skippedTools = current.plan.tools.filter(tool => !approved.includes(tool.id));
       for (const tool of current.plan.tools.filter(tool => approved.includes(tool.id))) {
         toolRuns[tool.id] = { pending: true, output: "Running…" };
         try {
-          const result = await runTool(process.env.SHELL || "/bin/sh", ["-c", tool.command], store.home, this.lifecycle.signal);
+          const finish = await trackToolRun(store, { name: tool.name, provides: tool.skills });
+          const result = await finish(await runTool(process.env.SHELL || "/bin/sh", ["-c", tool.command], store.home, this.lifecycle.signal));
           toolRuns[tool.id] = { pending: false, ...result };
           tools.push({ id: tool.id, name: tool.name, ...result });
         } catch (error) {
@@ -863,7 +865,8 @@ export class FieldworkOperations {
       const command = data.update === true ? tool.update || tool.install : tool.install;
       toolRuns[tool.id] = { pending: true, output: "Running…" };
       try {
-        const result = await runTool(process.env.SHELL || "/bin/sh", ["-c", command], store.home, this.lifecycle.signal);
+        const finish = await trackToolRun(store, tool);
+        const result = await finish(await runTool(process.env.SHELL || "/bin/sh", ["-c", command], store.home, this.lifecycle.signal));
         toolRuns[tool.id] = { pending: false, ...result }; return result;
       } catch (error) {
         toolRuns[tool.id] = { pending: false, code: 1, output: error instanceof Error ? error.message : "Command could not start." }; throw error;

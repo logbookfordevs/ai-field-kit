@@ -282,7 +282,7 @@ describe("AFK agent CLI", () => {
     const before = await readFile(store.path, "utf8");
     const result = await manage(store, "tool/run", { id: 9, update: true });
     expect(result.code).toBe(7);
-    expect(json(result.stdout)).toEqual({ output: "fixture-output", code: 7 });
+    expect(json(result.stdout)).toEqual({ output: "fixture-output", code: 7, reapplied: [], warnings: [] });
     expectFailure(await manage(store, "tool/run", { id: 10, command: "printf unsaved-command" }));
     expect(await readFile(store.path, "utf8")).toBe(before);
   });
