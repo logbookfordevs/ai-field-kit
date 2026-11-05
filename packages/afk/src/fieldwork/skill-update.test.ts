@@ -15,7 +15,7 @@ async function fixture(project = false) {
   const scope = project ? "Project" : "Global";
   if (project) settings.projects.push({ name: scope, path: join(home, "project") });
   await store.save(settings);
-  const root = new SkillLibrary(store).root(settings, scope), path = join(root, ".disabled/sample");
+  const root = new SkillLibrary(store).root(settings, scope), path = join(root, project ? "sample" : ".disabled/sample");
   await mkdir(path, { recursive: true }); await writeFile(join(path, "SKILL.md"), text("old"));
   const receipt = project ? join(root, "../../skills-lock.json") : join(home, ".agents/.skill-lock.json");
   await writeFile(receipt, JSON.stringify({ version: 3, skills: { sample: { source: "fixture" } } }));
@@ -61,11 +61,11 @@ it("preserves originals and receipts after an upstream failure", async () => {
   expect(await readFile(join(f.path, "SKILL.md"), "utf8")).toContain("old");
   expect(await readFile(f.receipt, "utf8")).toBe(receipt);
 });
-it("updates project disabled storage with its project receipt", async () => {
+it("updates a project skill in place with its project receipt", async () => {
   const f = await fixture(true);
   expect(await updateSkills(f.store, f.settings, f.scope, () => {}, runner(true))).toMatchObject({ updated: 1 });
   expect(await readFile(join(f.path, "SKILL.md"), "utf8")).toContain("new");
-  await expect(readFile(join(f.root, "sample/SKILL.md"))).rejects.toThrow();
+  await expect(readFile(join(f.root, ".disabled/sample/SKILL.md"))).rejects.toThrow();
 });
 it("rejects intervening edits before replacing any originals", async () => {
   const f = await fixture();

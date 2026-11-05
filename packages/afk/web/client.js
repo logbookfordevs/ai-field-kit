@@ -13,6 +13,7 @@ async function refresh(){
   tools=tools.map(tool=>({...tool,last:toolRuns[tool.id]?{ok:toolRuns[tool.id].code===0,label:toolRuns[tool.id].pending?'Running…':'Last run · exit '+toolRuns[tool.id].code}:null}));
   await loadRules();
   render();
+  void loadBackup(false);
 }
 async function operation(action){
   try{await action();await refresh()}
@@ -279,7 +280,7 @@ function renderSkillSelection(shown){
   const hidden=[...selectedSkills].filter(name=>!shown.some(skill=>skill.name===name)).length;
   const disabled=skillBulkBusy?'disabled':'';
   const count=selectedSkills.size;
-  $('skillSelection').innerHTML=count?`<div class="skill-bulk" role="group" aria-label="Selected skill actions"><strong class="bulk-count">${count} selected${skillBulkBusy?' · Applying…':''}${hidden?' · '+hidden+' hidden by filters':''} · ${esc(scope)}</strong>${button('Enable',"applySkillBulk('enable')",'',disabled)}${button('Disable',"applySkillBulk('disable')",'',disabled)}<label><span class="sr-only">Invocation for selected skills</span><select ${disabled} aria-label="Invocation for selected skills" onchange="if(this.value)applySkillBulk('invocation',this.value==='default'?'':this.value)"><option value="">Change invocation…</option><option>Manual only</option><option>Automatic allowed</option><option value="default">Restore defaults</option></select></label>${button(skillActionLabel('Update selected','update'),'showSkillUpdate([...selectedSkills])','primary',disabled)}${button('Delete selected','reviewBulkSkillDeletion()','text danger',disabled)}${button('Clear selection','clearSkillSelection()','text',disabled)}</div>`:'';
+  $('skillSelection').innerHTML=count?`<div class="skill-bulk" role="group" aria-label="Selected skill actions"><strong class="bulk-count">${count} selected${skillBulkBusy?' · Applying…':''}${hidden?' · '+hidden+' hidden by filters':''} · ${esc(scope)}</strong>${scope==='Global'?button('Enable',"applySkillBulk('enable')",'',disabled)+button('Disable',"applySkillBulk('disable')",'',disabled):''}<label><span class="sr-only">Invocation for selected skills</span><select ${disabled} aria-label="Invocation for selected skills" onchange="if(this.value)applySkillBulk('invocation',this.value==='default'?'':this.value)"><option value="">Change invocation…</option><option>Manual only</option><option>Automatic allowed</option><option value="default">Restore defaults</option></select></label>${button(skillActionLabel('Update selected','update'),'showSkillUpdate([...selectedSkills])','primary',disabled)}${button('Delete selected','reviewBulkSkillDeletion()','text danger',disabled)}${button('Clear selection','clearSkillSelection()','text',disabled)}</div>`:'';
   if(shown.length)$('skillSelection').innerHTML+=`<p>${button('Select shown','selectShownSkills()','text',disabled)}</p>`;
 }
 function showSkillBulkResult(result,target){

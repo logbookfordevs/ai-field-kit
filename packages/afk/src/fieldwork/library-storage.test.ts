@@ -49,6 +49,7 @@ beforeEach(async () => {
   await write(join(agents, ".disabled/gamma"), "gamma");
   await write(join(agents, ".disabled/delta"), "delta");
   await write(join(agents, ".disabled/old"), "old");
+  await write(join(agents, ".disabled/tooled"), "tooled");
   await write(join(agents, "mine"), "mine");
   await write(join(agents, "loose"), "loose");
   await mkdir(claude, { recursive: true });
@@ -60,7 +61,7 @@ beforeEach(async () => {
   const settings = emptySettings();
   settings.kit = { core: [{ source: "owner/repo", skills: ["alpha"] }] };
   settings.profiles = [structuredClone(pack), structuredClone(offPack)];
-  settings.tools = [{ id: 1, name: "Tool", install: "echo install", update: "echo update" }];
+  settings.tools = [{ id: 1, name: "Tool", install: "echo install", update: "echo update", provides: ["tooled"] }];
   settings.favoriteSources = [{ name: "later", source: "owner/later" }];
   settings.machineOnly = ["mine"];
   settings.managedLinks = { [join(agents, "gamma")]: join(agents, ".disabled/gamma"), [join(claude, "gamma")]: join(agents, ".disabled/gamma") };
@@ -82,6 +83,7 @@ describe("library init for packs, machine-only skills and .disabled", () => {
     expect(await readFile(join(home, ".afk/packs-cache/gamma/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
     expect(await readFile(join(home, ".afk/packs-cache/delta/SKILL.md"), "utf8")).toBe(skill("delta"));
     expect(await readFile(join(home, ".afk/machine/old/SKILL.md"), "utf8")).toBe(skill("old"));
+    expect(await readFile(join(home, ".afk/off/tooled/SKILL.md"), "utf8")).toBe(skill("tooled"));
     expect(await readlink(join(agents, "gamma"))).toBe(join(home, ".afk/packs-cache/gamma"));
     expect(await readlink(join(claude, "gamma"))).toBe(join(home, ".afk/packs-cache/gamma"));
     expect(await present(join(agents, "delta"))).toBe(false);
@@ -141,7 +143,7 @@ describe("portable settings in the library", () => {
     const library = join(home, ".afk/library/.afk");
     const { enabled: _enabled, ready: _ready, ...definition } = pack;
     expect(await readFile(join(library, `packs/${pack.id}.json`), "utf8")).toBe(`${JSON.stringify(definition, null, 2)}\n`);
-    expect(await json(join(library, "tools/1.json"))).toEqual({ id: 1, name: "Tool", install: "echo install", update: "echo update" });
+    expect(await json(join(library, "tools/1.json"))).toEqual({ id: 1, name: "Tool", install: "echo install", update: "echo update", provides: ["tooled"] });
     expect(await json(join(library, "bookmarks/owner-later.json"))).toEqual({ name: "later", source: "owner/later" });
     expect(await json(join(library, "skills/gamma.json"))).toEqual({ source: "owner/review", invocation: "Manual only" });
     expect(await commits()).toHaveLength(1);

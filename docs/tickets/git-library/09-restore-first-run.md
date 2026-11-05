@@ -18,6 +18,7 @@ First run asks *Restore my library*, *Start a new library* or *Skip*. Restore li
 - [ ] A differing local copy is moved to a dated folder and listed; identical copies are adopted.
 - [ ] Tool commands run only when ticked; choices are reapplied after each.
 - [ ] *Skip* leaves AFK usable without a backup.
+- [ ] Restore's deploy step (link what the library says is on, unlink what it doesn't) is shared with ticket 07's *Go back*, so going back to an older save also re-links skills it brings back (gap found after ticket 07).
 
 ## Blocked By
 - 03, 06 and 07.

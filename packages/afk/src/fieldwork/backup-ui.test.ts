@@ -1,0 +1,174 @@
+import { readFileSync } from "node:fs";
+import { createContext, runInContext, type Context } from "node:vm";
+import { beforeEach, describe, expect, it } from "vitest";
+
+const script = readFileSync(new URL("../../web/backup.js", import.meta.url), "utf8");
+
+let context: Context;
+let requests: { path: string; data: unknown }[];
+let view: { innerHTML: string };
+let box: { innerHTML: string; hidden: boolean };
+let dialog: string;
+let toasts: string[];
+let reply: unknown;
+let stateReply: unknown;
+let fields: Record<string, { value: string }>;
+
+function evaluate<T>(code: string): T { return runInContext(code, context) as T; }
+
+const connected = (status: object, extra: object = {}) => ({
+  status: { library: true, state: "saved", remote: "git@github.com:leo/afk-library.git", waiting: 0, pushing: false, lastSavedAt: Date.now() - 120_000, ...status },
+  history: [
+    { id: "c3", at: Date.now() - 60_000, message: "Edited atlas-review", pushed: false },
+    { id: "c2", at: Date.now() - 3_600_000, message: "Updated 11 skills", pushed: true },
+    { id: "c1", at: Date.now() - 86_400_000, message: "Start the library", pushed: true },
+  ],
+  contents: { coreSkills: 43, skillBytes: 9_126_805, packs: 3, tools: 8, bookmarks: 26, choices: 56, rules: true },
+  ...extra,
+});
+
+function show(state: unknown): void {
+  context.nextState = state;
+  evaluate("backupState=nextState");
+}
+
+beforeEach(() => {
+  requests = []; dialog = ""; toasts = []; reply = {}; stateReply = connected({}); view = { innerHTML: "" }; box = { innerHTML: "", hidden: true };
+  fields = { backupRepository: { value: " afk-library " }, backupUrl: { value: " git@github.com:leo/x.git " }, backupNewUrl: { value: "" } };
+  context = createContext({
+    $: (id: string) => id === "view" ? view : id === "backupBox" ? box : fields[id] ?? { value: "" },
+    esc: (value: unknown) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll('"', "&quot;"),
+    button: (label: string, action: string, _class = "", attrs = "") => `<button data-action="${action.replaceAll('"', "&quot;")}" ${attrs}>${label}</button>`,
+    head: (title: string, _sub: string, action = "") => `<h1>${title}</h1>${action}`,
+    modal: (_title: string, body: string, foot = "") => { dialog = body + foot; },
+    closeModal: () => { dialog = ""; },
+    toast: (message: string) => { toasts.push(message); },
+    navigate: () => {}, section: "Backup",
+    request: async (path: string, data: unknown) => { requests.push({ path, data }); return path === "backup/state" ? stateReply : reply; },
+    document: { addEventListener() {}, hidden: false, activeElement: null },
+    setTimeout: () => 0, clearTimeout: () => {},
+  });
+  runInContext(script, context);
+});
+
+describe("the sidebar backup box", () => {
+  it.each(["saved", "waiting", "failed"])("shows the %s state", state => {
+    show(connected({ state, waiting: state === "saved" ? 0 : 2 }));
+    evaluate("renderBackupBox()");
+
+    expect(box.hidden).toBe(false);
+    expect(box.innerHTML).toContain(`data-state="${state}"`);
+    expect(box.innerHTML).toContain("saveBackupNow()");
+  });
+
+  it("offers setup, not saving, while no remote is connected", () => {
+    show({ status: { library: true, state: "off", waiting: 0, pushing: false } });
+    evaluate("renderBackupBox()");
+
+    expect(box.innerHTML).toContain('data-state="off"');
+    expect(box.innerHTML).not.toContain("saveBackupNow()");
+  });
+
+  it("stays hidden without a library", () => {
+    show({ status: { library: false, state: "off", waiting: 0, pushing: false } });
+    evaluate("renderBackupBox()");
+
+    expect(box.hidden).toBe(true);
+    expect(box.innerHTML).toBe("");
+  });
+
+  it("disables saving while a push is running", () => {
+    show(connected({ pushing: true }));
+    evaluate("renderBackupBox()");
+
+    expect(box.innerHTML).toMatch(/data-backup-save disabled/);
+  });
+});
+
+describe("the Backup screen", () => {
+  it("asks for a repository first and says skill files are not scanned for secrets", () => {
+    show({ status: { library: true, state: "off", waiting: 0, pushing: false } });
+    evaluate("renderBackup()");
+
+    expect(view.innerHTML).toContain("createBackupRepository()");
+    expect(view.innerHTML).toContain("connectBackupRemote()");
+    expect(view.innerHTML).toContain("data-backup-warning");
+  });
+
+  it("points to library init when there is no library", () => {
+    show({ status: { library: false, state: "off", waiting: 0, pushing: false } });
+    evaluate("renderBackup()");
+
+    expect(view.innerHTML).not.toContain("createBackupRepository()");
+  });
+
+  it("shows the state, what is in the backup and each save, marking those not pushed", () => {
+    show(connected({ state: "waiting", waiting: 1 }));
+    evaluate("renderBackup()");
+
+    expect(view.innerHTML).toContain('data-state="waiting"');
+    expect(view.innerHTML).toContain("43 Core skills");
+    expect(view.innerHTML).toContain('data-save="c3" data-pushed="false"');
+    expect(view.innerHTML).toContain('data-save="c2" data-pushed="true"');
+  });
+
+  it("shows why saving failed and keeps the retry in reach", () => {
+    show(connected({ state: "failed", waiting: 3, error: "Could not read from remote repository." }));
+    evaluate("renderBackup()");
+
+    expect(view.innerHTML).toContain('data-state="failed"');
+    expect(view.innerHTML).toContain("Could not read from remote repository.");
+    expect(view.innerHTML).toContain("saveBackupNow()");
+  });
+
+  it("offers going back on every save except the oldest", () => {
+    show(connected({}));
+    evaluate("renderBackup()");
+
+    expect(view.innerHTML).toContain("confirmGoBack(0)");
+    expect(view.innerHTML).toContain("confirmGoBack(1)");
+    expect(view.innerHTML).not.toContain("confirmGoBack(2)");
+  });
+});
+
+describe("backup actions", () => {
+  it("Save now asks the server to push, then refreshes the state", async () => {
+    reply = { state: "saved", waiting: 0 };
+    show(connected({ state: "waiting", waiting: 1 }));
+
+    await evaluate<Promise<void>>("saveBackupNow()");
+
+    expect(requests.map(entry => entry.path)).toEqual(["backup/save", "backup/state"]);
+  });
+
+  it("tells the person when a push failed and that nothing is lost", async () => {
+    reply = { state: "failed", waiting: 2, error: "offline" };
+    show(connected({}));
+
+    await evaluate<Promise<void>>("saveBackupNow()");
+
+    expect(toasts.at(-1)).toMatch(/offline/);
+  });
+
+  it("creates a repository and connects a remote with the trimmed field values", async () => {
+    show({ status: { library: true, state: "off", waiting: 0, pushing: false } });
+    await evaluate<Promise<void>>("createBackupRepository()");
+    await evaluate<Promise<void>>("connectBackupRemote()");
+
+    expect(requests.filter(entry => entry.path !== "backup/state")).toEqual([
+      { path: "backup/create", data: { name: "afk-library" } },
+      { path: "backup/connect", data: { url: "git@github.com:leo/x.git" } },
+    ]);
+  });
+
+  it("goes back to the save before the chosen one only after confirmation", async () => {
+    show(connected({}));
+    evaluate("confirmGoBack(0)");
+
+    expect(requests).toEqual([]);
+    expect(dialog).toContain("goBackTo('c2')");
+
+    await evaluate<Promise<void>>("goBackTo('c2')");
+    expect(requests[0]).toEqual({ path: "backup/restore", data: { id: "c2" } });
+  });
+});

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { SettingsStore } from "./settings.js";
 import { SkillLibrary } from "./skills.js";
 
-it("uses scoped receipts, inherits provenance only for shared project entries and tolerates missing receipts", async () => {
+it("uses scoped receipts, ignores Global links in a project and tolerates missing receipts", async () => {
   const home=await mkdtemp(join(tmpdir(),"afk-provenance-"));
   try {
     const store=new SettingsStore(home);await store.initialize();
@@ -15,7 +15,10 @@ it("uses scoped receipts, inherits provenance only for shared project entries an
     await writeFile(join(globalRoot,"sample/SKILL.md"),"---\nname: sample\ndescription: test\n---\nInstructions");
     await writeFile(join(home,".agents/.skill-lock.json"),JSON.stringify({skills:{sample:{source:"owner/global"}}}));
     await mkdir(projectRoot,{recursive:true});await symlink(join(globalRoot,"sample"),join(projectRoot,"sample"));
-    expect((await library.inventory(settings,"Demo"))[0]?.source).toBe("owner/global");
+    expect(await library.inventory(settings,"Demo")).toEqual([]);
+    await rm(join(projectRoot,"sample"));await mkdir(join(projectRoot,"sample"));
+    await writeFile(join(projectRoot,"sample/SKILL.md"),"---\nname: sample\ndescription: test\n---\nProject copy");
+    expect((await library.inventory(settings,"Demo"))[0]?.source).toBeUndefined();
     await writeFile(join(home,"project/skills-lock.json"),JSON.stringify({skills:{sample:{source:"owner/project"}}}));
     expect((await library.inventory(settings,"Demo"))[0]?.source).toBe("owner/project");
     await rm(join(home,"project/skills-lock.json"));await rm(join(home,".agents/.skill-lock.json"));

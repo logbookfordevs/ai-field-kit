@@ -135,6 +135,7 @@ function describeLibraryInit(plan: LibraryInitPlan, applied: boolean): string {
   for (const skill of plan.skills) lines.push(`  ${skill.name} (${skill.on ? "on" : "off"}${skill.record.invocation ? `, ${skill.record.invocation}` : ""}) from ${skill.from}`);
   for (const skill of plan.packSkills) lines.push(`  ${skill.name} (pack${skill.on ? ", on" : ""}) to the pack cache from ${skill.from}`);
   for (const skill of plan.machineSkills) lines.push(`  ${skill.name} (this machine${skill.on ? ", on" : ""}) to machine storage from ${skill.from}`);
+  for (const skill of plan.offToolSkills) lines.push(`  ${skill.name} (tool, off) to the off folder from ${skill.from}`);
   if (plan.rules.length) lines.push(`Rules: ${plan.rules.join(", ")}`);
   if (plan.missing.length) lines.push(`Not on this machine: ${plan.missing.join(", ")}`);
   if (plan.toolSkills.length) lines.push(`Provided by tools, left in place: ${plan.toolSkills.join(", ")}`);

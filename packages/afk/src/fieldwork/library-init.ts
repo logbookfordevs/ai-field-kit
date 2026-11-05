@@ -5,6 +5,7 @@ import { toolOwner } from "./kit.js";
 import { agentSkillFolders, Library, type GitRunner, type InvocationChoice, type SkillRecord, type Storage } from "./library.js";
 import { planLibrarySettings } from "./library-settings.js";
 import { RulesWorkspace } from "./rules.js";
+import { offFolder } from "./tool-skills.js";
 import { skillName, type Settings, type SettingsStore } from "./settings.js";
 import { globalLockPath } from "./skills.js";
 
@@ -29,6 +30,7 @@ export interface LibraryInitPlan {
   skills: LibraryInitSkill[];
   packSkills: StoredInitSkill[];
   machineSkills: StoredInitSkill[];
+  offToolSkills: StoredInitSkill[];
   missing: string[];
   toolSkills: string[];
   rules: string[];
@@ -86,7 +88,7 @@ export async function planLibraryInit(store: SettingsStore, runner?: GitRunner):
   const settings = await store.read();
   const lock = await lockEntries(globalLockPath(home));
   const [agents] = agentSkillFolders(home);
-  const plan: LibraryInitPlan = { library: library.root, backup: join(backupFolder(home), new Date().toISOString().replace(/[:.]/g, "-")), skills: [], packSkills: [], machineSkills: [], missing: [], toolSkills: [], rules: [] };
+  const plan: LibraryInitPlan = { library: library.root, backup: join(backupFolder(home), new Date().toISOString().replace(/[:.]/g, "-")), skills: [], packSkills: [], machineSkills: [], offToolSkills: [], missing: [], toolSkills: [], rules: [] };
 
   for (const entry of settings.kit?.core ?? []) {
     for (const name of entry.skills) {
@@ -130,6 +132,10 @@ async function planStoredSkills(library: Library, settings: Settings, agents: st
   }
   let disabled: string[] = [];
   try { disabled = (await readdir(join(agents, ".disabled"))).filter(name => skillName(name)); } catch { /* No .disabled folder. */ }
+  for (const name of disabled.filter(name => toolOwner(settings, name)).sort()) {
+    const from = join(agents, ".disabled", name);
+    if (await isFolder(from)) plan.offToolSkills.push({ name, on: false, from, originals: [from] });
+  }
   const machine = new Set([...settings.machineOnly, ...disabled].filter(name => !taken(name) && !packMembers.has(name)));
   for (const name of [...machine].sort()) {
     const skill = await storedSkill(library, name, join(agents, name), join(agents, ".disabled", name), false);
@@ -147,6 +153,7 @@ export async function applyLibraryInit(store: SettingsStore, runner?: GitRunner)
   const linked: string[] = [];
   const copied: string[] = [];
   const stored: (readonly [StoredInitSkill, Exclude<Storage, "library">])[] = [...plan.packSkills.map(skill => [skill, "pack"] as const), ...plan.machineSkills.map(skill => [skill, "machine"] as const)];
+  const destinations = new Map<StoredInitSkill, string>([...stored.map(([skill, storage]) => [skill, library.storagePath(skill.name, storage)] as const), ...plan.offToolSkills.map(skill => [skill, join(offFolder(store.home), skill.name)] as const)]);
   const undo = async (): Promise<void> => {
     for (const name of linked) await library.unlink(name);
     for (const [original, destination] of moved.reverse()) await rename(destination, original);
@@ -154,8 +161,7 @@ export async function applyLibraryInit(store: SettingsStore, runner?: GitRunner)
   };
 
   try {
-    for (const [skill, storage] of stored) {
-      const destination = library.storagePath(skill.name, storage);
+    for (const [skill, destination] of destinations) {
       await mkdir(dirname(destination), { recursive: true });
       await cp(await realpath(skill.from), destination, { recursive: true, dereference: true, errorOnExist: true, force: false });
       copied.push(destination);
@@ -184,7 +190,7 @@ export async function applyLibraryInit(store: SettingsStore, runner?: GitRunner)
   }
 
   try {
-    for (const skill of [...plan.skills, ...stored.map(([skill]) => skill)]) {
+    for (const skill of [...plan.skills, ...destinations.keys()]) {
       for (const original of skill.originals) {
         const destination = join(plan.backup, relative(store.home, original));
         await mkdir(dirname(destination), { recursive: true });
