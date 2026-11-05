@@ -12,7 +12,7 @@ function showFirstRun(){
 async function maybeFirstRun(){
   const state=await request('backup/state',{brief:true}).catch(()=>null);
   if($('sheet')?.open)return;
-  if(state?.status?.library===false)showFirstRun();else showWelcome();
+  if(state?.status?.library===false||state?.status?.restoring)showFirstRun();else showWelcome();
 }
 
 function renderFirstRunChoice(){

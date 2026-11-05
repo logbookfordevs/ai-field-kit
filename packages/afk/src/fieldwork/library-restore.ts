@@ -7,6 +7,7 @@ import { Library, type GitRunner, type LibrarySettings } from "./library.js";
 import { checkRemoteUrl } from "./library-backup.js";
 import { deployLibrary, type AsideMove } from "./library-deploy.js";
 import { recordedInvocations } from "./library-settings.js";
+import { clearRestorePending, markRestorePending, pendingRestore } from "./restore-pending.js";
 import type { SettingsStore, Tool } from "./settings.js";
 
 export interface RestoreOptions {
@@ -110,16 +111,22 @@ export class Restore {
   }
 
   async restore(repository: string): Promise<RestoreSummary> {
-    const url = repositoryUrl(repository);
-    if (await exists(this.library.root)) throw new Error(`A library already exists at ${this.library.root}. Restore needs an empty machine.`);
-    await this.clearLeftovers();
-    await this.inspect(url);
-    await this.clone(url);
+    const url = repositoryUrl(repository), home = this.store.home;
+    const pending = await exists(this.library.root) ? await pendingRestore(home) : undefined;
+    if (pending !== undefined && pending !== url) throw new Error(`The restore from ${pending} did not finish. Restore from it again to finish linking its skills.`);
+    if (pending === undefined) {
+      if (await exists(this.library.root)) throw new Error(`A library already exists at ${this.library.root}. Restore needs an empty machine.`);
+      await this.clearLeftovers();
+      await this.inspect(url);
+      await markRestorePending(home, url);
+      try { await this.clone(url); } catch (error) { await clearRestorePending(home); throw error; }
+    }
     const { packs, tools } = await this.contents();
     const deployed = await deployLibrary(this.library, this.options.now ? { now: this.options.now } : {});
     const settings = await this.store.read();
     settings.independentSkills.Global = [...new Set([...(settings.independentSkills.Global ?? []), ...deployed.linked])].sort();
     await this.store.save(settings);
+    await clearRestorePending(home);
     return {
       repository: url,
       linked: deployed.linked,

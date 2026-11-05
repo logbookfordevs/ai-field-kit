@@ -160,6 +160,25 @@ describe("an interrupted or refused restore", () => {
     expect(await present(library().root)).toBe(false);
   });
 
+  it("finishes a restore whose linking failed once the obstruction is gone, and reports it until then", async () => {
+    await sourceLibrary();
+    await mkdir(join(home, ".agents"), { recursive: true });
+    await writeFile(agents(), "blocking regular file");
+
+    await expect(restorer().restore(remote)).rejects.toThrow();
+    expect(await new Backup(library()).status()).toMatchObject({ library: true, restoring: remote });
+    await expect(restorer().restore(join(sourceHome, "other.git"))).rejects.toThrow(/did not finish/);
+
+    await rm(agents());
+    const summary = await restorer().restore(remote);
+
+    expect(summary.linked).toEqual(["alpha", "beta"]);
+    expect(await readlink(agents("alpha"))).toBe(library().skillPath("alpha"));
+    expect((await store.read()).independentSkills.Global).toEqual(["alpha", "beta"]);
+    expect((await new Backup(library()).status()).restoring).toBeUndefined();
+    await expect(restorer().restore(remote)).rejects.toThrow(/already exists/);
+  });
+
   it("refuses to restore over a machine that already has a library", async () => {
     await sourceLibrary();
     await restorer().restore(remote);
