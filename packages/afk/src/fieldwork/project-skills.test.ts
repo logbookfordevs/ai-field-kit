@@ -236,3 +236,58 @@ it("migrates every present project the first time the app answers, before it lis
     expect(await exists(join(f.root, ".disabled"))).toBe(false);
   } finally { await ops.close(); }
 });
+
+it("keeps edits made after an earlier Manual/Automatic change and resets only the two invocation fields", async () => {
+  const f = await fixture();
+  const own = await f.write(join(f.root, "own"), "own", "Original");
+  await mkdir(join(own, "agents"));
+  await writeFile(join(own, "agents/openai.yaml"), "interface:\n  display_name: Original\n");
+  await writeFile(join(own, ".afk-invocation-original.json"), JSON.stringify({ skill: body("own", "Original"), metadata: "interface:\n  display_name: Original\n" }));
+  await writeFile(join(own, "SKILL.md"), body("own", "UNIQUE PROJECT EDIT", "disable-model-invocation: true\n"));
+  await writeFile(join(own, "agents/openai.yaml"), "interface:\n  display_name: Edited later\npolicy:\n  allow_implicit_invocation: false\n");
+  f.settings.preferences["Studio|own"] = "Manual only";
+  await f.store.save(f.settings);
+
+  await migrateProject(f.store, await f.store.read(), "Studio");
+
+  const skill = await readFile(join(own, "SKILL.md"), "utf8");
+  expect(skill).toContain("UNIQUE PROJECT EDIT");
+  expect(skill).toContain("disable-model-invocation: true");
+  expect(await readFile(join(own, "agents/openai.yaml"), "utf8")).toContain("display_name: Edited later");
+  expect(await exists(join(own, ".afk-invocation-original.json"))).toBe(false);
+});
+
+it("keeps the invocation backup when saving the migrated settings fails, so a retry can finish", async () => {
+  const f = await fixture();
+  const own = await f.write(join(f.root, "own"), "own", "Original");
+  await writeFile(join(own, ".afk-invocation-original.json"), JSON.stringify({ skill: body("own", "Original"), metadata: null }));
+  await writeFile(join(own, "SKILL.md"), body("own", "Edited", "disable-model-invocation: true\n"));
+  const save = f.store.save.bind(f.store);
+  f.store.save = async () => { throw new Error("disk full"); };
+
+  await expect(migrateProject(f.store, await f.store.read(), "Studio")).rejects.toThrow(/disk full/);
+  expect(await exists(join(own, ".afk-invocation-original.json"))).toBe(true);
+  expect(await readFile(join(own, "SKILL.md"), "utf8")).toContain("Edited");
+
+  f.store.save = save;
+  await migrateProject(f.store, await f.store.read(), "Studio");
+  expect(await readFile(join(own, "SKILL.md"), "utf8")).toBe(body("own", "Edited"));
+  expect(await exists(join(own, ".afk-invocation-original.json"))).toBe(false);
+});
+
+it("moves an AFK copy the user edited to a dated recovery folder instead of deleting it", async () => {
+  const f = await fixture();
+  await f.write(join(f.home, ".agents/skills/.disabled/review"), "review", "Library");
+  const override = await f.write(join(f.root, ".afk-overrides/review"), "review", "MY OVERRIDE EDIT", "disable-model-invocation: true\n");
+  await symlink(override, join(f.root, "review"), "dir");
+  f.settings.managedLinks[join(f.root, "review")] = override;
+  await f.store.save(f.settings);
+
+  const result = await migrateProject(f.store, await f.store.read(), "Studio");
+
+  expect(result.movedAside).toHaveLength(1);
+  expect(result.movedAside[0]).toMatchObject({ name: "review", from: override });
+  expect(result.movedAside[0]!.to.startsWith(join(f.home, ".afk/restore-aside/"))).toBe(true);
+  expect(await readFile(join(result.movedAside[0]!.to, "SKILL.md"), "utf8")).toContain("MY OVERRIDE EDIT");
+  expect(await exists(join(f.root, ".afk-overrides"))).toBe(false);
+});
