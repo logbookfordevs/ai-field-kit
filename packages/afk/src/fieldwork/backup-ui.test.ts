@@ -172,3 +172,101 @@ describe("backup actions", () => {
     expect(requests[0]).toEqual({ path: "backup/restore", data: { id: "c2" } });
   });
 });
+
+const edited = { id: "edited:kami", kind: "edited", name: "kami", files: ["SKILL.md"], at: Date.now() - 60_000 };
+const replaced = { id: "replaced:statechart", kind: "replaced", name: "statechart", changed: true };
+
+describe("Needs attention", () => {
+  it("lists each item with its own actions on the Backup screen, with the count in the heading", () => {
+    show(connected({ attention: 2, held: true }, { attention: [edited, replaced] }));
+    evaluate("renderBackup()");
+
+    expect(view.innerHTML).toContain("Needs attention · 2");
+    expect(view.innerHTML).toContain('data-attention="edited:kami"');
+    expect(view.innerHTML).toContain('data-attention="replaced:statechart"');
+    expect(view.innerHTML).toContain("Keep edit");
+    expect(view.innerHTML).toContain("confirmDiscardEdit(0)");
+    expect(view.innerHTML).toContain("takeSkillsUpdate(1)");
+    expect(view.innerHTML).toContain("confirmRestoreSaved(1)");
+  });
+
+  it("shows the section before backup is connected, because these checks are local", () => {
+    show({ status: { library: true, state: "off", waiting: 0, attention: 1, held: true, pushing: false }, attention: [replaced] });
+    evaluate("renderBackup()");
+
+    expect(view.innerHTML).toContain("Needs attention · 1");
+    expect(view.innerHTML).toContain("createBackupRepository()");
+  });
+
+  it("has no section when nothing needs attention", () => {
+    show(connected({ attention: 0 }, { attention: [] }));
+    evaluate("renderBackup()");
+
+    expect(view.innerHTML).not.toContain("Needs attention");
+  });
+
+  it("says saving is paused while edits made outside AFK wait", () => {
+    show(connected({ state: "waiting", waiting: 2, attention: 1, held: true }, { attention: [edited] }));
+    evaluate("renderBackup()");
+    evaluate("renderBackupBox()");
+
+    expect(view.innerHTML).toContain("data-held");
+    expect(box.innerHTML).toContain('data-held="true"');
+  });
+
+  it("puts the same count as the list in the sidebar box", () => {
+    show(connected({ attention: 2 }, { attention: [edited, replaced] }));
+    evaluate("renderBackupBox()");
+
+    expect(box.innerHTML).toMatch(/data-attention-count="2"/);
+  });
+
+  it("shows no count in the sidebar when the list is empty", () => {
+    show(connected({ attention: 0 }, { attention: [] }));
+    evaluate("renderBackupBox()");
+
+    expect(box.innerHTML).not.toContain("data-attention-count");
+  });
+
+  it("keeps an edit, takes an update, and refreshes", async () => {
+    stateReply = connected({ attention: 2 }, { attention: [edited, replaced] });
+    show(stateReply);
+
+    await evaluate<Promise<void>>("keepEdit(0)");
+    await evaluate<Promise<void>>("takeSkillsUpdate(1)");
+
+    expect(requests.filter(entry => entry.path !== "backup/state")).toEqual([
+      { path: "backup/keep", data: { id: "edited:kami" } },
+      { path: "backup/take-update", data: { name: "statechart" } },
+    ]);
+    expect(requests.at(-1)?.path).toBe("backup/state");
+  });
+
+  it("discards an edit and restores the saved version only after confirmation", async () => {
+    stateReply = connected({ attention: 2 }, { attention: [edited, replaced] });
+    show(stateReply);
+    evaluate("confirmDiscardEdit(0)");
+    expect(dialog).toContain("discardEdit(0)");
+    evaluate("confirmRestoreSaved(1)");
+    expect(dialog).toContain("restoreSaved(1)");
+
+    expect(requests).toEqual([]);
+
+    await evaluate<Promise<void>>("discardEdit(0)");
+    await evaluate<Promise<void>>("restoreSaved(1)");
+
+    expect(requests.filter(entry => entry.path !== "backup/state")).toEqual([
+      { path: "backup/discard", data: { id: "edited:kami" } },
+      { path: "backup/restore-saved", data: { name: "statechart" } },
+    ]);
+  });
+
+  it("reports a refused action instead of failing silently", async () => {
+    show(connected({ attention: 1 }, { attention: [edited] }));
+    context.request = async () => { throw new Error("That edit is no longer waiting."); };
+
+    await evaluate<Promise<void>>("keepEdit(0)");
+
+    expect(toasts.at(-1)).toMatch(/no longer waiting/);
+  });
+});
