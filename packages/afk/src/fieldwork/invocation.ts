@@ -68,7 +68,8 @@ export async function setInvocation(store: SettingsStore, settings: Settings, na
   if (!["", "Manual only", "Automatic allowed"].includes(mode)) throw new Error("Choose a supported invocation mode.");
   if (scope !== "Global") return setProjectInvocation(store, settings, name, scope, mode);
   const stored = new SkillLibrary(store).library;
-  if (scope !== "Global" || !await stored.has(name)) return changeInvocation(store, settings, name, scope, mode);
+  const storage = scope === "Global" ? await stored.storage(name) : undefined;
+  if (storage !== "library" && storage !== "pack") return changeInvocation(store, settings, name, scope, mode);
   const choice = mode as InvocationChoice;
   await stored.change(`Set ${name} to ${choice || "its default invocation"}`, async () => {
     await changeInvocation(store, settings, name, scope, choice);

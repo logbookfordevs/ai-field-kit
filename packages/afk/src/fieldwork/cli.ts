@@ -34,7 +34,7 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk kit drop <skill> [--pack <name>]    Stop tracking a skill; its files stay
   afk sync [--agent <agent>] [--yes] [--run-tools]  Make this machine match your kit
   afk migrate [--core <stack-id>] [--apply]  Move old stacks settings to the kit format
-  afk library init [--apply]         Move Core skills into ~/.afk/library; dry run without --apply
+  afk library init [--apply]         Move Core, pack and machine-only skills into AFK storage; dry run without --apply
   afk library confirm                Delete the originals kept after library init
   afk install <url> [--agent <agent>] [-g | -p <folder>] [--yes]
   afk update [--dry-run]             Update AFK itself from the latest release
@@ -133,6 +133,9 @@ async function manage(argv: string[], store: SettingsStore): Promise<number> {
 function describeLibraryInit(plan: LibraryInitPlan, applied: boolean): string {
   const lines = [applied ? `Library started at ${plan.library}.` : `Dry run: nothing changed. Run afk library init --apply to start the library at ${plan.library}.`];
   for (const skill of plan.skills) lines.push(`  ${skill.name} (${skill.on ? "on" : "off"}${skill.record.invocation ? `, ${skill.record.invocation}` : ""}) from ${skill.from}`);
+  for (const skill of plan.packSkills) lines.push(`  ${skill.name} (pack${skill.on ? ", on" : ""}) to the pack cache from ${skill.from}`);
+  for (const skill of plan.machineSkills) lines.push(`  ${skill.name} (this machine${skill.on ? ", on" : ""}) to machine storage from ${skill.from}`);
+  for (const skill of plan.offToolSkills) lines.push(`  ${skill.name} (tool, off) to the off folder from ${skill.from}`);
   if (plan.rules.length) lines.push(`Rules: ${plan.rules.join(", ")}`);
   if (plan.missing.length) lines.push(`Not on this machine: ${plan.missing.join(", ")}`);
   if (plan.toolSkills.length) lines.push(`Provided by tools, left in place: ${plan.toolSkills.join(", ")}`);
