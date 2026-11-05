@@ -1,27 +1,91 @@
-# The kit
+# Your library and the Skills page
 
-The kit is the set of skills that travels with you. It lives in your settings file, so
-every machine that shares that file sees the same kit. The kit is a list of what you want.
-Each machine is then reconciled against it, instead of replaying a saved install plan.
+AFK keeps the skills you manage in **your library**: a Git repository on this machine at
+`~/.afk/library`. Every change AFK makes there (an install, an update, an edit, a new
+pack) is one save with a readable name. **Backup** copies those saves to a private Git
+repository, and **Restore** brings them back on a new or wiped machine.
 
-The Kit page has four tabs:
+The library saves **Core** skills in full. Packs, tools, Try later bookmarks, your
+Manual/Automatic choices, agent folders and agent rules are saved as definitions. Skills
+kept on this machine only, and pack skills once downloaded, stay on this machine and are
+not saved.
 
-- **This machine** shows where your kit and this computer differ.
-- **Core** holds the always-on skills.
-- **Packs** holds groups you turn on when needed.
+## Start a library
+
+If you used AFK before the library, start one from **Start a new library** on the first-run
+screen, on the Backup screen, or in Settings. AFK first shows what it will do:
+
+- Core skills move into the library.
+- Pack skills and skills kept on this machine move into AFK's storage on this machine.
+- Skills a tool installs stay where the tool put them.
+- Core skills missing on this machine are listed and skipped.
+- `AGENTS.md` and its references are copied into the library.
+
+Nothing changes until you choose **Start the library**. AFK then replaces the original
+folders with links, so your agents still find every skill, and keeps the originals in a
+dated folder under `~/.afk/library-backups`. Delete them once everything works.
+
+The same steps from a terminal:
+
+```sh
+afk library init           # dry run: shows the plan, writes nothing
+afk library init --apply   # starts the library
+afk library confirm        # deletes the kept originals
+```
+
+## Backup
+
+The Backup screen connects the library to a private repository:
+
+- **Create a private GitHub repository** uses the GitHub CLI and its sign-in. AFK stores
+  no token.
+- **Use another Git remote** takes any URL Git can push to, with Git's own credentials.
+
+AFK then saves to the remote two minutes after each change. If a save fails, the changes
+wait on this machine and nothing is lost; **Save now** retries. Skill files are not
+scanned for secrets, so keep the repository private.
+
+**History** lists every save. **Go back** restores an earlier one as a new save, so going
+back can be undone too.
+
+**Needs attention** lists changes AFK did not make:
+
+- A stored skill edited outside AFK. **Keep edit** saves the edit; **Discard** puts the saved
+  files back. Saving to the remote pauses while such edits wait.
+- A stored skill replaced by Skills CLI with a plain folder. **Take the update** moves the
+  new files into the library; **Restore saved version** puts the link to the saved version back.
+
+## Restore on a new machine
+
+On a machine without a library, the first-run screen offers **Restore my library**. Pick
+the repository from your GitHub CLI sign-in or paste its address. AFK checks it is an AFK
+library before downloading it, links your Core skills, applies your agent folders and
+Manual/Automatic choices, and leaves packs off. Skills already here with identical files
+are adopted; different ones move to a dated folder, so nothing is lost. Tools are listed
+for you to run; none runs unless you tick it.
+
+```sh
+afk library connect owner/afk-library
+afk library connect git@github.com:owner/afk-library.git --run-tools all
+```
+
+## The Skills page
+
+The Skills page has five tabs:
+
+- **Core** holds the skills saved in full in your library, grouped by repository. A Core
+  skill missing on this machine has an **Install** button on its row.
+- **Packs** holds groups of skills you turn on when you need them.
+- **This machine only** holds skills that stay on this computer and are not saved.
 - **Try later** holds repository bookmarks.
+- **To review** lists skills installed outside AFK, so you can decide where each belongs.
 
-## Core
-
-Core is the skills you want on every machine, always on. It is grouped by original
-repository and stored in `kit.core` as `{source, name?, skills, follow?}` entries. A skill
-belongs to one Core source. Core is Global only; use a pack for a project.
+Each row has an on/off switch, the Manual/Automatic choice, a backup chip, **Update**,
+**Inspect** and a **⋯** menu (Add to pack, Edit files, Drop from Core, Delete). Select
+several rows to turn them on or off, change their invocation, update or delete them
+together.
 
 AFK ships no default Core. You choose what goes in it.
-
-Add skills from This machine, from the `afk kit add` command, or with **Install skills**
-(see [Installing](#installing)). **Export JSON** in Core publishes it as a
-manifest (see [Share a pack with a manifest](#share-a-pack-with-a-manifest)).
 
 ### Follow a repository
 
@@ -32,27 +96,21 @@ them and never installs them automatically. Add the ones you want with
 
 ## Packs
 
-A pack is a named group of skills, possibly from several repositories. Turn it on for
-Global or a project, or read its instructions once without turning it on. Packs replace
-the earlier profiles and stacks.
+A pack is a named group of skills, possibly from several repositories. Packs are Global:
+turn one on or off, or read its instructions once without turning it on. The library
+saves the pack's definition; its skills download the first time you turn it on.
 
-- Skills download once into a private disabled store. Turning a pack on links them into the
-  selected scope. Turning it off removes only AFK-owned links.
+- Turning a pack off removes only AFK's links. The downloaded skills stay ready.
 - A skill belongs to one source in a pack. A pack that selects one skill from two
   sources is rejected.
-- A pack that is on can be edited. It stays on, added skills are exposed, and dropped
-  skills lose only AFK-owned links. If an edit fails, AFK restores the pack.
-- Remove a pack after it is off everywhere. Stored skill files remain.
-
-Packs are stored in the `profiles` array of the settings file, with their original IDs.
-Activation is local to each machine and keyed by a hash of the pack's source, skills and
-groups. The optional fields `description`, `origin` and `sourceNames` are display
-metadata and don't change that hash.
+- A pack that is on can be edited. It stays on, added skills appear, and dropped skills
+  lose only AFK's links.
+- Remove a pack after it is off. Downloaded skill files remain.
 
 ```sh
 afk packs use "My pack"
-afk packs enable "My pack" Global
-afk packs disable "My pack" "Project name"
+afk packs enable "My pack"
+afk packs disable "My pack"
 ```
 
 `afk profiles` still works as an alias. Names match without case sensitivity; duplicate
@@ -60,24 +118,24 @@ names need the pack ID.
 
 ## Installing
 
-**Install skills** on the Kit page, or `afk add <repository>`, is one place to install from.
-Skills CLI does the work. AFK lists the repository's skills first, from a temporary download,
-so you can read each `SKILL.md` before anything is installed. You then choose where they go:
+**Install skills** on the Skills page, or `afk add <repository>`, is one place to install
+from. Skills CLI does the work. AFK lists the repository's skills first, from a temporary
+download, so you can read each `SKILL.md` before anything is installed. You then choose
+where they go:
 
 | Destination | What happens |
 | --- | --- |
-| Core | Installs now and joins Core, so other machines see it as missing until they sync. |
+| Core | Installs into your library and joins Core, so your backup saves it. |
 | A pack | Downloads into an existing or new pack. The pack stays on or off as it was. |
-| This machine | Installs and stays out of the kit. A project choice installs there instead. |
+| This machine | Installs and stays out of your library. A project choice installs there instead. |
 | Try later | Saves a bookmark and installs nothing. With no skills picked, it covers the repository. |
 
-A skill installed this way never appears under **Not in your kit**. AFK remembers your last
-destination and agent, and asks the first time. A failed installation adds nothing to the kit.
+AFK remembers your last destination and agent. A failed installation changes nothing.
 
 Skills already installed from that repository are adopted without reinstalling. A skill
-installed from another repository is left unticked, with a warning, because installing replaces
-it. Ticking it approves the replacement; in the CLI, pass `--replace`. A skill a tool provides
-is left out, and AFK names the tool.
+installed from another repository is left unticked, with a warning, because installing
+replaces it. Ticking it approves the replacement; in the CLI, pass `--replace`. A skill a
+tool provides is left out, and AFK names the tool.
 
 ```sh
 afk add owner/repo
@@ -87,61 +145,51 @@ afk add owner/repo --skill review --here --project Work --yes
 afk add owner/repo --later --yes
 ```
 
-Without a skill and destination, a terminal asks for them. Unattended runs need `--skill` or
-`--all`, a destination and `--yes`. For a published manifest URL, use `afk install`.
+Without a skill and destination, a terminal asks for them. Unattended runs need `--skill`
+or `--all`, a destination and `--yes`. For a published manifest URL, use `afk install`.
 
-To catch up one missing skill, use **Install** on its row under **Missing here**, or **Turn on**
-if it's installed but off. A tool's row offers **Run install command**, which shows the saved
-command first. **Install all…** opens the sync review.
+### Uploads
+
+The install dialog also takes a `.zip`, a `.skill` file or a folder. AFK checks it before
+writing anything (no unsafe paths, no symlinks, a size limit, at least one `SKILL.md`),
+then lets you send the skills to Core, a pack or this machine. Uploaded skills in Core or
+a pack are saved in full, because they can't be downloaded again. They never update
+automatically, and a pack or Core that contains them can't be exported as a manifest.
+
+## Editing a skill
+
+**Edit files** in a row's **⋯** menu opens the editor: the skill's files on the left, plain
+text with a Markdown preview on the right. Saving makes one save named `Edit <name>` and
+reapplies your Manual/Automatic choice. For a skill that updates from a repository, the
+first save asks whether to **keep your version** (its updates stop) or **let updates
+replace your edits**. Tool skills, pack skills and skills AFK does not store open read-only.
 
 ## Try later
 
-Try later is the earlier source bookmarks (`favoriteSources`), unchanged. A bookmark can
-select specific skills. Saving one installs nothing. Use a bookmark to copy a command, run
-an install, or create a pack draft.
+Try later holds repository bookmarks (`favoriteSources`). A bookmark can select specific
+skills. Saving one installs nothing. Use a bookmark to copy a command, install, or start
+a pack.
 
-## Skills that aren't in your kit yet
+## To review
 
-This machine lists installed, available Global skills that are not in Core, a pack, a tool
-or machine-only. For each one, choose:
+To review lists installed Global skills that are not in Core, a pack, a tool or this
+machine only. For each one, choose:
 
-- **Core**, to keep it on every machine.
+- **Core** (or **Add to library**), to save it in your library.
 - **Pack**, to add it to a pack.
-- **This machine only**, to keep it here and stop being asked. The choice is stored in
-  `~/.afk/local`, never in the portable file. `afk kit keep <skill>` does the same.
+- **This machine only**, to keep it here and stop being asked. `afk kit keep <skill>` does
+  the same.
 - **Remove**, to delete it from this machine.
 
-A skill without a repository source can't go to Core, because another machine couldn't
-install it. Link it to a tool or keep it on this machine only.
+A skill without a repository source can't be reinstalled elsewhere; link it to a tool or
+keep it on this machine only.
 
 ## Tools that provide skills
 
-A tool can list the skills it installs and updates in `provides`. The kit then tracks the
-tool instead of each skill. Installed Skills labels those skills, and `afk skills update`
-and the app's update skip them or refuse to update them by name. Update them with the
-tool's own command.
-
-## Sync
-
-```sh
-afk sync [--agent <agent>] [--yes] [--run-tools]
-```
-
-Sync makes this machine match the kit. It shows the plan, then asks before changing
-anything:
-
-- It installs missing Core skills through Skills CLI, grouped by repository.
-- It turns Core skills back on that are installed but off.
-- It lists tools whose provided skills are missing. A tool's saved install command runs
-  only when you approve it: interactively, with `--run-tools`, or by ticking it in the
-  app's sync review.
-
-Sync never removes anything. `--yes` skips the confirmation for skills but not for tool
-commands. The agent defaults to `universal`; the other choices are `codex`, `claude-code`,
-`cursor` and `opencode`.
-
-Dropping a skill from the kit keeps its files. Other machines then show it as not in
-your kit.
+A tool can list the skills it installs and updates in `provides`. AFK then tracks the tool
+instead of each skill: its skills stay where the tool writes them, outside the library,
+and `afk skills update` skips them. Update them with the tool's own command. Turning one
+off moves it to `~/.afk/off`. Restore lists your tools for you to run.
 
 ## Commands
 
@@ -155,9 +203,9 @@ afk kit unfollow <repo>
 afk kit check
 ```
 
-`afk kit` compares the kit with this machine. Nothing here installs a skill; run
-`afk sync` for that. Run `afk manage describe` for the matching operations (`kit/state`,
-`kit/add`, `kit/drop`, `kit/machine-only`, `kit/follow`, `kit/upstream`, `kit/sync`).
+`afk kit` compares Core with this machine. Nothing here installs a skill; use `afk add`.
+Run `afk manage describe` for the matching operations (`kit/state`, `kit/add`, `kit/drop`,
+`kit/machine-only`, `kit/follow`, `kit/upstream`).
 
 ## Share a pack with a manifest
 
@@ -259,9 +307,9 @@ Without `--apply` the command prints what would change and writes nothing.
   preferences are unchanged. The saved skills list is retired.
 - Migration never moves, installs or deletes skill files.
 
-Before it writes, AFK keeps the old file permanently as `~/.afk/backups/pre-kit-*.json`,
-outside the 20-file rotation. Restore it with `afk settings restore <name>`. The apply
-step refuses a file that changed since the dry run, and a final check stops the write if
+Before it writes, AFK keeps the old file permanently as `~/.afk/backups/pre-kit-*.json`.
+To undo the migration, copy that file back over your `settings.json`. The apply step
+refuses a file that changed since the dry run, and a final check stops the write if
 anything outside the intended change would be lost.
 
-Settings or ZIP files from version 1 import with an empty Core.
+Migrate before you start a library: the library starts from the migrated settings.

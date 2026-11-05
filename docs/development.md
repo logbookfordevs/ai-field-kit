@@ -29,8 +29,8 @@ child tool processes. Status, stop and restart address only that machine’s
 background instance; a foreground server is independent. The restart command verifies and stops the instance before starting a replacement on
 the same port and current settings path. Changed terminal environment settings do
 not override that path. If shutdown is still draining operations, restart reports
-the wait rather than starting another process. Runtime records and logs live under `~/.afk/`, rather than
-in the portable AFK folder. Use a temporary home for lifecycle tests.
+the wait rather than starting another process. Runtime records and logs live under `~/.afk/`, outside
+the library. Use a temporary home for lifecycle tests.
 
 Every outside command (Skills CLI, tool commands, the AFK installer) starts through
 `command-runner.ts`, which enforces a silence limit and an overall limit, kills the
@@ -45,7 +45,7 @@ AFK background server, and clears the record.
 
 `afk skills update -g` and `afk skills update -p <project>` delegate updates in an
 isolated workspace, then replace existing stored copies. Use temporary homes and
-receipts to test update failures, disabled skills, shared Claude links and
+receipts to test update failures, skills that are off, agent folder links and
 intervening edits. The web app uses the same `skills/update` operation;
 `skills/update-state` exposes session progress without waiting for the mutation queue.
 
@@ -68,10 +68,14 @@ node --check packages/afk/web/invocation-info.js
 node --check packages/afk/web/skill-schedule.js
 node --check packages/afk/web/agent-folders.js
 node --check packages/afk/web/editor.js
+node --check packages/afk/web/skills.js
+node --check packages/afk/web/backup.js
+node --check packages/afk/web/first-run.js
 ```
 
-The test command runs skill/settings/server, rule-sync and portable ZIP regressions,
-plus the installer test.
+The test command runs skill, library, backup, restore, settings, server and rule-sync
+regressions, plus the installer test. Library and backup tests use a temporary home, an
+isolated Git config and a local bare repository as the remote; they never contact GitHub.
 The server test requires permission to bind a loopback port. Use a temporary home
 and fixture skills for activation tests; a read-only inventory check can use real
 skills without changing them. Confirm persistence failures, overlap handling,
@@ -87,20 +91,20 @@ schema and local consistency without mutation, and `settings-schema.ts` supplies
 editor guidance while the runtime validator owns cross-field validation.
 `stacks.ts` still owns the versioned manifest contract and bounded HTTPS JSON
 fetching. Its script generation and stack storage are gone; manifests are the
-publish format for packs. `kit.ts` compares the kit with one machine's Global
-inventory and builds the sync plan. `kit-cli.ts` implements `afk kit`, `afk sync`
-and `afk migrate`. `migration.ts` is a pure mapping from version 1 stacks to Core
+publish format for packs. `kit.ts` compares Core with one machine's Global
+inventory. `kit-cli.ts` implements `afk kit`, `afk add` and `afk migrate`. `migration.ts` is a pure mapping from version 1 stacks to Core
 and packs, with `assertNothingLost` as its last check; `SettingsStore.save` is the
 single gate that refuses writes to a version 1 file with stacks. Pack definitions
 must stay byte-identical across migration because machine-local activation is keyed
-by their hash. `skill-install.ts` runs explicit saved-source and kit sync
-installation jobs through Skills CLI; state/cancellation operations bypass
+by their hash. `skill-install.ts` runs explicit installation jobs through Skills CLI; state/cancellation operations bypass
 the mutation queue. Use temporary homes and a local repository for browser tests. Keep its exported schema synchronized with
 `docs/schemas/skill-stack.v1.schema.json`; the schema regression checks equality.
-`rules.ts` owns canonical rule files and managed destination regions; `bundle.ts`
-owns portable ZIP validation and restoration. Rule operations use temporary target
-files in tests; they must preserve surrounding text and restore owned changes after
-failed writes. Importing a bundle never writes agent destinations.
+`rules.ts` owns canonical rule files and managed destination regions. Rule operations use
+temporary target files in tests; they must preserve surrounding text and restore owned
+changes after failed writes. `library.ts` owns the library repository, storage and links;
+`library-init.ts` starts a library (`library/init-preview`, `library/init`, `afk library
+init`), `library-backup.ts` pushes it, `library-restore.ts` restores it and
+`library-checks.ts` finds edits made outside AFK.
 `agent-table.ts` is Skills CLI 1.7.6's agent table (folders, detection, known invocation mechanisms); `agent-folders.ts` builds the Agent folders list and validates custom folders, and the library saves the enabled ones in `.afk/settings.json`. Agent icons in `web/assets/agent-icons/` are Skills Manager's, with its MIT notice beside them.
 The app's HTML and JavaScript live under `web/`; its fonts are bundled locally.
 
@@ -116,7 +120,7 @@ through shared operations are serialized within the process. Direct settings
 edits and separate processes require checking for intervening changes; AFK does
 not reconcile concurrent writers. Tool execution is explicit and its result survives closing the
 dialog during the session. Repository preparation uses an isolated temporary home;
-only selected skill copies are kept in the shared disabled store.
+only selected skill copies are kept in AFK's storage.
 
 Read root PRODUCT.md for scope, the product spec for behavior, and the scoped
 web DESIGN.md for interface work. Root DESIGN.md remains the brand reference.

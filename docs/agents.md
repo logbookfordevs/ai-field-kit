@@ -1,7 +1,7 @@
 # Manage AFK with an agent
 
-The `afk-cli` skill lets your agent manage the same local skills, kit, packs,
-sources, tools, Agent rules, and settings as the web app. AFK bundles the skill
+The `afk-cli` skill lets your agent manage the same library, backup, skills, packs,
+sources, tools, agent folders, projects, Agent rules and settings as the web app. AFK bundles the skill
 and its workflow references. Run `afk guide` to get the absolute `SKILL.md` path,
 then have your agent read that file. This works without installing the skill into
 the agent's skill directory; `afk --help` includes this instruction.
@@ -90,16 +90,11 @@ project also supplies its current name as `previous`.
 
 ## Use the kit
 
-Run `afk kit` to compare the kit with this machine, or `kit/state` for the same data and the
-exact sync plan as JSON. Add and drop skills with `afk kit add` and `afk kit drop`, or
-`kit/add` and `kit/drop`. These change the kit, not the installed files. Use
+Run `afk kit` to compare Core with this machine, or `kit/state` for the same data as
+JSON. Add and drop skills with `afk kit add` and `afk kit drop`, or `kit/add` and
+`kit/drop`. These change Core, not the installed files. A Core skill missing here
+installs with `kit/install` (`to: "core"`) from its source. Use
 `afk manage describe kit/add` for the payload.
-
-`afk sync` (`kit/sync`) makes this machine match the kit. Review the plan with the user
-first. Sync installs missing Core skills and turns Core skills back on; it never removes
-anything. A tool's saved install command runs only after the user approves it: pass
-`--run-tools`, or list the tool IDs in `runTools`. Without that, those commands are
-skipped.
 
 If a write fails with a message that settings use the old stacks format, run
 `afk migrate`. It is a dry run and writes nothing. Show the report, let the user choose
@@ -140,7 +135,7 @@ JSON
 
 Read the saved command and replace `123` with the actual tool ID. An empty update
 command reuses install. Inspect output and exit status to verify execution.
-Use `kit/install`, `source/install` or `kit/sync` for authorized installation, and inspect
+Use `kit/install`, `kit/upload-install` or `source/install` for authorized installation, and inspect
 `skills/install-state` for progress and results. `skills/install-cancel` stops
 remaining installation work while keeping completed or partial files.
 Use `afk skills update [name] -g` or `afk skills update [name] -p <project>` for
@@ -157,7 +152,7 @@ has loaded the files.
 
 ## Save rules, then preview and sync
 
-Use `rules/state` to locate the canonical AFK folder. Edit its `AGENTS.md` and
+Use `rules/state` to locate the canonical rules folder (`rules/` in the library). Edit its `AGENTS.md` and
 Markdown under `references/`, or use `rules/save`. Save alone leaves agent
 destination files unchanged. Configure destinations through `rules/destination`.
 
@@ -196,17 +191,22 @@ and saving; `rules/overwrite` requires the reviewed region and preview. Neither
 choice should be inferred from a request to sync. Disconnect can remove owned
 content or leave files while forgetting management.
 
-## Transfer or change the AFK folder
+## Library, backup and restore
 
-Use `workspace`/`location` for folder selection or moves; direct file moves do
-not maintain AFK's local pointer. `settings export` and `import` transfer settings
-only. `bundle/export`, `bundle/preview`, and `bundle/import` transfer the portable
-folder with saved rules and references.
+`backup/state` reports whether a library exists, its remote, saves waiting to be
+pushed, history and Needs attention items. With no library, `library/init-preview`
+shows what starting one would move, and `library/init` applies that exact preview
+(`{"expected": <preview>}`); the CLI equivalent is `afk library init [--apply]`, then
+`afk library confirm` once the user has checked the result. `backup/connect` or
+`backup/create` connect a remote, `backup/save` pushes now and `backup/restore` goes back
+to an earlier save as a new one. On a machine with no library, `restore/inspect` then
+`restore/start`, or `afk library connect <owner/repo | url>`, restore it; tools run only
+when the user names them.
 
-Review local project/destination mappings before import. Turn packs off,
-disable individual skills and resolve managed links first. ZIP import also requires
-disconnecting managed rule destinations before replacing their ownership. Imported
-configuration does not install skills, execute tools, or sync rules. Turn on packs, run `afk sync`,
-and preview/sync rules the requested effects separately on the receiving
-machine. A storage provider can transport the folder; AFK does not reconcile
-concurrent edits or apply another machine's ownership automatically.
+`agent-folders/state` lists the folders AFK links skills into; `agent-folders/enable`,
+`disable`, `add` and `remove` change them as one library save. Projects manage their own
+repository skills; `skills-sharing/*` links a project's Claude folder to its
+`.agents/skills` and does not apply to Global.
+
+Restore and backup move the library through Git. AFK does not reconcile two machines
+editing the same library at once.

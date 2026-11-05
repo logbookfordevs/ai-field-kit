@@ -4,31 +4,41 @@ Run `afk manage describe <operation>` for current payloads. Read the relevant br
 
 ## Settings definitions
 
-Resolve the file with `afk settings path`; read current JSON with `afk settings show` and guidance with `afk settings schema`. `show` returns defaults when no file exists. The runtime validator is authoritative: `afk settings validate [file]` validates JSON and exits nonzero on invalid input; it does not apply filesystem changes.
+Once a library exists (`backup/state` reports `library: true`), settings live in it and every operation that changes them makes one library commit; edit them through operations, not files. Before that, resolve the file with `afk settings path`; read current JSON with `afk settings show` and guidance with `afk settings schema`. `show` returns defaults when no file exists. The runtime validator is authoritative: `afk settings validate [file]` validates JSON and exits nonzero on invalid input; it does not apply filesystem changes.
 
-AFK snapshots `settings.json` into `~/.afk/backups/` before a save replaces it. `afk settings backups` lists them; `afk settings restore <name>` restores one after snapshotting the current file. A save refused with "different AFK configuration" means the file on disk belongs to another configuration: check the backups instead of forcing the write.
+A save refused with "different AFK configuration" means the file on disk belongs to another configuration: report it instead of forcing the write.
 
-Direct edits are for `favoriteSources`, `tools` (including `provides`), `kit`, and inactive project definitions. Preserve the rest of the current document, especially `profiles` (the packs), `preferences`, `managedLinks`, `independentSkills`, and `agentRules` destinations/receipts. Prepare a candidate, validate it, check that the original has not changed, then replace it. Prefer `project/save` for project changes because it handles renames and associated state. Pack preparation, activation, invocation, rule ownership, and import use AFK operations.
+Direct edits are for `favoriteSources`, `tools` (including `provides`), `kit`, and inactive project definitions. Preserve the rest of the current document, especially `profiles` (the packs), `preferences`, `managedLinks`, `independentSkills`, and `agentRules` destinations/receipts. Prepare a candidate, validate it, check that the original has not changed, then replace it. Prefer `project/save` for project changes because it handles renames and associated state. Pack preparation, activation, invocation and rule ownership use AFK operations.
 
 `afk doctor --json` checks schema and local drift, including rule references. It is read-only. Read its findings and repair each through the relevant workflow; a clean report does not prove a running agent has loaded instructions.
 
-## Kit and packs
+## Library, backup and restore
 
-Use `state` for inventories, pack IDs, readiness, and enabled targets, and `kit/state` for the kit compared with this machine. Scope is `Global` or an exact saved project name. Core is Global only.
+- Start: with no library, `library/init-preview` shows what would move; show it and apply only the approved preview with `library/init` (`{"expected": <preview>}`), or `afk library init` then `--apply`. Originals stay in `~/.afk/library-backups` until the user runs `afk library confirm`.
+- Back up: `backup/create {name}` (private GitHub repository through the GitHub CLI) or `backup/connect {url}`. AFK pushes two minutes after each change; `backup/save` pushes now. Never pass a URL containing a token.
+- History: `backup/state` lists saves; `backup/restore {id}` goes back as a new save.
+- Needs attention: `backup/state.attention` items need the user's choice: `backup/keep` or `backup/discard` for edits outside AFK, `backup/take-update` or `backup/restore-saved` for a folder Skills CLI replaced.
+- Restore: on a machine with no library, `restore/inspect` then `restore/start {repository}`, or `afk library connect <owner/repo | url> [--run-tools <ids|all>]`. Run listed tools only with the user's approval.
+- Agent folders: `agent-folders/state`, then `agent-folders/enable|disable {path}` or `add {name, global, project?}` / `remove {path}`. Skills that are on, tool skills included, are linked into every enabled folder.
 
-- Compare: `afk kit` or `kit/state`. It lists Core status, tool-owned skills, installed skills not yet in the kit, and the sync plan.
-- Add or drop: `afk kit add <skill>... [--pack <name>] [--source <repo>]` and `afk kit drop <skill>`. These edit the kit and install nothing. A skill without a repository source cannot go to Core; link it to a tool (`provides`) or run `afk kit keep <skill>` to keep it on this machine only.
+## Core and packs
+
+Use `state` for inventories, pack IDs, readiness, and enabled targets, and `kit/state` for Core compared with this machine. Scope is `Global` or an exact saved project name. Core and packs are Global; a project manages only its own repository skills (install, update, delete, invocation), always on.
+
+- Compare: `afk kit` or `kit/state`. It lists Core status, tool-owned skills, skills to review and machine-only skills.
+- Add or drop: `afk kit add <skill>... [--pack <name>] [--source <repo>]` and `afk kit drop <skill>`. These edit Core or a pack and install nothing. `skill/adopt` stores a skill installed outside AFK in the library or on this machine. A skill without a repository source cannot go to Core; link it to a tool (`provides`) or run `afk kit keep <skill>` to keep it on this machine only.
 - Install: `afk add <repo> [--skill <name>]... [--all] [--core | --pack <name> | --here [--project <name>] | --later] [--replace] --yes`, or `kit/install-preview` then `kit/install`. Show the user the skills from the preview and read them with `kit/install-read` when asked. Destination is the user's decision. `--replace` needs their approval for each skill installed from another repository. Skills a tool provides are refused; use that tool.
-- Catch up one skill: `kit/sync` with the exact plan and `only: [name]`.
-- Sync: show the plan from `kit/state`, then run `afk sync` or `kit/sync` with that exact plan. Sync installs missing Core skills and turns Core skills back on. It removes nothing. Run a tool's install command only after the user approves that command, with `--run-tools` or `runTools`.
+- Missing Core skill: `kit/install` with its Core source, `names: [name]` and `to: "core"`.
+- Upload: `kit/upload-preview` (archive, files or folder) then `kit/upload-install`. Uploaded skills never update and block manifest export.
+- Edit: `skill/editor` reads a stored Global skill's files; `skill/edit` saves one file as one commit. Ask the user for `updates` (`keep` or `replace`) the first time for a skill with a repository source.
 - Follow: `afk kit follow <repo>`, then `afk kit check` lists new upstream skills. Add the ones the user chooses; nothing installs automatically.
-- Create/edit a pack: discover repository or Global members with `discover`, choose explicit skill names, then `pack/save`. Saving a remote pack prepares missing selected copies in shared disabled storage and preserves existing copies. For several repositories pass `groups` (`[{source, skills}]`, each skill from one source). A pack that is on can be edited. Turn it off everywhere before removing it.
-- Turn on or off: `afk packs enable <id> [scope]` / `disable`, or `activation`. This is additive and owns discovery links. Turning off preserves overlapping packs, independent availability, and preexisting files.
+- Create/edit a pack: discover repository or Global members with `discover`, choose explicit skill names, then `pack/save`. Skills download when the pack is first turned on, or now with `prepare: true`. For several repositories pass `groups` (`[{source, skills}]`, each skill from one source). A pack that is on can be edited. Turn it off everywhere before removing it.
+- Turn on or off: `afk packs enable <id>` / `disable`, or `activation` with `Global`. Turning off removes only AFK's links and preserves overlapping packs and preexisting files.
 - `/afk-cli use pack <name>` means read that pack for this conversation. Match names without case sensitivity; quote names containing spaces when passing them to the shell. Use an ID to resolve duplicate names.
-- Read a pack for this conversation: run `afk packs use <name-or-id>` or `pack/read`, then read the returned instructions and relevant supporting resources. This includes prepared disabled members and leaves activation unchanged.
+- Read a pack for this conversation: run `afk packs use <name-or-id>` or `pack/read`, then read the returned instructions and relevant supporting resources. This includes downloaded members that are off and leaves activation unchanged.
 - Share: `pack/manifest` returns a pack or `core` as a manifest. `pack/import-preview` then `pack/import` saves a reviewed manifest, passing both `pack` and `expected` unchanged. Neither installs anything.
 - Inspect a skill: `afk skills get <name> [scope]` reads SKILL.md; `skill/read` also lists supporting files and can read a chosen relative file.
-- Set individual availability with `skill/availability`, supplying the desired `enabled` boolean. Retries preserve that state. Turn off packs that own the skill before changing its individual availability. Invocation uses `invocation` and is independent of availability. Inspect the supported modes and current override before changing them; a project override can create an isolated copy, and reset restores its original/shared metadata behavior.
+- Set individual availability with `skill/availability`, supplying the desired `enabled` boolean. Retries preserve that state. Turn off packs that own the skill before changing its individual availability. Project skills are always on. Invocation uses `invocation` and is independent of availability; inspect the current choice before changing it.
 
 Verify inventories and enabled targets after availability changes, native metadata after invocation changes, and actual output after reads. Turning a skill off does not erase instructions already read in a conversation.
 
@@ -48,20 +58,10 @@ For installed-skill updates, use `skills/update` with the requested scope, or `a
 
 ## Agent rules
 
-Read `rules/state` for the AFK folder, canonical files, saved hash, destinations, and conflicts. Author `AGENTS.md` and supporting Markdown under `references/` in that folder directly, or use `rules/save` with the full intended file set and the inspected `expectedHash`. Reference placeholders such as `{{development.md}}` resolve under `references/`; fix unresolved references before sync. Saving changes canonical content only.
+Read `rules/state` for the rules folder, canonical files, saved hash, destinations, and conflicts. Author `AGENTS.md` and supporting Markdown under `references/` in that folder directly, or use `rules/save` with the full intended file set and the inspected `expectedHash`. Reference placeholders such as `{{development.md}}` resolve under `references/`; fix unresolved references before sync. Saving changes canonical content only.
 
 Use `rules/destination` to register or update explicit destination files. Use `rules/preview` for selected IDs; inspect region changes, reference copies, backups, and errors. Apply with `rules/sync`, supplying the same IDs and exact preview object. A stale snapshot requires a fresh preview and review. Verify `rules/state` and the actual destination region/reference files. AFK preserves text outside its managed region. A Claude or custom destination can set `claudeMdImport: true` so sync also keeps an `@AGENTS.md` import in the neighbouring `CLAUDE.md`; the preview then lists that file as a separate change.
 
 Conflicts require a deliberate choice from the user to adopt target edits or overwrite them. Inspect `rules/existing` and the preview first. `rules/adopt` returns a canonical draft and updates local ownership; review and save that draft, then preview/sync. `rules/overwrite` uses the reviewed `expectedRegion` and `expectedPreview`; preserve text outside the region. Broken or duplicate markers require manual boundary repair rather than an overwrite guess.
 
 Use `rules/disconnect` with the chosen cleanup behavior: remove unchanged owned content, or leave files and forget management. Verify the resulting state and surrounding user content. Sync does not prove a running client has reloaded instructions; verify discovery through that client's reload/context behavior separately.
-
-## Portable configuration
-
-Use `workspace` or `location` to choose/move the AFK folder/settings file; AFK copies canonical Markdown and records the local pointer. Inspect the resolved path afterward, including any `AFK_SETTINGS` override. For switching ownership, turn packs off, disable active skills and disconnect managed destinations first. Let AFK enforce its preconditions rather than clearing receipts by hand.
-
-`afk settings export <file>` exports configuration only and refuses to overwrite an existing file. Use `import` for reviewed settings JSON; turn packs off, disable individual skills and resolve managed links first. Import resets readiness, activation, and link/individual receipts while retaining local rules ownership. A version 1 file imports with an empty Core. Review local project paths and turn packs on intentionally afterward.
-
-Use `bundle/export`, `bundle/preview`, and `bundle/import` for the portable AFK folder, including saved Markdown. Preview the archive and supply reviewed local destination and project mappings. Turn packs off, disable active skills and disconnect rules before replacing the folder. Import resets local ownership and does not execute tools, install skills, or sync rule destinations. Verify saved files and state, then turn on packs, run `afk sync`, and preview/sync rules only for the requested effects.
-
-Transport through Git or a synced folder belongs to the chosen provider. AFK does not commit/push files, fetch rules repositories, or reconcile concurrent machines; ownership and destination paths remain machine-local.
