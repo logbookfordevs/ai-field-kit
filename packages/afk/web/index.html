@@ -87,6 +87,14 @@ kbd{font-size:12px;border:1px solid var(--border);border-bottom-width:2px;border
 .backup-panel,.backup-contents{display:grid;align-content:start;gap:8px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-lg,8px);background:var(--surface)}
 .backup-panel label{display:grid;gap:4px}
 .backup-save{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:center}
+.first-run-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:12px 0}
+.first-run-choice{display:grid;align-content:start;justify-items:start;gap:6px;min-height:44px;padding:16px;text-align:left;font-weight:400;border:1px solid var(--border);border-radius:var(--radius-lg,8px);background:var(--surface)}
+.first-run-choice:hover,.first-run-choice:focus-visible{border-color:var(--accent)}
+.first-run-repository{padding:10px 0}
+.first-run-url{display:grid;gap:4px;margin-top:12px}
+.first-run-command{margin:8px 0;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);overflow-x:auto}
+.first-run-aside{display:grid;gap:4px;margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:var(--radius-lg,8px);background:var(--bg)}
+.first-run-aside p{margin:0;overflow-wrap:anywhere}
 .attn{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 16px;align-items:center}
 .attn p{margin:2px 0 0}
 .attn .inline{flex-wrap:wrap;justify-content:flex-end}
@@ -1269,6 +1277,7 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 <script src="/agent-folders.js"></script>
 <script src="/app-update.js"></script>
 <script src="/backup.js"></script>
+<script src="/first-run.js"></script>
 <script src="/runtime-status.js"></script>
 <script src="/client.js"></script>
 </body>
