@@ -331,15 +331,20 @@ showSkillUpdate=(selection)=>{
   modal(title,`<p>Update ${subject} in ${esc(scope)} through Skills CLI. Available skills stay available; disabled skills stay disabled. Your AFK invocation preferences are kept.</p>${members}<p class="hint">Updates are prepared separately before replacing stored files.</p><div id="skillUpdateOutput" role="status" aria-live="polite"></div>`,button('Close','closeModal()','text')+button(skillUpdateRunning?'View progress':selected?'Update selected':'Update skills','executeSkillUpdate()', 'primary'));
   pollSkillUpdate();
 };
+function updateElapsed(result){
+  const seconds=Math.max(0,Math.floor(((result.finishedAt||Date.now())-(result.startedAt||Date.now()))/1000));
+  return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+}
 function renderSkillUpdate(result){
   const output=$('skillUpdateOutput');if(!output||!result)return;
   if(result.scope!==scope&&!result.pending&&output.dataset.jobScope!==result.scope)return;output.dataset.jobScope=result.scope;
+  const clock=output.querySelector('[data-elapsed]');if(clock&&result.startedAt)clock.textContent=updateElapsed(result);
   const signature=JSON.stringify(result);if(output.dataset.updateSignature===signature)return;output.dataset.updateSignature=signature;
   const stage=result.code? -1:result.phase.startsWith('Preparing')?0:result.phase.startsWith('Updating through')?1:2;
   const stages=['Prepare','Update','Apply'];
   const steps=stages.map((label,index)=>`<li class="${result.code===0||index<stage?'complete':index===stage?'current':''}"><span>${result.code===0||index<stage?'✓':index+1}</span>${label}</li>`).join('');
   if(!output.querySelector('[data-update-summary]'))output.innerHTML='<div data-update-summary></div><details><summary>Skills CLI output</summary><pre></pre></details><p><button type="button" class="text danger" data-cancel-update onclick="cancelSkillUpdate()">Cancel update</button></p>';
-  output.querySelector('[data-update-summary]').innerHTML=`<p class="meta">${esc(result.scope)} update${result.names?' · '+esc(result.names.join(', ')):''}</p><ol class="update-steps" aria-label="Update stages">${steps}</ol><p class="update-phase">${result.pending?'<span class="update-spinner" aria-hidden="true"></span>':''}<strong>${esc(result.phase)}</strong></p>${result.updated!==undefined?`<p>${result.updated} stored ${result.updated===1?'skill':'skills'} updated. Availability preserved.</p>`:''}`;
+  output.querySelector('[data-update-summary]').innerHTML=`<p class="meta">${esc(result.scope)} update${result.names?' · '+esc(result.names.join(', ')):''}</p><ol class="update-steps" aria-label="Update stages">${steps}</ol><p class="update-phase">${result.pending?'<span class="update-spinner" aria-hidden="true"></span>':''}<strong>${esc(result.phase)}</strong></p>${result.startedAt?`<p class="meta">${result.item?esc(result.item)+' · ':''}<span data-elapsed>${updateElapsed(result)}</span></p>`:''}${result.pending&&result.lastLine?`<p class="meta update-last-line">${esc(result.lastLine)}</p>`:''}${result.updated!==undefined?`<p>${result.updated} stored ${result.updated===1?'skill':'skills'} updated. Availability preserved.</p>`:''}`;
   output.querySelector('pre').textContent=result.output||'Preparing…';
   const cancel=output.querySelector('[data-cancel-update]');cancel.hidden=!result.pending;cancel.disabled=!result.cancellable;cancel.textContent=result.cancellable?'Cancel update':'Finishing safely…';
 }

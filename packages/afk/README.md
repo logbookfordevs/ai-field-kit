@@ -225,7 +225,7 @@ afk stop
 
 Background start prints the local URL without opening a browser. Status shows the
 URL, process ID, resident memory (RSS) and log location. Stop gracefully closes the background instance;
-foreground sessions are independent. Runtime records and logs stay under `~/.afk/`,
+foreground sessions are independent. If the recorded server is running but not answering, `afk status` prints its PID and `afk stop --force` stops it and clears the record. Runtime records and logs stay under `~/.afk/`,
 separate from your portable settings. Starting again reuses the running instance.
 `afk ui --background` is also accepted. **Exit AFK** can close a background server
 from the app; closing the browser tab leaves it running. Background instances use

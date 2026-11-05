@@ -1,6 +1,6 @@
 import { ProcessOutput } from "./process-output.js";
 import { isDeepStrictEqual } from "node:util";
-import { spawn } from "node:child_process";
+import { runCommand } from "./command-runner.js";
 import { createHash, randomUUID } from "node:crypto";
 import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
@@ -10,23 +10,12 @@ import { SettingsStore as Store } from "./settings.js";
 import { SkillLibrary } from "./skills.js";
 import { setInvocation } from "./invocation.js";
 
-export interface UpdateProgress { pending: boolean; cancellable?: boolean; cancelled?: boolean; names?: string[]; phase: string; output: string; code?: number; updated?: number; scope: string }
+export interface UpdateProgress { pending: boolean; cancellable?: boolean; cancelled?: boolean; names?: string[]; phase: string; output: string; code?: number; updated?: number; scope: string; startedAt?: number; finishedAt?: number; item?: string; lastLine?: string }
 export type UpdateRunner = (cwd: string, env: NodeJS.ProcessEnv, args: string[], output: (text: string) => void, signal?: AbortSignal) => Promise<number>;
-const run: UpdateRunner = (cwd, env, args, output, signal) => new Promise((accept, reject) => {
-  signal?.throwIfAborted();
-  const child = spawn("npx", ["--yes", "skills", "update", ...args], { cwd, env, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
-  child.stdout.setEncoding("utf8").on("data", (chunk: string) => output(chunk));
-  child.stderr.setEncoding("utf8").on("data", (chunk: string) => output(chunk));
-  const cancel = (): void => {
-    if (!child.pid) return;
-    if (process.platform === "win32") spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], { stdio: "ignore" }).once("error", () => child.kill());
-    else { try { process.kill(-child.pid, "SIGKILL"); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") reject(error instanceof Error ? error : new Error("Could not stop the update process.")); } }
-  };
-  signal?.addEventListener("abort", cancel, { once: true });
-  if (signal?.aborted) cancel();
-  child.once("error", error => { signal?.removeEventListener("abort", cancel); reject(error); });
-  child.once("close", code => { signal?.removeEventListener("abort", cancel); accept(code ?? 1); });
-});
+const run: UpdateRunner = async (cwd, env, args, output, signal) => (await runCommand({
+  command: "npx", args: ["--yes", "skills", "update", ...args], step: "Updating through Skills CLI",
+  cwd, env, signal, idleTimeoutMs: 120_000, timeoutMs: 15 * 60_000, onOutput: output,
+})).code;
 async function optional(path: string): Promise<string | null> {
   try { return await readFile(path, "utf8"); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return null; throw error; }
 }
@@ -51,10 +40,11 @@ export async function updateSkills(store: SettingsStore, settings: Settings, sco
   const temporary = await mkdtemp(join(tmpdir(), "afk-skill-update-"));
   const home = join(temporary, "home"), project = join(temporary, "project");
   const stagedRoot = scope === "Global" ? join(home, ".agents/skills") : join(project, ".agents/skills");
-  const state: UpdateProgress = { pending: true, cancellable: true, phase: "Preparing isolated update", output: "", scope, ...(selectedNames ? { names: selectedNames } : {}) };
+  const state: UpdateProgress = { pending: true, cancellable: true, phase: "Preparing isolated update", output: "", scope, startedAt: Date.now(), ...(selectedNames ? { names: selectedNames } : {}) };
   const report = (): void => progress({ ...state });
   const output = new ProcessOutput();
-  const append = (text: string): void => { state.output = output.append(text); report(); };
+  const append = (text: string): void => { state.output = output.append(text); state.lastLine = output.lastLine(); report(); };
+  const finished = (extra: Partial<UpdateProgress> = {}): UpdateProgress => ({ ...state, ...extra, pending: false, cancellable: false, finishedAt: Date.now() });
   let committed = false;
   const backups: { path: string; backup: string }[] = [];
   try {
@@ -82,11 +72,11 @@ export async function updateSkills(store: SettingsStore, settings: Settings, sco
       snapshots.push({ entry, path, before, staged });
     }
     signal?.throwIfAborted();
-    state.phase = "Updating through Skills CLI"; report();
+    state.phase = "Updating through Skills CLI"; state.item = selectedNames?.join(", ") || `${scope} tracked skills`; report();
     const env = { ...process.env, HOME: home, USERPROFILE: home, XDG_STATE_HOME: "", XDG_CONFIG_HOME: join(home, ".config"), XDG_DATA_HOME: join(home, ".local/share"), DISABLE_TELEMETRY: "1", DO_NOT_TRACK: "1" };
     const code = await runner(project, env, [...(selectedNames || []), scope === "Global" ? "-g" : "-p", "-y"], append, signal);
     signal?.throwIfAborted();
-    if (code !== 0) { state.code = code; state.phase = "Update failed; original skills unchanged"; return { ...state, pending: false, cancellable: false }; }
+    if (code !== 0) { state.code = code; state.phase = "Update failed; original skills unchanged"; return finished(); }
     state.phase = "Checking and applying updates"; report();
     const changed = [];
     const stagedStore = new Store(home, join(temporary, "settings.json"));
@@ -124,10 +114,10 @@ export async function updateSkills(store: SettingsStore, settings: Settings, sco
     state.updated = changed.length; state.code = 0; state.phase = "Updated; availability preserved";
     for (const backup of backups) await rm(backup.backup, { recursive: true, force: true }).catch(() => undefined);
     backups.length = 0;
-    return { ...state, pending: false, cancellable: false };
+    return finished();
   } catch (error) {
     for (const backup of (committed ? [] : backups).reverse()) { await rm(backup.path, { recursive: true, force: true }); await rename(backup.backup, backup.path); }
-    if (signal?.aborted && !committed) return { ...state, pending: false, cancellable: false, cancelled: true, code: 130, phase: "Update cancelled; original skills unchanged" };
+    if (signal?.aborted && !committed) return finished({ cancelled: true, code: 130, phase: "Update cancelled; original skills unchanged" });
     throw error;
   } finally { await rm(temporary, { recursive: true, force: true }).catch(() => undefined); }
 }

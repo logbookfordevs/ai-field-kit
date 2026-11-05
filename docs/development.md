@@ -32,6 +32,15 @@ not override that path. If shutdown is still draining operations, restart report
 the wait rather than starting another process. Runtime records and logs live under `~/.afk/`, rather than
 in the portable AFK folder. Use a temporary home for lifecycle tests.
 
+Every outside command (Skills CLI, tool commands, the AFK installer) starts through
+`command-runner.ts`, which enforces a silence limit and an overall limit, kills the
+whole process group on timeout or cancel, and names the step in its failure.
+`AFK_COMMAND_IDLE_MS` and `AFK_COMMAND_TIMEOUT_MS` override the limits for tests.
+Only the browser opener and the background and app-update launchers spawn directly.
+A recorded background server that is alive but not answering is reported by
+`afk status` with its PID; `afk stop --force` stops it after checking the PID is an
+AFK background server, and clears the record.
+
 ## Skill update testing
 
 `afk skills update -g` and `afk skills update -p <project>` delegate updates in an
