@@ -64,6 +64,19 @@ export async function readLibrarySettings(home: string): Promise<Settings> {
   };
 }
 
+/** True for a library AFK started on its own: no skills, packs, tools, bookmarks, rules or remote. Dismissing the welcome does not count as use. */
+export async function libraryUntouched(home: string): Promise<boolean> {
+  const library = new Library(home);
+  try {
+    if (!await library.exists() || (await library.names()).length) return false;
+    const settings = await readLibrarySettings(home);
+    if (settings.kit?.core.length || settings.profiles.length || settings.tools.length || settings.favoriteSources.length || settings.agentRules) return false;
+    if ((await recordNames(library.root)).length) return false;
+    if ((await readdir(join(library.root, "rules")).catch(() => [])).length) return false;
+    return !(await readFile(join(library.root, ".git/config"), "utf8")).includes("[remote ");
+  } catch { return false; }
+}
+
 /** Invocation choices saved in skill records; they override this machine's preferences for the same skills. */
 export async function recordedInvocations(home: string): Promise<Record<string, InvocationChoice>> {
   const library = new Library(home), result: Record<string, InvocationChoice> = {};

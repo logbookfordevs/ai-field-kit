@@ -5,6 +5,7 @@ import { runCommand } from "./command-runner.js";
 import { LocalChecks } from "./library-checks.js";
 import type { GitRunner, Library } from "./library.js";
 import { coreNames, deployLibrary, type DeploySummary } from "./library-deploy.js";
+import { libraryUntouched } from "./library-settings.js";
 import { pendingRestore } from "./restore-pending.js";
 
 export type BackupState = "off" | "saved" | "waiting" | "failed";
@@ -21,6 +22,8 @@ export interface BackupStatus {
   pushing: boolean;
   /** The repository of a restore that put the library in place but has not finished linking it. */
   restoring?: string;
+  /** The library AFK started by itself, with nothing in it and no backup yet. */
+  fresh?: true;
 }
 
 export interface SaveEntry { id: string; at: number; message: string; pushed: boolean }
@@ -87,7 +90,7 @@ export class Backup {
     const remote = await this.remoteUrl(), memory = await this.memory(), pushing = this.pushing !== undefined;
     const items = await this.checks.list(), attention = items.length, held = items.some(item => item.kind === "edited");
     const restoring = await pendingRestore(this.library.home);
-    const unfinished = restoring === undefined ? {} : { restoring };
+    const unfinished = { ...(restoring === undefined ? {} : { restoring }), ...(!remote && await libraryUntouched(this.library.home) ? { fresh: true as const } : {}) };
     if (!remote) return { library: true, state: "off", waiting: 0, attention, held, pushing, ...unfinished };
     const waiting = await this.waiting();
     const state: BackupState = waiting === 0 ? "saved" : memory.error ? "failed" : "waiting";

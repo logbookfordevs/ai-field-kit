@@ -80,7 +80,7 @@ describe("library init for packs, machine-only skills and .disabled", () => {
 
     await applyLibraryInit(store);
 
-    expect(await readdir(join(agents, ".disabled"))).toEqual([]);
+    expect(await present(join(agents, ".disabled"))).toBe(false);
     expect(await readFile(join(home, ".afk/packs-cache/gamma/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
     expect(await readFile(join(home, ".afk/packs-cache/delta/SKILL.md"), "utf8")).toBe(skill("delta"));
     expect(await readFile(join(home, ".afk/machine/old/SKILL.md"), "utf8")).toBe(skill("old"));

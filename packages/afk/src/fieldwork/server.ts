@@ -9,6 +9,7 @@ import { AppUpdates } from "./app-update.js";
 import { operationCatalog } from "./operation-catalog.js";
 import { startSchedule } from "./skill-schedule.js";
 import { startBackup } from "./library-backup.js";
+import { startLibrary } from "./library-init.js";
 import { DuplicateCopyError } from "./skills.js";
 import type { UpdateProgress } from "./skill-update.js";
 
@@ -28,6 +29,7 @@ export async function startFieldwork(store = new SettingsStore(), port = 0, opti
   let shutdown: Promise<void> | undefined;
   let updatingRequested = false;
   await store.initialize();
+  await startLibrary(store).catch(error => console.error(error));
   const operations = new FieldworkOperations(store);
   const pkg = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
   const updates = new AppUpdates(pkg.version);
