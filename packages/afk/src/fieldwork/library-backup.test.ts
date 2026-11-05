@@ -226,6 +226,35 @@ describe("history and going back", () => {
     expect(await library.linked("sample")).toBe(true);
   });
 
+  it("removes AFK's links from folders the earlier save had disabled, including skills that save did not have", async () => {
+    await library.change("Add settings", () => library.writeSettings({ version: 1, core: [] }));
+    const empty = await backup.lastChange();
+    await save("Add sample", "sample");
+    await library.link("sample");
+    await library.changeAgentFolders("Switch to Cursor", { enabled: ["~/.cursor/skills"], custom: [] });
+
+    await backup.goBack(empty);
+
+    expect(await library.names()).toEqual([]);
+    expect(await lstat(join(home, ".cursor/skills/sample")).then(() => true, () => false)).toBe(false);
+  });
+
+  it("puts every agent-folder link back exactly when the going-back commit fails", async () => {
+    await library.change("Add settings", () => library.writeSettings({ version: 1, core: [] }));
+    await save("Add sample", "sample");
+    await library.link("sample");
+    const earlier = await backup.lastChange();
+    await library.changeAgentFolders("Switch to Cursor", { enabled: ["~/.cursor/skills"], custom: [] });
+    const failing = new Library(home, async spec => spec.args.includes("commit") ? { code: 1, output: "injected commit failure", cancelled: false } : runCommand(spec));
+
+    await expect(new Backup(failing).goBack(earlier)).rejects.toThrow(/injected commit failure/);
+
+    expect((await library.agentFolders()).enabled).toEqual(["~/.cursor/skills"]);
+    expect(await readlink(join(home, ".cursor/skills/sample"))).toBe(library.skillPath("sample"));
+    expect(await lstat(join(home, ".claude/skills/sample")).then(() => true, () => false)).toBe(false);
+    expect(await library.linked("sample")).toBe(true);
+  });
+
   it("refuses an id that is not a save in this library", async () => {
     await expect(backup.goBack("deadbeef")).rejects.toThrow();
     await expect(backup.goBack("--hard")).rejects.toThrow();
