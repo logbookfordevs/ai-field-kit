@@ -45,7 +45,7 @@ async function probe(home: string, probeMs = 3000): Promise<Probe> {
 
 function stuckMessage(record: Receipt): string {
   if (record.token === "starting") return `AFK background (PID ${record.pid}) is still starting. Try afk status shortly.`;
-  return `AFK background (PID ${record.pid}) is running at ${record.url} but is not answering. Run afk stop --force to stop it and clear its record, then afk --background to start again.`;
+  return `AFK background (PID ${record.pid}) is running at ${record.url} but is not answering. Run afk stop --force to stop it and clear its record, then afk start to start again.`;
 }
 
 async function running(home: string, options: ProbeOptions = {}): Promise<RunningReceipt | undefined> {
@@ -110,7 +110,7 @@ export async function stopVerifiedBackground(record: Receipt): Promise<void> {
 
 export async function restartBackground(home: string, options: ProbeOptions = {}): Promise<void> {
   const record = await running(home, options);
-  if (!record) { console.log("AFK background is not running. Run afk --background to start it."); return; }
+  if (!record) { console.log("AFK background is not running. Run afk start to start it."); return; }
   let settingsPath = record.settingsPath;
   if (!settingsPath) {
     const response = await fetch(`${record.url}/api/state`, { headers: { "x-afk-token": record.token }, signal: AbortSignal.timeout(3000) });
@@ -122,10 +122,10 @@ export async function restartBackground(home: string, options: ProbeOptions = {}
   await startBackground(new SettingsStore(home, settingsPath), Number(new URL(record.url).port));
 }
 
-export async function startBackground(store: SettingsStore, port = 0, options: ProbeOptions = {}): Promise<void> {
+export async function startBackground(store: SettingsStore, port = 0, options: ProbeOptions = {}): Promise<string | undefined> {
   const existing = await running(store.home, options);
   if (existing && port && new URL(existing.url).port !== String(port)) throw new Error(`AFK background is already running at ${existing.url}. Run afk stop before starting on port ${port}.`);
-  if (existing) { console.log(`AFK background is already running at ${existing.url}`); return; }
+  if (existing) { console.log(`AFK background is already running at ${existing.url}`); return existing.url; }
   const location = paths(store.home);
   await mkdir(resolve(store.home, ".afk"), { recursive: true });
   try { await mkdir(location.directory, { mode: 0o700 }); }
@@ -157,6 +157,7 @@ export async function startBackground(store: SettingsStore, port = 0, options: P
     if (started.state === "unresponsive") throw new Error(`AFK started but could not be verified: ${started.cause}`);
     const record = started.state === "ready" ? started.record : undefined;
     console.log(`AFK background is running at ${record?.url}\nPID: ${record?.pid}\nLog: ${location.log}\nRun afk stop to close it.`);
+    return record?.url;
   } catch (error) {
     if (child?.pid && child.exitCode === null && child.signalCode === null) {
       const failedChild = child;

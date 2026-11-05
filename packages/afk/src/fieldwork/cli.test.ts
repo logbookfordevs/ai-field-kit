@@ -66,7 +66,7 @@ describe("AFK agent CLI", () => {
     await writeFile(store.path,"{invalid");
     const idle=await command(store,["restart"]);
     expect(idle.code).toBe(0);
-    expect(idle.stdout).toContain("Run afk --background");
+    expect(idle.stdout).toContain("Run afk start");
     expectFailure(await command(store,["restart","--port","4310"]));
     expect(await readFile(store.path,"utf8")).toBe("{invalid");
   });

@@ -78,7 +78,7 @@ server; `afk stop` requests shutdown only after verifying its identity. `afk res
 uses the verified running server's current port and settings path to launch its
 replacement. It leaves foreground sessions alone and does not start an idle instance.
 
-The server port is a launch option, not a setting. Use `afk --background --port 4310`
+The server port is a launch option, not a setting. Use `afk start --port 4310`
 for a fixed URL; omit `--port` for an available port chosen at startup. A running
 instance on another port must be stopped first. A background server uses the
 configuration selected at startup; stop it before launching with a different

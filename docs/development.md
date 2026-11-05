@@ -6,18 +6,18 @@ From the repository root:
 ```sh
 pnpm install
 pnpm afk:build
-node packages/afk/dist/index.js ui --no-open
+node packages/afk/dist/index.js --foreground --no-open
 ```
 
 Open the loopback URL printed in the terminal. The CLI normally opens a browser;
-`--no-open` leaves that to you. Exit AFK or Ctrl+C shuts down the server.
+`--foreground` keeps it attached to this terminal and `--no-open` leaves opening the page to you. Exit AFK or Ctrl+C shuts it down. Without `--foreground`, AFK starts in the background.
 
 ## Background testing
 
 Build first, then use the local executable:
 
 ```sh
-node packages/afk/dist/index.js --background --port 4310
+node packages/afk/dist/index.js start --no-open --port 4310
 node packages/afk/dist/index.js status
 node packages/afk/dist/index.js restart
 node packages/afk/dist/index.js stop

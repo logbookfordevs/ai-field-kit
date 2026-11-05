@@ -52,6 +52,17 @@ describe("background instance verification", () => {
     expect(log.mock.calls[0]?.[0]).toContain("Memory (RSS): unavailable (restart AFK after updating)");
   });
 
+  it("reuses a running background instance and returns its URL, so afk start can just open it", async () => {
+    const directory = await home();
+    const store = new SettingsStore(directory);
+    const app = await startFieldwork(store);
+    cleanup.push(app.close);
+    await writeFile(resolve(directory, ".afk/background/server.json"), JSON.stringify({ pid: process.pid, url: app.url, token: app.token }));
+    vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await expect(startBackground(store)).resolves.toBe(app.url);
+  });
+
   it("preserves a running background instance when another port is requested", async () => {
     const directory = await home();
     const store = new SettingsStore(directory);

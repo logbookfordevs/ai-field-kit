@@ -130,39 +130,43 @@ Run `afk update` to rerun the hosted release installer and install the latest AF
 release. `afk update --dry-run` prints the command without running it. This is
 separate from updating installed skills and works without reading AFK settings.
 
-## Run in the background
+## Start, stop and status
 
 ```sh
-afk --background
+afk            # same as afk start
+afk start
 afk status
 afk restart
 afk stop
 ```
 
-Background start prints the local URL without opening a browser. Status shows the
-URL, process ID, resident memory (RSS) and log location. Stop gracefully closes the background instance;
-foreground sessions are independent. Runtime records and logs stay under `~/.afk/`,
-separate from your portable settings. Starting again reuses the running instance.
-`afk ui --background` is also accepted. **Exit AFK** can close a background server
-from the app; closing the browser tab leaves it running. Background instances use
-the settings selected when they start. `afk restart` uses the running server’s
-current port and settings path, even if your terminal’s `AFK_SETTINGS` changed.
-If no background instance is running, it suggests `afk --background`. Foreground
-sessions are untouched. To switch via `AFK_SETTINGS`, stop and start explicitly.
+`afk` and `afk start` run AFK in the background and open it in your browser. If it
+is already running, they open the running app instead of starting another. Add
+`--no-open` to start without opening a browser. Status shows the URL, process ID,
+resident memory (RSS) and log location. Stop gracefully closes the background
+instance. Runtime records and logs stay under `~/.afk/`, separate from your library.
+**Exit AFK** can close the background server from the app; closing the browser tab
+leaves it running. `afk restart` uses the running server's current port and settings
+path, even if your terminal's `AFK_SETTINGS` changed. To switch via `AFK_SETTINGS`,
+stop and start explicitly.
+
+`afk --foreground` runs AFK attached to the terminal instead; Ctrl+C or **Exit AFK**
+closes it. `afk --background` still works for scripts: it starts in the background
+without opening a browser.
 
 ### Choose a fixed port
 
 ```sh
-afk --port 4310
-afk --background --port 4310
+afk start --port 4310
+afk --foreground --port 4310
 ```
 
 With `--port`, the app uses `http://127.0.0.1:4310`. Without it, AFK picks an
 available port. Ports must be integers from 1 to 65535; an occupied port causes
 an error rather than a fallback. Browser-blocked ports such as 6666 are rejected
 before starting; choose a web port such as 4310 or 8080. If the background instance already uses another
-port, run `afk stop` before restarting with your chosen port. The port is a launch
-option, not a saved setting. `afk ui` accepts the same options.
+port, run `afk stop` before starting with your chosen port. The port is a launch
+option, not a saved setting.
 
 `afk status` reports the server’s current resident RAM in MiB, including Node.js
 and native allocations. It excludes the browser tab and child tool processes.

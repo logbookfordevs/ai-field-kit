@@ -21,10 +21,10 @@ import { startFieldwork } from "./server.js";
 
 const HELP = `AFK — local skills, tools, and agent rules
 
-  afk                               Open the local web app
-  afk ui --no-open                   Start without opening a browser
-  afk --background [--port <number>] Run the app in the background
-  afk --port <number>                Open the app on a fixed port
+  afk [start]                       Start the app in the background and open it
+  afk start --no-open                Start in the background without opening a browser
+  afk --foreground                  Run attached to this terminal; Ctrl+C closes it
+  afk start --port <number>          Use a fixed port
   afk status                         Show the background app URL and PID
   afk stop [--force]                 Stop the background app; --force also clears one that is not answering
   afk restart                        Restart the background app on its current port
@@ -274,17 +274,23 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     return report.ok ? 0 : 1;
   }
   const options = parseUiOptions(argv);
-  if (options.background) { await startBackground(store, options.port); return 0; }
+  if (options.background) {
+    const url = await startBackground(store, options.port);
+    if (options.open && url) openInBrowser(url);
+    return 0;
+  }
   const app = await startFieldwork(store, options.port);
   console.log(`AFK is running at ${app.url}\nPress Ctrl+C to close it.`);
-  if (options.open) {
-    const [opener, args] = process.platform === "darwin" ? ["open", [app.url]] : process.platform === "win32" ? ["cmd", ["/c", "start", "", app.url]] : ["xdg-open", [app.url]];
-    const child = spawn(opener!, args, { stdio: "ignore" });
-    child.on("error", () => console.error("Open the AFK URL in your browser."));
-  }
+  if (options.open) openInBrowser(app.url);
   const stop = (): void => { void app.close().then(() => { process.exitCode = 0; }); };
   process.once("SIGINT", stop); process.once("SIGTERM", stop);
   return 0;
+}
+
+function openInBrowser(url: string): void {
+  const [opener, args] = process.platform === "darwin" ? ["open", [url]] : process.platform === "win32" ? ["cmd", ["/c", "start", "", url]] : ["xdg-open", [url]];
+  const child = spawn(opener!, args, { stdio: "ignore" });
+  child.on("error", () => console.error("Open the AFK URL in your browser."));
 }
 
 export async function runFieldwork(argv: string[], store = new SettingsStore()): Promise<number> {
