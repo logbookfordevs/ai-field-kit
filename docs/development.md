@@ -66,6 +66,7 @@ node --check packages/afk/web/kit.js
 node --check packages/afk/web/install.js
 node --check packages/afk/web/invocation-info.js
 node --check packages/afk/web/skill-schedule.js
+node --check packages/afk/web/agent-folders.js
 ```
 
 The test command runs skill/settings/server, rule-sync and portable ZIP regressions,
@@ -99,6 +100,7 @@ the mutation queue. Use temporary homes and a local repository for browser tests
 owns portable ZIP validation and restoration. Rule operations use temporary target
 files in tests; they must preserve surrounding text and restore owned changes after
 failed writes. Importing a bundle never writes agent destinations.
+`agent-table.ts` is Skills CLI 1.7.6's agent table (folders, detection, known invocation mechanisms); `agent-folders.ts` builds the Agent folders list and validates custom folders, and the library saves the enabled ones in `.afk/settings.json`. Agent icons in `web/assets/agent-icons/` are Skills Manager's, with its MIT notice beside them.
 The app's HTML and JavaScript live under `web/`; its fonts are bundled locally.
 
 `skills/afk-cli/` at the repository root is the canonical agent skill. The package
