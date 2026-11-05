@@ -160,6 +160,22 @@ describe("installing from a repository into storage", () => {
     expect(await readFile(join(agents, "wizard/SKILL.md"), "utf8")).toContain("outside");
   });
 
+  it("keeps an installed skill on when a later skill in the same install fails to link", async () => {
+    await install(skillsCli(["wizard"]), ["wizard"]);
+    const before = await commits();
+    await mkdir(join(claude, "other"), { recursive: true });
+    await writeFile(join(claude, "other/SKILL.md"), skill("other", "outside"));
+
+    const result = await install(skillsCli(["wizard", "other"], { version: "2" }), ["wizard", "other"]);
+
+    expect(result.code).toBe(1);
+    expect(await commits()).toEqual(before);
+    expect(await new Library(home).linked("wizard")).toBe(true);
+    expect(await readlink(join(claude, "wizard"))).toBe(join(home, ".afk/library/skills/wizard"));
+    expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toContain("version 1");
+    expect((await store.read()).independentSkills.Global).toEqual(["wizard"]);
+  });
+
   it("replaces the one stored copy on a reinstall and keeps its links", async () => {
     await install(skillsCli(["wizard"]), ["wizard"]);
 

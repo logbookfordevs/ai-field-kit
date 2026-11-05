@@ -30,7 +30,8 @@ interface PendingLink { path: string; target: string }
 export type GitRunner = (spec: CommandSpec) => Promise<{ code: number; output: string }>;
 
 const queues = new Map<string, Promise<unknown>>();
-const changing = new AsyncLocalStorage<string>();
+interface ChangeContext { root: string; undo: (() => Promise<unknown>)[]; after: (() => Promise<unknown>)[] }
+const changing = new AsyncLocalStorage<ChangeContext>();
 
 const GITIGNORE = ".DS_Store\nThumbs.db\n.afk-*\nnode_modules/\n";
 
@@ -125,8 +126,24 @@ export class Library {
 
   /** Runs one library change as exactly one commit; a failure restores the working tree to the last commit. A change made inside another joins its commit. */
   change<T>(message: string, mutate: () => Promise<T>): Promise<T> {
-    if (changing.getStore() === this.root) return mutate();
+    if (changing.getStore()?.root === this.root) return mutate();
     return this.enqueue(() => this.commitChange(message, mutate));
+  }
+
+  /** Inside a change: undoes work outside the repository if the outermost change fails, newest step first. */
+  onRollback(step: () => Promise<unknown>): void {
+    this.context().undo.push(step);
+  }
+
+  /** Inside a change: runs once the outermost change has committed, such as removing copies kept for a rollback. */
+  afterCommit(step: () => Promise<unknown>): void {
+    this.context().after.push(step);
+  }
+
+  private context(): ChangeContext {
+    const context = changing.getStore();
+    if (context?.root !== this.root) throw new Error("This step runs only inside a library change.");
+    return context;
   }
 
   /** Paths whose files differ from the last commit, as the library itself would list them. */
@@ -198,8 +215,9 @@ export class Library {
   }
 
   /** Links a stored skill into every enabled folder; an occupied destination stops before anything changes. */
-  async link(name: string): Promise<void> {
-    await this.createLinks(await this.pendingLinks(await this.folders(), [name]));
+  /** Returns the links it created; links that were already there are left out. */
+  async link(name: string): Promise<string[]> {
+    return this.createLinks(await this.pendingLinks(await this.folders(), [name]));
   }
 
   /** Removes only AFK's own links to a stored skill; the stored files never move. */
@@ -280,7 +298,7 @@ export class Library {
     return pending;
   }
 
-  private async createLinks(pending: PendingLink[]): Promise<void> {
+  private async createLinks(pending: PendingLink[]): Promise<string[]> {
     const created: string[] = [];
     try {
       for (const { path, target } of pending) {
@@ -292,11 +310,12 @@ export class Library {
       for (const path of created) await rm(path, { force: true });
       throw error;
     }
+    return created;
   }
 
   private enqueue<T>(work: () => Promise<T>): Promise<T> {
-    if (changing.getStore() === this.root) return work();
-    const next = (queues.get(this.root) ?? Promise.resolve()).then(() => changing.run(this.root, work));
+    if (changing.getStore()?.root === this.root) return work();
+    const next = (queues.get(this.root) ?? Promise.resolve()).then(() => changing.run({ root: this.root, undo: [], after: [] }, work));
     queues.set(this.root, next.catch(() => undefined));
     return next;
   }
@@ -327,15 +346,21 @@ export class Library {
   private async commitChange<T>(message: string, mutate: () => Promise<T>): Promise<T> {
     if (!await this.exists()) throw new Error("Start a library first with `afk library init`.");
     if (await this.git("Checking the library", "status", "--porcelain")) throw new Error("The library has changes AFK did not make. Review them before changing it.");
+    const context = this.context();
+    let result: T;
     try {
-      const result = await mutate();
+      result = await mutate();
       await this.commit(message);
-      return result;
     } catch (error) {
+      for (const step of context.undo.splice(0).reverse()) await step().catch(() => undefined);
+      context.after.length = 0;
       await this.git("Restoring the library", "reset", "--hard", "--quiet", "HEAD");
       await this.git("Restoring the library", "clean", "-fd", "--quiet");
       throw error;
     }
+    context.undo.length = 0;
+    for (const step of context.after.splice(0)) await step().catch(() => undefined);
+    return result;
   }
 
   private async commit(message: string): Promise<void> {

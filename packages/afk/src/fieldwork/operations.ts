@@ -411,7 +411,7 @@ export class FieldworkOperations {
       const status = await backup.status(), attention = await backup.checks.list(), unpushed = await backup.unpushedSkills();
       return data.brief === true ? { status, attention, unpushed } : { status, attention, unpushed, history: await backup.history(), contents: await backup.contents() };
     }
-    const resolutions: Partial<Record<Operation, () => Promise<void>>> = {
+    const resolutions: Partial<Record<Operation, () => Promise<{ movedAside: AsideMove[] } | void>>> = {
       "backup/keep": () => backup.checks.keep(String(data.id)),
       "backup/discard": () => backup.checks.discard(String(data.id)),
       "backup/take-update": () => backup.checks.take(String(data.name)),
@@ -419,8 +419,8 @@ export class FieldworkOperations {
     };
     const resolve = resolutions[operation];
     if (resolve) {
-      await resolve();
-      return { status: await backup.status(), attention: await backup.checks.list() };
+      const resolution = await resolve();
+      return { status: await backup.status(), attention: await backup.checks.list(), ...(resolution ? { movedAside: resolution.movedAside } : {}) };
     }
     if (operation === "backup/connect") return backup.connect(String(data.url));
     if (operation === "backup/create") return backup.createRepository(String(data.name));
