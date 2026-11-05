@@ -101,36 +101,17 @@ describe("Installed skill metadata", () => {
     expect((await library.inventory(settings, "Global"))[0]?.defaultInvocation).toEqual({ claude: "Unknown", codex: "Unknown" });
   });
 
-  it("shows isolated project files and the current Global policy that reset will reconnect", async () => {
-    const { path, project, library, settings, store } = await fixture();
-    await library.activate(settings, "profile", "Demo", true);
-    expect((await library.inventory(settings, "Demo"))[0]?.invocationInherited).toBe(true);
-    await setInvocation(store, settings, "example", "Demo", "Manual only");
-    await setInvocation(store, settings, "example", "Global", "Automatic allowed");
-    await writeAgent(path, "policy:\n  allow_implicit_invocation: false\n");
-    const [isolated] = await library.inventory(settings, "Demo");
-    expect(isolated?.invocationInherited).toBe(false);
-    expect(isolated?.invocation).toEqual({ claude: "Manual only", codex: "Manual only" });
-    expect(isolated?.defaultInvocation).toEqual({ claude: "Automatic allowed", codex: "Manual only" });
-    await setInvocation(store, settings, "example", "Demo", "");
-    const [inherited] = await library.inventory(settings, "Demo");
-    expect(inherited?.invocationInherited).toBe(true);
-    expect(inherited?.invocation).toEqual(isolated?.defaultInvocation);
-    expect(await readlink(join(project, ".agents/skills/example"))).toBe(path);
-  });
-
-  it("keeps a physical project skill's original policy independent of Global preferences", async () => {
+  it("keeps a project skill's own policy and resets to no explicit choice", async () => {
     const { project, library, settings, store } = await fixture();
     const local = join(project, ".agents/skills/example");
     await mkdir(local, { recursive: true });
     await writeFile(join(local, "SKILL.md"), "---\ndisable-model-invocation: true\n---\nBody\n");
     await writeAgent(local, "policy:\n  allow_implicit_invocation: true\n");
-    await setInvocation(store, settings, "example", "Global", "Automatic allowed");
+    const [own] = await library.inventory(settings, "Demo");
+    expect(own).toMatchObject({ invocationInherited: false, shared: false, invocation: { claude: "Manual only", codex: "Automatic allowed" } });
     await setInvocation(store, settings, "example", "Demo", "Automatic allowed");
-    const [isolated] = await library.inventory(settings, "Demo");
-    expect(isolated?.invocationInherited).toBe(false);
-    expect(isolated?.defaultInvocation).toEqual({ claude: "Manual only", codex: "Automatic allowed" });
+    expect((await library.inventory(settings, "Demo"))[0]?.invocation).toEqual({ claude: "Automatic allowed", codex: "Automatic allowed" });
     await setInvocation(store, settings, "example", "Demo", "");
-    expect((await library.inventory(settings, "Demo"))[0]?.invocation).toEqual(isolated?.defaultInvocation);
+    expect((await library.inventory(settings, "Demo"))[0]?.invocation).toEqual({ claude: "Automatic allowed", codex: "Automatic allowed" });
   });
 });

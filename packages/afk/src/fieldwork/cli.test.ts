@@ -201,18 +201,17 @@ describe("AFK agent CLI", () => {
     expect((await command(store, ["skills", "get", "render"])).stdout).toContain("Fixture instruction");
     expect((await store.read()).profiles[0]?.enabled).toEqual([]);
 
-    expect((await command(store, ["profiles", "enable", "VIDEO", "Demo"])).code).toBe(0);
-    expect(await readlink(join(project, ".agents/skills/render"))).toBe(skill);
-    expect((await command(store, ["profiles", "disable", "video", "Demo"])).code).toBe(0);
+    expectFailure(await command(store, ["profiles", "enable", "VIDEO", "Demo"]));
+    expectFailure(await manage(store, "activation", { id: profile.id, scope: "Demo", enabled: true }));
     await expect(access(join(project, ".agents/skills/render"))).rejects.toMatchObject({ code: "ENOENT" });
-    expect((await manage(store, "activation", { id: profile.id, scope: "Demo", enabled: true })).code).toBe(0);
-    expect(await readlink(join(project, ".agents/skills/render"))).toBe(skill);
+    expect((await manage(store, "activation", { id: profile.id, scope: "Global", enabled: true })).code).toBe(0);
+    expect(await readlink(join(home, ".agents/skills/render"))).toBe(skill);
     const activated = await readFile(store.path, "utf8");
-    expectFailure(await manage(store, "activation", { id: profile.id, scope: "Demo" }));
+    expectFailure(await manage(store, "activation", { id: profile.id, scope: "Global" }));
     expectFailure(await manage(store, "pack/remove", { id: profile.id }));
     expectFailure(await manage(store, "import", { settings: emptySettings() }));
     expect(await readFile(store.path, "utf8")).toBe(activated);
-    expect((await command(store, ["profiles", "disable", profile.id, "Demo"])).code).toBe(0);
+    expect((await command(store, ["profiles", "disable", profile.id, "Global"])).code).toBe(0);
     expect((await manage(store, "pack/remove", { id: profile.id })).code).toBe(0);
     expect((await store.read()).profiles).toEqual([]);
     expect(await readFile(join(skill, "SKILL.md"), "utf8")).toContain("Fixture instruction");

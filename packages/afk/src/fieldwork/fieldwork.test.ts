@@ -33,15 +33,13 @@ describe("Fieldwork skill availability", () => {
     expect(inventory.map(entry => entry.name)).toEqual(["render"]);
   });
 
-  it("reads groups without activation and routes a shared copy to a project", async () => {
+  it("reads groups without activating them and keeps packs out of projects", async () => {
     const { library, settings, store, project, stored } = await fixture();
     expect(await library.readGroup(settings, "video")).toContain("Render instruction");
     expect((await library.inventory(settings, "Demo"))).toEqual([]);
-    await library.activate(settings, "video", "Demo", true);
-    expect(await readlink(join(project, ".agents/skills/render"))).toBe(stored);
-    expect((await store.read()).profiles[0]?.enabled).toEqual(["Demo"]);
-    await library.activate(settings, "video", "Demo", false);
-    expect(await library.inventory(settings, "Demo")).toEqual([]);
+    await expect(library.activate(settings, "video", "Demo", true)).rejects.toThrow("Global");
+    expect((await store.read()).profiles[0]?.enabled).toEqual([]);
+    await expect(readlink(join(project, ".agents/skills/render"))).rejects.toMatchObject({ code: "ENOENT" });
     expect(await readFile(join(stored, "SKILL.md"), "utf8")).toContain("Render instruction");
   });
 
@@ -54,44 +52,6 @@ describe("Fieldwork skill availability", () => {
     expect((await library.inventory(settings, "Global")).some(s => s.available)).toBe(true);
     await library.activate(settings, "second", "Global", false);
     expect((await library.inventory(settings, "Global")).every(s => !s.available)).toBe(true);
-  });
-
-  it("preserves preexisting user links and rejects colliding files", async () => {
-    const { library, settings, project, stored } = await fixture();
-    const root = join(project, ".agents/skills"); await mkdir(root, { recursive: true });
-    await symlink(stored, join(root, "render"));
-    await library.activate(settings, "video", "Demo", true);
-    await library.activate(settings, "video", "Demo", false);
-    expect(await readlink(join(root, "render"))).toBe(stored);
-    await rm(join(root, "render")); await mkdir(join(root, "render"));
-    await writeFile(join(root, "render/SKILL.md"), "User content");
-    await expect(library.activate(settings, "video", "Demo", true)).rejects.toThrow("already exists");
-    expect(await readFile(join(root, "render/SKILL.md"), "utf8")).toBe("User content");
-  });
-
-  it("isolates project invocation metadata and keeps disable working", async () => {
-    const { library, store, settings, stored, project } = await fixture();
-    await library.activate(settings, "video", "Demo", true);
-    const original = await readFile(join(stored, "SKILL.md"), "utf8");
-    await setInvocation(store, settings, "render", "Demo", "Manual only");
-    expect(await readFile(join(stored, "SKILL.md"), "utf8")).toBe(original);
-    expect(await readFile(join(project, ".agents/skills/render/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
-    await library.activate(settings, "video", "Demo", false);
-    expect((await library.inventory(settings, "Demo"))).toEqual([]);
-  });
-  it("keeps project exposure valid when a global individual skill is disabled", async () => {
-    const { library, settings, store, home, stored, project } = await fixture();
-    const active = join(home, ".agents/skills/render");
-    const { rename } = await import("node:fs/promises");
-    await rename(stored, active);
-    await library.activate(settings, "video", "Demo", true);
-    await library.toggle(settings, "render", "Global");
-    expect(await readlink(join(project, ".agents/skills/render"))).toBe(stored);
-    expect((await store.read()).profiles[0]?.enabled).toEqual(["Demo"]);
-    expect((await library.inventory(settings, "Global"))).toHaveLength(1);
-    await library.toggle(settings, "render", "Global");
-    expect((await library.inventory(settings, "Global"))).toHaveLength(1);
-    expect((await library.inventory(settings, "Global"))[0]?.available).toBe(true);
   });
 
   it("preserves an independent activation when its profile is disabled", async () => {
@@ -112,21 +72,6 @@ describe("Fieldwork skill availability", () => {
     expect(await readFile(join(stored, "SKILL.md"), "utf8")).toBe(staleCopy);
     const [entry] = await library.inventory(settings, "Global");
     expect(entry?.invocation).toMatchObject({ claude: "Manual only", codex: "Manual only" });
-  });
-
-  it("lets project invocation change repeatedly without touching the shared copy", async () => {
-    const { library, store, settings, stored, project } = await fixture();
-    await library.activate(settings, "video", "Demo", true);
-    await setInvocation(store, settings, "render", "Demo", "Manual only");
-    await setInvocation(store, settings, "render", "Demo", "Automatic allowed");
-    await setInvocation(store, settings, "render", "Demo", "");
-    expect(await readFile(join(stored, "SKILL.md"), "utf8")).not.toContain("disable-model-invocation");
-    expect(await readFile(join(project, ".claude/skills/render/SKILL.md"), "utf8")).not.toContain("disable-model-invocation");
-    await setInvocation(store, settings, "render", "Global", "Manual only");
-    expect(await readFile(join(project, ".agents/skills/render/SKILL.md"), "utf8")).toContain("disable-model-invocation: true");
-    await library.activate(settings, "video", "Demo", false);
-    await library.activate(settings, "video", "Demo", true);
-    expect((await library.inventory(settings, "Demo"))).toHaveLength(1);
   });
 
 });
