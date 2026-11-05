@@ -28,6 +28,7 @@ beforeEach(() => {
     modal: (_title: string, body: string, foot = "") => { dialog = body + foot; },
     toast: () => {}, profiles: [], favoriteSources: [], tools: [], projects: [], currentSettings: { stacks: [] },
     scope: "Global", section: "Skills", inventories: { Global: [] }, nestedInventories: {}, backupState: null, skillBulkBusy: false,
+    selectedSkills: new Set<string>(), selectedSkillScope: "Global", renderSkillSelection: () => {},
     byName: (a: string, b: string) => a.localeCompare(b),
     sourceWebUrl: (value: string) => value.startsWith("https://") ? value : `https://github.com/${value}`,
     renderPacksPanel: () => "PACKS", renderSourcesPanel: () => "LATER", renderSourceList: () => {}, renderSkills: () => { view.innerHTML = "PROJECT"; },

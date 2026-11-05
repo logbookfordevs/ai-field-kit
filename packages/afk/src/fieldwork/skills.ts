@@ -40,6 +40,8 @@ export interface SkillEntry {
   invocationInherited: boolean;
   /** Where AFK keeps a Global skill's one copy; absent for skills AFK does not store. */
   storage?: Storage;
+  /** The user edited this library skill and chose to keep their version, so updates skip it. */
+  updatesStopped?: boolean;
   /** Set for skills a tool writes; they open read-only in the editor. */
   tool?: string;
   readOnly?: boolean;
@@ -173,9 +175,11 @@ export class SkillLibrary {
     const sources = await installedSources(scope === "Global" ? globalReceipt : join(root, "../../skills-lock.json"));
     const globalSources = scope === "Global" ? sources : await installedSources(globalReceipt);
     const librarySources: Record<string, string> = {};
+    const stopped = new Set<string>();
     if (scope === "Global") for (const name of await this.library.names()) {
-      const source = (await this.library.record(name))?.source;
-      if (source) librarySources[name] = source;
+      const record = await this.library.record(name);
+      if (record?.source) librarySources[name] = record.source;
+      if (record?.updates === "stopped") stopped.add(name);
     }
     const folders = [{ directory: root, disabled: false }, ...(scope === "Global" ? [join(this.library.root, "skills"), packCacheRoot(this.store.home), machineRoot(this.store.home)].map(directory => ({ directory, disabled: true })) : []), { directory: join(root, ".disabled"), disabled: true }, ...(scope === "Global" ? [{ directory: offFolder(this.store.home), disabled: true }] : [])];
     for (const { directory, disabled } of folders) {
@@ -204,7 +208,7 @@ export class SkillLibrary {
         const source = librarySources[name] ?? preparedSource ?? sources[name] ?? (invocationInherited ? globalSources[name] : undefined);
         const tool = scope === "Global" ? toolOwner(settings, name) : undefined;
         const storage = scope === "Global" ? await this.library.storage(name) : undefined;
-        return { name, path, ...(source ? { source } : {}), ...(storage ? { storage } : {}), owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited, ...(tool ? { tool: tool.name, readOnly: true } : {}) };
+        return { name, path, ...(source ? { source } : {}), ...(storage ? { storage } : {}), ...(stopped.has(name) ? { updatesStopped: true } : {}), owners, stored: disabled, independent: owners.length === 0, available: !disabled, shared, ...metadata, defaultInvocation, invocationInherited, ...(tool ? { tool: tool.name, readOnly: true } : {}) };
       }));
       for (const entry of entries) if (entry) result.push(entry);
     }

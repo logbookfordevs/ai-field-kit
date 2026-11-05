@@ -798,6 +798,27 @@ dialog.welcome{width:min(720px,calc(100vw - 32px))}
  .review-row{flex-direction:column;align-items:stretch;padding-left:0}
  .review-row .kit-actions{justify-content:flex-start}
 }
+.skill-editor{display:grid;gap:12px;min-width:0}
+.skill-editor .workbench{border-top:1px solid var(--fg)}
+.skill-editor .files{padding-top:8px}
+.skill-editor .editor{padding:12px 0 4px 20px}
+.skill-editor .editor-head h2{font-size:14px}
+.skill-editor .editor-text{min-height:min(46vh,380px);resize:vertical}
+.skill-editor[data-pane=preview] .editor-text,.skill-editor:not([data-pane=preview]) .editor-preview{display:none}
+.editor-preview{min-height:min(46vh,380px);max-height:min(46vh,380px);overflow:auto;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-size:14px;line-height:1.6}
+.editor-preview h3{margin:12px 0 4px;font-size:16px}
+.editor-preview h3:first-child,.editor-preview p:first-child{margin-top:0}
+.editor-preview p,.editor-preview ul{margin:0 0 10px}
+.editor-preview ul{padding-left:20px}
+.editor-preview pre{margin:0 0 10px;padding:10px 12px;border-radius:var(--radius);background:var(--code-bg);color:var(--code-fg);font:12.5px/1.65 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.editor-panes{display:inline-flex;border:1px solid var(--control-border);border-radius:var(--radius);overflow:hidden}
+.editor-panes button{min-height:36px;border:0;border-radius:0;padding:0 14px}
+.editor-panes button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
+.editor-note{margin:0;padding:10px 14px;border:1px solid var(--border);border-left:3px solid var(--fg);border-radius:var(--radius);background:var(--sunk);font-size:13px;line-height:1.5}
+.editor-note[hidden],.editor-ask[hidden]{display:none}
+.editor-ask{display:grid;gap:10px;padding:12px 14px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface)}
+.editor-ask p{margin:0}
+@media(max-width:760px){.skill-editor .editor{padding:12px 0 4px}.skill-editor .editor-text,.editor-preview{min-height:260px}}
 .kit-section{margin:0 0 28px}
 .kit-section>h2{font-size:20px;margin:0 0 4px}
 .kit-section>.sub{margin:0 0 12px}
@@ -966,12 +987,16 @@ function profileRow(p){
 }
 
 
+let sheetGuard=null;
 function modal(title,body,foot=''){
+  sheetGuard=null;
   $('sheetContent').innerHTML=`<header class="dialog-head"><div><h2 id="sheetTitle">${title}</h2></div><button type="button" class="close" onclick="closeModal()">Close</button></header><div class="dialog-body">${body}</div>${foot?`<div class="dialog-foot">${foot}</div>`:''}`;
   if(!$('sheet').open)$('sheet').showModal();
   ($('sheet').querySelector('.dialog-body input:not([readonly]):not([type=checkbox]),.dialog-body textarea')||$('sheet').querySelector('.dialog-body button,.dialog-foot .primary'))?.focus();
 }
-function closeModal(){$('sheet').close()}
+function closeModal(){if(sheetGuard&&!sheetGuard())return;$('sheet').close()}
+$('sheet').addEventListener('cancel',event=>{if(sheetGuard&&!sheetGuard())event.preventDefault()});
+$('sheet').addEventListener('close',()=>{sheetGuard=null});
 
 function inspectProfile(id){
   const p=profiles.find(p=>p.id===id),on=p.enabled.length>0;
@@ -1273,6 +1298,7 @@ new MutationObserver(markInspectable).observe(document.body,{childList:true,subt
 <script src="/install.js"></script>
 <script src="/kit.js"></script>
 <script src="/skills.js"></script>
+<script src="/editor.js"></script>
 <script src="/invocation-info.js"></script>
 <script src="/rules.js"></script>
 <script src="/onboarding.js"></script>

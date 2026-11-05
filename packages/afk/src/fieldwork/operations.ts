@@ -11,6 +11,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { runCommand as run, type CommandResult } from "./command-runner.js";
 import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, UPLOADED_SOURCE, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
+import { openSkillEditor, saveSkillEdit, type UpdatesChoice } from "./skill-editor.js";
 import { adoptSkill, type AdoptDestination } from "./adopt.js";
 import { trackToolRun } from "./tool-run.js";
 import { resolveDuplicate } from "./duplicates.js";
@@ -45,7 +46,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "skills/update": ["scope"], "skills/delete-preview": ["scope"], "skills/bulk": ["scope", "action"],
     "skills-sharing/state": ["scope"], "skills-sharing/set": ["scope"],
     "skill/delete-preview": ["name", "scope"], "skill/delete": ["name", "scope"],
-    "skill/availability": ["name", "scope"], "skill/read": ["name", "scope"],
+    "skill/availability": ["name", "scope"], "skill/read": ["name", "scope"], "skill/editor": ["name"], "skill/edit": ["name", "file"],
     "rules/existing": ["id"], "rules/adopt": ["id"], "rules/overwrite": ["id"],
     "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"], workspace: ["mode", "folder"], location: ["path"],
     "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
@@ -54,7 +55,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
     "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "kit/upload-preview": ["archive", "name", "folder"], "kit/upload-install": ["packName"], "project/save": ["previous"],
-    "skill/read": ["file", "folder"], "rules/save": ["expectedHash"], folders: ["path"], "agent-folders/add": ["project"],
+    "skill/read": ["file", "folder"], "skill/editor": ["file"], "skill/edit": ["updates"], "rules/save": ["expectedHash"], folders: ["path"], "agent-folders/add": ["project"],
   };
   for (const key of requiredText[operation] ?? []) {
     if (typeof data[key] !== "string" || !data[key].trim()) throw new Error(`Provide ${key} as a nonempty string.`);
@@ -62,6 +63,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   for (const key of optionalText[operation] ?? []) {
     if (data[key] !== undefined && typeof data[key] !== "string") throw new Error(`Provide ${key} as a string.`);
   }
+  if (operation === "skill/edit" && typeof data.content !== "string") throw new Error("Provide content as a string.");
   if (operation === "skill/adopt" && !["library", "machine"].includes(String(data.to))) throw new Error("Choose library or machine.");
   for (const key of ["local", "update", "clean", "enabled", "confirmed", "prepare", "brief", "bookmark"]) {
     if (data[key] !== undefined && typeof data[key] !== "boolean") throw new Error(`Provide ${key} as true or false.`);
@@ -975,6 +977,8 @@ export class FieldworkOperations {
       if ((await stat(target)).size > 500_000) throw new Error("This file is too large to preview. Open it from the displayed skill folder.");
       return { path, files, file, content: await readFile(target, "utf8") };
     }
+    if (operation === "skill/editor") return await openSkillEditor(store, settings, String(data.name), typeof data.file === "string" ? data.file : undefined);
+    if (operation === "skill/edit") return await saveSkillEdit(store, settings, { name: String(data.name), file: String(data.file), content: String(data.content), ...(data.updates ? { updates: data.updates as UpdatesChoice } : {}) });
     if (operation === "pack/read") { return { content: await library.readGroup(settings, String(data.id)) }; }
     if (operation === "tool/run") {
       const tool = settings.tools.find(t => t.id === data.id);

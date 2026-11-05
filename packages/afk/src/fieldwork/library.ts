@@ -12,6 +12,8 @@ export interface SkillRecord {
   skillPath?: string;
   revision?: string;
   invocation: InvocationChoice;
+  /** Set once the user edited a skill that updates from its repository: stopped keeps their version, replace lets updates overwrite it. */
+  updates?: "stopped" | "replace";
 }
 
 export interface LibrarySettings {
@@ -111,6 +113,10 @@ export class Library {
 
   async writeRecord(name: string, record: SkillRecord): Promise<void> {
     await this.writeJson(this.recordPath(name), record);
+  }
+
+  async removeRecord(name: string): Promise<void> {
+    await rm(this.recordPath(name), { force: true });
   }
 
   async writeSettings(settings: LibrarySettings): Promise<void> {
