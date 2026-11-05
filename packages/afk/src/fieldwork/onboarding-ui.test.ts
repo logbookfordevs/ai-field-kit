@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { createContext, runInContext } from "node:vm";
 import { expect, it, vi } from "vitest";
 
-it("walks through all five pages with back, skip, finish, and restart without configuration mutations", () => {
+it("walks through all four pages with back, skip, finish, and restart without configuration mutations", () => {
   const panel = { hidden: true, innerHTML: "" };
   const dimmer = { hidden: true, innerHTML: "" };
   const rect = { x: 10, y: 20, width: 100, height: 200 };
@@ -22,11 +22,11 @@ it("walks through all five pages with back, skip, finish, and restart without co
   expect(panel.hidden).toBe(false);
   expect(dimmer.hidden).toBe(false);
   expect(dimmer.innerHTML.match(/fill="black"/g)).toHaveLength(4);
-  expect(panel.innerHTML).toContain("1 of 5");
+  expect(panel.innerHTML).toContain("1 of 4");
   runInContext("moveTour(1);moveTour(-1)", context);
-  expect(navigate.mock.calls.map(call => call[0])).toEqual(["Kit", "Installed Skills", "Kit"]);
-  for (let step = 0; step < 4; step++) runInContext("moveTour(1)", context);
-  expect(navigate.mock.calls.slice(-4).map(call => call[0])).toEqual(["Installed Skills", "Agent rules", "Tools", "Settings"]);
+  expect(navigate.mock.calls.map(call => call[0])).toEqual(["Skills", "Agent rules", "Skills"]);
+  for (let step = 0; step < 3; step++) runInContext("moveTour(1)", context);
+  expect(navigate.mock.calls.slice(-3).map(call => call[0])).toEqual(["Agent rules", "Tools", "Settings"]);
   expect(panel.innerHTML).toContain("Finish tour");
   runInContext("endTour(true)", context);
   expect(panel.hidden).toBe(true);

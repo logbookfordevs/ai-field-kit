@@ -97,6 +97,7 @@ async function loadBackup(full=section==='Backup'){
   try{backupState=await request('backup/state',full?{}:{brief:true})}
   catch{return}
   renderBackupBox();
+  if(typeof refreshBackupChips==='function')refreshBackupChips();
   if(section==='Backup'&&!document.activeElement?.closest?.('#view input'))renderBackup();
   scheduleBackupPoll();
 }
