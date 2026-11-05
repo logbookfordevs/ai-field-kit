@@ -176,6 +176,19 @@ describe("installing from a repository into storage", () => {
     expect((await store.read()).independentSkills.Global).toEqual(["wizard"]);
   });
 
+  it("refuses to store a skill whose name matches a stored one apart from letter case, and changes nothing", async () => {
+    await install(skillsCli(["wizard"]), ["wizard"], "machine");
+    const before = await commits();
+
+    const result = await install(skillsCli(["Wizard"], { version: "2" }), ["Wizard"]);
+
+    expect(result.code).toBe(1);
+    expect(result.output).toMatch(/letter case/i);
+    expect(await commits()).toEqual(before);
+    expect(await readFile(join(home, ".afk/machine/wizard/SKILL.md"), "utf8")).toContain("version 1");
+    expect(await readdir(join(home, ".afk/machine"))).toEqual(["wizard"]);
+  });
+
   it("replaces the one stored copy on a reinstall and keeps its links", async () => {
     await install(skillsCli(["wizard"]), ["wizard"]);
 

@@ -143,6 +143,11 @@ export function skillName(value: unknown): value is string {
   return typeof value === "string" && /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(value) && value !== "." && value !== "..";
 }
 
+/** Skill names are folder names, and most agent machines fold letter case, so `Foo` and `foo` are one skill. */
+export function sameSkillName(left: string, right: string): boolean {
+  return left.toLowerCase() === right.toLowerCase();
+}
+
 function nonempty(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0 && !containsControl(value);
 }

@@ -3,7 +3,7 @@ import { lstat, mkdir, readFile, readdir, readlink, realpath, rename, rm, symlin
 import { dirname, join, resolve } from "node:path";
 import { runCommand, type CommandSpec } from "./command-runner.js";
 import { DEFAULT_ENABLED, expandHome, SHARED_FOLDER, type AgentFolderSettings } from "./agent-folders.js";
-import { skillName, type KitSource, type RulesDestination } from "./settings.js";
+import { sameSkillName, skillName, type KitSource, type RulesDestination } from "./settings.js";
 
 export type InvocationChoice = "" | "Manual only" | "Automatic allowed";
 
@@ -61,6 +61,11 @@ export function machineRoot(home: string): string {
 
 export type Storage = "library" | "pack" | "machine";
 
+async function entries(folder: string): Promise<string[]> {
+  try { return await readdir(folder); }
+  catch (error) { if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) return []; throw error; }
+}
+
 /** AFK's own Git repository of Core skills, their `.afk` records and small settings. */
 export class Library {
   readonly root: string;
@@ -84,8 +89,22 @@ export class Library {
   async storage(name: string): Promise<Storage | undefined> {
     if (!skillName(name)) return undefined;
     if (await this.has(name)) return "library";
-    for (const storage of ["pack", "machine"] as const) if (await exists(join(this.storagePath(name, storage), "SKILL.md"))) return storage;
+    for (const storage of ["pack", "machine"] as const) {
+      const path = this.storagePath(name, storage);
+      if (await exists(join(path, "SKILL.md")) && (await entries(dirname(path))).includes(name)) return storage;
+    }
     return undefined;
+  }
+
+  /** A stored skill whose name differs from this one only in letter case, which a case-folding disk would treat as the same folder. */
+  async caseTwin(name: string): Promise<string | undefined> {
+    const stored = [
+      ...await this.names(),
+      ...await entries(packCacheRoot(this.home)),
+      ...await entries(machineRoot(this.home)),
+      ...(await entries(join(this.root, ".afk/skills"))).filter(file => file.endsWith(".json")).map(file => file.slice(0, -5)),
+    ];
+    return stored.find(other => other !== name && skillName(other) && sameSkillName(other, name));
   }
 
   async location(name: string): Promise<string | undefined> {
@@ -98,7 +117,7 @@ export class Library {
   }
 
   async has(name: string): Promise<boolean> {
-    return skillName(name) && await this.exists() && await exists(join(this.skillPath(name), "SKILL.md"));
+    return skillName(name) && await this.exists() && await exists(join(this.skillPath(name), "SKILL.md")) && (await this.names()).includes(name);
   }
 
   async names(): Promise<string[]> {

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { addToCore, kitStatus, toolOwner } from "./kit.js";
 import { storeSkills, type StagedSkill } from "./library-install.js";
-import { expandPath, profileGroups, skillName, UPLOADED_SOURCE, type Profile, type ProfileGroup, type Settings, type SettingsStore } from "./settings.js";
+import { expandPath, profileGroups, sameSkillName, skillName, UPLOADED_SOURCE, type Profile, type ProfileGroup, type Settings, type SettingsStore } from "./settings.js";
 import { MAX_UPLOAD_BYTES, stageUpload, type UploadSource, type UploadedSkill } from "./skill-upload.js";
 import type { SkillLibrary } from "./skills.js";
 
@@ -74,6 +74,10 @@ export class Uploads {
 
     const settings = await this.store.read();
     const inventory = await this.skills.inventory(settings, "Global");
+    for (const { name } of skills) {
+      const twin = inventory.find(item => item.name !== name && sameSkillName(item.name, name))?.name ?? await this.skills.library.caseTwin(name);
+      if (twin) { await this.close(); throw new Error(`${name} differs from the installed ${twin} only in letter case, so both would share one folder. Rename it in SKILL.md, or name it ${twin} to replace that skill.`); }
+    }
     const candidates = skills.map(({ name, description, files, bytes }): UploadCandidate => {
       const tool = toolOwner(settings, name), entry = inventory.find(item => item.name === name);
       return { name, description, files, bytes, state: tool ? "tool" : entry ? "installed" : "new", ...(tool ? { tool: tool.name } : {}), ...(!tool && entry?.source ? { installedFrom: entry.source } : {}) };

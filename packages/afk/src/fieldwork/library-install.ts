@@ -3,7 +3,7 @@ import { cp, lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node
 import { dirname, join } from "node:path";
 import { writeInvocationChoice } from "./invocation.js";
 import { Library, type InvocationChoice, type Storage } from "./library.js";
-import { skillName, type Settings, type SettingsStore } from "./settings.js";
+import { sameSkillName, skillName, type Settings, type SettingsStore } from "./settings.js";
 
 export interface StagedSkill {
   name: string;
@@ -71,6 +71,12 @@ function choice(value: string | undefined): InvocationChoice {
 export async function storeSkills(store: SettingsStore, staged: StagedSkill[], options: StoreOptions = {}): Promise<void> {
   const library = new Library(store.home);
   if (!staged.length) return;
+  for (const { name } of staged) {
+    const twin = await library.caseTwin(name);
+    if (twin) throw new Error(`${name} differs from the stored ${twin} only in letter case, so both would share one folder. Nothing was changed; rename the new skill or replace ${twin} under its own name.`);
+  }
+  const twins = staged.find(skill => staged.some(other => other !== skill && sameSkillName(other.name, skill.name)));
+  if (twins) throw new Error(`Two skills named ${twins.name} apart from letter case can't be stored together. Nothing was changed.`);
   const existing = new Map<string, Storage | undefined>();
   for (const { name } of staged) existing.set(name, await library.storage(name));
   const targets = staged.map(skill => ({ skill, from: existing.get(skill.name), to: options.destination ?? existing.get(skill.name) ?? "library" as Storage }));

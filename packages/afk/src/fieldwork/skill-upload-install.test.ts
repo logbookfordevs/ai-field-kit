@@ -9,6 +9,7 @@ import { SourcePreparation } from "./preparation.js";
 import { emptySettings, SettingsStore } from "./settings.js";
 import { makeZip } from "./zip.test-helper.js";
 import { Uploads } from "./upload-install.js";
+import { Library } from "./library.js";
 import { SkillLibrary } from "./skills.js";
 
 let home: string;
@@ -293,6 +294,19 @@ describe("what an upload cannot do", () => {
       expect(await readlink(join(agents, "wizard"))).toBe(machine);
       expect((await readdir(join(home, ".afk/machine"))).filter(name => name.startsWith(".afk-"))).toEqual([]);
     } finally { await uploads.close(); }
+  });
+
+  it("refuses an upload whose name matches an installed skill apart from letter case, even when that skill is off", async () => {
+    const first = await preview("zip", "UNIQUE EXISTING ORIGINAL.");
+    await operations.run("kit/upload-install", { upload: first.upload, names: ["wizard"], to: "core" });
+    await new Library(home).unlink("wizard");
+    const before = await commits();
+    const archive = makeZip([{ path: "upload/SKILL.md", data: skill("Wizard", "Replacement without confirmation.") }]).toString("base64");
+
+    await expect(operations.run("kit/upload-preview", { archive, name: "upload.zip" })).rejects.toThrow(/letter case/i);
+
+    expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toContain("UNIQUE EXISTING ORIGINAL.");
+    expect(await commits()).toEqual(before);
   });
 
   it("needs the AFK library to exist first", async () => {

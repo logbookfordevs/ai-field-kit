@@ -2,7 +2,7 @@ import { chmod, lstat, mkdir, readFile, readdir, writeFile } from "node:fs/promi
 import { basename, dirname, join } from "node:path";
 import { inflateRawSync } from "node:zlib";
 import { parse } from "yaml";
-import { containsControl, skillName } from "./settings.js";
+import { containsControl, sameSkillName, skillName } from "./settings.js";
 
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 export const MAX_UPLOAD_FILES = 2000;
@@ -177,7 +177,7 @@ export async function stageUpload(source: UploadSource, staging: string): Promis
     const folder = root ? basename(root) : fallback;
     const name = meta.name === undefined ? folder : meta.name;
     if (!skillName(name)) throw new Error(`${root ? `The skill in ${root}` : "This skill"} needs a valid name: letters, numbers, dots, dashes and underscores. Set name in SKILL.md.`);
-    if (found.some(item => item.name === name)) throw new Error(`Two skills in this upload have the same name (${name}). Names must be unique.`);
+    if (found.some(item => sameSkillName(item.name, name))) throw new Error(`Two skills in this upload have the same name (${name}). Names must be unique.`);
     found.push({ name, description: typeof meta.description === "string" ? meta.description.trim() : "", members });
   }
 

@@ -134,6 +134,11 @@ describe("rejecting unsafe uploads before anything is written", () => {
     await rejects(zip([{ path: "a/SKILL.md", data: skill("same") }, { path: "b/SKILL.md", data: skill("same") }]), /same name|twice/i);
   });
 
+  it("rejects two skills whose names differ only by letter case, writing nothing", async () => {
+    await rejects(zip([{ path: "one/SKILL.md", data: skill("Foo") }, { path: "two/SKILL.md", data: skill("foo") }]), /same name/i);
+    expect(await readdir(staging)).toEqual([]);
+  });
+
   it("rejects a skill whose name cannot be a folder name", async () => {
     await rejects(zip([{ path: "x/SKILL.md", data: "---\nname: ../../bad\ndescription: d\n---\n" }, { path: "y/z.md", data: "" }]), /name/i);
   });
