@@ -64,6 +64,12 @@ export const operationCatalog = {
   "bundle/export": { description: "Export an AFK-folder ZIP as base64 with settings and canonical Markdown.", input: {} },
   "bundle/preview": { description: "Validate and inspect an AFK-folder ZIP before importing.", input: { base64: "Base64 ZIP contents." } },
   "bundle/import": { description: "Import a reviewed AFK-folder ZIP with explicit local path mappings. Does not sync agent destinations.", input: { base64: "Reviewed base64 ZIP contents.", mappings: "Array of {id,path} for rule destinations.", projects: "Optional array of {name,path} for local project mappings." } },
+  "backup/state": { description: "Read the library's backup: status (off, saved, waiting or failed), the remote, saves waiting to be pushed, history of saves, and what the backup holds. Changes nothing.", input: { brief: "Optional boolean; true returns only the status." } },
+  "backup/connect": { description: "Connect the library to any Git remote and push. Git's own credentials are used; a URL containing a password or token is refused. If the push fails, the commits wait locally.", input: { url: "Git remote URL, for example git@github.com:owner/repo.git." } },
+  "backup/create": { description: "Create a private GitHub repository with the GitHub CLI (its own sign-in is used), connect it and push. Skill files are not scanned for secrets, so the repository must stay private.", input: { name: "Repository name, for example afk-library." } },
+  "backup/save": { description: "Save now: push every commit waiting locally. A failed push keeps the commits and reports why.", input: {} },
+  "backup/restore": { description: "Go back to an earlier save. The library is restored to that point as a new commit, so going back can itself be undone.", input: { id: "Save id from backup/state history." } },
+  "backup/disconnect": { description: "Disconnect the remote. Local commits and history stay.", input: {} },
   welcome: { description: "Remember dismissal of the Welcome dialog.", input: {} },
 } satisfies Record<string, OperationDescription>;
 
