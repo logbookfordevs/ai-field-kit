@@ -22,7 +22,7 @@ async function body(request: IncomingMessage): Promise<Record<string, unknown>> 
   return value as Record<string, unknown>;
 }
 
-export async function startFieldwork(store = new SettingsStore(), port = 0): Promise<{ url: string; token: string; close: () => Promise<void> }> {
+export async function startFieldwork(store = new SettingsStore(), port = 0, options: { shutdownMs?: number } = {}): Promise<{ url: string; token: string; close: () => Promise<void> }> {
   let closeApp: (() => Promise<void>) | undefined;
   let shutdown: Promise<void> | undefined;
   let updatingRequested = false;
@@ -102,9 +102,16 @@ export async function startFieldwork(store = new SettingsStore(), port = 0): Pro
   });
   closeApp = () => {
     shutdown ??= (async () => {
-      await new Promise<void>((accept, reject) => server.close(error => error ? reject(error) : accept()));
-      await schedule.stop();
-      await operations.close();
+      const deadline = options.shutdownMs ?? 10_000;
+      const closed = new Promise<void>((accept, reject) => server.close(error => error ? reject(error) : accept()));
+      server.closeIdleConnections();
+      await operations.close(deadline);
+      let timer: NodeJS.Timeout | undefined;
+      const scheduled = await Promise.race([schedule.stop().then(() => true), new Promise<boolean>(accept => { timer = setTimeout(() => accept(false), deadline); })]);
+      clearTimeout(timer);
+      if (!scheduled) console.error("AFK shutdown deadline reached; abandoned: scheduled skill update");
+      server.closeAllConnections();
+      await closed;
     })();
     return shutdown;
   };

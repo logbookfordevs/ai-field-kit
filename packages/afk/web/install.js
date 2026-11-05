@@ -12,6 +12,7 @@ function showInstallSkills({source='',to,selected=[]}={}){
   modal('Install skills',`<div class="install-source"><label>Repository<input id="installSource" value="${esc(source)}" placeholder="owner/repository or URL" oninput="installSourceChanged()" onkeydown="if(event.key==='Enter'){event.preventDefault();findInstallSkills()}"></label>${button('Find skills','findInstallSkills()','','id="findInstallSkills"')}</div><p id="installSkipped" class="hint" hidden></p><div id="installationDiscovery"></div><fieldset class="profile-source"><legend>Where should they go?</legend><div class="install-destinations">${destinations}</div></fieldset><div id="installTarget"></div><details class="source-options"><summary>Installation agent</summary><label>Agent<select id="installAgent" onchange="saveInstallPrefs({agent:this.value})">${agents}</select></label></details><div id="installOutput" role="status" aria-live="polite"></div><p id="installError" class="field-error" role="alert"></p>`,button('Cancel installation','cancelInstallSkills()','text danger','id="cancelInstall" hidden')+button('Close','closeModal()','text')+button('Install','applyInstallSkills()','primary','id="startInstall" disabled'));
   renderInstallTarget();
   updateInstallationSelection();
+  request('skills/install-state',{}).then(progress=>{if(progress?.pending)renderInstallProgress(progress)}).catch(()=>{});
   if(source)findInstallSkills();
 }
 function installFromSource(index,to){
@@ -119,11 +120,19 @@ function installPayload(){
     ...(conflicts.length&&dialog.to!=='pack'&&dialog.to!=='later'?{replace:conflicts}:{}),
   };
 }
+function installElapsed(progress){
+  const seconds=Math.max(0,Math.floor(((progress.finishedAt||Date.now())-(progress.startedAt||Date.now()))/1000));
+  return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+}
 function renderInstallProgress(progress){
   const output=$('installOutput');
   if(!output||!progress)return;
-  if(!output.querySelector('details'))output.innerHTML='<p class="install-phase"></p><details><summary>Skills CLI output</summary><pre></pre></details>';
+  if(!output.querySelector('details'))output.innerHTML='<p class="install-phase"></p><p class="meta install-detail"></p><p class="meta install-last-line"></p><details><summary>Skills CLI output</summary><pre></pre></details>';
   output.querySelector('.install-phase').textContent=progress.phase;
+  const detail=output.querySelector('.install-detail');
+  if(detail)detail.textContent=[progress.item,progress.startedAt?installElapsed(progress):''].filter(Boolean).join(' · ');
+  const last=output.querySelector('.install-last-line');
+  if(last)last.textContent=progress.pending?progress.lastLine||'':'';
   output.querySelector('pre').textContent=progress.output||'Preparing…';
   if(!progress.pending&&progress.code)output.querySelector('details').open=true;
 }

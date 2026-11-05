@@ -1,7 +1,7 @@
 import { mkdtemp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { runCommand } from "./command-runner.js";
 import { ProcessOutput } from "./process-output.js";
 import { containsControl, skillName } from "./settings.js";
 
@@ -60,6 +60,8 @@ function preparationFailure(source: string, output: string): Error {
 export class SourcePreparation {
   private readonly sources = new Map<string, string>();
 
+  constructor(private readonly signal?: AbortSignal) {}
+
   async discover(source: string): Promise<string[]> {
     if (!source.trim() || source.startsWith("-") || containsControl(source)) throw new Error("Enter a repository URL or owner/repository.");
     let directory = this.sources.get(source);
@@ -67,14 +69,9 @@ export class SourcePreparation {
       directory = await mkdtemp(join(tmpdir(), "afk-prepare-"));
       const home = join(directory, "home");
       await mkdir(home);
-      const result = await new Promise<{ code: number; output: string }>((accept, reject) => {
-        const child = spawn("npx", ["--yes", "skills", "add", source, "--skill", "*", "--agent", "codex", "--yes", "--copy"], {
-          cwd: directory, env: { ...process.env, HOME: home, USERPROFILE: home, XDG_STATE_HOME: join(home, ".local/state") }, stdio: ["ignore", "pipe", "pipe"],
-        });
-        let output = "";
-        const append = (data: Buffer): void => { output = (output + data.toString()).slice(-30_000); };
-        child.stdout.on("data", append); child.stderr.on("data", append);
-        child.once("error", reject); child.once("close", code => accept({ code: code ?? 1, output }));
+      const result = await runCommand({
+        command: "npx", args: ["--yes", "skills", "add", source, "--skill", "*", "--agent", "codex", "--yes", "--copy"], step: `Reading ${source} through Skills CLI`,
+        cwd: directory, env: { ...process.env, HOME: home, USERPROFILE: home, XDG_STATE_HOME: join(home, ".local/state") }, signal: this.signal, idleTimeoutMs: 90_000, timeoutMs: 5 * 60_000,
       }).catch(async error => { await rm(directory!, { recursive: true, force: true }); throw error; });
       if (result.code !== 0) { await rm(directory, { recursive: true, force: true }); throw preparationFailure(source, result.output); }
       this.sources.set(source, directory);

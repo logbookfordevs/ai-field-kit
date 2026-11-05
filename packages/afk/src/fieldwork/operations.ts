@@ -7,7 +7,7 @@ import { fetchStack, manifestUrl, validateStack, type SkillStack } from "./stack
 import { randomUUID } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
-import { spawn } from "node:child_process";
+import { runCommand as run, type CommandResult } from "./command-runner.js";
 import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
 import { resolveDuplicate } from "./duplicates.js";
@@ -68,22 +68,18 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   }
 }
 
-export function runCommand(command: string, args: string[], cwd: string): Promise<{ output: string; code: number }> {
-  return new Promise((accept, reject) => {
-    const child = spawn(command, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
-    let output = "";
-    const append = (chunk: Buffer): void => { output = (output + chunk.toString()).slice(-100_000); };
-    child.stdout.on("data", append);
-    child.stderr.on("data", append);
-    child.once("error", reject);
-    child.once("close", code => accept({ output, code: code ?? 1 }));
-  });
+export async function runTool(command: string, args: string[], cwd: string, signal?: AbortSignal): Promise<{ output: string; code: number }> {
+  const result: CommandResult = await run({ command, args, cwd, signal, step: "The tool command", idleTimeoutMs: 10 * 60_000, timeoutMs: 30 * 60_000 });
+  return { output: result.output, code: result.code };
 }
 
 export class FieldworkOperations {
   private readonly library: SkillLibrary;
   private readonly rules: RulesWorkspace;
-  private readonly preparation = new SourcePreparation();
+  private readonly lifecycle = new AbortController();
+  private readonly inFlight = new Map<number, { operation: string; settled: Promise<void> }>();
+  private nextFlight = 0;
+  private readonly preparation = new SourcePreparation(this.lifecycle.signal);
   private installController: AbortController | null = null;
   private skillInstall: InstallProgress | null = null;
   private updateController: AbortController | null = null;
@@ -238,7 +234,7 @@ export class FieldworkOperations {
     if (toInstall.length) {
       this.installController = new AbortController();
       try {
-        install = await installSkills(store, settings, [{ source, skills: toInstall }], scope, String(data.agent ?? "universal"), `Install from ${source}`, value => { this.skillInstall = value; }, this.installController.signal, this.installRunner);
+        install = await installSkills(store, settings, [{ source, skills: toInstall }], scope, String(data.agent ?? "universal"), `Install from ${source}`, value => { this.skillInstall = value; }, AbortSignal.any([this.installController.signal, this.lifecycle.signal]), this.installRunner);
         this.skillInstall = install;
       } finally { this.installController = null; }
       if (install.code !== 0) {
@@ -272,9 +268,12 @@ export class FieldworkOperations {
   run(operation: string, data: Record<string, unknown> = {}): Promise<unknown> {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const action = (): Promise<unknown> => this.apply(operation as Operation, data);
-    if (["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule"].includes(operation)) return action();
-    const result = this.mutations.then(action);
-    this.mutations = result.then(() => undefined, () => undefined);
+    const direct = ["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule"].includes(operation);
+    const result = direct ? action() : this.mutations.then(action);
+    if (!direct) this.mutations = result.then(() => undefined, () => undefined);
+    const flight = this.nextFlight++;
+    this.inFlight.set(flight, { operation, settled: result.then(() => undefined, () => undefined) });
+    void this.inFlight.get(flight)!.settled.then(() => this.inFlight.delete(flight));
     return result;
   }
 
@@ -283,9 +282,18 @@ export class FieldworkOperations {
     if (Object.values(this.toolRuns).some(run => run.pending)) throw new Error("Wait for running tool commands to finish before updating AFK.");
   }
 
-  async close(): Promise<void> {
-    await this.mutations;
+  async close(deadlineMs = 10_000): Promise<{ abandoned: string[] }> {
+    this.lifecycle.abort();
+    let timer: NodeJS.Timeout | undefined;
+    const drained = await Promise.race([
+      Promise.all([...this.inFlight.values()].map(flight => flight.settled)).then(() => true),
+      new Promise<boolean>(accept => { timer = setTimeout(() => accept(false), deadlineMs); }),
+    ]);
+    clearTimeout(timer);
+    const abandoned = drained ? [] : [...new Set([...this.inFlight.values()].map(flight => flight.operation))];
+    if (abandoned.length) console.error(`AFK shutdown deadline reached; abandoned: ${abandoned.join(", ")}`);
     await this.preparation.close();
+    return { abandoned };
   }
 
   private migrationChoices(data: Record<string, unknown>): MigrationChoices {
@@ -343,7 +351,7 @@ export class FieldworkOperations {
       const groups = [{ ...source, ...(data.skills ? { skills: data.skills as string[] } : {}) }];
       this.installController = new AbortController();
       try {
-        this.skillInstall = await installSkills(store, settings, groups, String(data.scope), String(data.agent), source.name, value => { this.skillInstall = value; }, this.installController.signal, this.installRunner);
+        this.skillInstall = await installSkills(store, settings, groups, String(data.scope), String(data.agent), source.name, value => { this.skillInstall = value; }, AbortSignal.any([this.installController.signal, this.lifecycle.signal]), this.installRunner);
         return this.skillInstall;
       } finally { this.installController = null; }
     }
@@ -456,7 +464,7 @@ export class FieldworkOperations {
       if (current.plan.install.length) {
         this.installController = new AbortController();
         try {
-          install = await installSkills(store, settings, current.plan.install, "Global", String(data.agent ?? "universal"), "Sync this machine", value => { this.skillInstall = value; }, this.installController.signal, this.installRunner);
+          install = await installSkills(store, settings, current.plan.install, "Global", String(data.agent ?? "universal"), "Sync this machine", value => { this.skillInstall = value; }, AbortSignal.any([this.installController.signal, this.lifecycle.signal]), this.installRunner);
           this.skillInstall = install;
         } finally { this.installController = null; }
       }
@@ -465,7 +473,7 @@ export class FieldworkOperations {
       for (const tool of current.plan.tools.filter(tool => approved.includes(tool.id))) {
         toolRuns[tool.id] = { pending: true, output: "Running…" };
         try {
-          const result = await runCommand(process.env.SHELL || "/bin/sh", ["-c", tool.command], store.home);
+          const result = await runTool(process.env.SHELL || "/bin/sh", ["-c", tool.command], store.home, this.lifecycle.signal);
           toolRuns[tool.id] = { pending: false, ...result };
           tools.push({ id: tool.id, name: tool.name, ...result });
         } catch (error) {
@@ -501,10 +509,10 @@ export class FieldworkOperations {
       const scope = String(data.scope);
       this.updateController = new AbortController();
       try {
-        this.skillUpdate = await updateSkills(store, settings, scope, value => { this.skillUpdate = value; }, undefined, this.updateController.signal, data.names as string[] | undefined);
+        this.skillUpdate = await updateSkills(store, settings, scope, value => { this.skillUpdate = value; }, undefined, AbortSignal.any([this.updateController.signal, this.lifecycle.signal]), data.names as string[] | undefined);
         return this.skillUpdate;
       } catch (error) {
-        this.skillUpdate = { pending: false, phase: "Update failed; review the details", output: (this.skillUpdate?.output || "") + "\n" + (error instanceof Error ? error.message : "Update failed"), code: 1, scope };
+        this.skillUpdate = { pending: false, phase: "Update failed; review the details", output: (this.skillUpdate?.output || "") + "\n" + (error instanceof Error ? error.message : "Update failed"), code: 1, scope, startedAt: this.skillUpdate?.startedAt ?? Date.now(), finishedAt: Date.now() };
         return this.skillUpdate;
       } finally { this.updateController = null; }
     }
@@ -830,7 +838,7 @@ export class FieldworkOperations {
       const command = data.update === true ? tool.update || tool.install : tool.install;
       toolRuns[tool.id] = { pending: true, output: "Running…" };
       try {
-        const result = await runCommand(process.env.SHELL || "/bin/sh", ["-c", command], store.home);
+        const result = await runTool(process.env.SHELL || "/bin/sh", ["-c", command], store.home, this.lifecycle.signal);
         toolRuns[tool.id] = { pending: false, ...result }; return result;
       } catch (error) {
         toolRuns[tool.id] = { pending: false, code: 1, output: error instanceof Error ? error.message : "Command could not start." }; throw error;

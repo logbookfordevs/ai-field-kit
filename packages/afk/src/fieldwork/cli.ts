@@ -5,6 +5,7 @@ import { startBackground, backgroundStatus, stopBackground, restartBackground } 
 import { updateAfk } from "./update.js";
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
+import { createInterface } from "node:readline/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { doctor } from "./doctor.js";
@@ -23,7 +24,7 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk --background [--port <number>] Run the app in the background
   afk --port <number>                Open the app on a fixed port
   afk status                         Show the background app URL and PID
-  afk stop                           Stop the background app
+  afk stop [--force]                 Stop the background app; --force also clears one that is not answering
   afk restart                        Restart the background app on its current port
   afk skills update [name] [-g | -p <project>]  Update skills, preserving availability
   afk add <repository>               Install skills and decide where they go
@@ -64,6 +65,11 @@ No browser or running web app is required. Use describe for supported fields.
 Tool commands run only through tool/run. Rule sync requires an exact preview.
 
 Operations: ${Object.keys(operationCatalog).join(", ")}`;
+
+async function confirmInTerminal(message: string): Promise<boolean> {
+  const terminal = createInterface({ input: process.stdin, output: process.stdout });
+  try { return /^y(es)?$/i.test((await terminal.question(`${message} [y/N] `)).trim()); } finally { terminal.close(); }
+}
 
 function json(value: unknown): void { console.log(JSON.stringify(value, null, 2)); }
 function hasErrors(value: unknown): boolean {
@@ -145,9 +151,10 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     console.log(fileURLToPath(new URL("../../skills/afk-cli/SKILL.md", import.meta.url))); return 0;
   }
   if (command === "status" || command === "stop" || command === "restart") {
-    if (action !== undefined) throw new Error(`Use afk ${command} without additional arguments.`);
-    if (command === "status") await backgroundStatus(store.home);
-    else if (command === "stop") await stopBackground(store.home);
+    const force = command === "stop" && action === "--force";
+    if ((action !== undefined && !force) || id !== undefined) throw new Error(command === "stop" ? "Use afk stop [--force]." : `Use afk ${command} without additional arguments.`);
+    if (command === "status") return backgroundStatus(store.home);
+    if (command === "stop") await stopBackground(store.home, { force, confirm: process.stdin.isTTY && process.stdout.isTTY ? confirmInTerminal : undefined });
     else await restartBackground(store.home);
     return 0;
   }

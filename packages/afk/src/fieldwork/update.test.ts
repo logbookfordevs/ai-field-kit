@@ -29,7 +29,7 @@ describe("AFK self-update CLI", () => {
       const child = new ChildProcess(); queueMicrotask(() => child.emit("close", code)); return child;
     });
     expect(await runFieldwork(["update"], store)).toBe(code ?? 1);
-    expect(spawn).toHaveBeenCalledWith("bash", ["-o", "pipefail", "-c", installerCommand], { stdio: "inherit" });
+    expect(spawn).toHaveBeenCalledWith("bash", ["-o", "pipefail", "-c", installerCommand], expect.objectContaining({ stdio: "inherit" }));
     expect(store.initialize).not.toHaveBeenCalled();
     if (code !== 0) expect(console.error).toHaveBeenCalledWith(installerCommand);
   });

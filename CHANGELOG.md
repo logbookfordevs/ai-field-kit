@@ -17,6 +17,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Fixed
 
+- **A stalled outside command can no longer hang AFK.** Installs, updates, repository reads, tool commands and AFK's own update now run with a silence limit and an overall limit, stop together with their child processes, and fail with a message naming the step. Install and update dialogs show the current source, elapsed time and last output line, and keep running when you close them. Closing AFK has a deadline too and logs anything it had to abandon.
+- **`afk status` explains a server that is running but not answering.** It prints the PID and the fix instead of `fetch failed`, and `afk stop --force` stops it and clears its record. `afk stop` offers to do so when run in a terminal.
 - **Installing a skill AFK had already stored no longer leaves two copies.** The fresh installation replaces the older stored copy, and packs, project links and your Manual/Automatic choice keep working. Existing duplicates show as **Two copies** in Installed Skills with a **Resolve** action. Turning such a skill off, or turning on a pack that contains it, now asks which copy to keep instead of failing; identical copies merge without asking. Doctor also reports them.
 - **Manual/Automatic now applies to the copy agents load.** When a skill was installed through Skills CLI after a pack had already stored a copy of it, AFK edited the hidden stored copy. The setting looked saved, but agents still read the unchanged installed copy, and the invocation filter still listed it as Automatic.
 
