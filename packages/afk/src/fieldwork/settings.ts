@@ -304,11 +304,25 @@ export class SettingsStore {
     catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
     settings.projects = state?.projects ?? [];
     const result = applyLocalState(validateSettings(settings), state, this.home);
+    await this.dropStoredMachineOnly(result, state);
     for (const [name, invocation] of Object.entries(await recordedInvocations(this.home))) {
       if (invocation) result.preferences[`Global|${name}`] = invocation;
       else delete result.preferences[`Global|${name}`];
     }
     return validateSettings(result);
+  }
+
+  // A skill is in Core or the library, or it is machine-only, never both; earlier versions left both marks behind.
+  private async dropStoredMachineOnly(settings: Settings, state: LocalState | undefined): Promise<void> {
+    const stored = new Set([...(settings.kit?.core ?? []).flatMap(entry => entry.skills), ...await new Library(this.home).names()]);
+    const kept = settings.machineOnly.filter(name => !stored.has(name));
+    if (kept.length === settings.machineOnly.length) return;
+    settings.machineOnly = kept;
+    if (!state || !settings.configurationId) return;
+    const local = this.localPath(settings.configurationId);
+    await mkdir(dirname(local), { recursive: true });
+    await writeFile(`${local}.${process.pid}.tmp`, `${JSON.stringify({ ...state, machineOnly: kept }, null, 2)}\n`, { mode: 0o600 });
+    await rename(`${local}.${process.pid}.tmp`, local);
   }
 
   private async saveLibrary(settings: Settings): Promise<void> {

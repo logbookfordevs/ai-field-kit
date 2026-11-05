@@ -69,6 +69,7 @@ export function coreEntry(settings: Settings, source: string): KitSource | undef
 
 export function addToCore(settings: Settings, name: string, source: string): void {
   settings.kit ??= { core: [] };
+  settings.machineOnly = settings.machineOnly.filter(member => member !== name);
   const other = settings.kit.core.find(entry => entry.skills.includes(name));
   if (other) {
     if (sourceIdentity(other.source) === sourceIdentity(source)) return;

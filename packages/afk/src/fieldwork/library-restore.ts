@@ -6,7 +6,7 @@ import { runCommand } from "./command-runner.js";
 import { Library, type GitRunner, type LibrarySettings } from "./library.js";
 import { checkRemoteUrl } from "./library-backup.js";
 import { coreNames, deployLibrary, type AsideMove } from "./library-deploy.js";
-import { recordedInvocations } from "./library-settings.js";
+import { libraryUntouched, recordedInvocations } from "./library-settings.js";
 import { clearRestorePending, markRestorePending, pendingRestore } from "./restore-pending.js";
 import type { SettingsStore, Tool } from "./settings.js";
 
@@ -115,6 +115,7 @@ export class Restore {
     const pending = await exists(this.library.root) ? await pendingRestore(home) : undefined;
     if (pending !== undefined && pending !== url) throw new Error(`The restore from ${pending} did not finish. Restore from it again to finish linking its skills.`);
     if (pending === undefined) {
+      if (await libraryUntouched(home)) await rm(this.library.root, { recursive: true, force: true });
       if (await exists(this.library.root)) throw new Error(`A library already exists at ${this.library.root}. Restore needs an empty machine.`);
       await this.clearLeftovers();
       await this.inspect(url);

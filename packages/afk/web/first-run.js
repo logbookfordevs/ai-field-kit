@@ -1,32 +1,40 @@
-let firstRun={step:'choose',path:'restore',repositories:[],listError:'',error:'',summary:null,plan:null,started:null,ticked:new Set(),ran:[],failed:[]};
+let firstRun={step:'choose',ready:false,path:'restore',repositories:[],listError:'',error:'',summary:null,plan:null,started:null,ticked:new Set(),ran:[],failed:[]};
 
 function firstRunCount(count,word){return count+' '+word+(count===1?'':'s')}
 
 function firstRunShow(title,body,foot=''){modal(title,`<div data-first-run="${firstRun.step}" aria-live="polite">${body}</div>`,foot)}
 
-function showFirstRun(){
-  firstRun={step:'choose',path:'restore',repositories:[],listError:'',error:'',summary:null,plan:null,started:null,ticked:new Set(),ran:[],failed:[]};
+function showFirstRun(ready=false){
+  firstRun={step:'choose',ready,path:'restore',repositories:[],listError:'',error:'',summary:null,plan:null,started:null,ticked:new Set(),ran:[],failed:[]};
   renderFirstRunChoice();
 }
 
 async function maybeFirstRun(){
   const state=await request('backup/state',{brief:true}).catch(()=>null);
   if($('sheet')?.open)return;
-  if(state?.status?.library===false||state?.status?.restoring)showFirstRun();else showWelcome();
+  if(state?.status?.fresh)showFirstRun(true);
+  else if(state?.status?.library===false||state?.status?.restoring)showFirstRun();
+  else showWelcome();
 }
 
 function renderFirstRunChoice(){
   firstRun.step='choose';
+  const {ready}=firstRun;
   firstRunShow('Welcome to AFK',
-    `<p class="sub">Is this a new setup, or are you bringing your skills back from a saved library?</p>
+    `<p class="sub">${ready?'Your library is ready on this machine. Is this a new setup, or are you bringing your skills back from a saved library?':'Is this a new setup, or are you bringing your skills back from a saved library?'}</p>
     <div class="first-run-choices">
       <button type="button" class="first-run-choice" onclick="firstRunChoose('restore')"><b>Restore my library</b><span class="meta">You wiped this machine or got a new one. Bring back your Core skills, choices, packs, tools and Try later from your last save.</span></button>
-      <button type="button" class="first-run-choice" onclick="firstRunChoose('fresh')"><b>Start a new library</b><span class="meta">First time backing up. AFK saves this machine's setup into a private Git repository.</span></button>
+      <button type="button" class="first-run-choice" onclick="firstRunChoose('fresh')"><b>${ready?'Back up this machine':'Start a new library'}</b><span class="meta">${ready?'Save your library to a private Git repository so you can bring it back later.':'Move this machine’s skills into a library. You can back it up afterwards.'}</span></button>
     </div>`,
-    button('Skip for now, use AFK without a backup',"firstRunSkip()",'text'));
+    button(ready?'Skip for now, use AFK without a backup':'Not now, ask me next time',"firstRunSkip()",'text'));
 }
 
 async function firstRunSkip(){
+  if(!firstRun.ready){
+    closeModal();
+    toast('Your skills stay where they are for now. AFK will offer to move them into a library next time you open it.');
+    return;
+  }
   try{await request('welcome',{})}catch{toast('Could not remember your choice. This may appear again after restarting AFK.')}
   currentSettings.welcomeDismissed=true;
   showWelcome();
@@ -34,6 +42,11 @@ async function firstRunSkip(){
 
 async function firstRunChoose(path){
   firstRun.path=path;firstRun.error='';
+  if(path==='fresh'&&firstRun.ready){
+    try{await request('welcome',{})}catch{}
+    currentSettings.welcomeDismissed=true;
+    return renderFirstRunReady();
+  }
   if(path==='fresh')return firstRunLoadPlan();
   firstRun.step='pick';
   firstRunShow('Which repository is your library?','<p class="sub">Looking up your repositories…</p>',button('Cancel',"firstRunCancel()",'text'));
@@ -100,6 +113,14 @@ function renderFirstRunStarted(){
     <p class="small">Your original folders are in <code>${esc(started.backup)}</code>. Delete them with <code>afk library confirm</code> once everything works.</p>
     <p class="hint">Next, open Backup to create a private GitHub repository or connect any Git remote. Skill files are not scanned for secrets, so the repository must stay private.</p>`,
     button('Open Skills',"firstRunGo('Skills')",'text')+button('Open Backup',"firstRunGo('Backup')",'primary'));
+}
+
+function renderFirstRunReady(){
+  firstRun.step='ready';
+  firstRunShow('Your library is ready',
+    `<p>AFK already keeps your skills in a library on this machine, and every change is saved there.</p>
+    <p class="hint">Next, open Backup to create a private GitHub repository or connect any Git remote. Skill files are not scanned for secrets, so the repository must stay private.</p>`,
+    button('Back','renderFirstRunChoice()','text')+button('Open Backup',"firstRunGo('Backup')",'primary'));
 }
 
 function renderFirstRunPick(){

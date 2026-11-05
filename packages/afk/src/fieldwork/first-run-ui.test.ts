@@ -78,16 +78,63 @@ describe("choosing how to start", () => {
     expect(asked("restore/repositories")).toEqual([]);
   });
 
-  it("leaves AFK usable without a backup when skipped, remembering the choice", async () => {
+  it("keeps offering the migration when skipped on a machine that has no library yet", async () => {
     evaluate("showFirstRun()");
 
     await click("firstRunSkip()");
 
-    expect(asked("welcome")).toEqual([{}]);
-    expect(asked("restore/start")).toEqual([]);
-    expect(welcomes).toBe(1);
+    expect(asked("welcome")).toEqual([]);
+    expect(welcomes).toBe(0);
+    expect(closed).toBeGreaterThan(0);
+    expect(toasts.join(" ")).toContain("next time");
   });
 
+  it("opens the first-run choice when the library is only the empty one AFK started", async () => {
+    replies["backup/state"] = { status: { library: true, fresh: true } };
+
+    await click("maybeFirstRun()");
+
+    expect(screen()).toContain("firstRunChoose('restore')");
+  });
+
+  it("opens the first-run choice when the library is missing", async () => {
+    replies["backup/state"] = { status: { library: false } };
+
+    await click("maybeFirstRun()");
+
+    expect(screen()).toContain("firstRunChoose('fresh')");
+  });
+
+  it("shows the welcome when the library is in use", async () => {
+    replies["backup/state"] = { status: { library: true } };
+
+    await click("maybeFirstRun()");
+
+    expect(welcomes).toBe(1);
+    expect(dialog.title).toBe("");
+  });
+
+  describe("with the library AFK already started", () => {
+    beforeEach(async () => {
+      replies["backup/state"] = { status: { library: true, fresh: true } };
+      await click("maybeFirstRun()");
+    });
+
+    it("skips only the backup question, remembering the choice", async () => {
+      await click("firstRunSkip()");
+
+      expect(asked("welcome")).toEqual([{}]);
+      expect(asked("restore/start")).toEqual([]);
+      expect(welcomes).toBe(1);
+    });
+
+    it("sends starting a new library straight to Backup without previewing a migration", async () => {
+      await click("firstRunChoose('fresh')");
+
+      expect(asked("library/init-preview")).toEqual([]);
+      expect(screen()).toContain("firstRunGo('Backup')");
+    });
+  });
 });
 
 const plan = {

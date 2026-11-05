@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runFieldwork } from "./cli.js";
 import { runCommand, type CommandResult, type CommandSpec } from "./command-runner.js";
 import { Library } from "./library.js";
-import { applyLibraryInit } from "./library-init.js";
+import { applyLibraryInit, startLibrary } from "./library-init.js";
 import { Backup } from "./library-backup.js";
 import { Restore } from "./library-restore.js";
 import { writeInvocationChoice } from "./invocation.js";
@@ -198,6 +198,27 @@ describe("an interrupted or refused restore", () => {
     await restorer().restore(remote);
 
     await expect(restorer().restore(remote)).rejects.toThrow(/already exists/);
+  });
+});
+
+describe("restoring over the empty library AFK started by itself", () => {
+  it("replaces it, so a new machine can still bring its library back", async () => {
+    await sourceLibrary();
+    await startLibrary(store);
+
+    const summary = await restorer().restore(remote);
+
+    expect(summary.linked).toEqual(["alpha", "beta"]);
+    expect(await library().names()).toEqual(["alpha", "beta"]);
+  });
+
+  it("still refuses once the library holds a skill", async () => {
+    await sourceLibrary();
+    await startLibrary(store);
+    await library().change("Add stray", async () => { await write(library().skillPath("stray"), "stray"); });
+
+    await expect(restorer().restore(remote)).rejects.toThrow(/already exists/);
+    expect(await library().names()).toEqual(["stray"]);
   });
 });
 

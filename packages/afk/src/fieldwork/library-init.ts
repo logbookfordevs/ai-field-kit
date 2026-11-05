@@ -1,9 +1,10 @@
-import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, rmdir, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { writeInvocationChoice } from "./invocation.js";
 import { toolOwner } from "./kit.js";
 import { agentSkillFolders, Library, type GitRunner, type InvocationChoice, type SkillRecord, type Storage } from "./library.js";
 import { planLibrarySettings } from "./library-settings.js";
+import { pendingRestore } from "./restore-pending.js";
 import { RulesWorkspace } from "./rules.js";
 import { offFolder } from "./tool-skills.js";
 import { skillName, type Settings, type SettingsStore } from "./settings.js";
@@ -226,14 +227,39 @@ export async function applyLibraryInit(store: SettingsStore, runner?: GitRunner,
     }
     const on = [...plan.skills, ...plan.machineSkills].filter(skill => skill.on).map(skill => skill.name);
     settings.independentSkills.Global = [...new Set([...(settings.independentSkills.Global ?? []), ...on])];
-    settings.machineOnly = [...new Set([...settings.machineOnly, ...plan.machineSkills.map(skill => skill.name)])];
+    const joined = new Set([...(settings.kit?.core ?? []).flatMap(entry => entry.skills), ...plan.skills.map(skill => skill.name)]);
+    settings.machineOnly = [...new Set([...settings.machineOnly, ...plan.machineSkills.map(skill => skill.name)])].filter(name => !joined.has(name));
     await store.save(settings);
   } catch (error) {
     await undo();
     await rm(library.root, { recursive: true, force: true });
     throw error;
   }
+  await removeEmptyDisabledFolders(store.home);
   return plan;
+}
+
+// Only an empty `.disabled` goes; one that still holds something belongs to the user.
+async function removeEmptyDisabledFolders(home: string): Promise<void> {
+  for (const folder of agentSkillFolders(home)) {
+    const disabled = join(folder, ".disabled");
+    try { if (!(await readdir(disabled)).length) await rmdir(disabled); } catch { /* Missing or not removable: leave it. */ }
+  }
+}
+
+function hasSetup(settings: Settings, plan: LibraryInitPlan): boolean {
+  const lists = [plan.skills, plan.packSkills, plan.machineSkills, plan.offToolSkills, plan.missing, plan.toolSkills, plan.rules];
+  const saved = [settings.kit?.core ?? [], settings.profiles, settings.tools, settings.favoriteSources, settings.agentRules?.destinations ?? [], Object.keys(settings.preferences)];
+  return [...lists, ...saved].some(list => list.length > 0);
+}
+
+/** Starts the library on a machine with nothing to migrate. A machine with an existing setup keeps the reviewed migration. */
+export async function startLibrary(store: SettingsStore, runner?: GitRunner): Promise<boolean> {
+  const library = new Library(store.home, runner);
+  if (await exists(library.root) || await pendingRestore(store.home) !== undefined) return false;
+  if (hasSetup(await store.read(), await planLibraryInit(store, runner))) return false;
+  await applyLibraryInit(store, runner);
+  return true;
 }
 
 /** Deletes the dated backups of the folders a library migration replaced. */
