@@ -89,8 +89,14 @@ export async function migrateProject(store: SettingsStore, settings: Settings, s
   if (await entryType(overrides) !== "missing") { await rm(overrides, { recursive: true, force: true }); changed = true; }
 
   // Only AFK's two invocation fields go back to how the backup had them; the backup stays until the settings are saved.
-  for (const name of await names(root)) {
+  // A reset never writes through a link, so a linked skill, skills folder or metadata file keeps what it points to.
+  let rootLinked = false;
+  for (let path = root; path !== project && inside(path, project); path = dirname(path)) if (await entryType(path) === "link") rootLinked = true;
+  const managed = ["SKILL.md", "agents", "agents/openai.yaml", ".afk-invocation-original.json"];
+  for (const name of rootLinked ? [] : await names(root)) {
     const path = join(root, name), backupPath = join(path, ".afk-invocation-original.json");
+    if (await entryType(path) !== "folder") continue;
+    if ((await Promise.all(managed.map(file => entryType(join(path, file))))).includes("link")) continue;
     const text = await optional(backupPath);
     if (text === null) continue;
     let backup: InvocationBackup;

@@ -209,6 +209,36 @@ it("leaves a folder outside the project alone when the project's skills folder i
   expect(await readFile(join(outside, ".afk-overrides/unrelated/SKILL.md"), "utf8")).toContain("UNIQUE OUTSIDE COPY");
 });
 
+it("does not reset invocation fields through a project skill folder that is a link to somewhere else", async () => {
+  const f = await fixture();
+  const outside = await mkdtemp(join(tmpdir(), "afk-project-outside-")); homes.push(outside);
+  const target = await f.write(join(outside, "shared"), "shared", "UNIQUE OUTSIDE SKILL", "disable-model-invocation: true\n");
+  await writeFile(join(target, ".afk-invocation-original.json"), JSON.stringify({ skill: body("shared", "Original"), metadata: null }));
+  const before = await readFile(join(target, "SKILL.md"), "utf8");
+  await mkdir(f.root, { recursive: true });
+  await symlink(target, join(f.root, "shared"), "dir");
+
+  await migrateProject(f.store, await f.store.read(), "Studio");
+
+  expect(await readFile(join(target, "SKILL.md"), "utf8")).toBe(before);
+  expect(await exists(join(target, ".afk-invocation-original.json"))).toBe(true);
+});
+
+it("does not reset invocation fields through a skill's metadata file that is a link to somewhere else", async () => {
+  const f = await fixture();
+  const outside = await mkdtemp(join(tmpdir(), "afk-project-outside-")); homes.push(outside);
+  await writeFile(join(outside, "openai.yaml"), "policy:\n  allow_implicit_invocation: false\n");
+  const own = await f.write(join(f.root, "own"), "own", "Original", "disable-model-invocation: true\n");
+  await mkdir(join(own, "agents"));
+  await symlink(join(outside, "openai.yaml"), join(own, "agents/openai.yaml"));
+  await writeFile(join(own, ".afk-invocation-original.json"), JSON.stringify({ skill: body("own", "Original"), metadata: "interface:\n  display_name: Original\n" }));
+
+  await migrateProject(f.store, await f.store.read(), "Studio");
+
+  expect(await readFile(join(outside, "openai.yaml"), "utf8")).toBe("policy:\n  allow_implicit_invocation: false\n");
+  expect(await exists(join(own, ".afk-invocation-original.json"))).toBe(true);
+});
+
 it("turns off existing pack activations in a project and removes only AFK's links and copies", async () => {
   const f = await fixture();
   const library = await f.write(join(f.home, ".agents/skills/.disabled/review"), "review", "Library");
