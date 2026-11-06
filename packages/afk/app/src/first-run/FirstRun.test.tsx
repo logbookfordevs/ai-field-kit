@@ -12,6 +12,11 @@ const backupState = (status: Status) => () => ({
   unpushed: [],
 });
 
+const appState = (settings: Record<string, unknown> = {}) => () => ({
+  settings: { profiles: [], tools: [], favoriteSources: [], ...settings },
+  inventories: { Global: [] },
+});
+
 const names = (prefix: string, count: number): string[] => Array.from({ length: count }, (_, index) => `${prefix}-${String(index + 1).padStart(2, "0")}`);
 
 const skill = (name: string) => ({ name, on: true, from: "owner/repo", originals: [], record: {} });
@@ -153,7 +158,7 @@ it("starts an empty library when there is nothing on the machine to move", async
 it("on a library that AFK started empty, offers backup instead of starting one, and lets you skip it", async () => {
   const client = fakeClient({
     "backup/state": backupState({ fresh: true }),
-    state: () => ({ settings: {} }),
+    state: appState(),
     welcome: () => ({ ok: true }),
   });
   open(client);
@@ -171,13 +176,13 @@ it("on a library that AFK started empty, offers backup instead of starting one, 
 });
 
 it("does not ask again once the welcome was dismissed", async () => {
-  open(fakeClient({ "backup/state": backupState({ fresh: true }), state: () => ({ settings: { welcomeDismissed: true } }) }));
+  open(fakeClient({ "backup/state": backupState({ fresh: true }), state: appState({ welcomeDismissed: true }) }));
 
   expect(await screen.findByRole("navigation", { name: "Sections" })).toBeInTheDocument();
 });
 
 it("opens Backup from the backup choice", async () => {
-  open(fakeClient({ "backup/state": backupState({ fresh: true }), state: () => ({ settings: {} }), welcome: () => ({ ok: true }) }));
+  open(fakeClient({ "backup/state": backupState({ fresh: true }), state: appState(), welcome: () => ({ ok: true }) }));
 
   await userEvent.click(await screen.findByRole("radio", { name: /Back up this machine/ }));
   await userEvent.click(screen.getByRole("button", { name: "Continue" }));
