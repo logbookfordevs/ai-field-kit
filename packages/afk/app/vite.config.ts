@@ -15,12 +15,12 @@ function devSession(): Plugin {
 
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
-  base: "/next/",
-  publicDir: false,
+  base: "/",
+  publicDir: fileURLToPath(new URL("./public", import.meta.url)),
   plugins: [react(), devSession()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   build: {
-    outDir: fileURLToPath(new URL("../web/next", import.meta.url)),
+    outDir: fileURLToPath(new URL("../web", import.meta.url)),
     emptyOutDir: true,
     assetsDir: "assets",
   },
@@ -28,8 +28,6 @@ export default defineConfig({
     ? {
         proxy: {
           "/api": { target: afkUrl, changeOrigin: true, configure: proxy => { proxy.on("proxyReq", request => request.removeHeader("origin")); } },
-          "/assets": { target: afkUrl, changeOrigin: true },
-          "/favicon.svg": { target: afkUrl, changeOrigin: true },
         },
       }
     : {},

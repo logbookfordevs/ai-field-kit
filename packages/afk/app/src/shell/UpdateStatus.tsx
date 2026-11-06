@@ -9,7 +9,7 @@ const reconnectMs = 12 * 60_000;
 
 async function restartedToken(): Promise<string | undefined> {
   try {
-    const response = await fetch("/next/", { cache: "no-store", signal: AbortSignal.timeout(3_000) });
+    const response = await fetch("/", { cache: "no-store", signal: AbortSignal.timeout(3_000) });
     const token = /window\.afkToken="([a-f0-9]+)"/.exec(await response.text())?.[1];
     return response.ok && token !== window.afkToken ? token : undefined;
   } catch {
