@@ -56,6 +56,7 @@ The React app ([ADR 0013](adr/0013-react-for-the-local-app.md)) lives in `packag
 - **Screens** live in `app/src/screens/<id>/index.tsx`, each exporting a `ScreenDefinition` (`label`, `Screen`, `useAttention`). `screens/registry.ts` fixes the navigation order; a screen ticket replaces only its own folder.
 - **Data** goes through `useOperation(name, input)` for reads and `useMutation(name)` for changes (`app/src/api/hooks.ts`). Both return failures as values; a successful change refreshes every read. Result types live in `OperationResults` (`app/src/api/operations.ts`), which screens extend by declaration merging.
 - **Shared components** are in `app/src/components/`; `app/gallery.html` shows them during development (not built).
+- **Install dialog**: any screen can open it with `openInstall({ repository?, skills?, destination?, source? })` from `@/screens/sources`. It prefills what is given and still asks for the rest, including the destination. `InstallHost` renders the one dialog from `App.tsx`.
 - **Tests** use Vitest, React Testing Library and happy-dom. `renderWithApp` and `fakeClient` in `app/src/test/` render a screen against handler functions instead of a server.
 
 For live reloading against a running AFK on a temporary home, start AFK in the foreground, read the token from its page and run Vite with both:

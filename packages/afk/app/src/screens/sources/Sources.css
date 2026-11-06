@@ -1,0 +1,13 @@
+.add-row{display:flex;gap:8px;flex-wrap:wrap;padding-top:16px;border-top:1px solid var(--fg)}
+.count{font:500 14px var(--font-body);color:var(--muted);margin-left:6px}
+.find-inline{max-width:420px;margin-bottom:8px}
+.search-wrap{position:relative;display:block}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search-wrap input{padding-left:40px}
+.core-source .switch .st{min-width:6.5em}
+#try-later:focus-visible{outline:2px solid var(--focus);outline-offset:4px}
+@media (max-width:760px){
+  .add-row>*{flex:1 1 100%}
+  .sec-head{flex-wrap:wrap;align-items:flex-start}
+  .find-inline{max-width:none}
+}
