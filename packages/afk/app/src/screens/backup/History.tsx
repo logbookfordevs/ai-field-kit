@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog } from "@/components/Dialog";
 import { EmptyState } from "@/components/EmptyState";
 import { Ledger, Row } from "@/components/Row";
-import { ago } from "@/screens/backup/format";
+import { ago } from "@/text/format";
 import type { BackupActions } from "@/screens/backup/useBackupActions";
 import type { SaveEntry } from "../../../../src/fieldwork/library-backup.js";
 

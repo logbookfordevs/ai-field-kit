@@ -6,7 +6,8 @@ import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import { FileViewer } from "@/screens/skills/FileViewer";
 import { useMechanismText } from "@/screens/skills/InvocationInfo";
-import { fromLabel, shortSource, type Skill } from "@/screens/skills/model";
+import { fromLabel, type Skill } from "@/screens/skills/model";
+import { shortSource } from "@/text/format";
 import { SkillEditor } from "@/screens/skills/SkillEditor";
 import { modeOptions, updateBlocked, type RowActions } from "@/screens/skills/SkillRow";
 

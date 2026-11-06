@@ -2,7 +2,7 @@ import { useId, useState, type FormEvent } from "react";
 import type { Tool } from "../../../src/fieldwork/settings.js";
 import { Progress } from "@/components/Progress";
 import { Ledger } from "@/components/Row";
-import { count } from "@/first-run/text";
+import { plural as count } from "@/text/format";
 import { RunOutput } from "@/screens/tools/RunOutput";
 import { useLiveRun } from "@/screens/tools/useLiveRun";
 

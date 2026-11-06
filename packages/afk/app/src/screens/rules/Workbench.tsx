@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Menu, MenuItem } from "@/components/Menu";
 import {
-  CANONICAL, currentFile, dirtyFiles, lineCount, missingReferences, newRefName, plural, refKey,
+  CANONICAL, currentFile, dirtyFiles, lineCount, missingReferences, newRefName, refKey,
   type Drafts, type RuleFile,
 } from "@/screens/rules/model";
+import { plural } from "@/text/format";
 import "@/screens/rules/Rules.css";
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);

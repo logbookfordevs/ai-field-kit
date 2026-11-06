@@ -1,5 +1,6 @@
 import type { BackupStatus } from "../../../../src/fieldwork/library-backup.js";
-import { ago, changesWaiting } from "@/screens/backup/format";
+import { changesWaiting } from "@/screens/backup/format";
+import { ago } from "@/text/format";
 
 export type Headline = {
   kind: "off" | "saved" | "waiting" | "failed" | "paused";

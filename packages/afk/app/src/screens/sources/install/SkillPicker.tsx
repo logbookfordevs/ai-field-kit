@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { plural } from "@/screens/sources/format";
+import { plural } from "@/text/format";
 
 export interface PickerItem {
   name: string;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog } from "@/components/Dialog";
 import { Ledger, Row } from "@/components/Row";
-import { ago } from "@/screens/backup/format";
+import { ago } from "@/text/format";
 import type { BackupActions } from "@/screens/backup/useBackupActions";
 import type { AttentionItem } from "../../../../src/fieldwork/library-checks.js";
 

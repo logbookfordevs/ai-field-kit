@@ -8,7 +8,7 @@ import { Ledger, Row } from "@/components/Row";
 import { Switch } from "@/components/Switch";
 import { useToast } from "@/components/Toast";
 import { useSourcesState } from "@/screens/sources/data";
-import { isRepositoryReference, plural, shortSource } from "@/screens/sources/format";
+import { isRepositorySource, plural, shortSource } from "@/text/format";
 import { openInstall } from "@/screens/sources/install/store";
 import type { FavoriteSource, SourcesState, UpdateResult } from "@/screens/sources/types";
 import { Page } from "@/shell/Page";
@@ -180,7 +180,7 @@ function CoreSource({ source, installed }: { source: SourcesState["kit"]["source
   const follow = useMutation("kit/follow");
   const update = useMutation("skills/update");
   const label = source.name ?? shortSource(source.source);
-  const fromRepository = isRepositoryReference(source.source);
+  const fromRepository = isRepositorySource(source.source);
 
   const toggleFollow = async (next: boolean) => {
     const result = await follow.run({ source: source.source, follow: next });

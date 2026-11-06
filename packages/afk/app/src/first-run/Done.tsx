@@ -4,7 +4,7 @@ import { Icon } from "@/components/Icon";
 import { PathCard } from "@/components/PathCard";
 import { Ledger, Row } from "@/components/Row";
 import { Tags } from "@/components/Tags";
-import { count } from "@/first-run/text";
+import { plural as count } from "@/text/format";
 import { skillsMoving } from "@/first-run/StartPreview";
 
 function Success({ title }: { title: string }) {

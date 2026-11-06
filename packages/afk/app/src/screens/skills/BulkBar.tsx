@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/components/Toast";
 import type { BulkResult } from "@/screens/skills/api";
-import { plural } from "@/screens/skills/model";
+import { plural } from "@/text/format";
 import type { DialogRequest } from "@/screens/skills/SkillDialogs";
 import { useRun } from "@/screens/skills/useRun";
 import type { Selection } from "@/screens/skills/useSelection";

@@ -1,4 +1,5 @@
 import type { AppState, InvocationMode, SkillEntry } from "@/screens/skills/api";
+import { isRepositorySource } from "@/text/format";
 
 export const skillsDescription = "Turn skills on or off and choose how they start. New skills come in from Sources.";
 
@@ -38,14 +39,6 @@ export const noFilters: Filters = { query: "", from: "all", state: "all" };
 
 const placeLabels: Record<Exclude<Place, "pack" | "tool">, string> = { core: "Core", machine: "This machine", review: "To review", project: "This project" };
 
-export function repositorySource(source: string | undefined): source is string {
-  return Boolean(source) && source !== "Uploaded skill" && !/^(\/|~|\.|file:)/.test(source ?? "");
-}
-
-export function shortSource(source: string): string {
-  return source.trim().replace(/^https?:\/\/github\.com\//, "").replace(/^git@github\.com:/, "").replace(/\.git$/, "").replace(/\/+$/, "");
-}
-
 function savedMode(state: AppState, scope: string, name: string): InvocationMode | undefined {
   const saved = state.settings.preferences[`${scope}|${name}`];
   return saved === "Manual only" || saved === "Automatic allowed" ? saved : undefined;
@@ -71,14 +64,14 @@ export function globalSkills(state: AppState): Skill[] {
     const pack = state.settings.profiles.find(profile => profile.skills.includes(entry.name));
     const base = { name: entry.name, description: entry.description, entry, on: entry.available, ...modeOf(state, "Global", entry), ...(entry.source ? { source: entry.source } : {}) };
     if (tool) return { ...base, place: "tool", owner: tool.name, ownerId: tool.id, installable: false };
-    if (core.has(entry.name) || entry.storage === "library") return { ...base, place: "core", installable: repositorySource(entry.source) };
-    if (pack) return { ...base, place: "pack", owner: pack.name, ownerId: pack.id, installable: repositorySource(entry.source) };
+    if (core.has(entry.name) || entry.storage === "library") return { ...base, place: "core", installable: isRepositorySource(entry.source) };
+    if (pack) return { ...base, place: "pack", owner: pack.name, ownerId: pack.id, installable: isRepositorySource(entry.source) };
     if (review.has(entry.name)) return { ...base, place: "review", installable: review.get(entry.name)?.installable ?? false };
-    return { ...base, place: "machine", installable: repositorySource(entry.source), keptHere: state.settings.machineOnly.includes(entry.name) };
+    return { ...base, place: "machine", installable: isRepositorySource(entry.source), keptHere: state.settings.machineOnly.includes(entry.name) };
   });
   for (const item of state.kit.core) {
     if (item.status !== "missing") continue;
-    skills.push({ name: item.name, description: "", place: "core", source: item.source, on: false, mode: null, installable: repositorySource(item.source) });
+    skills.push({ name: item.name, description: "", place: "core", source: item.source, on: false, mode: null, installable: isRepositorySource(item.source) });
   }
   return skills.sort((a, b) => Number(b.place === "review") - Number(a.place === "review") || a.name.localeCompare(b.name));
 }
@@ -87,7 +80,7 @@ export function globalSkills(state: AppState): Skill[] {
 export function projectSkills(state: AppState, scope: string): { own: Skill[]; nested: Skill[] } {
   const own = (state.inventories[scope] ?? []).map(entry => ({
     name: entry.name, description: entry.description, place: "project" as const, entry, on: entry.available,
-    ...modeOf(state, scope, entry), ...(entry.source ? { source: entry.source } : {}), installable: repositorySource(entry.source),
+    ...modeOf(state, scope, entry), ...(entry.source ? { source: entry.source } : {}), installable: isRepositorySource(entry.source),
   }));
   const nested = (state.nestedInventories[scope] ?? []).map(item => {
     const agreed = item.invocation.claude === item.invocation.codex && item.invocation.claude !== "Unknown" ? item.invocation.claude : null;
@@ -138,8 +131,4 @@ export function filterSkills(skills: Skill[], filters: Filters): Skill[] {
 /** Read by the navigation on every screen, so it tolerates a partial state. */
 export function reviewCount(state: Partial<AppState>): number {
   return state.kit?.undecided.length ?? 0;
-}
-
-export function plural(count: number, one: string, many = `${one}s`): string {
-  return `${count} ${count === 1 ? one : many}`;
 }

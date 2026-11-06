@@ -1,4 +1,5 @@
-import { count, megabytes } from "@/screens/backup/format";
+import { megabytes } from "@/screens/backup/format";
+import { plural as count } from "@/text/format";
 import type { BackupContents } from "../../../../src/fieldwork/library-backup.js";
 
 const staysHere = ["Skills kept on this machine only", "Skills that are off", "Pack skill files (they download again)", "Project folders"];

@@ -10,7 +10,7 @@ import { BackupFailedNeed, BackupOffNeed, EditedNeed, ReplacedNeed } from "@/scr
 import { ReviewNeed } from "@/screens/overview/ReviewNeed";
 import { Setup } from "@/screens/overview/Setup";
 import { useAttention, useOverview, type Need } from "@/screens/overview/needs";
-import { plural, repositoryLabel, savedAgo } from "@/screens/overview/time";
+import { ago, plural, shortSource } from "@/text/format";
 import "@/screens/overview/overview.css";
 
 function NeedItem({ need, libraryReady, packs }: { need: Need; libraryReady: boolean; packs: { id: string; name: string }[] }) {
@@ -66,10 +66,10 @@ function OverviewScreen() {
   if (!needs || !status || !kit.data) return <Page title="Overview" />;
 
   const packs = (setup.data?.settings.profiles ?? []).map(pack => ({ id: pack.id, name: pack.name }));
-  const repository = status.remote ? repositoryLabel(status.remote) : undefined;
+  const repository = status.remote ? shortSource(status.remote) : undefined;
   const core = kit.data.core.length;
   const savedIn = core > 0 ? `${plural(core, "Core skill")} and your choices are` : "Your choices are";
-  const savedLine = status.lastSavedAt === undefined ? "backed up" : `backed up ${savedAgo(status.lastSavedAt)}`;
+  const savedLine = status.lastSavedAt === undefined ? "backed up" : `backed up ${ago(status.lastSavedAt)}`;
   const allSetTitle = status.waiting > 0 ? `All set · ${plural(status.waiting, "change")} saving` : `All set · ${savedLine}`;
 
   return (

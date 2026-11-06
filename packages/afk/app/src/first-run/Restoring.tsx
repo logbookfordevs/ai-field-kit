@@ -1,7 +1,7 @@
 import type { LibraryPreview } from "../../../src/fieldwork/library-restore.js";
 import { Icon } from "@/components/Icon";
 import { Progress } from "@/components/Progress";
-import { count } from "@/first-run/text";
+import { plural as count } from "@/text/format";
 
 function found(preview: LibraryPreview): string {
   return `Found an AFK library with ${count(preview.coreSkills, "Core skill")}, ${count(preview.packs, "pack")} and ${count(preview.tools, "tool")}.`;

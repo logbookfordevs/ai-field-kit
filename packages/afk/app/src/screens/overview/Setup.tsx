@@ -2,7 +2,7 @@ import { Icon } from "@/components/Icon";
 import type { OperationResult } from "@/api/operations";
 import { hrefFor } from "@/shell/router";
 import type { ScreenId } from "@/screens/types";
-import { plural, repositoryLabel, savedAgo } from "@/screens/overview/time";
+import { ago, plural, shortSource } from "@/text/format";
 
 type Kit = OperationResult<"kit/state">;
 type State = OperationResult<"state">;
@@ -11,9 +11,9 @@ type Status = OperationResult<"backup/state">["status"];
 function backupLine(status: Status): string {
   if (status.state === "off") return "Off · your library is only on this machine";
   if (status.state === "failed") return `Can't save · ${plural(status.waiting, "change")} waiting`;
-  const repository = status.remote ? ` · ${repositoryLabel(status.remote)}` : "";
+  const repository = status.remote ? ` · ${shortSource(status.remote)}` : "";
   if (status.waiting > 0) return `Saving ${plural(status.waiting, "change")}${repository}`;
-  return `${status.lastSavedAt === undefined ? "Saved" : `Saved ${savedAgo(status.lastSavedAt)}`}${repository}`;
+  return `${status.lastSavedAt === undefined ? "Saved" : `Saved ${ago(status.lastSavedAt)}`}${repository}`;
 }
 
 function SetupRow({ to, name, children, quiet = false }: { to: ScreenId; name: string; children: string; quiet?: boolean }) {

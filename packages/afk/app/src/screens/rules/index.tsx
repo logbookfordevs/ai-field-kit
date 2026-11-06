@@ -10,9 +10,10 @@ import { DestinationDialog, Destinations, DisconnectDialog, type DestinationInpu
 import { Diff } from "@/screens/rules/Diff";
 import {
   adoptDraft, applyServerState, addReference, clock, CANONICAL, diffRows, discardStash, editDraft, hasCanonical, hasEdits, markSaved, openFile,
-  plural, reloadFromDisk, removeReference, renameReference, restoreReference, restoreStash, revertAll, revertFile, RULES_END, RULES_START,
+  reloadFromDisk, removeReference, renameReference, restoreReference, restoreStash, revertAll, revertFile, RULES_END, RULES_START,
   savedText, startDocument, textFromDestination, type Drafts,
 } from "@/screens/rules/model";
+import { plural } from "@/text/format";
 import { AddReferenceDialog, RemoveReferenceDialog, RenameReferenceDialog } from "@/screens/rules/ReferenceDialogs";
 import { draftStore, useDrafts } from "@/screens/rules/store";
 import { PreviewDialog, ResultDialog, SaveFirstDialog, type SyncOutcome } from "@/screens/rules/SyncDialogs";

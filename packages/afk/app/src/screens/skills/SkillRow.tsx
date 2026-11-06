@@ -4,7 +4,8 @@ import { Menu, MenuItem, MenuSeparator } from "@/components/Menu";
 import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import type { InvocationMode } from "@/screens/skills/api";
-import { fromLabel, shortSource, type Skill } from "@/screens/skills/model";
+import { fromLabel, type Skill } from "@/screens/skills/model";
+import { shortSource } from "@/text/format";
 
 export const modeOptions = [{ value: "Manual only", label: "Manual" }, { value: "Automatic allowed", label: "Automatic" }] as const;
 
