@@ -47,7 +47,9 @@ it("changes the selected project skills without on/off, which projects don't hav
   await userEvent.click(screen.getByRole("checkbox", { name: "Select site-deploy" }));
   const bar = screen.getByRole("group", { name: "Selected skills" });
   expect(within(bar).queryByRole("button", { name: "Turn off" })).not.toBeInTheDocument();
-  await userEvent.selectOptions(within(bar).getByRole("combobox", { name: "How the selected skills start" }), "Automatic allowed");
+  const trigger = within(bar).getByRole("button", { name: "How they start" });
+  await userEvent.click(trigger);
+  await userEvent.click(within(document.getElementById(trigger.getAttribute("aria-controls") ?? "")!).getByRole("button", { name: "Automatic allowed" }));
 
   await waitFor(() => expect(calls(client, "skills/bulk")).toEqual([{ names: ["site-deploy"], scope: "Site", action: "invocation", mode: "Automatic allowed" }]));
 });
