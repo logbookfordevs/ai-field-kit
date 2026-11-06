@@ -75,6 +75,13 @@ describe("states in words", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Not saved yet: Could not resolve host: github.com. Your changes are kept here.");
   });
 
+  it("does not double the full stop when the remote's reason already ends with one", async () => {
+    open({ "backup/save": () => status({ state: "failed", waiting: 1, error: "Repository not found." }) });
+    await userEvent.click(await screen.findByRole("button", { name: "Save now" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Not saved yet: Repository not found. Your changes are kept here.");
+  });
+
   it("disables saving while a push is running", async () => {
     open({}, state({ status: status({ pushing: true }) }));
 

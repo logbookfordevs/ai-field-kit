@@ -31,12 +31,15 @@ export function NeedsAttention({ items, held, actions }: { items: AttentionItem[
   return (
     <section aria-labelledby="attention-h">
       <div className="sec-head"><h2 id="attention-h">Needs attention · {items.length}</h2></div>
-      <Ledger labelledBy="attention-h">
+      <Ledger labelledBy="attention-h" className="no-aside">
         {items.map(item => item.kind === "replaced" ? (
           <Row
             key={item.id}
-            title={<><span className="sname">{item.name}</span> <span className="state-text warn">Replaced by Skills CLI</span></>}
-            description={item.changed ? "npx skills update swapped the link for a plain folder with a newer version." : "Skills CLI swapped the link for a plain folder with the same files."}
+            className="attn"
+            title={<>
+              <span className="sname">{item.name}</span> <span className="state-text warn">Replaced by Skills CLI</span>
+              <p className="sub">{item.changed ? "npx skills update swapped the link for a plain folder with a newer version." : "Skills CLI swapped the link for a plain folder with the same files."}</p>
+            </>}
             actions={<>
               <button type="button" className="primary" disabled={actions.busy} onClick={() => void actions.takeUpdate(item.name)}>Take the update</button>
               <button type="button" disabled={actions.busy} onClick={() => setConfirming({ kind: "restore", item })}>Restore saved version</button>
@@ -45,8 +48,11 @@ export function NeedsAttention({ items, held, actions }: { items: AttentionItem[
         ) : (
           <Row
             key={item.id}
-            title={<><span className="sname">{item.name}</span> <span className="state-text warn">Edited outside AFK</span></>}
-            description={filesLine(item)}
+            className="attn"
+            title={<>
+              <span className="sname">{item.name}</span> <span className="state-text warn">Edited outside AFK</span>
+              <p className="sub">{filesLine(item)}</p>
+            </>}
             actions={<>
               <button type="button" className="primary" disabled={actions.busy} onClick={() => void actions.keepEdit(item.id)}>Keep edit</button>
               <button type="button" disabled={actions.busy} onClick={() => setConfirming({ kind: "discard", item })}>Discard</button>

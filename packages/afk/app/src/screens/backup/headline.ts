@@ -1,5 +1,5 @@
 import type { BackupStatus } from "../../../../src/fieldwork/library-backup.js";
-import { ago, changesWaiting, repositoryName } from "@/screens/backup/format";
+import { ago, changesWaiting } from "@/screens/backup/format";
 
 export type Headline = {
   kind: "off" | "saved" | "waiting" | "failed" | "paused";
@@ -9,7 +9,6 @@ export type Headline = {
 
 /** The one sentence pair that names the backup's state; every state has its own words. */
 export function headline(status: BackupStatus, now: number = Date.now()): Headline {
-  const repository = repositoryName(status.remote);
   const lastSaved = status.lastSavedAt ? ` Last saved ${ago(status.lastSavedAt, now)}.` : "";
   if (status.state === "off") return { kind: "off", title: "Off", detail: "Your library is only on this machine." };
   if (status.held && status.waiting > 0) {
@@ -20,6 +19,6 @@ export function headline(status: BackupStatus, now: number = Date.now()): Headli
   return {
     kind: "saved",
     title: status.lastSavedAt ? `Saved ${ago(status.lastSavedAt, now)}` : "Saved",
-    detail: `${repository ? `${repository} · private. ` : ""}AFK saves 2 minutes after each change.`,
+    detail: "AFK saves 2 minutes after each change.",
   };
 }

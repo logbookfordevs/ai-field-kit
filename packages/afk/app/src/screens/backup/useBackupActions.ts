@@ -9,7 +9,7 @@ import type { BackupStatus } from "../../../../src/fieldwork/library-backup.js";
 const keptHere = "Your changes are kept here.";
 
 function savedOrWaiting(status: BackupStatus, success: string): string {
-  return status.state === "failed" ? `Not saved yet: ${status.error ?? "the remote could not be reached"}. ${keptHere}` : success;
+  return status.state === "failed" ? `Not saved yet: ${(status.error ?? "the remote could not be reached").replace(/[.\s]+$/, "")}. ${keptHere}` : success;
 }
 
 function movedAside(resolved: Resolved): string {

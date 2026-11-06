@@ -13,8 +13,8 @@
 .state-block .failure{grid-column:2;color:var(--danger);font-family:var(--font-mono);overflow-wrap:anywhere}
 .connect{display:grid;gap:14px;max-width:640px}
 section+section,.state-block+section{margin-top:40px}
-.change-remote{margin-top:8px}
-.state-text{font:500 13px/1.5 var(--font-body);color:var(--muted)}
+.state-block>.text{grid-column:2;justify-self:start;margin-left:-6px}
+.state-text{font:500 13px/1.5 var(--font-body);color:var(--muted);padding:0 6px}
 .state-text.warn{color:var(--danger)}
 .paused-note{margin-top:12px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:24px 40px}
@@ -23,3 +23,10 @@ section+section,.state-block+section{margin-top:40px}
 .plain li{padding:9px 0;border-bottom:1px solid var(--border)}
 .plain li:first-child{border-top:1px solid var(--fg)}
 @media (max-width:760px){.two{grid-template-columns:1fr}}
+.state-block .repo{grid-column:2;font:13px/1.5 var(--font-mono);overflow-wrap:anywhere}
+.attn .row-title p{font-weight:400;margin-top:2px}
+@media (min-width:761px){.no-aside>.row{grid-template-columns:minmax(0,1fr) auto}}
+@media (max-width:760px){
+  .attn.row{grid-template-columns:minmax(0,1fr);grid-template-areas:"main" "actions"}
+  .attn .row-actions{justify-content:flex-start}
+}

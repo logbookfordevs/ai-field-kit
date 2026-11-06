@@ -25,7 +25,7 @@ export function History({ entries, actions }: { entries: SaveEntry[]; actions: B
         </div>
       </div>
       {entries.length === 0 ? <EmptyState title="No saves yet">Each change to your library becomes a save here.</EmptyState> : (
-        <Ledger label="Saves">
+        <Ledger label="Saves" className="no-aside">
           {entries.map((entry, index) => (
             <Row
               key={entry.id}

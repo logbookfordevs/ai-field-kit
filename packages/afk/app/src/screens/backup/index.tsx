@@ -45,8 +45,8 @@ function BackupScreen() {
   return (
     <Page title="Backup" description={description}>
       {actions.problem ? <p className="field-error problem" role="alert">{actions.problem}</p> : null}
-      <StateBlock status={status} actions={isConnected ? saveButton : undefined} />
-      {isConnected ? <p className="change-remote"><ChangeRemote actions={actions} /></p> : <Connect actions={actions} />}
+      <StateBlock status={status} actions={isConnected ? saveButton : undefined}>{isConnected ? <ChangeRemote actions={actions} /> : null}</StateBlock>
+      {isConnected ? null : <Connect actions={actions} />}
       <NeedsAttention items={attention} held={status.held} actions={actions} />
       {isConnected && history ? <History entries={history} actions={actions} /> : null}
       {contents ? <Holds contents={contents} /> : null}
