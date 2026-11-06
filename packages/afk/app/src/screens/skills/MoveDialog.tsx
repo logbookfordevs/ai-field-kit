@@ -5,13 +5,14 @@ import { useToast } from "@/components/Toast";
 import type { AppState } from "@/screens/skills/api";
 import { fromLabel, type Skill } from "@/screens/skills/model";
 import { useRun } from "@/screens/skills/useRun";
+import { placeDefinitions } from "@/text/places";
 
 type Destination = "core" | "pack" | "machine";
 
 const places: Record<Destination, { label: string; definition: string }> = {
-  core: { label: "Core", definition: "On every machine, always on, backed up." },
-  pack: { label: "A pack", definition: "Turns on with the pack, per project or globally. The pack is backed up; its files download again." },
-  machine: { label: "This machine only", definition: "Stays installed here, never backed up." },
+  core: { label: "Core", definition: placeDefinitions.core },
+  pack: { label: "A pack", definition: placeDefinitions.pack },
+  machine: { label: "This machine only", definition: placeDefinitions.machine },
 };
 
 /** The places a skill can go from where it is now, each mapped to one existing operation. */
