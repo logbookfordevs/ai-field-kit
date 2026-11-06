@@ -52,12 +52,12 @@ The developer who owns AFK, at their desk, opening the local app for a quick tas
 
 ## Constraints
 
-- Current stack: vanilla JS and one stylesheet. A React move is a separate decision.
+- React 19 + TypeScript (Vite), no Tailwind; tokens stay CSS custom properties ([ADR 0013](../../adr/0013-react-for-the-local-app.md)).
 - Keyboard and screen-reader support, nothing hidden past a scroll edge, meaning in text as well as color.
 - None of the 15 audit findings may reappear.
 
 ## Next
 
-A clickable prototype (local HTML) of Overview, Skills, Packs, Sources and first run, with real data: [prototype.html](prototype.html).
+A clickable prototype (local HTML) of Overview, Skills, Packs, Sources and first run, with sample data: [prototype.html](prototype.html).
 
 Implementation: [ADR 0013](../../adr/0013-react-for-the-local-app.md); tickets in [docs/tickets/afk-app-redesign](../../tickets/afk-app-redesign/).
