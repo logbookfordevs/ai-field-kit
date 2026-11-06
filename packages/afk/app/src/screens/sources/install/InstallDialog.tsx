@@ -43,18 +43,6 @@ const ways = [
   { value: "upload", label: "A zip or folder" },
 ] as const;
 
-const agents = ["codex", "claude-code", "cursor", "opencode"];
-
-/** The agent chosen in the previous app, if any; the default (universal) needs no field. */
-function savedAgent(): string | undefined {
-  try {
-    const saved = (JSON.parse(localStorage.getItem("afk.install") ?? "{}") as { agent?: unknown }).agent;
-    return typeof saved === "string" && agents.includes(saved) ? saved : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 /** Add something new: look inside a repository or an upload, pick skills, choose where they go. */
 export function InstallDialog({ request, onClose }: InstallDialogProps) {
   const [round, setRound] = useState(0);
@@ -277,11 +265,9 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
       return;
     }
     const replace = destination === "pack" ? [] : available.filter(candidate => candidate.state === "conflict" && picked.has(candidate.name)).map(candidate => candidate.name);
-    const agent = destination === "core" || destination === "machine" ? savedAgent() : undefined;
     await run({
       source, names, to, ...packName,
       ...(destination === "machine" && place.scope !== "Global" ? { scope: place.scope } : {}),
-      ...(agent ? { agent } : {}),
       ...(replace.length ? { replace } : {}),
     }, destination, names.length, {});
   };

@@ -65,6 +65,20 @@ it("finds a repository's skills, installs the picked ones to Core and says where
   expect(screen.getByText("They are on for every agent and saved with your next backup.")).toBeInTheDocument();
 });
 
+it("installs for every agent, whatever an earlier version of the app remembered", async () => {
+  localStorage.setItem("afk.install", JSON.stringify({ agent: "cursor" }));
+  try {
+    const { client } = setup();
+    await findSkills();
+    await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
+    await chooseDestination("Core");
+
+    await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Core" }));
+
+    expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["kami"], to: "core" });
+  } finally { localStorage.removeItem("afk.install"); }
+});
+
 it("asks for a destination when the person submits without one, and focuses the first choice", async () => {
   const { client } = setup();
   await findSkills();
