@@ -42,7 +42,7 @@ export function Projects() {
   const moveFolder = async (project: Project, path: string) => {
     const result = await save.run({ previous: project.name, name: project.name, path });
     close();
-    toast.show(result.ok ? "Project folder updated." : result.error.message);
+    if (result.ok) toast.show("Project folder updated."); else toast.fail(result.error.message);
   };
 
   return (

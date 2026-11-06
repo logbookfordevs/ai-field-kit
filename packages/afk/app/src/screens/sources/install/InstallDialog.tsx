@@ -294,7 +294,7 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
   const cancelInstall = async () => {
     const result = await client.run("skills/install-cancel", {});
     const cancelled = result.ok && (result.value as { cancelled?: boolean }).cancelled;
-    if (!cancelled) toast.show(result.ok ? (result.value as { reason?: string }).reason ?? "There is nothing to cancel." : result.error.message);
+    if (!cancelled) if (result.ok) toast.show((result.value as { reason?: string }).reason ?? "There is nothing to cancel."); else toast.fail(result.error.message);
   };
 
   const readSkill = async (name: string): Promise<string> => {

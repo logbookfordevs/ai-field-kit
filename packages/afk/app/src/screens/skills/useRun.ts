@@ -16,7 +16,7 @@ export function useRun(): Run {
   return useCallback<Run>(async (operation, input, options = {}) => {
     const result = await client.run(operation, input);
     if (result.ok) await refreshAfter(queries, operation);
-    else if (!options.quiet) toast.show(result.error.message);
+    else if (!options.quiet) toast.fail(result.error.message);
     return result;
   }, [client, queries, toast]);
 }

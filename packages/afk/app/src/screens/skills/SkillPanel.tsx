@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { useOperation } from "@/api/hooks";
 import { Dialog } from "@/components/Dialog";
 import { PathCard } from "@/components/PathCard";
@@ -9,7 +9,7 @@ import { useMechanismText } from "@/screens/skills/InvocationInfo";
 import { fromLabel, type Skill } from "@/screens/skills/model";
 import { shortSource } from "@/text/format";
 import { SkillEditor } from "@/screens/skills/SkillEditor";
-import { modeOptions, updateBlocked, type RowActions } from "@/screens/skills/SkillRow";
+import { FailureNote, modeOptions, updateBlocked, type RowActions, type RowFailure } from "@/screens/skills/SkillRow";
 
 const definitions: Record<Skill["place"], string> = {
   core: "On every machine, always on, backed up.",
@@ -33,7 +33,8 @@ function discoveryTokens(skill: Skill): number {
 }
 
 /** Side panel for one skill: on/off, how it starts, where it lives, and its files. */
-export function SkillPanel({ skill, scope, focus, actions, onClose }: { skill: Skill; scope: string; focus: "details" | "editor"; actions: RowActions; onClose: () => void }) {
+export function SkillPanel({ skill, scope, focus, actions, failure, onClose }: { skill: Skill; scope: string; focus: "details" | "editor"; actions: RowActions; failure?: RowFailure | undefined; onClose: () => void }) {
+  const failureId = useId();
   const textRef = useRef<HTMLTextAreaElement>(null);
   const [dirty, setDirty] = useState(false);
   const [blocked, setBlocked] = useState("");
@@ -83,13 +84,14 @@ export function SkillPanel({ skill, scope, focus, actions, onClose }: { skill: S
       )}
     >
       {skill.description ? <p className="panel-desc">{skill.description}</p> : null}
+      {failure ? <FailureNote id={failureId} failure={failure} /> : null}
 
       {global ? (
         <section className="blk" aria-labelledby="panel-on">
           <h3 id="panel-on">On or off</h3>
           {present ? (
             <div className="blk-row">
-              <Switch label={skill.name} checked={skill.on} disabled={heldByPack} onChange={next => actions.setOn(skill, next)} />
+              <Switch label={skill.name} checked={skill.on} disabled={heldByPack} {...(failure ? { describedBy: failureId } : {})} onChange={next => actions.setOn(skill, next)} />
               <span className="meta">{heldByPack ? `On through ${heldBy.join(", ")}. Turn the pack on or off in Packs.` : skill.on ? "Agents can see it." : "Hidden from every agent."}</span>
             </div>
           ) : (
@@ -106,7 +108,7 @@ export function SkillPanel({ skill, scope, focus, actions, onClose }: { skill: S
           <h3 id="panel-inv">How it starts</h3>
           {skill.folder ? <p className="meta">Whatever manages this folder decides. AFK only shows it.</p> : (
             <>
-              <Segmented legend={`How ${skill.name} starts`} options={modeOptions} value={skill.mode} onChange={mode => actions.setMode(skill, mode)} />
+              <Segmented legend={`How ${skill.name} starts`} options={modeOptions} value={skill.mode} describedBy={failure ? failureId : undefined} onChange={mode => actions.setMode(skill, mode)} />
               <p className="hint">{mechanism}</p>
               {savedChoice ? <button type="button" className="text" onClick={() => actions.setMode(skill, "")}>Use the skill’s own default</button> : null}
             </>

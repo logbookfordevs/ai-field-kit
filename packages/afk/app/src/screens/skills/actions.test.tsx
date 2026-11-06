@@ -51,6 +51,21 @@ async function menuItem(name: string, item: string) {
   return (await openMenu(name)).getByRole("button", { name: item });
 }
 
+it("keeps a failed change beside its skill, says why and links to where it is fixed", async () => {
+  const client = setup(appState(), {
+    "backup/state": () => ({ status: { state: "saved", held: true }, attention: [{ id: "a", kind: "edited", name: "wizard" }], unpushed: [] }),
+    invocation: () => fail("The library has changes AFK did not make. Review them before changing it."),
+  });
+  const kami = await row("kami");
+
+  await userEvent.click(within(kami).getByRole("radio", { name: "Manual" }));
+
+  const note = await within(kami).findByText(/Your library has an edit made outside AFK/);
+  expect(within(note).getByRole("link", { name: "Review it in Backup" })).toHaveAttribute("href", "#/backup");
+  expect(within(kami).getByRole("group", { name: "How kami starts" })).toHaveAccessibleDescription(/edit made outside AFK/);
+  expect(calls(client, "invocation")).toHaveLength(1);
+});
+
 it("turns a skill off with its switch and offers to undo", async () => {
   const client = setup();
 

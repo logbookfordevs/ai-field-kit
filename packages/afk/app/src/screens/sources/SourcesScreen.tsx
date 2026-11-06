@@ -71,12 +71,12 @@ function TryLater({ bookmarks }: { bookmarks: FavoriteSource[] }) {
   const change = async (update: (list: FavoriteSource[]) => FavoriteSource[]): Promise<boolean> => {
     const fresh = await client.run("state");
     if (!fresh.ok) {
-      toast.show(fresh.error.message);
+      toast.fail(fresh.error.message);
       return false;
     }
     const { settings } = fresh.value as unknown as SourcesState;
     const saved = await saveSettings.run({ settings: { ...settings, favoriteSources: update(settings.favoriteSources) } });
-    if (!saved.ok) toast.show(saved.error.message);
+    if (!saved.ok) toast.fail(saved.error.message);
     return saved.ok;
   };
 
@@ -184,7 +184,7 @@ function CoreSource({ source, installed }: { source: SourcesState["kit"]["source
 
   const toggleFollow = async (next: boolean) => {
     const result = await follow.run({ source: source.source, follow: next });
-    toast.show(result.ok ? `${next ? "Following" : "Stopped following"} ${label}` : result.error.message);
+    if (result.ok) toast.show(`${next ? "Following" : "Stopped following"} ${label}`); else toast.fail(result.error.message);
   };
 
   const refresh = async () => {
@@ -195,7 +195,7 @@ function CoreSource({ source, installed }: { source: SourcesState["kit"]["source
     toast.show(`Updating ${label}…`, { busy: true });
     const result = await update.run({ scope: "Global", names: installed });
     if (!result.ok) {
-      toast.show(result.error.message);
+      toast.fail(result.error.message);
       return;
     }
     const outcome = result.value as UpdateResult;

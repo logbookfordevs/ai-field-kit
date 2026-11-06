@@ -86,7 +86,7 @@ function PacksScreen() {
 
   async function exportManifest(pack: PackView) {
     const result = await client.run("pack/manifest", { id: pack.profile.id });
-    if (!result.ok) return toast.show(result.error.message);
+    if (!result.ok) return toast.fail(result.error.message);
     const { manifest } = result.value;
     downloadJson(`${manifest.id}.json`, manifest);
     toast.show(`Exported ${manifest.id}.json`);

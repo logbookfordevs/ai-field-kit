@@ -49,7 +49,7 @@ export function Schedule() {
     const choice = { enabled: state.enabled, frequency: state.frequency, time: state.time, weekday: state.weekday, ...next };
     if (!choice.time) { toast.show("Choose a time for automatic updates."); return; }
     const result = await save.run(choice);
-    if (!result.ok) { toast.show(result.error.message); return; }
+    if (!result.ok) { toast.fail(result.error.message); return; }
     const saved = result.value as ScheduleState;
     toast.show(saved.enabled && saved.nextRunAt ? `Schedule saved. Next run ${when(saved.nextRunAt)}.` : "Automatic skill updates turned off.");
   };
