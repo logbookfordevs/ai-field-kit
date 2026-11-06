@@ -28,7 +28,8 @@ This changelog tracks meaningful updates by version and date.
 
 ### Changed
 
-- **One Skills page** replaces Kit and Installed Skills, with tabs Core, Packs, This machine only, Try later and To review. A Core skill missing here installs from its own row. Bulk selection works on every tab.
+- **A redesigned app.** AFK opens on **Overview**: what needs you, whether you're backed up, and quick actions to find a skill or add something new. Each kind of thing has its own page: **Skills** (one searchable list of every skill, filtered by where it comes from, with a details panel, an editor and bulk actions), **Packs**, **Sources** (install from a repository or an upload, Try later, followed repositories), **Agent rules**, **Tools**, **Backup** and **Settings**. Phones get a compact top bar with a section menu. First run starts or restores your library in three steps and asks before running any saved tool, showing its output as it runs. The app is rebuilt in React; the previous interface is removed.
+- **Adding a skill installed outside AFK to your library puts it in Core** even when it has no repository, as an uploaded skill, so Overview stops asking about it.
 - **Projects manage their own skills.** Adding a project lets AFK install, update, delete and set Manual/Automatic for the skills in that project's repository. Projects have no on/off and no packs; packs are Global.
 
 - **Automatic skill updates.** Settings can update your Global skills daily or weekly at a time you choose, using the same protected update as **Update skills**. It runs only while AFK is open, and catches up shortly after start if a run was missed while AFK was closed. The schedule is per machine; agents can set it with `skills/schedule`.
