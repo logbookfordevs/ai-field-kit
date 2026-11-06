@@ -3,7 +3,7 @@ import type { Settings } from "../../../../src/fieldwork/settings.js";
 import type { NestedSkillEntry, SkillEntry } from "../../../../src/fieldwork/skills.js";
 import type { SkillEditorView } from "../../../../src/fieldwork/skill-editor.js";
 import type { previewDeletion } from "../../../../src/fieldwork/deletion.js";
-import type { InvocationMechanism } from "../../../../src/fieldwork/agent-table.js";
+import { useOperation, type Read } from "@/api/hooks";
 
 export type { NestedSkillEntry, SkillEntry, SkillEditorView };
 
@@ -50,8 +50,6 @@ export type InvocationMode = "Manual only" | "Automatic allowed";
 
 declare module "@/api/operations" {
   interface OperationResults {
-    state: AppState;
-    "agent-folders/state": { library: boolean; invocationAgents: Record<InvocationMechanism, string[]> };
     "skill/editor": SkillEditorView;
     "skill/edit": unknown;
     "skill/read": SkillFile;
@@ -60,4 +58,12 @@ declare module "@/api/operations" {
     "skills/bulk": BulkResult;
     "skills-sharing/state": SharingState;
   }
+}
+
+/**
+ * The `state` operation as Skills reads it. Other screens type the same operation
+ * for what they need, so each keeps its own view instead of sharing one declaration.
+ */
+export function useSkillsState(): Read<AppState> {
+  return useOperation("state") as unknown as Read<AppState>;
 }

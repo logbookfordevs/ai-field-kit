@@ -135,8 +135,9 @@ export function filterSkills(skills: Skill[], filters: Filters): Skill[] {
   });
 }
 
-export function reviewCount(state: AppState): number {
-  return state.kit.undecided.length;
+/** Read by the navigation on every screen, so it tolerates a partial state. */
+export function reviewCount(state: Partial<AppState>): number {
+  return state.kit?.undecided.length ?? 0;
 }
 
 export function plural(count: number, one: string, many = `${one}s`): string {

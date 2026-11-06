@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { useOperation } from "@/api/hooks";
 import { EmptyState } from "@/components/EmptyState";
 import { Page } from "@/shell/Page";
 import type { Attention, ScreenDefinition, ScreenProps } from "@/screens/types";
-import "@/screens/skills/api";
+import { useSkillsState } from "@/screens/skills/api";
 import { GlobalSkills } from "@/screens/skills/GlobalSkills";
 import { reviewCount, skillsDescription } from "@/screens/skills/model";
 import { ProjectSkills } from "@/screens/skills/ProjectSkills";
 import "@/screens/skills/skills.css";
 
 function SkillsScreen({ params }: ScreenProps) {
-  const state = useOperation("state");
+  const state = useSkillsState();
   const [scope, setScope] = useState(params.get("scope") ?? "Global");
   const projects = state.data?.settings.projects ?? [];
   const knownScope = scope === "Global" || projects.some(project => project.name === scope);
@@ -40,7 +39,7 @@ function SkillsScreen({ params }: ScreenProps) {
 }
 
 function useSkillsAttention(): Attention | null {
-  const { data } = useOperation("state");
+  const { data } = useSkillsState();
   const count = data ? reviewCount(data) : 0;
   return count ? { text: `${count} to review`, tone: "attention" } : null;
 }

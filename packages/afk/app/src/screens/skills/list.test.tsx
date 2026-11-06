@@ -126,3 +126,13 @@ it("shows the review count in the navigation as text", async () => {
 
   await waitFor(() => expect(hook.result.current).toEqual({ text: "1 to review", tone: "attention" }));
 });
+
+it("shows no navigation signal while the state has no kit yet", async () => {
+  const client = fakeClient({ state: () => ({ settings: appState().settings }) });
+  const wrapper = ({ children }: { children: ReactNode }) => <ClientProvider client={client}>{children}</ClientProvider>;
+
+  const hook = renderHook(() => skills.useAttention(), { wrapper });
+
+  await waitFor(() => expect(client.calls).toHaveLength(1));
+  expect(hook.result.current).toBeNull();
+});
