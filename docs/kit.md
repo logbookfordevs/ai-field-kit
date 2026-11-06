@@ -78,8 +78,8 @@ you can decide where each belongs). Search by name or description and filter by 
 skill comes from or its state. A Core skill missing on this machine can be installed from
 its row.
 
-Each row has an on/off switch, the Manual/Automatic choice and a **⋯** menu (update, edit
-files, add to a pack or move, drop from Core, delete). Select a skill's name for its
+Each row has an on/off switch, the Manual/Automatic choice and a **⋯** menu (inspect, edit
+files, update, move to Core, a pack or this machine, drop, delete). Select a skill's name for its
 details and files. Select several rows to turn them on or off, change their invocation,
 update or delete them together.
 
