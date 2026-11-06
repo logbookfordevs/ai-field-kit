@@ -15,7 +15,7 @@ export function ExitButton({ onExited }: { onExited: () => void }) {
     toast.show(result.error.message);
   };
 
-  return <button type="button" className="text" disabled={exiting} onClick={() => void exit()}>{exiting ? "Exiting…" : "Exit AFK"}</button>;
+  return <button type="button" className="text exit-afk" disabled={exiting} onClick={() => void exit()}>{exiting ? "Exiting…" : "Exit AFK"}</button>;
 }
 
 export function Closed() {
@@ -23,6 +23,7 @@ export function Closed() {
   useEffect(() => heading.current?.focus(), []);
   return (
     <main id="main" className="closed">
+      <div className="brand"><b>afk.</b><span>AI Field Kit</span></div>
       <h1 ref={heading} tabIndex={-1}>AFK is closed</h1>
       <p>The local server has stopped. Your library, settings and skills are unchanged.</p>
       <p>You can close this tab. Run <code>afk</code> in a terminal to open it again.</p>

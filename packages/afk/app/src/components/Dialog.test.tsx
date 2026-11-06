@@ -71,3 +71,14 @@ it("stays open when closing is blocked and says so", async () => {
   expect(screen.getByRole("dialog", { name: "Save for later" })).toBeInTheDocument();
   expect(blocked).toHaveBeenCalledTimes(2);
 });
+
+it("enters a radio group at its checked option", () => {
+  render(
+    <Dialog open onClose={() => undefined} title="How it starts">
+      <label><input type="radio" name="start" value="manual" />Manual</label>
+      <label><input type="radio" name="start" value="automatic" defaultChecked />Automatic</label>
+    </Dialog>,
+  );
+
+  expect(screen.getByRole("radio", { name: "Automatic" })).toHaveFocus();
+});

@@ -41,6 +41,7 @@
 .tool-check{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;row-gap:2px;align-items:start;padding:14px 0;cursor:pointer;font-weight:400}
 .tool-check input{margin-top:3px}
 .tool-check>*:not(input){grid-column:2}
+.fr-main>.command{display:block;font-size:12.5px;line-height:1.6;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
 .tool-check .command{font-size:12.5px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
 @media (max-width:760px){
   .fr-top{padding:14px 16px}

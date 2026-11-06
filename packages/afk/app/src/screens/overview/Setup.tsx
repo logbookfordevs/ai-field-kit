@@ -31,14 +31,14 @@ function SetupRow({ to, name, children, quiet = false }: { to: ScreenId; name: s
 /** One line per page, so the whole setup reads at a glance and each line opens its page. */
 export function Setup({ kit, backup, state }: { kit: Kit; backup: { status: Status; attention: unknown[] }; state: State | undefined }) {
   const skills = state?.inventories.Global ?? [];
-  const placed = new Set(skills.filter(skill => skill.storage === "library").map(skill => skill.name));
   const on = skills.filter(skill => skill.available).length;
-  const review = state ? kit.undecided.filter(skill => !placed.has(skill.name)).length : kit.undecided.length;
+  const review = kit.undecided.length;
   const packs = state?.settings.profiles ?? [];
   const packsOn = packs.filter(pack => pack.enabled.length > 0).length;
   const followed = kit.sources.filter(source => source.follow).length;
   const saved = state?.settings.favoriteSources.length ?? 0;
   const toolSkills = kit.tools.reduce((total, tool) => total + tool.provides.length, 0);
+  const tools = state?.settings.tools.length ?? kit.tools.length;
 
   return (
     <section aria-labelledby="setup-h">
@@ -47,7 +47,7 @@ export function Setup({ kit, backup, state }: { kit: Kit; backup: { status: Stat
         <SetupRow to="skills" name="Skills">{state ? `${on} of ${skills.length} on · ${kit.core.length} in Core${review ? ` · ${review} to review` : ""}` : `${kit.core.length} in Core`}</SetupRow>
         <SetupRow to="packs" name="Packs">{state ? `${plural(packs.length, "pack")} · ${packsOn ? `${packsOn} on` : "all off"}` : "Open to see your packs"}</SetupRow>
         <SetupRow to="sources" name="Sources">{`${saved} saved for later · ${followed} followed`}</SetupRow>
-        <SetupRow to="tools" name="Tools">{`${plural(kit.tools.length, "tool")} · ${plural(toolSkills, "skill")}`}</SetupRow>
+        <SetupRow to="tools" name="Tools">{`${plural(tools, "tool")} · ${plural(toolSkills, "skill")}`}</SetupRow>
         <SetupRow to="backup" name="Backup" quiet={backup.status.state === "off"}>{backupLine(backup.status)}</SetupRow>
       </ul>
     </section>

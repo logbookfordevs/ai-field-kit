@@ -214,6 +214,15 @@ describe("your setup", () => {
     expect(screen.getByRole("link", { name: /Sources/ })).toHaveTextContent("1 saved for later · 1 followed");
     expect(screen.getByRole("link", { name: /Backup/ })).toHaveTextContent(/Saved 2 min ago · leo\/afk-library/);
   });
+
+  it("counts every saved tool and every skill still to review", async () => {
+    const tools = [{ id: 1, name: "Atlas", install: "x", update: "", provides: ["atlas"] }, { id: 2, name: "Linter", install: "y", update: "" }];
+    const stored = { ...setupState, settings: { ...setupState.settings, tools }, inventories: { Global: [{ name: "kami", available: true, storage: "library" }, { name: "local-notes", available: true }] } };
+    setup({ "kit/state": () => ({ ...reviewKit, tools: [{ id: 1, name: "Atlas", provides: ["atlas"], missing: [] }] }), state: () => stored });
+
+    await waitFor(() => expect(screen.getByRole("link", { name: /Skills/ })).toHaveTextContent("2 to review"));
+    expect(screen.getByRole("link", { name: /Tools/ })).toHaveTextContent("2 tools · 1 skill");
+  });
 });
 
 describe("navigation signal", () => {
