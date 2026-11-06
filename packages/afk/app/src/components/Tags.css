@@ -1,0 +1,3 @@
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 0;padding:0;list-style:none}
+.tag{font:12px/1 var(--font-mono);padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-compact);background:var(--surface);overflow-wrap:anywhere}
+.tag.away{border-style:dashed;background:transparent;color:var(--muted)}

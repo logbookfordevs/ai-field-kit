@@ -49,6 +49,24 @@ receipts to test update failures, skills that are off, agent folder links and
 intervening edits. The web app uses the same `skills/update` operation;
 `skills/update-state` exposes session progress without waiting for the mutation queue.
 
+## The new app (`/next/`)
+
+The React app ([ADR 0013](adr/0013-react-for-the-local-app.md)) lives in `packages/afk/app/`. `pnpm afk:build` builds it into `packages/afk/web/next/` (ignored by Git, published with the package), and the server serves it at `/next/` with the session token, beside the old app at `/`.
+
+- **Screens** live in `app/src/screens/<id>/index.tsx`, each exporting a `ScreenDefinition` (`label`, `Screen`, `useAttention`). `screens/registry.ts` fixes the navigation order; a screen ticket replaces only its own folder.
+- **Data** goes through `useOperation(name, input)` for reads and `useMutation(name)` for changes (`app/src/api/hooks.ts`). Both return failures as values; a successful change refreshes every read. Result types live in `OperationResults` (`app/src/api/operations.ts`), which screens extend by declaration merging.
+- **Shared components** are in `app/src/components/`; `app/gallery.html` shows them during development (not built).
+- **Tests** use Vitest, React Testing Library and happy-dom. `renderWithApp` and `fakeClient` in `app/src/test/` render a screen against handler functions instead of a server.
+
+For live reloading against a running AFK on a temporary home, start AFK in the foreground, read the token from its page and run Vite with both:
+
+```sh
+HOME=/tmp/afk-home node packages/afk/dist/index.js --foreground --no-open --port 4391
+AFK_URL=http://127.0.0.1:4391 AFK_TOKEN=<token> pnpm --dir packages/afk app:dev
+```
+
+Vite serves the app at `http://localhost:5173/next/` and the workbench at `/next/gallery.html`, proxying `/api` and the bundled fonts to AFK.
+
 ## Checks
 
 ```sh

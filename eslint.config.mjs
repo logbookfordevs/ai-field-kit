@@ -39,6 +39,30 @@ export default defineConfig(
     },
   },
   {
+    files: ["packages/afk/app/src/**/*.{ts,tsx}"],
+    ignores: ["packages/afk/app/src/**/*.test.{ts,tsx}", "packages/afk/app/src/test/**"],
+    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked, react.configs.flat.recommended, react.configs.flat["jsx-runtime"], reactHooks.configs.flat.recommended],
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    settings: { react: { version: "detect" } },
+    rules: {
+      "react/prop-types": "off",
+      "@typescript-eslint/no-misused-promises": ["error", { checksVoidReturn: { attributes: false } }],
+    },
+  },
+  {
+    files: ["packages/afk/app/src/**/*.test.{ts,tsx}", "packages/afk/app/src/test/**/*.{ts,tsx}", "packages/afk/app/vite.config.ts"],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended, react.configs.flat.recommended, react.configs.flat["jsx-runtime"], reactHooks.configs.flat.recommended],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+    settings: { react: { version: "detect" } },
+    rules: { "react/prop-types": "off" },
+  },
+  {
     files: ["apps/site/**/*.{ts,tsx}"],
     extends: [js.configs.recommended, ...tseslint.configs.recommended, react.configs.flat.recommended, react.configs.flat["jsx-runtime"], reactHooks.configs.flat.recommended],
     languageOptions: {

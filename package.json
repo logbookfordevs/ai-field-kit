@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "afk:build": "pnpm --dir packages/afk build",
-    "afk:lint": "eslint packages/afk/src packages/afk/vitest.config.ts",
+    "afk:lint": "eslint packages/afk/src packages/afk/vitest.config.ts packages/afk/app",
     "afk:test": "pnpm --dir packages/afk test && ./scripts/install.test.sh",
     "afk:typecheck": "pnpm --dir packages/afk typecheck",
     "lint": "eslint .",
