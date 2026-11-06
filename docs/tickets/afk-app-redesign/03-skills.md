@@ -27,4 +27,4 @@ One searchable list of every Global skill, with a "Comes from" column (Core, Pac
 
 ## Verification
 - [x] `pnpm afk:typecheck`, `pnpm afk:lint`, `pnpm afk:test` and `pnpm afk:build` pass
-- [ ] Checked in a real browser at 1440px and 390px against a temporary home
+- [x] Checked in a real browser at 1440px and 390px against a temporary home
