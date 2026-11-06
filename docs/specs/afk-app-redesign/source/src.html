@@ -1,0 +1,1507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AFK redesign prototype</title>
+<style>
+/*__FONTS__*/
+:root{
+  --bg:#f3eddf;--surface:#fffaf0;--fg:#17201e;--muted:#5d6964;--border:#b9c0b7;--accent:#102c2c;
+  --accent-hover:#24302c;--warm:#e9ddc9;--accent-fg:#f4efde;--control-border:#5d6964;--focus:#3f8580;--danger:#8f3f2d;
+  --font-body:Poppins,'Avenir Next','Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',SFMono-Regular,Consolas,monospace;
+  --radius:6px;--radius-lg:8px;--ease:cubic-bezier(.32,.72,0,1);
+  --shadow-dialog:0 28px 64px -28px color-mix(in srgb,var(--fg) 55%,transparent);
+  --shadow-pop:0 18px 36px -22px color-mix(in srgb,var(--fg) 55%,transparent);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scrollbar-color:color-mix(in srgb,var(--muted) 55%,transparent) var(--bg);scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 var(--font-body);-webkit-font-smoothing:antialiased;caret-color:var(--focus)}
+::selection{background:color-mix(in srgb,var(--focus) 28%,transparent);color:var(--fg)}
+h1{font:600 32px/1.15 var(--font-body);letter-spacing:-.015em;margin:0;text-wrap:balance}
+h2{font:600 20px/1.35 var(--font-body);margin:0;text-wrap:balance}
+h3{font:600 16px/1.4 var(--font-body);margin:0}
+p{margin:0;max-width:65ch}
+a{color:var(--fg);text-underline-offset:4px}
+code,kbd,.mono{font-family:var(--font-mono)}
+.sub{color:var(--muted);font-size:14px;line-height:1.5}
+.meta{color:var(--muted);font-size:13px;line-height:1.5}
+.num{font-variant-numeric:tabular-nums}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+svg.i.sm{width:16px;height:16px}
+
+button,input,select,textarea{font:inherit;color:inherit}
+button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);font-size:14px;font-weight:500;letter-spacing:.02em;line-height:1.2;cursor:pointer;transition:background-color .16s,border-color .16s,transform .16s;white-space:nowrap}
+button:hover{background:var(--warm);border-color:var(--fg)}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+button:disabled:hover{background:var(--surface);border-color:var(--control-border)}
+.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);transform:translateY(-1px)}
+.primary:active{transform:translateY(0)}
+.primary:disabled:hover{background:var(--accent);border-color:var(--accent);transform:none}
+.text{background:transparent;border-color:transparent;padding:0 6px;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}
+.text:hover,.text:disabled:hover{background:transparent;border-color:transparent;text-decoration-thickness:2px}
+.danger-text{color:var(--danger)}
+.danger-outline{color:var(--danger);border-color:var(--danger)}
+.danger-outline:hover{background:color-mix(in srgb,var(--danger) 8%,var(--surface));border-color:var(--danger)}
+.icon-btn{width:44px;padding:0;border-color:transparent;background:transparent}
+.icon-btn:hover{background:var(--warm);border-color:transparent}
+.icon-btn[aria-expanded=true]{background:var(--warm)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+[tabindex="-1"]:focus{outline:none}
+
+input,select,textarea{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);font-size:14px;transition:border-color .16s}
+input:hover,select:hover,textarea:hover{border-color:var(--fg)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
+textarea{padding:12px 14px;min-height:88px;resize:vertical;font-family:var(--font-mono);font-size:13px;line-height:1.7}
+textarea[readonly]{background:var(--warm)}
+input[aria-invalid=true]{border-color:var(--danger)}
+select{appearance:none;cursor:pointer;padding-right:36px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2317201e' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 14px center}
+input[type=checkbox],input[type=radio]{width:18px;height:18px;min-height:0;padding:0;margin:0;flex:none;accent-color:var(--fg)}
+input[type=search]::-webkit-search-cancel-button{display:none}
+label{display:grid;gap:6px;font-size:13px;font-weight:500}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{padding:0;font-size:13px;font-weight:500;margin-bottom:8px}
+.field-error{color:var(--danger);font-size:13px;font-weight:500;min-height:0}
+.field-error:empty{display:none}
+kbd{font-size:12px;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 6px;background:var(--surface);color:var(--muted)}
+.hint{color:var(--muted);font-size:13px;line-height:1.5}
+
+.skip{position:fixed;top:-100px;left:12px;z-index:99;background:var(--surface);padding:12px;color:var(--fg)}
+.skip:focus{top:12px}
+
+/* app frame */
+#app{container:app/inline-size;background:var(--bg)}
+html.phone-preview body{background:color-mix(in srgb,var(--fg) 14%,var(--bg))}
+html.phone-preview #app{width:390px;height:min(844px,calc(100dvh - 48px));overflow:auto;margin:24px auto;border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-dialog);overscroll-behavior:contain}
+
+.shell{display:grid;grid-template-columns:228px minmax(0,1fr);min-height:100dvh}
+html.phone-preview .shell{min-height:100%}
+.rail{position:sticky;top:0;height:100dvh;padding:28px 16px 20px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:28px;background:var(--bg)}
+.brand{display:flex;align-items:baseline;gap:10px;padding:0 12px}
+.brand b{font:600 28px/1 var(--font-body);letter-spacing:-.02em}
+.brand span{font-size:13px;color:var(--muted)}
+.nav{display:grid;gap:2px}
+.nav .sep{height:1px;background:var(--border);margin:10px 12px}
+.nav button{justify-content:space-between;padding:0 12px;border-color:transparent;background:transparent;text-align:left;font-weight:500;letter-spacing:.01em}
+.nav button:hover{background:var(--warm);border-color:transparent}
+.nav button[aria-current=page]{background:var(--surface);border-color:var(--border);font-weight:600}
+.nav .flag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--fg);letter-spacing:0}
+.nav .flag::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--fg)}
+.nav .flag.quiet{color:var(--muted)}
+.nav .flag.quiet::before{background:transparent;border:1.5px solid var(--muted)}
+.nav .flag.bad{color:var(--danger)}
+.nav .flag.bad::before{background:var(--danger)}
+.rail-foot{margin-top:auto;padding:14px 12px 44px;border-top:1px solid var(--border);display:grid;gap:2px;justify-items:start}
+.rail-foot .text{min-height:32px;padding:0;font-size:13px}
+
+.topbar{display:none}
+main{padding:36px clamp(20px,4vw,56px) 72px;min-width:0;max-width:1240px}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:0 0 28px}
+.page-head .sub{margin-top:8px;max-width:60ch}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap}
+section+section{margin-top:44px}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.sec-head .sub{margin-top:2px}
+.count{font:500 14px var(--font-body);color:var(--muted);margin-left:6px}
+
+.ledger{list-style:none;margin:0;padding:0;border-top:1px solid var(--fg)}
+.ledger>li{border-bottom:1px solid var(--border)}
+
+/* overview */
+.status-line{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--muted);font-size:14px}
+.need{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:4px 16px;padding:20px 0;align-items:start}
+.need>svg{margin-top:2px}
+.need .sub{margin-top:4px}
+.need .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.need.bad>svg,.need.bad h3{color:var(--danger)}
+.need-skills{grid-column:2/-1;list-style:none;margin:12px 0 0;padding:0}
+.need-skills li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 20px;align-items:center;padding:12px 0;border-top:1px solid var(--border)}
+.need-skills .acts{justify-content:flex-end}
+.sname{font:600 14px/1.4 var(--font-mono);overflow-wrap:anywhere}
+.clamp1{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.leaving{animation:leave .24s var(--ease) forwards}
+@keyframes leave{to{opacity:0;transform:translateX(12px)}}
+.allset{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;align-items:center;padding:24px 0;border-top:1px solid var(--fg);border-bottom:1px solid var(--border)}
+.allset .tick{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-fg);grid-row:span 2}
+.allset.arrived{animation:settle .52s var(--ease)}
+.allset.arrived .tick{animation:pop .52s var(--ease)}
+@keyframes settle{from{opacity:0;transform:translateY(10px);filter:blur(3px)}}
+@keyframes pop{from{transform:scale(.6)}}
+.ov-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,1fr);gap:24px 56px;margin-top:48px}
+.ov-grid section+section{margin-top:0}
+.setup-row{width:100%;display:grid;grid-template-columns:120px minmax(0,1fr) 20px;gap:12px;align-items:center;min-height:56px;padding:10px 4px;border:0;border-radius:0;background:transparent;text-align:left;font-weight:400;letter-spacing:0;white-space:normal}
+.setup-row:hover{background:var(--warm)}
+.setup-row b{font-weight:600}
+.setup-row .meta{font-size:14px;color:var(--fg)}
+.setup-row .meta.off{color:var(--muted)}
+.setup-row svg{color:var(--muted)}
+.quick{display:grid;gap:14px;padding-top:16px;border-top:1px solid var(--fg)}
+.quick-row{display:flex;gap:8px}
+.quick .acts{display:flex;flex-wrap:wrap;gap:8px}
+
+/* skills */
+.strip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.strip p{flex:1;min-width:200px;font-size:14px}
+.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 240px 190px;gap:12px;align-items:end}
+.search-wrap{position:relative}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search-wrap input{padding-left:40px;padding-right:44px}
+.search-wrap kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%)}
+.list-meta{display:flex;align-items:center;gap:8px;min-height:44px;margin:12px 0 4px;font-size:13px;color:var(--muted)}
+.list-meta .text{font-size:13px;min-height:36px;color:var(--fg)}
+.cols,.srow{display:grid;grid-template-columns:minmax(0,1fr) 210px 92px 206px 44px;grid-template-areas:"main from on inv more";gap:4px 20px;align-items:center}
+.cols{padding:0 0 8px;font-size:13px;font-weight:500;color:var(--muted);border-bottom:1px solid var(--fg)}
+.cols span:first-child{grid-area:main}
+.slist{list-style:none;margin:0;padding:0}
+.srow{padding:12px 0;border-bottom:1px solid var(--border);min-height:68px}
+.srow .s-main{grid-area:main;min-width:0}
+.s-name{all:unset;cursor:pointer;font:600 14px/1.45 var(--font-mono);overflow-wrap:anywhere;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:4px;transition:text-decoration-color .16s}
+.s-name:hover{text-decoration-color:currentColor}
+.s-name:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:2px}
+.s-desc{font-size:13px;line-height:1.5;color:var(--muted);margin-top:2px}
+.s-from{grid-area:from;min-width:0;font-size:13px;line-height:1.45}
+.s-from .src{display:block;font:12px/1.5 var(--font-mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-from .rv{display:flex;align-items:center;gap:4px 10px;flex-wrap:wrap}
+.s-from .review{display:inline-flex;gap:6px;align-items:center;font-weight:600}
+.s-from .text{min-height:32px;font-size:13px;padding:0}
+.s-on{grid-area:on}
+.s-inv{grid-area:inv}
+.s-more{grid-area:more;justify-self:end}
+.empty{padding:28px 24px;border:1px dashed var(--border);border-radius:var(--radius-lg);display:grid;gap:10px;justify-items:start;margin-top:12px}
+.empty .acts{display:flex;gap:8px;flex-wrap:wrap}
+
+.switch{min-height:44px;padding:0;gap:10px;border:0;background:none;font-size:14px;font-weight:500}
+.switch:hover{background:none}
+.switch .track{position:relative;flex:none;width:36px;height:20px;border:1px solid var(--control-border);border-radius:999px;background:var(--surface);transition:background-color .2s,border-color .2s}
+.switch .track::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--control-border);transition:transform .42s var(--ease),background-color .2s}
+.switch[aria-checked=true] .track{background:var(--fg);border-color:var(--fg)}
+.switch[aria-checked=true] .track::after{transform:translateX(16px);background:var(--surface)}
+.switch:hover:not(:disabled) .track{border-color:var(--fg)}
+.switch:active{transform:none}
+.switch:disabled{opacity:1}
+.switch:disabled .track{opacity:.5}
+.switch .st{min-width:2.4em;text-align:left}
+
+.seg{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;padding:2px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);width:100%}
+.seg label{display:block;position:relative;gap:0;font-size:13px;font-weight:500}
+.seg input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer}
+.seg span{display:flex;align-items:center;justify-content:center;gap:5px;min-height:38px;padding:0 8px;border-radius:4px;color:var(--muted);transition:background-color .16s,color .16s}
+.seg label:hover span{color:var(--fg);background:color-mix(in srgb,var(--warm) 55%,transparent)}
+.seg input:checked+span{background:var(--warm);color:var(--fg);font-weight:600;box-shadow:inset 0 0 0 1px var(--fg)}
+.seg input:focus-visible+span{outline:2px solid var(--focus);outline-offset:2px}
+.seg svg{display:none}
+.seg input:checked+span svg{display:block}
+.seg input:disabled{cursor:not-allowed}
+.seg input:disabled+span{opacity:.55}
+
+/* popover menu */
+.menu{position:fixed;inset:auto;margin:0;padding:6px;min-width:232px;max-width:min(300px,calc(100vw - 24px));border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);color:var(--fg);box-shadow:var(--shadow-pop)}
+.menu:popover-open{display:grid;gap:2px}
+.menu button{justify-content:flex-start;border-color:transparent;background:transparent;font-weight:500;letter-spacing:.01em;padding:0 12px;width:100%}
+.menu button:hover{background:var(--warm);border-color:transparent}
+.menu .why{font-size:12px;color:var(--muted);padding:0 12px 6px;margin-top:-6px;line-height:1.4}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px 6px}
+.menu .vers{padding:8px 12px;font-size:13px;color:var(--muted)}
+
+/* packs */
+.pack{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px 32px;padding:22px 0;border-bottom:1px solid var(--border)}
+.pack-main{min-width:0}
+.pack-main .sub{margin-top:4px}
+.pack-side{border-left:1px solid var(--border);padding-left:28px;display:grid;align-content:start;justify-items:start;gap:6px}
+.pack-side .meta{max-width:30ch}
+details.members{margin-top:12px}
+summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:14px;font-weight:500;border-radius:4px}
+summary::-webkit-details-marker{display:none}
+summary .chev{transition:transform .2s var(--ease)}
+details[open]>summary .chev{transform:rotate(90deg)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 0;padding:0;list-style:none}
+.tag{font:12px/1 var(--font-mono);padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface)}
+.tag.away{border-style:dashed;background:transparent;color:var(--muted)}
+.legend{font-size:12px;color:var(--muted);margin-top:8px}
+.progress{height:4px;border-radius:999px;background:var(--warm);overflow:hidden;margin-top:6px}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .2s linear}
+
+/* sources */
+.add-row{display:flex;gap:8px;flex-wrap:wrap;padding-top:16px;border-top:1px solid var(--fg)}
+.trow,.frow{display:grid;grid-template-columns:minmax(0,1fr) auto 44px;gap:4px 16px;align-items:center;padding:12px 0;min-height:64px}
+.frow{grid-template-columns:minmax(0,1fr) 168px 96px}
+.trow .src,.frow .src{font:12.5px/1.5 var(--font-mono);color:var(--muted);overflow-wrap:anywhere}
+.frow .src{font-size:13px;color:var(--fg);font-weight:600}
+.tname{font-weight:600;font-size:15px;line-height:1.4}
+.find-inline{max-width:420px;margin-bottom:8px}
+
+/* backup */
+.state-block{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 16px;align-items:center;padding:20px 0;border-top:1px solid var(--fg);border-bottom:1px solid var(--border)}
+.state-block .ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--control-border);grid-row:span 2}
+.state-block.ok .ico{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.state-block.bad .ico{border-color:var(--danger);color:var(--danger)}
+.state-block.bad h2{color:var(--danger)}
+.state-block>h2,.state-block>.sub{grid-column:2}
+.state-block .acts{grid-row:1/span 2;grid-column:3;display:flex;gap:8px}
+.state-block+section{margin-top:40px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px 40px}
+.plain{list-style:none;margin:0;padding:0;font-size:14px}
+.plain li{padding:9px 0;border-bottom:1px solid var(--border)}
+.plain li:first-child{border-top:1px solid var(--fg)}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:4px 16px;align-items:center;padding:10px 0}
+.connect{display:grid;gap:18px;max-width:640px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card-radio{position:relative;display:grid;align-content:start;grid-template-columns:18px minmax(0,1fr);gap:4px 12px;align-items:start;padding:14px 16px;border:1px solid var(--control-border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-weight:400;transition:border-color .16s,box-shadow .16s}
+.card-radio:hover{border-color:var(--fg)}
+.card-radio input{margin-top:3px}
+.card-radio b{font-size:14px;font-weight:600;line-height:1.4}
+.card-radio .meta{grid-column:2;margin-top:-2px}
+.card-radio:has(input:checked){border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.card-radio:has(input:disabled){cursor:not-allowed;opacity:.6}
+.card-radio:has(input:focus-visible){outline:2px solid var(--focus);outline-offset:3px}
+.card-radio input:focus-visible{outline:none}
+.card-radio .extra{grid-column:2;margin-top:8px}
+.path-card{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 16px;align-items:center;padding:12px 12px 12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.path-card .k{font-size:13px;font-weight:500;color:var(--muted)}
+.path-card code{font-size:13px;overflow-wrap:anywhere}
+.boundary{padding:20px 24px;border:1px dashed var(--border);border-radius:var(--radius-lg);color:var(--muted);font-size:14px}
+
+/* settings & tools */
+.set-grid{display:grid;grid-template-columns:minmax(200px,280px) minmax(0,1fr);gap:16px 40px;padding:28px 0;border-top:1px solid var(--border)}
+.set-grid:first-of-type{border-top-color:var(--fg)}
+.frow2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.frow2 code{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.tool{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 24px;align-items:center;padding:16px 0}
+
+/* dialogs */
+dialog{max-width:none;border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:var(--radius-lg);padding:0;width:min(640px,calc(100vw - 32px));max-height:min(88dvh,860px);box-shadow:var(--shadow-dialog)}
+dialog[open]{display:flex;flex-direction:column;animation:rise .42s var(--ease)}
+dialog::backdrop{background:color-mix(in srgb,var(--fg) 38%,transparent);animation:fade .3s ease}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+@keyframes fade{from{opacity:0}}
+.dlg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 16px 18px 24px;border-bottom:1px solid var(--border)}
+.dlg-head h2{font-size:22px;letter-spacing:-.01em}
+.dlg-head .sub{margin-top:2px}
+.dlg-body{padding:24px;display:grid;gap:20px;overflow:auto;min-height:0;align-content:start}
+.dlg-foot{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;padding:14px 24px;background:var(--bg);border-top:1px solid var(--border);border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+.dlg-foot .spacer{flex:1}
+dialog.sheet{margin:0 0 0 auto;height:100dvh;max-height:100dvh;width:min(560px,100vw);border-radius:0;border-width:0 0 0 1px}
+dialog.sheet[open]{animation:slide .42s var(--ease)}
+dialog.sheet .dlg-foot{border-radius:0}
+@keyframes slide{from{opacity:0;transform:translateX(28px)}}
+dialog.small{width:min(480px,calc(100vw - 32px))}
+.blk{display:grid;gap:10px}
+.blk>h3{font-size:14px}
+.kv{display:grid;grid-template-columns:110px minmax(0,1fr);gap:6px 16px;margin:0;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+.note{font-size:13px;line-height:1.5;color:var(--muted);padding:10px 12px;background:var(--bg);border-radius:var(--radius)}
+.radio-list{display:grid;gap:10px}
+.inline-err{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--danger);border-radius:var(--radius);color:var(--danger);font-size:14px;background:color-mix(in srgb,var(--danger) 5%,var(--surface))}
+.found-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.found{list-style:none;margin:0;padding:0;border-top:1px solid var(--fg);max-height:min(36dvh,320px);overflow:auto}
+.found li{border-bottom:1px solid var(--border)}
+.found label{display:grid;grid-template-columns:18px minmax(0,1fr);gap:2px 12px;align-items:start;padding:12px 4px;font-weight:400;min-height:48px;cursor:pointer}
+.found input{margin-top:2px}
+.found .s-desc,.found .already{grid-column:2}
+.found .already{font-size:12px;color:var(--fg);font-weight:500}
+.skel{height:14px;border-radius:4px;background:linear-gradient(90deg,var(--warm),color-mix(in srgb,var(--warm) 40%,var(--surface)),var(--warm));background-size:200% 100%;animation:shimmer 1.2s linear infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
+.skel-row{display:grid;gap:8px;padding:14px 4px;border-bottom:1px solid var(--border)}
+.drop{display:grid;gap:12px;justify-items:start;padding:20px;border:1px dashed var(--control-border);border-radius:var(--radius-lg);background:var(--bg)}
+.drop .acts{display:flex;gap:8px;flex-wrap:wrap}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;align-items:center;padding:10px 0;font-size:14px;color:var(--muted)}
+.steps li.now{color:var(--fg);font-weight:500}
+.steps li.done{color:var(--fg)}
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--fg);animation:spin .8s linear infinite}
+.dot{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--border);margin-left:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.success{display:grid;gap:10px;justify-items:start;padding:8px 0}
+.success .tick{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-fg)}
+.picker-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.picker-tools .search-wrap{flex:1;min-width:200px}
+.toggle-pill[aria-pressed=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+
+/* first run */
+.fr{min-height:100dvh;display:grid;grid-template-rows:auto 1fr}
+html.phone-preview .fr{min-height:100%}
+.fr-top{display:flex;align-items:center;justify-content:space-between;padding:24px clamp(20px,4vw,48px);border-bottom:1px solid var(--border)}
+.fr-steps{display:flex;gap:6px;list-style:none;margin:0;padding:0;font-size:13px;color:var(--muted)}
+.fr-steps li{display:flex;align-items:center;gap:6px}
+.fr-steps li+li::before{content:'';width:18px;height:1px;background:var(--border);margin-right:2px}
+.fr-steps li[aria-current=step]{color:var(--fg);font-weight:600}
+.fr-main{width:min(720px,100%);margin:0 auto;padding:56px 24px 72px;display:grid;gap:28px;align-content:start}
+.fr-main .lede{font-size:17px;line-height:1.55;color:var(--fg);max-width:56ch}
+.fr-cards{display:grid;gap:12px}
+.fr-cards .card-radio{padding:20px}
+.fr-cards .card-radio b{font-size:16px}
+.fr-cards .card-radio .meta{font-size:14px}
+.fr-acts{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.summary{font-size:17px;line-height:1.55;max-width:56ch}
+.groups{border-top:1px solid var(--fg)}
+.groups .group+.group{margin-top:0}
+.group{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;padding:16px 0;border-bottom:1px solid var(--border)}
+.group h2{font-size:17px;display:flex;align-items:baseline;gap:10px}
+.group h2 .n{font:600 15px var(--font-mono);color:var(--muted)}
+.group details{grid-column:1/-1}
+.group summary{min-height:36px;font-size:13px}
+.paths{display:grid;gap:8px}
+.back{justify-self:start;min-height:36px;padding:0 4px;font-size:14px}
+
+/* toast + prototype control */
+.toast{position:fixed;bottom:20px;right:20px;z-index:20;display:flex;align-items:center;gap:14px;max-width:min(460px,calc(100vw - 40px));padding:10px 10px 10px 18px;background:var(--fg);color:var(--surface);border-radius:var(--radius-lg);font-size:14px;line-height:1.45;box-shadow:0 16px 40px -20px color-mix(in srgb,var(--fg) 70%,transparent);opacity:0;visibility:hidden;transform:translateY(12px);transition:opacity .25s,transform .42s var(--ease),visibility 0s .42s;min-height:48px}
+.toast.show{opacity:1;visibility:visible;transform:none;transition:opacity .25s,transform .42s var(--ease)}
+.toast button{min-height:36px;background:transparent;color:var(--surface);border-color:color-mix(in srgb,var(--surface) 50%,transparent)}
+.toast button:hover{background:var(--accent-hover);border-color:var(--surface)}
+.toast .spin{border-color:color-mix(in srgb,var(--surface) 30%,transparent);border-top-color:var(--surface)}
+.proto-btn{position:fixed;left:12px;bottom:12px;z-index:30;min-height:36px;padding:0 12px;font:500 12px var(--font-mono);letter-spacing:0;border:1px dashed var(--control-border);background:color-mix(in srgb,var(--surface) 92%,transparent);border-radius:999px;color:var(--muted)}
+.proto-btn:hover{color:var(--fg)}
+.proto-panel{position:fixed;inset:auto auto 56px 12px;margin:0;width:min(300px,calc(100vw - 24px));padding:16px;border:1px solid var(--control-border);border-radius:var(--radius-lg);background:var(--surface);color:var(--fg);box-shadow:var(--shadow-pop);font-size:13px}
+.proto-panel:popover-open{display:grid;gap:14px}
+.proto-panel h2{font:600 13px var(--font-mono)}
+.proto-panel fieldset{display:grid;gap:2px}
+.proto-panel legend{margin-bottom:4px;color:var(--muted)}
+.proto-panel label{display:flex;align-items:center;gap:10px;min-height:32px;font-weight:400;font-size:13px;cursor:pointer}
+.proto-panel .text{justify-self:start;min-height:32px;font-size:13px;padding:0}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ---------- responsive (container: the app frame) ---------- */
+@container app (max-width:1100px){
+  .cols{display:none}
+  .slist{border-top:1px solid var(--fg)}
+  .srow{grid-template-columns:minmax(0,1fr) 92px 206px 44px;grid-template-areas:"main on inv more" "from on inv more"}
+  .s-from .src{display:inline;margin-left:6px}
+  .ov-grid{grid-template-columns:1fr}
+  .toolbar{grid-template-columns:minmax(200px,1fr) 220px 170px}
+}
+@container app (max-width:960px){
+  .shell{grid-template-columns:196px minmax(0,1fr)}
+  .rail{padding:24px 10px 18px}
+  .pack{grid-template-columns:1fr}
+  .pack-side{border-left:0;padding-left:0;border-top:1px solid var(--border);padding-top:14px}
+  .set-grid{grid-template-columns:1fr}
+}
+@container app (max-width:760px){
+  .shell{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .rail{display:none}
+  .topbar{display:flex;position:sticky;top:0;z-index:5;align-items:center;gap:10px;padding:10px 12px 10px 16px;background:var(--bg);border-bottom:1px solid var(--border)}
+  .topbar .brand{padding:0;flex:none}
+  .topbar .brand b{font-size:24px}
+  .topbar label{flex:1;min-width:0}
+  .topbar select{font-size:16px;font-weight:500}
+  main{padding:20px 16px 88px}
+  h1{font-size:26px}
+  .page-head{flex-direction:column;align-items:stretch;gap:16px;margin-bottom:22px}
+  .head-actions>*{flex:1}
+  section+section{margin-top:36px}
+  .need{grid-template-columns:20px minmax(0,1fr);padding:16px 0}
+  .need .acts{grid-column:1/-1;justify-content:flex-start}
+  .need-skills{grid-column:1/-1}
+  .need-skills li{grid-template-columns:1fr}
+  .need-skills .acts{justify-content:flex-start}
+  .ov-grid{margin-top:36px}
+  .setup-row{grid-template-columns:minmax(0,1fr) 20px;gap:2px 12px}
+  .setup-row .meta{grid-column:1;grid-row:2}
+  .setup-row svg{grid-row:1/3;grid-column:2}
+  .quick-row{flex-direction:column}
+  .toolbar{grid-template-columns:1fr 1fr}
+  .toolbar .search-label{grid-column:1/-1}
+  .toolbar select,.toolbar input{font-size:16px}
+  .search-wrap kbd{display:none}
+  .search-wrap input{padding-right:12px}
+  .srow{grid-template-columns:auto minmax(0,1fr) 44px;grid-template-areas:"main main more" "from from from" "on inv inv";gap:8px 12px;padding:14px 0}
+  .s-from .src{display:block;margin-left:0}
+  .s-inv{justify-self:end;width:min(206px,100%)}
+  .s-more{align-self:start;margin-top:-8px;margin-right:-8px}
+  .pack-side .switch{justify-self:start}
+  .trow{grid-template-columns:minmax(0,1fr) 44px;grid-template-areas:"a m" "b b"}
+  .trow>div:first-child{grid-area:a}
+  .trow>.t-act{grid-area:b}
+  .trow>.icon-btn{grid-area:m;align-self:start}
+  .frow{grid-template-columns:minmax(0,1fr) auto;gap:4px 12px}
+  .frow>.f-upd{grid-column:1/-1;justify-self:start}
+  .state-block{grid-template-columns:auto minmax(0,1fr)}
+  .state-block .acts{grid-column:1/-1;grid-row:auto;margin-top:12px}
+  .two,.cards{grid-template-columns:1fr}
+  .hrow{grid-template-columns:minmax(0,1fr) auto}
+  .hrow .when{grid-column:1;grid-row:2}
+  .hrow .text{grid-row:1/3;grid-column:2}
+  .path-card{grid-template-columns:1fr}
+  .tool{grid-template-columns:1fr}
+  .tool button{justify-self:start}
+  dialog,dialog.small{width:min(calc(100vw - 16px),calc(100cqw - 16px));max-height:92dvh}
+  dialog.sheet{margin:auto;height:auto;max-height:92dvh;border-radius:var(--radius-lg);border-width:1px}
+  dialog.sheet .dlg-foot{border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+  .dlg-head{padding:14px 8px 14px 18px}
+  .dlg-head h2{font-size:19px}
+  .dlg-body{padding:18px;gap:16px}
+  .dlg-foot{padding:12px 16px}
+  .dlg-foot .primary{flex:1}
+  .kv{grid-template-columns:1fr;gap:0}
+  .kv dd{margin-bottom:8px}
+  .fr-top{padding:14px 16px}
+  .fr-steps{display:none}
+  .fr-main{padding:28px 16px 64px;gap:22px}
+  .fr-acts .primary{flex:1}
+  .group{grid-template-columns:1fr}
+  input,select{font-size:16px}
+  .state-block .acts{grid-column:1/-1;grid-row:auto}
+}
+html.phone-preview dialog,html.phone-preview dialog.small,html.phone-preview dialog.sheet{width:374px;max-height:min(92dvh,800px);margin:auto;height:auto;border-radius:var(--radius-lg);border-width:1px}
+html.phone-preview .dlg-body{padding:18px;gap:16px}
+html.phone-preview .cards{grid-template-columns:1fr}
+html.phone-preview .kv{grid-template-columns:1fr;gap:0}
+@media (max-width:760px){.proto-btn{min-height:30px;font-size:11px;padding:0 10px;left:8px;bottom:8px}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="app"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-msg"></span></div>
+
+<button class="proto-btn" id="proto-btn" popovertarget="proto-panel" aria-expanded="false">Prototype</button>
+<div class="proto-panel" id="proto-panel" popover aria-labelledby="proto-h">
+  <h2 id="proto-h">Prototype states</h2>
+  <fieldset><legend>Opening</legend>
+    <label><input type="radio" name="p-view" value="app" checked> Returning user</label>
+    <label><input type="radio" name="p-view" value="firstrun"> First run</label>
+  </fieldset>
+  <fieldset><legend>Overview</legend>
+    <label><input type="radio" name="p-needs" value="needs" checked> Needs you (to review, backup off)</label>
+    <label><input type="radio" name="p-needs" value="problems"> Problems (backup error, edited outside)</label>
+    <label><input type="radio" name="p-needs" value="allset"> All set</label>
+  </fieldset>
+  <fieldset><legend>Width</legend>
+    <label><input type="radio" name="p-width" value="full" checked> Window width</label>
+    <label><input type="radio" name="p-width" value="phone"> Phone preview (390px)</label>
+  </fieldset>
+  <button class="text" type="button" id="proto-reset">Reset all data</button>
+</div>
+
+<div class="menu" id="menu" popover></div>
+<div class="menu" id="more-pop" popover></div>
+
+<dialog id="sheet" class="sheet" aria-labelledby="sheet-h"></dialog>
+<dialog id="install" aria-labelledby="install-h"></dialog>
+<dialog id="move" class="small" aria-labelledby="move-h"></dialog>
+<dialog id="confirm" class="small" aria-labelledby="confirm-h"></dialog>
+<dialog id="picker" aria-labelledby="picker-h"></dialog>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+/* ---------- icons ---------- */
+const P = {
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/>',
+  dots:'<circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/>',
+  chev:'<path d="m9 6 6 6-6 6"/>',
+  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  alert:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.3" r=".6" fill="currentColor"/>',
+  cloudoff:'<path d="M7 18h10.5a3.5 3.5 0 0 0 .6-6.95A5.5 5.5 0 0 0 7.6 9.1 4.5 4.5 0 0 0 7 18Z"/><path d="m4 4 16 16"/>',
+  cloud:'<path d="M7 18h10.5a3.5 3.5 0 0 0 .6-6.95A5.5 5.5 0 0 0 7.6 9.1 4.5 4.5 0 0 0 7 18Z"/>',
+  edit:'<path d="M14.5 5.5 18.5 9.5"/><path d="M5 19l1-4.5L15.5 5a1.4 1.4 0 0 1 2 0l1.5 1.5a1.4 1.4 0 0 1 0 2L9.5 18Z"/>',
+  close:'<path d="m6 6 12 12M18 6 6 18"/>',
+  arrow:'<path d="M5 12h14m-5-5 5 5-5 5"/>',
+  folder:'<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z"/>',
+  back:'<path d="M19 12H5m5-5-5 5 5 5"/>'
+};
+const ic = (n, cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+
+/* ---------- vocabulary ---------- */
+const PLACES = {
+  core:{label:'Core', def:'On every machine, always on, backed up.'},
+  pack:{label:'A pack', def:'On when you turn the pack on. The pack is backed up; its files download again.'},
+  machine:{label:'This machine only', def:'Installed here, never backed up.'},
+  later:{label:'Try later', def:'Bookmarked. Nothing installed.'},
+  tool:{label:'Tool', def:'Installed by a tool. AFK keeps your Manual/Automatic choice after each run.'},
+  review:{label:'To review', def:'Installed outside AFK. Decide where it belongs.'}
+};
+const INV = {
+  manual:{label:'Manual', long:'Manual only', def:'Runs only when you call it by name.'},
+  auto:{label:'Automatic', long:'Automatic allowed', def:'Agents can start it when a task matches.'}
+};
+
+const shortSrc = s => {
+  if (!s) return '';
+  const m = String(s).match(/^(?:https?:\/\/github\.com\/)?([^/#\s]+\/[^/#\s]+)(?:\/tree\/[^/]+\/([^#]+))?(?:#(.+))?/);
+  if (!m) return s;
+  return m[1] + (m[2] ? '/' + m[2].replace(/\/$/, '') : '') + (m[3] ? ' @' + m[3] : '');
+};
+const repoKey = s => { const m = shortSrc(s).match(/^([^/\s@]+\/[^/\s@]+)/); return m ? m[1].toLowerCase() : ''; };
+
+/* ---------- state ---------- */
+let S;
+function fresh(){
+  const review = new Set(DATA.to_review);
+  return {
+    view:'app', page:'overview', needs:'needs', phone:false,
+    backup:{on:false, error:false, repo:'leo/afk-library', saved:'2 min ago', waiting:0},
+    edited:[],
+    skills: DATA.skills.map(s => {
+      let kind = 'machine', pack = null, tool = null;
+      if (s.place === 'Core') kind = 'core';
+      else if (s.place.startsWith('Pack: ')) { kind = 'pack'; pack = s.place.slice(6); }
+      else if (s.place.startsWith('Tool: ')) { kind = 'tool'; tool = s.place.slice(6); }
+      if (review.has(s.name)) kind = 'review';
+      return {name:s.name, desc:s.description, on:s.on, inv:s.invocation === 'Manual only' ? 'manual' : 'auto', src:s.source, kind, pack, tool, gone:false};
+    }),
+    packs: DATA.packs.map((p, i) => ({id:i, name:p.name, desc:p.description, members:[...p.members], on:p.on, busy:null})),
+    sources: DATA.core_sources.map(c => ({src:c.source, count:c.count, follow:c.follow})),
+    later: DATA.try_later.map((t, i) => ({id:i, name:t.name, src:t.source, desc:t.description})),
+    tools: DATA.tools,
+    q:'', fFrom:'all', fState:'all', laterQ:'',
+    fr:{step:'choose', choice:null},
+    history:[
+      {msg:'Turn off quill-sketch', when:'2 min ago'},
+      {msg:'Edit north-plan', when:'Today 14:02'},
+      {msg:'Install 3 skills from fieldnotes/agent-skills', when:'Today 11:40'},
+      {msg:'Manual only: animated-driven-frontend', when:'Yesterday 18:15'},
+      {msg:'Add Hairline to Try later', when:'Nov 3'}
+    ]
+  };
+}
+function applyNeeds(mode){
+  S.needs = mode;
+  for (const s of S.skills) if (DATA.to_review.includes(s.name)) s.kind = mode === 'needs' ? 'review' : 'machine';
+  if (mode === 'needs') { S.backup = {...S.backup, on:false, error:false, waiting:0}; S.edited = []; }
+  if (mode === 'problems') { S.backup = {...S.backup, on:true, error:true, waiting:3, saved:'Today 11:40'}; S.edited = ['kami']; }
+  if (mode === 'allset') { S.backup = {...S.backup, on:true, error:false, waiting:0, saved:'2 min ago'}; S.edited = []; }
+}
+
+const live = () => S.skills.filter(s => !s.gone);
+const skill = n => S.skills.find(s => s.name === n && !s.gone);
+const fromLabel = s => s.kind === 'pack' ? `Pack · ${s.pack}` : s.kind === 'tool' ? `Tool · ${s.tool}` : PLACES[s.kind].label;
+const reviewList = () => live().filter(s => s.kind === 'review');
+function needsItems(){
+  const items = [];
+  if (S.backup.error) items.push({type:'backup-error'});
+  if (reviewList().length) items.push({type:'review'});
+  for (const n of S.edited) items.push({type:'edited', name:n});
+  if (!S.backup.on) items.push({type:'backup-off'});
+  return items;
+}
+function backupFlag(){
+  if (!S.backup.on) return {text:'Off', cls:'quiet'};
+  if (S.backup.error) return {text:"Can't save", cls:'bad'};
+  return {text:'Saved', cls:'quiet ok'};
+}
+
+/* ---------- navigation ---------- */
+const PAGES = [
+  {id:'overview', name:'Overview'},
+  {id:'skills', name:'Skills'},
+  {id:'packs', name:'Packs'},
+  {id:'sources', name:'Sources'},
+  {sep:true},
+  {id:'rules', name:'Agent rules'},
+  {id:'tools', name:'Tools'},
+  {id:'backup', name:'Backup'},
+  {id:'settings', name:'Settings'}
+];
+function pageFlag(id){
+  if (id === 'overview') { const n = needsItems().length; return n ? {text:`${n} need${n === 1 ? 's' : ''} you`, cls:''} : null; }
+  if (id === 'skills') { const n = reviewList().length; return n ? {text:`${n} to review`, cls:''} : null; }
+  if (id === 'backup') { const f = backupFlag(); return f.cls.includes('ok') ? null : f; }
+  return null;
+}
+function go(page, opts={}){
+  S.page = page;
+  closeMenus();
+  render();
+  if (opts.focus) { const el = document.getElementById(opts.focus); if (el) { el.focus(); return; } }
+  const h = $('main h1'); if (h) h.focus({preventScroll:true});
+  const scroller = S.phone ? $('#app') : document.scrollingElement;
+  scroller.scrollTop = 0;
+}
+
+/* ---------- render ---------- */
+let arrived = false;
+function render(){
+  const app = $('#app');
+  const fk = document.activeElement?.dataset?.fk;
+  const sel = document.activeElement && 'selectionStart' in document.activeElement ? document.activeElement.selectionStart : null;
+  app.innerHTML = S.view === 'firstrun' ? renderFirstRun() : renderShell();
+  if (fk) { const el = app.querySelector(`[data-fk="${CSS.escape(fk)}"]`); if (el) { el.focus({preventScroll:true}); if (sel != null && el.setSelectionRange) try { el.setSelectionRange(sel, sel); } catch(e){} } }
+  arrived = false;
+}
+function renderShell(){
+  const nav = PAGES.map(p => {
+    if (p.sep) return '<div class="sep" role="presentation"></div>';
+    const f = pageFlag(p.id);
+    return `<button type="button" data-go="${p.id}" data-fk="nav-${p.id}" ${S.page === p.id ? 'aria-current="page"' : ''}><span>${p.name}</span>${f ? `<span class="flag ${f.cls}">${esc(f.text)}</span>` : ''}</button>`;
+  }).join('');
+  const opts = PAGES.filter(p => !p.sep).map(p => { const f = pageFlag(p.id); return `<option value="${p.id}" ${S.page === p.id ? 'selected' : ''}>${p.name}${f ? ' · ' + f.text : ''}</option>`; }).join('');
+  return `<div class="shell">
+    <aside class="rail" aria-label="AFK">
+      <div class="brand"><b>afk.</b><span>AI Field Kit</span></div>
+      <nav class="nav" aria-label="Sections">${nav}</nav>
+      <div class="rail-foot"><span class="meta">AFK 2.1.0 · Up to date</span><button type="button" class="text" data-action="check-updates">Check for updates</button></div>
+    </aside>
+    <header class="topbar">
+      <div class="brand"><b>afk.</b></div>
+      <label><span class="vh">Section</span><select id="section-select" data-fk="section-select">${opts}</select></label>
+      <button type="button" class="icon-btn" id="more-btn" data-action="more" aria-label="More" aria-expanded="false" data-fk="more-btn">${ic('dots')}</button>
+    </header>
+    <main id="main" tabindex="-1">${PAGE_RENDER[S.page]()}</main>
+  </div>`;
+}
+const PAGE_RENDER = {overview:renderOverview, skills:renderSkills, packs:renderPacks, sources:renderSources, rules:renderRules, tools:renderTools, backup:renderBackup, settings:renderSettings};
+
+function head(title, sub, actions=''){
+  return `<header class="page-head"><div><h1 tabindex="-1">${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div>${actions ? `<div class="head-actions">${actions}</div>` : ''}</header>`;
+}
+
+/* overview */
+function renderOverview(){
+  const items = needsItems();
+  const all = live(), on = all.filter(s => s.on).length, core = all.filter(s => s.kind === 'core').length;
+  const rv = reviewList().length;
+  const packsOn = S.packs.filter(p => p.on).length;
+  const followed = S.sources.filter(s => s.follow).length;
+  const toolSkills = all.filter(s => s.kind === 'tool').length;
+  const b = S.backup;
+  const backupLine = !b.on ? 'Off · your library is only on this machine' : b.error ? `Can't save · ${plural(b.waiting, 'change')} waiting` : `Saved ${b.saved} · ${b.repo}`;
+  const status = items.length ? `${plural(items.length, 'thing needs', 'things need')} you` : 'Nothing needs you';
+
+  let needs;
+  if (items.length) {
+    needs = `<div class="sec-head"><h2 id="needs-h">Needs you</h2></div><ul class="ledger" aria-labelledby="needs-h">${items.map(renderNeed).join('')}</ul>`;
+  } else {
+    needs = `<div class="allset ${arrived ? 'arrived' : ''}"><span class="tick">${ic('check')}</span><h2 id="needs-h">All set · backed up ${esc(b.saved)}</h2><p class="sub">Nothing needs you. ${core} Core skills and your choices are saved in ${esc(b.repo)}.</p></div>`;
+  }
+
+  const row = (go, name, text, off) => `<li><button type="button" class="setup-row" data-go="${go}" data-fk="setup-${go}"><b>${name}</b><span class="meta ${off ? 'off' : ''}">${text}</span>${ic('chev')}</button></li>`;
+  return head('Overview', items.length ? `${status}.` : '') + `
+    <section aria-labelledby="needs-h">${needs}</section>
+    <div class="ov-grid">
+      <section aria-labelledby="setup-h">
+        <div class="sec-head"><h2 id="setup-h">Your setup</h2></div>
+        <ul class="ledger">
+          ${row('skills', 'Skills', `${on} of ${all.length} on · ${core} in Core${rv ? ` · ${rv} to review` : ''}`)}
+          ${row('packs', 'Packs', `${plural(S.packs.length, 'pack')} · ${packsOn ? `${packsOn} on` : 'all off'}`)}
+          ${row('sources', 'Sources', `${S.later.length} saved for later · ${followed} followed`)}
+          ${row('tools', 'Tools', `${plural(S.tools.length, 'tool')} · ${plural(toolSkills, 'skill')}`)}
+          ${row('backup', 'Backup', backupLine, !b.on)}
+        </ul>
+      </section>
+      <section aria-labelledby="quick-h">
+        <div class="sec-head"><h2 id="quick-h">Quick actions</h2></div>
+        <div class="quick">
+          <form class="quick-row" data-form="quick-find" role="search">
+            <label style="flex:1"><span>Find a skill</span><span class="search-wrap">${ic('search')}<input type="search" name="q" placeholder="Name or what it does" data-fk="quick-q" autocomplete="off"><kbd>/</kbd></span></label>
+            <button type="submit" style="align-self:end">Find</button>
+          </form>
+          <div class="acts">
+            <button type="button" class="primary" data-action="install" data-fk="ov-add">Add something new</button>
+          </div>
+        </div>
+      </section>
+    </div>`;
+}
+function renderNeed(it){
+  if (it.type === 'review') {
+    const list = reviewList();
+    return `<li class="need" data-need="review">${ic('alert')}<div><h3>${plural(list.length, 'skill was', 'skills were')} installed outside AFK</h3><p class="sub">They're on, but not in your library. Decide where each one belongs.</p></div><div></div>
+      <ul class="need-skills">${list.map(s => `<li data-skill-row="${esc(s.name)}"><div><span class="sname">${esc(s.name)}</span><p class="s-desc clamp1">${esc(s.desc)}</p></div><div class="acts">
+        <button type="button" data-action="place" data-skill="${esc(s.name)}" data-to="core" data-fk="rv-core-${esc(s.name)}">Add to Core</button>
+        <button type="button" data-action="place" data-skill="${esc(s.name)}" data-to="machine" data-fk="rv-mach-${esc(s.name)}">Keep here only</button>
+        <button type="button" class="text" data-action="move" data-skill="${esc(s.name)}" data-fk="rv-more-${esc(s.name)}">Other…</button></div></li>`).join('')}</ul></li>`;
+  }
+  if (it.type === 'backup-off') return `<li class="need" data-need="backup-off">${ic('cloudoff')}<div><h3>Backup is off</h3><p class="sub">Your library is only on this machine. Connect a private Git repository and AFK saves after every change.</p></div><div class="acts"><button type="button" data-go="backup" data-fk="need-backup">Set up backup</button></div></li>`;
+  if (it.type === 'backup-error') return `<li class="need bad" data-need="backup-error">${ic('alert')}<div><h3>Backup can't save</h3><p class="sub">github.com couldn't be reached. ${plural(S.backup.waiting, 'change is', 'changes are')} waiting on this machine; nothing is lost.</p></div><div class="acts"><button type="button" data-action="retry-backup" data-fk="need-retry">Try again</button></div></li>`;
+  if (it.type === 'edited') return `<li class="need" data-need="edited-${esc(it.name)}">${ic('edit')}<div><h3><span class="sname">${esc(it.name)}</span> was edited outside AFK</h3><p class="sub">SKILL.md changed at 14:02, not through AFK's editor. Keep the edit to save it, or go back to the saved version.</p></div><div class="acts"><button type="button" data-action="keep-edit" data-skill="${esc(it.name)}" data-fk="need-keep">Keep edit</button><button type="button" class="text" data-action="discard-edit" data-skill="${esc(it.name)}" data-fk="need-discard">Discard</button></div></li>`;
+  return '';
+}
+
+/* skills */
+function fromOptions(){
+  const all = live(); const counts = new Map();
+  for (const s of all) { const k = fromKey(s); counts.set(k, (counts.get(k) || 0) + 1); }
+  const order = ['core', 'machine', 'review'];
+  const keys = [...counts.keys()].sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    if (ia >= 0 || ib >= 0) return (ia < 0 ? 9 : ia) - (ib < 0 ? 9 : ib);
+    return a.localeCompare(b);
+  });
+  return [['all', `Anywhere (${all.length})`], ...keys.map(k => [k, `${fromKeyLabel(k)} (${counts.get(k)})`])];
+}
+const fromKey = s => s.kind === 'pack' ? 'pack:' + s.pack : s.kind === 'tool' ? 'tool:' + s.tool : s.kind;
+const fromKeyLabel = k => k.startsWith('pack:') ? 'Pack · ' + k.slice(5) : k.startsWith('tool:') ? 'Tool · ' + k.slice(5) : PLACES[k].label;
+function filtered(){
+  const q = S.q.trim().toLowerCase();
+  return live().filter(s =>
+    (S.fFrom === 'all' || fromKey(s) === S.fFrom) &&
+    (S.fState === 'all' || (S.fState === 'on' && s.on) || (S.fState === 'off' && !s.on) || s.inv === S.fState) &&
+    (!q || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q))
+  ).sort((a, b) => (a.kind === 'review') === (b.kind === 'review') ? a.name.localeCompare(b.name) : a.kind === 'review' ? -1 : 1);
+}
+function renderSkills(){
+  const rv = reviewList().length;
+  if (S.fFrom !== 'all' && !fromOptions().some(([k]) => k === S.fFrom)) S.fFrom = 'all';
+  const strip = rv && S.fFrom !== 'review' ? `<div class="strip">${ic('alert')}<p><b>${plural(rv, 'skill was', 'skills were')} installed outside AFK</b> and ${rv === 1 ? 'needs' : 'need'} a place.</p><button type="button" class="text" data-action="filter-review" data-fk="strip-show">Show ${rv === 1 ? 'it' : 'them'}</button></div>` : '';
+  return head('Skills', 'Turn skills on or off and choose how they start. New skills come in from Sources.', `<button type="button" data-action="update-all" data-fk="update-all">Update all</button>`) + strip + `
+    <div class="toolbar" role="search">
+      <label class="search-label"><span>Find a skill</span><span class="search-wrap">${ic('search')}<input type="search" id="skill-q" placeholder="Name or what it does" value="${esc(S.q)}" data-fk="skill-q" autocomplete="off"><kbd>/</kbd></span></label>
+      <label><span>Comes from</span><select id="f-from" data-fk="f-from">${fromOptions().map(([v, l]) => `<option value="${esc(v)}" ${S.fFrom === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+      <label><span>State</span><select id="f-state" data-fk="f-state">${[['all', 'Any state'], ['on', 'On'], ['off', 'Off'], ['manual', 'Manual only'], ['auto', 'Automatic allowed']].map(([v, l]) => `<option value="${v}" ${S.fState === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    </div>
+    <div id="skill-results">${renderSkillResults()}</div>`;
+}
+function renderSkillResults(){
+  const list = filtered();
+  const isFiltered = S.q || S.fFrom !== 'all' || S.fState !== 'all';
+  const meta = `<p class="list-meta" aria-live="polite"><span>${isFiltered ? `Showing ${list.length} of ${live().length}` : `${live().length} skills`}</span>${isFiltered ? `<button type="button" class="text" data-action="clear-filters" data-fk="clear-filters">Clear filters</button>` : ''}</p>`;
+  if (!list.length) return meta + `<div class="empty"><h3>No skill matches${S.q ? ` “${esc(S.q)}”` : ' these filters'}</h3><p class="sub">Search looks at names and descriptions. To get a skill you don't have yet, install it from a repository or a zip.</p><div class="acts"><button type="button" data-action="clear-filters" data-fk="empty-clear">Clear filters</button><button type="button" data-action="install" data-repo="${esc(S.q)}" data-fk="empty-install">Find it in a repository</button></div></div>`;
+  return meta + `<div class="cols" aria-hidden="true"><span>Skill</span><span>Comes from</span><span>On</span><span>How it starts</span><span></span></div>
+    <ul class="slist" aria-label="Skills">${list.map(skillRow).join('')}</ul>`;
+}
+function invSeg(s, prefix){
+  return `<fieldset class="seg"><legend class="vh">How ${esc(s.name)} starts</legend>${['manual', 'auto'].map(k => `<label><input type="radio" name="${prefix}-${esc(s.name)}" value="${k}" data-action="inv" data-skill="${esc(s.name)}" data-fk="${prefix}-${k}-${esc(s.name)}" ${s.inv === k ? 'checked' : ''}><span>${ic('check', 'sm')}${INV[k].label}</span></label>`).join('')}</fieldset>`;
+}
+function switchBtn(on, label, fk, action, extra=''){
+  return `<button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="${esc(label)}" data-action="${action}" data-fk="${fk}" ${extra}><span class="track"></span><span class="st" aria-hidden="true">${on ? 'On' : 'Off'}</span></button>`;
+}
+function skillRow(s){
+  const src = shortSrc(s.src);
+  const from = s.kind === 'review'
+    ? `<span class="rv"><span class="review">${ic('alert', 'sm')}To review</span><button type="button" class="text" data-action="move" data-skill="${esc(s.name)}" data-fk="decide-${esc(s.name)}">Decide…</button></span>`
+    : `<span>${esc(fromLabel(s))}</span>${src ? `<span class="src" title="${esc(src)}">${esc(src)}</span>` : s.kind === 'machine' ? '<span class="src">no repository</span>' : ''}`;
+  return `<li class="srow" data-skill-row="${esc(s.name)}">
+    <div class="s-main"><button type="button" class="s-name" data-action="inspect" data-skill="${esc(s.name)}" data-fk="name-${esc(s.name)}">${esc(s.name)}</button><p class="s-desc clamp1">${esc(s.desc)}</p></div>
+    <div class="s-from">${from}</div>
+    <div class="s-on">${switchBtn(s.on, s.name, 'sw-' + s.name, 'toggle', `data-skill="${esc(s.name)}"`)}</div>
+    <div class="s-inv">${invSeg(s, 'inv')}</div>
+    <div class="s-more"><button type="button" class="icon-btn" aria-label="More for ${esc(s.name)}" aria-expanded="false" data-action="row-menu" data-skill="${esc(s.name)}" data-fk="more-${esc(s.name)}">${ic('dots')}</button></div>
+  </li>`;
+}
+
+/* packs */
+function renderPacks(){
+  return head('Packs', 'Groups of skills you turn on when a piece of work needs them. Packs are backed up as definitions; their files download again.', `<button type="button" data-action="pack-create" data-fk="pack-create">Create pack</button>`) +
+    `<div class="ledger" style="list-style:none">${S.packs.map(renderPack).join('')}</div>`;
+}
+function renderPack(p){
+  const here = p.members.filter(m => skill(m));
+  const away = p.members.length - here.length;
+  const sideMeta = p.busy ? `<p class="meta" aria-live="polite">Downloading ${p.busy.done} of ${p.busy.total} skills…</p><div class="progress" aria-hidden="true"><i style="width:${Math.round(p.busy.done / p.busy.total * 100)}%"></i></div>`
+    : p.on ? `<p class="meta">On for every agent. ${plural(p.members.length, 'skill')} linked.</p>`
+    : `<p class="meta">Off. Turning it on links ${plural(here.length, 'skill')}${away ? ` and downloads ${away}` : ''}.</p>`;
+  return `<article class="pack" aria-labelledby="pack-h-${p.id}">
+    <div class="pack-main">
+      <h2 id="pack-h-${p.id}">${esc(p.name)}</h2>
+      ${p.desc ? `<p class="sub">${esc(p.desc)}</p>` : ''}
+      <p class="meta" style="margin-top:4px">${plural(p.members.length, 'skill')} · ${here.length ? `${here.length} on this machine` : 'none downloaded yet'}</p>
+      <details class="members">
+        <summary data-fk="pack-sum-${p.id}">${ic('chev', 'sm chev')}Show members</summary>
+        <ul class="tags">${p.members.map(m => `<li class="tag ${skill(m) ? '' : 'away'}">${esc(m)}${skill(m) ? '' : '<span class="vh"> (not downloaded)</span>'}</li>`).join('')}</ul>
+        ${away ? `<p class="legend">Dashed: not downloaded yet. They download when the pack turns on.</p>` : ''}
+        <button type="button" class="text" style="margin-top:6px;padding:0" data-action="pack-edit" data-pack="${p.id}" data-fk="pack-edit-${p.id}">Edit members</button>
+      </details>
+    </div>
+    <div class="pack-side">
+      ${switchBtn(p.on, p.name + ' on for every agent', 'pack-sw-' + p.id, 'pack-toggle', `data-pack="${p.id}" ${p.busy ? 'disabled' : ''}`)}
+      ${sideMeta}
+    </div>
+  </article>`;
+}
+
+/* sources */
+function renderSources(){
+  const q = S.laterQ.trim().toLowerCase();
+  const later = S.later.filter(t => !q || t.name.toLowerCase().includes(q) || shortSrc(t.src).toLowerCase().includes(q) || (t.desc || '').toLowerCase().includes(q));
+  const laterList = !S.later.length
+    ? `<div class="empty"><h3>Nothing saved for later</h3><p class="sub">Bookmark a repository you want to look at later. Nothing is installed until you choose.</p><button type="button" data-action="install" data-dest="later">Save a repository for later</button></div>`
+    : !later.length ? `<div class="empty"><h3>No bookmark matches “${esc(S.laterQ)}”</h3><button type="button" data-action="later-clear" data-fk="later-clear">Clear search</button></div>`
+    : `<ul class="ledger">${later.map(t => `<li class="trow"><div><span class="tname">${esc(t.name)}</span>${t.desc ? ` <span class="sub">· ${esc(t.desc)}</span>` : ''}<div class="src">${esc(shortSrc(t.src))}</div></div>
+        <div class="t-act"><button type="button" data-action="install" data-repo="${esc(shortSrc(t.src))}" data-later="${t.id}" data-fk="later-inst-${t.id}">Install…</button></div>
+        <button type="button" class="icon-btn" aria-label="More for ${esc(t.name)}" aria-expanded="false" data-action="later-menu" data-later="${t.id}" data-fk="later-more-${t.id}">${ic('dots')}</button></li>`).join('')}</ul>`;
+  return head('Sources', 'Where skills come from: install something new, keep repositories for later, and follow the ones your Core comes from.') + `
+    <section aria-labelledby="add-h">
+      <div class="sec-head"><div><h2 id="add-h">Add something new</h2><p class="sub">Install skills into Core, a pack or this machine.</p></div></div>
+      <div class="add-row">
+        <button type="button" class="primary" data-action="install" data-fk="src-repo">From a repository</button>
+        <button type="button" data-action="install" data-mode="zip" data-fk="src-zip">From a zip, .skill or folder</button>
+      </div>
+    </section>
+    <section aria-labelledby="later-h">
+      <div class="sec-head"><div><h2 id="later-h" tabindex="-1">Try later<span class="count num">${S.later.length}</span></h2><p class="sub">${PLACES.later.def}</p></div><button type="button" data-action="install" data-dest="later" data-fk="later-add">Save a repository</button></div>
+      ${S.later.length > 6 ? `<label class="find-inline"><span class="vh">Search Try later</span><span class="search-wrap">${ic('search')}<input type="search" id="later-q" placeholder="Search bookmarks" value="${esc(S.laterQ)}" data-fk="later-q" autocomplete="off"></span></label>` : ''}
+      <div id="later-results">${laterList}</div>
+    </section>
+    <section aria-labelledby="core-h">
+      <div class="sec-head"><div><h2 id="core-h">Core comes from<span class="count num">${S.sources.length}</span></h2><p class="sub">Following a repository adds its new skills to Core when it updates.</p></div></div>
+      <ul class="ledger">${S.sources.map((c, i) => `<li class="frow"><div><div class="src">${esc(shortSrc(c.src))}</div><span class="meta">${plural(c.count, 'skill')} in Core</span></div>
+        ${switchBtn(c.follow, 'Follow ' + shortSrc(c.src), 'follow-' + i, 'follow', `data-i="${i}"`).replace(/<span class="st" aria-hidden="true">(On|Off)<\/span>/, `<span class="st" aria-hidden="true">${c.follow ? 'Following' : 'Not following'}</span>`)}
+        <button type="button" class="text f-upd" data-action="source-update" data-i="${i}" data-fk="src-upd-${i}">Update</button></li>`).join('')}</ul>
+    </section>`;
+}
+
+/* backup */
+function renderBackup(){
+  const b = S.backup;
+  const core = live().filter(s => s.kind === 'core').length;
+  const holds = `<section aria-labelledby="holds-h"><div class="sec-head"><h2 id="holds-h">What a backup holds</h2></div><div class="two">
+      <div><h3 style="font-size:14px;margin-bottom:8px">Saved</h3><ul class="plain"><li>${core} Core skills, full files</li><li>${plural(S.packs.length, 'pack definition')}</li><li>${S.later.length} Try later bookmarks</li><li>${plural(S.tools.length, 'tool definition')}</li><li>Manual/Automatic choices</li><li>AGENTS.md and references</li></ul></div>
+      <div><h3 style="font-size:14px;margin-bottom:8px">Stays on this machine</h3><ul class="plain"><li>This machine only skills</li><li>Skills that are off</li><li>Pack skill files (they download again)</li><li>Project folders</li></ul></div></div></section>`;
+  if (!b.on) {
+    return head('Backup', 'A private Git repository that holds your library. Restore it on a new machine in one download.') + `
+      <div class="state-block">${'<span class="ico">' + ic('cloudoff') + '</span>'}<h2>Off</h2><p class="sub">Your library is only on this machine.</p></div>
+      <section aria-labelledby="conn-h"><form class="connect" data-form="connect" novalidate>
+        <div class="sec-head"><h2 id="conn-h">Connect a repository</h2></div>
+        <fieldset><legend>Where should AFK save?</legend><div class="cards">
+          <label class="card-radio"><input type="radio" name="conn" value="create" checked data-action="conn-mode"><b>Create a private repository</b><span class="meta">On your GitHub account, with your GitHub CLI sign-in.</span></label>
+          <label class="card-radio"><input type="radio" name="conn" value="remote" data-action="conn-mode"><b>Use a Git remote I have</b><span class="meta">Any empty Git repository URL.</span></label>
+        </div></fieldset>
+        <label id="conn-label"><span>Repository name</span><input id="conn-input" name="repo" value="afk-library" autocomplete="off" aria-describedby="conn-hint conn-err" data-fk="conn-input"></label>
+        <p class="hint" id="conn-hint">Skill files aren't scanned for secrets. Keep the repository private.</p>
+        <p class="field-error" id="conn-err"></p>
+        <div><button type="submit" class="primary" data-fk="conn-submit">Create and save</button></div>
+      </form></section>` + holds;
+  }
+  const blk = b.error
+    ? `<div class="state-block bad"><span class="ico">${ic('alert')}</span><h2>Can't save</h2><p class="sub">github.com couldn't be reached. ${plural(b.waiting, 'change is', 'changes are')} waiting on this machine; nothing is lost. Last saved ${esc(b.saved)}.</p><div class="acts"><button type="button" data-action="retry-backup" data-fk="bk-retry">Try again</button></div></div>`
+    : `<div class="state-block ok"><span class="ico">${ic('check')}</span><h2>Saved ${esc(b.saved)}</h2><p class="sub"><span class="mono">${esc(b.repo)}</span> · private. AFK saves 2 minutes after each change.</p><div class="acts"><button type="button" data-action="save-now" data-fk="bk-save">Save now</button></div></div>`;
+  const att = S.edited.length ? `<section aria-labelledby="att-h"><div class="sec-head"><h2 id="att-h">Needs attention</h2></div><ul class="ledger">${S.edited.map(n => renderNeed({type:'edited', name:n})).join('')}</ul></section>` : '';
+  return head('Backup', 'A private Git repository that holds your library. Restore it on a new machine in one download.') + blk + att + `
+    <section aria-labelledby="hist-h"><div class="sec-head"><div><h2 id="hist-h">History</h2><p class="sub">Going back makes a new save, so it can be undone too.</p></div></div>
+      <ul class="ledger">${S.history.map((h, i) => `<li class="hrow"><span>${esc(h.msg)}</span><span class="meta when">${esc(h.when)}</span><button type="button" class="text" data-action="go-back" data-i="${i}" data-fk="hist-${i}" ${i === 0 ? 'disabled' : ''}>${i === 0 ? 'Current' : 'Go back here'}</button></li>`).join('')}</ul></section>` + holds;
+}
+
+/* tools, settings, rules */
+function renderTools(){
+  return head('Tools', 'Tools install their own skills. AFK keeps your Manual/Automatic choices after each run.') +
+    `<ul class="ledger">${S.tools.map((t, i) => `<li class="tool"><div><h3>${esc(t.name)}</h3>${t.provides.length ? `<ul class="tags" aria-label="Provides">${t.provides.map(p => `<li class="tag">${esc(p)}</li>`).join('')}</ul>` : '<p class="meta">Provides no skills</p>'}</div><button type="button" data-action="tool-run" data-i="${i}" data-fk="tool-${i}">Run update</button></li>`).join('')}</ul>`;
+}
+function renderSettings(){
+  const folders = [
+    ['Shared folder', '~/.agents/skills', 'Codex, Cline, Warp and Zed read it.', true, true],
+    ['Claude Code', '~/.claude/skills', '', true, false],
+    ['Cursor', '~/.cursor/skills', '', false, false],
+    ['Gemini CLI', '~/.gemini/skills', '', false, false]
+  ];
+  return head('Settings', 'Where your library lives, which folders your agents read, and your projects.') + `
+    <div class="set-grid"><div><h2>Your library</h2><p class="sub">Every skill AFK manages is stored here and linked into agent folders.</p></div>
+      <div class="paths"><div class="path-card"><span class="k">Library</span><code>~/.afk/library</code></div><div class="path-card"><span class="k">Backup</span><code>${S.backup.on ? esc(S.backup.repo) : 'Off'}</code></div></div></div>
+    <div class="set-grid"><div><h2>Agent folders</h2><p class="sub">Every skill that is on gets a link in each folder that's on.</p></div>
+      <div>${folders.map((f, i) => `<div class="frow2"><div><b style="font-size:14px">${f[0]}</b><br><code>${f[1]}</code>${f[2] ? `<p class="meta">${f[2]}</p>` : ''}</div>${switchBtn(f[3], f[0] + ' folder', 'fold-' + i, 'folder', f[4] ? 'disabled title="Always on"' : '')}</div>`).join('')}</div></div>
+    <div class="set-grid"><div><h2>Projects</h2><p class="sub">AFK installs and updates skills inside a project's own repository.</p></div>
+      <div><div class="frow2"><div><b style="font-size:14px">Studio</b><br><code>~/Code/studio</code></div><button type="button" class="text" data-action="noop-toast" data-msg="Project editing isn't modelled in this prototype.">Edit</button></div></div></div>`;
+}
+function renderRules(){
+  return head('Agent rules', 'Your AGENTS.md and references, synced to each agent.') + `<div class="boundary">Agent rules keep today's workbench and aren't part of this redesign, so the prototype doesn't model this screen.</div>`;
+}
+
+/* ---------- first run ---------- */
+function renderFirstRun(){
+  const st = S.fr.step;
+  const stepIx = {choose:0, preview:1, restore:1, working:2, done:2}[st];
+  const labels = ['Choose', S.fr.choice === 'restore' ? 'Pick library' : 'Preview', 'Done'];
+  const top = `<header class="fr-top"><div class="brand" style="padding:0"><b>afk.</b><span>AI Field Kit</span></div><ol class="fr-steps" aria-label="Steps">${labels.map((l, i) => `<li ${i === stepIx ? 'aria-current="step"' : ''}>${l}</li>`).join('')}</ol></header>`;
+  return `<div class="fr">${top}<main class="fr-main" id="main" tabindex="-1">${FR[st]()}</main></div>`;
+}
+function frGroups(){
+  const all = live();
+  const g = k => all.filter(s => k === 'machine' ? (s.kind === 'machine' || s.kind === 'review') : s.kind === k).map(s => s.name).sort();
+  return [
+    {key:'core', title:'Core', names:g('core'), def:PLACES.core.def},
+    {key:'pack', title:'Pack skills', names:g('pack'), def:'Kept by AFK. Their packs are backed up; the files download again.'},
+    {key:'machine', title:'This machine only', names:g('machine'), def:PLACES.machine.def},
+    {key:'tool', title:'Tool skills', names:g('tool'), def:'Stay with the tools that install them. AFK keeps your Manual/Automatic choices.'}
+  ];
+}
+const FR = {
+  choose(){
+    const moving = live().filter(s => s.kind !== 'tool').length;
+    return `<div><h1 tabindex="-1">Welcome to AFK</h1></div>
+      <p class="lede">AFK keeps the skills your agents use in one library on this machine, and can back that library up to a private Git repository.</p>
+      <form data-form="fr-choose" novalidate class="fr-cards" style="gap:16px">
+        <fieldset aria-describedby="fr-err"><legend>How do you want to start?</legend><div class="fr-cards">
+          <label class="card-radio"><input type="radio" name="fr" value="start" data-fk="fr-start" ${S.fr.choice === 'start' ? 'checked' : ''}><b>Start a library from this machine</b><span class="meta">Move this machine's ${moving} skills into a library. You can back it up afterwards.</span></label>
+          <label class="card-radio"><input type="radio" name="fr" value="restore" data-fk="fr-restore" ${S.fr.choice === 'restore' ? 'checked' : ''}><b>Restore my library</b><span class="meta">New or wiped machine? Bring back your skills and choices from your backup repository.</span></label>
+        </div></fieldset>
+        <p class="field-error" id="fr-err" role="alert"></p>
+        <div class="fr-acts"><button type="submit" class="primary" data-fk="fr-continue">Continue</button><button type="button" class="text" data-action="fr-skip" data-fk="fr-skip">Skip for now</button></div>
+      </form>`;
+  },
+  preview(){
+    const groups = frGroups();
+    const moving = groups.filter(g => g.key !== 'tool').reduce((n, g) => n + g.names.length, 0);
+    const tools = groups.find(g => g.key === 'tool').names.length;
+    return `<button type="button" class="text back" data-action="fr-back" data-fk="fr-back">${ic('back', 'sm')}Back</button>
+      <div><h1 tabindex="-1">Start your library</h1></div>
+      <p class="summary"><b>${moving} skills</b> move into your library and stay linked where your agents look. <b>${tools}</b> stay with their tools. Nothing is deleted.</p>
+      <div class="groups">${groups.map(g => `<section class="group" aria-labelledby="g-${g.key}"><h2 id="g-${g.key}">${g.title}<span class="n num">${g.names.length}</span></h2><p class="sub" style="grid-column:1/-1">${g.def}</p>
+        <details><summary data-fk="fr-show-${g.key}">${ic('chev', 'sm chev')}Show names</summary><ul class="tags">${g.names.map(n => `<li class="tag">${esc(n)}</li>`).join('')}</ul></details></section>`).join('')}</div>
+      <div class="paths">
+        <div class="path-card"><span class="k">Library</span><code>~/.afk/library</code></div>
+        <div class="path-card"><span class="k">Agents read from</span><code>~/.agents/skills · ~/.claude/skills</code></div>
+      </div>
+      <p class="sub">Backup stays off until you connect a repository on the Backup page.</p>
+      <div class="fr-acts"><button type="button" class="primary" data-action="fr-start" data-fk="fr-go">Start the library</button><button type="button" class="text" data-action="fr-back">Back</button></div>`;
+  },
+  restore(){
+    return `<button type="button" class="text back" data-action="fr-back" data-fk="fr-back">${ic('back', 'sm')}Back</button>
+      <div><h1 tabindex="-1">Which repository is your library?</h1></div>
+      <p class="lede">Listed with your GitHub CLI sign-in.</p>
+      <ul class="ledger">
+        <li class="trow"><div><span class="tname mono" style="font-size:14px">leo/afk-library</span><div class="meta">AFK library · private · last saved today 14:02 · 43 Core skills</div></div><div class="t-act"><button type="button" class="primary" data-action="fr-restore-go" data-fk="fr-restore-go">Restore</button></div></li>
+        <li class="trow"><div><span class="tname mono" style="font-size:14px">leo/dotfiles</span><div class="meta">Not an AFK library. Add it to Try later instead.</div></div></li>
+      </ul>
+      <form data-form="fr-url" novalidate class="blk"><label><span>Or paste a repository URL</span><input name="url" placeholder="owner/repository or URL" aria-describedby="fr-url-err" data-fk="fr-url"></label><p class="field-error" id="fr-url-err"></p><div><button type="submit" data-fk="fr-url-go">Restore from URL</button></div></form>`;
+  },
+  working(){
+    const restore = S.fr.choice === 'restore';
+    const steps = restore ? ['Download library', 'Check skills already here', 'Link Core skills into agent folders', 'Apply your Manual/Automatic choices'] : ['Move skills into ~/.afk/library', 'Link them into agent folders', 'Apply your Manual/Automatic choices'];
+    const at = S.fr.at || 0;
+    return `<div><h1 tabindex="-1">${restore ? 'Restoring leo/afk-library' : 'Starting your library'}</h1></div>
+      <ol class="steps" aria-live="polite">${steps.map((t, i) => `<li class="${i < at ? 'done' : i === at ? 'now' : ''}">${i < at ? ic('check') : i === at ? '<span class="spin" aria-hidden="true"></span>' : '<span class="dot" aria-hidden="true"></span>'}<span>${t}${i < at ? '<span class="vh"> done</span>' : i === at ? '<span class="vh"> in progress</span>' : ''}</span></li>`).join('')}</ol>
+      <p class="sub">Nothing is lost if this stops; the library is only replaced once it's complete.</p>`;
+  },
+  done(){
+    const restore = S.fr.choice === 'restore';
+    const n = live().filter(s => s.kind !== 'tool').length;
+    return `<div class="success"><span class="tick">${ic('check')}</span><h1 tabindex="-1">${restore ? 'Your library is back' : 'Your library is ready'}</h1></div>
+      <p class="lede">${restore ? '43 Core skills are on with your Manual/Automatic choices. Packs start off; turning one on downloads its skills.' : `${n} skills are in <code>~/.afk/library</code> and linked for your agents.`}</p>
+      ${restore ? '' : '<p class="sub">Backup is off. Set it up whenever you\'re ready; it takes a repository name.</p>'}
+      <div class="fr-acts"><button type="button" class="primary" data-action="fr-finish" data-fk="fr-finish">Open AFK</button>${restore ? '' : '<button type="button" data-action="fr-finish" data-to="backup">Set up backup</button>'}</div>`;
+  }
+};
+
+/* ---------- dialogs ---------- */
+const triggers = new Map();
+function openDialog(id, trigger){
+  const d = document.getElementById(id);
+  triggers.set(id, trigger || document.activeElement);
+  if (!d.open) d.showModal();
+  const f = d.querySelector('[autofocus]') || d.querySelector('.dlg-body input:not([type=radio]):not([type=checkbox]), .dlg-body button, .dlg-body input, .dlg-head button');
+  f?.focus();
+}
+function closeDialog(id){ const d = document.getElementById(id); if (d.open) d.close(); }
+function restoreFocus(id){
+  const t = triggers.get(id);
+  if (t && t.isConnected) { t.focus(); return; }
+  const fk = t?.dataset?.fk;
+  const el = fk && document.querySelector(`[data-fk="${CSS.escape(fk)}"]`);
+  (el || $('main h1'))?.focus();
+}
+for (const id of ['sheet', 'install', 'move', 'confirm', 'picker']) {
+  const d = document.getElementById(id);
+  d.addEventListener('close', () => restoreFocus(id));
+  d.addEventListener('click', e => { if (e.target === d) guardedClose(id); });
+  d.addEventListener('cancel', e => { if (id === 'sheet' && sheetDirty()) { e.preventDefault(); sheetBlocked(); } if (id === 'install' && INST.phase === 'installing') e.preventDefault(); });
+}
+function guardedClose(id){
+  if (id === 'sheet' && sheetDirty()) return sheetBlocked();
+  if (id === 'install' && INST.phase === 'installing') return;
+  closeDialog(id);
+}
+
+/* skill sheet */
+let SHEET = {name:null, draft:null, original:null, confirmDelete:false};
+function skillFile(s){
+  return `---\nname: ${s.name}\ndescription: ${s.desc}\n${s.inv === 'manual' ? 'disable-model-invocation: true\n' : ''}---\n\n# ${s.name}\n\nThe skill's instructions continue here.\n`;
+}
+const sheetDirty = () => SHEET.name && SHEET.draft !== null && SHEET.draft !== SHEET.original;
+function sheetBlocked(){ const m = $('#sheet-dirty'); if (m) { m.textContent = 'Save or revert your edit before closing.'; $('#sheet-text')?.focus(); } }
+function openSheet(name, trigger){
+  const s = skill(name); if (!s) return;
+  SHEET = {name, original:skillFile(s), draft:null};
+  renderSheet();
+  openDialog('sheet', trigger);
+  $('#sheet .dlg-head button')?.focus();
+}
+function renderSheet(){
+  const s = skill(SHEET.name), d = $('#sheet');
+  if (!s) { closeDialog('sheet'); return; }
+  const fk = document.activeElement?.dataset?.fk;
+  const ro = s.kind === 'tool';
+  const src = shortSrc(s.src);
+  const backup = {core:S.backup.on ? 'Saved in your backup.' : 'In your library. Saved once backup is on.', pack:'Pack definition backed up; the files download again.', machine:'Never backed up.', tool:'The tool and your choice are backed up; the files come from the tool.', review:'Not in your library yet.'}[s.kind];
+  const text = SHEET.draft ?? SHEET.original;
+  d.innerHTML = `<div class="dlg-head"><div style="min-width:0"><h2 id="sheet-h" class="mono" style="font-size:19px;overflow-wrap:anywhere">${esc(s.name)}</h2><p class="sub">${esc(fromLabel(s))}</p></div><button type="button" class="icon-btn" data-action="sheet-close" aria-label="Close" data-fk="sheet-close">${ic('close')}</button></div>
+    <div class="dlg-body">
+      <p style="font-size:15px">${esc(s.desc)}</p>
+      <div class="blk"><h3>On or off</h3><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">${switchBtn(s.on, s.name, 'sheet-sw', 'toggle', `data-skill="${esc(s.name)}"`)}<span class="meta">${s.on ? 'Agents can see it.' : 'Hidden from every agent.'}</span></div></div>
+      <fieldset class="blk"><legend style="font-size:14px;font-weight:600">How it starts</legend><div class="radio-list">
+        ${['manual', 'auto'].map(k => `<label class="card-radio"><input type="radio" name="sheet-inv" value="${k}" data-action="inv" data-skill="${esc(s.name)}" data-fk="sheet-inv-${k}" ${s.inv === k ? 'checked' : ''}><b>${INV[k].long}</b><span class="meta">${INV[k].def}</span></label>`).join('')}
+      </div><p class="hint" style="margin-top:8px">Claude Code and Pi read this choice. Codex reads its own setting, which AFK writes too. Other agents: unknown.</p></fieldset>
+      <div class="blk"><h3>Where it lives</h3><dl class="kv"><dt>Comes from</dt><dd>${esc(fromLabel(s))} — ${esc((PLACES[s.kind] || PLACES.core).def)}</dd><dt>Repository</dt><dd>${src ? `<code>${esc(src)}</code>` : 'None. It can\'t update on its own.'}</dd><dt>Backup</dt><dd>${backup}</dd></dl>
+        ${ro ? '' : `<div><button type="button" data-action="move" data-skill="${esc(s.name)}" data-fk="sheet-move">${s.kind === 'review' ? 'Decide where it belongs…' : 'Move to…'}</button></div>`}</div>
+      <div class="blk"><h3 id="file-h">SKILL.md</h3>
+        ${ro ? `<p class="note">Read-only. ${esc(s.tool)} installs and updates this skill, so edits would be overwritten.</p>` : ''}
+        <textarea id="sheet-text" aria-labelledby="file-h" aria-describedby="sheet-file-hint sheet-dirty" rows="9" data-fk="sheet-text" ${ro ? 'readonly' : ''} spellcheck="false">${esc(text)}</textarea>
+        <p class="hint" id="sheet-file-hint">The <code>disable-model-invocation</code> line follows How it starts.</p>
+        ${ro ? '' : `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button type="button" data-action="sheet-save" data-fk="sheet-save" ${sheetDirty() ? '' : 'disabled'}>Save edit</button><button type="button" class="text" data-action="sheet-revert" data-fk="sheet-revert" ${sheetDirty() ? '' : 'disabled'}>Revert</button><span class="meta" aria-live="polite">${sheetDirty() ? 'Unsaved edit' : 'Saved'}</span></div><p class="field-error" id="sheet-dirty" role="alert"></p>`}
+      </div>
+    </div>
+    <div class="dlg-foot">${ro ? '' : `<button type="button" class="text danger-text" data-action="delete" data-skill="${esc(s.name)}" data-fk="sheet-del">Delete…</button>`}<span class="spacer"></span><button type="button" data-action="update-one" data-skill="${esc(s.name)}" data-fk="sheet-upd" ${s.src ? '' : 'disabled title="No repository to update from"'}>Update</button><button type="button" data-action="sheet-close" data-fk="sheet-close2">Close</button></div>`;
+  if (fk) d.querySelector(`[data-fk="${CSS.escape(fk)}"]`)?.focus();
+}
+
+/* move dialog */
+let MOVE = {name:null, to:null, pack:null};
+function openMove(name, trigger){
+  const s = skill(name); if (!s) return;
+  MOVE = {name, to:null, pack:S.packs[0].name};
+  renderMove(); openDialog('move', trigger);
+}
+function renderMove(){
+  const s = skill(MOVE.name), d = $('#move');
+  const opts = ['core', 'pack', 'machine'].filter(k => k !== s.kind || k === 'pack');
+  const label = !MOVE.to ? 'Move' : MOVE.to === 'core' ? 'Add to Core' : MOVE.to === 'pack' ? `Add to ${MOVE.pack}` : 'Keep on this machine only';
+  d.innerHTML = `<form data-form="move" novalidate style="display:contents"><div class="dlg-head"><div><h2 id="move-h">${s.kind === 'review' ? 'Where does' : 'Move'} <span class="mono">${esc(s.name)}</span>${s.kind === 'review' ? ' belong?' : ''}</h2><p class="sub">Now: ${esc(fromLabel(s))}</p></div><button type="button" class="icon-btn" data-action="close-move" aria-label="Close">${ic('close')}</button></div>
+    <div class="dlg-body"><fieldset aria-describedby="move-err"><legend>Choose a place</legend><div class="radio-list">
+      ${opts.map(k => `<label class="card-radio"><input type="radio" name="to" value="${k}" ${MOVE.to === k ? 'checked' : ''} data-action="move-to" data-fk="move-${k}"><b>${PLACES[k].label}</b><span class="meta">${PLACES[k].def}</span>${k === 'pack' && MOVE.to === 'pack' ? `<span class="extra"><label><span>Pack</span><select data-action="move-pack" data-fk="move-pack-sel">${S.packs.map(p => `<option ${p.name === MOVE.pack ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label></span>` : ''}</label>`).join('')}
+    </div></fieldset><p class="field-error" id="move-err" role="alert"></p></div>
+    <div class="dlg-foot">${s.kind === 'review' ? `<button type="button" class="text danger-text" data-action="delete" data-skill="${esc(s.name)}">Remove from this machine…</button><span class="spacer"></span>` : ''}<button type="button" class="text" data-action="close-move">Cancel</button><button type="submit" class="primary" data-fk="move-submit">${esc(label)}</button></div></form>`;
+}
+
+/* confirm delete */
+let CONF = null;
+function openConfirm(name, trigger){
+  const s = skill(name); CONF = name;
+  $('#confirm').innerHTML = `<div class="dlg-head"><div><h2 id="confirm-h">Delete <span class="mono">${esc(s.name)}</span>?</h2></div></div>
+    <div class="dlg-body"><p>${s.kind === 'core' ? 'Removes its files from this machine and from your library. The backup keeps it in History.' : s.kind === 'pack' ? `Removes its files here and drops it from ${esc(s.pack)}.` : 'Removes its files from this machine. It isn\'t backed up, so this can\'t be restored later.'}</p></div>
+    <div class="dlg-foot"><button type="button" data-action="confirm-cancel" autofocus>Keep it</button><button type="button" class="danger-outline" data-action="confirm-delete">Delete ${esc(s.name)}</button></div>`;
+  openDialog('confirm', trigger);
+}
+
+/* install dialog */
+let INST;
+function resetInst(o={}){ INST = {mode:o.mode || 'repo', repo:o.repo || '', phase:'idle', found:[], picked:new Set(), dest:o.dest || null, pack:S.packs[0].name, err:'', destErr:'', pickErr:'', zip:null, done:null, laterId:o.laterId ?? null, progress:0}; }
+function openInstall(o, trigger){ resetInst(o); renderInstall(); openDialog('install', trigger); if (o.repo && INST.mode === 'repo' && INST.dest !== 'later') findSkills(); }
+function installLabel(){
+  const n = INST.mode === 'zip' ? (INST.zip ? INST.picked.size : 0) : INST.picked.size;
+  if (INST.dest === 'later') return 'Save to Try later';
+  const where = {core:'to Core', pack:`to ${INST.pack}`, machine:'on this machine'}[INST.dest];
+  return n ? `Install ${plural(n, 'skill')}${where ? ' ' + where : ''}` : 'Install';
+}
+function renderInstall(){
+  const d = $('#install'); const fk = document.activeElement?.dataset?.fk;
+  if (INST.phase === 'done') {
+    const r = INST.done;
+    d.innerHTML = `<div class="dlg-head"><div><h2 id="install-h">${r.later ? 'Saved for later' : 'Installed'}</h2></div><button type="button" class="icon-btn" data-action="close-install" aria-label="Close">${ic('close')}</button></div>
+      <div class="dlg-body"><div class="success"><span class="tick">${ic('check')}</span><h3>${esc(r.title)}</h3><p class="sub">${esc(r.sub)}</p></div></div>
+      <div class="dlg-foot"><button type="button" class="text" data-action="install-again" data-fk="inst-again">Add another</button><button type="button" class="primary" data-action="install-open" data-fk="inst-open" autofocus>${r.later ? 'Open Try later' : 'Open in Skills'}</button></div>`;
+    d.querySelector('[autofocus]')?.focus();
+    return;
+  }
+  const busy = INST.phase === 'installing';
+  const later = INST.dest === 'later';
+  let body = '';
+  if (INST.mode === 'repo') {
+    body += `<form class="blk" data-form="find" novalidate><label for="inst-repo">Repository</label><div style="display:flex;gap:8px"><input id="inst-repo" name="repo" value="${esc(INST.repo)}" placeholder="owner/repository or URL" aria-describedby="inst-repo-hint inst-repo-err" ${INST.err ? 'aria-invalid="true"' : ''} data-fk="inst-repo" autocomplete="off" ${busy ? 'disabled' : ''}>${later ? '' : `<button type="submit" data-fk="inst-find" ${busy ? 'disabled' : ''}>Find skills</button>`}</div>
+      <p class="hint" id="inst-repo-hint">${later ? 'AFK saves the link. Nothing is downloaded.' : 'For example owner/repository or a GitHub URL.'}</p><p class="field-error" id="inst-repo-err" role="alert">${esc(INST.err)}</p></form>`;
+    if (!later) {
+      if (INST.phase === 'finding') body += `<div aria-busy="true" aria-label="Looking for skills"><p class="meta" role="status">Looking for SKILL.md files in ${esc(INST.repo)}…</p>${'<div class="skel-row"><div class="skel" style="width:38%"></div><div class="skel" style="width:82%"></div></div>'.repeat(3)}</div>`;
+      if (INST.found.length) body += foundList(`${plural(INST.found.length, 'skill')} in <span class="mono">${esc(INST.repo)}</span>`);
+    }
+  } else {
+    body += `<div class="drop"><p><b>Drop a .zip, a .skill file or a folder here</b></p><p class="sub">AFK finds every SKILL.md inside. Uploaded skills don't update on their own.</p><div class="acts"><button type="button" data-action="zip-pick" data-kind="file" data-fk="zip-file" ${busy ? 'disabled' : ''}>Choose file…</button><button type="button" data-action="zip-pick" data-kind="folder" data-fk="zip-folder" ${busy ? 'disabled' : ''}>Choose folder…</button></div></div>`;
+    if (INST.zip) body += foundList(`${plural(INST.found.length, 'skill')} in <span class="mono">${esc(INST.zip)}</span>`);
+  }
+  const showDest = INST.mode === 'zip' ? !!INST.zip : (later || INST.found.length);
+  if (showDest) body += `<fieldset aria-describedby="dest-err"><legend>Where should ${later ? 'it' : 'they'} go?</legend><div class="cards">${['core', 'pack', 'machine', 'later'].map(k => {
+      const off = (k === 'later' && INST.mode === 'zip');
+      return `<label class="card-radio"><input type="radio" name="dest" value="${k}" ${INST.dest === k ? 'checked' : ''} ${off || busy ? 'disabled' : ''} data-action="dest" data-fk="dest-${k}"><b>${PLACES[k].label}</b><span class="meta">${off ? 'Only for repositories.' : PLACES[k].def}</span>${k === 'pack' && INST.dest === 'pack' ? `<span class="extra"><label><span>Pack</span><select data-action="inst-pack" data-fk="inst-pack">${S.packs.map(p => `<option ${p.name === INST.pack ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label></span>` : ''}</label>`; }).join('')}</div></fieldset><p class="field-error" id="dest-err" role="alert">${esc(INST.destErr)}</p>`;
+  if (busy) body += `<div role="status"><p class="meta">Installing ${INST.progress} of ${INST.picked.size}…</p><div class="progress"><i style="width:${Math.round(INST.progress / Math.max(1, INST.picked.size) * 100)}%"></i></div></div>`;
+  const canSubmit = showDest;
+  d.innerHTML = `<div class="dlg-head"><div><h2 id="install-h">${later && INST.mode === 'repo' ? 'Save a repository for later' : 'Add something new'}</h2></div><button type="button" class="icon-btn" data-action="close-install" aria-label="Close" ${busy ? 'disabled' : ''}>${ic('close')}</button></div>
+    <div class="dlg-body">
+      <fieldset><legend>Install from</legend><div class="seg" style="max-width:420px">${[['repo', 'A repository'], ['zip', 'A zip or folder']].map(([v, l]) => `<label><input type="radio" name="imode" value="${v}" ${INST.mode === v ? 'checked' : ''} data-action="imode" data-fk="imode-${v}" ${busy ? 'disabled' : ''}><span>${ic('check', 'sm')}${l}</span></label>`).join('')}</div></fieldset>
+      ${body}
+    </div>
+    <div class="dlg-foot"><button type="button" class="text" data-action="close-install" ${busy ? 'disabled' : ''}>Cancel</button>${canSubmit ? `<button type="button" class="primary" data-action="install-go" data-fk="inst-go" ${busy ? 'disabled' : ''}>${busy ? 'Installing…' : esc(installLabel())}</button>` : ''}</div>`;
+  if (fk) d.querySelector(`[data-fk="${CSS.escape(fk)}"]`)?.focus();
+}
+function foundList(title){
+  const all = INST.found.length && INST.found.every(f => INST.picked.has(f.name));
+  return `<div class="blk"><div class="found-head"><h3>${title}</h3><span class="meta num">${INST.picked.size} selected <button type="button" class="text" style="min-height:32px;font-size:13px" data-action="pick-all" data-fk="pick-all">${all ? 'Select none' : 'Select all'}</button></span></div>
+    <ul class="found" aria-describedby="pick-err-i">${INST.found.map(f => { const have = skill(f.name); return `<li><label><input type="checkbox" value="${esc(f.name)}" data-action="pick" data-fk="pick-${esc(f.name)}" ${INST.picked.has(f.name) ? 'checked' : ''}><span class="sname">${esc(f.name)}</span><span class="s-desc clamp2">${esc(f.desc)}</span>${have ? `<span class="already">Already here · ${esc(fromLabel(have))}. Installing again replaces it.</span>` : ''}</label></li>`; }).join('')}</ul><p class="field-error" id="pick-err-i" role="alert">${esc(INST.pickErr)}</p></div>`;
+}
+function findSkills(){
+  const raw = INST.repo.trim();
+  INST.found = []; INST.picked = new Set(); INST.err = '';
+  if (!raw) { INST.err = 'Enter a repository, like owner/repository.'; renderInstall(); $('#inst-repo')?.focus(); return; }
+  if (!/^(https?:\/\/)?(github\.com\/)?[\w.-]+\/[\w.-]+/i.test(raw)) { INST.err = `“${raw}” isn't a repository. Use owner/repository or a full URL.`; renderInstall(); $('#inst-repo')?.focus(); return; }
+  INST.repo = shortSrc(raw); INST.phase = 'finding'; renderInstall();
+  setTimeout(() => {
+    const key = repoKey(raw);
+    let found = live().filter(s => repoKey(s.src) === key).map(s => ({name:s.name, desc:s.desc}));
+    if (!found.length) {
+      const slug = key.split('/')[1] || 'skill';
+      found = [{name:slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'), desc:'Found at the repository root. Read its SKILL.md after installing to see what it does.'}];
+    }
+    INST.found = found; INST.phase = 'found';
+    for (const f of found) if (!skill(f.name)) INST.picked.add(f.name);
+    renderInstall();
+    $('#install .found input')?.focus();
+  }, 900);
+}
+function installGo(){
+  if (!INST.dest) { INST.destErr = 'Choose where the skills go.'; renderInstall(); $('#install input[name=dest]:not(:disabled)')?.focus(); return; }
+  if (INST.dest === 'later') {
+    const raw = INST.repo.trim();
+    if (!/^(https?:\/\/)?(github\.com\/)?[\w.-]+\/[\w.-]+/i.test(raw)) { INST.err = raw ? `“${raw}” isn't a repository. Use owner/repository or a full URL.` : 'Enter a repository, like owner/repository.'; renderInstall(); $('#inst-repo')?.focus(); return; }
+    const src = shortSrc(raw);
+    if (!S.later.some(t => repoKey(t.src) === repoKey(src))) S.later.unshift({id:Date.now(), name:src.split('/')[1], src, desc:''});
+    INST.phase = 'done'; INST.done = {later:true, title:`${src} is in Try later`, sub:'Install it from Sources whenever you want. Nothing was downloaded.'};
+    renderInstall(); render(); return;
+  }
+  if (!INST.picked.size) { INST.pickErr = 'Select at least one skill to install.'; renderInstall(); $('#install .found input')?.focus(); return; }
+  INST.phase = 'installing'; INST.progress = 0; INST.destErr = ''; renderInstall();
+  const tick = setInterval(() => {
+    INST.progress++;
+    if (INST.progress >= INST.picked.size) {
+      clearInterval(tick);
+      for (const n of INST.picked) {
+        const f = INST.found.find(x => x.name === n); let s = skill(n);
+        if (!s) { s = {name:n, desc:f.desc, on:true, inv:'auto', src:INST.mode === 'zip' ? null : INST.repo, kind:'core', pack:null, tool:null, gone:false}; S.skills.push(s); }
+        s.kind = INST.dest; s.pack = INST.dest === 'pack' ? INST.pack : null; s.on = true;
+        if (INST.dest === 'pack') { const p = S.packs.find(p => p.name === INST.pack); if (!p.members.includes(n)) p.members.push(n); }
+      }
+      if (INST.laterId != null) S.later = S.later.filter(t => t.id !== INST.laterId);
+      const where = {core:'Core', pack:INST.pack, machine:'this machine only'}[INST.dest];
+      INST.lastNames = [...INST.picked];
+      INST.done = {later:false, title:`${plural(INST.picked.size, 'skill')} installed to ${where}`, sub:INST.dest === 'machine' ? 'They stay on this machine and are never backed up.' : INST.dest === 'core' ? 'They are on for every agent and saved with your next backup.' : 'They are ready; turn the pack on when you need them.'};
+      INST.phase = 'done'; renderInstall(); render();
+    } else renderInstall();
+  }, 450);
+}
+
+/* pack member picker */
+let PICK;
+function openPicker(packId, trigger){
+  const p = packId == null ? null : S.packs.find(x => x.id === +packId);
+  PICK = {id:p ? p.id : null, name:p ? p.name : '', sel:new Set(p ? p.members : []), q:'', only:false, err:''};
+  renderPicker(); openDialog('picker', trigger);
+}
+function renderPicker(){
+  const d = $('#picker'); const fk = document.activeElement?.dataset?.fk;
+  const names = [...new Set([...live().filter(s => s.kind !== 'tool').map(s => s.name), ...PICK.sel])].sort();
+  const q = PICK.q.toLowerCase();
+  const shown = names.filter(n => (!PICK.only || PICK.sel.has(n)) && (!q || n.includes(q) || (skill(n)?.desc || '').toLowerCase().includes(q)));
+  d.innerHTML = `<div class="dlg-head"><div><h2 id="picker-h">${PICK.id == null ? 'Create a pack' : `Edit ${esc(PICK.name)}`}</h2></div><button type="button" class="icon-btn" data-action="close-picker" aria-label="Close">${ic('close')}</button></div>
+    <div class="dlg-body">
+      ${PICK.id == null ? `<label><span>Pack name</span><input id="pick-name" value="${esc(PICK.name)}" aria-describedby="pick-err" ${PICK.err ? 'aria-invalid="true"' : ''} data-fk="pick-name" autocomplete="off"></label><p class="field-error" id="pick-err" role="alert">${esc(PICK.err)}</p>` : ''}
+      <div class="picker-tools"><label class="search-wrap" style="display:block"><span class="vh">Search skills</span>${ic('search')}<input type="search" id="pick-q" placeholder="Search skills" value="${esc(PICK.q)}" data-fk="pick-q" autocomplete="off"></label><button type="button" class="toggle-pill" aria-pressed="${PICK.only}" data-action="pick-only" data-fk="pick-only">Selected only</button></div>
+      <p class="meta num" aria-live="polite">${PICK.sel.size} selected · showing ${shown.length}</p>
+      ${shown.length ? `<ul class="found" id="pick-list">${shown.map(n => { const s = skill(n); return `<li><label><input type="checkbox" value="${esc(n)}" data-action="pick-member" data-fk="pm-${esc(n)}" ${PICK.sel.has(n) ? 'checked' : ''}><span class="sname">${esc(n)}</span><span class="s-desc clamp2">${s ? esc(s.desc) : 'Not on this machine. Downloads when the pack turns on.'}</span></label></li>`; }).join('')}</ul>` : `<div class="empty" style="margin:0"><p>No skill matches “${esc(PICK.q)}”.${PICK.only ? ' Selected only is on.' : ''}</p></div>`}
+    </div>
+    <div class="dlg-foot"><button type="button" class="text" data-action="close-picker">Cancel</button><button type="button" class="primary" data-action="picker-save" data-fk="pick-save">${PICK.id == null ? 'Create pack' : 'Save members'}</button></div>`;
+  if (fk) { const el = d.querySelector(`[data-fk="${CSS.escape(fk)}"]`); if (el) { el.focus(); if (el.type === 'search' || el.id === 'pick-name') el.setSelectionRange(el.value.length, el.value.length); } }
+}
+
+/* ---------- menus ---------- */
+function closeMenus(){ for (const id of ['menu', 'more-pop']) { const m = document.getElementById(id); if (m.matches(':popover-open')) m.hidePopover(); } }
+let menuTrigger = null;
+function openMenu(id, trigger, html){
+  const m = document.getElementById(id);
+  if (m.matches(':popover-open') && menuTrigger === trigger) { m.hidePopover(); return; }
+  closeMenus();
+  m.innerHTML = html; menuTrigger = trigger;
+  trigger.setAttribute('aria-expanded', 'true');
+  m.showPopover();
+  const r = trigger.getBoundingClientRect(), mw = m.offsetWidth, mh = m.offsetHeight;
+  let left = Math.min(r.right - mw, innerWidth - mw - 12); left = Math.max(12, left);
+  let top = r.bottom + 6; if (top + mh > innerHeight - 12) top = Math.max(12, r.top - mh - 6);
+  m.style.left = left + 'px'; m.style.top = top + 'px';
+  m.querySelector('button:not(:disabled)')?.focus();
+}
+for (const id of ['menu', 'more-pop']) document.getElementById(id).addEventListener('toggle', e => {
+  if (e.newState === 'closed' && menuTrigger) {
+    menuTrigger.setAttribute('aria-expanded', 'false');
+    const t = menuTrigger; menuTrigger = null;
+    if (document.activeElement === document.body || document.getElementById(id).contains(document.activeElement)) {
+      if (t.isConnected) t.focus(); else { const el = t.dataset.fk && document.querySelector(`[data-fk="${CSS.escape(t.dataset.fk)}"]`); el?.focus(); }
+    }
+  }
+});
+function rowMenu(name){
+  const s = skill(name); const ro = s.kind === 'tool';
+  const why = t => `<p class="why">${t}</p>`;
+  return `<button type="button" data-action="inspect" data-skill="${esc(name)}">Inspect</button>
+    <button type="button" data-action="edit" data-skill="${esc(name)}">${ro ? 'View files' : 'Edit files'}</button>
+    <button type="button" data-action="update-one" data-skill="${esc(name)}" ${s.src ? '' : 'disabled'}>Update</button>${s.src ? '' : why('No repository to update from.')}
+    <button type="button" data-action="move" data-skill="${esc(name)}" ${ro ? 'disabled' : ''}>${s.kind === 'review' ? 'Decide where it belongs…' : 'Move to…'}</button>${ro ? why(`Installed by ${esc(s.tool)}.`) : ''}
+    <hr><button type="button" class="danger-text" data-action="delete" data-skill="${esc(name)}" ${ro ? 'disabled' : ''}>Delete…</button>${ro ? why('Remove it from the tool instead.') : ''}`;
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg, o={}){
+  const t = $('#toast'); clearTimeout(toastTimer);
+  t.innerHTML = `${o.loading ? '<span class="spin" aria-hidden="true"></span>' : ''}<span>${esc(msg)}</span>${o.action ? '<button type="button" id="toast-act">' + esc(o.action.label) + '</button>' : ''}`;
+  t.classList.add('show');
+  if (o.action) $('#toast-act').onclick = () => { o.action.fn(); t.classList.remove('show'); };
+  if (!o.loading) toastTimer = setTimeout(() => t.classList.remove('show'), o.action ? 7000 : 4500);
+}
+
+/* ---------- actions ---------- */
+function setSkillPlace(s, to, pack){
+  s.kind = to; s.pack = to === 'pack' ? pack : null;
+  if (to === 'pack') { const p = S.packs.find(p => p.name === pack); if (p && !p.members.includes(s.name)) p.members.push(s.name); }
+}
+function resolveRow(name, fn){
+  const row = document.querySelector(`.need-skills [data-skill-row="${CSS.escape(name)}"]`);
+  const finish = () => { const before = needsItems().length; fn(); if (before && !needsItems().length) arrived = true; render(); afterResolve(); };
+  if (row && !matchMedia('(prefers-reduced-motion: reduce)').matches) { row.classList.add('leaving'); setTimeout(finish, 230); } else finish();
+}
+function afterResolve(){
+  if (S.page !== 'overview') return;
+  const next = $('.need-skills button') || $('.need .acts button') || $('#needs-h');
+  if (next) { if (next.id === 'needs-h') next.setAttribute('tabindex', '-1'); next.focus(); }
+}
+function resolveNeed(sel, fn){
+  const li = document.querySelector(sel);
+  const finish = () => { const before = needsItems().length; fn(); if (before && !needsItems().length) arrived = true; render(); afterResolve(); };
+  if (li && S.page === 'overview' && !matchMedia('(prefers-reduced-motion: reduce)').matches) { li.classList.add('leaving'); setTimeout(finish, 230); } else finish();
+}
+
+const ACT = {
+  toggle(el){
+    const s = skill(el.dataset.skill); s.on = !s.on; render(); if ($('#sheet').open) renderSheet();
+    toast(`${s.name} is ${s.on ? 'on' : 'off'}`, {action:{label:'Undo', fn(){ s.on = !s.on; render(); if ($('#sheet').open) renderSheet(); }}});
+  },
+  inv(el){
+    const s = skill(el.dataset.skill); s.inv = el.value;
+    if ($('#sheet').open && SHEET.name === s.name) { SHEET.original = skillFile(s); renderSheet(); }
+    render();
+    toast(`${s.name}: ${INV[s.inv].long}`);
+  },
+  inspect(el){ const o = menuOwner(el); closeMenus(); openSheet(el.dataset.skill, o); },
+  edit(el){ const o = menuOwner(el); closeMenus(); openSheet(el.dataset.skill, o); setTimeout(() => { const t = $('#sheet-text'); t?.scrollIntoView({block:'center'}); t?.focus(); }, 60); },
+  'row-menu'(el){ openMenu('menu', el, rowMenu(el.dataset.skill)); },
+  'update-one'(el){
+    closeMenus(); const n = el.dataset.skill;
+    toast(`Updating ${n}…`, {loading:true});
+    setTimeout(() => toast(`${n} is up to date`), 1100);
+  },
+  'update-all'(el){
+    el.disabled = true; el.textContent = 'Updating…';
+    const n = live().filter(s => s.src && s.kind !== 'tool').length;
+    toast(`Checking ${n} skills for updates…`, {loading:true});
+    setTimeout(() => { render(); toast(`${n} skills checked · 2 updated (aster-review, north-plan)`); }, 1600);
+  },
+  move(el){ const o = menuOwner(el); closeMenus(); openMove(el.dataset.skill, o); },
+  'move-to'(el){ MOVE.to = el.value; renderMove(); $(`#move [data-fk="move-${el.value}"]`)?.focus(); },
+  'move-pack'(el){ MOVE.pack = el.value; renderMove(); },
+  'close-move'(){ closeDialog('move'); },
+  delete(el){ const o = menuOwner(el); closeMenus(); if ($('#move').open) closeDialog('move'); openConfirm(el.dataset.skill, o); },
+  'confirm-cancel'(){ closeDialog('confirm'); },
+  'confirm-delete'(){
+    const s = skill(CONF); s.gone = true; closeDialog('confirm');
+    if ($('#sheet').open) { SHEET.draft = null; closeDialog('sheet'); }
+    render(); $('main h1')?.focus();
+    toast(`Deleted ${s.name}`, {action:{label:'Undo', fn(){ s.gone = false; render(); }}});
+  },
+  place(el){
+    const s = skill(el.dataset.skill), to = el.dataset.to;
+    resolveRow(s.name, () => setSkillPlace(s, to));
+    toast(`${s.name} ${to === 'core' ? 'is in Core' : 'stays on this machine only'}`, {action:{label:'Undo', fn(){ s.kind = 'review'; render(); }}});
+  },
+  'filter-review'(){ S.fFrom = 'review'; render(); $('#skill-q')?.focus(); },
+  'clear-filters'(){ S.q = ''; S.fFrom = 'all'; S.fState = 'all'; render(); $('#skill-q')?.focus(); },
+  'pack-toggle'(el){
+    const p = S.packs.find(x => x.id === +el.dataset.pack);
+    if (p.on) { p.on = false; render(); toast(`${p.name} is off`); return; }
+    const away = p.members.filter(m => !skill(m)).length;
+    if (!away) { p.on = true; render(); toast(`${p.name} is on`); return; }
+    p.busy = {done:0, total:away}; render();
+    const t = setInterval(() => {
+      p.busy.done = Math.min(away, p.busy.done + Math.ceil(away / 8));
+      if (p.busy.done >= away) {
+        clearInterval(t); p.busy = null; p.on = true;
+        for (const m of p.members) if (!skill(m)) S.skills.push({name:m, desc:`Part of ${p.name}.`, on:true, inv:'auto', src:null, kind:'pack', pack:p.name, tool:null, gone:false});
+        toast(`${p.name} is on · ${plural(away, 'skill')} downloaded`);
+      }
+      render();
+    }, 260);
+  },
+  'pack-edit'(el){ openPicker(el.dataset.pack, el); },
+  'pack-create'(el){ openPicker(null, el); },
+  'pick-member'(el){ el.checked ? PICK.sel.add(el.value) : PICK.sel.delete(el.value); renderPicker(); },
+  'pick-only'(){ PICK.only = !PICK.only; renderPicker(); },
+  'close-picker'(){ closeDialog('picker'); },
+  'picker-save'(){
+    if (PICK.id == null) {
+      const name = ($('#pick-name')?.value || '').trim();
+      if (!name) { PICK.err = 'Give the pack a name.'; renderPicker(); $('#pick-name').focus(); return; }
+      if (S.packs.some(p => p.name.toLowerCase() === name.toLowerCase())) { PICK.err = `There's already a pack called ${name}.`; renderPicker(); $('#pick-name').focus(); return; }
+      S.packs.push({id:S.packs.length, name, desc:'', members:[...PICK.sel], on:false, busy:null});
+      closeDialog('picker'); render(); toast(`Created ${name} · ${plural(PICK.sel.size, 'skill')}`);
+    } else {
+      const p = S.packs.find(x => x.id === PICK.id); p.members = [...PICK.sel];
+      closeDialog('picker'); render(); toast(`${p.name} · ${plural(p.members.length, 'skill')}`);
+    }
+  },
+  install(el){ const o = menuOwner(el); closeMenus(); openInstall({mode:el.dataset.mode, dest:el.dataset.dest, repo:el.dataset.repo, laterId:el.dataset.later != null ? +el.dataset.later : null}, o); },
+  imode(el){ INST.mode = el.value; INST.found = []; INST.picked = new Set(); INST.zip = null; INST.err = ''; INST.destErr = ''; if (INST.mode === 'zip' && INST.dest === 'later') INST.dest = null; INST.phase = 'idle'; renderInstall(); },
+  dest(el){ INST.dest = el.value; INST.destErr = ''; renderInstall(); },
+  'inst-pack'(el){ INST.pack = el.value; renderInstall(); },
+  pick(el){ el.checked ? INST.picked.add(el.value) : INST.picked.delete(el.value); INST.pickErr = ''; renderInstall(); },
+  'pick-all'(){ const all = INST.found.every(f => INST.picked.has(f.name)); INST.picked = new Set(all ? [] : INST.found.map(f => f.name)); renderInstall(); },
+  'zip-pick'(el){
+    INST.zip = el.dataset.kind === 'file' ? 'field-notes.zip · 48 KB' : '~/Downloads/field-notes/';
+    INST.found = [{name:'field-notes', desc:'Capture decisions and loose ends from a session as dated notes in the project.'}, {name:'release-letter', desc:'Draft a short, plain release note from merged pull requests.'}];
+    INST.picked = new Set(INST.found.map(f => f.name)); renderInstall(); $('#install .found input')?.focus();
+  },
+  'install-go'(){ installGo(); },
+  'close-install'(){ closeDialog('install'); },
+  'install-again'(){ resetInst(); renderInstall(); $('#inst-repo')?.focus(); },
+  'install-open'(){
+    const later = INST.done.later; const names = INST.lastNames || [];
+    closeDialog('install');
+    if (later) go('sources', {focus:'later-h'});
+    else { S.q = names.length === 1 ? names[0] : ''; S.fFrom = 'all'; S.fState = 'all'; go('skills'); }
+  },
+  'later-menu'(el){
+    const t = S.later.find(x => x.id === +el.dataset.later);
+    openMenu('menu', el, `<button type="button" data-action="install" data-repo="${esc(shortSrc(t.src))}" data-later="${t.id}">Install…</button><button type="button" data-action="later-open" data-later="${t.id}">Copy repository link</button><hr><button type="button" class="danger-text" data-action="later-remove" data-later="${t.id}">Remove from Try later</button>`);
+  },
+  'later-open'(el){ closeMenus(); const t = S.later.find(x => x.id === +el.dataset.later); navigator.clipboard?.writeText(t.src).catch(() => {}); toast(`Copied ${shortSrc(t.src)}`); },
+  'later-remove'(el){
+    closeMenus(); const i = S.later.findIndex(x => x.id === +el.dataset.later); const [t] = S.later.splice(i, 1); render(); $('#later-h')?.focus();
+    toast(`Removed ${t.name} from Try later`, {action:{label:'Undo', fn(){ S.later.splice(i, 0, t); render(); }}});
+  },
+  'later-clear'(){ S.laterQ = ''; render(); $('#later-q')?.focus(); },
+  follow(el){ const c = S.sources[+el.dataset.i]; c.follow = !c.follow; render(); toast(`${c.follow ? 'Following' : 'Stopped following'} ${shortSrc(c.src)}`); },
+  'source-update'(el){ const c = S.sources[+el.dataset.i]; toast(`Updating ${shortSrc(c.src)}…`, {loading:true}); setTimeout(() => toast(`${shortSrc(c.src)} is up to date`), 1100); },
+  'retry-backup'(el){
+    el.disabled = true; el.textContent = 'Saving…';
+    setTimeout(() => resolveNeed('[data-need="backup-error"]', () => { S.backup.error = false; S.backup.waiting = 0; S.backup.saved = 'just now'; }), 900);
+    setTimeout(() => toast('Saved to ' + S.backup.repo), 1000);
+  },
+  'save-now'(el){ el.disabled = true; el.textContent = 'Saving…'; setTimeout(() => { S.backup.saved = 'just now'; render(); toast('Saved to ' + S.backup.repo); }, 900); },
+  'keep-edit'(el){ const n = el.dataset.skill; resolveNeed(`[data-need="edited-${CSS.escape(n)}"]`, () => { S.edited = S.edited.filter(x => x !== n); S.history.unshift({msg:`Keep edit to ${n}`, when:'just now'}); }); toast(`Kept your edit to ${n}`); },
+  'discard-edit'(el){ const n = el.dataset.skill; resolveNeed(`[data-need="edited-${CSS.escape(n)}"]`, () => { S.edited = S.edited.filter(x => x !== n); }); toast(`${n} is back to the saved version`); },
+  'conn-mode'(el){
+    const create = el.value === 'create';
+    $('#conn-label span').textContent = create ? 'Repository name' : 'Remote URL';
+    const i = $('#conn-input'); i.value = create ? 'afk-library' : ''; i.placeholder = create ? '' : 'git@github.com:you/afk-library.git';
+    $('form[data-form=connect] button[type=submit]').textContent = create ? 'Create and save' : 'Connect and save';
+    $('#conn-err').textContent = ''; i.removeAttribute('aria-invalid');
+  },
+  'go-back'(el){ const h = S.history[+el.dataset.i]; S.history.unshift({msg:`Go back to “${h.msg}”`, when:'just now'}); render(); toast(`Went back to “${h.msg}” as a new save`); },
+  'tool-run'(el){ const t = S.tools[+el.dataset.i]; el.disabled = true; el.textContent = 'Running…'; setTimeout(() => { render(); toast(`${t.name} updated · choices reapplied`); }, 1300); },
+  folder(el){ el.setAttribute('aria-checked', el.getAttribute('aria-checked') !== 'true'); el.querySelector('.st').textContent = el.getAttribute('aria-checked') === 'true' ? 'On' : 'Off'; },
+  'noop-toast'(el){ toast(el.dataset.msg); },
+  'check-updates'(){ closeMenus(); toast('Checking for updates…', {loading:true}); setTimeout(() => toast('AFK 2.1.0 is up to date'), 900); },
+  more(el){ openMenu('more-pop', el, `<p class="vers">AFK 2.1.0 · Up to date</p><button type="button" data-action="check-updates">Check for updates</button>`); },
+  'sheet-close'(){ guardedClose('sheet'); },
+  'sheet-save'(){ const s = skill(SHEET.name); SHEET.original = SHEET.draft; SHEET.draft = null; renderSheet(); toast(`Saved · “Edit ${s.name}”`); $('#sheet-text')?.focus(); },
+  'sheet-revert'(){ SHEET.draft = null; renderSheet(); $('#sheet-text')?.focus(); },
+  'fr-skip'(){ S.view = 'app'; S.page = 'overview'; render(); $('main h1')?.focus(); },
+  'fr-back'(){ S.fr.step = 'choose'; render(); $('main h1')?.focus(); },
+  'fr-start'(){ frRun('start'); },
+  'fr-restore-go'(){ frRun('restore'); },
+  'fr-finish'(el){
+    S.view = 'app';
+    if (S.fr.choice === 'restore') applyNeeds('allset'); else applyNeeds('needs');
+    syncProto(); S.page = el.dataset.to || 'overview'; render(); $('main h1')?.focus();
+  }
+};
+function frRun(choice){
+  S.fr.choice = choice; S.fr.step = 'working'; S.fr.at = 0; render(); $('main h1')?.focus();
+  const total = choice === 'restore' ? 4 : 3;
+  const t = setInterval(() => { S.fr.at++; if (S.fr.at >= total) { clearInterval(t); S.fr.step = 'done'; render(); $('main h1')?.focus(); } else render(); }, 650);
+}
+function menuOwner(el){ return el.closest('.menu') ? menuTrigger : el; }
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const goEl = e.target.closest('[data-go]');
+  if (goEl) { closeMenus(); go(goEl.dataset.go); return; }
+  const a = e.target.closest('[data-action]');
+  if (!a || a.disabled) return;
+  if (a.matches('input[type=radio],input[type=checkbox],select')) return;
+  const fn = ACT[a.dataset.action]; if (fn) fn(a, e);
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'section-select') return go(t.value);
+  if (t.id === 'f-from') { S.fFrom = t.value; return render(); }
+  if (t.id === 'f-state') { S.fState = t.value; return render(); }
+  if (t.name === 'fr') { S.fr.choice = t.value; $('#fr-err').textContent = ''; return; }
+  if (t.matches('[data-action]') && t.matches('input[type=radio],input[type=checkbox],select')) ACT[t.dataset.action]?.(t, e);
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'skill-q') { S.q = t.value; $('#skill-results').innerHTML = renderSkillResults(); return; }
+  if (t.id === 'later-q') { S.laterQ = t.value; const fk = 'later-q'; render(); const el = $(`[data-fk="${fk}"]`); el.focus(); el.setSelectionRange(el.value.length, el.value.length); return; }
+  if (t.id === 'pick-q') { PICK.q = t.value; renderPicker(); return; }
+  if (t.id === 'pick-name') { PICK.name = t.value; if (PICK.err) { PICK.err = ''; renderPicker(); } return; }
+  if (t.id === 'inst-repo') { INST.repo = t.value; if (INST.err) { INST.err = ''; t.removeAttribute('aria-invalid'); $('#inst-repo-err').textContent = ''; } return; }
+  if (t.id === 'sheet-text') { const was = sheetDirty(); SHEET.draft = t.value; if (was !== sheetDirty()) renderSheet(); return; }
+});
+document.addEventListener('submit', e => {
+  const f = e.target.closest('form[data-form]'); if (!f) return;
+  e.preventDefault();
+  const k = f.dataset.form;
+  if (k === 'quick-find') { S.q = f.q.value.trim(); S.fFrom = 'all'; S.fState = 'all'; go('skills', {focus:'skill-q'}); return; }
+  if (k === 'find') { INST.repo = f.repo.value; findSkills(); return; }
+  if (k === 'move') {
+    if (!MOVE.to) { $('#move-err').textContent = 'Choose a place first.'; $('#move input[name=to]')?.focus(); return; }
+    const s = skill(MOVE.name), was = s.kind;
+    closeDialog('move'); setSkillPlace(s, MOVE.to, MOVE.pack);
+    if ($('#sheet').open) renderSheet();
+    render();
+    toast(`${s.name} → ${fromLabel(s)}`, {action:{label:'Undo', fn(){ s.kind = was; render(); }}});
+    return;
+  }
+  if (k === 'connect') {
+    const v = f.repo.value.trim(), create = f.conn.value === 'create';
+    const err = !v ? (create ? 'Give the repository a name.' : 'Paste the remote URL.') : (!create && !/^(git@|https?:\/\/)/.test(v)) ? 'That doesn\'t look like a Git URL. It starts with git@ or https://.' : '';
+    if (err) { $('#conn-err').textContent = err; f.repo.setAttribute('aria-invalid', 'true'); f.repo.focus(); return; }
+    const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Creating and saving…';
+    setTimeout(() => { S.backup = {...S.backup, on:true, error:false, waiting:0, saved:'just now', repo:create ? 'leo/' + v : v.replace(/^.*[:/]([^/]+\/[^/]+?)(\.git)?$/, '$1')}; render(); $('main h1')?.focus(); toast('Backup is on · saved to ' + S.backup.repo); }, 1200);
+    return;
+  }
+  if (k === 'fr-choose') {
+    if (!S.fr.choice) { $('#fr-err').textContent = 'Choose how to start, or skip for now.'; $('input[name=fr]')?.focus(); return; }
+    S.fr.step = S.fr.choice === 'start' ? 'preview' : 'restore'; render(); $('main h1')?.focus(); return;
+  }
+  if (k === 'fr-url') {
+    const v = f.url.value.trim();
+    if (!/^(https?:\/\/)?(github\.com\/)?[\w.-]+\/[\w.-]+/i.test(v)) { $('#fr-url-err').textContent = v ? `“${v}” isn't a repository. Use owner/repository or a URL.` : 'Paste the repository first.'; f.url.setAttribute('aria-invalid', 'true'); f.url.focus(); return; }
+    frRun('restore');
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.target.closest('input,textarea,select,[contenteditable]') && !document.querySelector('dialog[open]') && S.view === 'app') {
+    e.preventDefault();
+    if (S.page !== 'skills') go('skills', {focus:'skill-q'}); else $('#skill-q')?.focus();
+  }
+  if (e.key === 'Enter' && e.target.id === 'inst-repo' && INST.dest === 'later') { e.preventDefault(); installGo(); }
+});
+
+/* ---------- prototype control ---------- */
+const protoPanel = $('#proto-panel'), protoBtn = $('#proto-btn');
+protoPanel.addEventListener('toggle', e => protoBtn.setAttribute('aria-expanded', e.newState === 'open'));
+protoPanel.addEventListener('change', e => {
+  const t = e.target;
+  if (t.name === 'p-view') {
+    if (t.value === 'firstrun') { const phone = S.phone; S = fresh(); S.phone = phone; applyNeeds('needs'); for (const r of $$('input[name=p-needs]')) r.checked = r.value === 'needs'; }
+    S.view = t.value; closeAllDialogs(); render();
+  }
+  if (t.name === 'p-needs') { applyNeeds(t.value); if (S.view === 'app') render(); }
+  if (t.name === 'p-width') { S.phone = t.value === 'phone'; document.documentElement.classList.toggle('phone-preview', S.phone); }
+});
+$('#proto-reset').addEventListener('click', () => { const phone = S.phone; S = fresh(); S.phone = phone; applyNeeds('needs'); syncProto(); closeAllDialogs(); render(); toast('Prototype data reset'); });
+function syncProto(){
+  for (const r of $$('input[name=p-view]')) r.checked = r.value === S.view;
+  for (const r of $$('input[name=p-needs]')) r.checked = r.value === S.needs;
+}
+function closeAllDialogs(){ for (const d of $$('dialog[open]')) { if (d.id === 'sheet') SHEET.draft = null; d.close(); } }
+
+S = fresh(); applyNeeds('needs'); render();
+</script>
+</body>
+</html>

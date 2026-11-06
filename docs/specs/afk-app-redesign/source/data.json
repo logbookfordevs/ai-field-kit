@@ -1,0 +1,1082 @@
+{
+ "skills": [
+  {
+   "name": "quill-explain",
+   "description": "Sample skill that helps with explain work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "acme/skills"
+  },
+  {
+   "name": "harbor-spec",
+   "description": "Sample skill that helps with spec work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "aster-craft",
+   "description": "Sample skill that helps with craft work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "compass-verify",
+   "description": "Sample skill that helps with verify work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "quill-copy",
+   "description": "Sample skill that helps with copy work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "aster-figure",
+   "description": "Sample skill that helps with figure work in your projects.",
+   "place": "Pack: Web Design",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "northwind/design-skills"
+  },
+  {
+   "name": "compass-slides",
+   "description": "Sample skill that helps with slides work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "harbor-sketch",
+   "description": "Sample skill that helps with sketch work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "field-notes",
+   "description": "Sample skill that helps with notes work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "field-diagram",
+   "description": "Sample skill that helps with diagram work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "harbor-plan",
+   "description": "Sample skill that helps with plan work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "orbit-verify",
+   "description": "Sample skill that helps with verify work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "north-spec",
+   "description": "Sample skill that helps with spec work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "orbit-plan",
+   "description": "Sample skill that helps with plan work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "orbit-copy",
+   "description": "Sample skill that helps with copy work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "north-plan",
+   "description": "Sample skill that helps with plan work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "compass-paint",
+   "description": "Sample skill that helps with paint work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "ledger-refactor",
+   "description": "Sample skill that helps with refactor work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "harbor-explain",
+   "description": "Sample skill that helps with explain work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "paperworks/motion"
+  },
+  {
+   "name": "orbit-refactor",
+   "description": "Sample skill that helps with refactor work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "quill-labs/writing"
+  },
+  {
+   "name": "compass-canvas",
+   "description": "Sample skill that helps with canvas work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "quill-labs/writing"
+  },
+  {
+   "name": "ledger-verify",
+   "description": "Sample skill that helps with verify work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "harbor-dev/review-kit"
+  },
+  {
+   "name": "north-docs",
+   "description": "Sample skill that helps with docs work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "lantern/creative"
+  },
+  {
+   "name": "field-copy",
+   "description": "Sample skill that helps with copy work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "aster-index",
+   "description": "Sample skill that helps with index work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "lantern/creative"
+  },
+  {
+   "name": "north-research",
+   "description": "Sample skill that helps with research work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "orbit/tools"
+  },
+  {
+   "name": "compass-sketch",
+   "description": "Sample skill that helps with sketch work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "quill-audit",
+   "description": "Sample skill that helps with audit work in your projects.",
+   "place": "This machine",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-10"
+  },
+  {
+   "name": "orbit-figure",
+   "description": "Sample skill that helps with figure work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-11"
+  },
+  {
+   "name": "lantern-docs",
+   "description": "Sample skill that helps with docs work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-12"
+  },
+  {
+   "name": "paper-notes",
+   "description": "Sample skill that helps with notes work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "ledger-deploy",
+   "description": "Sample skill that helps with deploy work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "orbit/tools"
+  },
+  {
+   "name": "north-craft",
+   "description": "Sample skill that helps with craft work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-13"
+  },
+  {
+   "name": "compass-research",
+   "description": "Sample skill that helps with research work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-14"
+  },
+  {
+   "name": "quill-lint",
+   "description": "Sample skill that helps with lint work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-14"
+  },
+  {
+   "name": "lantern-refactor",
+   "description": "Sample skill that helps with refactor work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-14"
+  },
+  {
+   "name": "orbit-craft",
+   "description": "Sample skill that helps with craft work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "harbor-dev/review-kit"
+  },
+  {
+   "name": "field-handoff",
+   "description": "Sample skill that helps with handoff work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "harbor-motion",
+   "description": "Sample skill that helps with motion work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "lantern-sketch",
+   "description": "Sample skill that helps with sketch work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-15"
+  },
+  {
+   "name": "aster-test",
+   "description": "Sample skill that helps with test work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-15"
+  },
+  {
+   "name": "field-story",
+   "description": "Sample skill that helps with story work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Manual only",
+   "source": "sample/repo-16"
+  },
+  {
+   "name": "compass-copy",
+   "description": "Sample skill that helps with copy work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "quill-release",
+   "description": "Sample skill that helps with release work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "quill-index",
+   "description": "Sample skill that helps with index work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-17"
+  },
+  {
+   "name": "lantern-copy",
+   "description": "Sample skill that helps with copy work in your projects.",
+   "place": "Tool: Sample tool 1",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-18"
+  },
+  {
+   "name": "lantern-craft",
+   "description": "Sample skill that helps with craft work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "field-debug",
+   "description": "Sample skill that helps with debug work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "lantern-deploy",
+   "description": "Sample skill that helps with deploy work in your projects.",
+   "place": "This machine",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-10"
+  },
+  {
+   "name": "field-plan",
+   "description": "Sample skill that helps with plan work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "sample/repo-19"
+  },
+  {
+   "name": "paper-spec",
+   "description": "Sample skill that helps with spec work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "orbit-test",
+   "description": "Sample skill that helps with test work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-20"
+  },
+  {
+   "name": "harbor-sound",
+   "description": "Sample skill that helps with sound work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-14"
+  },
+  {
+   "name": "quill-review",
+   "description": "Sample skill that helps with review work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-21"
+  },
+  {
+   "name": "ledger-index",
+   "description": "Sample skill that helps with index work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-20"
+  },
+  {
+   "name": "field-research",
+   "description": "Sample skill that helps with research work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "aster-slides",
+   "description": "Sample skill that helps with slides work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-14"
+  },
+  {
+   "name": "paper-explain",
+   "description": "Sample skill that helps with explain work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "sample/repo-11"
+  },
+  {
+   "name": "north-tickets",
+   "description": "Sample skill that helps with tickets work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "lantern/creative"
+  },
+  {
+   "name": "harbor-figure",
+   "description": "Sample skill that helps with figure work in your projects.",
+   "place": "Tool: Sample tool 2",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": null
+  },
+  {
+   "name": "ledger-audit",
+   "description": "Sample skill that helps with audit work in your projects.",
+   "place": "Tool: Sample tool 2",
+   "on": true,
+   "invocation": "Manual only",
+   "source": null
+  },
+  {
+   "name": "harbor-diagram",
+   "description": "Sample skill that helps with diagram work in your projects.",
+   "place": "Tool: Sample tool 2",
+   "on": true,
+   "invocation": "Manual only",
+   "source": null
+  },
+  {
+   "name": "paper-sound",
+   "description": "Sample skill that helps with sound work in your projects.",
+   "place": "Tool: Sample tool 2",
+   "on": true,
+   "invocation": "Manual only",
+   "source": null
+  },
+  {
+   "name": "ledger-canvas",
+   "description": "Sample skill that helps with canvas work in your projects.",
+   "place": "Tool: Sample tool 2",
+   "on": true,
+   "invocation": "Manual only",
+   "source": null
+  },
+  {
+   "name": "harbor-paint",
+   "description": "Sample skill that helps with paint work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "northwind/design-skills"
+  },
+  {
+   "name": "compass-debug",
+   "description": "Sample skill that helps with debug work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "harbor-docs",
+   "description": "Sample skill that helps with docs work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "harbor-notes",
+   "description": "Sample skill that helps with notes work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": null
+  },
+  {
+   "name": "ledger-craft",
+   "description": "Sample skill that helps with craft work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": null
+  },
+  {
+   "name": "ledger-explain",
+   "description": "Sample skill that helps with explain work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "harbor-dev/review-kit"
+  },
+  {
+   "name": "north-test",
+   "description": "Sample skill that helps with test work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "northwind/design-skills"
+  },
+  {
+   "name": "north-review",
+   "description": "Sample skill that helps with review work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "lantern-canvas",
+   "description": "Sample skill that helps with canvas work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "orbit-motion",
+   "description": "Sample skill that helps with motion work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-22"
+  },
+  {
+   "name": "paper-refactor",
+   "description": "Sample skill that helps with refactor work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "sample/repo-23"
+  },
+  {
+   "name": "aster-explain",
+   "description": "Sample skill that helps with explain work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "northwind/design-skills"
+  },
+  {
+   "name": "orbit-release",
+   "description": "Sample skill that helps with release work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-24"
+  },
+  {
+   "name": "compass-index",
+   "description": "Sample skill that helps with index work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "sample/repo-25"
+  },
+  {
+   "name": "aster-audit",
+   "description": "Sample skill that helps with audit work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "sample/repo-26"
+  },
+  {
+   "name": "compass-tickets",
+   "description": "Sample skill that helps with tickets work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "harbor-tickets",
+   "description": "Sample skill that helps with tickets work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "harbor-verify",
+   "description": "Sample skill that helps with verify work in your projects.",
+   "place": "Pack: Web Design",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-27"
+  },
+  {
+   "name": "lantern-spec",
+   "description": "Sample skill that helps with spec work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "north-audit",
+   "description": "Sample skill that helps with audit work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "fieldnotes/agent-skills"
+  },
+  {
+   "name": "aster-verify",
+   "description": "Sample skill that helps with verify work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-28"
+  },
+  {
+   "name": "aster-copy",
+   "description": "Sample skill that helps with copy work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "ledger-diagram",
+   "description": "Sample skill that helps with diagram work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "field-docs",
+   "description": "Sample skill that helps with docs work in your projects.",
+   "place": "This machine",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "compass/ops-skills"
+  },
+  {
+   "name": "orbit-review",
+   "description": "Sample skill that helps with review work in your projects.",
+   "place": "Pack: Video & Motion",
+   "on": false,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-29"
+  },
+  {
+   "name": "field-paint",
+   "description": "Sample skill that helps with paint work in your projects.",
+   "place": "Tool: Sample tool 3",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "sample/repo-30"
+  },
+  {
+   "name": "north-index",
+   "description": "Sample skill that helps with index work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "paper-docs",
+   "description": "Sample skill that helps with docs work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Automatic allowed",
+   "source": "ledger/docs-kit"
+  },
+  {
+   "name": "orbit-docs",
+   "description": "Sample skill that helps with docs work in your projects.",
+   "place": "Core",
+   "on": true,
+   "invocation": "Manual only",
+   "source": "fieldnotes/agent-skills"
+  }
+ ],
+ "packs": [
+  {
+   "name": "Web Design",
+   "description": "",
+   "members": [
+    "quill-review",
+    "quill-explain",
+    "lantern-docs",
+    "north-docs",
+    "aster-index",
+    "north-tickets",
+    "lantern-sketch",
+    "aster-test",
+    "north-craft",
+    "harbor-verify",
+    "aster-figure",
+    "north-research"
+   ],
+   "on": false
+  },
+  {
+   "name": "Writing",
+   "description": "",
+   "members": [
+    "lantern-verify",
+    "lantern-audit",
+    "lantern-research",
+    "paper-craft",
+    "paper-research",
+    "ledger-verify",
+    "ledger-handoff",
+    "compass-docs",
+    "compass-figure",
+    "aster-story",
+    "compass-refactor",
+    "field-deploy",
+    "paper-handoff",
+    "quill-figure",
+    "ledger-docs",
+    "north-diagram",
+    "compass-story",
+    "compass-release",
+    "north-video",
+    "north-canvas",
+    "harbor-lint",
+    "north-slides",
+    "aster-review",
+    "paper-slides",
+    "lantern-video",
+    "quill-docs",
+    "lantern-slides",
+    "quill-slides",
+    "lantern-index",
+    "orbit-canvas",
+    "aster-research",
+    "quill-video",
+    "field-canvas",
+    "field-figure",
+    "harbor-video",
+    "ledger-sketch",
+    "quill-craft",
+    "harbor-audit",
+    "field-lint",
+    "ledger-motion",
+    "ledger-review",
+    "ledger-copy",
+    "orbit-research",
+    "compass-diagram",
+    "compass-tickets",
+    "aster-video",
+    "north-story",
+    "paper-diagram",
+    "harbor-canvas"
+   ],
+   "on": false
+  },
+  {
+   "name": "Video & Motion",
+   "description": "",
+   "members": [
+    "field-story",
+    "orbit-test",
+    "ledger-index",
+    "quill-review",
+    "lantern-sketch",
+    "aster-test",
+    "ledger-plan",
+    "orbit-review",
+    "compass-research",
+    "quill-lint",
+    "lantern-refactor",
+    "harbor-sound",
+    "aster-slides",
+    "orbit-release",
+    "quill-explain",
+    "quill-index",
+    "orbit-refactor",
+    "compass-canvas"
+   ],
+   "on": false
+  }
+ ],
+ "core_sources": [
+  {
+   "source": "ledger/docs-kit",
+   "count": 11,
+   "follow": false
+  },
+  {
+   "source": "fieldnotes/agent-skills",
+   "count": 20,
+   "follow": true
+  },
+  {
+   "source": "harbor-dev/review-kit",
+   "count": 3,
+   "follow": false
+  },
+  {
+   "source": "sample/repo-19",
+   "count": 1,
+   "follow": false
+  },
+  {
+   "source": "sample/repo-26",
+   "count": 1,
+   "follow": true
+  },
+  {
+   "source": "sample/repo-23",
+   "count": 1,
+   "follow": false
+  },
+  {
+   "source": "sample/repo-28",
+   "count": 1,
+   "follow": false
+  },
+  {
+   "source": "sample/repo-11",
+   "count": 2,
+   "follow": true
+  },
+  {
+   "source": "sample/repo-22",
+   "count": 1,
+   "follow": false
+  },
+  {
+   "source": "orbit/tools",
+   "count": 2,
+   "follow": false
+  }
+ ],
+ "try_later": [
+  {
+   "name": "Sample repository 1",
+   "source": "sample-org/repo-1",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 2",
+   "source": "sample-org/repo-2",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 3",
+   "source": "sample-org/repo-3",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 4",
+   "source": "sample-org/repo-4",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 5",
+   "source": "sample-org/repo-5",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 6",
+   "source": "sample-org/repo-6",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 7",
+   "source": "sample-org/repo-7",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 8",
+   "source": "sample-org/repo-8",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 9",
+   "source": "sample-org/repo-9",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 10",
+   "source": "sample-org/repo-10",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 11",
+   "source": "sample-org/repo-11",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 12",
+   "source": "sample-org/repo-12",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 13",
+   "source": "sample-org/repo-13",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 14",
+   "source": "sample-org/repo-14",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 15",
+   "source": "sample-org/repo-15",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 16",
+   "source": "sample-org/repo-16",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 17",
+   "source": "sample-org/repo-17",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 18",
+   "source": "sample-org/repo-18",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 19",
+   "source": "sample-org/repo-19",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 20",
+   "source": "sample-org/repo-20",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 21",
+   "source": "sample-org/repo-21",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 22",
+   "source": "sample-org/repo-22",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 23",
+   "source": "sample-org/repo-23",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 24",
+   "source": "sample-org/repo-24",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 25",
+   "source": "sample-org/repo-25",
+   "description": ""
+  },
+  {
+   "name": "Sample repository 26",
+   "source": "sample-org/repo-26",
+   "description": ""
+  }
+ ],
+ "tools": [
+  {
+   "name": "Sample tool 1",
+   "provides": [
+    "field-paint"
+   ]
+  },
+  {
+   "name": "Sample tool 2",
+   "provides": [
+    "harbor-figure",
+    "ledger-audit",
+    "harbor-diagram",
+    "paper-sound",
+    "ledger-canvas"
+   ]
+  },
+  {
+   "name": "Sample tool 3",
+   "provides": []
+  },
+  {
+   "name": "Sample tool 4",
+   "provides": []
+  },
+  {
+   "name": "Sample tool 5",
+   "provides": []
+  },
+  {
+   "name": "Sample tool 6",
+   "provides": [
+    "lantern-copy"
+   ]
+  },
+  {
+   "name": "Sample tool 7",
+   "provides": []
+  },
+  {
+   "name": "Sample tool 8",
+   "provides": []
+  }
+ ],
+ "to_review": [
+  "harbor-notes",
+  "ledger-craft"
+ ]
+}
