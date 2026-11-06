@@ -17,7 +17,7 @@ import "@/screens/packs/Packs.css";
 
 function usePackState(): Read<PackState> {
   const read = useOperation("state");
-  return { ...read, data: read.data as PackState | undefined };
+  return { ...read, data: read.data };
 }
 
 type Editor = { pack: PackView | null };
