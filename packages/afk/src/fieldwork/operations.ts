@@ -85,10 +85,12 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   }
 }
 
-export async function runTool(command: string, args: string[], cwd: string, signal?: AbortSignal): Promise<{ output: string; code: number }> {
-  const result: CommandResult = await run({ command, args, cwd, signal, step: "The tool command", idleTimeoutMs: 10 * 60_000, timeoutMs: 30 * 60_000 });
+export async function runTool(command: string, args: string[], cwd: string, signal?: AbortSignal, onOutput?: (text: string) => void): Promise<{ output: string; code: number }> {
+  const result: CommandResult = await run({ command, args, cwd, signal, step: "The tool command", idleTimeoutMs: 10 * 60_000, timeoutMs: 30 * 60_000, ...(onOutput ? { onOutput } : {}) });
   return { output: result.output, code: result.code };
 }
+
+const TOOL_OUTPUT_LIMIT = 100_000;
 
 function hasNoRepository(source: string): boolean {
   return source === LOCAL_PROFILE_SOURCE || source === UPLOADED_SOURCE;
@@ -364,7 +366,7 @@ export class FieldworkOperations {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
     const ready = this.projectsReady ??= this.migrateProjects();
     const action = async (): Promise<unknown> => { await ready; return this.apply(operation as Operation, data); };
-    const direct = ["state", "kit/state", "rules/state", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel"].includes(operation);
+    const direct = ["state", "kit/state", "rules/state", "tool/state", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel"].includes(operation);
     const result = direct ? action() : this.mutations.then(action);
     if (!direct) this.mutations = result.then(() => undefined, () => undefined);
     const flight = this.nextFlight++;
@@ -907,15 +909,18 @@ export class FieldworkOperations {
     if (operation === "skill/editor") return await openSkillEditor(store, settings, String(data.name), typeof data.file === "string" ? data.file : undefined);
     if (operation === "skill/edit") return await saveSkillEdit(store, settings, { name: String(data.name), file: String(data.file), content: String(data.content), ...(data.updates ? { updates: data.updates as UpdatesChoice } : {}) });
     if (operation === "pack/read") { return { content: await library.readGroup(settings, String(data.id)) }; }
+    if (operation === "tool/state") return { tools: settings.tools, runs: toolRuns, home: store.home };
     if (operation === "tool/run") {
       const tool = settings.tools.find(t => t.id === data.id);
       if (!tool) throw new Error("Tool not found.");
       if (toolRuns[tool.id]?.pending) throw new Error("This tool command is already running. Reopen its results to follow it.");
       const command = data.update === true ? tool.update || tool.install : tool.install;
-      toolRuns[tool.id] = { pending: true, output: "Running…" };
+      const current: { pending: boolean; output: string; code?: number; warnings?: string[] } = { pending: true, output: "Running…" };
+      toolRuns[tool.id] = current;
+      const stream = (text: string): void => { current.output = ((current.output === "Running…" ? "" : current.output) + text).slice(-TOOL_OUTPUT_LIMIT); };
       try {
         const finish = await trackToolRun(store, tool);
-        const result = await finish(await runTool(process.env.SHELL || "/bin/sh", ["-c", command], store.home, this.lifecycle.signal));
+        const result = await finish(await runTool(process.env.SHELL || "/bin/sh", ["-c", command], store.home, this.lifecycle.signal, stream));
         toolRuns[tool.id] = { pending: false, ...result }; return result;
       } catch (error) {
         toolRuns[tool.id] = { pending: false, code: 1, output: error instanceof Error ? error.message : "Command could not start." }; throw error;
