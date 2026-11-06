@@ -15,6 +15,7 @@ import { plural } from "@/text/format";
 import { SkillPanel } from "@/screens/skills/SkillPanel";
 import { SkillRow, type RowActions, type RowFailure } from "@/screens/skills/SkillRow";
 import { Toolbar } from "@/screens/skills/Toolbar";
+import { UpdateAll } from "@/screens/skills/UpdateAll";
 import { useRun } from "@/screens/skills/useRun";
 import { useSelection } from "@/screens/skills/useSelection";
 
@@ -142,7 +143,7 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
     <Page
       title="Skills"
       description={skillsDescription}
-      actions={hasSkills ? <button type="button" onClick={() => setDialog({ kind: "update", title: "Update skills" })}>Update all</button> : undefined}
+      actions={hasSkills ? <UpdateAll onSelect={() => setDialog({ kind: "update", title: "Update skills" })} /> : undefined}
     >
       {scopePicker}
       {showStrip ? (

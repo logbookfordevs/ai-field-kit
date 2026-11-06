@@ -7,6 +7,7 @@ import { screen as skills } from "@/screens/skills";
 import { agentFolders, appState, entry } from "@/screens/skills/fixtures";
 import { fakeClient } from "@/test/fake-client";
 import { renderWithApp } from "@/test/render";
+import { narrow } from "@/test/viewport";
 
 const Screen = skills.Screen;
 
@@ -143,4 +144,17 @@ it("starts with the search from the address, as Overview's Find a skill sends it
   expect(await rows()).toHaveLength(1);
   expect(rowFor("hairline")).toBeInTheDocument();
   expect(screen.getByRole("searchbox", { name: /Find a skill/ })).toHaveValue("hairline");
+});
+
+it("keeps Update all in a menu beside the heading on a phone", async () => {
+  narrow(true);
+  try {
+    renderSkills("");
+    const trigger = await screen.findByRole("button", { name: "More skill actions" });
+    await userEvent.click(trigger);
+
+    await userEvent.click(within(document.getElementById(trigger.getAttribute("aria-controls") ?? "")!).getByRole("button", { name: "Update all" }));
+
+    expect(await screen.findByRole("dialog", { name: "Update skills" })).toBeInTheDocument();
+  } finally { narrow(false); }
 });
