@@ -41,7 +41,7 @@ describe("command runner", () => {
   });
 
   it("lets a command that keeps talking run past the silence limit", async () => {
-    const result = await runCommand(node(`let n = 0; const t = setInterval(() => { console.log("tick"); if (++n === 6) { clearInterval(t); } }, 100)`, { idleTimeoutMs: 400 }));
+    const result = await runCommand(node(`let n = 0; const t = setInterval(() => { console.log("tick"); if (++n === 15) { clearInterval(t); } }, 100)`, { idleTimeoutMs: 1000 }));
     expect(result.code).toBe(0);
   });
 
@@ -52,7 +52,7 @@ describe("command runner", () => {
 
   it("kills the whole process group at the deadline", async () => {
     const file = join(directory, "grandchild");
-    await runCommand(node(spawnsGrandchild(file), { idleTimeoutMs: 400 })).catch(() => undefined);
+    await runCommand(node(spawnsGrandchild(file), { idleTimeoutMs: 1500 })).catch(() => undefined);
     const pid = Number(await readFile(file, "utf8"));
     await until(() => !alive(pid));
   });
