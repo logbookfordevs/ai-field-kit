@@ -24,7 +24,6 @@
 .tool-state span:not(.spin){font-family:var(--font-mono);font-size:13px;color:var(--muted)}
 .tool-state.failed strong{color:var(--danger)}
 .tool-run-result:empty{display:none}
-.tool-output{margin:0;padding:12px 14px;max-height:min(40dvh,360px);overflow:auto;font:12.5px/1.6 var(--font-mono);background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);white-space:pre-wrap;overflow-wrap:anywhere}
 .tool-warnings{margin:0;padding:0 0 0 18px;font-size:13px;line-height:1.5;color:var(--danger)}
 .tool-batch{list-style:none;margin:0;padding:0;display:grid;gap:18px}
 .tool-batch li{display:grid;gap:8px;padding-top:14px;border-top:1px solid var(--border)}

@@ -5,6 +5,8 @@ import { Progress } from "@/components/Progress";
 import { useToast } from "@/components/Toast";
 import type { Skill } from "@/screens/skills/model";
 import { useRun } from "@/screens/skills/useRun";
+import { RunOutput } from "@/screens/tools/RunOutput";
+import { useLiveRun } from "@/screens/tools/useLiveRun";
 
 /**
  * Updates through `skills/update` (all tracked skills, or `names`), following `skills/update-state` while it runs.
@@ -88,6 +90,8 @@ export function ToolUpdateDialog({ skill, onClose }: { skill: Skill; onClose: ()
   };
   const finished = typeof state === "object";
   const running = state === "running";
+  const live = useLiveRun(typeof skill.ownerId === "number" ? skill.ownerId : undefined, running);
+  const output = finished ? state.output : live?.output;
 
   return (
     <Dialog
@@ -105,12 +109,8 @@ export function ToolUpdateDialog({ skill, onClose }: { skill: Skill; onClose: ()
     >
       <p>Runs the update command saved for {skill.owner} in Tools. AFK puts your Manual/Automatic choices back afterwards.</p>
       {running ? <div role="status"><Progress label={`Running ${skill.owner}’s update…`} /></div> : null}
-      {finished ? (
-        <div role="status">
-          <p><b>{state.code === 0 ? "Finished" : `Stopped with code ${state.code}`}</b></p>
-          <pre className="output">{state.output}</pre>
-        </div>
-      ) : null}
+      {finished ? <p role="status"><b>{state.code === 0 ? "Finished" : `Stopped with code ${state.code}`}</b></p> : null}
+      {output ? <RunOutput output={output} label={`Output of ${skill.owner}`} /> : null}
     </Dialog>
   );
 }

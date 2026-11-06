@@ -3,8 +3,9 @@ import { Icon } from "@/components/Icon";
 import { EmptyState } from "@/components/EmptyState";
 import { Ledger } from "@/components/Row";
 import { Page } from "@/shell/Page";
-import { hrefFor, navigate } from "@/shell/router";
+import { navigate } from "@/shell/router";
 import type { ScreenDefinition } from "@/screens/types";
+import { openInstall } from "@/screens/sources";
 import { BackupFailedNeed, BackupOffNeed, EditedNeed, ReplacedNeed } from "@/screens/overview/LocalNeeds";
 import { ReviewNeed } from "@/screens/overview/ReviewNeed";
 import { Setup } from "@/screens/overview/Setup";
@@ -41,7 +42,7 @@ function QuickActions() {
           <button type="submit">Find</button>
         </form>
         <div className="acts">
-          <a className="button-link primary" href={hrefFor("skills", { add: "1" })}>Add something new</a>
+          <button type="button" className="primary" onClick={() => openInstall()}>Add something new</button>
         </div>
       </div>
     </section>

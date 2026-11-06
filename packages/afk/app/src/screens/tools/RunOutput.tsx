@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
+import "@/screens/tools/RunOutput.css";
 
 /** A command's output in a keyboard-scrollable block that follows new lines unless the reader scrolled up. */
 export function RunOutput({ output, label }: { output: string; label: string }) {

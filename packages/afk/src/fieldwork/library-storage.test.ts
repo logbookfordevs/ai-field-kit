@@ -268,6 +268,19 @@ describe("skills installed outside AFK", () => {
     expect(await git("status", "--porcelain")).toBe("");
   });
 
+  it("adds an outside skill with no repository to Core as an uploaded skill", async () => {
+    await write(join(agents, "handmade"), "handmade");
+    const operations = new FieldworkOperations(store);
+
+    await operations.run("skill/adopt", { name: "handmade", to: "library" });
+    const kit = await operations.run("kit/state") as { core: { name: string; source: string }[]; undecided: { name: string }[] };
+    await operations.close();
+
+    expect(kit.undecided.map(entry => entry.name)).not.toContain("handmade");
+    expect(kit.core).toContainEqual(expect.objectContaining({ name: "handmade", source: "Uploaded skill" }));
+    expect(await readlink(join(agents, "handmade"))).toBe(join(home, ".afk/library/skills/handmade"));
+  });
+
   it("tells the Skills page where each Global skill is stored", async () => {
     const operations = new FieldworkOperations(store);
     await operations.run("skill/adopt", { name: "loose", to: "library" });

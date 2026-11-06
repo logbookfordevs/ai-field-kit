@@ -136,3 +136,11 @@ it("shows no navigation signal while the state has no kit yet", async () => {
   await waitFor(() => expect(client.calls).toHaveLength(1));
   expect(hook.result.current).toBeNull();
 });
+
+it("starts with the search from the address, as Overview's Find a skill sends it", async () => {
+  renderSkills("q=hairline");
+
+  expect(await rows()).toHaveLength(1);
+  expect(rowFor("hairline")).toBeInTheDocument();
+  expect(screen.getByRole("searchbox", { name: /Find a skill/ })).toHaveValue("hairline");
+});

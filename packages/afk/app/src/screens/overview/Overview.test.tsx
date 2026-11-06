@@ -1,10 +1,12 @@
 import { renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { ClientProvider } from "@/api/ClientProvider";
 import { renderWithApp } from "@/test/render";
 import { fail, fakeClient } from "@/test/fake-client";
 import { screen as overview } from "@/screens/overview";
+import { InstallHost } from "@/screens/sources";
+import { closeInstall } from "@/screens/sources/install/store";
 import { backupState, emptyKit, offBackup, reviewKit } from "@/screens/overview/fixtures";
 
 const Overview = overview.Screen;
@@ -103,14 +105,30 @@ describe("skills installed outside AFK", () => {
   });
 });
 
-describe("skills adopted without a repository", () => {
-  it("are not asked about again once they are stored in the library", async () => {
-    const stored = { ...setupState, inventories: { Global: [{ name: "kami", available: true, storage: "library" }, { name: "local-notes", available: true }] } };
-    setup({ "kit/state": () => reviewKit, state: () => stored });
+describe("quick actions", () => {
+  afterEach(() => { closeInstall(); location.hash = ""; });
 
-    expect(await screen.findByRole("heading", { name: "1 skill was installed outside AFK" })).toBeInTheDocument();
-    expect(screen.queryByText("kami", { selector: ".sname" })).not.toBeInTheDocument();
-    expect(screen.getByText("local-notes", { selector: ".sname" })).toBeInTheDocument();
+  it("finds a skill by opening Skills with the search filled in", async () => {
+    setup();
+
+    await userEvent.type(await screen.findByRole("searchbox", { name: "Find a skill" }), "kami");
+    await userEvent.click(screen.getByRole("button", { name: "Find" }));
+
+    expect(location.hash).toBe("#/skills?q=kami");
+  });
+
+  it("opens the install dialog to add something new", async () => {
+    const client = fakeClient({
+      "kit/state": () => emptyKit,
+      "backup/state": () => backupState(),
+      state: () => ({ ...setupState, settings: { ...setupState.settings, projects: [] }, kit: {} }),
+      "skills/install-state": () => null,
+    });
+    renderWithApp(<><Overview params={params} /><InstallHost /></>, { client });
+
+    await userEvent.click(await screen.findByRole("button", { name: "Add something new" }));
+
+    expect(await screen.findByRole("dialog", { name: "Add something new" })).toBeInTheDocument();
   });
 });
 

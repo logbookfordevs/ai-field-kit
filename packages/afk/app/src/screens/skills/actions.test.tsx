@@ -103,6 +103,21 @@ it("updates a tool skill by running its tool and keeps Delete and Move unavailab
   expect(await screen.findByText("atlas: updated")).toBeInTheDocument();
 });
 
+it("follows a tool's update output while it runs", async () => {
+  let finish: (value: unknown) => void = () => undefined;
+  setup(appState(), {
+    "tool/run": () => new Promise(resolve => { finish = resolve; }),
+    "tool/state": () => ({ tools: [], runs: { 7: { pending: true, output: "Pulling atlas…" } }, home: "/home/leo" }),
+  });
+
+  await userEvent.click(await menuItem("atlas-review", "Update"));
+  await userEvent.click(screen.getByRole("button", { name: "Run Atlas’s update" }));
+
+  expect(await screen.findByLabelText("Output of Atlas")).toHaveTextContent("Pulling atlas…");
+  finish({ code: 0, output: "Pulling atlas…\natlas: updated" });
+  expect(await screen.findByText(/atlas: updated/)).toBeInTheDocument();
+});
+
 it("says why a skill without a repository can't update", async () => {
   setup();
 
