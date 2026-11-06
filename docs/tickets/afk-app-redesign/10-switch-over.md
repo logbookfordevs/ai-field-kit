@@ -13,7 +13,7 @@ Serve the new app at `/` and remove `/next/`. Delete the string-template UI (`pa
 
 ## Acceptance Criteria
 - [x] `afk start` opens the new app at `/`; no old UI files remain.
-- [ ] Re-run audit reports none of the original 15 findings.
+- [x] Re-run audit reports none of the original 15 findings. (14 resolved in the re-audit; #15 completed in the review-fix pass.)
 - [x] Docs describe the new sections.
 - [x] All checks pass.
 
