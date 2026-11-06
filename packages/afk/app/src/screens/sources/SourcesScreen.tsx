@@ -13,6 +13,7 @@ import { openInstall } from "@/screens/sources/install/store";
 import type { FavoriteSource, SourcesState, UpdateResult } from "@/screens/sources/types";
 import { Page } from "@/shell/Page";
 import "@/screens/sources/Sources.css";
+import { Count } from "@/components/Count";
 
 const searchThreshold = 6;
 
@@ -106,7 +107,7 @@ function TryLater({ bookmarks }: { bookmarks: FavoriteSource[] }) {
     <section aria-labelledby="try-later">
       <div className="sec-head">
         <div>
-          <h2 id="try-later" tabIndex={-1}>Try later<span className="count num">{bookmarks.length}</span></h2>
+          <h2 id="try-later" tabIndex={-1}>Try later<Count n={bookmarks.length} /></h2>
           <p className="sub">Bookmarked. Nothing installed.</p>
         </div>
         <button type="button" onClick={() => openInstall({ source: "repository", destination: "later" })}>Save a repository</button>
@@ -160,7 +161,7 @@ function CoreSources({ kit }: { kit: SourcesState["kit"] }) {
     <section aria-labelledby="core-sources">
       <div className="sec-head">
         <div>
-          <h2 id="core-sources">Core comes from<span className="count num">{kit.sources.length}</span></h2>
+          <h2 id="core-sources">Core comes from<Count n={kit.sources.length} /></h2>
           <p className="sub">Following a repository means AFK offers its new skills for Core. Nothing installs by itself.</p>
         </div>
       </div>

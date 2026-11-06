@@ -42,6 +42,10 @@ export function Shell({ navigation = defaultNavigation }: { navigation?: ScreenD
   const close = () => setClosed(true);
 
   useEffect(() => {
+    document.title = `${current.label} · AFK`;
+  }, [current.label]);
+
+  useEffect(() => {
     if (!opened.current) { opened.current = true; return; }
     const heading = main.current?.querySelector<HTMLElement>("h1");
     (heading ?? main.current)?.focus({ preventScroll: true });

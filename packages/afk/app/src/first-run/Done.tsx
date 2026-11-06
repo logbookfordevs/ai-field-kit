@@ -6,6 +6,7 @@ import { Ledger, Row } from "@/components/Row";
 import { Tags } from "@/components/Tags";
 import { plural as count } from "@/text/format";
 import { skillsMoving } from "@/first-run/StartPreview";
+import { Count } from "@/components/Count";
 
 function Success({ title }: { title: string }) {
   return (
@@ -59,7 +60,7 @@ export function Restored({ summary, ran, failed, onOpenBackup, onOpenApp }: Rest
       {hasFailures ? <p className="field-error" role="alert">{failed.map(name => `${name} could not run`).join(", ")}. Run {failed.length === 1 ? "it" : "them"} from Tools to see why.</p> : null}
       {hasMovedAside ? (
         <section className="aside-copies" aria-labelledby="moved-aside">
-          <h2 id="moved-aside">Your copy was different<span className="n num">{summary.movedAside.length}</span></h2>
+          <h2 id="moved-aside">Your copy was different<Count n={summary.movedAside.length} className="n" /></h2>
           <p className="sub">The library copy is used. Yours was moved here, so nothing is lost.</p>
           <Ledger label="Moved-aside copies">
             {summary.movedAside.map(move => <Row key={move.name} title={<span className="sname">{move.name}</span>} meta={move.to} />)}
@@ -68,7 +69,7 @@ export function Restored({ summary, ran, failed, onOpenBackup, onOpenApp }: Rest
       ) : null}
       {hasAdopted ? (
         <section className="aside-copies" aria-labelledby="adopted">
-          <h2 id="adopted">Already here, now managed<span className="n num">{summary.adopted.length}</span></h2>
+          <h2 id="adopted">Already here, now managed<Count n={summary.adopted.length} className="n" /></h2>
           <p className="sub">The files matched the library exactly, so these stay in place.</p>
           <details>
             <summary><Icon name="chev" size="sm" className="chev" />Show names</summary>

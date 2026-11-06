@@ -52,6 +52,8 @@ it("opens the install dialog on a repository from the first button", async () =>
 it("lists Try later bookmarks and installs one with its repository and saved skills prefilled", async () => {
   const client = setup(stateWith([bookmark("Hairline", { description: "Thin rules", skills: ["hairline"] }), bookmark("Fieldnotes")]));
 
+  expect(await screen.findByRole("heading", { level: 2, name: /^Try later ?, \d+$/ })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { level: 2, name: /^Core comes from ?, \d+$/ })).toBeInTheDocument();
   const later = await screen.findByRole("region", { name: /Try later/ });
   expect(within(later).getAllByRole("listitem")).toHaveLength(2);
   expect(within(later).getByText("Thin rules")).toBeInTheDocument();

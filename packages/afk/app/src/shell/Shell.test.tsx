@@ -142,3 +142,13 @@ it("exits AFK on request and says the app is closed", async () => {
   expect(exits).toEqual(["exit"]);
   expect(screen.queryByRole("navigation", { name: "Sections" })).not.toBeInTheDocument();
 });
+
+it("names the browser tab after the open section", async () => {
+  renderWithApp(<Shell />);
+  expect(document.title).toBe("Overview · AFK");
+
+  await userEvent.click(within(screen.getByRole("navigation", { name: "Sections" })).getByRole("link", { name: "Backup" }));
+
+  expect(await screen.findByRole("heading", { level: 1, name: "Backup" })).toBeInTheDocument();
+  expect(document.title).toBe("Backup · AFK");
+});
