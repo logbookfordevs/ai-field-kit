@@ -23,14 +23,14 @@ function initialFilters(params: URLSearchParams): Filters {
   return { ...noFilters, query: params.get("q") ?? "", from: params.get("from") ?? "all" };
 }
 
-function useBackupNotes(): { note: (skill: Skill) => string | undefined; outsideEdit: boolean } {
+function useBackupNotes(): { note: (skill: Skill) => { text: string; warn: boolean } | undefined; outsideEdit: boolean } {
   const { data } = useOperation("backup/state", { brief: false });
   const note = (skill: Skill) => {
     if (!data || !skill.entry) return undefined;
-    if (data.attention.some(item => item.name === skill.name)) return "Changed outside AFK. Review it in Backup.";
+    if (data.attention.some(item => item.name === skill.name)) return { text: "Changed outside AFK. Review it in Backup.", warn: true };
     const backupOn = data.status.state !== "off";
     const unpushed = skill.place === "core" && backupOn && data.unpushed.includes(skill.name);
-    return unpushed ? "Saved · not pushed yet" : undefined;
+    return unpushed ? { text: "Saved · not pushed yet", warn: false } : undefined;
   };
   return { note, outsideEdit: Boolean(data?.status.held) };
 }

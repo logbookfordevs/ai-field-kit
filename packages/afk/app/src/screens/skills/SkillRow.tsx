@@ -62,7 +62,7 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
   onSelect: (name: string, selected: boolean) => void;
   actions: RowActions;
   busy: boolean;
-  backupNote?: string | undefined;
+  backupNote?: { text: string; warn: boolean } | undefined;
   failure?: RowFailure | undefined;
   sourceLine?: boolean;
 }) {
@@ -125,7 +125,7 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
         {skill.entry?.updatesStopped ? <p className="s-note">Your version · updates stopped</p> : null}
         {hasDuplicate ? <p className="s-note warn">Two copies on this machine. <button type="button" className="text" disabled={busy} onClick={() => actions.resolveDuplicate(skill)}>Resolve…</button></p> : null}
         {hasDrift ? <p className="s-note warn">Files differ from your choice. <button type="button" className="text" disabled={busy} onClick={() => actions.setMode(skill, skill.drift ?? "")}>Reapply</button></p> : null}
-        {backupNote ? <p className="s-note warn">{backupNote}</p> : null}
+        {backupNote ? <p className={backupNote.warn ? "s-note warn" : "s-note"}>{backupNote.text}</p> : null}
         {failure ? <FailureNote id={failureId} failure={failure} /> : null}
       </div>
       <div className="s-from">{renderFrom()}</div>
