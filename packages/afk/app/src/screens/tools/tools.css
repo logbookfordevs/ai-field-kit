@@ -1,0 +1,47 @@
+.tools-ledger{margin-top:24px}
+.tool-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"main actions" "cmds cmds";align-items:start;gap:12px 20px;padding:18px 0}
+.tool-row .row-main{grid-area:main}
+.tool-row .row-actions{grid-area:actions}
+.tool-name{font:600 17px/1.35 var(--font-body);overflow-wrap:anywhere}
+.tool-last{font-size:13px;line-height:1.5;color:var(--muted);margin-top:2px}
+.tool-last.running{color:var(--fg);font-weight:500}
+.tool-last.failed{color:var(--danger);font-weight:500}
+.tool-cmds{grid-area:cmds;display:grid;gap:10px;margin:0}
+.tool-cmds>div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 16px;align-items:start}
+.tool-cmds dt{font-size:13px;font-weight:500;color:var(--muted);padding-top:9px}
+.tool-cmds dd{margin:0;display:flex;align-items:flex-start;gap:8px;min-width:0}
+.tool-cmds dd>.meta{padding-top:8px}
+.tool-cmd{display:block;flex:1;min-width:0;padding:8px 12px;font:13px/1.6 var(--font-mono);background:var(--accent);color:var(--accent-fg);border-radius:var(--radius);white-space:pre-wrap;overflow-wrap:anywhere}
+.tool-cmd::before{content:"$ ";opacity:.6;user-select:none}
+.tool-cmds .copy{flex:none;min-height:44px;background:transparent;border-style:dashed;color:var(--fg)}
+.tool-cmds .copy:hover{border-style:solid}
+.tool-run-command{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 16px;align-items:start}
+.tool-run-command .k{font-size:13px;font-weight:500;color:var(--muted);padding-top:8px}
+.tool-run-command .hint{grid-column:2}
+.tool-home{font-size:13px;overflow-wrap:anywhere;padding-top:8px}
+.tool-state{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500}
+.tool-state strong{font-weight:600}
+.tool-state span:not(.spin){font-family:var(--font-mono);font-size:13px;color:var(--muted)}
+.tool-state.failed strong{color:var(--danger)}
+.tool-run-result:empty{display:none}
+.tool-output{margin:0;padding:12px 14px;max-height:min(40dvh,360px);overflow:auto;font:12.5px/1.6 var(--font-mono);background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);white-space:pre-wrap;overflow-wrap:anywhere}
+.tool-warnings{margin:0;padding:0 0 0 18px;font-size:13px;line-height:1.5;color:var(--danger)}
+.tool-batch{list-style:none;margin:0;padding:0;display:grid;gap:18px}
+.tool-batch li{display:grid;gap:8px;padding-top:14px;border-top:1px solid var(--border)}
+.tool-batch li:first-child{padding-top:0;border-top:0}
+.tool-batch-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tool-batch-status{font-size:13px;font-weight:500;color:var(--muted)}
+.tool-batch-status.failed{color:var(--danger)}
+.tool-form{display:grid;gap:18px}
+.tool-form .field{display:grid;gap:6px}
+.tool-form label{font-size:13px;font-weight:500}
+@media (max-width:760px){
+  .tool-row{grid-template-columns:minmax(0,1fr);grid-template-areas:"main" "actions" "cmds";gap:12px}
+  .tool-row .row-actions{justify-content:flex-start}
+  .tool-cmds>div,.tool-run-command{grid-template-columns:minmax(0,1fr)}
+  .tool-run-command .hint{grid-column:1}
+  .tool-cmds dt,.tool-run-command .k{padding-top:0}
+  .tool-home{padding-top:0}
+  .tool-cmds dd{flex-wrap:wrap}
+  .tool-cmds .copy{min-height:44px}
+}

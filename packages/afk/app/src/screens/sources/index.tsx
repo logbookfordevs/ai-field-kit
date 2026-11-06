@@ -1,9 +1,8 @@
-import { Placeholder } from "@/screens/Placeholder";
+import { SourcesScreen } from "@/screens/sources/SourcesScreen";
 import { noAttention, type ScreenDefinition } from "@/screens/types";
 
-function SourcesScreen() {
-  return <Placeholder title="Sources" />;
-}
+export { InstallHost } from "@/screens/sources/install/InstallHost";
+export { openInstall, type InstallRequest } from "@/screens/sources/install/store";
 
 export const screen: ScreenDefinition = {
   id: "sources",

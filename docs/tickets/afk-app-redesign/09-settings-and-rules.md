@@ -1,7 +1,7 @@
 ---
 id: 09
 title: Settings and Agent rules
-status: pending
+status: done
 blocked_by: [01]
 source: docs/specs/afk-app-redesign/brief.md — "Scope"; Git library spec "Agent folders", "Projects"
 ---
@@ -12,9 +12,9 @@ source: docs/specs/afk-app-redesign/brief.md — "Scope"; Git library spec "Agen
 Settings: your library (paths, start/connect), agent folders with icons, detected agents first, the shared folder naming its readers, custom folders and Show all; projects; scheduled updates; invocation defaults. Agent rules ported with its existing behaviour (canonical document, references, preview and sync to destinations).
 
 ## Acceptance Criteria
-- [ ] Agent folders show each agent's icon and use the existing agent-folder operations.
-- [ ] Every existing Settings and Agent rules action is reachable.
-- [ ] Works at 1440px and 390px.
+- [x] Agent folders show each agent's icon and use the existing agent-folder operations.
+- [x] Every existing Settings and Agent rules action is reachable.
+- [x] Works at 1440px and 390px.
 
 ## Blocked By
 - 01.
@@ -24,5 +24,5 @@ Settings: your library (paths, start/connect), agent folders with icons, detecte
 - Test Seam: Component tests for agent folders (detected ordering, custom folder validation) and the rules preview/sync flow with a mocked client.
 
 ## Verification
-- [ ] `pnpm afk:typecheck`, `pnpm afk:lint`, `pnpm afk:test` and `pnpm afk:build` pass
-- [ ] Checked in a real browser at 1440px and 390px against a temporary home
+- [x] `pnpm afk:typecheck`, `pnpm afk:lint`, `pnpm afk:test` and `pnpm afk:build` pass
+- [x] Checked in a real browser at 1440px and 390px against a temporary home
