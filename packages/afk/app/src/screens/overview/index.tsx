@@ -67,6 +67,7 @@ function OverviewScreen() {
   const packs = (setup.data?.settings.profiles ?? []).map(pack => ({ id: pack.id, name: pack.name }));
   const repository = status.remote ? repositoryLabel(status.remote) : undefined;
   const core = kit.data.core.length;
+  const savedIn = core > 0 ? `${plural(core, "Core skill")} and your choices are` : "Your choices are";
   const savedLine = status.lastSavedAt === undefined ? "backed up" : `backed up ${savedAgo(status.lastSavedAt)}`;
   const allSetTitle = status.waiting > 0 ? `All set · ${plural(status.waiting, "change")} saving` : `All set · ${savedLine}`;
 
@@ -84,7 +85,7 @@ function OverviewScreen() {
           <div className="allset">
             <span className="tick"><Icon name="check" /></span>
             <h2 id="needs-h">{allSetTitle}</h2>
-            <p className="sub">Nothing needs you.{repository ? ` ${plural(core, "Core skill")} and your choices are saved in ${repository}.` : ""}</p>
+            <p className="sub">Nothing needs you.{repository ? ` ${savedIn} saved in ${repository}.` : ""}</p>
           </div>
         )}
       </section>
