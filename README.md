@@ -24,7 +24,7 @@ pnpm afk:build
 node packages/afk/dist/index.js
 ```
 
-AFK opens a browser on a loopback address. Use **Exit AFK** in the header or
+AFK opens a browser on a loopback address. Use **Exit AFK** below the navigation (under **More** on phones) or
 Ctrl+C in the terminal to stop it. Exiting preserves your configuration and
 skill activation.
 
@@ -32,7 +32,10 @@ skill activation.
 
 | Section | Purpose | Scope |
 | --- | --- | --- |
-| Skills | Core, packs, this machine only, Try later and skills to review in one page; inspect, edit, update and delete skills and choose how agents invoke them | Global, or a selected project's own skills |
+| Overview | What needs you, whether you're backed up, and quick actions: find a skill or add something new | Your setup |
+| Skills | One searchable list of every skill, filtered by where it comes from; turn skills on or off, choose how agents invoke them, edit, update, move and delete | Global, or a selected project's own skills |
+| Packs | Turn a pack on or off, see and edit its members, import or create one | Global |
+| Sources | Install from a repository or a zip, `.skill` file or folder; Try later bookmarks; followed repositories | Global |
 | Agent rules | Edit shared rules and references, preview and sync managed regions | Shared document; explicit destination files |
 | Tools | Save and explicitly run install/update commands | Always global |
 | Backup | Save your library to a private Git repository, go back to an earlier save, review edits made outside AFK | Your library |
@@ -45,12 +48,13 @@ Start one from the app (**Start a new library**) or with `afk library init --app
 each change, and **Restore my library** (or `afk library connect owner/repo`) brings it
 back on a new machine. See the [library guide](docs/kit.md).
 
-The Skills page has five tabs. **Core** holds the skills saved in full in your library,
-grouped by repository. **Packs** are named groups you turn on when needed. **This machine
-only** keeps skills that stay here. **Try later** keeps repository bookmarks. **To review**
-lists skills installed outside AFK so you can decide where they belong.
+Every skill appears once in **Skills**, labelled with where it comes from: **Core** (saved
+in full in your library, on every machine), a **pack** (a named group you turn on when
+needed, in **Packs**), **this machine** only, or a **tool**. Skills installed outside AFK
+show up on **Overview** under **Needs you** and as the *To review* filter in Skills, so you
+can decide where they belong. **Try later** bookmarks live in **Sources**.
 
-Install from a repository with **Install skills** or `afk add <repository>`, which asks
+Install with **Add something new** (Overview or Sources) or `afk add <repository>`, which asks
 whether a skill belongs in Core, a pack, on this machine only or under Try later. You can
 also upload a zip, a `.skill` file or a folder.
 
@@ -108,7 +112,7 @@ changelog and Git history.
 ## Repository
 
 - `packages/afk/src/fieldwork/`: CLI, settings, local APIs, skill preparation and activation.
-- `packages/afk/web/`: local app and its scoped design system.
+- `packages/afk/app/`: local app (React) and its scoped design system; `pnpm afk:build` builds it into `packages/afk/web/`.
 - `skills/afk-cli/`: agent management workflow and on-demand references.
 - `docs/`: current guides, decisions, specifications, and approved design references.
 - `apps/site/`: public website and documentation.

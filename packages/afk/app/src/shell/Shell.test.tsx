@@ -100,3 +100,14 @@ it("shows the running version and offers an available update", async () => {
   expect((await screen.findAllByText("AFK 2.1.0 · 2.2.0 is available"))[0]).toBeInTheDocument();
   expect(screen.getAllByRole("button", { name: "Update & restart" })[0]).toBeInTheDocument();
 });
+
+it("exits AFK on request and says the app is closed", async () => {
+  const exits: string[] = [];
+  renderWithApp(<Shell />, { client: fakeClient({}, { exit: () => { exits.push("exit"); } }) });
+
+  await userEvent.click(within(screen.getByRole("complementary", { name: "AFK" })).getByRole("button", { name: "Exit AFK" }));
+
+  expect(await screen.findByRole("heading", { level: 1, name: "AFK is closed" })).toHaveFocus();
+  expect(exits).toEqual(["exit"]);
+  expect(screen.queryByRole("navigation", { name: "Sections" })).not.toBeInTheDocument();
+});

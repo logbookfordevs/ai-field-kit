@@ -16,4 +16,4 @@ catalog, custom-agent, and sync plans have been removed; Git history preserves t
 `specs/afk-docs.md` and root `design-qa.md` are historical website-delivery records.
 They do not describe the current app. The website is awaiting a separate update.
 Approved Open Design exports under `references/afk-pivot/` are visual inputs;
-`packages/afk/web/` contains the runnable implementation.
+`packages/afk/app/` contains the runnable implementation.

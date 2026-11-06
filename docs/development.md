@@ -49,13 +49,15 @@ receipts to test update failures, skills that are off, agent folder links and
 intervening edits. The web app uses the same `skills/update` operation;
 `skills/update-state` exposes session progress without waiting for the mutation queue.
 
-## The new app (`/next/`)
+## The local app
 
-The React app ([ADR 0013](adr/0013-react-for-the-local-app.md)) lives in `packages/afk/app/`. `pnpm afk:build` builds it into `packages/afk/web/next/` (ignored by Git, published with the package), and the server serves it at `/next/` with the session token, beside the old app at `/`.
+The React app ([ADR 0013](adr/0013-react-for-the-local-app.md)) lives in `packages/afk/app/`, with its design system in `packages/afk/app/DESIGN.md`. `pnpm afk:build` builds it into `packages/afk/web/` (generated, ignored by Git, published with the package), and the server serves it at `/` with the session token injected into `index.html`. Fonts, agent icons and the favicon live in `app/public/` and are copied into the build.
 
 - **Screens** live in `app/src/screens/<id>/index.tsx`, each exporting a `ScreenDefinition` (`label`, `Screen`, `useAttention`). `screens/registry.ts` fixes the navigation order; a screen ticket replaces only its own folder.
 - **Data** goes through `useOperation(name, input)` for reads and `useMutation(name)` for changes (`app/src/api/hooks.ts`). Both return failures as values; a successful change refreshes every read. Result types live in `OperationResults` (`app/src/api/operations.ts`), which screens extend by declaration merging.
 - **Shared components** are in `app/src/components/`; `app/gallery.html` shows them during development (not built).
+- **Cross-screen links** use hash addresses: `#/skills?q=<text>` opens Skills with a search, `#/overview?start=library` or `?start=restore` opens the matching first-run step while there is no library.
+- **Tool output**: `useLiveRun(toolId, running)` from `@/screens/tools/useLiveRun` follows `tool/state` while a `tool/run` is pending; render it with `RunOutput`.
 - **Install dialog**: any screen can open it with `openInstall({ repository?, skills?, destination?, source? })` from `@/screens/sources`. It prefills what is given and still asks for the rest, including the destination. `InstallHost` renders the one dialog from `App.tsx`.
 - **Tests** use Vitest, React Testing Library and happy-dom. `renderWithApp` and `fakeClient` in `app/src/test/` render a screen against handler functions instead of a server.
 
@@ -66,7 +68,7 @@ HOME=/tmp/afk-home node packages/afk/dist/index.js --foreground --no-open --port
 AFK_URL=http://127.0.0.1:4391 AFK_TOKEN=<token> pnpm --dir packages/afk app:dev
 ```
 
-Vite serves the app at `http://localhost:5173/next/` and the workbench at `/next/gallery.html`, proxying `/api` and the bundled fonts to AFK.
+Vite serves the app at `http://localhost:5173/` and the component workbench at `/gallery.html`, proxying `/api` to AFK.
 
 ## Checks
 
@@ -75,21 +77,6 @@ pnpm afk:typecheck
 pnpm afk:lint
 pnpm afk:test
 pnpm afk:build
-node --check packages/afk/web/client.js
-node --check packages/afk/web/rules.js
-node --check packages/afk/web/onboarding.js
-node --check packages/afk/web/members.js
-node --check packages/afk/web/sources.js
-node --check packages/afk/web/packs.js
-node --check packages/afk/web/kit.js
-node --check packages/afk/web/install.js
-node --check packages/afk/web/invocation-info.js
-node --check packages/afk/web/skill-schedule.js
-node --check packages/afk/web/agent-folders.js
-node --check packages/afk/web/editor.js
-node --check packages/afk/web/skills.js
-node --check packages/afk/web/backup.js
-node --check packages/afk/web/first-run.js
 ```
 
 The test command runs skill, library, backup, restore, settings, server and rule-sync

@@ -138,7 +138,7 @@ The incumbent AFK identity remains a warm working field notebook: precise, calm,
 
 The shipped 2.0 website uses unframed copy, ruled ledgers, native controls, and lightly bent paper. Its paper stack is built from CSS geometry around real controls, not a raster illustration. Docs use the same material with quieter reading measures. PRODUCT.md owns product strategy; the approved composition and surface modes belong in `docs/specs/afk-website-v2/implementation.md` and `proposal.md`, rather than becoming global brand rules.
 
-This root system owns AFK branding and the website in `apps/site/`. The local application's interface remains governed by `packages/afk/web/DESIGN.md`; website sizes and composition do not replace its controls or density.
+This root system owns AFK branding and the website in `apps/site/`. The local application's interface remains governed by `packages/afk/app/DESIGN.md`; website sizes and composition do not replace its controls or density.
 
 **Key Characteristics:**
 
@@ -263,7 +263,7 @@ The shared ease is `cubic-bezier(.16,1,.3,1)`. Paper settles once over 700ms wit
 - **Do** keep ruled ledgers, bounded article measures, wrapping commands, and responsive native navigation.
 - **Do** show targets and states beside actions and keep copy feedback and recovery in place.
 - **Do** keep essential content visible from first paint and all actions available under reduced motion.
-- **Do** consult the separate local-app design system before changing `packages/afk/web/`.
+- **Do** consult the separate local-app design system before changing `packages/afk/app/`.
 
 ### Don't:
 

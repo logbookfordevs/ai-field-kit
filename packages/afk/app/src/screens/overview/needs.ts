@@ -16,9 +16,9 @@ export type Need =
   | { kind: "backup-off" };
 
 /** Everything that needs the user, most urgent first. Skills to review are one item however many there are. */
-export function needsFrom(kit: Kit, backup: Backup, inLibrary: ReadonlySet<string> = new Set()): Need[] {
+export function needsFrom(kit: Kit, backup: Backup): Need[] {
   const needs: Need[] = [];
-  const undecided = kit.undecided.filter(skill => !inLibrary.has(skill.name));
+  const { undecided } = kit;
   const { status } = backup;
   if (status.state === "failed") needs.push({ kind: "backup-failed", waiting: status.waiting, ...(status.error ? { reason: status.error } : {}) });
   if (undecided.length > 0) needs.push({ kind: "review", skills: undecided });
@@ -45,10 +45,7 @@ export function useOverview(): Overview {
   const kit = useOperation("kit/state");
   const backup = useOperation("backup/state", { brief: true });
   const setup = useOperation("state");
-  const settled = !setup.loading;
-  // Skills without a repository are stored in the library on adoption but stay "undecided" in kit/state; they are placed.
-  const inLibrary = new Set((setup.data?.inventories.Global ?? []).filter(skill => skill.storage === "library").map(skill => skill.name));
-  const needs = kit.data && backup.data && settled ? needsFrom(kit.data, backup.data, inLibrary) : null;
+  const needs = kit.data && backup.data ? needsFrom(kit.data, backup.data) : null;
   return { kit, backup, setup, needs };
 }
 

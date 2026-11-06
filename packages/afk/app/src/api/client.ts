@@ -21,6 +21,8 @@ export interface AfkClient {
     updateCheck(options?: { refresh?: boolean }): Promise<Result<VersionCheck>>;
     updateState(): Promise<Result<AppUpdateJob | null>>;
     update(): Promise<Result<{ started: boolean }>>;
+    /** Stops the local server; the page stays open but can no longer reach AFK. */
+    exit(): Promise<Result<{ ok: boolean }>>;
   };
 }
 
@@ -63,6 +65,7 @@ export function createClient(options: { token: string | undefined; fetch?: typeo
       updateCheck: ({ refresh = false } = {}) => request(`app/update-check${refresh ? "?refresh=1" : ""}`, "GET"),
       updateState: () => request("app/update-state", "GET"),
       update: () => request("app/update", "POST"),
+      exit: () => request("exit", "POST"),
     },
   };
 }

@@ -22,7 +22,7 @@ export interface FakeClient extends AfkClient {
  * operation's value (or a promise of it), or `fail(...)`.
  * Operations without a handler fail with "Unknown operation.".
  */
-export function fakeClient(handlers: Partial<Record<OperationName, Handler>> = {}, app: { version?: VersionCheck; job?: AppUpdateJob | null } = {}): FakeClient {
+export function fakeClient(handlers: Partial<Record<OperationName, Handler>> = {}, app: { version?: VersionCheck; job?: AppUpdateJob | null; exit?: () => void } = {}): FakeClient {
   const calls: FakeClient["calls"] = [];
   return {
     calls,
@@ -40,6 +40,7 @@ export function fakeClient(handlers: Partial<Record<OperationName, Handler>> = {
       updateCheck: async () => ({ ok: true, value: app.version ?? { current: "2.1.0", available: false } }),
       updateState: async () => ({ ok: true, value: app.job ?? null }),
       update: async () => ({ ok: true, value: { started: true } }),
+      exit: async () => { app.exit?.(); return { ok: true, value: { ok: true } }; },
     },
   };
 }

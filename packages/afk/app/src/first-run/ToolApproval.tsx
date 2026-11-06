@@ -3,6 +3,8 @@ import type { Tool } from "../../../src/fieldwork/settings.js";
 import { Progress } from "@/components/Progress";
 import { Ledger } from "@/components/Row";
 import { count } from "@/first-run/text";
+import { RunOutput } from "@/screens/tools/RunOutput";
+import { useLiveRun } from "@/screens/tools/useLiveRun";
 
 /** Tools are only run when ticked here; nothing runs by default. */
 export function ToolApproval({ tools, onRun, onSkip }: { tools: Tool[]; onRun: (tools: Tool[]) => void; onSkip: () => void }) {
@@ -56,11 +58,14 @@ export function ToolApproval({ tools, onRun, onSkip }: { tools: Tool[]; onRun: (
   );
 }
 
-export function RunningTools({ name, position, total }: { name: string; position: number; total: number }) {
+export function RunningTools({ tool, position, total }: { tool: Tool; position: number; total: number }) {
+  const live = useLiveRun(tool.id, true);
   return (
     <>
-      <div><h1 tabIndex={-1}>Running {name}</h1></div>
-      <div role="status"><Progress label={`Running ${name} (${position} of ${total})…`} /></div>
+      <div><h1 tabIndex={-1}>Running {tool.name}</h1></div>
+      <div role="status"><Progress label={`Running ${tool.name} (${position} of ${total})…`} /></div>
+      <code className="command">{tool.install}</code>
+      {live?.output ? <RunOutput output={live.output} label={`Output of ${tool.name}`} /> : null}
     </>
   );
 }

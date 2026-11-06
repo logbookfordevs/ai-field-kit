@@ -71,19 +71,19 @@ afk library connect git@github.com:owner/afk-library.git --run-tools all
 
 ## The Skills page
 
-The Skills page has five tabs:
+**Skills** lists every skill once, with where it comes from: **Core** (saved in full in
+your library), a pack, **This machine** (stays on this computer and is not saved), a
+tool, or **To review** (installed outside AFK; Overview lists these under **Needs you** so
+you can decide where each belongs). Search by name or description and filter by where a
+skill comes from or its state. A Core skill missing on this machine can be installed from
+its row.
 
-- **Core** holds the skills saved in full in your library, grouped by repository. A Core
-  skill missing on this machine has an **Install** button on its row.
-- **Packs** holds groups of skills you turn on when you need them.
-- **This machine only** holds skills that stay on this computer and are not saved.
-- **Try later** holds repository bookmarks.
-- **To review** lists skills installed outside AFK, so you can decide where each belongs.
+Each row has an on/off switch, the Manual/Automatic choice and a **⋯** menu (inspect, edit
+files, update, move to Core, a pack or this machine, drop, delete). Select a skill's name for its
+details and files. Select several rows to turn them on or off, change their invocation,
+update or delete them together.
 
-Each row has an on/off switch, the Manual/Automatic choice, a backup chip, **Update**,
-**Inspect** and a **⋯** menu (Add to pack, Edit files, Drop from Core, Delete). Select
-several rows to turn them on or off, change their invocation, update or delete them
-together.
+**Packs** has its own page, and **Try later** bookmarks are on **Sources**.
 
 AFK ships no default Core. You choose what goes in it.
 
@@ -118,7 +118,7 @@ names need the pack ID.
 
 ## Installing
 
-**Install skills** on the Skills page, or `afk add <repository>`, is one place to install
+**Add something new** (on Overview or Sources), or `afk add <repository>`, is one place to install
 from. Skills CLI does the work. AFK lists the repository's skills first, from a temporary
 download, so you can read each `SKILL.md` before anything is installed. You then choose
 where they go:

@@ -23,7 +23,7 @@
     "!dist/**/*.test-helper.js"
   ],
   "scripts": {
-    "clean": "node -e \"for (const path of ['dist', 'skills/afk-cli', 'web/next']) require('node:fs').rmSync(path, { recursive: true, force: true })\"",
+    "clean": "node -e \"for (const path of ['dist', 'skills/afk-cli', 'web']) require('node:fs').rmSync(path, { recursive: true, force: true })\"",
     "build": "pnpm run clean && tsc && node scripts/bundle-skill.mjs && vite build --config app/vite.config.ts",
     "app:dev": "vite --config app/vite.config.ts",
     "typecheck": "npx tsc --noEmit && npx tsc --noEmit -p app",

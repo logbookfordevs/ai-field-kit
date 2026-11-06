@@ -1,8 +1,9 @@
-import { Fragment, useEffect, useRef, type MouseEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type MouseEvent } from "react";
 import { Menu } from "@/components/Menu";
 import { navigation as defaultNavigation } from "@/screens/registry";
 import type { Attention, ScreenDefinition } from "@/screens/types";
 import { hrefFor, navigate, useRoute } from "@/shell/router";
+import { Closed, ExitButton } from "@/shell/ExitAfk";
 import { UpdateStatus } from "@/shell/UpdateStatus";
 import "@/shell/Shell.css";
 
@@ -36,6 +37,8 @@ export function Shell({ navigation = defaultNavigation }: { navigation?: ScreenD
   const screens = navigation.flat();
   const current = screens.find(screen => screen.id === route.screen) ?? screens[0]!;
   const opened = useRef(false);
+  const [closed, setClosed] = useState(false);
+  const close = () => setClosed(true);
 
   useEffect(() => {
     if (!opened.current) { opened.current = true; return; }
@@ -48,6 +51,8 @@ export function Shell({ navigation = defaultNavigation }: { navigation?: ScreenD
     event.preventDefault();
     main.current?.focus();
   };
+
+  if (closed) return <Closed />;
 
   return (
     <>
@@ -63,7 +68,7 @@ export function Shell({ navigation = defaultNavigation }: { navigation?: ScreenD
               </Fragment>
             ))}
           </nav>
-          <div className="rail-foot"><UpdateStatus /></div>
+          <div className="rail-foot"><UpdateStatus /><ExitButton onExited={close} /></div>
         </aside>
         <header className="topbar">
           <Brand />
@@ -75,6 +80,7 @@ export function Shell({ navigation = defaultNavigation }: { navigation?: ScreenD
           </label>
           <Menu label="More">
             <UpdateStatus />
+            <ExitButton onExited={close} />
           </Menu>
         </header>
         <main id="main" ref={main} tabIndex={-1}>

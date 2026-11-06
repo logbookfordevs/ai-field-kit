@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, it } from "vitest";
+import { afterEach, expect, it } from "vitest";
 import { App } from "@/App";
 import { fakeClient, fail, type FakeClient } from "@/test/fake-client";
 
@@ -33,6 +33,8 @@ const plan = {
   toolSkills: names("tool", 5),
   rules: ["AGENTS.md"],
 };
+
+afterEach(() => { location.hash = ""; });
 
 function open(client: FakeClient): void {
   render(<App client={client} />);
@@ -382,4 +384,44 @@ it("filters a long repository list", async () => {
 
   const list = screen.getByRole("list", { name: "Your repositories" });
   expect(within(list).getAllByRole("listitem")).toHaveLength(11);
+});
+
+it("shows a tool's output while it runs", async () => {
+  let finish: (value: unknown) => void = () => undefined;
+  open(restoreClient({
+    "restore/start": () => ({ ...summary, tools }),
+    "tool/run": () => new Promise(resolve => { finish = resolve; }),
+    "tool/state": () => ({ tools, runs: { 7: { pending: true, output: "Fetching gstack…\nLinked office-hours\n" } }, home: "/home/leo" }),
+  }));
+  await chooseRestore();
+  await userEvent.click(await screen.findByRole("button", { name: "Restore leo/afk-library" }));
+  await userEvent.click(await screen.findByRole("checkbox", { name: /gstack/ }));
+  await userEvent.click(screen.getByRole("button", { name: "Run 1 tool" }));
+
+  expect(await screen.findByRole("heading", { level: 1, name: "Running gstack" })).toBeInTheDocument();
+  expect(await screen.findByLabelText("Output of gstack")).toHaveTextContent("Linked office-hours");
+  finish({ code: 0, output: "", reapplied: [], warnings: [] });
+  expect(await screen.findByRole("heading", { level: 1, name: "Your library is back" })).toBeInTheDocument();
+});
+
+it("opens the restore picker when Settings asks to restore the library", async () => {
+  location.hash = "#/overview?start=restore";
+  open(restoreClient());
+
+  expect(await screen.findByRole("heading", { level: 1, name: "Which repository is your library?" })).toBeInTheDocument();
+});
+
+it("opens the new-library preview when Settings asks to start one", async () => {
+  location.hash = "#/overview?start=library";
+  open(fakeClient({ "backup/state": backupState({ library: false }), "library/init-preview": () => plan }));
+
+  expect(await screen.findByRole("heading", { level: 1, name: "Start your library" })).toBeInTheDocument();
+});
+
+it("ignores a request to start a library when this machine already has one", async () => {
+  location.hash = "#/overview?start=library";
+  open(fakeClient({ "backup/state": backupState({}) }));
+
+  expect(await screen.findByRole("navigation", { name: "Sections" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Start your library" })).not.toBeInTheDocument();
 });

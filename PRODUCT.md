@@ -17,11 +17,21 @@ AI Field Kit manages the skills and tools a developer actually uses. Its CLI ope
 a local web app and provides headless management operations, protected skill updates
 and background lifecycle commands alongside kit management, sync, and pack reading and activation.
 
-The product has five sections: Kit, Installed Skills, Agent rules, Tools, and
-Settings. The kit holds Core (always-on skills), packs and skills to try later. Pack
-definitions are shared; activation is global or project-specific. Core is global
-only. Tools are always global. Configuration lives in one file whose
-location the user chooses.
+The app has eight sections, one per kind of thing: Overview (what needs you,
+backup state, quick actions), Skills (one searchable list of every skill), Packs,
+Sources (where new skills come in: repositories, uploads and Try later), Agent
+rules, Tools, Backup and Settings. A first-run flow starts or restores the library
+before the app opens.
+
+Everything the user decides lives in a **library**: a Git repository at
+`~/.afk/library` where every change is one save, optionally backed up to a private
+remote and restored on another machine. The library holds Core (skills on every
+machine, always on, backed up), packs (named groups turned on when needed), tools,
+Try later bookmarks, invocation choices, agent folders and agent rules. A skill
+kept on this machine only stays outside it. A skill in a pack still appears in
+Skills, labelled with its pack; turning the pack on lives in Packs. Core and packs
+are Global; projects manage only their own repository's skills. Tools are always
+global.
 
 Skills CLI owns repository preparation and external install/update behavior. AFK
 owns local availability, the portable kit (Core, packs and source bookmarks), reconciling
@@ -63,5 +73,5 @@ The local app and the AFK 2.0 home and field manual are implemented and tested.
 Live discovery inside agent conversations still needs verification. Package
 publication and website deployment remain separate work.
 The behavior specification is `docs/specs/afk-pivot.md`; the local app's visual
-system is `packages/afk/web/DESIGN.md`. Root `DESIGN.md` describes the AFK website
+system is `packages/afk/app/DESIGN.md`. Root `DESIGN.md` describes the AFK website
 and shared brand. Website evidence is in `docs/specs/afk-website-v2/implementation.md`.

@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { addToCore, isRepositorySource, toolOwner } from "./kit.js";
 import type { InvocationChoice, SkillRecord } from "./library.js";
 import { sourceIdentity } from "./migration.js";
-import type { Settings } from "./settings.js";
+import { UPLOADED_SOURCE, type Settings } from "./settings.js";
 import { globalLockPath, sameSkillFiles, SkillLibrary } from "./skills.js";
 
 export type AdoptDestination = "library" | "machine";
@@ -58,7 +58,7 @@ export async function adoptSkill(skills: SkillLibrary, settings: Settings, name:
         invocation: (settings.preferences[`Global|${name}`] ?? "") as InvocationChoice,
       };
       await library.writeRecord(name, record);
-      if (isRepositorySource(source)) addToCore(settings, name, source);
+      addToCore(settings, name, isRepositorySource(source) ? source : UPLOADED_SOURCE);
       settings.machineOnly = settings.machineOnly.filter(member => member !== name);
     } else {
       settings.machineOnly = [...new Set([...settings.machineOnly, name])];

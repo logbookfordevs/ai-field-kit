@@ -14,6 +14,14 @@ import type { ScreenId } from "@/screens/types";
 /** new: no library yet. ready: AFK started an empty one. restoring: a restore put the library in place but did not finish. */
 export type FirstRunKind = "new" | "ready" | "restoring";
 
+/** A way in chosen elsewhere (Settings), skipping the choice. */
+export type StartRequest = "library" | "restore";
+
+function firstStep(kind: FirstRunKind, start: StartRequest | undefined): Step {
+  if (kind === "restoring" || start === "restore") return { name: "pick" };
+  return start === "library" ? { name: "preview" } : { name: "choose" };
+}
+
 type Step =
   | { name: "choose" }
   | { name: "preview" }
@@ -41,16 +49,17 @@ function Steps({ stage, restoring }: { stage: Stage; restoring: boolean }) {
 export interface FirstRunProps {
   kind: FirstRunKind;
   pendingRepository?: string | undefined;
+  start?: StartRequest | undefined;
   /** Leaves the flow for the app, optionally opening a section. */
   onFinish: (to?: ScreenId) => void;
 }
 
 /** The full-page first-run flow shown in front of the app. */
-export function FirstRun({ kind, pendingRepository, onFinish }: FirstRunProps) {
-  const [step, setStep] = useState<Step>(kind === "restoring" ? { name: "pick" } : { name: "choose" });
+export function FirstRun({ kind, pendingRepository, start: requested, onFinish }: FirstRunProps) {
+  const [step, setStep] = useState<Step>(() => firstStep(kind, requested));
   const [problem, setProblem] = useState("");
   const [address, setAddress] = useState(pendingRepository ?? "");
-  const [restoringPath, setRestoringPath] = useState(kind === "restoring");
+  const [restoringPath, setRestoringPath] = useState(kind === "restoring" || requested === "restore");
   const main = useRef<HTMLElement>(null);
   const shown = useRef(false);
   const attempt = useRef(0);
@@ -164,7 +173,7 @@ export function FirstRun({ kind, pendingRepository, onFinish }: FirstRunProps) {
         ) : null}
         {step.name === "restoring" ? <Restoring label={step.label} preview={step.preview} onCancel={() => void cancelRestore()} /> : null}
         {step.name === "tools" ? <ToolApproval tools={step.summary.tools} onRun={chosen => void runTools(step.summary, chosen)} onSkip={() => setStep({ name: "restored", summary: step.summary, ran: [], failed: [] })} /> : null}
-        {step.name === "running" ? <RunningTools name={step.tool.name} position={step.position} total={step.total} /> : null}
+        {step.name === "running" ? <RunningTools key={step.tool.id} tool={step.tool} position={step.position} total={step.total} /> : null}
         {step.name === "restored" ? <Restored summary={step.summary} ran={step.ran} failed={step.failed} onOpenBackup={() => void finish("backup")} onOpenApp={() => void finish()} /> : null}
       </main>
     </div>

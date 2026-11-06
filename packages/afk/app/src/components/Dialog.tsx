@@ -21,6 +21,11 @@ export interface DialogProps {
 
 const focusable = "input:not([type=hidden]):not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled), [href], [tabindex]:not([tabindex='-1'])";
 
+/** A radio group is entered at its checked option, so an unchecked radio is never where focus starts. */
+function firstFocusable(root: HTMLElement | null): HTMLElement | undefined {
+  return [...(root?.querySelectorAll<HTMLElement>(focusable) ?? [])].find(element => !(element instanceof HTMLInputElement && element.type === "radio" && !element.checked));
+}
+
 /** Native modal dialog: the page behind is inert, focus starts inside and returns to the opener on close. */
 export function Dialog(props: DialogProps) {
   return props.open ? <OpenDialog {...props} /> : null;
@@ -37,7 +42,7 @@ function OpenDialog({ onClose, title, description, children, footer, variant = "
     if (!dialog) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (!dialog.open) dialog.showModal();
-    const first = initialFocus?.current ?? body.current?.querySelector<HTMLElement>(focusable) ?? dialog.querySelector<HTMLElement>(focusable);
+    const first = initialFocus?.current ?? firstFocusable(body.current) ?? firstFocusable(dialog);
     first?.focus();
     return () => {
       if (dialog.open) dialog.close();

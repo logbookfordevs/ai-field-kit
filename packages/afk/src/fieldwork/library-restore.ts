@@ -78,6 +78,7 @@ export class Restore {
     } catch (error) {
       throw new Error(`The GitHub CLI could not list your repositories: ${error instanceof Error ? error.message : "unknown error"}. Install it and run gh auth login, or paste a repository URL instead.`);
     }
+    if (result.code !== 0 && /gh auth login/.test(result.output)) throw new Error("Sign in to the GitHub CLI with gh auth login to list your repositories, or paste a repository URL instead.");
     if (result.code !== 0) throw new Error(`The GitHub CLI could not list your repositories: ${failure(result.output)} Run gh auth login, or paste a repository URL instead.`);
     let listed: { nameWithOwner: string; url: string; isPrivate: boolean; pushedAt?: string }[];
     try { listed = JSON.parse(result.output) as typeof listed; } catch { throw new Error("The GitHub CLI returned a list AFK could not read. Paste a repository URL instead."); }

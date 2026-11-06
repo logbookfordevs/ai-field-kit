@@ -410,6 +410,15 @@ describe("choosing a repository", () => {
     await expect(restorer().repositories()).rejects.toThrow(/gh auth login, or paste a repository URL/);
   });
 
+  it("asks to sign in, once, when the GitHub CLI is signed out", async () => {
+    const signedOut = "To get started with GitHub CLI, please run:  gh auth login\nAlternatively, populate the GH_TOKEN environment variable with a GitHub API authentication token.";
+    const runner = async (): Promise<CommandResult> => ({ code: 4, output: signedOut, cancelled: false });
+
+    const message = await restorer(runner).repositories().then(() => "", (error: Error) => error.message);
+
+    expect(message).toBe("Sign in to the GitHub CLI with gh auth login to list your repositories, or paste a repository URL instead.");
+  });
+
   it("restores from a pasted owner/repo by asking GitHub, never a local path", async () => {
     const seen: string[][] = [];
     const runner = async (spec: CommandSpec): Promise<CommandResult> => { seen.push(spec.args); return spec.args.includes("fetch") ? { code: 128, output: "stopped here", cancelled: false } : runCommand(spec); };
