@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import type { ApiError, Result } from "@/api/client";
 import { useClient } from "@/api/ClientProvider";
 import type { OperationInput, OperationName, OperationResult } from "@/api/operations";
@@ -43,6 +43,20 @@ export function useOperation<K extends OperationName>(operation: K, input?: Oper
   return { data: query.data, error, loading: query.isPending && query.fetchStatus !== "idle", reload };
 }
 
+const rulesReads = new Set(["rules/state", "backup/state"]);
+
+// Rules live in their own files (and in the library once it exists); every other change can move skills, packs or the backup.
+function affects(operation: OperationName, read: unknown): boolean {
+  if (read === "app") return false;
+  if (operation.startsWith("rules/")) return rulesReads.has(String(read));
+  return true;
+}
+
+/** Refreshes the mounted reads a successful change can affect; the app's own version check is never one. */
+export async function refreshAfter(queries: QueryClient, operation: OperationName): Promise<void> {
+  await queries.invalidateQueries({ predicate: query => affects(operation, query.queryKey[0]) });
+}
+
 export interface Change<K extends OperationName> {
   run: (input?: OperationInput<K>) => Promise<Result<OperationResult<K>>>;
   pending: boolean;
@@ -50,7 +64,7 @@ export interface Change<K extends OperationName> {
   reset: () => void;
 }
 
-/** Runs a changing operation. On success every read refreshes, so navigation signals and other screens stay current. */
+/** Runs a changing operation. On success the reads it affects refresh, so navigation signals and other screens stay current. */
 export function useMutation<K extends OperationName>(operation: K): Change<K> {
   const client = useClient();
   const queries = useQueryClient();
@@ -61,7 +75,7 @@ export function useMutation<K extends OperationName>(operation: K): Change<K> {
     setError(null);
     const result = await client.run(operation, input);
     setPending(false);
-    if (result.ok) await queries.invalidateQueries();
+    if (result.ok) await refreshAfter(queries, operation);
     else setError(result.error);
     return result;
   }, [client, operation, queries]);
