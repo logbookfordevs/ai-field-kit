@@ -17,8 +17,10 @@ async function restartedToken(): Promise<string | undefined> {
   }
 }
 
-/** Version line and update action for the rail footer and the phone More menu. */
-export function UpdateStatus() {
+export type AppUpdate = ReturnType<typeof useAppUpdate>;
+
+/** The app's version and update job; call once so the rail and the phone menu share it. */
+export function useAppUpdate() {
   const client = useClient();
   const queries = useQueryClient();
   const toast = useToast();
@@ -83,12 +85,27 @@ export function UpdateStatus() {
   const offerUpdate = !updating && !checking && Boolean(current?.available);
   const offerCheck = !updating && !offerUpdate;
 
+  return { name, status: statusText(), job, checking, offerUpdate, offerCheck, check, update };
+}
+
+/** Version line and update action for the rail footer and the phone More menu. */
+export function UpdateStatus({ update }: { update: AppUpdate }) {
+  const { name, status, job, checking, offerUpdate, offerCheck } = update;
+  const failed = Boolean(job?.error);
+  const hasOutput = Boolean(job?.output);
+
   return (
     <div className="update-status">
-      <p className="meta">{`${name} · ${statusText()}`}</p>
-      {job?.error ? <p className="field-error">{job.error}</p> : null}
-      {offerUpdate ? <button type="button" className="primary" onClick={() => void update()}>Update &amp; restart</button> : null}
-      {offerCheck ? <button type="button" className="text" disabled={checking} onClick={() => void check()}>{checking ? "Checking…" : "Check for updates"}</button> : null}
+      <p className="meta">{`${name} · ${status}`}</p>
+      {failed ? <p className="field-error">{job?.error} You can retry, or run <code>afk update</code> in your terminal.</p> : null}
+      {hasOutput ? (
+        <details className="update-details">
+          <summary>Update details</summary>
+          <pre>{job?.output}</pre>
+        </details>
+      ) : null}
+      {offerUpdate ? <button type="button" className="primary" onClick={() => void update.update()}>Update &amp; restart</button> : null}
+      {offerCheck ? <button type="button" className="text" disabled={checking} onClick={() => void update.check()}>{checking ? "Checking…" : "Check for updates"}</button> : null}
     </div>
   );
 }

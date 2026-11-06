@@ -101,6 +101,37 @@ it("shows the running version and offers an available update", async () => {
   expect(screen.getAllByRole("button", { name: "Update & restart" })[0]).toBeInTheDocument();
 });
 
+it("keeps one update state for the rail and the phone menu, so an update is offered once", async () => {
+  const client = fakeClient({}, { version: { current: "2.1.0", latest: "2.2.0", available: true } });
+  let stateReads = 0;
+  const updateState = client.app.updateState;
+  client.app.updateState = async () => { stateReads++; return await updateState(); };
+  renderWithApp(<Shell />, { client });
+  const rail = screen.getByRole("complementary", { name: "AFK" });
+
+  await userEvent.click(await within(rail).findByRole("button", { name: "Update & restart" }));
+
+  expect(stateReads).toBe(1);
+  expect(screen.queryByRole("button", { name: "Update & restart" })).not.toBeInTheDocument();
+  expect(screen.getAllByText("AFK 2.1.0 · Starting update…")).toHaveLength(2);
+});
+
+it("shows what the updater printed when an update fails, and how to finish it", async () => {
+  const client = fakeClient({}, { version: { current: "2.1.0", latest: "2.2.0", available: true } });
+  client.app.update = async () => ({ ok: true, value: { started: true } });
+  let job = { pending: true, phase: "Installing AFK 2.2.0…", output: "" };
+  client.app.updateState = async () => ({ ok: true, value: job });
+  renderWithApp(<Shell />, { client });
+  const rail = screen.getByRole("complementary", { name: "AFK" });
+  await within(rail).findByText("AFK 2.1.0 · Installing AFK 2.2.0…");
+
+  job = { pending: false, phase: "Update failed", output: "npm ERR! EACCES /usr/local/lib", error: "The updater exited with code 1." } as typeof job;
+
+  await userEvent.click(await within(rail).findByText("Update details", {}, { timeout: 3000 }));
+  expect(within(rail).getByText("npm ERR! EACCES /usr/local/lib")).toBeVisible();
+  expect(within(rail).getByText((_, element) => element?.tagName === "P" && /retry, or run afk update in your terminal/.test(element.textContent ?? ""))).toBeInTheDocument();
+});
+
 it("exits AFK on request and says the app is closed", async () => {
   const exits: string[] = [];
   renderWithApp(<Shell />, { client: fakeClient({}, { exit: () => { exits.push("exit"); } }) });
