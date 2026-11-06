@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useClient } from "@/api/ClientProvider";
-import { useMutation, useOperation, type Read } from "@/api/hooks";
+import { useMutation } from "@/api/hooks";
 import { EmptyState } from "@/components/EmptyState";
 import { Icon } from "@/components/Icon";
 import { Menu, MenuItem, MenuSeparator } from "@/components/Menu";
 import { Ledger, Row } from "@/components/Row";
 import { Switch } from "@/components/Switch";
 import { useToast } from "@/components/Toast";
+import { useSourcesState } from "@/screens/sources/data";
 import { isRepositoryReference, plural, shortSource } from "@/screens/sources/format";
 import { openInstall } from "@/screens/sources/install/store";
 import type { FavoriteSource, SourcesState, UpdateResult } from "@/screens/sources/types";
@@ -16,7 +17,7 @@ import "@/screens/sources/Sources.css";
 const searchThreshold = 6;
 
 export function SourcesScreen() {
-  const state = useOperation("state") as Read<SourcesState>;
+  const state = useSourcesState();
 
   return (
     <Page title="Sources" description="Where skills come from: install something new, keep repositories for later, and follow the ones your Core comes from.">
@@ -73,7 +74,7 @@ function TryLater({ bookmarks }: { bookmarks: FavoriteSource[] }) {
       toast.show(fresh.error.message);
       return false;
     }
-    const { settings } = fresh.value as SourcesState;
+    const { settings } = fresh.value as unknown as SourcesState;
     const saved = await saveSettings.run({ settings: { ...settings, favoriteSources: update(settings.favoriteSources) } });
     if (!saved.ok) toast.show(saved.error.message);
     return saved.ok;

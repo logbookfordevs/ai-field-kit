@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useClient } from "@/api/ClientProvider";
-import { useMutation, useOperation, type Read } from "@/api/hooks";
+import { useMutation, useOperation } from "@/api/hooks";
 import { Dialog } from "@/components/Dialog";
 import { Icon } from "@/components/Icon";
 import { Progress } from "@/components/Progress";
@@ -11,8 +11,9 @@ import { SkillPicker, type PickerItem } from "@/screens/sources/install/SkillPic
 import { UploadDrop } from "@/screens/sources/install/UploadDrop";
 import { uploadPayload, type PickedFile } from "@/screens/sources/install/upload";
 import type { InstallRequest } from "@/screens/sources/install/store";
+import { useSourcesState } from "@/screens/sources/data";
 import { defaultBookmarkName, formatBytes, isValidSource, plural, shortSource } from "@/screens/sources/format";
-import type { Destination, InstallCandidate, InstallOutcome, InstallProgress, SourcesState, UploadCandidate, UploadPreview } from "@/screens/sources/types";
+import type { Destination, InstallCandidate, InstallOutcome, InstallProgress, UploadCandidate, UploadPreview } from "@/screens/sources/types";
 import { navigate } from "@/shell/router";
 import "@/screens/sources/install/Install.css";
 
@@ -62,7 +63,7 @@ export function InstallDialog({ request, onClose }: InstallDialogProps) {
 function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAgain: () => void }) {
   const client = useClient();
   const toast = useToast();
-  const sources = useOperation("state") as Read<SourcesState>;
+  const sources = useSourcesState();
   const repositoryInstall = useMutation("kit/install");
   const uploadInstall = useMutation("kit/upload-install");
 
