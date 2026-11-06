@@ -50,15 +50,16 @@ export async function adoptSkill(skills: SkillLibrary, settings: Settings, name:
       parked.push([path, aside]);
     }
     if (to === "library") {
-      const receipt = await lockEntry(store.home, name);
+      const repository = isRepositorySource(source) ? source : undefined;
+      const receipt = repository ? await lockEntry(store.home, name) : {};
       const record: SkillRecord = {
-        ...(source ? { source } : {}),
+        ...(repository ? { source: repository } : {}),
         ...(typeof receipt.skillPath === "string" ? { skillPath: receipt.skillPath } : {}),
         ...(typeof receipt.skillFolderHash === "string" ? { revision: receipt.skillFolderHash } : {}),
         invocation: (settings.preferences[`Global|${name}`] ?? "") as InvocationChoice,
       };
       await library.writeRecord(name, record);
-      addToCore(settings, name, isRepositorySource(source) ? source : UPLOADED_SOURCE);
+      addToCore(settings, name, repository ?? UPLOADED_SOURCE);
       settings.machineOnly = settings.machineOnly.filter(member => member !== name);
     } else {
       settings.machineOnly = [...new Set([...settings.machineOnly, name])];
