@@ -103,6 +103,17 @@ describe("skills installed outside AFK", () => {
   });
 });
 
+describe("skills adopted without a repository", () => {
+  it("are not asked about again once they are stored in the library", async () => {
+    const stored = { ...setupState, inventories: { Global: [{ name: "kami", available: true, storage: "library" }, { name: "local-notes", available: true }] } };
+    setup({ "kit/state": () => reviewKit, state: () => stored });
+
+    expect(await screen.findByRole("heading", { name: "1 skill was installed outside AFK" })).toBeInTheDocument();
+    expect(screen.queryByText("kami", { selector: ".sname" })).not.toBeInTheDocument();
+    expect(screen.getByText("local-notes", { selector: ".sname" })).toBeInTheDocument();
+  });
+});
+
 describe("local checks", () => {
   const edited = { id: "edited:kami", kind: "edited" as const, name: "kami", files: ["SKILL.md"] };
   const replaced = { id: "replaced:north", kind: "replaced" as const, name: "north" };

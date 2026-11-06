@@ -16,11 +16,12 @@ export type Need =
   | { kind: "backup-off" };
 
 /** Everything that needs the user, most urgent first. Skills to review are one item however many there are. */
-export function needsFrom(kit: Kit, backup: Backup): Need[] {
+export function needsFrom(kit: Kit, backup: Backup, inLibrary: ReadonlySet<string> = new Set()): Need[] {
   const needs: Need[] = [];
+  const undecided = kit.undecided.filter(skill => !inLibrary.has(skill.name));
   const { status } = backup;
   if (status.state === "failed") needs.push({ kind: "backup-failed", waiting: status.waiting, ...(status.error ? { reason: status.error } : {}) });
-  if (kit.undecided.length > 0) needs.push({ kind: "review", skills: kit.undecided });
+  if (undecided.length > 0) needs.push({ kind: "review", skills: undecided });
   for (const item of backup.attention) needs.push({ kind: item.kind === "edited" ? "edited" : "replaced", item });
   if (status.state === "off") needs.push({ kind: "backup-off" });
   return needs;
@@ -35,6 +36,7 @@ export function attentionFor(needs: Need[]): Attention | null {
 export interface Overview {
   kit: Read<Kit>;
   backup: Read<Backup>;
+  setup: Read<OperationResult<"state">>;
   /** null until both reads have succeeded. */
   needs: Need[] | null;
 }
@@ -42,8 +44,12 @@ export interface Overview {
 export function useOverview(): Overview {
   const kit = useOperation("kit/state");
   const backup = useOperation("backup/state", { brief: true });
-  const needs = kit.data && backup.data ? needsFrom(kit.data, backup.data) : null;
-  return { kit, backup, needs };
+  const setup = useOperation("state");
+  const settled = !setup.loading;
+  // Skills without a repository are stored in the library on adoption but stay "undecided" in kit/state; they are placed.
+  const inLibrary = new Set((setup.data?.inventories.Global ?? []).filter(skill => skill.storage === "library").map(skill => skill.name));
+  const needs = kit.data && backup.data && settled ? needsFrom(kit.data, backup.data, inLibrary) : null;
+  return { kit, backup, setup, needs };
 }
 
 export function useAttention(): Attention | null {

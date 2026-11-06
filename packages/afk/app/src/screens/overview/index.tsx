@@ -5,7 +5,6 @@ import { Ledger } from "@/components/Row";
 import { Page } from "@/shell/Page";
 import { hrefFor, navigate } from "@/shell/router";
 import type { ScreenDefinition } from "@/screens/types";
-import { useOperation } from "@/api/hooks";
 import { BackupFailedNeed, BackupOffNeed, EditedNeed, ReplacedNeed } from "@/screens/overview/LocalNeeds";
 import { ReviewNeed } from "@/screens/overview/ReviewNeed";
 import { Setup } from "@/screens/overview/Setup";
@@ -50,8 +49,7 @@ function QuickActions() {
 }
 
 function OverviewScreen() {
-  const { kit, backup, needs } = useOverview();
-  const setup = useOperation("state");
+  const { kit, backup, setup, needs } = useOverview();
   const failed = kit.error ?? backup.error;
   const status = backup.data?.status;
 

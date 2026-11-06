@@ -31,8 +31,9 @@ function SetupRow({ to, name, children, quiet = false }: { to: ScreenId; name: s
 /** One line per page, so the whole setup reads at a glance and each line opens its page. */
 export function Setup({ kit, backup, state }: { kit: Kit; backup: { status: Status; attention: unknown[] }; state: State | undefined }) {
   const skills = state?.inventories.Global ?? [];
+  const placed = new Set(skills.filter(skill => skill.storage === "library").map(skill => skill.name));
   const on = skills.filter(skill => skill.available).length;
-  const review = kit.undecided.length;
+  const review = state ? kit.undecided.filter(skill => !placed.has(skill.name)).length : kit.undecided.length;
   const packs = state?.settings.profiles ?? [];
   const packsOn = packs.filter(pack => pack.enabled.length > 0).length;
   const followed = kit.sources.filter(source => source.follow).length;
