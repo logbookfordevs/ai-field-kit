@@ -3,7 +3,7 @@ import type { RulesDestinationState } from "../../../../src/fieldwork/rules.js";
 import { Dialog } from "@/components/Dialog";
 import { Field } from "@/components/Field";
 import { Menu, MenuItem } from "@/components/Menu";
-import { plural } from "@/screens/rules/model";
+import { plural } from "@/text/format";
 import { Status } from "@/screens/rules/Status";
 import "@/screens/rules/Rules.css";
 

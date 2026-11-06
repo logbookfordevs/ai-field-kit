@@ -17,13 +17,14 @@ export interface SegmentedProps<V extends string> {
   value: V | null;
   onChange: (value: V) => void;
   disabled?: boolean;
+  describedBy?: string | undefined;
 }
 
 /** A two-way (or few-way) choice built on native radios: arrow keys move, the group has a name. */
-export function Segmented<V extends string>({ legend, showLegend = false, options, value, onChange, disabled = false }: SegmentedProps<V>) {
+export function Segmented<V extends string>({ legend, showLegend = false, options, value, onChange, disabled = false, describedBy }: SegmentedProps<V>) {
   const name = useId();
   return (
-    <fieldset className="seg-field" disabled={disabled}>
+    <fieldset className="seg-field" disabled={disabled} aria-describedby={describedBy}>
       <legend className={showLegend ? undefined : "vh"}>{legend}</legend>
       <div className="seg">
         {options.map(option => (

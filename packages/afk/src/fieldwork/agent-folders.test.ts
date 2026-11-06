@@ -8,6 +8,7 @@ import { Library } from "./library.js";
 import { runCommand } from "./command-runner.js";
 import { FieldworkOperations } from "./operations.js";
 import { startFieldwork } from "./server.js";
+import { fixtureWeb } from "./web.test-helper.js";
 import { emptySettings, SettingsStore } from "./settings.js";
 
 let home: string;
@@ -230,7 +231,7 @@ describe("agent folders without a library and over HTTP", () => {
   });
 
   it("serves the state and the agent icons to the app", async () => {
-    const app = await startFieldwork(store);
+    const app = await startFieldwork(store, 0, { web: await fixtureWeb(home) });
     try {
       const token = /window.afkToken="([^"]+)"/.exec(await (await fetch(app.url)).text())![1]!;
       const state = await (await fetch(`${app.url}/api/agent-folders/state`, { headers: { "x-afk-token": token } })).json() as { folders: { icon?: string }[] };

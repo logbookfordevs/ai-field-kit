@@ -1,6 +1,7 @@
 import { useId } from "react";
 import { Icon } from "@/components/Icon";
 import { Tags } from "@/components/Tags";
+import { Count } from "@/components/Count";
 
 export interface NameGroupData {
   key: string;
@@ -14,7 +15,7 @@ function NameGroup({ title, description, names }: Omit<NameGroupData, "key">) {
   const headingId = useId();
   return (
     <section className="group" aria-labelledby={headingId}>
-      <h2 id={headingId}>{title}<span className="n num">{names.length}</span></h2>
+      <h2 id={headingId}>{title}<Count n={names.length} className="n" /></h2>
       <p className="sub">{description}</p>
       <details>
         <summary><Icon name="chev" size="sm" className="chev" />Show names<span className="vh"> for {title}</span></summary>

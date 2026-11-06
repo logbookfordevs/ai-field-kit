@@ -8,11 +8,12 @@ import { Ledger, Row } from "@/components/Row";
 import { Switch } from "@/components/Switch";
 import { useToast } from "@/components/Toast";
 import { useSourcesState } from "@/screens/sources/data";
-import { isRepositoryReference, plural, shortSource } from "@/screens/sources/format";
+import { isRepositorySource, plural, shortSource } from "@/text/format";
 import { openInstall } from "@/screens/sources/install/store";
 import type { FavoriteSource, SourcesState, UpdateResult } from "@/screens/sources/types";
 import { Page } from "@/shell/Page";
 import "@/screens/sources/Sources.css";
+import { Count } from "@/components/Count";
 
 const searchThreshold = 6;
 
@@ -71,12 +72,12 @@ function TryLater({ bookmarks }: { bookmarks: FavoriteSource[] }) {
   const change = async (update: (list: FavoriteSource[]) => FavoriteSource[]): Promise<boolean> => {
     const fresh = await client.run("state");
     if (!fresh.ok) {
-      toast.show(fresh.error.message);
+      toast.fail(fresh.error.message);
       return false;
     }
     const { settings } = fresh.value as unknown as SourcesState;
     const saved = await saveSettings.run({ settings: { ...settings, favoriteSources: update(settings.favoriteSources) } });
-    if (!saved.ok) toast.show(saved.error.message);
+    if (!saved.ok) toast.fail(saved.error.message);
     return saved.ok;
   };
 
@@ -106,7 +107,7 @@ function TryLater({ bookmarks }: { bookmarks: FavoriteSource[] }) {
     <section aria-labelledby="try-later">
       <div className="sec-head">
         <div>
-          <h2 id="try-later" tabIndex={-1}>Try later<span className="count num">{bookmarks.length}</span></h2>
+          <h2 id="try-later" tabIndex={-1}>Try later<Count n={bookmarks.length} /></h2>
           <p className="sub">Bookmarked. Nothing installed.</p>
         </div>
         <button type="button" onClick={() => openInstall({ source: "repository", destination: "later" })}>Save a repository</button>
@@ -160,7 +161,7 @@ function CoreSources({ kit }: { kit: SourcesState["kit"] }) {
     <section aria-labelledby="core-sources">
       <div className="sec-head">
         <div>
-          <h2 id="core-sources">Core comes from<span className="count num">{kit.sources.length}</span></h2>
+          <h2 id="core-sources">Core comes from<Count n={kit.sources.length} /></h2>
           <p className="sub">Following a repository means AFK offers its new skills for Core. Nothing installs by itself.</p>
         </div>
       </div>
@@ -180,11 +181,11 @@ function CoreSource({ source, installed }: { source: SourcesState["kit"]["source
   const follow = useMutation("kit/follow");
   const update = useMutation("skills/update");
   const label = source.name ?? shortSource(source.source);
-  const fromRepository = isRepositoryReference(source.source);
+  const fromRepository = isRepositorySource(source.source);
 
   const toggleFollow = async (next: boolean) => {
     const result = await follow.run({ source: source.source, follow: next });
-    toast.show(result.ok ? `${next ? "Following" : "Stopped following"} ${label}` : result.error.message);
+    if (result.ok) toast.show(`${next ? "Following" : "Stopped following"} ${label}`); else toast.fail(result.error.message);
   };
 
   const refresh = async () => {
@@ -195,7 +196,7 @@ function CoreSource({ source, installed }: { source: SourcesState["kit"]["source
     toast.show(`Updating ${label}…`, { busy: true });
     const result = await update.run({ scope: "Global", names: installed });
     if (!result.ok) {
-      toast.show(result.error.message);
+      toast.fail(result.error.message);
       return;
     }
     const outcome = result.value as UpdateResult;

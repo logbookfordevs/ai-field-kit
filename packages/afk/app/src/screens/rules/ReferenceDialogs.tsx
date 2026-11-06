@@ -1,7 +1,8 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Dialog } from "@/components/Dialog";
 import { Field } from "@/components/Field";
-import { mentions, plural, refKey, refPathError, type Drafts } from "@/screens/rules/model";
+import { mentions, refKey, refPathError, type Drafts } from "@/screens/rules/model";
+import { plural } from "@/text/format";
 
 const stripPrefix = (path: string): string => path.trim().replace(/^references\//, "");
 

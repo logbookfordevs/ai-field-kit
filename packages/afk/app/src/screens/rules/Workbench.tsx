@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Menu, MenuItem } from "@/components/Menu";
 import {
-  CANONICAL, currentFile, dirtyFiles, lineCount, missingReferences, newRefName, plural, refKey,
+  CANONICAL, currentFile, dirtyFiles, lineCount, missingReferences, newRefName, refKey,
   type Drafts, type RuleFile,
 } from "@/screens/rules/model";
+import { plural } from "@/text/format";
 import "@/screens/rules/Rules.css";
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -169,6 +170,7 @@ function Editor({ drafts, busy, onEdit, onRevert, onSave, onAddReference, onRena
         <textarea
           ref={area}
           value={file.draft}
+          readOnly={busy}
           spellCheck={false}
           aria-label={`Contents of ${file.path}`}
           aria-describedby={footId}

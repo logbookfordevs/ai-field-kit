@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RulesDestinationState, RulesPreview, RulesState, RulesTargetPreview } from "../../../../src/fieldwork/rules.js";
 import { useClient } from "@/api/ClientProvider";
 import { useMutation, useOperation } from "@/api/hooks";
@@ -10,9 +10,10 @@ import { DestinationDialog, Destinations, DisconnectDialog, type DestinationInpu
 import { Diff } from "@/screens/rules/Diff";
 import {
   adoptDraft, applyServerState, addReference, clock, CANONICAL, diffRows, discardStash, editDraft, hasCanonical, hasEdits, markSaved, openFile,
-  plural, reloadFromDisk, removeReference, renameReference, restoreReference, restoreStash, revertAll, revertFile, RULES_END, RULES_START,
+  reloadFromDisk, removeReference, renameReference, restoreReference, restoreStash, revertAll, revertFile, RULES_END, RULES_START,
   savedText, startDocument, textFromDestination, type Drafts,
 } from "@/screens/rules/model";
+import { plural } from "@/text/format";
 import { AddReferenceDialog, RemoveReferenceDialog, RenameReferenceDialog } from "@/screens/rules/ReferenceDialogs";
 import { draftStore, useDrafts } from "@/screens/rules/store";
 import { PreviewDialog, ResultDialog, SaveFirstDialog, type SyncOutcome } from "@/screens/rules/SyncDialogs";
@@ -63,6 +64,7 @@ function RulesScreen() {
   const [actionErrors, setActionErrors] = useState<string[]>([]);
   const [lastRun, setLastRun] = useState("");
   const [saving, setSaving] = useState(false);
+  const savingNow = useRef(false);
 
   const state = read.data;
   const destinations = state?.destinations ?? [];
@@ -73,7 +75,7 @@ function RulesScreen() {
   const isSelected = (destination: Destination): boolean => selection[destination.id] ?? destination.status !== "off";
   const selectedIds = destinations.filter(destination => destination.status !== "off" && isSelected(destination)).map(destination => destination.id);
   const ready = hasCanonical(drafts);
-  const fail = (message: string): void => { setActionErrors(previous => unique([...previous, message])); toast.show(message); };
+  const fail = (message: string): void => { setActionErrors(previous => unique([...previous, message])); toast.fail(message); };
 
   useEffect(() => {
     if (!edited) return;
@@ -88,8 +90,10 @@ function RulesScreen() {
   };
 
   const save = async (): Promise<boolean> => {
+    if (savingNow.current) return false;
     const current = draftStore.get();
     if (!hasEdits(current)) return true;
+    savingNow.current = true;
     setSaving(true);
     try {
       const result = await saveFiles.run({ files: current.files.map(file => ({ path: file.path, content: file.draft })), expectedHash: current.baseHash });
@@ -102,13 +106,16 @@ function RulesScreen() {
       draftStore.update(drafts => markSaved(fresh.ok ? applyServerState(drafts, fresh.value, true) : drafts, clock()));
       setActionErrors([]);
       return true;
-    } finally { setSaving(false); }
+    } finally {
+      savingNow.current = false;
+      setSaving(false);
+    }
   };
 
   const previewSync = async (ids: string[] = selectedIds): Promise<void> => {
     const result = await client.run("rules/preview", { ids });
     if (result.ok) setDialog({ kind: "preview", preview: result.value, error: "" });
-    else toast.show(result.error.message);
+    else toast.fail(result.error.message);
   };
 
   const onSave = async (): Promise<void> => {
@@ -147,7 +154,7 @@ function RulesScreen() {
 
   const reviewConflict = async (id: string): Promise<void> => {
     const result = await client.run("rules/preview", { ids: [id] });
-    if (!result.ok) { toast.show(result.error.message); return; }
+    if (!result.ok) { toast.fail(result.error.message); return; }
     const target = result.value.targets[0];
     if (!target) { toast.show("Destination no longer exists. Check destinations again."); return; }
     setDialog({ kind: "conflict", preview: result.value, target, error: "", stale: false });
@@ -155,7 +162,7 @@ function RulesScreen() {
 
   const adoptRegion = async (id: string): Promise<void> => {
     const result = await adopt.run({ id });
-    if (!result.ok) { if (dialog.kind === "conflict") setDialog({ ...dialog, error: result.error.message }); toast.show(result.error.message); return; }
+    if (!result.ok) { if (dialog.kind === "conflict") setDialog({ ...dialog, error: result.error.message }); toast.fail(result.error.message); return; }
     draftStore.update(current => adoptDraft(current, result.value.content, clock()));
     closeDialog();
     toast.show("Destination edits loaded as a draft. Review and save before syncing.");
@@ -170,7 +177,7 @@ function RulesScreen() {
     if (message) {
       setActionErrors(previous => unique([...previous, message]));
       setDialog({ ...dialog, error: message, stale: true });
-      toast.show(message);
+      toast.fail(message);
       return;
     }
     closeDialog();
@@ -208,14 +215,14 @@ function RulesScreen() {
     const found = destinations.find(destination => destination.id === id);
     if (!found) return;
     const result = await saveDestination.run({ destination: { id, name: found.name, kind: found.kind, path: found.path, ...(found.claudeMdImport ? { claudeMdImport: true } : {}) } });
-    toast.show(result.ok ? "Destination reconnected. Preview before syncing." : result.error.message);
+    if (result.ok) toast.show("Destination reconnected. Preview before syncing."); else toast.fail(result.error.message);
   };
 
   const startRules = async (from?: string): Promise<void> => {
     let text = "# Agent rules\n\n";
     if (from) {
       const existing = await client.run("rules/existing", { id: from });
-      if (!existing.ok) { toast.show(existing.error.message); return; }
+      if (!existing.ok) { toast.fail(existing.error.message); return; }
       text = textFromDestination(existing.value.text);
       if (!text) { toast.show("This destination contains no text to copy. Start a new document or paste your rules."); return; }
     }

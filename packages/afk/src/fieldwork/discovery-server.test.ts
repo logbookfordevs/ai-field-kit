@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startFieldwork } from "./server.js";
+import { fixtureWeb } from "./web.test-helper.js";
 import { emptySettings, SettingsStore } from "./settings.js";
 import { SourcePreparation } from "./preparation.js";
 
@@ -34,7 +35,7 @@ it("returns prepared repository and local descriptions through authenticated dis
   const discover = vi.spyOn(SourcePreparation.prototype, "discover").mockResolvedValue(["deploy", "guide", "broken"]);
   const directory = vi.spyOn(SourcePreparation.prototype, "directory").mockResolvedValue(prepared);
   const paths = vi.spyOn(SourcePreparation.prototype, "paths").mockResolvedValue({ deploy: "agent-skills/releases/deploy", guide: "agent-skills/guide" });
-  const app = await startFieldwork(store);
+  const app = await startFieldwork(store, 0, { web: await fixtureWeb(home) });
   cleanups.push(app.close);
   const token = (await (await fetch(app.url)).text()).match(/window.afkToken="([^"]+)"/)?.[1];
   expect(token).toBeTruthy();

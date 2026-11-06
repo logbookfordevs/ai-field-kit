@@ -232,5 +232,4 @@ export function diffRows(before: string | null, after: string | null): DiffRow[]
   return output;
 }
 
-export const plural = (count: number, word: string, many = `${word}s`): string => `${count} ${count === 1 ? word : many}`;
 export const clock = (): string => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });

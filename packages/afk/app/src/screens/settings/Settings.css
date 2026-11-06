@@ -9,7 +9,7 @@ section.set-grid+section.set-grid{margin-top:0}
 .paths{display:grid;gap:8px}
 .agent-title{display:flex;align-items:center;gap:12px}
 .agent-icon{flex:none;width:28px;height:28px;border-radius:var(--radius-compact);object-fit:contain}
-.agent-icon-letter{display:inline-grid;place-items:center;background:var(--warm);color:var(--muted);font:600 13px/1 var(--font-mono)}
+.agent-icon-letter{display:inline-grid;place-items:center;background:var(--warm);color:var(--fg);font:600 13px/1 var(--font-mono)}
 .agent-title .name{min-width:0;overflow-wrap:anywhere}
 .always-on{font-size:14px;font-weight:500;color:var(--muted)}
 .form-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}

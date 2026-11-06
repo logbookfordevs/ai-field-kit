@@ -4,7 +4,7 @@ import { Segmented } from "@/components/Segmented";
 import { useToast } from "@/components/Toast";
 import type { SkillEditorView } from "@/screens/skills/api";
 import { Markdown } from "@/screens/skills/Markdown";
-import { shortSource } from "@/screens/skills/model";
+import { shortSource } from "@/text/format";
 import { useRun } from "@/screens/skills/useRun";
 
 type Pane = "edit" | "preview";

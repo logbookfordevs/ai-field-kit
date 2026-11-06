@@ -8,7 +8,7 @@ export function useAction<K extends OperationName>(operation: K) {
   const toast = useToast();
   const run = async (input: OperationInput<K>, done: string): Promise<boolean> => {
     const result = await change.run(input);
-    toast.show(result.ok ? done : result.error.message);
+    if (result.ok) toast.show(done); else toast.fail(result.error.message);
     return result.ok;
   };
   return { run, pending: change.pending };

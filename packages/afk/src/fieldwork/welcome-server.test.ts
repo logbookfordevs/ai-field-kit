@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startFieldwork } from "./server.js";
+import { fixtureWeb } from "./web.test-helper.js";
 import { emptySettings, SettingsStore, validateSettings, type Settings } from "./settings.js";
 
 const cleanups: (() => Promise<void>)[] = [];
@@ -20,7 +21,8 @@ it("persists welcome dismissal across server sessions without losing serialized 
   await mkdir(skill, { recursive: true });
   await writeFile(join(skill, "SKILL.md"), "---\nname: example\n---\nBody\n");
 
-  const app = await startFieldwork(store);
+  const web = await fixtureWeb(home);
+  const app = await startFieldwork(store, 0, { web });
   cleanups.push(app.close);
   const token = (await (await fetch(app.url)).text()).match(/window.afkToken="([^"]+)"/)?.[1];
   expect(token).toBeTruthy();
@@ -49,7 +51,7 @@ it("persists welcome dismissal across server sessions without losing serialized 
   expect(await store.read()).toEqual(saved);
   await app.close();
 
-  const restarted = await startFieldwork(new SettingsStore(home));
+  const restarted = await startFieldwork(new SettingsStore(home), 0, { web });
   cleanups.push(restarted.close);
   const newToken = (await (await fetch(restarted.url)).text()).match(/window.afkToken="([^"]+)"/)?.[1];
   const response = await fetch(restarted.url + "/api/state", { headers: { "x-afk-token": newToken! } });

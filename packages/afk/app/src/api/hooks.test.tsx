@@ -1,6 +1,8 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useQuery } from "@tanstack/react-query";
 import { expect, it } from "vitest";
+import { useClient } from "@/api/ClientProvider";
 import { useOperation, useMutation } from "@/api/hooks";
 import { fail, fakeClient } from "@/test/fake-client";
 import { renderWithApp } from "@/test/render";
@@ -44,4 +46,28 @@ it("keeps a failed change as a value next to the control", async () => {
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Choose a valid skill name.");
   await waitFor(() => expect(client.calls.filter(call => call.operation === "kit/state")).toHaveLength(1));
+});
+
+function RulesAndVersion() {
+  const rules = useOperation("rules/state");
+  const state = useOperation("state");
+  const save = useMutation("rules/save");
+  const client = useClient();
+  const version = useQuery({ queryKey: ["app", "update-check"], queryFn: async () => (await client.app.updateCheck()).ok, staleTime: Infinity });
+  if (!rules.data || !state.data || version.data === undefined) return <p>Loading</p>;
+  return <button type="button" onClick={() => void save.run({ files: [] })}>Save rules</button>;
+}
+
+it("refreshes only the reads a change can affect, and never the app's version check", async () => {
+  const client = fakeClient({ "rules/state": () => ({}), state: () => ({}), "rules/save": () => ({}) });
+  let versionChecks = 0;
+  const check = client.app.updateCheck;
+  client.app.updateCheck = async options => { versionChecks++; return await check(options); };
+  renderWithApp(<RulesAndVersion />, { client });
+
+  await userEvent.click(await screen.findByRole("button", { name: "Save rules" }));
+
+  await waitFor(() => expect(client.calls.filter(call => call.operation === "rules/state")).toHaveLength(2));
+  expect(client.calls.filter(call => call.operation === "state")).toHaveLength(1);
+  expect(versionChecks).toBe(1);
 });

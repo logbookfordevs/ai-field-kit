@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { Icon } from "@/components/Icon";
+import { Menu, MenuItem, MenuNote, MenuSeparator } from "@/components/Menu";
 import { useToast } from "@/components/Toast";
+import { useNarrow } from "@/shell/useNarrow";
 import type { BulkResult } from "@/screens/skills/api";
-import { plural } from "@/screens/skills/model";
+import { plural } from "@/text/format";
 import type { DialogRequest } from "@/screens/skills/SkillDialogs";
 import { useRun } from "@/screens/skills/useRun";
 import type { Selection } from "@/screens/skills/useSelection";
@@ -22,17 +24,17 @@ export function SelectShown({ selection, shown }: { selection: Selection; shown:
 export function BulkBar({ scope, selection, shown, onDialog }: { scope: string; selection: Selection; shown: string[]; onDialog: (request: DialogRequest) => void }) {
   const run = useRun();
   const toast = useToast();
-  const [mode, setMode] = useState("");
+  const narrow = useNarrow();
   const count = selection.names.length;
   const hidden = selection.names.filter(name => !shown.includes(name)).length;
   const allShownPicked = shown.length > 0 && shown.every(name => selection.has(name));
   const global = scope === "Global";
 
   const apply = async (change: Action) => {
+    if (selection.busy) return;
     selection.setBusy(true);
     const result = await run("skills/bulk", { names: selection.names, scope, ...change });
     selection.setBusy(false);
-    setMode("");
     if (!result.ok) return;
     report(result.value);
   };
@@ -48,34 +50,62 @@ export function BulkBar({ scope, selection, shown, onDialog }: { scope: string; 
 
   if (!count) return null;
 
+  const busy = selection.busy;
+  const setMode = (mode: string) => void apply({ action: "invocation", mode });
+  const modeItems = (
+    <>
+      <MenuItem onSelect={() => setMode("Manual only")}>Manual only</MenuItem>
+      <MenuItem onSelect={() => setMode("Automatic allowed")}>Automatic allowed</MenuItem>
+      <MenuItem onSelect={() => setMode("")}>Each skill’s default</MenuItem>
+    </>
+  );
+  const update = () => onDialog({ kind: "update", names: selection.names, title: "Update selected skills", scope });
+  const remove = () => onDialog({ kind: "bulk-delete", names: selection.names, scope });
+  const turnOn = global ? <button type="button" disabled={busy} onClick={() => void apply({ action: "enable" })}>Turn on</button> : null;
+
+  const renderActions = () => {
+    if (narrow) {
+      return (
+        <div className="bulk-acts">
+          {turnOn}
+          <Menu label="More actions for selected" triggerClassName="icon-btn on-accent">
+            {global ? <MenuItem onSelect={() => void apply({ action: "disable" })}>Turn off</MenuItem> : null}
+            {global ? <MenuSeparator /> : null}
+            <MenuNote>How they start</MenuNote>
+            {modeItems}
+            <MenuSeparator />
+            <MenuItem onSelect={update}>Update</MenuItem>
+            {allShownPicked ? null : <MenuItem onSelect={() => selection.add(shown)}>Select shown</MenuItem>}
+            <MenuItem onSelect={selection.clear}>Clear selection</MenuItem>
+            <MenuSeparator />
+            <MenuItem danger onSelect={remove}>Delete…</MenuItem>
+          </Menu>
+        </div>
+      );
+    }
+    return (
+      <div className="bulk-acts">
+        {turnOn}
+        {global ? <button type="button" disabled={busy} onClick={() => void apply({ action: "disable" })}>Turn off</button> : null}
+        <Menu label="How they start" trigger={<>How they start <Icon name="chev" size="sm" className="down" /></>} triggerClassName="bulk-mode">
+          {modeItems}
+        </Menu>
+        <button type="button" disabled={busy} onClick={update}>Update</button>
+        <button type="button" className="danger-outline" disabled={busy} onClick={remove}>Delete…</button>
+        {allShownPicked ? null : <button type="button" className="text" disabled={busy} onClick={() => selection.add(shown)}>Select shown</button>}
+        <button type="button" className="text" disabled={busy} onClick={selection.clear}>Clear selection</button>
+      </div>
+    );
+  };
+
   return (
     <div className="bulk" role="group" aria-label="Selected skills">
       <p className="bulk-count">
         <b>{count} selected</b>
         {hidden ? <span className="meta"> · {hidden} hidden by filters</span> : null}
-        {selection.busy ? <span className="meta"> · Applying…</span> : null}
+        {busy ? <span className="meta"> · Applying…</span> : null}
       </p>
-      <div className="bulk-acts">
-        {global ? <button type="button" disabled={selection.busy} onClick={() => void apply({ action: "enable" })}>Turn on</button> : null}
-        {global ? <button type="button" disabled={selection.busy} onClick={() => void apply({ action: "disable" })}>Turn off</button> : null}
-        <label className="bulk-mode">
-          <span className="vh">How the selected skills start</span>
-          <select value={mode} disabled={selection.busy} onChange={event => {
-            const value = event.target.value;
-            setMode(value);
-            if (value) void apply({ action: "invocation", mode: value === "default" ? "" : value });
-          }}>
-            <option value="">How they start…</option>
-            <option value="Manual only">Manual only</option>
-            <option value="Automatic allowed">Automatic allowed</option>
-            <option value="default">Each skill’s default</option>
-          </select>
-        </label>
-        <button type="button" disabled={selection.busy} onClick={() => onDialog({ kind: "update", names: selection.names, title: "Update selected skills", scope })}>Update</button>
-        <button type="button" className="danger-outline" disabled={selection.busy} onClick={() => onDialog({ kind: "bulk-delete", names: selection.names, scope })}>Delete…</button>
-        {allShownPicked ? null : <button type="button" className="text" disabled={selection.busy} onClick={() => selection.add(shown)}>Select shown</button>}
-        <button type="button" className="text" disabled={selection.busy} onClick={selection.clear}>Clear selection</button>
-      </div>
+      {renderActions()}
     </div>
   );
 }

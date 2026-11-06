@@ -55,11 +55,11 @@ export function AgentFolders() {
   const toggle = async (folder: AgentFolder, on: boolean) => {
     const name = folder.names.join(", ");
     const result = on ? await enable.run({ path: folder.path }) : await disable.run({ path: folder.path });
-    toast.show(result.ok ? (on ? `Linked skills into ${name}.` : `Removed AFK's links from ${name}.`) : result.error.message);
+    if (result.ok) toast.show((on ? `Linked skills into ${name}.` : `Removed AFK's links from ${name}.`)); else toast.fail(result.error.message);
   };
   const removeFolder = async (folder: AgentFolder) => {
     const result = await remove.run({ path: folder.path });
-    toast.show(result.ok ? `Removed ${folder.names.join(", ")}.` : result.error.message);
+    if (result.ok) toast.show(`Removed ${folder.names.join(", ")}.`); else toast.fail(result.error.message);
   };
 
   const folderRow = (folder: AgentFolder) => {

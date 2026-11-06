@@ -25,6 +25,11 @@ export function RunDialog({ tool, kind, home, onClose }: RunDialogProps) {
   const failed = latest?.code !== undefined && latest.code !== 0;
   const label = kind === "update" ? "Update" : "Install";
   const buttonText = running ? "Running…" : latest ? "Run again" : "Run command";
+  const finished = !running && latest && !hasFailedToStart ? latest : undefined;
+  const warnings = running ? [] : latest?.warnings ?? [];
+  const reapplied = running ? [] : latest?.reapplied ?? [];
+  const hasWarnings = warnings.length > 0;
+  const hasReapplied = reapplied.length > 0;
 
   const start = async () => {
     reset();
@@ -60,12 +65,12 @@ export function RunDialog({ tool, kind, home, onClose }: RunDialogProps) {
       </div>
       <div className="tool-run-result" aria-live="polite">
         {running ? <p className="tool-state"><span className="spin" aria-hidden="true" />Running…</p> : null}
-        {!running && latest && !hasFailedToStart ? <p className={failed ? "tool-state failed" : "tool-state"}><strong>{failed ? "Last run failed" : "Last run finished"}</strong><span>Exit {latest.code}</span></p> : null}
+        {finished ? <p className={failed ? "tool-state failed" : "tool-state"}><strong>{failed ? "Last run failed" : "Last run finished"}</strong><span>Exit {finished.code}</span></p> : null}
         {error ? <p className="field-error" role="alert">{error.message}</p> : null}
       </div>
       {showsOutput ? <RunOutput output={latest.output} label={`Output of ${tool.name}`} /> : null}
-      {!running && latest?.warnings?.length ? <ul className="tool-warnings">{latest.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul> : null}
-      {!running && latest?.reapplied?.length ? <p className="hint">Manual/Automatic choices reapplied to {latest.reapplied.join(", ")}.</p> : null}
+      {hasWarnings ? <ul className="tool-warnings">{warnings.map(warning => <li key={warning}>{warning}</li>)}</ul> : null}
+      {hasReapplied ? <p className="hint">Manual/Automatic choices reapplied to {reapplied.join(", ")}.</p> : null}
     </Dialog>
   );
 }

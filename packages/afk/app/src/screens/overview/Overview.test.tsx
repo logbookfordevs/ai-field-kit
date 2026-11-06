@@ -215,6 +215,12 @@ describe("your setup", () => {
     expect(screen.getByRole("link", { name: /Backup/ })).toHaveTextContent(/Saved 2 min ago · leo\/afk-library/);
   });
 
+  it("says the backup is paused while an edit made outside AFK waits, even with nothing new to save", async () => {
+    setup({ "backup/state": () => backupState({ held: true, attention: 1, waiting: 0 }) });
+
+    expect(await screen.findByRole("link", { name: /Backup/ })).toHaveTextContent("Paused · 1 edit to resolve");
+  });
+
   it("counts every saved tool and every skill still to review", async () => {
     const tools = [{ id: 1, name: "Atlas", install: "x", update: "", provides: ["atlas"] }, { id: 2, name: "Linter", install: "y", update: "" }];
     const stored = { ...setupState, settings: { ...setupState.settings, tools }, inventories: { Global: [{ name: "kami", available: true, storage: "library" }, { name: "local-notes", available: true }] } };
@@ -228,13 +234,14 @@ describe("your setup", () => {
 describe("navigation signal", () => {
   function attention(handlers: Parameters<typeof fakeClient>[0]) {
     const client = fakeClient(handlers);
-    return renderHook(() => overview.useAttention(), { wrapper: ({ children }) => <ClientProvider client={client}>{children}</ClientProvider> });
+    return { client, ...renderHook(() => overview.useAttention(), { wrapper: ({ children }) => <ClientProvider client={client}>{children}</ClientProvider> }) };
   }
 
-  it("says how many things need you, as text", async () => {
-    const { result } = attention({ "kit/state": () => reviewKit, "backup/state": () => offBackup() });
+  it("says how many things need you, as text, reading only the kit and the backup", async () => {
+    const { result, client } = attention({ "kit/state": () => reviewKit, "backup/state": () => offBackup() });
 
     await waitFor(() => expect(result.current).toEqual({ text: "2 need you", tone: "attention" }));
+    expect(client.calls.map(call => call.operation).sort()).toEqual(["backup/state", "kit/state"]);
   });
 
   it("is silent when all is set and marks a failing backup as a problem", async () => {

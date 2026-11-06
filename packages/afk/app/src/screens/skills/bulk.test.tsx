@@ -6,6 +6,7 @@ import { screen as skills } from "@/screens/skills";
 import { agentFolders, appState } from "@/screens/skills/fixtures";
 import { fakeClient } from "@/test/fake-client";
 import { renderWithApp } from "@/test/render";
+import { narrow } from "@/test/viewport";
 
 const Screen = skills.Screen;
 const review = { names: ["kami", "quill"], scope: "Global", items: [{ name: "kami", preview: { name: "kami", path: "/lib/kami" } }, { name: "quill", error: "Disable Writing first." }] };
@@ -42,18 +43,41 @@ it("turns the selected skills on and off together", async () => {
   await waitFor(() => expect(calls(client, "skills/bulk")).toEqual([{ names: ["kami", "quill"], scope: "Global", action: "disable" }]));
 });
 
-it("sets how the selected skills start, or restores each default", async () => {
+async function chooseMode(bar: HTMLElement, mode: string) {
+  const trigger = within(bar).getByRole("button", { name: "How they start" });
+  await userEvent.click(trigger);
+  await userEvent.click(within(document.getElementById(trigger.getAttribute("aria-controls") ?? "")!).getByRole("button", { name: mode }));
+}
+
+it("sets how the selected skills start, or restores each default, only when a choice is made", async () => {
   const client = setup();
   const bar = await pick("kami");
 
-  await userEvent.selectOptions(within(bar).getByRole("combobox", { name: "How the selected skills start" }), "Manual only");
+  await chooseMode(bar, "Manual only");
   await waitFor(() => expect(calls(client, "skills/bulk")).toHaveLength(1));
-  await userEvent.selectOptions(within(bar).getByRole("combobox", { name: "How the selected skills start" }), "default");
+  await chooseMode(bar, "Each skill’s default");
 
   await waitFor(() => expect(calls(client, "skills/bulk")).toEqual([
     { names: ["kami"], scope: "Global", action: "invocation", mode: "Manual only" },
     { names: ["kami"], scope: "Global", action: "invocation", mode: "" },
   ]));
+});
+
+it("keeps the bar to one line on a phone, with the other actions in a menu", async () => {
+  narrow(true);
+  try {
+    const client = setup();
+    const bar = await pick("kami", "quill");
+
+    const trigger = within(bar).getByRole("button", { name: "More actions for selected" });
+    const menu = document.getElementById(trigger.getAttribute("aria-controls") ?? "")!;
+    const outsideMenu = within(bar).getAllByRole("button").filter(button => !menu.contains(button));
+    expect(outsideMenu.map(button => button.getAttribute("aria-label") ?? button.textContent)).toEqual(["Turn on", "More actions for selected"]);
+    await userEvent.click(trigger);
+    await userEvent.click(within(menu).getByRole("button", { name: "Automatic allowed" }));
+
+    await waitFor(() => expect(calls(client, "skills/bulk")).toEqual([{ names: ["kami", "quill"], scope: "Global", action: "invocation", mode: "Automatic allowed" }]));
+  } finally { narrow(false); }
 });
 
 it("selects what the filters show and counts selected skills hidden by filters", async () => {

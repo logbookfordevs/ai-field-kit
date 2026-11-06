@@ -4,7 +4,9 @@ import { Menu, MenuItem, MenuSeparator } from "@/components/Menu";
 import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import type { InvocationMode } from "@/screens/skills/api";
-import { fromLabel, shortSource, type Skill } from "@/screens/skills/model";
+import { fromLabel, type Skill } from "@/screens/skills/model";
+import { hrefFor } from "@/shell/router";
+import { shortSource } from "@/text/format";
 
 export const modeOptions = [{ value: "Manual only", label: "Manual" }, { value: "Automatic allowed", label: "Automatic" }] as const;
 
@@ -43,16 +45,29 @@ function availabilityNote(skill: Skill): string | undefined {
   return undefined;
 }
 
-export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote, sourceLine = false }: {
+/** A change to this skill that AFK refused; `outsideEdit` when an edit made outside AFK is why. */
+export interface RowFailure {
+  message: string;
+  outsideEdit: boolean;
+}
+
+export function FailureNote({ id, failure }: { id: string; failure: RowFailure }) {
+  if (!failure.outsideEdit) return <p className="s-note warn" id={id} role="alert">{failure.message}</p>;
+  return <p className="s-note warn" id={id} role="alert">Your library has an edit made outside AFK. <a href={hrefFor("backup")}>Review it in Backup</a></p>;
+}
+
+export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote, failure, sourceLine = false }: {
   skill: Skill;
   selected: boolean;
   onSelect: (name: string, selected: boolean) => void;
   actions: RowActions;
   busy: boolean;
-  backupNote?: string | undefined;
+  backupNote?: { text: string; warn: boolean } | undefined;
+  failure?: RowFailure | undefined;
   sourceLine?: boolean;
 }) {
   const noteId = useId();
+  const failureId = useId();
   const missing = !skill.entry;
   const tool = skill.place === "tool";
   const review = skill.place === "review";
@@ -66,6 +81,7 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
   const dropLabel = skill.place === "pack" ? `Drop from ${skill.owner}` : "Drop from Core";
   const hasDuplicate = Boolean(skill.entry?.duplicate);
   const hasDrift = Boolean(skill.drift);
+  const describedBy = [note ? noteId : "", failure ? failureId : ""].filter(Boolean).join(" ") || undefined;
   const editLabel = tool || skill.entry?.readOnly || skill.place === "pack" || !skill.entry?.storage ? "View files" : "Edit files";
 
   const renderFrom = () => {
@@ -94,7 +110,7 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
         </span>
       );
     }
-    return <Switch label={skill.name} checked={skill.on} disabled={busy || heldByPack} {...(note ? { describedBy: noteId } : {})} onChange={next => actions.setOn(skill, next)} />;
+    return <Switch label={skill.name} checked={skill.on} disabled={busy || heldByPack} {...(describedBy ? { describedBy } : {})} onChange={next => actions.setOn(skill, next)} />;
   };
 
   return (
@@ -109,12 +125,13 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
         {skill.entry?.updatesStopped ? <p className="s-note">Your version · updates stopped</p> : null}
         {hasDuplicate ? <p className="s-note warn">Two copies on this machine. <button type="button" className="text" disabled={busy} onClick={() => actions.resolveDuplicate(skill)}>Resolve…</button></p> : null}
         {hasDrift ? <p className="s-note warn">Files differ from your choice. <button type="button" className="text" disabled={busy} onClick={() => actions.setMode(skill, skill.drift ?? "")}>Reapply</button></p> : null}
-        {backupNote ? <p className="s-note warn">{backupNote}</p> : null}
+        {backupNote ? <p className={backupNote.warn ? "s-note warn" : "s-note"}>{backupNote.text}</p> : null}
+        {failure ? <FailureNote id={failureId} failure={failure} /> : null}
       </div>
       <div className="s-from">{renderFrom()}</div>
       <div className="s-on">{renderState()}</div>
       <div className="s-inv">
-        {missing ? null : <Segmented legend={`How ${skill.name} starts`} options={modeOptions} value={skill.mode} disabled={busy} onChange={mode => actions.setMode(skill, mode)} />}
+        {missing ? null : <Segmented legend={`How ${skill.name} starts`} options={modeOptions} value={skill.mode} disabled={busy} describedBy={describedBy} onChange={mode => actions.setMode(skill, mode)} />}
       </div>
       <div className="s-more">
         <Menu label={`More for ${skill.name}`}>

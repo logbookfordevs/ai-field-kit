@@ -7,6 +7,9 @@ export default defineConfig({
         test: {
           name: "cli",
           include: ["src/**/*.test.ts"],
+          // These tests spawn real git and shell processes; on a busy machine one can take several seconds.
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
           exclude: ["dist/**", "node_modules/**"],
         },
       },

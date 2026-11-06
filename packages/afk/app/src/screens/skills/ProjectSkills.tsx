@@ -8,7 +8,8 @@ import { navigate } from "@/shell/router";
 import type { AppState } from "@/screens/skills/api";
 import { BulkBar, SelectShown } from "@/screens/skills/BulkBar";
 import { InvocationInfo } from "@/screens/skills/InvocationInfo";
-import { filterSkills, isFiltered, noFilters, plural, projectSkills, shortSource, skillsDescription, type Skill } from "@/screens/skills/model";
+import { filterSkills, isFiltered, noFilters, projectSkills, skillsDescription, type Skill } from "@/screens/skills/model";
+import { plural, shortSource } from "@/text/format";
 import { SharingDialog } from "@/screens/skills/SharingDialog";
 import { SkillDialogs, type DialogRequest } from "@/screens/skills/SkillDialogs";
 import { SkillPanel } from "@/screens/skills/SkillPanel";
@@ -16,6 +17,7 @@ import { modeOptions, unavailable, updateBlocked, type RowActions } from "@/scre
 import { Toolbar } from "@/screens/skills/Toolbar";
 import { useRun } from "@/screens/skills/useRun";
 import { useSelection, type Selection } from "@/screens/skills/useSelection";
+import { UpdateAll } from "@/screens/skills/UpdateAll";
 
 function ProjectRow({ skill, selection, actions }: { skill: Skill; selection: Selection; actions: RowActions }) {
   const nested = Boolean(skill.folder);
@@ -125,7 +127,7 @@ export function ProjectSkills({ state, scope, scopePicker }: { state: AppState; 
     <Page
       title="Skills"
       description={skillsDescription}
-      actions={hasOwn ? <button type="button" onClick={() => setDialog({ kind: "update", title: `Update skills in ${scope}`, scope })}>Update all</button> : undefined}
+      actions={hasOwn ? <UpdateAll onSelect={() => setDialog({ kind: "update", title: `Update skills in ${scope}`, scope })} /> : undefined}
     >
       {scopePicker}
       <div className="strip quiet">

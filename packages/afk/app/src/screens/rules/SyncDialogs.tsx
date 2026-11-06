@@ -1,6 +1,6 @@
 import type { RulesPreview, RulesTargetPreview } from "../../../../src/fieldwork/rules.js";
 import { Dialog } from "@/components/Dialog";
-import { plural } from "@/screens/rules/model";
+import { plural } from "@/text/format";
 import { Diff } from "@/screens/rules/Diff";
 import { Status, statusLabel } from "@/screens/rules/Status";
 import "@/screens/rules/Rules.css";

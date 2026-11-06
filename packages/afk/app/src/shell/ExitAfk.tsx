@@ -12,7 +12,7 @@ export function ExitButton({ onExited }: { onExited: () => void }) {
     const result = await client.app.exit();
     if (result.ok) { onExited(); return; }
     setExiting(false);
-    toast.show(result.error.message);
+    toast.fail(result.error.message);
   };
 
   return <button type="button" className="text exit-afk" disabled={exiting} onClick={() => void exit()}>{exiting ? "Exiting…" : "Exit AFK"}</button>;

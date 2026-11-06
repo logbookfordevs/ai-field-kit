@@ -4,14 +4,15 @@ import { Icon } from "@/components/Icon";
 import { PathCard } from "@/components/PathCard";
 import { Progress } from "@/components/Progress";
 import { NameGroups, type NameGroupData } from "@/first-run/NameGroups";
+import { placeDefinitions } from "@/text/places";
 
 const named = (entries: readonly { name: string }[]): string[] => entries.map(entry => entry.name);
 
 function groupsOf(plan: LibraryInitPlan): NameGroupData[] {
   return [
-    { key: "core", title: "Core skills", description: "On every machine, always on, backed up.", names: named(plan.skills) },
-    { key: "pack", title: "Pack skills", description: "Kept by AFK. Their packs are backed up; the files download again.", names: named(plan.packSkills) },
-    { key: "machine", title: "This machine only", description: "Installed here, never backed up. AFK keeps them on this machine.", names: named([...plan.machineSkills, ...plan.offToolSkills]) },
+    { key: "core", title: "Core skills", description: placeDefinitions.core, names: named(plan.skills) },
+    { key: "pack", title: "Pack skills", description: placeDefinitions.pack, names: named(plan.packSkills) },
+    { key: "machine", title: "This machine only", description: placeDefinitions.machine, names: named([...plan.machineSkills, ...plan.offToolSkills]) },
     { key: "tool", title: "Tool skills", description: "Stay with the tools that install them. AFK keeps your Manual/Automatic choices.", names: plan.toolSkills },
     { key: "missing", title: "Missing from this machine", description: "In Core but not installed here, so they are skipped.", names: plan.missing },
     { key: "rules", title: "Agent rules", description: "Copied into the library.", names: plan.rules },

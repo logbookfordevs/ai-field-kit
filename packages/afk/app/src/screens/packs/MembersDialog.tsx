@@ -2,7 +2,8 @@ import { useId, useState } from "react";
 import { useMutation } from "@/api/hooks";
 import { Dialog } from "@/components/Dialog";
 import { Icon } from "@/components/Icon";
-import { candidatesFor, groupsFor, plural, type PackView } from "@/screens/packs/model";
+import { candidatesFor, groupsFor, type PackView } from "@/screens/packs/model";
+import { plural } from "@/text/format";
 import type { SkillEntry } from "@/screens/packs/types";
 
 export interface MembersDialogProps {

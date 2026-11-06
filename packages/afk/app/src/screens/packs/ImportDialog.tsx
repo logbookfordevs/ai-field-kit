@@ -3,7 +3,8 @@ import { useClient } from "@/api/ClientProvider";
 import { useMutation } from "@/api/hooks";
 import { Dialog } from "@/components/Dialog";
 import { Segmented } from "@/components/Segmented";
-import { groupsOf, originLabel, plural } from "@/screens/packs/model";
+import { groupsOf, originLabel } from "@/screens/packs/model";
+import { plural } from "@/text/format";
 import type { ImportProposal } from "@/screens/packs/types";
 
 type Mode = "json" | "link";

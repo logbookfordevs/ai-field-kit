@@ -345,14 +345,21 @@ export class SettingsStore {
     }
   }
 
+  // A sync can briefly remove the file; only a machine that saved settings before, or a custom location, can be in that gap.
   private async readPortable(): Promise<string> {
     for (let attempt = 0; ; attempt++) {
       try { return await readFile(this.path, "utf8"); }
       catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT" || attempt === 4) throw error;
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT" || attempt === 4 || !await this.mayBeSyncing()) throw error;
         await new Promise(done => setTimeout(done, 100));
       }
     }
+  }
+
+  private async mayBeSyncing(): Promise<boolean> {
+    if (this.path !== resolve(this.home, ".afk/settings.json")) return true;
+    try { await readdir(join(this.home, ".afk/local")); return true; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return false; throw error; }
   }
 
   private identifier(legacy = false): string {

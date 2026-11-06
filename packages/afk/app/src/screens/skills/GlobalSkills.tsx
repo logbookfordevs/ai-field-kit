@@ -1,5 +1,6 @@
 import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
 import { useOperation } from "@/api/hooks";
+import type { OperationInput, OperationName } from "@/api/operations";
 import { EmptyState } from "@/components/EmptyState";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/Toast";
@@ -9,10 +10,12 @@ import type { AppState, InvocationMode } from "@/screens/skills/api";
 import { BulkBar, SelectShown } from "@/screens/skills/BulkBar";
 import { SkillDialogs, type DialogRequest } from "@/screens/skills/SkillDialogs";
 import { InvocationInfo } from "@/screens/skills/InvocationInfo";
-import { filterSkills, fromOptions, globalSkills, isFiltered, noFilters, plural, skillsDescription, type Filters, type Skill } from "@/screens/skills/model";
+import { filterSkills, fromOptions, globalSkills, isFiltered, noFilters, skillsDescription, type Filters, type Skill } from "@/screens/skills/model";
+import { plural } from "@/text/format";
 import { SkillPanel } from "@/screens/skills/SkillPanel";
-import { SkillRow, type RowActions } from "@/screens/skills/SkillRow";
+import { SkillRow, type RowActions, type RowFailure } from "@/screens/skills/SkillRow";
 import { Toolbar } from "@/screens/skills/Toolbar";
+import { UpdateAll } from "@/screens/skills/UpdateAll";
 import { useRun } from "@/screens/skills/useRun";
 import { useSelection } from "@/screens/skills/useSelection";
 
@@ -20,15 +23,16 @@ function initialFilters(params: URLSearchParams): Filters {
   return { ...noFilters, query: params.get("q") ?? "", from: params.get("from") ?? "all" };
 }
 
-function useBackupNotes(): (skill: Skill) => string | undefined {
+function useBackupNotes(): { note: (skill: Skill) => { text: string; warn: boolean } | undefined; outsideEdit: boolean } {
   const { data } = useOperation("backup/state", { brief: false });
-  return (skill: Skill) => {
+  const note = (skill: Skill) => {
     if (!data || !skill.entry) return undefined;
-    if (data.attention.some(item => item.name === skill.name)) return "Changed outside AFK. Review it in Backup.";
+    if (data.attention.some(item => item.name === skill.name)) return { text: "Changed outside AFK. Review it in Backup.", warn: true };
     const backupOn = data.status.state !== "off";
     const unpushed = skill.place === "core" && backupOn && data.unpushed.includes(skill.name);
-    return unpushed ? "Saved · not pushed yet" : undefined;
+    return unpushed ? { text: "Saved · not pushed yet", warn: false } : undefined;
   };
+  return { note, outsideEdit: Boolean(data?.status.held) };
 }
 
 export function GlobalSkills({ state, params, scopePicker }: { state: AppState; params: URLSearchParams; scopePicker: ReactNode }) {
@@ -37,7 +41,8 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
   const [filters, setFilters] = useState(() => initialFilters(params));
   const [panel, setPanel] = useState<{ name: string; focus: "details" | "editor" } | null>(null);
   const [dialog, setDialog] = useState<DialogRequest | null>(null);
-  const backupNote = useBackupNotes();
+  const backup = useBackupNotes();
+  const [failures, setFailures] = useState<Record<string, RowFailure>>({});
 
   const all = useMemo(() => globalSkills(state), [state]);
   const deferred = useDeferredValue(filters);
@@ -57,15 +62,26 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
 
   const clear = () => setFilters(noFilters);
 
+  const attempt = async <K extends OperationName>(skill: Skill, operation: K, input: OperationInput<K>) => {
+    const result = await run(operation, input, { quiet: true });
+    setFailures(previous => {
+      const next = { ...previous };
+      if (result.ok) delete next[skill.name];
+      else next[skill.name] = { message: result.error.message, outsideEdit: backup.outsideEdit };
+      return next;
+    });
+    return result;
+  };
+
   const actions: RowActions = {
     open: (name, focus) => setPanel({ name, focus }),
     setOn: async (skill, on) => {
-      const result = await run("skill/availability", { name: skill.name, scope: "Global", enabled: on });
+      const result = await attempt(skill, "skill/availability", { name: skill.name, scope: "Global", enabled: on });
       if (!result.ok) return;
       toast.show(`${skill.name} is ${on ? "on" : "off"}`, { action: { label: "Undo", onAction: () => void run("skill/availability", { name: skill.name, scope: "Global", enabled: !on }) } });
     },
     setMode: async (skill, mode: InvocationMode | "") => {
-      const result = await run("invocation", { name: skill.name, scope: "Global", mode });
+      const result = await attempt(skill, "invocation", { name: skill.name, scope: "Global", mode });
       if (result.ok) toast.show(mode ? `${skill.name}: ${mode}` : `${skill.name} follows its own default`);
     },
     update: skill => {
@@ -75,17 +91,18 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
     move: skill => setDialog({ kind: "move", skill }),
     drop: async skill => {
       const from = skill.place === "pack" ? String(skill.ownerId) : "core";
-      const result = await run("kit/drop", { name: skill.name, from });
+      const result = await attempt(skill, "kit/drop", { name: skill.name, from });
       if (result.ok) toast.show(`${skill.name} dropped from ${skill.place === "pack" ? skill.owner : "Core"}. Its files stay on this machine.`);
     },
     askAgain: async skill => {
-      const result = await run("kit/machine-only", { name: skill.name, enabled: false });
+      const result = await attempt(skill, "kit/machine-only", { name: skill.name, enabled: false });
       if (result.ok) toast.show(`${skill.name} is back in To review.`);
     },
     install: async skill => {
       toast.show(`Installing ${skill.name}…`, { busy: true });
-      const result = await run("kit/install", { source: skill.source, names: [skill.name], to: "core" });
+      const result = await attempt(skill, "kit/install", { source: skill.source, names: [skill.name], to: "core" });
       if (result.ok) toast.show(`${skill.name} is ready on this machine.`);
+      else toast.dismiss();
     },
     resolveDuplicate: skill => setDialog({ kind: "duplicate", name: skill.name, scope: "Global" }),
     remove: skill => setDialog({ kind: "delete", name: skill.name, scope: "Global" }),
@@ -115,7 +132,7 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
         <div className="s-cols" aria-hidden="true"><span /><span>Skill</span><span>Comes from</span><span>On</span><span>How it starts</span><span /></div>
         <ul className="slist" aria-label="Skills">
           {shown.map(skill => (
-            <SkillRow key={skill.name} skill={skill} selected={selection.has(skill.name)} onSelect={selection.toggle} actions={actions} busy={selection.busy} backupNote={backupNote(skill)} sourceLine />
+            <SkillRow key={skill.name} skill={skill} selected={selection.has(skill.name)} onSelect={selection.toggle} actions={actions} busy={selection.busy} backupNote={backup.note(skill)} failure={failures[skill.name]} sourceLine />
           ))}
         </ul>
       </>
@@ -126,7 +143,7 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
     <Page
       title="Skills"
       description={skillsDescription}
-      actions={hasSkills ? <button type="button" onClick={() => setDialog({ kind: "update", title: "Update skills" })}>Update all</button> : undefined}
+      actions={hasSkills ? <UpdateAll onSelect={() => setDialog({ kind: "update", title: "Update skills" })} /> : undefined}
     >
       {scopePicker}
       {showStrip ? (
@@ -152,6 +169,7 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
           scope="Global"
           focus={panel?.focus ?? "details"}
           actions={actions}
+          failure={failures[panelSkill.name]}
           onClose={() => setPanel(null)}
         />
       ) : null}

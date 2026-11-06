@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it } from "vitest";
 import type { RulesDestinationState, RulesPreview, RulesState, RulesTargetPreview } from "../../../../src/fieldwork/rules.js";
@@ -84,6 +84,23 @@ it("saves edits with the hash they were based on, and says what is saved", async
   expect(callsTo(client, "rules/save")).toEqual([{ operation: "rules/save", input: { files: [{ path: "AGENTS.md", content: "# Rules\n\nSee {{testing.md}}!" }, { path: "references/testing.md", content: "# Testing" }], expectedHash: "h1" } }]);
   expect((await screen.findAllByText(/^Saved/)).length).toBeGreaterThan(0);
   expect(screen.queryByText(/^Unsaved/)).not.toBeInTheDocument();
+});
+
+it("locks the editor while saving and ignores a second save until the first finishes", async () => {
+  let finish: (value: unknown) => void = () => undefined;
+  const client = setup({ "rules/save": () => new Promise(resolve => { finish = resolve; }) });
+  const editor = await screen.findByRole("textbox", { name: "Contents of AGENTS.md" });
+  await userEvent.type(editor, "!");
+
+  await userEvent.keyboard("{Control>}s{/Control}");
+  await userEvent.keyboard("{Control>}s{/Control}");
+
+  expect(editor).toHaveAttribute("readonly");
+  expect(callsTo(client, "rules/save")).toHaveLength(1);
+  finish({});
+  expect(await screen.findByRole("button", { name: /^Save/ })).toBeDisabled();
+  await waitFor(() => expect(editor).not.toHaveAttribute("readonly"));
+  expect(screen.queryByRole("dialog", { name: "The AFK folder changed on disk" })).not.toBeInTheDocument();
 });
 
 it("asks before syncing with unsaved edits, then saves and previews in order", async () => {

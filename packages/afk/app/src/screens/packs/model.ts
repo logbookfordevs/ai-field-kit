@@ -1,7 +1,7 @@
 import type { PackState, Profile, ProfileGroup, SkillEntry } from "@/screens/packs/types";
+import { shortSource, UPLOADED_SOURCE } from "@/text/format";
 
 const LOCAL_SOURCE = "Local skill selection";
-const UPLOADED_SOURCE = "Uploaded skill";
 
 export const GLOBAL = "Global";
 
@@ -25,22 +25,14 @@ export interface PackView {
   exportBlock: string | null;
 }
 
-export function plural(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
-
 export function groupsOf(profile: Pick<Profile, "source" | "skills" | "groups">): ProfileGroup[] {
   return profile.groups ?? [{ source: profile.source, skills: profile.skills }];
-}
-
-function repositoryName(reference: string): string {
-  return reference.replace(/#.*$/, "").replace(/\.git$/, "").replace(/\/+$/, "").split(/[/:]/).filter(Boolean).pop() ?? reference;
 }
 
 export function originLabel(profile: Pick<Profile, "sourceNames">, source: string): string {
   if (source === LOCAL_SOURCE) return "This machine";
   if (source === UPLOADED_SOURCE) return "Uploaded";
-  return profile.sourceNames?.[source] ?? repositoryName(source);
+  return profile.sourceNames?.[source] ?? shortSource(source);
 }
 
 function exportBlock(profile: Profile): string | null {

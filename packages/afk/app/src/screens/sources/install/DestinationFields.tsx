@@ -1,5 +1,6 @@
 import { useId, type Ref } from "react";
 import type { Destination } from "@/screens/sources/types";
+import { placeDefinitions } from "@/text/places";
 
 export interface DestinationValue {
   destination: Destination | null;
@@ -34,10 +35,10 @@ export interface DestinationFieldsProps {
 }
 
 const places: { id: Destination; label: string; definition: (upload: boolean) => string }[] = [
-  { id: "core", label: "Core", definition: () => "On every machine, always on, backed up." },
-  { id: "pack", label: "A pack", definition: upload => upload ? "On when you turn the pack on. Saved in your library, so nothing downloads." : "On when you turn the pack on. The pack is backed up; its files download again." },
-  { id: "machine", label: "This machine only", definition: () => "Installed here, never backed up." },
-  { id: "later", label: "Try later", definition: () => "Bookmarked. Nothing installed." },
+  { id: "core", label: "Core", definition: () => placeDefinitions.core },
+  { id: "pack", label: "A pack", definition: upload => upload ? placeDefinitions.uploadedPack : placeDefinitions.pack },
+  { id: "machine", label: "This machine only", definition: () => placeDefinitions.machine },
+  { id: "later", label: "Try later", definition: () => placeDefinitions.later },
 ];
 
 export function DestinationFields({ value, onChange, packs, projects, upload, errors, groupRef, packRef, packNameRef, bookmarkRef }: DestinationFieldsProps) {

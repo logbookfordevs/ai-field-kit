@@ -41,15 +41,19 @@ export interface Overview {
   needs: Need[] | null;
 }
 
-export function useOverview(): Overview {
+function useNeeds() {
   const kit = useOperation("kit/state");
   const backup = useOperation("backup/state", { brief: true });
-  const setup = useOperation("state");
   const needs = kit.data && backup.data ? needsFrom(kit.data, backup.data) : null;
-  return { kit, backup, setup, needs };
+  return { kit, backup, needs };
+}
+
+export function useOverview(): Overview {
+  const setup = useOperation("state");
+  return { ...useNeeds(), setup };
 }
 
 export function useAttention(): Attention | null {
-  const { needs } = useOverview();
+  const { needs } = useNeeds();
   return needs ? attentionFor(needs) : null;
 }

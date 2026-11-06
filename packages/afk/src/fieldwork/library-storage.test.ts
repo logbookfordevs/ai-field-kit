@@ -281,6 +281,21 @@ describe("skills installed outside AFK", () => {
     expect(await readlink(join(agents, "handmade"))).toBe(join(home, ".afk/library/skills/handmade"));
   });
 
+  it("records an outside skill installed from a local folder the way Core lists it: as uploaded, with no source", async () => {
+    await write(join(agents, "local-made"), "local-made");
+    const lock = join(home, ".agents/.skill-lock.json");
+    const locked = await json(lock) as { skills: Record<string, unknown> };
+    locked.skills["local-made"] = { source: "/Users/ana/skills/local-made", skillFolderHash: "abc" };
+    await writeFile(lock, JSON.stringify(locked));
+    const operations = new FieldworkOperations(store);
+
+    await operations.run("skill/adopt", { name: "local-made", to: "library" });
+    await operations.close();
+
+    expect(await json(join(home, ".afk/library/.afk/skills/local-made.json"))).toEqual({ invocation: "" });
+    expect((await store.read()).kit?.core).toContainEqual({ source: "Uploaded skill", skills: ["local-made"] });
+  });
+
   it("tells the Skills page where each Global skill is stored", async () => {
     const operations = new FieldworkOperations(store);
     await operations.run("skill/adopt", { name: "loose", to: "library" });

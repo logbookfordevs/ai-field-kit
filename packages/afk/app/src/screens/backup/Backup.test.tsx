@@ -55,6 +55,7 @@ describe("states in words", () => {
     ["waiting", { state: "waiting", waiting: 3 }, "Saving soon", /3 changes waiting/],
     ["failed", { state: "failed", waiting: 1, error: "Could not resolve host: github.com" }, "Can't save", /1 change waiting on this machine; nothing is lost/],
     ["paused by an edit outside AFK", { state: "waiting", waiting: 2, held: true, attention: 1 }, "Paused", /2 changes waiting on this machine.*kept or discarded/],
+    ["paused with nothing new to save", { state: "saved", waiting: 0, held: true, attention: 1 }, "Paused", /^Saving resumes when the edits made outside AFK are kept or discarded\. Last saved 2 min ago\.$/],
     ["off", { state: "off" }, "Off", /only on this machine/],
   ];
 

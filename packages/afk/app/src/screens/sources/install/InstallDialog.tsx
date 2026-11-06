@@ -12,7 +12,8 @@ import { UploadDrop } from "@/screens/sources/install/UploadDrop";
 import { uploadPayload, type PickedFile } from "@/screens/sources/install/upload";
 import type { InstallRequest } from "@/screens/sources/install/store";
 import { useSourcesState } from "@/screens/sources/data";
-import { defaultBookmarkName, formatBytes, isValidSource, plural, shortSource } from "@/screens/sources/format";
+import { defaultBookmarkName, formatBytes, isValidSource } from "@/screens/sources/format";
+import { plural, shortSource } from "@/text/format";
 import type { Destination, InstallCandidate, InstallOutcome, InstallProgress, UploadCandidate, UploadPreview } from "@/screens/sources/types";
 import { navigate } from "@/shell/router";
 import "@/screens/sources/install/Install.css";
@@ -41,18 +42,6 @@ const ways = [
   { value: "repository", label: "A repository" },
   { value: "upload", label: "A zip or folder" },
 ] as const;
-
-const agents = ["codex", "claude-code", "cursor", "opencode"];
-
-/** The agent chosen in the previous app, if any; the default (universal) needs no field. */
-function savedAgent(): string | undefined {
-  try {
-    const saved = (JSON.parse(localStorage.getItem("afk.install") ?? "{}") as { agent?: unknown }).agent;
-    return typeof saved === "string" && agents.includes(saved) ? saved : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 /** Add something new: look inside a repository or an upload, pick skills, choose where they go. */
 export function InstallDialog({ request, onClose }: InstallDialogProps) {
@@ -276,11 +265,9 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
       return;
     }
     const replace = destination === "pack" ? [] : available.filter(candidate => candidate.state === "conflict" && picked.has(candidate.name)).map(candidate => candidate.name);
-    const agent = destination === "core" || destination === "machine" ? savedAgent() : undefined;
     await run({
       source, names, to, ...packName,
       ...(destination === "machine" && place.scope !== "Global" ? { scope: place.scope } : {}),
-      ...(agent ? { agent } : {}),
       ...(replace.length ? { replace } : {}),
     }, destination, names.length, {});
   };
@@ -307,7 +294,7 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
   const cancelInstall = async () => {
     const result = await client.run("skills/install-cancel", {});
     const cancelled = result.ok && (result.value as { cancelled?: boolean }).cancelled;
-    if (!cancelled) toast.show(result.ok ? (result.value as { reason?: string }).reason ?? "There is nothing to cancel." : result.error.message);
+    if (!cancelled) if (result.ok) toast.show((result.value as { reason?: string }).reason ?? "There is nothing to cancel."); else toast.fail(result.error.message);
   };
 
   const readSkill = async (name: string): Promise<string> => {

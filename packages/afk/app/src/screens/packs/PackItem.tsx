@@ -3,7 +3,8 @@ import { Icon } from "@/components/Icon";
 import { Menu, MenuItem, MenuSeparator } from "@/components/Menu";
 import { Progress } from "@/components/Progress";
 import { Switch } from "@/components/Switch";
-import { plural, type PackView } from "@/screens/packs/model";
+import type { PackView } from "@/screens/packs/model";
+import { plural } from "@/text/format";
 import type { InstallProgress } from "@/screens/packs/types";
 
 export interface PackItemProps {

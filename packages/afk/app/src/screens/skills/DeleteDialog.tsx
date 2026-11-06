@@ -3,7 +3,7 @@ import { Dialog } from "@/components/Dialog";
 import { PathCard } from "@/components/PathCard";
 import { useToast } from "@/components/Toast";
 import type { DeletionPreview } from "@/screens/skills/api";
-import { plural } from "@/screens/skills/model";
+import { plural } from "@/text/format";
 import { BulkResultDialog } from "@/screens/skills/BulkResultDialog";
 import { useReview, useRun } from "@/screens/skills/useRun";
 import type { Selection } from "@/screens/skills/useSelection";
