@@ -10,6 +10,7 @@ type Status = OperationResult<"backup/state">["status"];
 
 function backupLine(status: Status): string {
   if (status.state === "off") return "Off · your library is only on this machine";
+  if (status.held) return `Paused · ${plural(Math.max(status.attention, 1), "edit")} to resolve`;
   if (status.state === "failed") return `Can't save · ${plural(status.waiting, "change")} waiting`;
   const repository = status.remote ? ` · ${shortSource(status.remote)}` : "";
   if (status.waiting > 0) return `Saving ${plural(status.waiting, "change")}${repository}`;

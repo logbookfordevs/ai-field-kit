@@ -215,6 +215,12 @@ describe("your setup", () => {
     expect(screen.getByRole("link", { name: /Backup/ })).toHaveTextContent(/Saved 2 min ago · leo\/afk-library/);
   });
 
+  it("says the backup is paused while an edit made outside AFK waits, even with nothing new to save", async () => {
+    setup({ "backup/state": () => backupState({ held: true, attention: 1, waiting: 0 }) });
+
+    expect(await screen.findByRole("link", { name: /Backup/ })).toHaveTextContent("Paused · 1 edit to resolve");
+  });
+
   it("counts every saved tool and every skill still to review", async () => {
     const tools = [{ id: 1, name: "Atlas", install: "x", update: "", provides: ["atlas"] }, { id: 2, name: "Linter", install: "y", update: "" }];
     const stored = { ...setupState, settings: { ...setupState.settings, tools }, inventories: { Global: [{ name: "kami", available: true, storage: "library" }, { name: "local-notes", available: true }] } };
