@@ -35,7 +35,8 @@ html:has(.bulk){scroll-padding-top:84px}
 .bulk-acts .danger-outline{background:var(--surface)}
 .bulk-acts .bulk-mode{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;color:var(--fg)}
 .bulk-mode .down{transform:rotate(90deg)}
-.bulk-acts .on-accent{color:var(--accent-fg);border-color:color-mix(in srgb,var(--accent-fg) 50%,transparent)}
+.bulk-acts .on-accent{width:40px;background:var(--surface);color:var(--fg);border-color:var(--control-border)}
+.bulk-acts .on-accent:hover,.bulk-acts .on-accent[aria-expanded=true]{background:var(--warm);border-color:var(--fg)}
 
 .s-cols,.srow{display:grid;grid-template-columns:28px minmax(0,1fr) 200px 92px 206px 44px;grid-template-areas:"pick main from on inv more";gap:4px 18px;align-items:center}
 .srow.project{grid-template-columns:28px minmax(0,1fr) 220px 206px 44px;grid-template-areas:"pick main from inv more"}

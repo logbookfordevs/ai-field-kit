@@ -53,5 +53,5 @@ main:focus{outline:none}
   main{padding:20px 16px 88px}
   .page-head{flex-direction:column;align-items:stretch;gap:16px;margin-bottom:22px}
   .head-actions>button:not(.icon-btn){flex:1}
-  .page-head:has(.head-actions>.icon-btn:only-child){flex-direction:row;align-items:flex-start}
+  .page-head:has(.head-actions>.icon-btn):not(:has(.head-actions>button:not(.icon-btn))){flex-direction:row;align-items:flex-start}
 }
