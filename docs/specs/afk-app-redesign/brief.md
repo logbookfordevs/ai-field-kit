@@ -59,3 +59,5 @@ The developer who owns AFK, at their desk, opening the local app for a quick tas
 ## Next
 
 A clickable prototype (local HTML) of Overview, Skills, Packs, Sources and first run, with real data: [prototype.html](prototype.html).
+
+Implementation: [ADR 0013](../../adr/0013-react-for-the-local-app.md); tickets in [docs/tickets/afk-app-redesign](../../tickets/afk-app-redesign/).
