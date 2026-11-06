@@ -8,8 +8,15 @@ import type { Selection } from "@/screens/skills/useSelection";
 
 type Action = { action: "enable" | "disable" } | { action: "invocation"; mode: string };
 
+/** Starts a selection from what the filters show; sits in the list's count row. */
+export function SelectShown({ selection, shown }: { selection: Selection; shown: string[] }) {
+  const idle = selection.names.length === 0 && shown.length > 0;
+  if (!idle) return null;
+  return <button type="button" className="text" disabled={selection.busy} onClick={() => selection.add(shown)}>Select shown ({shown.length})</button>;
+}
+
 /**
- * Select shown, and once something is selected: turn on/off (Global only), Manual/Automatic,
+ * Once something is selected: turn on/off (Global only), Manual/Automatic,
  * update and delete, all through `skills/bulk` and its reviewed deletion.
  */
 export function BulkBar({ scope, selection, shown, onDialog }: { scope: string; selection: Selection; shown: string[]; onDialog: (request: DialogRequest) => void }) {
@@ -39,14 +46,7 @@ export function BulkBar({ scope, selection, shown, onDialog }: { scope: string; 
     toast.show(`${plural(result.completed, "skill")} changed in ${scope}.`);
   };
 
-  if (!count) {
-    if (!shown.length) return null;
-    return (
-      <div className="bulk-idle">
-        <button type="button" className="text" disabled={selection.busy} onClick={() => selection.add(shown)}>Select shown ({shown.length})</button>
-      </div>
-    );
-  }
+  if (!count) return null;
 
   return (
     <div className="bulk" role="group" aria-label="Selected skills">

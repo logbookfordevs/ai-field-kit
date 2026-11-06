@@ -14,7 +14,7 @@
 .skills-search kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%)}
 
 .list-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px;margin:12px 0 4px;font-size:13px;color:var(--muted)}
-.list-meta .text{font-size:13px;min-height:36px;color:var(--fg)}
+.list-meta .text{font-size:13px;min-height:36px;padding:0;color:var(--fg)}
 .list-meta .spacer{flex:1}
 
 .inv-info{display:inline-flex}
@@ -22,14 +22,14 @@
 .inv-pop:popover-open{display:grid;gap:10px}
 .inv-pop::backdrop{background:transparent}
 
-.bulk-idle{min-height:44px;display:flex;align-items:center}
-.bulk-idle .text{font-size:13px;padding:0}
 .bulk{position:sticky;top:8px;z-index:3;display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;min-height:44px;margin:4px 0 12px;padding:8px 12px;background:var(--accent);color:var(--accent-fg);border-radius:var(--radius);box-shadow:var(--shadow-pop)}
 .bulk .meta{color:color-mix(in srgb,var(--accent-fg) 78%,transparent)}
 .bulk-count{font-size:14px}
 .bulk-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
-.bulk-acts button{min-height:36px;padding:0 12px}
+.bulk-acts button{min-height:36px;padding:0 12px;color:var(--fg)}
+.bulk-acts select{color:var(--fg)}
 .bulk-acts .text{color:var(--accent-fg)}
+.bulk-acts .danger-outline{color:var(--danger)}
 .bulk-acts .danger-outline{background:var(--surface)}
 .bulk-mode select{min-height:36px;width:auto}
 
@@ -37,8 +37,7 @@
 .srow.project{grid-template-columns:28px minmax(0,1fr) 220px 206px 44px;grid-template-areas:"pick main from inv more"}
 .s-cols{padding:0 0 8px;font-size:13px;font-weight:500;color:var(--muted);border-bottom:1px solid var(--fg)}
 .slist{list-style:none;margin:0;padding:0}
-.s-cols+.slist,.list-meta+.slist,.bulk-idle+.slist,.bulk+.slist{border-top:1px solid var(--fg)}
-.s-cols+.slist{border-top:0}
+.list-meta+.slist,.bulk+.slist{border-top:1px solid var(--fg)}
 .srow{padding:12px 0;border-bottom:1px solid var(--border);min-height:68px}
 .srow.selected{background:color-mix(in srgb,var(--warm) 45%,transparent)}
 .s-pick{grid-area:pick;display:flex;justify-content:center}
@@ -115,12 +114,12 @@ section.blk+section.blk{margin-top:0}
   .skills-toolbar,.skills-toolbar.no-from{grid-template-columns:1fr 1fr}
   .skills-toolbar>label:first-child{grid-column:1/-1}
   .skills-scope{grid-template-columns:auto 1fr;width:100%}
-  .srow{grid-template-columns:28px minmax(0,1fr) 44px;grid-template-areas:"pick main more" ". from from" ". on inv";gap:6px 10px;align-items:start}
-  .srow.project{grid-template-areas:"pick main more" ". from from" ". inv inv"}
+  .srow{grid-template-columns:28px auto minmax(0,1fr) 44px;grid-template-areas:"pick main main more" ". from from from" ". on inv inv";gap:6px 12px;align-items:start}
+  .srow.project{grid-template-columns:28px minmax(0,1fr) 44px;grid-template-areas:"pick main more" ". from from" ". inv inv"}
   .s-pick{padding-top:3px}
-  .s-on{align-self:center}
-  .s-inv{width:100%;justify-self:stretch;max-width:220px;margin-left:auto}
-  .srow.project .s-inv{margin-left:0}
+  .s-on,.s-inv{align-self:center}
+  .s-inv{width:100%;max-width:220px;justify-self:end}
+  .srow.project .s-inv{justify-self:start}
   .bulk{top:64px}
   .bulk-acts{margin-left:0}
   .kv{grid-template-columns:1fr;gap:2px}

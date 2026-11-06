@@ -59,7 +59,7 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
   const note = availabilityNote(skill);
   const heldByPack = Boolean(note);
   const source = skill.source ? shortSource(skill.source) : "";
-  const hasSource = Boolean(source);
+  const showSource = Boolean(source) && sourceLine;
   const moveLabel = review ? "Decide where it belongs…" : "Move to…";
   const canAskAgain = skill.keptHere === true;
   const canDrop = skill.place === "core" || skill.place === "pack";
@@ -80,7 +80,7 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
     return (
       <>
         <span>{fromLabel(skill)}</span>
-        {hasSource && sourceLine ? <span className="src" title={skill.source}>{source}</span> : null}
+        {showSource ? <span className="src" title={skill.source}>{source}</span> : null}
       </>
     );
   };

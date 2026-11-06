@@ -6,7 +6,7 @@ import { useToast } from "@/components/Toast";
 import { Page } from "@/shell/Page";
 import { navigate } from "@/shell/router";
 import type { AppState } from "@/screens/skills/api";
-import { BulkBar } from "@/screens/skills/BulkBar";
+import { BulkBar, SelectShown } from "@/screens/skills/BulkBar";
 import { InvocationInfo } from "@/screens/skills/InvocationInfo";
 import { filterSkills, isFiltered, noFilters, plural, projectSkills, shortSource, skillsDescription, type Skill } from "@/screens/skills/model";
 import { SharingDialog } from "@/screens/skills/SharingDialog";
@@ -136,6 +136,7 @@ export function ProjectSkills({ state, scope, scopePicker }: { state: AppState; 
       <div className="list-meta">
         <p aria-live="polite">{filtered ? `Showing ${shown.length} of ${own.length}` : plural(own.length, "skill")}</p>
         {filtered ? <button type="button" className="text" onClick={() => setFilters(noFilters)}>Clear filters</button> : null}
+        <SelectShown selection={selection} shown={shown.map(skill => skill.name)} />
         <span className="spacer" />
         <InvocationInfo />
       </div>

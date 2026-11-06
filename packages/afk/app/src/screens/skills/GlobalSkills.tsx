@@ -6,7 +6,7 @@ import { useToast } from "@/components/Toast";
 import { Page } from "@/shell/Page";
 import { navigate } from "@/shell/router";
 import type { AppState, InvocationMode } from "@/screens/skills/api";
-import { BulkBar } from "@/screens/skills/BulkBar";
+import { BulkBar, SelectShown } from "@/screens/skills/BulkBar";
 import { SkillDialogs, type DialogRequest } from "@/screens/skills/SkillDialogs";
 import { InvocationInfo } from "@/screens/skills/InvocationInfo";
 import { filterSkills, fromOptions, globalSkills, isFiltered, noFilters, plural, skillsDescription, type Filters, type Skill } from "@/screens/skills/model";
@@ -140,6 +140,7 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
       <div className="list-meta">
         <p aria-live="polite">{filtered ? `Showing ${shown.length} of ${all.length}` : plural(all.length, "skill")}</p>
         {filtered ? <button type="button" className="text" onClick={clear}>Clear filters</button> : null}
+        <SelectShown selection={selection} shown={selectable} />
         <span className="spacer" />
         <InvocationInfo />
       </div>

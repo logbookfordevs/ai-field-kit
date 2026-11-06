@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { useClient } from "@/api/ClientProvider";
 import { Segmented } from "@/components/Segmented";
 import { useToast } from "@/components/Toast";
@@ -48,6 +48,7 @@ export function SkillEditor({ name, onDirtyChange, blocked, textRef, focusText =
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const askRef = useRef<HTMLDivElement>(null);
 
   const [file, setFile] = useState("SKILL.md");
 
@@ -72,6 +73,10 @@ export function SkillEditor({ name, onDirtyChange, blocked, textRef, focusText =
     textRef.current?.focus();
     textRef.current?.scrollIntoView?.({ block: "center" });
   }, [loaded, focusText, textRef]);
+
+  useEffect(() => {
+    if (asking) askRef.current?.querySelector("button")?.focus();
+  }, [asking]);
 
   const dirty = draft !== saved;
   useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
@@ -147,7 +152,7 @@ export function SkillEditor({ name, onDirtyChange, blocked, textRef, focusText =
         </div>
       )}
       {asking ? (
-        <div className="ask" role="group" aria-label="Updates">
+        <div className="ask" role="group" aria-label="Updates" ref={askRef}>
           <p><b>This skill updates from {view.source ? shortSource(view.source) : "its repository"}.</b> An update would overwrite what you just changed.</p>
           <div className="editor-acts">
             <button type="button" onClick={() => void commit("keep")}>Keep my version</button>

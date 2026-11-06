@@ -20,6 +20,7 @@ export function UpdateDialog({ title, scope, names, onClose }: { title: string; 
   const running = progress?.pending === true;
   if (running !== polling) setPolling(running);
   const showProgress = started || running;
+  const listNames = names !== undefined && names.length > 1;
   const subject = names?.length === 1 ? names[0] : names ? `${names.length} selected skills` : "every skill that updates from a repository";
 
   const start = async () => {
@@ -68,7 +69,7 @@ export function UpdateDialog({ title, scope, names, onClose }: { title: string; 
       )}
     >
       <p>Updates {subject}. Skills that are on stay on, skills that are off stay off, and your Manual/Automatic choices are kept. Each update is prepared separately before any file is replaced.</p>
-      {names && names.length > 1 ? <ul className="tags" aria-label="Skills to update">{names.map(name => <li key={name} className="tag">{name}</li>)}</ul> : null}
+      {listNames ? <ul className="tags" aria-label="Skills to update">{names?.map(name => <li key={name} className="tag">{name}</li>)}</ul> : null}
       {showProgress ? renderProgress() : null}
     </Dialog>
   );
