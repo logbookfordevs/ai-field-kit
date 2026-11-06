@@ -6,6 +6,7 @@ import { emptySettings, SettingsStore } from "./settings.js";
 import { SkillLibrary } from "./skills.js";
 import { setInvocation } from "./invocation.js";
 import { startFieldwork } from "./server.js";
+import { fixtureWeb } from "./web.test-helper.js";
 import { FieldworkOperations } from "./operations.js";
 
 const folders: string[] = [];
@@ -78,9 +79,9 @@ describe("Fieldwork skill availability", () => {
 
 describe("Fieldwork local server", () => {
   it("only shuts down for an authorized exit request and preserves settings", async () => {
-    const { store } = await fixture();
+    const { home, store } = await fixture();
     const before = await store.read();
-    const app = await startFieldwork(store);
+    const app = await startFieldwork(store, 0, { web: await fixtureWeb(home) });
     try {
       const rejected = await fetch(`${app.url}/api/exit`, { method: "POST" });
       expect(rejected.status).toBe(403);
@@ -95,8 +96,8 @@ describe("Fieldwork local server", () => {
   });
 
   it("requires the current app token for filesystem and command APIs", async () => {
-    const { store } = await fixture();
-    const app = await startFieldwork(store);
+    const { home, store } = await fixture();
+    const app = await startFieldwork(store, 0, { web: await fixtureWeb(home) });
     try {
       const result = await fetch(`${app.url}/api/state`);
       expect(result.status).toBe(403);
