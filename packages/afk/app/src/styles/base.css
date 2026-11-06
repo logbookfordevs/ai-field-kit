@@ -76,3 +76,6 @@ section+section{margin-top:44px}
 }
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+.field{display:grid;gap:6px}
+.field>label{font-size:13px;font-weight:500}
