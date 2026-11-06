@@ -1,0 +1,32 @@
+.state-block{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 16px;align-items:center;padding:20px 0;border-top:1px solid var(--fg);border-bottom:1px solid var(--border)}
+.state-block .ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--control-border);grid-row:span 2}
+.state-block.ok .ico{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.state-block.bad .ico{border-color:var(--danger);color:var(--danger)}
+.state-block.bad h2{color:var(--danger)}
+.state-block>h2,.state-block>.sub{grid-column:2}
+.state-block .acts{grid-row:1/span 2;grid-column:3;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:760px){
+  .state-block{grid-template-columns:auto minmax(0,1fr)}
+  .state-block .acts{grid-row:auto;grid-column:1/-1;justify-content:flex-start;margin-top:8px}
+}
+.problem{margin-bottom:16px;max-width:none}
+.state-block .failure{grid-column:2;color:var(--danger);font-family:var(--font-mono);overflow-wrap:anywhere}
+.connect{display:grid;gap:14px;max-width:640px}
+section+section,.state-block+section{margin-top:40px}
+.state-block>.text{grid-column:2;justify-self:start;margin-left:-6px}
+.state-text{font:500 13px/1.5 var(--font-body);color:var(--muted);padding:0 6px}
+.state-text.warn{color:var(--danger)}
+.paused-note{margin-top:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px 40px}
+.two h3{font-size:14px;margin-bottom:8px}
+.plain{list-style:none;margin:0;padding:0;font-size:14px}
+.plain li{padding:9px 0;border-bottom:1px solid var(--border)}
+.plain li:first-child{border-top:1px solid var(--fg)}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+.state-block .repo{grid-column:2;font:13px/1.5 var(--font-mono);overflow-wrap:anywhere}
+.attn .row-title p{font-weight:400;margin-top:2px}
+@media (min-width:761px){.no-aside>.row{grid-template-columns:minmax(0,1fr) auto}}
+@media (max-width:760px){
+  .attn.row{grid-template-columns:minmax(0,1fr);grid-template-areas:"main" "actions"}
+  .attn .row-actions{justify-content:flex-start}
+}
