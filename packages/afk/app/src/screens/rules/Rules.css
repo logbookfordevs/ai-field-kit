@@ -92,3 +92,4 @@
   .dest-actions{justify-content:flex-start}
   .plan-head{flex-direction:column}
 }
+.ref-menu[hidden]{display:none}

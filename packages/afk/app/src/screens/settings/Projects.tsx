@@ -55,9 +55,10 @@ export function Projects() {
             return (
               <Row
                 key={project.name}
+                className="project-row"
                 title={project.name}
                 meta={project.path}
-                description={problem ? <span className="field-error" role="status">{problem}. Choose another folder or remove the project definition.</span> : undefined}
+                description={problem ? <span className="field-error" role="status">{problem}</span> : undefined}
                 actions={(
                   <>
                     {problem ? <button type="button" aria-label={`Choose folder for ${project.name}`} onClick={() => setStep({ kind: "browse-existing", project })}>Choose folder</button> : null}

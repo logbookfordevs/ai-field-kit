@@ -12,14 +12,17 @@ section.set-grid+section.set-grid{margin-top:0}
 .agent-icon-letter{display:inline-grid;place-items:center;background:var(--warm);color:var(--muted);font:600 13px/1 var(--font-mono)}
 .agent-title .name{min-width:0;overflow-wrap:anywhere}
 .always-on{font-size:14px;font-weight:500;color:var(--muted)}
-.form-grid{display:grid;gap:16px}
+.form-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
 .form-grid .hint{max-width:none}
 .schedule-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;max-width:560px}
+.schedule-fields>*{min-width:0}
 .last-run pre{margin-top:8px;max-height:240px;overflow:auto;background:var(--accent);color:var(--accent-fg);padding:14px 16px;border-radius:var(--radius-lg);font:12.5px/1.6 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere}
 .last-run summary{min-height:44px}
 .folder-bar{display:flex;gap:8px;align-items:center;min-width:0}
 .crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:0 2px;min-width:0}
-.crumbs button{min-height:36px}
+.crumbs{flex:1}
+.crumbs>span{min-width:0;max-width:100%}
+.crumbs button{min-height:36px;white-space:normal;overflow-wrap:anywhere;text-align:left}
 .folder-list{display:grid;gap:0;border-top:1px solid var(--fg);max-height:320px;overflow:auto}
 .folder-list button{justify-content:space-between;width:100%;border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;font:400 14px/1.4 var(--font-mono);text-align:left;overflow-wrap:anywhere;white-space:normal}
 .folder-list button:hover{background:var(--warm)}
@@ -27,5 +30,10 @@ section.set-grid+section.set-grid{margin-top:0}
 .pref-list li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
 .pref-list code{font-size:13px;overflow-wrap:anywhere}
 @media (max-width:760px){
+  .folder-bar{flex-direction:column;align-items:stretch}
+  .folder-bar>button{align-self:flex-start}
+  .project-row{grid-template-columns:minmax(0,1fr);grid-template-areas:"main" "aside" "actions"}
+  .project-row .row-actions{grid-area:actions;justify-content:flex-start}
   .set-grid{grid-template-columns:minmax(0,1fr);gap:14px;padding:22px 0}
 }
+.form-grid>.switch{justify-self:start}

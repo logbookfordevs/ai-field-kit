@@ -55,7 +55,7 @@ function BrowserDialog({ start, title = "Choose project folder", onChoose, onClo
         <nav aria-label="Folder breadcrumbs" className="crumbs">
           {ancestors(here).map((part, index) => (
             <span key={part.path}>
-              {index > 0 ? <span aria-hidden="true">/</span> : null}
+              {index > 1 ? <span aria-hidden="true">/</span> : null}
               <button type="button" className="text" aria-current={part.path === here ? "location" : undefined} onClick={() => setPath(part.path)}>{part.name}</button>
             </span>
           ))}

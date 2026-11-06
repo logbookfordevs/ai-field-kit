@@ -34,7 +34,7 @@ it("lists each project with its folder, and says when a folder is gone", async (
 
   const list = await screen.findByRole("list", { name: "Projects" });
   expect(within(list).getByText("/Users/ana/Code/studio")).toBeInTheDocument();
-  expect(within(list).getByText(/Project folder not found/)).toBeInTheDocument();
+  expect(within(list).getByText("Project folder not found")).toBeInTheDocument();
   expect(within(list).getByRole("button", { name: "Choose folder for Old" })).toBeInTheDocument();
   expect(within(list).queryByRole("button", { name: "Choose folder for Studio" })).not.toBeInTheDocument();
 });
