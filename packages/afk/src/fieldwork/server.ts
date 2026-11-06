@@ -24,7 +24,7 @@ async function body(request: IncomingMessage, limit = 8_000_000): Promise<Record
   return value as Record<string, unknown>;
 }
 
-export async function startFieldwork(store = new SettingsStore(), port = 0, options: { shutdownMs?: number } = {}): Promise<{ url: string; token: string; close: () => Promise<void> }> {
+export async function startFieldwork(store = new SettingsStore(), port = 0, options: { shutdownMs?: number; web?: string } = {}): Promise<{ url: string; token: string; close: () => Promise<void> }> {
   let closeApp: (() => Promise<void>) | undefined;
   let shutdown: Promise<void> | undefined;
   let updatingRequested = false;
@@ -34,7 +34,7 @@ export async function startFieldwork(store = new SettingsStore(), port = 0, opti
   const pkg = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
   const updates = new AppUpdates(pkg.version);
   const token = randomBytes(32).toString("hex");
-  const web = resolve(dirname(fileURLToPath(import.meta.url)), "../../web");
+  const web = options.web ?? resolve(dirname(fileURLToPath(import.meta.url)), "../../web");
   const server = createServer((request, response) => {
     const handle = async (): Promise<void> => {
       const address = server.address();
@@ -76,12 +76,13 @@ export async function startFieldwork(store = new SettingsStore(), port = 0, opti
         send(await operations.run(operation, data)); return;
       }
       if (request.method !== "GET") { response.writeHead(405); response.end(); return; }
-      const pathname = url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
+      if (url.pathname === "/next") { response.writeHead(308, { Location: "/next/" }); response.end(); return; }
+      const pathname = url.pathname.endsWith("/") ? `${decodeURIComponent(url.pathname)}index.html` : decodeURIComponent(url.pathname);
       const path = resolve(web, `.${pathname}`);
       if (!path.startsWith(web + sep)) { response.writeHead(404); response.end(); return; }
       let contents: Buffer | string = await readFile(path);
-      if (pathname === "/index.html") contents = contents.toString().replace("/* AFK_SESSION */", `window.afkToken=${JSON.stringify(token)};`);
-      const mimeTypes: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".ttf": "font/ttf", ".svg": "image/svg+xml", ".png": "image/png" };
+      if (pathname === "/index.html" || pathname === "/next/index.html") contents = contents.toString().replace("/* AFK_SESSION */", `window.afkToken=${JSON.stringify(token)};`);
+      const mimeTypes: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".ttf": "font/ttf", ".svg": "image/svg+xml", ".png": "image/png" };
       const mime = mimeTypes[extname(pathname)] ?? "application/octet-stream";
       response.writeHead(200, { "Content-Type": mime, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" });
       response.end(contents);
