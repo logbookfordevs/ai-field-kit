@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RulesDestinationState, RulesPreview, RulesState, RulesTargetPreview } from "../../../../src/fieldwork/rules.js";
 import { useClient } from "@/api/ClientProvider";
 import { useMutation, useOperation } from "@/api/hooks";
@@ -63,6 +63,7 @@ function RulesScreen() {
   const [actionErrors, setActionErrors] = useState<string[]>([]);
   const [lastRun, setLastRun] = useState("");
   const [saving, setSaving] = useState(false);
+  const savingNow = useRef(false);
 
   const state = read.data;
   const destinations = state?.destinations ?? [];
@@ -88,8 +89,10 @@ function RulesScreen() {
   };
 
   const save = async (): Promise<boolean> => {
+    if (savingNow.current) return false;
     const current = draftStore.get();
     if (!hasEdits(current)) return true;
+    savingNow.current = true;
     setSaving(true);
     try {
       const result = await saveFiles.run({ files: current.files.map(file => ({ path: file.path, content: file.draft })), expectedHash: current.baseHash });
@@ -102,7 +105,10 @@ function RulesScreen() {
       draftStore.update(drafts => markSaved(fresh.ok ? applyServerState(drafts, fresh.value, true) : drafts, clock()));
       setActionErrors([]);
       return true;
-    } finally { setSaving(false); }
+    } finally {
+      savingNow.current = false;
+      setSaving(false);
+    }
   };
 
   const previewSync = async (ids: string[] = selectedIds): Promise<void> => {

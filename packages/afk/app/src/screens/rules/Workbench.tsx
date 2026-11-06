@@ -169,6 +169,7 @@ function Editor({ drafts, busy, onEdit, onRevert, onSave, onAddReference, onRena
         <textarea
           ref={area}
           value={file.draft}
+          readOnly={busy}
           spellCheck={false}
           aria-label={`Contents of ${file.path}`}
           aria-describedby={footId}
