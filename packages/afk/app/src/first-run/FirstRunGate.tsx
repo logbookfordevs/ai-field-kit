@@ -6,6 +6,8 @@ import type { ScreenId } from "@/screens/types";
 import "@/first-run/operations";
 import "@/first-run/first-run.css";
 
+const welcomeDismissed = (settings: object): boolean => "welcomeDismissed" in settings && settings.welcomeDismissed === true;
+
 type Decision = { kind: "app" } | { kind: "first-run"; mode: FirstRunKind; pendingRepository?: string };
 
 /**
@@ -31,7 +33,7 @@ export function FirstRunGate({ children }: { children: ReactNode }) {
     if (!isFresh) return { kind: "app" };
     if (settings.error) return { kind: "app" };
     if (!settings.data) return null;
-    return settings.data.settings.welcomeDismissed ? { kind: "app" } : { kind: "first-run", mode: "ready" };
+    return welcomeDismissed(settings.data.settings) ? { kind: "app" } : { kind: "first-run", mode: "ready" };
   }
 
   const decision = decided ?? computed;

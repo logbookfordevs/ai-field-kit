@@ -4,7 +4,6 @@ import type { ToolRunResult } from "../../../src/fieldwork/tool-run.js";
 
 declare module "@/api/operations" {
   interface OperationResults {
-    state: { settings: { welcomeDismissed?: boolean } };
     "library/init-preview": LibraryInitPlan;
     "library/init": LibraryInitPlan;
     "restore/repositories": RepositoryChoice[];
