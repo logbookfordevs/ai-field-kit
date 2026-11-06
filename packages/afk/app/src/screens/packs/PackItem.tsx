@@ -57,7 +57,7 @@ export function PackItem({ pack, switching, locked, progress, notice, onToggle, 
                 <li key={member.name} className={member.here ? undefined : "away"}>
                   <span className="sname">{member.name}</span>
                   <span className="meta">{member.origin}</span>
-                  {member.here ? null : <span className="meta">not downloaded yet</span>}
+                  <span className="meta away-note">{member.here ? "" : "not downloaded yet"}</span>
                 </li>
               ))}
             </ul>
