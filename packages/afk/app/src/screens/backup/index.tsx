@@ -40,7 +40,7 @@ function BackupScreen() {
   }
   const isConnected = status.state !== "off";
   const retry = status.state === "failed";
-  const saveLabel = retry ? "Try again" : "Save now";
+  const saveLabel = retry ? "Try again" : "Back up now";
   const saveButton = <button type="button" disabled={status.pushing || actions.busy} onClick={() => void actions.saveNow()}>{saveLabel}</button>;
   return (
     <Page title="Backup" description={description}>

@@ -47,7 +47,6 @@ export interface BackupOptions {
 }
 
 const REMOTE = "origin";
-const QUIET_MS = 120_000;
 const HISTORY_LIMIT = 200;
 
 /** Refuses anything that would put a secret in `.git/config` or be read by Git as an option. */
@@ -284,42 +283,54 @@ export class Backup {
   }
 }
 
+/** The one moment each day AFK sends waiting saves to the remote; "Back up now" covers anything sooner. */
+export const DAILY_BACKUP = { hours: 22, minutes: 0 };
+const LATE_LIMIT_MS = 30 * 60_000;
+
+export function nextDailyBackup(now: Date): Date {
+  const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), DAILY_BACKUP.hours, DAILY_BACKUP.minutes);
+  if (at <= now) at.setDate(at.getDate() + 1);
+  return at;
+}
+
 export interface BackupScheduleOptions {
-  now?: () => number;
-  interval?: number;
-  quietMs?: number;
+  now?: () => Date;
   onError?: (error: unknown) => void;
 }
 
 /**
- * Pushes once the library has been quiet for the quiet period. It watches HEAD instead of listening to
- * commits so every writer is covered, and it retries a failed push after another quiet period.
+ * Sleeps until the daily backup time with one timer, then pushes once. Node's timers pause while the Mac
+ * sleeps, so the wall clock decides: a run more than 30 minutes late, held by an outside edit, or failing
+ * is skipped until the next day, and the timer is set again from the wall clock.
  */
-export function startBackup(backup: Backup, options: BackupScheduleOptions = {}): { tick: () => Promise<void>; stop: () => Promise<void> } {
-  const now = options.now ?? Date.now, quiet = options.quietMs ?? QUIET_MS;
-  let seen: string | undefined, lastActivity = 0, current: Promise<void> | undefined, stopped = false;
+export function startBackup(backup: Backup, options: BackupScheduleOptions = {}): { tick: () => Promise<void>; stop: () => Promise<void>; nextAt: () => Date } {
+  const now = options.now ?? (() => new Date());
+  let slot = nextDailyBackup(now()), timer: NodeJS.Timeout | undefined, current: Promise<void> | undefined, stopped = false;
 
-  const check = async (): Promise<void> => {
-    if (stopped) return;
+  const run = async (): Promise<void> => {
+    const late = now().getTime() - slot.getTime();
+    if (late < 0 || late > LATE_LIMIT_MS) return;
     const status = await backup.status();
-    if (status.state === "off") { seen = undefined; return; }
-    const head = await backup.lastChange();
-    if (head !== seen) { seen = head; lastActivity = now(); }
-    if (status.held) return;
-    if (status.waiting === 0 || now() - lastActivity < quiet) return;
-    lastActivity = now();
+    if (status.state === "off" || status.held || status.waiting === 0) return;
     await backup.saveNow();
   };
 
+  const arm = (): void => {
+    if (stopped) return;
+    timer = setTimeout(() => void tick(), Math.max(0, slot.getTime() - now().getTime()));
+    timer.unref();
+  };
+
   const tick = (): Promise<void> => {
-    current ??= check().catch(error => options.onError?.(error)).finally(() => { current = undefined; });
+    current ??= run().catch(error => options.onError?.(error)).finally(() => {
+      current = undefined;
+      if (now() >= slot) slot = nextDailyBackup(now());
+      clearTimeout(timer);
+      arm();
+    });
     return current;
   };
 
-  const timer = setInterval(() => void tick(), options.interval ?? 15_000);
-  timer.unref();
-  const first = setTimeout(() => void tick(), 2_000);
-  first.unref();
-
-  return { tick, stop: async () => { stopped = true; clearInterval(timer); clearTimeout(first); await current; } };
+  arm();
+  return { tick, nextAt: () => slot, stop: async () => { stopped = true; clearTimeout(timer); await current; } };
 }

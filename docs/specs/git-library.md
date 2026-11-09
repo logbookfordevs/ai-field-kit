@@ -144,7 +144,7 @@ AFK asks *Restore my library* or *Start a new library*, and can be skipped to us
 ### Save
 
 - Every change AFK makes is one commit with a readable message: an install, an update run, an edit, an invocation change, a pack or bookmark change.
-- AFK pushes 2 minutes after the last change, and on **Save now**.
+- AFK pushes once a day at 22:00 with a single timer, and on **Back up now**. A day it misses (AFK closed, the Mac asleep past 22:30, an outside edit waiting, a failed push) is skipped, not retried.
 - If the push fails (offline, credentials), commits wait locally and the sidebar says so. Nothing is lost.
 - History lists past saves. *Go back to this save* restores the library to that point as a new commit, so it can itself be undone.
 

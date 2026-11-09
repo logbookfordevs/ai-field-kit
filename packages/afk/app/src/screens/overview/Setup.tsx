@@ -1,3 +1,4 @@
+import { dailyBackupTime } from "@/screens/backup/format";
 import { Icon } from "@/components/Icon";
 import type { OperationResult } from "@/api/operations";
 import { hrefFor } from "@/shell/router";
@@ -13,7 +14,7 @@ function backupLine(status: Status): string {
   if (status.held) return `Paused · ${plural(Math.max(status.attention, 1), "edit")} to resolve`;
   if (status.state === "failed") return `Can't save · ${plural(status.waiting, "change")} waiting`;
   const repository = status.remote ? ` · ${shortSource(status.remote)}` : "";
-  if (status.waiting > 0) return `Saving ${plural(status.waiting, "change")}${repository}`;
+  if (status.waiting > 0) return `${plural(status.waiting, "change")} back up at ${dailyBackupTime}${repository}`;
   return `${status.lastSavedAt === undefined ? "Saved" : `Saved ${ago(status.lastSavedAt)}`}${repository}`;
 }
 

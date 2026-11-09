@@ -296,74 +296,64 @@ describe("what the backup holds", () => {
   });
 });
 
-describe("the quiet period", () => {
-  it("pushes a change two minutes after it is first seen, and not before", async () => {
+describe("the daily backup", () => {
+  const at = (day: number, hours: number, minutes = 0): Date => new Date(2026, 10, day, hours, minutes);
+
+  it("sends waiting saves at 22:00 and not before", async () => {
     await backup.connect(remote);
-    let now = 1_000_000;
-    const schedule = startBackup(backup, { now: () => now, interval: 3_600_000 });
+    let now = at(9, 21);
+    const schedule = startBackup(backup, { now: () => now });
     try {
-      await schedule.tick();
       await save("Add alpha");
-      await schedule.tick();
-      now += 119_000;
+      expect(schedule.nextAt()).toEqual(at(9, 22));
       await schedule.tick();
       expect(await remoteLog()).toEqual(["Start the library"]);
 
-      now += 1_000;
+      now = at(9, 22);
+      await schedule.tick();
+      expect(await remoteLog()).toEqual(["Add alpha", "Start the library"]);
+      expect(schedule.nextAt()).toEqual(at(10, 22));
+    } finally { await schedule.stop(); }
+  });
+
+  it("skips a day it wakes up too late for and keeps the saves for the next one", async () => {
+    await backup.connect(remote);
+    let now = at(9, 21);
+    const schedule = startBackup(backup, { now: () => now });
+    try {
+      await save("Add alpha");
+      now = at(9, 23);
+      await schedule.tick();
+      expect(await remoteLog()).toEqual(["Start the library"]);
+      expect(schedule.nextAt()).toEqual(at(10, 22));
+
+      now = at(10, 22, 10);
       await schedule.tick();
       expect(await remoteLog()).toEqual(["Add alpha", "Start the library"]);
     } finally { await schedule.stop(); }
   });
 
-  it("restarts the quiet period with each new change", async () => {
-    await backup.connect(remote);
-    let now = 1_000_000;
-    const schedule = startBackup(backup, { now: () => now, interval: 3_600_000 });
-    try {
-      await schedule.tick();
-      await save("Add alpha");
-      await schedule.tick();
-      now += 100_000;
-      await save("Add beta");
-      await schedule.tick();
-      now += 100_000;
-      await schedule.tick();
-      expect(await remoteLog()).toEqual(["Start the library"]);
-
-      now += 20_000;
-      await schedule.tick();
-      expect(await remoteLog()).toEqual(["Add beta", "Add alpha", "Start the library"]);
-    } finally { await schedule.stop(); }
-  });
-
-  it("retries a failed push after another quiet period without losing the commits", async () => {
+  it("leaves a failed push for the next day without losing the commits", async () => {
     const later = join(home, "later.git");
     await backup.connect(later);
-    let now = 1_000_000;
-    const schedule = startBackup(backup, { now: () => now, interval: 3_600_000 });
+    let now = at(9, 21);
+    const schedule = startBackup(backup, { now: () => now });
     try {
-      await schedule.tick();
-      now += 120_000;
+      now = at(9, 22, 1);
       await schedule.tick();
       expect((await backup.status()).state).toBe("failed");
+      expect(schedule.nextAt()).toEqual(at(10, 22));
 
       await bare(later);
-      now += 119_000;
-      await schedule.tick();
-      expect((await backup.status()).state).toBe("failed");
-
-      now += 1_000;
+      now = at(10, 22, 1);
       await schedule.tick();
       expect((await backup.status()).state).toBe("saved");
     } finally { await schedule.stop(); }
   });
 
   it("does nothing without a remote", async () => {
-    let now = 0;
-    const schedule = startBackup(backup, { now: () => now, interval: 3_600_000 });
+    const schedule = startBackup(backup, { now: () => at(9, 22, 5) });
     try {
-      await schedule.tick();
-      now += 600_000;
       await expect(schedule.tick()).resolves.toBeUndefined();
       expect((await backup.status()).state).toBe("off");
     } finally { await schedule.stop(); }

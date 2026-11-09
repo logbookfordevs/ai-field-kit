@@ -11,6 +11,7 @@ import { ReviewNeed } from "@/screens/overview/ReviewNeed";
 import { Setup } from "@/screens/overview/Setup";
 import { useAttention, useOverview, type Need } from "@/screens/overview/needs";
 import { ago, plural, shortSource } from "@/text/format";
+import { dailyBackupTime } from "@/screens/backup/format";
 import "@/screens/overview/overview.css";
 
 function NeedItem({ need, libraryReady, packs }: { need: Need; libraryReady: boolean; packs: { id: string; name: string }[] }) {
@@ -70,7 +71,7 @@ function OverviewScreen() {
   const core = kit.data.core.length;
   const savedIn = core > 0 ? `${plural(core, "Core skill")} and your choices are` : "Your choices are";
   const savedLine = status.lastSavedAt === undefined ? "backed up" : `backed up ${ago(status.lastSavedAt)}`;
-  const allSetTitle = status.waiting > 0 ? `All set · ${plural(status.waiting, "change")} saving` : `All set · ${savedLine}`;
+  const allSetTitle = status.waiting > 0 ? `All set · ${plural(status.waiting, "change")} back up at ${dailyBackupTime}` : `All set · ${savedLine}`;
 
   return (
     <Page title="Overview" description={needs.length ? `${plural(needs.length, "thing needs", "things need")} you.` : undefined}>

@@ -41,8 +41,9 @@ The Backup screen connects the library to a private repository:
   no token.
 - **Use another Git remote** takes any URL Git can push to, with Git's own credentials.
 
-AFK then saves to the remote two minutes after each change. If a save fails, the changes
-wait on this machine and nothing is lost; **Save now** retries. Skill files are not
+AFK then sends waiting changes to the remote once a day at 22:00. If AFK isn't running
+then, an edit made outside AFK is waiting, or the push fails, that day is skipped; the changes
+wait on this machine and nothing is lost. **Back up now** sends them at any time. Skill files are not
 scanned for secrets, so keep the repository private.
 
 **History** lists every save. **Go back** restores an earlier one as a new save, so going

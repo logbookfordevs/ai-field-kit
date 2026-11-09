@@ -44,8 +44,8 @@ skill activation.
 Your skills, packs, tools, bookmarks, invocation choices and agent rules live in a
 **library**: a Git repository at `~/.afk/library` where every change is one save.
 Start one from the app (**Start a new library**) or with `afk library init --apply`.
-**Backup** sends it to a private GitHub repository or any Git remote two minutes after
-each change, and **Restore my library** (or `afk library connect owner/repo`) brings it
+**Backup** sends it to a private GitHub repository or any Git remote once a day at
+22:00 (or whenever you click **Back up now**), and **Restore my library** (or `afk library connect owner/repo`) brings it
 back on a new machine. See the [library guide](docs/kit.md).
 
 Every skill appears once in **Skills**, labelled with where it comes from: **Core** (saved

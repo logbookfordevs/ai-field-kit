@@ -293,26 +293,23 @@ describe("replaced by Skills CLI", () => {
 describe("outside edits and saving to the remote", () => {
   const backupFor = (): Backup => new Backup(library);
 
-  it("never sends an outside edit, and the scheduler holds back until the edit is resolved", async () => {
+  it("never sends an outside edit, and the daily backup skips while one waits", async () => {
     await store("kami");
     const backup = backupFor();
     await backup.connect(remote);
     await store("wizard");
     await writeFile(join(library.skillPath("kami"), "SKILL.md"), skillText("kami", "Edited by hand."));
-    let clock = 0;
-    const schedule = startBackup(backup, { now: () => clock, interval: 3_600_000, quietMs: 120_000 });
+    let clock = new Date(2026, 10, 9, 21);
+    const schedule = startBackup(backup, { now: () => clock });
 
-    await schedule.tick();
-    clock += 121_000;
+    clock = new Date(2026, 10, 9, 22);
     await schedule.tick();
 
     expect((await backup.status()).attention).toBe(1);
     expect((await git(remote, "log", "--format=%s", "main")).split("\n")).toEqual(["Add kami", "Start the library"]);
 
     await backup.checks.keep("edited:kami");
-    clock += 1_000;
-    await schedule.tick();
-    clock += 121_000;
+    clock = new Date(2026, 10, 10, 22);
     await schedule.tick();
     await schedule.stop();
 

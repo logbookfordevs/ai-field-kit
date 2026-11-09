@@ -43,7 +43,7 @@ describe("saved", () => {
 
     expect(await screen.findByRole("heading", { level: 2, name: "Saved 2 min ago" })).toBeInTheDocument();
     expect(screen.getByText("leo/afk-library", { exact: false })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Save now" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back up now" }));
 
     expect(client.calls.some(call => call.operation === "backup/save")).toBe(true);
     expect(await screen.findByRole("status")).toHaveTextContent("Saved.");
@@ -52,10 +52,10 @@ describe("saved", () => {
 
 describe("states in words", () => {
   const cases: [string, Overrides<Status>, string, RegExp][] = [
-    ["waiting", { state: "waiting", waiting: 3 }, "Saving soon", /3 changes waiting/],
+    ["waiting", { state: "waiting", waiting: 3 }, "Backs up at 22:00", /3 changes waiting on this machine/],
     ["failed", { state: "failed", waiting: 1, error: "Could not resolve host: github.com" }, "Can't save", /1 change waiting on this machine; nothing is lost/],
     ["paused by an edit outside AFK", { state: "waiting", waiting: 2, held: true, attention: 1 }, "Paused", /2 changes waiting on this machine.*kept or discarded/],
-    ["paused with nothing new to save", { state: "saved", waiting: 0, held: true, attention: 1 }, "Paused", /^Saving resumes when the edits made outside AFK are kept or discarded\. Last saved 2 min ago\.$/],
+    ["paused with nothing new to save", { state: "saved", waiting: 0, held: true, attention: 1 }, "Paused", /^The 22:00 backup is skipped until the edits made outside AFK are kept or discarded\. Last saved 2 min ago\.$/],
     ["off", { state: "off" }, "Off", /only on this machine/],
   ];
 
@@ -78,7 +78,7 @@ describe("states in words", () => {
 
   it("does not double the full stop when the remote's reason already ends with one", async () => {
     open({ "backup/save": () => status({ state: "failed", waiting: 1, error: "Repository not found." }) });
-    await userEvent.click(await screen.findByRole("button", { name: "Save now" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Back up now" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("Not saved yet: Repository not found. Your changes are kept here.");
   });
@@ -86,12 +86,12 @@ describe("states in words", () => {
   it("disables saving while a push is running", async () => {
     open({}, state({ status: status({ pushing: true }) }));
 
-    expect(await screen.findByRole("button", { name: "Save now" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Back up now" })).toBeDisabled();
   });
 
   it("keeps a refused save visible next to the page until the next action", async () => {
     open({ "backup/save": () => fail("The library is locked by another AFK.") });
-    await userEvent.click(await screen.findByRole("button", { name: "Save now" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Back up now" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The library is locked by another AFK.");
   });

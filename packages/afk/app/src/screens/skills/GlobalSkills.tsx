@@ -14,6 +14,7 @@ import { DiscoveryEstimate } from "@/screens/skills/DiscoveryEstimate";
 import { InvocationInfo } from "@/screens/skills/InvocationInfo";
 import { filterSkills, fromOptions, globalSkills, isFiltered, noFilters, skillsDescription, type Filters, type Skill } from "@/screens/skills/model";
 import { plural } from "@/text/format";
+import { dailyBackupTime } from "@/screens/backup/format";
 import { SkillPanel } from "@/screens/skills/SkillPanel";
 import { SkillRow, type RowActions, type RowFailure } from "@/screens/skills/SkillRow";
 import { Toolbar } from "@/screens/skills/Toolbar";
@@ -37,7 +38,7 @@ function useBackupNotes(): { note: (skill: Skill) => { text: string; warn: boole
     if (data.attention.some(item => item.name === skill.name)) return { text: "Changed outside AFK. Review it in Backup.", warn: true };
     const backupOn = data.status.state !== "off";
     const unpushed = skill.place === "core" && backupOn && data.unpushed.includes(skill.name);
-    return unpushed ? { text: "Saved · not pushed yet", warn: false } : undefined;
+    return unpushed ? { text: `Saved · backs up at ${dailyBackupTime}`, warn: false } : undefined;
   };
   return { note, outsideEdit: Boolean(data?.status.held) };
 }
