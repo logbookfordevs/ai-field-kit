@@ -4,6 +4,7 @@ import { navigation as defaultNavigation } from "@/screens/registry";
 import type { Attention, ScreenDefinition } from "@/screens/types";
 import { hrefFor, navigate, useRoute } from "@/shell/router";
 import { Closed, ExitButton } from "@/shell/ExitAfk";
+import { MemoryUse } from "@/shell/MemoryUse";
 import { UpdateStatus, useAppUpdate } from "@/shell/UpdateStatus";
 import "@/shell/Shell.css";
 
@@ -73,7 +74,7 @@ export function Shell({ navigation = defaultNavigation }: { navigation?: ScreenD
               </Fragment>
             ))}
           </nav>
-          <div className="rail-foot"><UpdateStatus update={update} /><ExitButton onExited={close} /></div>
+          <div className="rail-foot"><UpdateStatus update={update} /><MemoryUse /><ExitButton onExited={close} /></div>
         </aside>
         <header className="topbar">
           <Brand />
@@ -85,6 +86,7 @@ export function Shell({ navigation = defaultNavigation }: { navigation?: ScreenD
           </label>
           <Menu label="More">
             <UpdateStatus update={update} />
+            <MemoryUse />
             <ExitButton onExited={close} />
           </Menu>
         </header>

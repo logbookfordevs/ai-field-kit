@@ -152,3 +152,9 @@ it("names the browser tab after the open section", async () => {
   expect(await screen.findByRole("heading", { level: 1, name: "Backup" })).toBeInTheDocument();
   expect(document.title).toBe("Backup · AFK");
 });
+
+it("shows how much memory AFK uses, quietly, in the sidebar", async () => {
+  renderWithApp(<Shell />, { client: fakeClient({}, { rssBytes: 84.4 * 1024 * 1024 }) });
+
+  expect(await within(screen.getByRole("complementary", { name: "AFK" })).findByText("Using 84 MB")).toBeInTheDocument();
+});

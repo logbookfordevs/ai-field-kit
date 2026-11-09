@@ -23,6 +23,7 @@
 .menu .update-status{padding:8px 12px}
 .menu .update-status button{width:auto}
 .menu .update-status .text{padding:0}
+.memory-use{margin:2px 0 0;font-size:11px;line-height:1.4;color:var(--muted);font-variant-numeric:tabular-nums}
 .rail-foot .exit-afk{min-height:32px;padding:0;font-size:13px;margin-top:4px}
 main.closed{max-width:640px;margin:0 auto;padding:48px 24px}
 main.closed .brand{padding:0;margin-bottom:40px}
