@@ -19,8 +19,9 @@ export interface AgentEntry {
 export const AGENT_TABLE: readonly AgentEntry[] = [
   { id: "aider-desk", name: "AiderDesk", global: "~/.aider-desk/skills", project: ".aider-desk/skills", detect: ["~/.aider-desk"] },
   { id: "amp", name: "Amp", global: "~/.config/agents/skills", project: ".agents/skills", detect: ["~/.config/amp"], icon: "amp.svg" },
-  { id: "antigravity", name: "Antigravity", global: "~/.gemini/antigravity/skills", project: ".agents/skills", detect: ["~/.gemini/antigravity"], icon: "antigravity.png" },
-  { id: "antigravity-cli", name: "Antigravity CLI", global: "~/.gemini/antigravity-cli/skills", project: ".agents/skills", detect: ["~/.gemini/antigravity-cli"] },
+  // Antigravity 1.5+ reads global skills from the shared ~/.gemini/config, not the per-app folders Skills CLI 1.7.6 lists.
+  { id: "antigravity-cli", name: "Antigravity CLI", global: "~/.gemini/config/skills", project: ".agents/skills", detect: ["~/.gemini/antigravity-cli"], icon: "antigravity.png" },
+  { id: "antigravity", name: "Antigravity", global: "~/.gemini/config/skills", project: ".agents/skills", detect: ["~/.gemini/antigravity"], icon: "antigravity.png" },
   { id: "astrbot", name: "AstrBot", global: "~/.astrbot/data/skills", project: "data/skills", detect: ["~/.astrbot"] },
   { id: "autohand-code", name: "Autohand Code CLI", global: "~/.autohand/skills", project: ".autohand/skills", detect: ["~/.autohand"] },
   { id: "augment", name: "Augment", global: "~/.augment/skills", project: ".augment/skills", detect: ["~/.augment"], icon: "augment.svg" },
