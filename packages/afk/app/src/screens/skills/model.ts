@@ -1,7 +1,7 @@
 import type { AppState, InvocationMode, SkillEntry } from "@/screens/skills/api";
 import { isRepositorySource } from "@/text/format";
 
-export const skillsDescription = "Turn skills on or off and choose how they start. New skills come in from Sources.";
+export const skillsDescription = "Turn skills on or off and choose how they start.";
 
 export type Place = "core" | "machine" | "review" | "pack" | "tool" | "project";
 
@@ -27,15 +27,18 @@ export interface Skill {
   keptHere?: boolean;
 }
 
-export type StateFilter = "all" | "on" | "off" | "manual" | "auto";
+export type StateFilter = "on" | "all" | "off";
+export type StartsFilter = "any" | "manual" | "auto";
 
 export interface Filters {
   query: string;
   from: string;
   state: StateFilter;
+  starts: StartsFilter;
 }
 
-export const noFilters: Filters = { query: "", from: "all", state: "all" };
+/** Off skills stay out of the list until a filter asks for them. */
+export const noFilters: Filters = { query: "", from: "all", state: "on", starts: "any" };
 
 const placeLabels: Record<Exclude<Place, "pack" | "tool">, string> = { core: "Core", machine: "This machine", review: "To review", project: "This project" };
 
@@ -113,19 +116,31 @@ export function fromOptions(skills: Skill[]): { value: string; label: string }[]
 }
 
 export function isFiltered(filters: Filters): boolean {
-  return Boolean(filters.query.trim()) || filters.from !== "all" || filters.state !== "all";
+  return Boolean(filters.query.trim()) || filters.from !== "all" || filters.state !== noFilters.state || filters.starts !== noFilters.starts;
 }
 
 export function filterSkills(skills: Skill[], filters: Filters): Skill[] {
   const needle = filters.query.trim().toLowerCase();
   return skills.filter(skill => {
     if (filters.from !== "all" && fromKey(skill) !== filters.from) return false;
-    if (filters.state === "on" && !skill.on) return false;
-    if (filters.state === "off" && skill.on) return false;
-    if (filters.state === "manual" && skill.mode !== "Manual only") return false;
-    if (filters.state === "auto" && skill.mode !== "Automatic allowed") return false;
+    const turnedOff = Boolean(skill.entry) && !skill.on;
+    if (filters.state === "on" && turnedOff) return false;
+    if (filters.state === "off" && !turnedOff) return false;
+    if (filters.starts === "manual" && skill.mode !== "Manual only") return false;
+    if (filters.starts === "auto" && skill.mode !== "Automatic allowed") return false;
     return !needle || skill.name.toLowerCase().includes(needle) || skill.description.toLowerCase().includes(needle);
   });
+}
+
+/** Rough size of a skill's name and description, at four characters per token. */
+export function discoveryTokens(skill: Pick<Skill, "name" | "description">): number {
+  return Math.ceil(Array.from(`${skill.name}\n${skill.description}`).length / 4);
+}
+
+/** What agents load up front: names and descriptions of skills that are on and may start automatically. */
+export function discoveryEstimate(skills: Skill[], agent: "claude" | "codex"): { count: number; tokens: number } {
+  const loaded = skills.filter(skill => skill.on && skill.entry?.invocation[agent] === "Automatic allowed");
+  return { count: loaded.length, tokens: loaded.reduce((total, skill) => total + discoveryTokens(skill), 0) };
 }
 
 /** Read by the navigation on every screen, so it tolerates a partial state. */

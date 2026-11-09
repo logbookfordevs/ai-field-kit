@@ -48,7 +48,7 @@ it("names the agents in the list's invocation note too", async () => {
 
   await userEvent.click(screen.getByRole("button", { name: "How Manual and Automatic work" }));
 
-  expect(screen.getByRole("note")).toHaveTextContent("Claude Code and Pi read the disable-model-invocation line in SKILL.md.");
+  expect(screen.getByText("Claude Code and Pi read the disable-model-invocation line in SKILL.md.", { exact: false })).toBeVisible();
 });
 
 it("saves an edit as one change and reports it", async () => {

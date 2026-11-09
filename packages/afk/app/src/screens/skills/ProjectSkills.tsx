@@ -4,7 +4,6 @@ import { Menu, MenuItem, MenuSeparator } from "@/components/Menu";
 import { Segmented } from "@/components/Segmented";
 import { useToast } from "@/components/Toast";
 import { Page } from "@/shell/Page";
-import { navigate } from "@/shell/router";
 import type { AppState } from "@/screens/skills/api";
 import { BulkBar, SelectShown } from "@/screens/skills/BulkBar";
 import { InvocationInfo } from "@/screens/skills/InvocationInfo";
@@ -17,7 +16,8 @@ import { modeOptions, unavailable, updateBlocked, type RowActions } from "@/scre
 import { Toolbar } from "@/screens/skills/Toolbar";
 import { useRun } from "@/screens/skills/useRun";
 import { useSelection, type Selection } from "@/screens/skills/useSelection";
-import { UpdateAll } from "@/screens/skills/UpdateAll";
+import { openInstall } from "@/screens/sources";
+import { SkillsActions } from "@/screens/skills/SkillsActions";
 
 function ProjectRow({ skill, selection, actions }: { skill: Skill; selection: Selection; actions: RowActions }) {
   const nested = Boolean(skill.folder);
@@ -67,12 +67,17 @@ export function ProjectSkills({ state, scope, scopePicker }: { state: AppState; 
   const deferred = useDeferredValue(filters);
   const shown = useMemo(() => filterSkills(own, deferred), [own, deferred]);
   const shownNested = useMemo(() => filterSkills(nested, deferred), [nested, deferred]);
+  const hiddenOff = useMemo(() => (deferred.state === "on" ? filterSkills(own, { ...deferred, state: "off" }).length : 0), [own, deferred]);
   const selection = useSelection(own.map(skill => skill.name));
   const panelSkill = panel ? [...own, ...nested].find(skill => skill.name === panel) : undefined;
   const filtered = isFiltered(filters);
+  const offHidden = hiddenOff > 0;
+  const countLine = filtered ? `Showing ${shown.length} of ${own.length}` : `${plural(shown.length, "skill")} on`;
+  const includeOff = () => setFilters({ ...filters, state: "all" });
   const hasOwn = own.length > 0;
   const hasNested = shownNested.length > 0;
   const nothingShown = !shown.length && !hasNested;
+  const offHiddenNote = offHidden && !nothingShown;
   const missingFolder = state.projectStatuses[scope] !== "present";
   const sharingStatus = state.skillSharing[scope]?.status;
   const sharingText = sharingStatus === "connected" ? "Claude shares this project’s skills folder." : sharingStatus === "conflict" ? "Claude’s skills folder needs attention." : "Claude doesn’t see this project’s skills folder.";
@@ -97,12 +102,12 @@ export function ProjectSkills({ state, scope, scopePicker }: { state: AppState; 
     if (missingFolder) return <EmptyState title="This project’s folder is missing">Its folder isn’t on this machine. Fix its path in Settings.</EmptyState>;
     if (!hasOwn && !nested.length) {
       return (
-        <EmptyState title="This project has no skills of its own yet" actions={<button type="button" onClick={() => navigate("sources")}>Add something new</button>}>
+        <EmptyState title="This project has no skills of its own yet" actions={<button type="button" onClick={() => openInstall()}>Add something new</button>}>
           Install skills into this project to keep them with its repository. Global skills still reach agents working here.
         </EmptyState>
       );
     }
-    if (nothingShown) return <EmptyState title="No skill matches these filters" actions={<button type="button" onClick={() => setFilters(noFilters)}>Clear filters</button>}>Search looks at names and descriptions.</EmptyState>;
+    if (nothingShown) return <EmptyState title="No skill matches these filters" actions={<>{offHidden ? <button type="button" onClick={includeOff}>Include {hiddenOff} off</button> : null}<button type="button" onClick={() => setFilters(noFilters)}>Clear filters</button></>}>Search looks at names and descriptions. Turned-off skills stay out of the list until you include them.</EmptyState>;
     return (
       <>
         {shown.length ? (
@@ -127,7 +132,7 @@ export function ProjectSkills({ state, scope, scopePicker }: { state: AppState; 
     <Page
       title="Skills"
       description={skillsDescription}
-      actions={hasOwn ? <UpdateAll onSelect={() => setDialog({ kind: "update", title: `Update skills in ${scope}`, scope })} /> : undefined}
+      actions={<SkillsActions onUpdateAll={hasOwn ? () => setDialog({ kind: "update", title: `Update skills in ${scope}`, scope }) : undefined} />}
     >
       {scopePicker}
       <div className="strip quiet">
@@ -136,7 +141,8 @@ export function ProjectSkills({ state, scope, scopePicker }: { state: AppState; 
       </div>
       <Toolbar filters={filters} onChange={setFilters} />
       <div className="list-meta">
-        <p aria-live="polite">{filtered ? `Showing ${shown.length} of ${own.length}` : plural(own.length, "skill")}</p>
+        <p aria-live="polite">{countLine}</p>
+        {offHiddenNote ? <button type="button" className="text" onClick={includeOff}>Include {hiddenOff} off</button> : null}
         {filtered ? <button type="button" className="text" onClick={() => setFilters(noFilters)}>Clear filters</button> : null}
         <SelectShown selection={selection} shown={shown.map(skill => skill.name)} />
         <span className="spacer" />

@@ -5,8 +5,8 @@
 .strip p{flex:1;min-width:200px;font-size:14px}
 .strip.quiet{background:transparent}
 
-.skills-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 240px 190px;gap:12px;align-items:end}
-.skills-toolbar.no-from{grid-template-columns:minmax(220px,1fr) 190px}
+.skills-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 220px 150px 190px;gap:12px;align-items:end}
+.skills-toolbar.no-from{grid-template-columns:minmax(220px,1fr) 150px 190px}
 .skills-toolbar label>span:first-child{color:var(--muted)}
 .skills-search{position:relative;display:block}
 .skills-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
@@ -109,6 +109,9 @@ section.blk+section.blk{margin-top:0}
 .nested .sub{margin:4px 0 12px}
 
 @media (max-width:1100px){
+  .skills-toolbar{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .skills-toolbar.no-from{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .skills-toolbar>label:first-child{grid-column:1/-1}
   .s-cols{display:none}
   .srow{grid-template-columns:28px minmax(0,1fr) auto 44px;grid-template-areas:"pick main on more" ". from inv inv";row-gap:8px}
   .srow.project{grid-template-columns:28px minmax(0,1fr) 44px;grid-template-areas:"pick main more" ". from from" ". inv inv"}

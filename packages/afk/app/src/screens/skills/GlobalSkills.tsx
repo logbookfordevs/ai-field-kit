@@ -6,21 +6,28 @@ import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/Toast";
 import { Page } from "@/shell/Page";
 import { navigate } from "@/shell/router";
+import { openInstall } from "@/screens/sources";
 import type { AppState, InvocationMode } from "@/screens/skills/api";
 import { BulkBar, SelectShown } from "@/screens/skills/BulkBar";
 import { SkillDialogs, type DialogRequest } from "@/screens/skills/SkillDialogs";
+import { DiscoveryEstimate } from "@/screens/skills/DiscoveryEstimate";
 import { InvocationInfo } from "@/screens/skills/InvocationInfo";
 import { filterSkills, fromOptions, globalSkills, isFiltered, noFilters, skillsDescription, type Filters, type Skill } from "@/screens/skills/model";
 import { plural } from "@/text/format";
 import { SkillPanel } from "@/screens/skills/SkillPanel";
 import { SkillRow, type RowActions, type RowFailure } from "@/screens/skills/SkillRow";
 import { Toolbar } from "@/screens/skills/Toolbar";
-import { UpdateAll } from "@/screens/skills/UpdateAll";
+import { SkillsActions } from "@/screens/skills/SkillsActions";
 import { useRun } from "@/screens/skills/useRun";
 import { useSelection } from "@/screens/skills/useSelection";
 
+/** Skills to review are shown whether they are on or off, so none hides behind the default. */
+const reviewFilters: Filters = { ...noFilters, from: "review", state: "all" };
+
 function initialFilters(params: URLSearchParams): Filters {
-  return { ...noFilters, query: params.get("q") ?? "", from: params.get("from") ?? "all" };
+  const from = params.get("from") ?? "all";
+  const base = from === "review" ? reviewFilters : noFilters;
+  return { ...base, query: params.get("q") ?? "", from };
 }
 
 function useBackupNotes(): { note: (skill: Skill) => { text: string; warn: boolean } | undefined; outsideEdit: boolean } {
@@ -47,6 +54,7 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
   const all = useMemo(() => globalSkills(state), [state]);
   const deferred = useDeferredValue(filters);
   const shown = useMemo(() => filterSkills(all, deferred), [all, deferred]);
+  const hiddenOff = useMemo(() => (deferred.state === "on" ? filterSkills(all, { ...deferred, state: "off" }).length : 0), [all, deferred]);
   const options = useMemo(() => fromOptions(all), [all]);
   const selection = useSelection(all.filter(skill => skill.entry).map(skill => skill.name));
 
@@ -60,7 +68,12 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
   const selectable = shown.filter(skill => skill.entry).map(skill => skill.name);
   const panelSkill = panel ? all.find(skill => skill.name === panel.name) : undefined;
 
+  const offHidden = hiddenOff > 0;
+  const offHiddenNote = offHidden && !nothingShown;
+  const countLine = filtered ? `Showing ${shown.length} of ${all.length}` : `${plural(shown.length, "skill")} on`;
+
   const clear = () => setFilters(noFilters);
+  const includeOff = () => setFilters({ ...filters, state: "all" });
 
   const attempt = async <K extends OperationName>(skill: Skill, operation: K, input: OperationInput<K>) => {
     const result = await run(operation, input, { quiet: true });
@@ -111,8 +124,15 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
   const renderList = () => {
     if (!hasSkills) {
       return (
-        <EmptyState title="No skills on this machine yet" actions={<button type="button" className="primary" onClick={() => navigate("sources")}>Add something new</button>}>
+        <EmptyState title="No skills on this machine yet" actions={<button type="button" className="primary" onClick={() => openInstall()}>Add something new</button>}>
           Install skills from a repository or a zip in Sources. They show up here to turn on and off.
+        </EmptyState>
+      );
+    }
+    if (nothingShown && !filtered) {
+      return (
+        <EmptyState title="Every skill is off" actions={<button type="button" onClick={includeOff}>Include {hiddenOff} off</button>}>
+          Turned-off skills stay out of the list until you ask for them.
         </EmptyState>
       );
     }
@@ -121,7 +141,7 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
       return (
         <EmptyState
           title={query ? `No skill matches “${query}”` : "No skill matches these filters"}
-          actions={<><button type="button" onClick={clear}>Clear filters</button><button type="button" onClick={() => navigate("sources")}>Find it in a repository</button></>}
+          actions={<>{offHidden ? <button type="button" onClick={includeOff}>Include {hiddenOff} off</button> : null}<button type="button" onClick={clear}>Clear filters</button><button type="button" onClick={() => navigate("sources")}>Find it in a repository</button></>}
         >
           Search looks at names and descriptions. To get a skill you don’t have yet, install it from a repository or a zip.
         </EmptyState>
@@ -143,22 +163,24 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
     <Page
       title="Skills"
       description={skillsDescription}
-      actions={hasSkills ? <UpdateAll onSelect={() => setDialog({ kind: "update", title: "Update skills" })} /> : undefined}
+      actions={<SkillsActions onUpdateAll={hasSkills ? () => setDialog({ kind: "update", title: "Update skills" }) : undefined} />}
     >
       {scopePicker}
       {showStrip ? (
         <div className="strip">
           <Icon name="alert" />
           <p><b>{plural(toReview, "skill was", "skills were")} installed outside AFK</b> and {toReview === 1 ? "needs" : "need"} a place.</p>
-          <button type="button" className="text" onClick={() => setFilters({ ...noFilters, from: "review" })}>{toReview === 1 ? "Show it" : "Show them"}</button>
+          <button type="button" className="text" onClick={() => setFilters(reviewFilters)}>{toReview === 1 ? "Show it" : "Show them"}</button>
         </div>
       ) : null}
       <Toolbar filters={{ ...filters, from: fromValue }} fromOptions={options} onChange={setFilters} />
       <div className="list-meta">
-        <p aria-live="polite">{filtered ? `Showing ${shown.length} of ${all.length}` : plural(all.length, "skill")}</p>
+        <p aria-live="polite">{countLine}</p>
+        {offHiddenNote ? <button type="button" className="text" onClick={includeOff}>Include {hiddenOff} off</button> : null}
         {filtered ? <button type="button" className="text" onClick={clear}>Clear filters</button> : null}
         <SelectShown selection={selection} shown={selectable} />
         <span className="spacer" />
+        <DiscoveryEstimate skills={all} />
         <InvocationInfo />
       </div>
       <BulkBar scope="Global" selection={selection} shown={selectable} onDialog={setDialog} />

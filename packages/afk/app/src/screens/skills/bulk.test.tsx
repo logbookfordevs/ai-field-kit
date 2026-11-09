@@ -29,6 +29,7 @@ const calls = (client: ReturnType<typeof setup>, operation: OperationName) => cl
 
 async function pick(...names: string[]) {
   await screen.findByRole("list", { name: "Skills" });
+  await userEvent.click(screen.getByRole("button", { name: "Include 1 off" }));
   for (const name of names) await userEvent.click(screen.getByRole("checkbox", { name: `Select ${name}` }));
   return screen.getByRole("group", { name: "Selected skills" });
 }

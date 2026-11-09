@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
 import { ClientProvider } from "@/api/ClientProvider";
 import { screen as skills } from "@/screens/skills";
+import { InstallHost } from "@/screens/sources";
 import { agentFolders, appState, entry } from "@/screens/skills/fixtures";
 import { fakeClient } from "@/test/fake-client";
 import { renderWithApp } from "@/test/render";
@@ -26,12 +27,13 @@ function rowFor(name: string) {
   return screen.getByRole("button", { name }).closest("li") as HTMLElement;
 }
 
-it("lists every Global skill with where it comes from, derived from its placement", async () => {
+it("lists every Global skill that is on with where it comes from, derived from its placement", async () => {
   renderSkills();
 
   const listed = await rows();
 
-  expect(listed).toHaveLength(7);
+  expect(listed).toHaveLength(6);
+  expect(screen.getByText("6 skills on")).toBeInTheDocument();
   expect(rowFor("kami")).toHaveTextContent("Core");
   expect(rowFor("kami")).toHaveTextContent("Plans a change before writing code.");
   expect(rowFor("hairline")).toHaveTextContent("Pack · Writing");
@@ -59,20 +61,73 @@ it("opens filtered to review from the address", async () => {
   expect(screen.queryByRole("button", { name: "Show it" })).not.toBeInTheDocument();
 });
 
-it("searches names and descriptions and filters by state and invocation", async () => {
+it("keeps skills that are off out of the list until asked for", async () => {
   renderSkills();
   await rows();
+  expect(screen.queryByRole("button", { name: "quill" })).not.toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole("button", { name: "Include 1 off" }));
+
+  expect(await rows()).toHaveLength(7);
+  expect(screen.getByRole("combobox", { name: "State" })).toHaveValue("all");
+  expect(rowFor("quill")).toHaveTextContent("Edits prose for clarity.");
+});
+
+it("searches names and descriptions and filters by state and how skills start", async () => {
+  renderSkills();
+  await rows();
+  const names = async () => (await rows()).map(row => within(row).getAllByRole("button")[0]!.textContent);
 
   await userEvent.type(screen.getByRole("searchbox", { name: "Find a skill" }), "prose");
-  expect((await rows()).map(row => within(row).getAllByRole("button")[0]!.textContent)).toEqual(["quill"]);
+  expect(screen.getByRole("heading", { name: "No skill matches “prose”" })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Include 1 off" }));
+  expect(await names()).toEqual(["quill"]);
   expect(screen.getByText("Showing 1 of 7")).toBeInTheDocument();
 
   await userEvent.clear(screen.getByRole("searchbox", { name: "Find a skill" }));
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "State" }), "off");
-  expect((await rows()).map(row => within(row).getAllByRole("button")[0]!.textContent)).toEqual(["north-plan", "quill"]);
+  expect(await names()).toEqual(["quill"]);
 
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: "State" }), "manual");
-  expect((await rows()).map(row => within(row).getAllByRole("button")[0]!.textContent)).toEqual(["quill"]);
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "State" }), "all");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "How it starts" }), "manual");
+  expect(await names()).toEqual(["quill"]);
+});
+
+it("says when every skill is off and offers to include them", async () => {
+  const state = appState({ global: [entry("quiet", { available: false })] });
+  state.kit.core = [];
+  renderSkills("", state);
+
+  expect(await screen.findByRole("heading", { name: "Every skill is off" })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Include 1 off" }));
+
+  expect(await rows()).toHaveLength(1);
+});
+
+it("estimates the discovery tokens of skills that are on and may start automatically", async () => {
+  const global = [
+    entry("abcd", { description: "x".repeat(11) }),
+    entry("manual", { mode: "Manual only", description: "x".repeat(40) }),
+    entry("resting", { available: false, description: "x".repeat(40) }),
+    entry("efgh", { invocation: { claude: "Manual only", codex: "Automatic allowed" }, description: "y".repeat(11) }),
+  ];
+  renderSkills("", appState({ global }));
+  await rows();
+
+  await userEvent.click(screen.getByRole("button", { name: "Discovery: Claude ~4 · Codex ~8 tokens" }));
+
+  expect(screen.getByText(/about 4 tokens from 1 automatic skill/)).toBeVisible();
+  expect(screen.getByText(/about 8 tokens from 2 automatic skills/)).toBeVisible();
+});
+
+it("opens Add something new from the Skills page", async () => {
+  const client = fakeClient({ state: () => appState(), "agent-folders/state": () => agentFolders, "backup/state": () => ({ status: { state: "saved" }, attention: [], unpushed: [] }), "skills/install-state": () => null });
+  renderWithApp(<><Screen params={new URLSearchParams()} /><InstallHost /></>, { client });
+  await rows();
+
+  await userEvent.click(screen.getByRole("button", { name: "Add something new" }));
+
+  expect(await screen.findByRole("dialog", { name: "Add something new" })).toBeInTheDocument();
 });
 
 it("filters by where skills come from, with counts for each place", async () => {
@@ -96,7 +151,7 @@ it("says when nothing matches and clears the filters", async () => {
 
   expect(screen.getByRole("heading", { name: "No skill matches “zzz”" })).toBeInTheDocument();
   await userEvent.click(screen.getAllByRole("button", { name: "Clear filters" })[0]!);
-  expect(await rows()).toHaveLength(7);
+  expect(await rows()).toHaveLength(6);
 });
 
 it("explains an empty machine", async () => {

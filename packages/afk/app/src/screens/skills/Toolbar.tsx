@@ -1,16 +1,20 @@
 import { useEffect, useRef } from "react";
 import { Icon } from "@/components/Icon";
-import type { Filters, StateFilter } from "@/screens/skills/model";
+import type { Filters, StartsFilter, StateFilter } from "@/screens/skills/model";
 
 const stateOptions: { value: StateFilter; label: string }[] = [
-  { value: "all", label: "Any state" },
   { value: "on", label: "On" },
-  { value: "off", label: "Off" },
+  { value: "all", label: "On and off" },
+  { value: "off", label: "Off only" },
+];
+
+const startsOptions: { value: StartsFilter; label: string }[] = [
+  { value: "any", label: "Either way" },
   { value: "manual", label: "Manual only" },
   { value: "auto", label: "Automatic allowed" },
 ];
 
-/** Search plus the two filters. `/` focuses the search from anywhere on the page. */
+/** Search plus the filters. `/` focuses the search from anywhere on the page. */
 export function Toolbar({ filters, fromOptions, onChange }: { filters: Filters; fromOptions?: { value: string; label: string }[]; onChange: (next: Filters) => void }) {
   const search = useRef<HTMLInputElement>(null);
 
@@ -47,6 +51,12 @@ export function Toolbar({ filters, fromOptions, onChange }: { filters: Filters; 
         <span>State</span>
         <select value={filters.state} onChange={event => onChange({ ...filters, state: event.target.value as StateFilter })}>
           {stateOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>How it starts</span>
+        <select value={filters.starts} onChange={event => onChange({ ...filters, starts: event.target.value as StartsFilter })}>
+          {startsOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
       </label>
     </div>

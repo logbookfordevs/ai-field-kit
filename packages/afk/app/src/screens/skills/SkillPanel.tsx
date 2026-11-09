@@ -6,7 +6,7 @@ import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import { FileViewer } from "@/screens/skills/FileViewer";
 import { useMechanismText } from "@/screens/skills/InvocationInfo";
-import { fromLabel, type Skill } from "@/screens/skills/model";
+import { discoveryTokens, fromLabel, type Skill } from "@/screens/skills/model";
 import { shortSource } from "@/text/format";
 import { SkillEditor } from "@/screens/skills/SkillEditor";
 import { FailureNote, modeOptions, updateBlocked, type RowActions, type RowFailure } from "@/screens/skills/SkillRow";
@@ -26,10 +26,6 @@ function backupLine(skill: Skill, backupOn: boolean): string {
   if (skill.place === "tool") return "The tool and your Manual/Automatic choice are backed up; the files come from the tool.";
   if (skill.place === "project") return "Travels with the project’s repository.";
   return "Not in your library, so it isn’t backed up.";
-}
-
-function discoveryTokens(skill: Skill): number {
-  return Math.ceil(Array.from(`${skill.name}\n${skill.description}`).length / 4);
 }
 
 /** Side panel for one skill: on/off, how it starts, where it lives, and its files. */
