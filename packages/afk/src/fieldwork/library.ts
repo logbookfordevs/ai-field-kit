@@ -210,7 +210,15 @@ export class Library {
 
   /** Where AFK links a stored skill: one path in each folder from `folders()`. */
   async links(name: string): Promise<string[]> {
-    return (await this.folders()).map(folder => join(folder, name));
+    const seen = new Set<string>();
+    const paths: string[] = [];
+    for (const folder of await this.folders()) {
+      const identity = await this.identity(folder);
+      if (seen.has(identity)) continue;
+      seen.add(identity);
+      paths.push(join(folder, name));
+    }
+    return paths;
   }
 
   async readSettings(): Promise<LibrarySettings | undefined> {

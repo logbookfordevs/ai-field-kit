@@ -268,6 +268,21 @@ describe("skills installed outside AFK", () => {
     expect(await git("status", "--porcelain")).toBe("");
   });
 
+  it("adopts an outside skill when an agent folder is a link to the shared folder", async () => {
+    await rm(claude, { recursive: true, force: true });
+    await symlink(agents, claude, "dir");
+    await write(join(agents, "twin"), "twin");
+    const operations = new FieldworkOperations(store);
+
+    await operations.run("skill/adopt", { name: "twin", to: "library" });
+    await operations.close();
+
+    const stored = join(home, ".afk/library/skills/twin");
+    expect(await readFile(join(stored, "SKILL.md"), "utf8")).toBe(skill("twin"));
+    expect(await readlink(join(agents, "twin"))).toBe(stored);
+    expect(await readlink(claude)).toBe(agents);
+  });
+
   it("adds an outside skill with no repository to Core as an uploaded skill", async () => {
     await write(join(agents, "handmade"), "handmade");
     const operations = new FieldworkOperations(store);
