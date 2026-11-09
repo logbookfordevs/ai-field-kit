@@ -61,6 +61,9 @@ it("shows each agent's icon from the shipped set, and a letter when it has none"
   const geminiRow = screen.getByText("Gemini CLI").closest("li")!;
   expect(geminiRow.querySelector("img")).toBeNull();
   expect(within(geminiRow).getByText("G")).toBeInTheDocument();
+  const sharedRow = screen.getByText("~/.agents/skills").closest("li")!;
+  expect(sharedRow.querySelector("img")).toBeNull();
+  expect(sharedRow.querySelector("svg.agent-icon-shared")).not.toBeNull();
 });
 
 it("links and unlinks a folder through the agent folder operations", async () => {

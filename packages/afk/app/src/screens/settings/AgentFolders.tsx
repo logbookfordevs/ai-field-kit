@@ -6,11 +6,13 @@ import { Field } from "@/components/Field";
 import { Ledger, Row } from "@/components/Row";
 import { Switch } from "@/components/Switch";
 import { useToast } from "@/components/Toast";
+import { SharedFolderIcon } from "@/screens/settings/SharedFolderIcon";
 import "@/screens/settings/Settings.css";
 
 const sharedReadersShown = 6;
 
 function AgentIcon({ folder }: { folder: AgentFolder }) {
+  if (folder.shared) return <SharedFolderIcon />;
   if (folder.icon) return <img className="agent-icon" src={`/assets/agent-icons/${folder.icon}`} alt="" width={28} height={28} loading="lazy" />;
   return <span className="agent-icon agent-icon-letter" aria-hidden="true">{(folder.names[0] ?? "?").trim().charAt(0).toUpperCase()}</span>;
 }

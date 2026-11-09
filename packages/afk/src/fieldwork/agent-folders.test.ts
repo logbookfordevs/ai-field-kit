@@ -63,6 +63,7 @@ describe("agent folder catalog", () => {
 
     expect(catalog.find(folder => folder.path === "~/.claude/skills")).toMatchObject({ names: ["Claude Code"], enabled: true, mechanisms: { claude: ["Claude Code"] }, icon: "claude_code.svg" });
     expect(catalog.find(folder => folder.path === "~/.cursor/skills")).toMatchObject({ enabled: false });
+    expect(catalog.find(folder => folder.shared)!.icon).toBeUndefined();
     expect(catalog.find(folder => folder.path === "~/.cursor/skills")!.mechanisms).toEqual({});
     expect(catalog.find(folder => folder.path === "~/.agents/skills")!.mechanisms).toEqual({ claude: ["Pi"], codex: ["Codex"] });
   });

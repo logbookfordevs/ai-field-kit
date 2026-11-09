@@ -57,11 +57,12 @@ export async function agentFolderCatalog(home: string, settings: AgentFolderSett
   for (const entry of AGENT_TABLE) {
     let folder = folders.get(entry.global);
     if (!folder) {
-      folder = { path: entry.global, names: [], project: entry.project, ...(entry.icon ? { icon: entry.icon } : {}), detected: false, enabled: entry.global === SHARED_FOLDER || saved.enabled.includes(entry.global), shared: entry.global === SHARED_FOLDER, custom: false, mechanisms: {} };
+      const shared = entry.global === SHARED_FOLDER;
+      folder = { path: entry.global, names: [], project: entry.project, detected: false, enabled: shared || saved.enabled.includes(entry.global), shared, custom: false, mechanisms: {} };
       folders.set(entry.global, folder);
     }
     folder.names.push(entry.name);
-    if (!folder.icon && entry.icon) folder.icon = entry.icon;
+    if (!folder.icon && !folder.shared && entry.icon) folder.icon = entry.icon;
     if (entry.invocation) (folder.mechanisms[entry.invocation] ??= []).push(entry.name);
     if (!folder.detected && !folder.shared) folder.detected = (await Promise.all(entry.detect.map(path => present(expandHome(home, path))))).some(Boolean);
   }
