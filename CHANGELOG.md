@@ -11,9 +11,13 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.2.1 - 2026-11-10
+
 ### Changed
 
 - **Installing just installs.** Pick skills from a repository or an upload and click **Install**; there is no destination to choose. New skills are on for your agents here and wait in **To review**, the same place skills installed outside AFK go, until you decide whether each belongs in Core, a pack or This machine only. **Install into** a project still works as before. Skills already installed are shown with where they live and can't be ticked, and **Select all new** picks only the rest. Saving a repository to Try later is its own action in Sources.
+
+- **Move is named by what it does.** A pack skill's menu reads **Also add to Core…** and a Core skill's **Also add to a pack…**, since both keep the skill where it is; This machine only skills keep **Move to…**.
 
 ### Fixed
 
