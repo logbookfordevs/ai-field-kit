@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { cp, lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { writeInvocationChoice } from "./invocation.js";
 import { Library, type InvocationChoice, type Storage } from "./library.js";
 import { sameSkillName, skillName, type Settings, type SettingsStore } from "./settings.js";
@@ -59,6 +59,8 @@ export interface StoreOptions {
   packMember?: boolean;
   /** Replaces files in place: links, on/off state and the Core list stay as they are. */
   update?: boolean;
+  /** Installs only: leaves the folder where Skills CLI put it, so the skill waits in To review. */
+  unstored?: boolean;
   /** Edits the settings inside the same commit as the copied files. */
   finalize?: (settings: Settings, names: string[]) => void;
 }
@@ -95,7 +97,9 @@ export async function storeSkills(store: SettingsStore, staged: StagedSkill[], o
       const destination = library.storagePath(skill.name, to);
       const fresh = join(dirname(destination), `.afk-new-${randomUUID()}`);
       await mkdir(dirname(destination), { recursive: true });
-      await cp(skill.path, fresh, { recursive: true, dereference: true, errorOnExist: true, force: false });
+      // A library copy is found by its record, so the source note kept beside pack and machine copies stays behind.
+      const keep = (path: string): boolean => to !== "library" || dirname(path) !== skill.path || basename(path) !== ".afk-source.json";
+      await cp(skill.path, fresh, { recursive: true, dereference: true, errorOnExist: true, force: false, filter: keep });
       undo(() => rm(fresh, { recursive: true, force: true }));
       const mode = choice(original.preferences[`Global|${skill.name}`]);
       if (mode) await writeInvocationChoice(fresh, mode);

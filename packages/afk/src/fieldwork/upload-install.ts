@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { mkdtemp, rm } from "node:fs/promises";
+import { cp, lstat, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { expandHome, SHARED_FOLDER } from "./agent-folders.js";
 import { addToCore, kitStatus, toolOwner } from "./kit.js";
 import { storeSkills, type StagedSkill } from "./library-install.js";
 import { expandPath, profileGroups, sameSkillName, skillName, UPLOADED_SOURCE, type Profile, type ProfileGroup, type Settings, type SettingsStore } from "./settings.js";
@@ -103,7 +104,7 @@ export class Uploads {
     const settings = await store.read();
     const to = String(data.to);
     const pack = settings.profiles.find(profile => profile.id === to);
-    if (!["core", "machine", "new-pack"].includes(to) && !pack) throw new Error("Choose a destination: Core, a pack or this machine. Uploaded skills can't go to Try later.");
+    if (!["review", "core", "machine", "new-pack"].includes(to) && !pack) throw new Error("Choose a destination: To review, Core, a pack or this machine. Uploaded skills can't go to Try later.");
     const packName = typeof data.packName === "string" ? data.packName.trim() : "";
     if (to === "new-pack" && !packName) throw new Error("Name the new pack.");
 
@@ -112,6 +113,29 @@ export class Uploads {
       if (!held.skills.some(skill => skill.name === name)) throw new Error(`${name} is not in this upload.`);
       const tool = toolOwner(settings, name);
       if (tool) throw new Error(`${name} is installed by ${tool.name}. Use that tool instead.`);
+    }
+    if (to === "review") {
+      const installed = names.filter(name => inventory.some(item => item.name === name));
+      if (installed.length) throw new Error(`Already installed: ${installed.join(", ")}. Leave ${installed.length === 1 ? "it" : "them"} out, or remove ${installed.length === 1 ? "it" : "them"} from Skills first.`);
+      // Like a skill installed outside AFK: a plain folder in the shared agents folder, waiting in To review.
+      const shared = expandHome(store.home, SHARED_FOLDER);
+      await mkdir(shared, { recursive: true });
+      const copied: string[] = [];
+      try {
+        for (const name of names) {
+          const target = join(shared, name);
+          if (await lstat(target).then(() => true, () => false)) throw new Error(`${target} already exists. Nothing was changed.`);
+          copied.push(target);
+          await cp(held.skills.find(skill => skill.name === name)!.path, target, { recursive: true, dereference: true, errorOnExist: true, force: false });
+          copied.push(target);
+        }
+      } catch (error) {
+        for (const target of copied) await rm(target, { recursive: true, force: true });
+        throw error;
+      }
+      await this.close();
+      const latest = await store.read();
+      return { ok: true, to, status: kitStatus(latest, await this.skills.inventory(latest, "Global")) };
     }
     const taken = names.filter(name => inventory.some(item => item.name === name) && !replace.includes(name));
     if (taken.length) throw new Error(`Already installed: ${taken.join(", ")}. Choose to replace ${taken.length === 1 ? "it" : "them"}, or leave ${taken.length === 1 ? "it" : "them"} out.`);

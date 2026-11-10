@@ -120,6 +120,40 @@ describe("installing with a destination", () => {
     expect((await store.read()).kit!.core[0]!.skills).toEqual(["one"]);
   });
 
+  it("installs only the new skills and leaves one already in Core where it is", async () => {
+    await skill("one", "https://github.com/me/repo");
+    await configure({ kit: { core: [{ source: "me/repo", skills: ["one"] }] } });
+
+    const result = await operations.run("kit/install", { source: "me/repo", names: ["one", "two"], to: "machine" }) as { kept: string[] };
+
+    expect(result.kept).toEqual(["one"]);
+    expect(installed.map(args => args.filter((_, index) => args[index - 1] === "--skill"))).toEqual([["two"]]);
+    const settings = await store.read();
+    expect(settings.kit!.core[0]!.skills).toEqual(["one"]);
+    expect(settings.machineOnly).toEqual(["two"]);
+  });
+
+  it("lets a new pack include a Core skill, which stays in Core", async () => {
+    await skill("one", "https://github.com/me/repo");
+    await configure({ kit: { core: [{ source: "me/repo", skills: ["one"] }] } });
+
+    await operations.run("kit/install", { source: "me/repo", names: ["one", "two"], to: "new-pack", packName: "Video" });
+
+    const settings = await store.read();
+    expect(settings.profiles.map(pack => [pack.name, pack.skills])).toEqual([["Video", ["one", "two"]]]);
+    expect(settings.kit!.core[0]!.skills).toEqual(["one"]);
+  });
+
+  it("changes nothing when every skill picked for This machine is already in a pack", async () => {
+    await configure({ profiles: [{ id: "p-video", name: "Video", source: "me/repo", skills: ["one"], enabled: [], ready: true }] });
+
+    const result = await operations.run("kit/install", { source: "me/repo", names: ["one"], to: "machine" }) as { kept: string[] };
+
+    expect(result.kept).toEqual(["one"]);
+    expect(installed).toEqual([]);
+    expect((await store.read()).machineOnly).toEqual([]);
+  });
+
   it("refuses to replace a skill from another repository unless told to", async () => {
     await skill("one", "someone/else");
 
@@ -134,6 +168,15 @@ describe("installing with a destination", () => {
     await configure({ tools: [{ id: 1, name: "Waypoint", install: "x", update: "", provides: ["one"] }] });
 
     await expect(operations.run("kit/install", { source: "me/repo", names: ["one"], to: "machine" })).rejects.toThrow(/Waypoint/);
+  });
+
+  it("To review installs and leaves the decision for later", async () => {
+    const result = await operations.run("kit/install", { source: "me/repo", names: ["one", "two"], to: "review" }) as { status: KitStatus };
+
+    expect(installed).toHaveLength(1);
+    expect(result.status.undecided.map(item => item.name).sort()).toEqual(["one", "two"]);
+    expect(result.status.machineOnly).toEqual([]);
+    expect((await store.read()).kit?.core ?? []).toEqual([]);
   });
 
   it("This machine installs and stops asking, without touching the portable file", async () => {

@@ -19,7 +19,8 @@ import { SourcePreparation } from "./preparation.js";
 import { globalSkillOn, SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
-import { Library, type GitRunner } from "./library.js";
+import { Library, type GitRunner, type Storage } from "./library.js";
+import { storeSkills, type StagedSkill } from "./library-install.js";
 import { applyLibraryInit, planLibraryInit } from "./library-init.js";
 import { Backup } from "./library-backup.js";
 import { Restore } from "./library-restore.js";
@@ -28,7 +29,7 @@ import { projectStatus } from "./projects.js";
 import { migrateProject } from "./project-skills.js";
 import type { AsideMove } from "./aside.js";
 import { Uploads } from "./upload-install.js";
-import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate } from "./kit.js";
+import { addToCore, dropFromCore, isRepositorySource, kitStatus, placeOf, toolOwner, type InstallCandidate } from "./kit.js";
 import { agentFolderState, changeAgentFolders } from "./agent-folder-operations.js";
 import { fingerprint, migrateSettings, sourceIdentity, type MigrationChoices } from "./migration.js";
 
@@ -150,6 +151,27 @@ export class FieldworkOperations {
   }
 
   // Off, swap, on: activation owns links by name, so reusing it preserves every other owner of a skill.
+  /**
+   * Moves stored files to match a new place: Core keeps them in the library, so they are backed up;
+   * a pack keeps repository skills in the pack cache. A Core skill added to a pack stays in the library.
+   */
+  private async moveStoredFiles(names: string[], to: "core" | "pack"): Promise<void> {
+    const library = this.library.library;
+    if (!await library.exists()) return;
+    const inventory = await this.library.inventory(await this.store.read(), "Global");
+    const moves = new Map<Storage, StagedSkill[]>();
+    for (const name of names) {
+      const from = await library.storage(name);
+      if (!from) continue;
+      const source = inventory.find(entry => entry.name === name)?.source;
+      const repository = isRepositorySource(source) ? source : undefined;
+      const target: Storage = to === "core" ? "library" : from === "machine" ? (repository ? "pack" : "library") : from;
+      if (target === from) continue;
+      moves.set(target, [...moves.get(target) ?? [], { name, path: library.storagePath(name, from), ...(repository ? { source: repository } : {}) }]);
+    }
+    for (const [destination, staged] of moves) await storeSkills(this.store, staged, { destination });
+  }
+
   private async replacePack(settings: Settings, next: Profile, groups: ProfileGroup[]): Promise<void> {
     const previous = settings.profiles.find(profile => profile.id === next.id);
     const scopes = [...(previous?.enabled ?? [])];
@@ -201,8 +223,7 @@ export class FieldworkOperations {
       const { description } = await readNativeMetadata(join(directory, name));
       const entry = inventory.find(item => item.name === name);
       const tool = toolOwner(settings, name);
-      const pack = settings.profiles.find(profile => profile.skills.includes(name));
-      const inKit = settings.kit?.core.some(item => item.skills.includes(name)) ? "Core" : pack?.name;
+      const inKit = placeOf(settings, name);
       const state: InstallCandidate["state"] = tool ? "tool" : !entry ? "new" : entry.source && sourceIdentity(entry.source) === sourceIdentity(source) ? "installed" : "conflict";
       return {
         name, description, state,
@@ -218,21 +239,25 @@ export class FieldworkOperations {
     const { store, library } = this;
     const settings = await store.read();
     const source = String(data.source).trim(), to = String(data.to);
-    const names = data.names === undefined ? [] : data.names;
-    if (!Array.isArray(names) || !names.every(skillName) || new Set(names).size !== names.length) throw new Error("Choose unique skill names.");
+    const requested = data.names === undefined ? [] : data.names;
+    if (!Array.isArray(requested) || !requested.every(skillName) || new Set(requested).size !== requested.length) throw new Error("Choose unique skill names.");
     const replace = data.replace === undefined ? [] : data.replace;
     if (!Array.isArray(replace) || !replace.every(skillName)) throw new Error("Provide replace as an array of skill names.");
     const pack = settings.profiles.find(profile => profile.id === to);
-    if (!["core", "machine", "later", "new-pack"].includes(to) && !pack) throw new Error("Choose a destination: core, machine, later, new-pack, or a pack ID.");
+    if (!["review", "core", "machine", "later", "new-pack"].includes(to) && !pack) throw new Error("Choose a destination: review, core, machine, later, new-pack, or a pack ID.");
     if (data.scope !== undefined && data.scope !== "Global" && to !== "machine") throw new Error("Only This machine can install into a project. Core and packs start from Global.");
     const scope = String(data.scope ?? "Global");
     if (scope !== "Global" && !settings.projects.some(project => project.name === scope)) throw new Error("Choose a configured project.");
-    if (to !== "later" && !names.length) throw new Error("Choose at least one skill.");
+    if (to !== "later" && !requested.length) throw new Error("Choose at least one skill.");
+    // Core and packs add to a skill's places; This machine only means "not in the kit", so a skill
+    // already in Core or a pack keeps that place instead (moving one is Skills → Move).
+    const kept = to === "machine" ? requested.filter(name => { const place = placeOf(settings, name); return place !== undefined && place !== "This machine"; }) : [];
+    const names = requested.filter(name => !kept.includes(name));
     const bookmarkName = typeof data.name === "string" ? data.name.trim() : undefined;
     if (data.name !== undefined && (to !== "later" || !bookmarkName || bookmarkName.length > 120 || containsControl(bookmarkName))) throw new Error("Give the bookmark a name of up to 120 characters, for Try later only.");
     const finish = async (extra: Record<string, unknown> = {}): Promise<unknown> => {
       const latest = await store.read();
-      return { ok: true, to, ...extra, status: kitStatus(latest, await library.inventory(latest, "Global")) };
+      return { ok: true, to, ...(kept.length ? { kept } : {}), ...extra, status: kitStatus(latest, await library.inventory(latest, "Global")) };
     };
 
     if (to === "later") {
@@ -246,6 +271,7 @@ export class FieldworkOperations {
       return await finish();
     }
 
+    if (!names.length) return await finish();
     const candidates = await this.installCandidates(settings, source, scope);
     for (const name of names) {
       const candidate = candidates.find(item => item.name === name);
@@ -279,14 +305,14 @@ export class FieldworkOperations {
       if (to === "core") {
         for (const name of names) addToCore(target, name, source);
         target.machineOnly = target.machineOnly.filter(name => !names.includes(name));
-      } else if (scope === "Global") target.machineOnly = [...new Set([...target.machineOnly, ...names])];
+      } else if (to === "machine" && scope === "Global") target.machineOnly = [...new Set([...target.machineOnly, ...names])];
     };
     const stored = scope === "Global" && await library.library.exists();
     let install: InstallProgress | undefined;
     if (toInstall.length) {
       this.installController = new AbortController();
       try {
-        install = await installSkills(store, settings, [{ source, skills: toInstall }], scope, String(data.agent ?? "universal"), `Install from ${source}`, value => { this.skillInstall = value; }, AbortSignal.any([this.installController.signal, this.lifecycle.signal]), this.installRunner, { destination: to === "core" ? "library" : "machine", finalize: record });
+        install = await installSkills(store, settings, [{ source, skills: toInstall }], scope, String(data.agent ?? "universal"), `Install from ${source}`, value => { this.skillInstall = value; }, AbortSignal.any([this.installController.signal, this.lifecycle.signal]), this.installRunner, to === "review" ? { unstored: true } : { destination: to === "core" ? "library" : "machine", finalize: record });
         this.skillInstall = install;
       } finally { this.installController = null; }
       if (install.code !== 0) {
@@ -552,6 +578,7 @@ export class FieldworkOperations {
           addToCore(settings, name, source);
         }
         await store.save(settings);
+        await this.moveStoredFiles(names, "core");
         return { ok: true };
       }
       const pack = settings.profiles.find(profile => profile.id === data.to);
@@ -565,6 +592,7 @@ export class FieldworkOperations {
         else groups.push({ source, skills: [name] });
       }
       await this.replacePack(settings, this.packFrom(pack, pack.id, pack.name, groups, {}), groups);
+      await this.moveStoredFiles(names, "pack");
       return { ok: true };
     }
     if (operation === "kit/drop") {

@@ -67,7 +67,7 @@ it("lists Try later bookmarks and installs one with its repository and saved ski
   expect(within(dialog).getByRole("textbox", { name: "Repository" })).toHaveValue("owner/hairline");
   expect(within(dialog).getByRole("checkbox", { name: /hairline/ })).toBeChecked();
   expect(within(dialog).getByRole("checkbox", { name: /kami/ })).not.toBeChecked();
-  expect(within(dialog).getAllByRole("radio", { name: /^(Core|A pack|This machine|Try later)/ }).some(radio => (radio as HTMLInputElement).checked)).toBe(false);
+  expect(within(dialog).queryByRole("group", { name: "Where should they go?" })).not.toBeInTheDocument();
   expect(client.calls.filter(call => call.operation === "kit/install-preview")[0]?.input).toEqual({ source: "owner/hairline" });
 });
 

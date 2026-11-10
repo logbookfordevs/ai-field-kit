@@ -245,6 +245,52 @@ describe("Agent rules in the library", () => {
   });
 });
 
+describe("moving a stored skill to another place", () => {
+  beforeEach(async () => { await applyLibraryInit(store); });
+
+  it("moves a This machine only skill's files into the library when it joins Core, so it is backed up", async () => {
+    const operations = new FieldworkOperations(store);
+    await operations.run("skill/adopt", { name: "loose", to: "machine" });
+
+    await operations.run("kit/add", { names: ["loose"], to: "core" });
+    await operations.close();
+
+    const stored = join(home, ".afk/library/skills/loose");
+    expect(await readFile(join(stored, "SKILL.md"), "utf8")).toBe(skill("loose"));
+    expect(await present(join(stored, ".afk-source.json"))).toBe(false);
+    expect(await present(join(home, ".afk/machine/loose"))).toBe(false);
+    expect(await readlink(join(agents, "loose"))).toBe(stored);
+    expect(await json(join(home, ".afk/library/.afk/skills/loose.json"))).toMatchObject({ source: "owner/loose" });
+    expect(await git("status", "--porcelain")).toBe("");
+  });
+
+  it("moves a pack skill's files into the library when it joins Core, and keeps it in the pack", async () => {
+    expect(await present(join(home, ".afk/packs-cache/gamma/SKILL.md"))).toBe(true);
+    const operations = new FieldworkOperations(store);
+
+    await operations.run("kit/add", { names: ["gamma"], to: "core", source: "owner/review" });
+    await operations.close();
+
+    const text = await readFile(join(home, ".afk/library/skills/gamma/SKILL.md"), "utf8");
+    expect(text).toContain("Body of gamma.");
+    expect(text).toContain("disable-model-invocation: true");
+    expect(await present(join(home, ".afk/packs-cache/gamma"))).toBe(false);
+    expect((await store.read()).profiles.find(item => item.id === pack.id)?.skills).toContain("gamma");
+  });
+
+  it("moves a This machine only skill from a repository into the pack cache when it joins a pack", async () => {
+    const operations = new FieldworkOperations(store);
+    await operations.run("skill/adopt", { name: "loose", to: "machine" });
+
+    await operations.run("kit/add", { names: ["loose"], to: pack.id });
+    await operations.close();
+
+    expect(await present(join(home, ".afk/packs-cache/loose/SKILL.md"))).toBe(true);
+    expect(await present(join(home, ".afk/machine/loose"))).toBe(false);
+    expect(await present(join(home, ".afk/library/skills/loose"))).toBe(false);
+  });
+});
+
 describe("skills installed outside AFK", () => {
   beforeEach(async () => {
     await write(join(claude, "loose"), "loose");

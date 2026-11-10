@@ -22,6 +22,8 @@
 .picker-list>li{border-bottom:1px solid var(--border)}
 .picker-item{display:grid;grid-template-columns:18px minmax(0,1fr);gap:2px 12px;align-items:start;padding:12px 4px;font-weight:400;min-height:48px;cursor:pointer}
 .picker-item input{margin-top:2px;grid-row:1}
+.picker-item:has(input:disabled){cursor:default}
+.picker-item:has(input:disabled) .sname{color:var(--muted)}
 .picker-desc,.picker-note{grid-column:2;font-size:13px;line-height:1.5;color:var(--muted)}
 .picker-note.warning{color:var(--fg);font-weight:500}
 .picker-read{padding:0 4px 6px 34px;margin-top:-6px}

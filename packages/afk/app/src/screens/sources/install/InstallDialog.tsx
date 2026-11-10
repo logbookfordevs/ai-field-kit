@@ -6,7 +6,6 @@ import { Icon } from "@/components/Icon";
 import { Progress } from "@/components/Progress";
 import { Segmented } from "@/components/Segmented";
 import { useToast } from "@/components/Toast";
-import { DestinationFields, type DestinationErrors, type DestinationValue } from "@/screens/sources/install/DestinationFields";
 import { SkillPicker, type PickerItem } from "@/screens/sources/install/SkillPicker";
 import { UploadDrop } from "@/screens/sources/install/UploadDrop";
 import { uploadPayload, type PickedFile } from "@/screens/sources/install/upload";
@@ -14,7 +13,7 @@ import type { InstallRequest } from "@/screens/sources/install/store";
 import { useSourcesState } from "@/screens/sources/data";
 import { defaultBookmarkName, formatBytes, isValidSource } from "@/screens/sources/format";
 import { plural, shortSource } from "@/text/format";
-import type { Destination, InstallCandidate, InstallOutcome, InstallProgress, UploadCandidate, UploadPreview } from "@/screens/sources/types";
+import type { InstallCandidate, InstallOutcome, InstallProgress, UploadCandidate, UploadPreview } from "@/screens/sources/types";
 import { navigate } from "@/shell/router";
 import "@/screens/sources/install/Install.css";
 
@@ -25,8 +24,9 @@ export interface InstallDialogProps {
 
 type Way = "repository" | "upload";
 
-interface Errors extends DestinationErrors {
+interface Errors {
   repository?: string | undefined;
+  bookmarkName?: string | undefined;
   upload?: string | undefined;
   picks?: string | undefined;
   general?: string | undefined;
@@ -36,6 +36,8 @@ interface Finished {
   title: string;
   sub: string;
   later: boolean;
+  /** The project a project install went into; absent for To review. */
+  scope?: string;
 }
 
 const ways = [
@@ -43,7 +45,10 @@ const ways = [
   { value: "upload", label: "A zip or folder" },
 ] as const;
 
-/** Add something new: look inside a repository or an upload, pick skills, choose where they go. */
+/**
+ * Add something new: look inside a repository or an upload, pick skills and install them. New skills
+ * wait in To review, where each gets its place (Core, a pack or This machine only) later.
+ */
 export function InstallDialog({ request, onClose }: InstallDialogProps) {
   const [round, setRound] = useState(0);
   return <InstallForm key={round} request={round === 0 ? request : {}} onClose={onClose} onAgain={() => setRound(round + 1)} />;
@@ -63,9 +68,9 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
   const [finding, setFinding] = useState(autoSearch);
   const [upload, setUpload] = useState<{ id: string; name: string; candidates: UploadCandidate[] } | null>(null);
   const [reading, setReading] = useState(false);
-  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
-  const [place, setPlace] = useState<DestinationValue>({ destination: request.destination ?? null, pack: "", packName: "", scope: "Global", bookmarkName: "" });
-  const [bookmarkEdited, setBookmarkEdited] = useState(false);
+  const [chosen, setPicked] = useState<ReadonlySet<string>>(new Set());
+  const [scope, setScope] = useState("Global");
+  const [typedBookmarkName, setBookmarkName] = useState<string | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [running, setRunning] = useState(false);
   const [stopped, setStopped] = useState<InstallProgress | null>(null);
@@ -74,18 +79,15 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
   const version = useRef(0);
   const started = useRef(false);
   const repositoryField = useRef<HTMLInputElement>(null);
-  const destinationGroup = useRef<HTMLFieldSetElement>(null);
-  const packField = useRef<HTMLSelectElement>(null);
-  const packNameField = useRef<HTMLInputElement>(null);
   const bookmarkField = useRef<HTMLInputElement>(null);
 
-  const packs = sources.data?.settings.profiles ?? [];
   const projects = sources.data?.settings.projects ?? [];
-  const uploading = way === "upload";
-  const destination = place.destination;
-  const pack = place.pack || (packs.length === 0 ? "new-pack" : "");
-  const bookmarkName = bookmarkEdited ? place.bookmarkName : defaultBookmarkName(repository.trim());
-  const pollsProgress = running && !uploading && (destination === "core" || destination === "machine");
+  const savesBookmark = request.destination === "later";
+  const uploading = way === "upload" && !savesBookmark;
+  const inProject = !uploading && scope !== "Global";
+  const offersProjects = !uploading && !savesBookmark && projects.length > 0;
+  const bookmarkName = typedBookmarkName ?? defaultBookmarkName(repository.trim());
+  const pollsProgress = running && !uploading;
 
   const progress = useOperation("skills/install-state", {}, { refetchInterval: pollsProgress ? 1_000 : false });
   const liveProgress = progress.data?.pending ? progress.data : null;
@@ -93,13 +95,14 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
   const candidates = uploading ? upload?.candidates : found?.candidates;
   const available = (candidates ?? []).filter(candidate => candidate.state !== "tool");
   const toolOwned = (candidates ?? []).filter(candidate => candidate.state === "tool");
-  const selectable = available.filter(candidate => candidate.state !== "conflict" || destination === "pack");
+  const lockedNames = new Set(available.filter(candidate => candidate.state === "installed").map(candidate => candidate.name));
+  const picked: ReadonlySet<string> = new Set([...chosen].filter(name => !lockedNames.has(name)));
+  const selectable = available.filter(candidate => candidate.state !== "conflict" && !lockedNames.has(candidate.name));
 
   const searched = uploading ? upload !== null : found !== null;
   const count = picked.size;
   const readyToList = searched && !finding && !reading;
-  const showsFind = !uploading && destination !== "later";
-  const savesBookmark = destination === "later";
+  const showsFind = !uploading && !savesBookmark;
   const cancellable = running && pollsProgress;
 
   const settleSearch = (mine: number, source: string, result: Awaited<ReturnType<typeof client.run>>) => {
@@ -112,9 +115,10 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
     const list = (result.value as { candidates: InstallCandidate[] }).candidates;
     const open = list.filter(candidate => candidate.state !== "tool");
     const wanted = source === request.repository?.trim() ? request.skills ?? [] : [];
+    const fresh = open.filter(candidate => candidate.state !== "conflict" && candidate.state !== "installed");
     const chosen = wanted.length
-      ? wanted.filter(name => open.some(candidate => candidate.name === name && candidate.state !== "conflict"))
-      : open[0] && open.length === 1 && open[0].state !== "conflict" ? [open[0].name] : [];
+      ? wanted.filter(name => fresh.some(candidate => candidate.name === name))
+      : fresh[0] && open.length === 1 ? [fresh[0].name] : [];
     setFound({ source, candidates: list });
     setPicked(new Set(chosen));
   };
@@ -163,7 +167,6 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
     setFinding(false);
     setReading(false);
     setErrors({});
-    if (next === "upload" && destination === "later") setPlace(current => ({ ...current, destination: null }));
   };
 
   const readUpload = async (files: PickedFile[]) => {
@@ -212,22 +215,10 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
     setPicked(everything ? new Set() : new Set(selectable.map(candidate => candidate.name)));
   };
 
-  const changePlace = (patch: Partial<DestinationValue>) => {
-    if (patch.bookmarkName !== undefined) setBookmarkEdited(true);
-    setPlace(current => ({ ...current, ...patch }));
-    setErrors(current => ({ ...current, destination: undefined, pack: undefined, packName: undefined, bookmarkName: undefined, general: undefined }));
-  };
-
-  const targetName = pack === "new-pack" ? place.packName.trim() : packs.find(item => item.id === pack)?.name ?? "";
-
   const actionLabel = (): string => {
     if (savesBookmark) return "Save to Try later";
-    const skills = plural(count, "skill");
     if (!count) return "Install";
-    if (destination === "core") return `Install ${skills} to Core`;
-    if (destination === "machine") return `Install ${skills} ${place.scope === "Global" || uploading ? "on this machine" : `in ${place.scope}`}`;
-    if (destination === "pack") return `Install ${skills} to ${pack === "new-pack" ? "a new pack" : targetName || "a pack"}`;
-    return "Install";
+    return `Install ${plural(count, "skill")}${inProject ? ` in ${scope}` : ""}`;
   };
 
   const fail = (next: Errors, focus?: () => void) => {
@@ -238,41 +229,31 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
   const submit = async () => {
     const source = repository.trim();
     if (!uploading && !isValidSource(source)) return fail({ repository: "Enter a repository, like owner/repository." }, () => repositoryField.current?.focus());
-    if (uploading && !upload) return fail({ upload: "Choose a zip, a .skill file or a folder first." });
-    if (!destination) return fail({ destination: "Choose where the skills go." }, () => destinationGroup.current?.querySelector<HTMLInputElement>("input:not(:disabled)")?.focus());
 
-    if (destination === "later") {
+    if (savesBookmark) {
       const name = bookmarkName.trim();
       if (!name) return fail({ bookmarkName: "Give this repository a name." }, () => bookmarkField.current?.focus());
-      const names = found?.source === source ? [...picked] : [];
-      await run({ source, names, to: "later", name }, destination, names.length, { later: source });
+      await run({ source, names: [], to: "later", name }, { kind: "later", source });
       return;
     }
 
+    if (uploading && !upload) return fail({ upload: "Choose a zip, a .skill file or a folder first." });
     if (!uploading && found?.source !== source) return fail({ repository: "Find the skills in this repository first." }, () => repositoryField.current?.focus());
     if (!count) return fail({ picks: "Select at least one skill to install." });
-    if (destination === "pack") {
-      if (!pack) return fail({ pack: "Choose a pack." }, () => packField.current?.focus());
-      if (pack === "new-pack" && !place.packName.trim()) return fail({ packName: "Name the new pack." }, () => packNameField.current?.focus());
-    }
 
     const names = [...picked];
-    const to = destination === "pack" ? pack : destination;
-    const packName = pack === "new-pack" && destination === "pack" ? { packName: place.packName.trim() } : {};
     if (uploading && upload) {
-      const replace = upload.candidates.filter(candidate => candidate.state === "installed" && picked.has(candidate.name)).map(candidate => candidate.name);
-      await run({ upload: upload.id, names, to, ...packName, ...(replace.length ? { replace } : {}) }, destination, names.length, {});
+      await run({ upload: upload.id, names, to: "review" }, { kind: "review", count: names.length });
       return;
     }
-    const replace = destination === "pack" ? [] : available.filter(candidate => candidate.state === "conflict" && picked.has(candidate.name)).map(candidate => candidate.name);
+    const replace = available.filter(candidate => candidate.state === "conflict" && picked.has(candidate.name)).map(candidate => candidate.name);
     await run({
-      source, names, to, ...packName,
-      ...(destination === "machine" && place.scope !== "Global" ? { scope: place.scope } : {}),
+      source, names, ...(inProject ? { to: "machine", scope } : { to: "review" }),
       ...(replace.length ? { replace } : {}),
-    }, destination, names.length, {});
+    }, inProject ? { kind: "project", count: names.length, scope } : { kind: "review", count: names.length });
   };
 
-  const run = async (payload: Record<string, unknown>, to: Destination, installed: number, bookmark: { later?: string }) => {
+  const run = async (payload: Record<string, unknown>, outcome: Outcome) => {
     setRunning(true);
     setStopped(null);
     setErrors({});
@@ -282,13 +263,13 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
       setErrors({ general: result.error.message });
       return;
     }
-    const outcome = result.value as InstallOutcome;
-    if (!outcome.ok) {
-      setStopped(outcome.install ?? null);
-      setErrors({ general: to === "core" ? "Installation stopped, so nothing was added to Core. Review the output, then retry." : "Installation stopped. Review the output, then retry." });
+    const value = result.value as InstallOutcome;
+    if (!value.ok) {
+      setStopped(value.install ?? null);
+      setErrors({ general: "Installation stopped. Review the output, then retry." });
       return;
     }
-    setFinished(finishedFor(to, installed, uploading, { packName: targetName, scope: place.scope, later: bookmark.later }));
+    setFinished(finishedFor(outcome, uploading));
   };
 
   const cancelInstall = async () => {
@@ -303,7 +284,7 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
     return (result.value as { content: string }).content;
   };
 
-  const items: PickerItem[] = available.map(candidate => ({ name: candidate.name, description: candidate.description, notes: notesFor(candidate, uploading, destination) }));
+  const items: PickerItem[] = available.map(candidate => ({ name: candidate.name, description: candidate.description, notes: notesFor(candidate, uploading), ...(lockedNames.has(candidate.name) ? { locked: true } : {}) }));
 
   const openNext = () => {
     onClose();
@@ -311,7 +292,7 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
     if (finished.later) {
       navigate("sources");
       requestAnimationFrame(() => document.getElementById("try-later")?.focus());
-    } else navigate("skills");
+    } else navigate("skills", finished.scope ? { scope: finished.scope } : { from: "review" });
   };
 
   const title = finished ? (finished.later ? "Saved for later" : "Installed") : savesBookmark && !uploading ? "Save a repository for later" : "Add something new";
@@ -319,7 +300,7 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
   const footer = finished ? (
     <>
       <button type="button" className="text" onClick={onAgain}>Add another</button>
-      <button type="button" className="primary" onClick={openNext}>{finished.later ? "Open Try later" : "Open in Skills"}</button>
+      <button type="button" className="primary" onClick={openNext}>{finished.later ? "Open Try later" : finished.scope ? "Open in Skills" : "Open To review"}</button>
     </>
   ) : (
     <>
@@ -350,7 +331,7 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
         </div>
       ) : (
         <>
-          <Segmented legend="Install from" showLegend options={ways} value={way} onChange={changeWay} disabled={running} />
+          {savesBookmark ? null : <Segmented legend="Install from" showLegend options={ways} value={way} onChange={changeWay} disabled={running} />}
 
           {uploading ? (
             <div className="blk">
@@ -404,22 +385,30 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
             <p className="hint">Left out because a tool installs them: {toolOwned.map(candidate => `${candidate.name} (${candidate.tool})`).join(", ")}.</p>
           ) : null}
           {readyToList && uploading && items.length > 0 ? (
-            <p className="hint" id="upload-note">In Core or a pack their files are saved in your library and backup. A pack that holds one can’t be exported as a manifest.</p>
+            <p className="hint" id="upload-note">They wait in To review. Put them in Core or a pack there to save their files in your library and backup.</p>
           ) : null}
 
-          <DestinationFields
-            value={{ ...place, pack, bookmarkName }}
-            onChange={changePlace}
-            packs={packs}
-            projects={projects}
-            upload={uploading}
-            offerLater={!request.fromBookmark}
-            errors={errors}
-            groupRef={destinationGroup}
-            packRef={packField}
-            packNameRef={packNameField}
-            bookmarkRef={bookmarkField}
-          />
+          {savesBookmark ? (
+            <div className="blk">
+              <label>
+                Name
+                <input ref={bookmarkField} value={bookmarkName} maxLength={120} aria-invalid={errors.bookmarkName ? true : undefined} onChange={event => { setBookmarkName(event.target.value); setErrors(current => ({ ...current, bookmarkName: undefined })); }} />
+              </label>
+              <p className="field-error" role="alert">{errors.bookmarkName}</p>
+            </div>
+          ) : null}
+          {offersProjects ? (
+            <div className="blk">
+              <label>
+                Install into
+                <select value={scope} disabled={running} onChange={event => setScope(event.target.value)}>
+                  <option value="Global">This machine, for every project</option>
+                  {projects.map(project => <option key={project.name} value={project.name}>{project.name}</option>)}
+                </select>
+              </label>
+              <p className="hint">{inProject ? "A project install stays with that project and outside your library." : "New skills wait in To review, where you decide whether each goes to Core, a pack or This machine only."}</p>
+            </div>
+          ) : null}
 
           {showsProgress ? <InstallOutput progress={output} /> : null}
           {!showsProgress && stopped ? <InstallOutput progress={stopped} /> : null}
@@ -430,32 +419,28 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
   );
 }
 
-function notesFor(candidate: InstallCandidate | UploadCandidate, uploading: boolean, destination: Destination | null): PickerItem["notes"] {
+function notesFor(candidate: InstallCandidate | UploadCandidate, uploading: boolean): PickerItem["notes"] {
   const notes: PickerItem["notes"] = [];
   const from = candidate.installedFrom ?? "an unknown source";
   if ("files" in candidate) notes.push({ text: `${plural(candidate.files, "file")} · ${formatBytes(candidate.bytes)}` });
-  if (uploading) {
-    if (candidate.state === "installed") notes.push({ text: candidate.installedFrom ? `Installed from ${from}. Installing replaces it.` : "Already installed. Installing replaces it.", warning: true });
-    return notes;
+  if (candidate.state === "conflict") notes.push({ text: `Installed from ${from}. Installing replaces it.`, warning: true });
+  if (candidate.state === "installed") {
+    const place = "inKit" in candidate && candidate.inKit ? ` · In ${candidate.inKit === "This machine" ? "This machine only" : candidate.inKit}` : "";
+    notes.push({ text: uploading ? "Already installed. Remove it from Skills first to replace it." : `Already installed${place}` });
   }
-  if (candidate.state === "conflict") notes.push({ text: destination === "pack" ? `Installed from ${from}. The pack uses that copy.` : `Installed from ${from}. Installing replaces it.`, warning: true });
-  if (candidate.state === "installed") notes.push({ text: "Already installed" });
-  if (candidate.inKit) notes.push({ text: `In ${candidate.inKit}` });
   return notes;
 }
 
-function finishedFor(to: Destination, count: number, uploading: boolean, where: { packName: string; scope: string; later: string | undefined }): Finished {
-  const skills = plural(count, "skill");
-  if (to === "later") return { later: true, title: `${shortSource(where.later ?? "The repository")} is in Try later`, sub: "Install it from Sources whenever you want. Nothing was downloaded." };
-  if (to === "core") return { later: false, title: `${skills} installed to Core`, sub: uploading ? "Saved in your library and added to Core. It is in your backup." : "They are on for every agent and saved with your next backup." };
-  if (to === "pack") {
-    return { later: false, title: `${skills} added to ${where.packName || "the pack"}`, sub: uploading ? "Saved in your library and added to the pack. Turning the pack on needs no download." : "Their files are downloaded, and the pack stays on or off as it was." };
-  }
-  const project = !uploading && where.scope !== "Global";
+type Outcome = { kind: "review"; count: number } | { kind: "project"; count: number; scope: string } | { kind: "later"; source: string };
+
+function finishedFor(outcome: Outcome, uploading: boolean): Finished {
+  if (outcome.kind === "later") return { later: true, title: `${shortSource(outcome.source)} is in Try later`, sub: "Install it from Sources whenever you want. Nothing was downloaded." };
+  const skills = plural(outcome.count, "skill");
+  if (outcome.kind === "project") return { later: false, scope: outcome.scope, title: `${skills} installed in ${outcome.scope}`, sub: "They stay with that project and outside your library." };
   return {
     later: false,
-    title: `${skills} installed ${project ? `in ${where.scope}` : "on this machine"}`,
-    sub: project ? "They stay with that project and are never backed up." : uploading ? "Installed on this machine only. It stays out of your library." : "They stay on this machine and are never backed up.",
+    title: `${skills} installed`,
+    sub: `${uploading ? "They are" : "They’re"} on for your agents here and wait in To review. Decide there whether each goes to Core, a pack or This machine only; until then they aren’t backed up.`,
   };
 }
 

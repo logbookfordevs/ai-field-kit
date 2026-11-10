@@ -19,13 +19,12 @@ it("shows nothing until another screen asks for the install dialog", () => {
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
-it("opens from any screen with a repository, its skills and a destination, and closes again", async () => {
+it("opens from any screen with a repository and its skills, and closes again", async () => {
   renderWithApp(<InstallHost />, { client: client() });
 
-  act(() => openInstall({ repository: "fieldnotes/agent-skills", skills: ["kami"], destination: "core" }));
+  act(() => openInstall({ repository: "fieldnotes/agent-skills", skills: ["kami"] }));
 
   expect(await screen.findByRole("checkbox", { name: /kami/ })).toBeChecked();
-  expect(screen.getByRole("radio", { name: /^Core/ })).toBeChecked();
 
   act(() => closeInstall());
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

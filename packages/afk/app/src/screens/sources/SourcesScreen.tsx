@@ -138,7 +138,7 @@ function TryLater({ bookmarks }: { bookmarks: FavoriteSource[] }) {
               aside={<span className="meta">{skillsSummary(bookmark)}</span>}
               actions={
                 <>
-                  <button type="button" onClick={() => openInstall({ repository: bookmark.source, fromBookmark: true, ...(bookmark.skills ? { skills: bookmark.skills } : {}) })}>
+                  <button type="button" onClick={() => openInstall({ repository: bookmark.source, ...(bookmark.skills ? { skills: bookmark.skills } : {}) })}>
                     Install…<span className="vh"> {bookmark.name}</span>
                   </button>
                   <Menu label={`More for ${bookmark.name}`}>

@@ -17,7 +17,16 @@ export interface InstallCandidate {
   path?: string;
   tool?: string;
   installedFrom?: string;
+  /** Where it already belongs; installing leaves it there. */
   inKit?: string;
+}
+
+/** Where a skill already belongs in the kit: "Core", a pack's name, or "This machine". */
+export function placeOf(settings: Settings, name: string): string | undefined {
+  if (settings.kit?.core.some(item => item.skills.includes(name))) return "Core";
+  const pack = settings.profiles.find(profile => profile.skills.includes(name));
+  if (pack) return pack.name;
+  return settings.machineOnly.includes(name) ? "This machine" : undefined;
 }
 
 export function isRepositorySource(source: string | undefined): source is string {

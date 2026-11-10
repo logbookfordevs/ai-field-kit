@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { InstallDialog } from "@/screens/sources/install/InstallDialog";
@@ -44,25 +44,23 @@ async function findSkills(source = "fieldnotes/agent-skills") {
   await screen.findByRole("group", { name: /Skills in/ });
 }
 
-async function chooseDestination(name: string) {
-  await userEvent.click(within(screen.getByRole("group", { name: "Where should they go?" })).getByRole("radio", { name: new RegExp(`^${name}`) }));
-}
 
-it("finds a repository's skills, installs the picked ones to Core and says where they went", async () => {
+it("finds a repository's skills, installs the picked ones to To review and says what comes next", async () => {
   const { client } = setup();
 
   await findSkills();
   expect(callsTo(client, "kit/install-preview")[0]?.input).toEqual({ source: "fieldnotes/agent-skills" });
   expect(screen.getByText("Left out because a tool installs them: tool-skill (Skills Pro).")).toBeInTheDocument();
   expect(screen.queryByRole("checkbox", { name: /tool-skill/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("group", { name: "Where should they go?" })).not.toBeInTheDocument();
 
   await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-  await chooseDestination("Core");
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Core" }));
+  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill" }));
 
-  expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["kami"], to: "core" });
-  expect(await screen.findByRole("heading", { name: "1 skill installed to Core" })).toBeInTheDocument();
-  expect(screen.getByText("They are on for every agent and saved with your next backup.")).toBeInTheDocument();
+  expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["kami"], to: "review" });
+  expect(await screen.findByRole("heading", { name: "1 skill installed" })).toBeInTheDocument();
+  expect(screen.getByText(/wait in To review/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Open To review" })).toBeInTheDocument();
 });
 
 it("installs for every agent, whatever an earlier version of the app remembered", async () => {
@@ -71,31 +69,17 @@ it("installs for every agent, whatever an earlier version of the app remembered"
     const { client } = setup();
     await findSkills();
     await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-    await chooseDestination("Core");
 
-    await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Core" }));
+    await userEvent.click(screen.getByRole("button", { name: "Install 1 skill" }));
 
-    expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["kami"], to: "core" });
+    expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["kami"], to: "review" });
   } finally { localStorage.removeItem("afk.install"); }
-});
-
-it("asks for a destination when the person submits without one, and focuses the first choice", async () => {
-  const { client } = setup();
-  await findSkills();
-  await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-
-  await userEvent.click(screen.getByRole("button", { name: "Install" }));
-
-  expect(screen.getByText("Choose where the skills go.")).toBeInTheDocument();
-  expect(within(screen.getByRole("group", { name: "Where should they go?" })).getAllByRole("radio")[0]).toHaveFocus();
-  expect(callsTo(client, "kit/install")).toHaveLength(0);
 });
 
 it("asks for a skill when none is picked, and for a search when none was run", async () => {
   const { client } = setup();
 
   await userEvent.type(screen.getByRole("textbox", { name: "Repository" }), "fieldnotes/agent-skills");
-  await chooseDestination("Core");
   await userEvent.click(screen.getByRole("button", { name: "Install" }));
   expect(screen.getByText("Find the skills in this repository first.")).toBeInTheDocument();
 
@@ -106,66 +90,22 @@ it("asks for a skill when none is picked, and for a search when none was run", a
   expect(callsTo(client, "kit/install")).toHaveLength(0);
 });
 
-it("installs into an existing pack, and into a new one it asks to name", async () => {
+it("installs into a project when one is chosen", async () => {
   const { client } = setup();
   await findSkills();
   await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-  await chooseDestination("A pack");
-
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to a pack" }));
-  expect(screen.getByText("Choose a pack.")).toBeInTheDocument();
-
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Pack" }), "New pack…");
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to a new pack" }));
-  expect(screen.getByText("Name the new pack.")).toBeInTheDocument();
-
-  await userEvent.type(screen.getByRole("textbox", { name: "New pack name" }), "Fresh");
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to a new pack" }));
-  await screen.findByRole("heading", { name: "1 skill added to Fresh" });
-  expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["kami"], to: "new-pack", packName: "Fresh" });
-});
-
-it("adds to a chosen pack by its id", async () => {
-  const { client } = setup();
-  await findSkills();
-  await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-  await chooseDestination("A pack");
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Pack" }), "Ops");
-
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Ops" }));
-
-  await screen.findByRole("heading", { name: "1 skill added to Ops" });
-  expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["kami"], to: "pack-ops" });
-});
-
-it("installs on this machine, into a project when one is chosen", async () => {
-  const { client } = setup();
-  await findSkills();
-  await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-  await chooseDestination("This machine");
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Install into" }), "Workbench");
 
   await userEvent.click(screen.getByRole("button", { name: "Install 1 skill in Workbench" }));
 
-  expect(await screen.findByText("They stay with that project and are never backed up.")).toBeInTheDocument();
+  expect(await screen.findByText("They stay with that project and outside your library.")).toBeInTheDocument();
   expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["kami"], to: "machine", scope: "Workbench" });
-});
-
-it("installs on this machine for every project by default", async () => {
-  const { client } = setup();
-  await findSkills();
-  await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-  await chooseDestination("This machine");
-
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill on this machine" }));
-
-  expect(await screen.findByText("They stay on this machine and are never backed up.")).toBeInTheDocument();
-  expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["kami"], to: "machine" });
 });
 
 it("saves a repository to Try later under a name it asks for, without installing", async () => {
   const { client } = setup({ destination: "later" });
 
+  expect(screen.queryByRole("radio", { name: "A zip or folder" })).not.toBeInTheDocument();
   await userEvent.type(screen.getByRole("textbox", { name: "Repository" }), "https://github.com/hairline/type.git");
   const name = screen.getByRole("textbox", { name: "Name" });
   expect(name).toHaveValue("type");
@@ -181,20 +121,31 @@ it("saves a repository to Try later under a name it asks for, without installing
   expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "https://github.com/hairline/type.git", names: [], to: "later", name: "Hairline type" });
 });
 
-it("opened from a bookmark, prefills the repository and its saved skills and still asks for the destination", async () => {
-  const { client } = setup({ repository: "fieldnotes/agent-skills", skills: ["hairline"], fromBookmark: true });
+it("opened from a bookmark, prefills the repository and its saved skills", async () => {
+  setup({ repository: "fieldnotes/agent-skills", skills: ["hairline"] });
 
   await screen.findByRole("group", { name: /Skills in/ });
   expect(screen.getByRole("textbox", { name: "Repository" })).toHaveValue("fieldnotes/agent-skills");
   expect(screen.getByRole("checkbox", { name: /hairline/ })).toBeChecked();
   expect(screen.getByRole("checkbox", { name: /kami/ })).not.toBeChecked();
-  const destinations = within(screen.getByRole("group", { name: "Where should they go?" })).getAllByRole("radio");
-  expect(destinations.some(radio => (radio as HTMLInputElement).checked)).toBe(false);
-  expect(destinations.map(radio => (radio as HTMLInputElement).value)).toEqual(["core", "pack", "machine"]);
+  expect(screen.getByRole("button", { name: "Install 1 skill" })).toBeEnabled();
+});
 
-  await userEvent.click(screen.getByRole("button", { name: "Install" }));
-  expect(screen.getByText("Choose where the skills go.")).toBeInTheDocument();
-  expect(callsTo(client, "kit/install")).toHaveLength(0);
+it("locks skills that are already installed, says where they are, and selects only the new ones", async () => {
+  const listed = [
+    { name: "kami", description: "Typeset documents", state: "installed", inKit: "Core" },
+    { name: "hairline", description: "Thin rules", state: "new" },
+    { name: "quill", description: "Edit prose", state: "new" },
+  ];
+  const { client } = setup({}, { "kit/install-preview": ({ source }) => ({ source, candidates: listed }) });
+  await findSkills();
+
+  expect(screen.getByRole("checkbox", { name: /kami/ })).toBeDisabled();
+  expect(screen.getByText("Already installed · In Core")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Select all new (2)" }));
+  await userEvent.click(screen.getByRole("button", { name: "Install 2 skills" }));
+
+  await waitFor(() => expect(callsTo(client, "kit/install")[0]?.input).toMatchObject({ names: ["hairline", "quill"], to: "review" }));
 });
 
 it("asks before replacing a skill installed from another repository, and passes the approval along", async () => {
@@ -202,12 +153,11 @@ it("asks before replacing a skill installed from another repository, and passes 
   await findSkills();
   expect(screen.getByText("Installed from other/repo. Installing replaces it.")).toBeInTheDocument();
   await userEvent.click(screen.getByRole("checkbox", { name: /ledger/ }));
-  await chooseDestination("Core");
 
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Core" }));
+  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill" }));
 
-  await screen.findByRole("heading", { name: "1 skill installed to Core" });
-  expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["ledger"], to: "core", replace: ["ledger"] });
+  await screen.findByRole("heading", { name: "1 skill installed" });
+  expect(callsTo(client, "kit/install")[0]?.input).toEqual({ source: "fieldnotes/agent-skills", names: ["ledger"], to: "review", replace: ["ledger"] });
 });
 
 it("shows live progress while installing, and cancels through the operation", async () => {
@@ -220,26 +170,24 @@ it("shows live progress while installing, and cancels through the operation", as
   await findSkills();
   await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
   await userEvent.click(screen.getByRole("checkbox", { name: /hairline/ }));
-  await chooseDestination("Core");
-  await userEvent.click(screen.getByRole("button", { name: "Install 2 skills to Core" }));
+  await userEvent.click(screen.getByRole("button", { name: "Install 2 skills" }));
 
   expect(await screen.findByRole("progressbar", { name: /Installing kami/ })).toHaveAttribute("aria-valuenow", "1");
   expect(screen.getByRole("button", { name: "Installing…" })).toBeDisabled();
   await userEvent.click(screen.getByRole("button", { name: "Cancel installation" }));
   expect(callsTo(client, "skills/install-cancel")).toHaveLength(1);
 
-  finish({ ok: false, to: "core", install: { pending: false, phase: "Installation cancelled", output: "stopped", code: 130, cancelled: true, completed: 1, total: 2, scope: "Global", agent: "universal", label: "Install" } });
-  expect(await screen.findByText("Installation stopped, so nothing was added to Core. Review the output, then retry.")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Install 2 skills to Core" })).toBeEnabled();
+  finish({ ok: false, to: "review", install: { pending: false, phase: "Installation cancelled", output: "stopped", code: 130, cancelled: true, completed: 1, total: 2, scope: "Global", agent: "universal", label: "Install" } });
+  expect(await screen.findByText("Installation stopped. Review the output, then retry.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Install 2 skills" })).toBeEnabled();
 });
 
 it("keeps what was entered and shows the reason when the install fails", async () => {
   setup({}, { "kit/install": () => fail("Skills CLI isn't available.") });
   await findSkills();
   await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-  await chooseDestination("Core");
 
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Core" }));
+  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill" }));
 
   expect(await screen.findByText("Skills CLI isn't available.")).toBeInTheDocument();
   expect(screen.getByRole("checkbox", { name: /kami/ })).toBeChecked();
@@ -267,7 +215,7 @@ function setupUpload(handlers: Parameters<typeof fakeClient>[0] = {}) {
   });
 }
 
-it("reads an uploaded zip, shows size and the no-auto-update note, and installs to Core", async () => {
+it("reads an uploaded zip, shows size and the no-auto-update note, and installs it to To review", async () => {
   const { client } = setupUpload();
 
   await userEvent.upload(screen.getByLabelText("Zip or .skill file"), new File(["zip"], "skills.zip", { type: "application/zip" }));
@@ -275,32 +223,18 @@ it("reads an uploaded zip, shows size and the no-auto-update note, and installs 
 
   expect(screen.getByText(/don’t update on their own/)).toBeInTheDocument();
   expect(screen.getByText("3 files · 2 KB")).toBeInTheDocument();
-  expect(screen.getByText("Installed from other/repo. Installing replaces it.")).toBeInTheDocument();
+  expect(screen.getByRole("checkbox", { name: /ledger/ })).toBeDisabled();
+  expect(screen.getByText("Already installed. Remove it from Skills first to replace it.")).toBeInTheDocument();
   expect(callsTo(client, "kit/upload-preview")[0]?.input).toEqual({ archive: "emlw", name: "skills.zip" });
 
   await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-  await chooseDestination("Core");
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Core" }));
+  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill" }));
 
-  expect(await screen.findByText("Saved in your library and added to Core. It is in your backup.")).toBeInTheDocument();
-  expect(callsTo(client, "kit/upload-install")[0]?.input).toEqual({ upload: "upload-1", names: ["kami"], to: "core" });
+  expect(await screen.findByRole("heading", { name: "1 skill installed" })).toBeInTheDocument();
+  expect(callsTo(client, "kit/upload-install")[0]?.input).toEqual({ upload: "upload-1", names: ["kami"], to: "review" });
 });
 
-it("approves replacing an installed skill from an upload and can put it in a pack", async () => {
-  const { client } = setupUpload();
-  await userEvent.upload(screen.getByLabelText("Zip or .skill file"), new File(["zip"], "skills.zip"));
-  await screen.findByRole("group", { name: "Skills in skills.zip" });
-  await userEvent.click(screen.getByRole("checkbox", { name: /ledger/ }));
-  await chooseDestination("A pack");
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Pack" }), "Writing");
-
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Writing" }));
-
-  expect(await screen.findByText("Saved in your library and added to the pack. Turning the pack on needs no download.")).toBeInTheDocument();
-  expect(callsTo(client, "kit/upload-install")[0]?.input).toEqual({ upload: "upload-1", names: ["ledger"], to: "pack-writing", replace: ["ledger"] });
-});
-
-it("reads a chosen folder with its relative paths, and offers every destination except Try later", async () => {
+it("reads a chosen folder with its relative paths", async () => {
   const { client } = setupUpload();
   const file = new File(["---"], "SKILL.md");
   Object.defineProperty(file, "webkitRelativePath", { value: "kami/SKILL.md" });
@@ -309,9 +243,7 @@ it("reads a chosen folder with its relative paths, and offers every destination 
   await screen.findByRole("group", { name: "Skills in kami" });
 
   expect(callsTo(client, "kit/upload-preview")[0]?.input).toEqual({ files: [{ path: "kami/SKILL.md", base64: "LS0t" }] });
-  const destinations = within(screen.getByRole("group", { name: "Where should they go?" }));
-  expect(destinations.getByRole("radio", { name: /^Try later/ })).toBeDisabled();
-  expect(destinations.getByText("Only for repositories.")).toBeInTheDocument();
+  expect(screen.queryByRole("combobox", { name: "Install into" })).not.toBeInTheDocument();
 });
 
 it("refuses an upload over 25 MB before sending anything", async () => {
@@ -325,14 +257,11 @@ it("refuses an upload over 25 MB before sending anything", async () => {
   expect(callsTo(client, "kit/upload-preview")).toHaveLength(0);
 });
 
-it("asks for a file before installing from an upload, and drops Try later when switching to one", async () => {
-  setup({ destination: "later" });
+it("asks for a file before installing from an upload", async () => {
+  setup({ source: "upload" });
 
-  await userEvent.click(screen.getByRole("radio", { name: "A zip or folder" }));
-  expect(within(screen.getByRole("group", { name: "Where should they go?" })).getAllByRole("radio").some(radio => (radio as HTMLInputElement).checked)).toBe(false);
-
-  await chooseDestination("Core");
   await userEvent.click(screen.getByRole("button", { name: "Install" }));
+
   expect(screen.getByText("Choose a zip, a .skill file or a folder first.")).toBeInTheDocument();
 });
 
@@ -351,24 +280,22 @@ it("refuses to close while an install runs", async () => {
   const { onClose } = setup({}, { "kit/install": () => new Promise(resolve => { finish = resolve; }) });
   await findSkills();
   await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-  await chooseDestination("Core");
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Core" }));
+  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill" }));
 
   await userEvent.click(screen.getByRole("button", { name: "Close" }));
 
   expect(onClose).not.toHaveBeenCalled();
   expect(await screen.findByText("Installation is still running. Cancel it first to close.")).toBeInTheDocument();
-  finish(installed("core"));
-  await screen.findByRole("heading", { name: "1 skill installed to Core" });
+  finish(installed("review"));
+  await screen.findByRole("heading", { name: "1 skill installed" });
 });
 
 it("starts over from the success panel", async () => {
   setup();
   await findSkills();
   await userEvent.click(screen.getByRole("checkbox", { name: /kami/ }));
-  await chooseDestination("Core");
-  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill to Core" }));
-  await screen.findByRole("heading", { name: "1 skill installed to Core" });
+  await userEvent.click(screen.getByRole("button", { name: "Install 1 skill" }));
+  await screen.findByRole("heading", { name: "1 skill installed" });
 
   await userEvent.click(screen.getByRole("button", { name: "Add another" }));
 

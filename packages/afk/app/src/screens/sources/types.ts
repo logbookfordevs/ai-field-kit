@@ -4,8 +4,6 @@ import type { FavoriteSource, Profile } from "../../../../src/fieldwork/settings
 
 export type { FavoriteSource, InstallCandidate, InstallProgress, KitStatus };
 
-export type Destination = "core" | "pack" | "machine" | "later";
-
 /** What the Sources screen and the install dialog read from the `state` operation. */
 export interface SourcesState {
   /** The full settings object, so a bookmark change can be saved back whole. */

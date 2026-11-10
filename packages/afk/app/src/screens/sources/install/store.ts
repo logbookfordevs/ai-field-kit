@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from "react";
-import type { Destination } from "@/screens/sources/types";
 
 /**
  * What to prefill when the install dialog opens. Anything left out is asked in the dialog.
@@ -10,9 +9,8 @@ export interface InstallRequest {
   source?: "repository" | "upload";
   repository?: string;
   skills?: string[];
-  destination?: Destination;
-  /** Opened from a Try later bookmark, so Try later is not offered again. */
-  fromBookmark?: boolean;
+  /** "later" opens it to save a repository to Try later instead of installing. */
+  destination?: "later";
 }
 
 interface Opened { id: number; request: InstallRequest }

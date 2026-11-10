@@ -192,6 +192,19 @@ describe.each(["zip", "skill", "folder"] as const)("installing from a %s", kind 
     expect((await store.read()).machineOnly).toContain("wizard");
     expect(await commits()).toEqual(before);
   });
+
+  it("waits in To review: a plain folder in the shared agents folder, no commit", async () => {
+    const before = await commits();
+    const { upload } = await preview(kind);
+
+    const result = await operations.run("kit/upload-install", { upload, names: ["wizard"], to: "review" }) as { status: { undecided: { name: string }[] } };
+
+    expect(await readFile(join(agents, "wizard/SKILL.md"), "utf8")).toBe(skill("wizard"));
+    expect((await lstat(join(agents, "wizard"))).isDirectory()).toBe(true);
+    expect(result.status.undecided.map(item => item.name)).toContain("wizard");
+    expect((await store.read()).machineOnly).not.toContain("wizard");
+    expect(await commits()).toEqual(before);
+  });
 });
 
 describe("installing an upload into an existing pack", () => {

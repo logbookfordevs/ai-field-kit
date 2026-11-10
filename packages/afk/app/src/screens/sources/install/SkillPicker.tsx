@@ -6,6 +6,8 @@ export interface PickerItem {
   description: string;
   /** Short lines under the description: size, "Already installed", a replacement warning. */
   notes: { text: string; warning?: boolean }[];
+  /** Already has a place elsewhere, so this install leaves it out. */
+  locked?: boolean;
 }
 
 export interface SkillPickerProps {
@@ -21,19 +23,22 @@ export interface SkillPickerProps {
 
 export function SkillPicker({ legend, items, picked, onToggle, onToggleAll, error, readSkill }: SkillPickerProps) {
   const errorId = useId();
-  const allPicked = items.length > 0 && items.every(item => picked.has(item.name));
+  const pickable = items.filter(item => !item.locked);
+  const someLocked = pickable.length < items.length;
+  const allPicked = pickable.length > 0 && pickable.every(item => picked.has(item.name));
+  const selectAllLabel = someLocked ? `Select all new (${pickable.length})` : "Select all";
   return (
     <fieldset className="picker" aria-describedby={error ? errorId : undefined}>
       <legend>{legend}</legend>
       <div className="picker-head">
         <span className="meta num">{plural(items.length, "skill")} found · {picked.size} selected</span>
-        <button type="button" className="text" onClick={onToggleAll}>{allPicked ? "Select none" : "Select all"}</button>
+        <button type="button" className="text" onClick={onToggleAll}>{allPicked ? "Select none" : selectAllLabel}</button>
       </div>
       <ul className="picker-list">
         {items.map(item => (
           <li key={item.name}>
             <label className="picker-item">
-              <input type="checkbox" checked={picked.has(item.name)} onChange={() => onToggle(item.name)} />
+              <input type="checkbox" checked={picked.has(item.name)} disabled={item.locked} onChange={() => onToggle(item.name)} />
               <span className="sname">{item.name}</span>
               <span className="picker-desc clamp2">{item.description}</span>
               {item.notes.map(note => <span key={note.text} className={note.warning ? "picker-note warning" : "picker-note"}>{note.text}</span>)}

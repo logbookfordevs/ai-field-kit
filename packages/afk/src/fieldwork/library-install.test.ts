@@ -235,6 +235,19 @@ describe("installing through the Install dialog's operation", () => {
     expect(await git("status", "--porcelain")).toBe("");
   });
 
+  it("installs to To review as a plain folder, outside the library and AFK storage", async () => {
+    operations.installRunner = skillsCli(["wizard"]);
+    const before = await commits();
+
+    const result = await operations.run("kit/install", { source: "owner/repo", names: ["wizard"], to: "review" }) as { status: { undecided: { name: string }[] } };
+
+    expect(result.status.undecided.map(item => item.name)).toContain("wizard");
+    expect((await lstat(join(agents, "wizard"))).isDirectory()).toBe(true);
+    expect(await present(join(home, ".afk/machine/wizard"))).toBe(false);
+    expect((await store.read()).machineOnly).not.toContain("wizard");
+    expect(await commits()).toEqual(before);
+  });
+
   it("installs to this machine without touching the library", async () => {
     operations.installRunner = skillsCli(["wizard"]);
     const before = await commits();

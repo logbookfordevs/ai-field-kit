@@ -43,7 +43,7 @@ export async function installSkills(store: SettingsStore, settings: Settings, so
   if (scope !== "Global" && !project?.path) throw new Error("Choose a configured project with a local folder.");
   const path = project?.path;
   const cwd = scope === "Global" ? store.home : path === "~" ? store.home : path?.startsWith("~/") ? resolve(store.home, path.slice(2)) : resolve(path!);
-  const stored = scope === "Global" && await new Library(store.home).exists();
+  const stored = scope === "Global" && !storage.unstored && await new Library(store.home).exists();
   const env = { ...process.env, HOME: store.home, USERPROFILE: store.home, DISABLE_TELEMETRY: "1", ...(store.home !== homedir() ? { XDG_CONFIG_HOME: "", XDG_STATE_HOME: "", XDG_DATA_HOME: "" } : {}) };
   const state: InstallProgress = { pending: true, phase: "Preparing installation", output: "", completed: 0, total: sources.length, scope, agent, label, startedAt: Date.now() };
   const report = (): void => progress({ ...state });
