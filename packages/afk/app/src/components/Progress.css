@@ -1,0 +1,5 @@
+.progress-block{display:grid;gap:6px}
+.progress{height:4px;border-radius:var(--radius-pill);background:var(--warm);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .2s linear}
+.progress.indeterminate i{width:35%;animation:progress-slide 1.2s var(--ease) infinite}
+@keyframes progress-slide{from{transform:translateX(-100%)}to{transform:translateX(300%)}}

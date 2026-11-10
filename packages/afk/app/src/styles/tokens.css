@@ -1,0 +1,42 @@
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;src:url(/assets/font-0.ttf) format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:600;font-display:swap;src:url(/assets/font-1.ttf) format('truetype')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:swap;src:url(/assets/font-2.ttf) format('truetype')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:swap;src:url(/assets/font-3.ttf) format('truetype')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:swap;src:url(/assets/font-4.ttf) format('truetype')}
+
+:root {
+  --bg: #f3eddf;
+  --surface: #fffaf0;
+  --fg: #17201e;
+  --muted: #5d6964;
+  --border: #b9c0b7;
+  --accent: #102c2c;
+  --accent-hover: #24302c;
+  --warm: #e9ddc9;
+  --accent-fg: #f4efde;
+  --control-border: #5d6964;
+  --focus: #3f8580;
+  --danger: #8f3f2d;
+
+  --font-body: Poppins, 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', SFMono-Regular, Consolas, monospace;
+
+  --radius-compact: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-control: 16px;
+  --space-lg: 24px;
+  --space-section: 32px;
+
+  --ease: cubic-bezier(.32,.72,0,1);
+  --shadow-dialog: 0 28px 64px -28px color-mix(in srgb, var(--fg) 55%, transparent);
+  --shadow-pop: 0 18px 36px -22px color-mix(in srgb, var(--fg) 55%, transparent);
+  --shadow-toast: 0 16px 40px -20px color-mix(in srgb, var(--fg) 70%, transparent);
+
+  color-scheme: light;
+}

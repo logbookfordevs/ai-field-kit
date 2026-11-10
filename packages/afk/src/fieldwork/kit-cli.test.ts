@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { runKit, runMigrate, runSync } from "./kit-cli.js";
+import { runKit, runMigrate } from "./kit-cli.js";
 import { emptySettings, SettingsStore, type Settings } from "./settings.js";
 
 let home: string;
@@ -64,49 +64,6 @@ describe("afk kit", () => {
   it("explains itself when used wrongly", async () => {
     await expect(runKit(["add"], store, { log })).rejects.toThrow(/afk kit add/);
     await expect(runKit(["add", "x", "--wat"], store, { log })).rejects.toThrow(/Unknown option/);
-  });
-});
-
-describe("afk sync", () => {
-  it("reports a match without asking anything", async () => {
-    const ask = async (): Promise<string> => { throw new Error("should not ask"); };
-
-    expect(await runSync([], store, { log, ask, interactive: true })).toBe(0);
-
-    expect(output.join("\n")).toContain("matches your kit");
-  });
-
-  it("changes nothing when the confirmation is declined", async () => {
-    await configure({ kit: { core: [{ source: "me/core", skills: ["absent"] }] } });
-
-    expect(await runSync([], store, { log, ask: async () => "n", interactive: true })).toBe(0);
-
-    expect(output.join("\n")).toContain("Install from me/core: absent");
-    expect(output.join("\n")).toContain("Nothing changed");
-  });
-
-  it("refuses to run unattended without --yes", async () => {
-    await expect(runSync([], store, { log, interactive: false })).rejects.toThrow(/--yes/);
-  });
-
-  it("shows a tool's command but does not run it with only --yes", async () => {
-    const marker = join(home, "ran");
-    await configure({ tools: [{ id: 1, name: "Marker", install: `touch ${marker}`, update: "", provides: ["marker"] }] });
-
-    await runSync(["--yes"], store, { log, interactive: false });
-
-    expect(output.join("\n")).toContain(`$ touch ${marker}`);
-    expect(output.join("\n")).toContain("--run-tools");
-    await expect(readFile(marker)).rejects.toThrow();
-  });
-
-  it("runs a tool's command with --run-tools", async () => {
-    const marker = join(home, "ran");
-    await configure({ tools: [{ id: 1, name: "Marker", install: `touch ${marker}`, update: "", provides: ["marker"] }] });
-
-    await runSync(["--yes", "--run-tools"], store, { log, interactive: false });
-
-    await expect(readFile(marker)).resolves.toBeDefined();
   });
 });
 

@@ -44,6 +44,14 @@ export class ProcessOutput {
     return retained;
   }
 
+  lastLine(): string {
+    for (let index = this.lines.length - 1; index >= 0; index--) {
+      const line = this.lines[index]!.trim();
+      if (line) return line.slice(0, 300);
+    }
+    return "";
+  }
+
   private control(command: string, parameters: string): void {
     const value = Number(parameters.split(";")[0]) || 0;
     const distance = Math.min(value || 1, 100_000);

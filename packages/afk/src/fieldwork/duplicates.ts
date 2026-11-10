@@ -3,9 +3,14 @@ import { SkillLibrary, type DuplicateKeep } from "./skills.js";
 import type { Settings, SettingsStore } from "./settings.js";
 
 export async function resolveDuplicate(store: SettingsStore, settings: Settings, name: string, scope: string, keep: DuplicateKeep): Promise<void> {
-  await new SkillLibrary(store).consolidate(settings, name, scope, keep);
-  const mode = settings.preferences[`${scope}|${name}`];
-  if (keep === "installed" && mode) await setInvocation(store, settings, name, scope, mode);
+  const skills = new SkillLibrary(store);
+  const resolve = async (): Promise<void> => {
+    await skills.consolidate(settings, name, scope, keep);
+    const mode = settings.preferences[`${scope}|${name}`];
+    if (keep === "installed" && mode) await setInvocation(store, settings, name, scope, mode);
+  };
+  if (keep === "installed" && scope === "Global" && await skills.library.has(name)) await skills.library.change(`Reinstall ${name}`, resolve);
+  else await resolve();
 }
 
 // A fresh installation wins over a stored copy of the same skill; duplicates that predate it wait for the user.

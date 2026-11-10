@@ -56,7 +56,7 @@ it("does not start a background instance when none is running", async () => {
   vi.mocked(spawn).mockClear();
   try {
     await restartBackground(home);
-    expect(log).toHaveBeenCalledWith(expect.stringContaining("Run afk --background"));
+    expect(log).toHaveBeenCalledWith(expect.stringContaining("Run afk start"));
     expect(spawn).not.toHaveBeenCalled();
   } finally { await rm(home, { recursive: true, force: true }); }
 });

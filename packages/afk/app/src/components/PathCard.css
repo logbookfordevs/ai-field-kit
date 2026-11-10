@@ -1,0 +1,8 @@
+.path-card{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 16px;align-items:center;padding:12px 12px 12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.path-card.has-action{grid-template-columns:150px minmax(0,1fr) auto}
+.path-card .k{font-size:13px;font-weight:500;color:var(--muted)}
+.path-card code{font-size:13px;overflow-wrap:anywhere}
+@media (max-width:760px){
+  .path-card,.path-card.has-action{grid-template-columns:1fr}
+  .path-action{justify-self:start}
+}

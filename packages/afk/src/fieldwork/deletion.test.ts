@@ -53,7 +53,7 @@ it("protects unowned project links and refuses deleting shared storage through a
   await expect(previewDeletion(store, settings, "render", "Global")).rejects.toThrow("Another entry");
   await symlink(path, join(project, ".agents/skills/.disabled/render"));
   await expect(previewDeletion(store, settings, "render", "Global")).rejects.toThrow("Another entry");
-  await expect(previewDeletion(store, settings, "render", "Demo")).rejects.toThrow("shared storage");
+  await expect(previewDeletion(store, settings, "render", "Demo")).rejects.toThrow("not found");
 });
 it("restores stored files if saving settings fails", async () => {
   const { store, settings, path } = await fixture();
@@ -195,7 +195,7 @@ it("restores a deleted repository profile member before activation", async () =>
   const api = new FieldworkOperations(store);
   try {
     await api.run("activation", { id: "video", scope: "Global", enabled: true });
-    expect(fetch).toHaveBeenCalledWith("owner/video");
+    expect(fetch).toHaveBeenCalledWith("owner/video", expect.objectContaining({ onOutput: expect.any(Function) }));
     expect(await readFile(join(path, "SKILL.md"), "utf8")).toBe("Restored source instructions");
     expect((await store.read()).profiles[0]).toMatchObject({ ready: true, enabled: ["Global"] });
   } finally { await api.close(); }

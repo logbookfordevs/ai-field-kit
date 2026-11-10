@@ -1,3 +1,4 @@
+import { ProcessOutput } from "./process-output.js";
 import { installSkills, type InstallProgress, type InstallRunner } from "./skill-install.js";
 import { updateSkills, type UpdateProgress } from "./skill-update.js";
 import { SkillUpdateSchedule } from "./skill-schedule.js";
@@ -7,19 +8,28 @@ import { fetchStack, manifestUrl, validateStack, type SkillStack } from "./stack
 import { randomUUID } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
-import { spawn } from "node:child_process";
-import { isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
+import { runCommand as run, type CommandResult } from "./command-runner.js";
+import { containsControl, isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, UPLOADED_SOURCE, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
+import { openSkillEditor, saveSkillEdit, type UpdatesChoice } from "./skill-editor.js";
+import { adoptSkill, type AdoptDestination } from "./adopt.js";
+import { trackToolRun } from "./tool-run.js";
 import { resolveDuplicate } from "./duplicates.js";
 import { SourcePreparation } from "./preparation.js";
-import { SkillLibrary } from "./skills.js";
+import { globalSkillOn, SkillLibrary } from "./skills.js";
 import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
-import { exportBundle, inspectBundle, applyBundle } from "./bundle.js";
+import { Library, type GitRunner } from "./library.js";
+import { applyLibraryInit, planLibraryInit } from "./library-init.js";
+import { Backup } from "./library-backup.js";
+import { Restore } from "./library-restore.js";
 import { operationCatalog, type Operation } from "./operation-catalog.js";
 import { projectStatus } from "./projects.js";
-import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate, type SyncPlan } from "./kit.js";
-import { portableSettings } from "./local-state.js";
+import { migrateProject } from "./project-skills.js";
+import type { AsideMove } from "./aside.js";
+import { Uploads } from "./upload-install.js";
+import { addToCore, dropFromCore, isRepositorySource, kitStatus, toolOwner, type InstallCandidate } from "./kit.js";
+import { agentFolderState, changeAgentFolders } from "./agent-folder-operations.js";
 import { fingerprint, migrateSettings, sourceIdentity, type MigrationChoices } from "./migration.js";
 
 function validateInput(operation: Operation, data: Record<string, unknown>): void {
@@ -30,20 +40,22 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "project/remove": ["name"], "source/install": ["source", "scope", "agent"],
     "pack/remove": ["id"], "pack/read": ["id"], "pack/manifest": ["id"],
     "kit/add": ["to"], "kit/drop": ["name"], "kit/machine-only": ["name"], "kit/follow": ["source"],
-    "kit/install-preview": ["source"], "kit/install-read": ["source", "name"], "kit/install": ["source", "to"],
+    "kit/install-preview": ["source"], "kit/install-read": ["source", "name"], "kit/install": ["source", "to"], "kit/upload-install": ["upload", "to"],
     activation: ["id", "scope"], "project/save": ["name", "path"],
-    invocation: ["name", "scope"], "skill/toggle": ["name", "scope"], "skill/resolve-duplicate": ["name", "scope", "keep"],
+    invocation: ["name", "scope"], "skill/toggle": ["name", "scope"], "skill/adopt": ["name", "to"], "skill/resolve-duplicate": ["name", "scope", "keep"],
     "skills/update": ["scope"], "skills/delete-preview": ["scope"], "skills/bulk": ["scope", "action"],
     "skills-sharing/state": ["scope"], "skills-sharing/set": ["scope"],
     "skill/delete-preview": ["name", "scope"], "skill/delete": ["name", "scope"],
-    "skill/availability": ["name", "scope"], "skill/read": ["name", "scope"],
+    "skill/availability": ["name", "scope"], "skill/read": ["name", "scope"], "skill/editor": ["name"], "skill/edit": ["name", "file"],
     "rules/existing": ["id"], "rules/adopt": ["id"], "rules/overwrite": ["id"],
-    "rules/disconnect": ["id"], workspace: ["mode", "folder"], location: ["path"],
-    "bundle/preview": ["base64"], "bundle/import": ["base64"], "migration/apply": ["fingerprint"],
+    "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"],
+    "migration/apply": ["fingerprint"],
+    "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"], "restore/inspect": ["repository"], "restore/start": ["repository"],
+    "backup/keep": ["id"], "backup/discard": ["id"], "backup/take-update": ["name"], "backup/restore-saved": ["name"],
   };
   const optionalText: Partial<Record<Operation, string[]>> = {
-    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/sync": ["agent"], "kit/install": ["packName", "scope", "agent"], "project/save": ["previous"],
-    "skill/read": ["file", "folder"], "rules/save": ["expectedHash"], folders: ["path"],
+    "pack/save": ["id", "name", "source", "description"], "kit/drop": ["from"], "kit/add": ["source"], "kit/install": ["packName", "scope", "agent"], "kit/upload-preview": ["archive", "name", "folder"], "kit/upload-install": ["packName"], "project/save": ["previous"],
+    "skill/read": ["file", "folder"], "skill/editor": ["file"], "skill/edit": ["updates"], "rules/save": ["expectedHash"], folders: ["path"], "agent-folders/add": ["project"],
   };
   for (const key of requiredText[operation] ?? []) {
     if (typeof data[key] !== "string" || !data[key].trim()) throw new Error(`Provide ${key} as a nonempty string.`);
@@ -51,7 +63,9 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
   for (const key of optionalText[operation] ?? []) {
     if (data[key] !== undefined && typeof data[key] !== "string") throw new Error(`Provide ${key} as a string.`);
   }
-  for (const key of ["local", "update", "clean", "enabled", "confirmed", "prepare"]) {
+  if (operation === "skill/edit" && typeof data.content !== "string") throw new Error("Provide content as a string.");
+  if (operation === "skill/adopt" && !["library", "machine"].includes(String(data.to))) throw new Error("Choose library or machine.");
+  for (const key of ["local", "update", "clean", "enabled", "confirmed", "prepare", "brief", "bookmark"]) {
     if (data[key] !== undefined && typeof data[key] !== "boolean") throw new Error(`Provide ${key} as true or false.`);
   }
   if (operation === "skills/delete-preview" || operation === "skills/bulk" || (operation === "skills/update" && data.names !== undefined)) {
@@ -62,39 +76,57 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     if (data.action === "invocation" && (typeof data.mode !== "string" || !["", "Manual only", "Automatic allowed"].includes(data.mode))) throw new Error("Choose a supported invocation mode.");
   }
   if (operation === "invocation" && typeof data.mode !== "string") throw new Error("Provide an invocation mode.");
+  const inProject = typeof data.scope === "string" && data.scope !== "Global";
+  if (inProject && (operation === "skill/toggle" || operation === "skill/availability" || operation === "skills/bulk" && (data.action === "enable" || data.action === "disable"))) throw new Error("A project's skills are always on. Delete a skill to remove it from the project.");
+  if (inProject && operation === "activation" && data.enabled === true) throw new Error("Packs are Global only. A project keeps its own skills.");
   if (operation === "tool/run" && !Number.isSafeInteger(data.id)) throw new Error("Provide a numeric saved tool ID.");
   if (operation === "rules/preview" || operation === "rules/sync") {
     if (!Array.isArray(data.ids) || !data.ids.length || !data.ids.every(skillName) || new Set(data.ids).size !== data.ids.length) throw new Error("Choose unique rule destination IDs.");
   }
 }
 
-export function runCommand(command: string, args: string[], cwd: string): Promise<{ output: string; code: number }> {
-  return new Promise((accept, reject) => {
-    const child = spawn(command, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
-    let output = "";
-    const append = (chunk: Buffer): void => { output = (output + chunk.toString()).slice(-100_000); };
-    child.stdout.on("data", append);
-    child.stderr.on("data", append);
-    child.once("error", reject);
-    child.once("close", code => accept({ output, code: code ?? 1 }));
-  });
+export async function runTool(command: string, args: string[], cwd: string, signal?: AbortSignal, onOutput?: (text: string) => void): Promise<{ output: string; code: number }> {
+  const result: CommandResult = await run({ command, args, cwd, signal, step: "The tool command", idleTimeoutMs: 10 * 60_000, timeoutMs: 30 * 60_000, ...(onOutput ? { onOutput } : {}) });
+  return { output: result.output, code: result.code };
 }
+
+const TOOL_OUTPUT_LIMIT = 100_000;
+
+function hasNoRepository(source: string): boolean {
+  return source === LOCAL_PROFILE_SOURCE || source === UPLOADED_SOURCE;
+}
+
+const UPLOADED_MANIFEST = "includes uploaded skills. They are saved in your library and have no repository to publish, so this can't be exported as a manifest.";
 
 export class FieldworkOperations {
   private readonly library: SkillLibrary;
   private readonly rules: RulesWorkspace;
-  private readonly preparation = new SourcePreparation();
+  private readonly lifecycle = new AbortController();
+  private readonly inFlight = new Map<number, { operation: string; settled: Promise<void> }>();
+  private nextFlight = 0;
+  private readonly preparation = new SourcePreparation(this.lifecycle.signal);
   private installController: AbortController | null = null;
   private skillInstall: InstallProgress | null = null;
   private updateController: AbortController | null = null;
   private skillUpdate: UpdateProgress | null = null;
   installRunner: InstallRunner | undefined;
+  restoreRunner: GitRunner | undefined;
+  private restoreController: AbortController | null = null;
   private mutations: Promise<void> = Promise.resolve();
-  private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number }> = {};
+  private readonly toolRuns: Record<number, { pending: boolean; output: string; code?: number; warnings?: string[] }> = {};
   readonly schedule: SkillUpdateSchedule;
+  readonly backup: Backup;
+  private readonly uploads: Uploads;
+  private projectsReady: Promise<void> | undefined;
+  private projectMigration: { migrated: string[]; kept: { project: string; skills: string[] }[]; movedAside: { project: string; moves: AsideMove[] }[]; failed: { project: string; error: string }[] } = { migrated: [], kept: [], movedAside: [], failed: [] };
 
   constructor(readonly store: SettingsStore) {
+    this.backup = new Backup(new Library(store.home), undefined, { signal: this.lifecycle.signal, isOn: async name => globalSkillOn(await store.read(), name) });
     this.library = new SkillLibrary(store);
+    this.uploads = new Uploads(store, this.library, {
+      define: (existing, id, name, groups) => this.packFrom(existing, id, name, groups, {}),
+      save: (settings, pack) => this.replacePack(settings, pack, profileGroups(pack)),
+    });
     this.rules = new RulesWorkspace(store);
     this.schedule = new SkillUpdateSchedule(store.home);
   }
@@ -103,14 +135,18 @@ export class FieldworkOperations {
     return Boolean(this.skillUpdate?.pending);
   }
 
-  private async prepareMembers(settings: Settings, groups: ProfileGroup[]): Promise<void> {
+  private async prepareMembers(settings: Settings, groups: ProfileGroup[], pack = "the pack"): Promise<void> {
+    const downloads: { group: ProfileGroup; absent: string[] }[] = [];
     for (const group of groups) {
+      const absent: string[] = [];
       for (const name of group.skills) {
         try { await this.library.locate(settings, name); continue; } catch { /* A missing member needs preparation. */ }
-        if (group.source === LOCAL_PROFILE_SOURCE) throw new Error(`Restore this local skill before adding it: ${name}. It has no repository source.`);
-        await this.library.storePrepared(settings, await this.preparation.directory(group.source), [name], group.source);
+        if (hasNoRepository(group.source)) throw new Error(`Restore this local skill before adding it: ${name}. It has no repository source.`);
+        absent.push(name);
       }
+      if (absent.length) downloads.push({ group, absent });
     }
+    if (downloads.length) await this.downloadPackSkills(settings, pack, downloads);
   }
 
   // Off, swap, on: activation owns links by name, so reusing it preserves every other owner of a skill.
@@ -122,7 +158,7 @@ export class FieldworkOperations {
       await this.store.save(settings);
       return;
     }
-    await this.prepareMembers(settings, groups);
+    await this.prepareMembers(settings, groups, next.name);
     const restored: Profile = { ...structuredClone(previous), enabled: [] };
     const position = settings.profiles.indexOf(previous);
     for (const scope of scopes) await this.library.activate(settings, previous.id, scope, false);
@@ -192,6 +228,8 @@ export class FieldworkOperations {
     const scope = String(data.scope ?? "Global");
     if (scope !== "Global" && !settings.projects.some(project => project.name === scope)) throw new Error("Choose a configured project.");
     if (to !== "later" && !names.length) throw new Error("Choose at least one skill.");
+    const bookmarkName = typeof data.name === "string" ? data.name.trim() : undefined;
+    if (data.name !== undefined && (to !== "later" || !bookmarkName || bookmarkName.length > 120 || containsControl(bookmarkName))) throw new Error("Give the bookmark a name of up to 120 characters, for Try later only.");
     const finish = async (extra: Record<string, unknown> = {}): Promise<unknown> => {
       const latest = await store.read();
       return { ok: true, to, ...extra, status: kitStatus(latest, await library.inventory(latest, "Global")) };
@@ -199,8 +237,11 @@ export class FieldworkOperations {
 
     if (to === "later") {
       const existing = settings.favoriteSources.find(item => sourceIdentity(item.source) === sourceIdentity(source));
-      if (existing) { if (existing.skills) { if (names.length) existing.skills = [...new Set([...existing.skills, ...names])]; else delete existing.skills; } }
-      else settings.favoriteSources.push({ name: source.replace(/#.*$/, "").replace(/\.git$/, "").replace(/\/+$/, "").split(/[/:]/).filter(Boolean).pop() ?? source, source, ...(names.length ? { skills: names } : {}) });
+      if (existing) {
+        if (bookmarkName) existing.name = bookmarkName;
+        if (existing.skills) { if (names.length) existing.skills = [...new Set([...existing.skills, ...names])]; else delete existing.skills; }
+      }
+      else settings.favoriteSources.push({ name: bookmarkName ?? source.replace(/#.*$/, "").replace(/\.git$/, "").replace(/\/+$/, "").split(/[/:]/).filter(Boolean).pop() ?? source, source, ...(names.length ? { skills: names } : {}) });
       await store.save(settings);
       return await finish();
     }
@@ -222,7 +263,7 @@ export class FieldworkOperations {
       const packName = typeof data.packName === "string" ? data.packName.trim() : "";
       if (!pack && !packName) throw new Error("Name the new pack.");
       const next = this.packFrom(pack, pack?.id ?? "profile-" + randomUUID(), pack?.name ?? packName, groups, {});
-      await this.prepareMembers(settings, [{ source, skills: fresh }]);
+      await this.prepareMembers(settings, [{ source, skills: fresh }], pack?.name ?? packName);
       next.ready = true;
       for (const member of next.skills) { try { await library.locate(settings, member); } catch { next.ready = false; } }
       await this.replacePack(settings, next, profileGroups(next));
@@ -234,11 +275,18 @@ export class FieldworkOperations {
     const conflicts = candidates.filter(item => names.includes(item.name) && item.state === "conflict" && !replace.includes(item.name));
     if (conflicts.length) throw new Error(`Already installed from another repository: ${conflicts.map(item => `${item.name} (${item.installedFrom ?? "unknown source"})`).join(", ")}. Choose to replace them, or leave them out.`);
     const toInstall = names.filter(name => candidates.find(item => item.name === name)!.state !== "installed");
+    const record = (target: Settings): void => {
+      if (to === "core") {
+        for (const name of names) addToCore(target, name, source);
+        target.machineOnly = target.machineOnly.filter(name => !names.includes(name));
+      } else if (scope === "Global") target.machineOnly = [...new Set([...target.machineOnly, ...names])];
+    };
+    const stored = scope === "Global" && await library.library.exists();
     let install: InstallProgress | undefined;
     if (toInstall.length) {
       this.installController = new AbortController();
       try {
-        install = await installSkills(store, settings, [{ source, skills: toInstall }], scope, String(data.agent ?? "universal"), `Install from ${source}`, value => { this.skillInstall = value; }, this.installController.signal, this.installRunner);
+        install = await installSkills(store, settings, [{ source, skills: toInstall }], scope, String(data.agent ?? "universal"), `Install from ${source}`, value => { this.skillInstall = value; }, AbortSignal.any([this.installController.signal, this.lifecycle.signal]), this.installRunner, { destination: to === "core" ? "library" : "machine", finalize: record });
         this.skillInstall = install;
       } finally { this.installController = null; }
       if (install.code !== 0) {
@@ -246,18 +294,45 @@ export class FieldworkOperations {
         return { ok: false, to, install, status: kitStatus(latest, await library.inventory(latest, "Global")) };
       }
     }
-    const latest = await store.read();
-    if (to === "core") {
-      for (const name of names) addToCore(latest, name, source);
-      latest.machineOnly = latest.machineOnly.filter(name => !names.includes(name));
-    } else if (scope === "Global") latest.machineOnly = [...new Set([...latest.machineOnly, ...names])];
-    await store.save(latest);
+    if (!stored || !toInstall.length) {
+      const latest = await store.read();
+      record(latest);
+      await store.save(latest);
+    }
     return await finish(install ? { install } : {});
+  }
+
+  private async downloadPackSkills(settings: Settings, pack: string, downloads: { group: ProfileGroup; absent: string[] }[]): Promise<void> {
+    const state: InstallProgress = { pending: true, phase: `Downloading skills for ${pack}`, output: "", completed: 0, total: downloads.length, scope: "Global", agent: "universal", label: `Turn on ${pack}`, startedAt: Date.now() };
+    const output = new ProcessOutput();
+    const report = (): void => { this.skillInstall = { ...state }; };
+    const append = (text: string): void => { state.output = output.append(text); state.lastLine = output.lastLine(); report(); };
+    this.installController = new AbortController();
+    const signal = AbortSignal.any([this.installController.signal, this.lifecycle.signal]);
+    report();
+    try {
+      for (const { group, absent } of downloads) {
+        signal.throwIfAborted();
+        state.item = group.source; report();
+        append(`\nSource: ${group.source}\n`);
+        await this.library.storePrepared(settings, await this.preparation.directory(group.source, { onOutput: append, signal }), absent, group.source);
+        state.completed++; report();
+      }
+      state.code = 0; state.phase = `Downloaded skills for ${pack}`;
+    } catch (error) {
+      if (signal.aborted) { state.cancelled = true; state.code = 130; state.phase = "Download cancelled"; }
+      else { state.code = 1; state.phase = "Download failed"; append(error instanceof Error ? error.message : "Download failed"); }
+      throw error;
+    } finally {
+      delete state.item; state.pending = false; state.finishedAt = Date.now(); report();
+      this.installController = null;
+    }
   }
 
   private packManifest(settings: Settings, id: string): SkillStack {
     const label = (source: string): string => source.replace(/\.git$/, "").replace(/\/+$/, "").split(/[/:]/).filter(Boolean).pop() ?? source;
     if (id === "core") {
+      if (settings.kit?.core.some(entry => entry.source === UPLOADED_SOURCE && entry.skills.length)) throw new Error(`Core ${UPLOADED_MANIFEST}`);
       const sources = (settings.kit?.core ?? []).filter(entry => entry.skills.length).map(entry => ({ name: entry.name ?? label(entry.source), source: entry.source, skills: entry.skills }));
       if (!sources.length) throw new Error("Core has no skills to export yet.");
       return validateStack({ version: 1, id: "core", name: "Core", sources });
@@ -265,16 +340,38 @@ export class FieldworkOperations {
     const pack = settings.profiles.find(profile => profile.id === id);
     if (!pack) throw new Error("Pack not found.");
     const groups = profileGroups(pack);
+    if (groups.some(group => group.source === UPLOADED_SOURCE)) throw new Error(`${pack.name} ${UPLOADED_MANIFEST}`);
     if (groups.some(group => group.source === LOCAL_PROFILE_SOURCE)) throw new Error("This pack uses skills from this machine, which have no repository to publish.");
     return validateStack({ version: 1, id: pack.id.replace(/^stack-/, ""), name: pack.name, ...(pack.description ? { description: pack.description } : {}), sources: groups.map(group => ({ name: pack.sourceNames?.[group.source] ?? label(group.source), source: group.source, skills: group.skills })) });
   }
 
+  // Earlier versions parked, copied and linked skills inside projects; the first answer waits until every present project is back to its own files.
+  private async migrateProjects(): Promise<void> {
+    try {
+      const names = (await this.store.read()).projects.map(project => project.name);
+      for (const name of names) {
+        const settings = await this.store.read();
+        if ((await projectStatus(this.store, settings))[name] !== "present") continue;
+        try {
+          const result = await migrateProject(this.store, settings, name);
+          if (result.migrated) this.projectMigration.migrated.push(name);
+          if (result.kept.length) this.projectMigration.kept.push({ project: name, skills: result.kept });
+          if (result.movedAside.length) this.projectMigration.movedAside.push({ project: name, moves: result.movedAside });
+        } catch (error) { this.projectMigration.failed.push({ project: name, error: error instanceof Error ? error.message : "Migration failed." }); }
+      }
+    } catch { /* The requested operation reports unreadable settings itself. */ }
+  }
+
   run(operation: string, data: Record<string, unknown> = {}): Promise<unknown> {
     if (!Object.hasOwn(operationCatalog, operation)) return Promise.reject(new Error("Unknown operation. Run afk manage describe for supported operations."));
-    const action = (): Promise<unknown> => this.apply(operation as Operation, data);
-    if (["state", "kit/state", "rules/state", "bundle/export", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule"].includes(operation)) return action();
-    const result = this.mutations.then(action);
-    this.mutations = result.then(() => undefined, () => undefined);
+    const ready = this.projectsReady ??= this.migrateProjects();
+    const action = async (): Promise<unknown> => { await ready; return this.apply(operation as Operation, data); };
+    const direct = ["state", "kit/state", "rules/state", "tool/state", "tool/run", "skills/update-state", "skills/update-cancel", "skills/install-state", "skills/install-cancel", "skills/schedule-state", "skills/schedule", "backup/state", "backup/save", "agent-folders/state", "restore/repositories", "restore/inspect", "restore/cancel"].includes(operation);
+    const result = direct ? action() : this.mutations.then(action);
+    if (!direct) this.mutations = result.then(() => undefined, () => undefined);
+    const flight = this.nextFlight++;
+    this.inFlight.set(flight, { operation, settled: result.then(() => undefined, () => undefined) });
+    void this.inFlight.get(flight)!.settled.then(() => this.inFlight.delete(flight));
     return result;
   }
 
@@ -283,9 +380,19 @@ export class FieldworkOperations {
     if (Object.values(this.toolRuns).some(run => run.pending)) throw new Error("Wait for running tool commands to finish before updating AFK.");
   }
 
-  async close(): Promise<void> {
-    await this.mutations;
+  async close(deadlineMs = 10_000): Promise<{ abandoned: string[] }> {
+    this.lifecycle.abort();
+    let timer: NodeJS.Timeout | undefined;
+    const drained = await Promise.race([
+      Promise.all([...this.inFlight.values()].map(flight => flight.settled)).then(() => true),
+      new Promise<boolean>(accept => { timer = setTimeout(() => accept(false), deadlineMs); }),
+    ]);
+    clearTimeout(timer);
+    const abandoned = drained ? [] : [...new Set([...this.inFlight.values()].map(flight => flight.operation))];
+    if (abandoned.length) console.error(`AFK shutdown deadline reached; abandoned: ${abandoned.join(", ")}`);
     await this.preparation.close();
+    await this.uploads.close();
+    return { abandoned };
   }
 
   private migrationChoices(data: Record<string, unknown>): MigrationChoices {
@@ -297,6 +404,56 @@ export class FieldworkOperations {
     if (data.core !== undefined && data.core !== null && typeof data.core !== "string") throw new Error("Provide core as a stack ID or null.");
     const follow = strings(data.follow, "follow"), skipTools = strings(data.skipTools, "skipTools");
     return { core: (data.core as string | null | undefined) ?? null, ...(follow ? { follow } : {}), ...(skipTools ? { skipTools } : {}) };
+  }
+
+  private async applyBackup(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
+    const { backup } = this;
+    if (operation === "library/init-preview") { validateInput(operation, data); return await planLibraryInit(this.store, this.restoreRunner); }
+    if (operation === "library/init") {
+      validateInput(operation, data);
+      if (typeof data.expected !== "object" || data.expected === null) throw new Error("Provide expected as the library/init-preview result.");
+      return await applyLibraryInit(this.store, this.restoreRunner, data.expected);
+    }
+    if (operation === "backup/state") {
+      const status = await backup.status(), attention = await backup.checks.list(), unpushed = await backup.unpushedSkills();
+      return data.brief === true ? { status, attention, unpushed } : { status, attention, unpushed, history: await backup.history(), contents: await backup.contents() };
+    }
+    const resolutions: Partial<Record<Operation, () => Promise<{ movedAside: AsideMove[] } | void>>> = {
+      "backup/keep": () => backup.checks.keep(String(data.id)),
+      "backup/discard": () => backup.checks.discard(String(data.id)),
+      "backup/take-update": () => backup.checks.take(String(data.name)),
+      "backup/restore-saved": () => backup.checks.restore(String(data.name)),
+    };
+    const resolve = resolutions[operation];
+    if (resolve) {
+      const resolution = await resolve();
+      return { status: await backup.status(), attention: await backup.checks.list(), ...(resolution ? { movedAside: resolution.movedAside } : {}) };
+    }
+    if (operation === "backup/connect") return backup.connect(String(data.url));
+    if (operation === "backup/create") return backup.createRepository(String(data.name));
+    if (operation === "backup/save") return backup.saveNow();
+    if (operation === "backup/disconnect") return backup.disconnect();
+    await backup.goBack(String(data.id));
+    return backup.status();
+  }
+
+  private async applyRestore(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
+    if (operation === "restore/cancel") {
+      if (!this.restoreController) return { cancelled: false, reason: "No restore is running." };
+      this.restoreController.abort(); return { cancelled: true };
+    }
+    const controller = new AbortController(), stop = (): void => controller.abort();
+    this.lifecycle.signal.addEventListener("abort", stop, { once: true });
+    if (operation === "restore/start") this.restoreController = controller;
+    try {
+      const restore = new Restore(this.store, this.restoreRunner, { signal: controller.signal });
+      if (operation === "restore/repositories") return await restore.repositories();
+      if (operation === "restore/inspect") return await restore.inspect(String(data.repository));
+      return await restore.restore(String(data.repository));
+    } finally {
+      this.lifecycle.signal.removeEventListener("abort", stop);
+      if (operation === "restore/start") this.restoreController = null;
+    }
   }
 
   private async apply(operation: Operation, data: Record<string, unknown>): Promise<unknown> {
@@ -317,6 +474,8 @@ export class FieldworkOperations {
       return { cancelled: true };
     }
     validateInput(operation, data);
+    if (operation.startsWith("backup/") || operation.startsWith("library/")) return this.applyBackup(operation, data);
+    if (operation.startsWith("restore/")) return this.applyRestore(operation, data);
     const { store, library, rules, preparation, toolRuns } = this;
     const settings = await store.read();
     if (operation === "migration/preview") {
@@ -329,9 +488,9 @@ export class FieldworkOperations {
       const text = (await store.portableText()) ?? "";
       if (fingerprint(text) !== data.fingerprint) throw new Error("The settings file changed since this dry run. Review the migration again.");
       const { settings: migrated, report } = migrateSettings(settings, this.migrationChoices(data), await library.inventory(settings, "Global"));
+      const backup = await store.preserveLegacy(text);
       await store.save(migrated, { migrating: true });
-      const copy = (await store.backups()).find(backup => backup.name.startsWith("pre-kit-") && backup.configurationId === settings.configurationId);
-      return { ok: true, report, ...(copy ? { backup: join(store.backupFolder, copy.name) } : {}) };
+      return { ok: true, report, backup };
     }
     if (operation === "source/install") {
       const source = settings.favoriteSources?.find(source => source.source === data.source);
@@ -343,7 +502,7 @@ export class FieldworkOperations {
       const groups = [{ ...source, ...(data.skills ? { skills: data.skills as string[] } : {}) }];
       this.installController = new AbortController();
       try {
-        this.skillInstall = await installSkills(store, settings, groups, String(data.scope), String(data.agent), source.name, value => { this.skillInstall = value; }, this.installController.signal, this.installRunner);
+        this.skillInstall = await installSkills(store, settings, groups, String(data.scope), String(data.agent), source.name, value => { this.skillInstall = value; }, AbortSignal.any([this.installController.signal, this.lifecycle.signal]), this.installRunner, { destination: "library", finalize: (target, installed) => { for (const name of installed) addToCore(target, name, source.source); } });
         return this.skillInstall;
       } finally { this.installController = null; }
     }
@@ -432,51 +591,8 @@ export class FieldworkOperations {
       return { content: await readFile(path, "utf8") };
     }
     if (operation === "kit/install") return await this.installWithDestination(data);
-    if (operation === "kit/sync") {
-      const inventory = await library.inventory(settings, "Global");
-      const current = kitStatus(settings, inventory);
-      if (JSON.stringify(current.plan) !== JSON.stringify(data.expected as SyncPlan | undefined)) throw new Error("This machine or your kit changed since you reviewed the plan. Review it again.");
-      if (data.only !== undefined) {
-        const { only } = data;
-        if (!Array.isArray(only) || !only.length || !only.every(skillName)) throw new Error("Provide only as an array of skill names.");
-        current.plan = {
-          install: current.plan.install.map(group => ({ source: group.source, skills: group.skills.filter(name => only.includes(name)) })).filter(group => group.skills.length),
-          enable: current.plan.enable.filter(name => only.includes(name)),
-          tools: current.plan.tools.filter(tool => tool.skills.some(name => only.includes(name))),
-        };
-      }
-      const approved = data.runTools === undefined ? [] : data.runTools;
-      if (!Array.isArray(approved) || !approved.every(id => Number.isSafeInteger(id))) throw new Error("Provide runTools as an array of tool IDs.");
-      const enabled: { name: string; ok: boolean; error?: string }[] = [];
-      for (const name of current.plan.enable) {
-        try { await library.toggle(settings, name, "Global"); enabled.push({ name, ok: true }); }
-        catch (error) { enabled.push({ name, ok: false, error: error instanceof Error ? error.message : "Could not turn this skill on." }); }
-      }
-      let install: InstallProgress | undefined;
-      if (current.plan.install.length) {
-        this.installController = new AbortController();
-        try {
-          install = await installSkills(store, settings, current.plan.install, "Global", String(data.agent ?? "universal"), "Sync this machine", value => { this.skillInstall = value; }, this.installController.signal, this.installRunner);
-          this.skillInstall = install;
-        } finally { this.installController = null; }
-      }
-      const tools: { id: number; name: string; code: number; output: string }[] = [];
-      const skippedTools = current.plan.tools.filter(tool => !approved.includes(tool.id));
-      for (const tool of current.plan.tools.filter(tool => approved.includes(tool.id))) {
-        toolRuns[tool.id] = { pending: true, output: "Running…" };
-        try {
-          const result = await runCommand(process.env.SHELL || "/bin/sh", ["-c", tool.command], store.home);
-          toolRuns[tool.id] = { pending: false, ...result };
-          tools.push({ id: tool.id, name: tool.name, ...result });
-        } catch (error) {
-          const output = error instanceof Error ? error.message : "Command could not start.";
-          toolRuns[tool.id] = { pending: false, code: 1, output };
-          tools.push({ id: tool.id, name: tool.name, code: 1, output });
-        }
-      }
-      const latest = await store.read();
-      return { ...(install ? { install } : {}), enabled, tools, skippedTools, status: kitStatus(latest, await library.inventory(latest, "Global")) };
-    }
+    if (operation === "kit/upload-preview") return await this.uploads.preview(data);
+    if (operation === "kit/upload-install") return await this.uploads.install(data);
     if (operation === "pack/manifest") return { manifest: this.packManifest(settings, String(data.id)) };
     if (operation === "pack/import-preview") {
       if ((data.manifest === undefined) === (data.origin === undefined)) throw new Error("Provide pasted manifest JSON or its HTTPS URL, not both.");
@@ -501,18 +617,15 @@ export class FieldworkOperations {
       const scope = String(data.scope);
       this.updateController = new AbortController();
       try {
-        this.skillUpdate = await updateSkills(store, settings, scope, value => { this.skillUpdate = value; }, undefined, this.updateController.signal, data.names as string[] | undefined);
+        this.skillUpdate = await updateSkills(store, settings, scope, value => { this.skillUpdate = value; }, undefined, AbortSignal.any([this.updateController.signal, this.lifecycle.signal]), data.names as string[] | undefined);
         return this.skillUpdate;
       } catch (error) {
-        this.skillUpdate = { pending: false, phase: "Update failed; review the details", output: (this.skillUpdate?.output || "") + "\n" + (error instanceof Error ? error.message : "Update failed"), code: 1, scope };
+        this.skillUpdate = { pending: false, phase: "Update failed; review the details", output: (this.skillUpdate?.output || "") + "\n" + (error instanceof Error ? error.message : "Update failed"), code: 1, scope, startedAt: this.skillUpdate?.startedAt ?? Date.now(), finishedAt: Date.now() };
         return this.skillUpdate;
       } finally { this.updateController = null; }
     }
     if (operation === "rules/state") {
       return await rules.state(settings);
-    }
-    if (operation === "bundle/export") {
-      return await exportBundle(store);
     }
     if (operation === "state") {
       const projectStatuses = await projectStatus(store, settings);
@@ -527,14 +640,14 @@ export class FieldworkOperations {
         }
         inventories[scope] = await library.inventory(settings, scope);
         nestedInventories[scope] = await library.nested(settings, scope);
-        skillSharing[scope] = await sharingState(store, settings, scope);
+        if (scope !== "Global") skillSharing[scope] = await sharingState(store, settings, scope);
       }
       for (const profile of settings.profiles) {
         if (!profile.ready) continue;
         try { for (const name of profile.skills) await library.locate(settings, name); }
         catch { profile.ready = false; }
       }
-      return { settings, migration: { required: settings.version === 1 }, kit: kitStatus(settings, inventories.Global ?? []), portableSettings: portableSettings(settings), settingsPath: store.path, home: store.home, inventories, nestedInventories, skillSharing, projectStatuses, toolRuns };
+      return { settings, migration: { required: settings.version === 1 }, kit: kitStatus(settings, inventories.Global ?? []), settingsPath: store.path, home: store.home, inventories, nestedInventories, skillSharing, projectStatuses, projectMigration: this.projectMigration, toolRuns };
     }
     if (operation === "rules/save") {
       return await rules.saveFiles(data.files as RulesFile[], typeof data.expectedHash === "string" ? data.expectedHash : undefined);
@@ -566,22 +679,6 @@ export class FieldworkOperations {
     if (operation === "rules/disconnect") {
       const updated = await rules.disconnect(settings, String(data.id), data.clean === true);
       return await rules.state(updated);
-    }
-    if (operation === "bundle/preview") {
-      return inspectBundle(String(data.base64));
-    }
-    if (operation === "bundle/import") {
-      const mappings = data.mappings;
-      const hasMapping = (value: unknown, key: "id" | "name"): boolean => {
-        if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-        const mapping = value as Record<string, unknown>;
-        return typeof mapping[key] === "string" && typeof mapping.path === "string";
-      };
-      if (!Array.isArray(mappings) || !(mappings as unknown[]).every(m => hasMapping(m, "id"))) throw new Error("Choose local destination mappings.");
-      const projects = data.projects;
-      if (projects !== undefined && (!Array.isArray(projects) || !(projects as unknown[]).every(p => hasMapping(p, "name")))) throw new Error("Choose valid project folder mappings.");
-      await applyBundle(store, String(data.base64), mappings as { id: string; path: string }[], projects as { name: string; path: string }[] | undefined);
-      return { ok: true };
     }
     if (operation === "welcome") {
       settings.welcomeDismissed = true;
@@ -632,7 +729,7 @@ export class FieldworkOperations {
       if (typeof data.description === "string" && !data.description.trim()) delete pack.description;
       const memberGroups = profileGroups(pack);
       for (const group of memberGroups) {
-        if (group.source === LOCAL_PROFILE_SOURCE) { for (const member of group.skills) await library.locate(settings, member); }
+        if (hasNoRepository(group.source)) { for (const member of group.skills) await library.locate(settings, member); }
         else if (data.prepare === true) await library.storePrepared(settings, await preparation.directory(group.source), group.skills, group.source);
       }
       let ready = true;
@@ -672,7 +769,9 @@ export class FieldworkOperations {
         }
         previous.name = data.name; previous.path = data.path;
       } else settings.projects.push({ name: data.name, path: data.path });
-      await store.save(settings); return { ok: true };
+      await store.save(settings);
+      if ((await projectStatus(store, settings))[data.name] === "present") await migrateProject(store, settings, data.name);
+      return { ok: true };
     }
     if (operation === "project/remove") {
       const project = settings.projects.find(project => project.name === data.name);
@@ -692,14 +791,6 @@ export class FieldworkOperations {
       delete settings.independentSkills[String(data.name)];
       await store.save(settings); return { ok: true };
     }
-    if (operation === "location") { await store.relocate(String(data.path)); return { ok: true }; }
-    if (operation === "workspace") {
-      if (typeof data.folder !== "string" || !["move", "select", "create"].includes(String(data.mode))) throw new Error("Choose an AFK folder and action.");
-      if (data.mode === "move") return { ok: true, backup: await store.moveFolder(data.folder) };
-      if (data.mode === "select") await store.selectFolder(data.folder);
-      else await store.relocate(join(data.folder, "settings.json"));
-      return { ok: true };
-    }
     if (operation === "folders") {
       const path = resolve(String(data.path ?? store.home));
       if (!(await stat(path)).isDirectory()) throw new Error("Choose a folder.");
@@ -715,30 +806,15 @@ export class FieldworkOperations {
         for (const name of profile.skills) {
           try { await library.locate(settings, name); } catch { missing.push(name); }
         }
-        for (const group of profileGroups(profile)) {
-          const absent = group.skills.filter(name => missing.includes(name));
-          if (!absent.length) continue;
-          if (group.source === LOCAL_PROFILE_SOURCE) throw new Error(`Restore these local skill files before enabling: ${absent.join(", ")}. They have no repository source.`);
-          await library.storePrepared(settings, await preparation.directory(group.source), absent, group.source);
-        }
+        const downloads = profileGroups(profile).map(group => ({ group, absent: group.skills.filter(name => missing.includes(name)) })).filter(item => item.absent.length);
+        for (const { group, absent } of downloads) if (hasNoRepository(group.source)) throw new Error(`Restore these local skill files before enabling: ${absent.join(", ")}. They have no repository source.`);
+        if (downloads.length) await this.downloadPackSkills(settings, profile.name, downloads);
         profile.ready = true;
       }
       await library.activate(settings, String(data.id), String(data.scope), data.enabled === true); return { ok: true };
     }
     if (operation === "invocation") {
       await setInvocation(store, settings, String(data.name), String(data.scope), String(data.mode)); return { ok: true };
-    }
-    if (operation === "import") {
-      if (settings.profiles.some(p => p.enabled.length)) throw new Error("Disable current profiles before replacing the configuration.");
-      if (Object.keys(settings.managedLinks).length || Object.values(settings.independentSkills).some(names => names.length)) throw new Error("Disable active individual skills and resolve managed links before replacing the configuration.");
-      const parsed = validateSettings(data.settings);
-      const imported = parsed.version === 1 ? migrateSettings(parsed, {}, []).settings : parsed;
-      imported.managedLinks = {};
-      imported.independentSkills = {};
-      imported.profiles = imported.profiles.map(p => ({ ...p, enabled: [], ready: false }));
-      imported.agentRules = settings.agentRules;
-      imported.machineOnly = settings.machineOnly;
-      await store.save(imported, { replace: true }); return { ok: true };
     }
     if (operation === "skills/delete-preview" || operation === "skills/bulk") {
       const names = data.names as string[], scope = String(data.scope);
@@ -788,6 +864,14 @@ export class FieldworkOperations {
       await resolveDuplicate(store, settings, String(data.name), String(data.scope), data.keep);
       return { ok: true };
     }
+    if (operation === "agent-folders/state") return await agentFolderState(store.home);
+    if (operation === "agent-folders/enable" || operation === "agent-folders/disable" || operation === "agent-folders/remove" || operation === "agent-folders/add") {
+      return await changeAgentFolders(store, operation.slice("agent-folders/".length) as "enable" | "disable" | "add" | "remove", data);
+    }
+    if (operation === "skill/adopt") {
+      if (!skillName(data.name)) throw new Error("Choose a valid skill name.");
+      await adoptSkill(library, settings, data.name, data.to as AdoptDestination, data.bookmark === true); return { ok: true };
+    }
     if (operation === "skill/toggle") {
       await library.toggle(settings, String(data.name), String(data.scope)); return { ok: true };
     }
@@ -822,15 +906,21 @@ export class FieldworkOperations {
       if ((await stat(target)).size > 500_000) throw new Error("This file is too large to preview. Open it from the displayed skill folder.");
       return { path, files, file, content: await readFile(target, "utf8") };
     }
+    if (operation === "skill/editor") return await openSkillEditor(store, settings, String(data.name), typeof data.file === "string" ? data.file : undefined);
+    if (operation === "skill/edit") return await saveSkillEdit(store, settings, { name: String(data.name), file: String(data.file), content: String(data.content), ...(data.updates ? { updates: data.updates as UpdatesChoice } : {}) });
     if (operation === "pack/read") { return { content: await library.readGroup(settings, String(data.id)) }; }
+    if (operation === "tool/state") return { tools: settings.tools, runs: toolRuns, home: store.home };
     if (operation === "tool/run") {
       const tool = settings.tools.find(t => t.id === data.id);
       if (!tool) throw new Error("Tool not found.");
       if (toolRuns[tool.id]?.pending) throw new Error("This tool command is already running. Reopen its results to follow it.");
       const command = data.update === true ? tool.update || tool.install : tool.install;
-      toolRuns[tool.id] = { pending: true, output: "Running…" };
+      const current: { pending: boolean; output: string; code?: number; warnings?: string[] } = { pending: true, output: "Running…" };
+      toolRuns[tool.id] = current;
+      const stream = (text: string): void => { current.output = ((current.output === "Running…" ? "" : current.output) + text).slice(-TOOL_OUTPUT_LIMIT); };
       try {
-        const result = await runCommand(process.env.SHELL || "/bin/sh", ["-c", command], store.home);
+        const finish = await trackToolRun(store, tool);
+        const result = await finish(await runTool(process.env.SHELL || "/bin/sh", ["-c", command], store.home, this.lifecycle.signal, stream));
         toolRuns[tool.id] = { pending: false, ...result }; return result;
       } catch (error) {
         toolRuns[tool.id] = { pending: false, code: 1, output: error instanceof Error ? error.message : "Command could not start." }; throw error;

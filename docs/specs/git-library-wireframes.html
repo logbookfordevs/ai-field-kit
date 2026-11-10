@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AFK Library Wireframes</title>
+<style>
+:root{--bg:#f4f4f2;--paper:#fff;--ink:#1c1c1c;--mid:#6b6b6b;--line:#c9c9c4;--soft:#e9e9e5;--hi:#d6d6d0;--note:#fff7c2;--note-ink:#5a4b00}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid #000;outline-offset:2px}
+h1,h2,h3,h4{margin:0;line-height:1.25}
+p{margin:0}
+code{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+.muted{color:var(--mid)}
+.small{font-size:13px}
+
+/* review bar */
+.review{position:sticky;top:0;z-index:5;background:#222;color:#eee;padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.review b{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#aaa}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{background:#333;border:1px solid #555;color:#eee;padding:4px 10px;border-radius:3px;font-size:13px}
+.seg button[aria-pressed="true"]{background:#eee;color:#111;border-color:#eee}
+.dirnote{font-size:12.5px;color:#bbb;flex-basis:100%}
+
+/* app shell */
+.app{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 52px);max-width:1280px;margin:0 auto;background:var(--paper);border-inline:1px solid var(--line)}
+.side{border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.side .ws{font-size:12px;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;padding:0 8px 8px}
+.side a{display:block;padding:6px 8px;border-radius:3px;color:inherit;text-decoration:none;font-size:14px}
+.side a[aria-current="page"]{background:var(--soft);font-weight:600}
+.syncbox{margin-top:auto;border:1px solid var(--line);border-radius:3px;padding:8px;font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.syncbox .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:6px}
+.main{padding:24px clamp(16px,3vw,32px) 48px;display:flex;flex-direction:column;gap:20px;min-width:0}
+.head{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-end}
+.head h1{font-size:24px}
+.sub{color:var(--mid);font-size:14px;max-width:70ch}
+
+.btn{border:1px solid var(--ink);background:var(--paper);padding:6px 12px;border-radius:3px;font-size:14px}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.text{border-color:transparent;text-decoration:underline;padding:6px 4px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:12px;white-space:nowrap}
+.chip.solid{background:var(--soft)}
+.chip.warn{border-style:dashed;border-color:#555;font-weight:600}
+.box{border:1px solid var(--line);border-radius:3px;background:var(--paper)}
+.pad{padding:14px 16px}
+.note{background:var(--note);color:var(--note-ink);border:1px dashed #c9b440;padding:8px 10px;font-size:12.5px;border-radius:2px}
+.note b{font-weight:600}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs button{border:1px solid transparent;border-bottom:none;background:none;padding:6px 12px;font-size:14px;border-radius:3px 3px 0 0;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{border-color:var(--line);background:var(--paper);font-weight:600}
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1.1fr) auto;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid var(--soft)}
+.item:first-child{border-top:none}
+.item h4{font-size:14.5px}
+.item .meta{font-size:12.5px;color:var(--mid)}
+.switch{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.switch i{width:28px;height:16px;border-radius:999px;border:1px solid var(--ink);position:relative;background:var(--ink)}
+.switch i::after{content:"";position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#fff}
+.switch.off i{background:var(--paper)}
+.switch.off i::after{right:auto;left:2px;background:var(--ink)}
+.group-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:10px 14px;background:var(--soft);font-size:13px;font-weight:600;flex-wrap:wrap}
+.group-title .muted{font-weight:400}
+select.inv{border:1px solid var(--line);border-radius:3px;padding:4px 6px;font-size:13px;max-width:100%}
+.screen{display:none;flex-direction:column;gap:20px}
+.screen.on{display:flex}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.stepper{display:flex;gap:6px;flex-wrap:wrap;font-size:13px}
+.stepper span{padding:3px 10px;border:1px solid var(--line);border-radius:999px}
+.stepper span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.stepper span.done{background:var(--soft)}
+.choice{display:flex;flex-direction:column;gap:6px;text-align:left;border:1.5px solid var(--line);border-radius:3px;padding:14px;background:var(--paper)}
+.choice[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.choice b{font-size:15px}
+.repo{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--soft);flex-wrap:wrap}
+.repo:first-child{border-top:none}
+.repo.dim{color:var(--mid)}
+.progress{display:flex;flex-direction:column;gap:0}
+.pstep{display:grid;grid-template-columns:22px 1fr auto;gap:10px;padding:9px 14px;border-top:1px solid var(--soft);align-items:start;font-size:14px}
+.pstep:first-child{border-top:none}
+.pstep .ic{font-family:ui-monospace,monospace;font-weight:700}
+.bar{height:6px;background:var(--soft);border-radius:2px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--ink)}
+.logline{font:12px/1.4 ui-monospace,monospace;color:var(--mid);margin-top:4px;overflow-wrap:anywhere}
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 14px;border-top:1px solid var(--soft)}
+.check:first-child{border-top:none}
+.check input{margin-top:4px}
+.editor{display:grid;grid-template-columns:180px minmax(0,1fr) minmax(0,1fr);border:1px solid var(--line);border-radius:3px;min-height:380px}
+.editor .files{border-right:1px solid var(--line);padding:10px;font-size:13px;display:flex;flex-direction:column;gap:2px}
+.editor .files div{padding:4px 6px;border-radius:2px}
+.editor .files .on{background:var(--soft);font-weight:600}
+.editor textarea{border:none;border-right:1px solid var(--line);padding:12px;resize:none;font:12.5px/1.6 ui-monospace,monospace;min-height:380px;width:100%}
+.editor .preview{padding:12px 16px;font-size:14px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.editor .preview h3{font-size:18px}
+.attn{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:14px 16px;border-top:1px solid var(--soft);align-items:start}
+.attn:first-child{border-top:none}
+.attn h4{font-size:15px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.feed{display:flex;flex-direction:column}
+.feed div{display:grid;grid-template-columns:88px 1fr;gap:10px;padding:8px 14px;border-top:1px solid var(--soft);font-size:13.5px}
+.feed div:first-child{border-top:none}
+.drop{border:2px dashed var(--line);border-radius:3px;padding:28px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.dest{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.dest label{border:1.5px solid var(--line);border-radius:3px;padding:10px;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.dest label:has(input:checked){border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.dest label b{font-size:14px}
+.split{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+.hidden{display:none!important}
+
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .side{border-right:none;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px}
+  .side .ws{flex-basis:100%;padding:0 4px}
+  .syncbox{margin-top:0;flex-basis:100%}
+  .item{grid-template-columns:1fr auto;}
+  .item .c-inv{grid-column:1/-1}
+  .editor{grid-template-columns:1fr}
+  .editor .files{border-right:none;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:wrap}
+  .editor textarea{border-right:none;border-bottom:1px solid var(--line);min-height:220px}
+  .split{grid-template-columns:1fr}
+  .attn{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="review" role="region" aria-label="Wireframe review controls">
+  <b>Screen</b>
+  <div class="seg" id="screenSeg">
+    <button type="button" data-screen="first" aria-pressed="true">1 · First run & restore</button>
+    <button type="button" data-screen="skills" aria-pressed="false">2 · Skills & editor</button>
+    <button type="button" data-screen="sync" aria-pressed="false">3 · Backup & history</button>
+    <button type="button" data-screen="install" aria-pressed="false">4 · Install</button>
+    <button type="button" data-screen="folders" aria-pressed="false">5 · Agent folders</button>
+    <button type="button" data-screen="project" aria-pressed="false">6 · Project skills</button>
+  </div>
+  <b>Direction</b>
+  <div class="seg" id="dirSeg">
+    <button type="button" data-dir="a" aria-pressed="false">A · Kit + Installed Skills</button>
+    <button type="button" data-dir="b" aria-pressed="true">B · One Skills page (chosen)</button>
+  </div>
+  <p class="dirnote" id="dirNote">A keeps today's two pages: Kit decides what travels, Installed Skills shows what this machine has. Familiar, but one skill appears in two places.</p>
+</div>
+
+<div class="app">
+  <nav class="side" aria-label="Main sections">
+    <span class="ws">Personal workspace</span>
+    <a href="#" data-nav="kit" class="dir-a">Kit</a>
+    <a href="#" data-nav="skills" aria-current="page" id="navSkills">Installed Skills</a>
+    <a href="#" data-goto="project">Projects</a>
+    <a href="#">Agent rules</a>
+    <a href="#">Tools</a>
+    <a href="#" data-nav="settings">Settings</a>
+    <div class="syncbox" aria-label="Backup status">
+      <span><span class="dot"></span><b>Backed up</b></span>
+      <span class="muted">2 min ago · leo/afk-library · 1 change waiting</span>
+      <span class="muted">2 need attention</span>
+      <button type="button" class="btn" data-goto="sync">Save now</button>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- ============ 1. FIRST RUN ============ -->
+    <section class="screen on" id="s-first" aria-labelledby="h-first">
+      <div class="head"><div><h1 id="h-first">Welcome to AFK</h1><p class="sub">Shown on first run, and from Settings → Library on a machine that isn't connected yet.</p></div></div>
+      <div class="stepper" aria-label="Progress"><span class="on" data-st="0">Choose</span><span data-st="1">Pick library</span><span data-st="2">Restore</span><span data-st="3">Tools</span><span data-st="4">Done</span></div>
+
+      <div data-step="0" class="fr">
+        <div class="grid2">
+          <button type="button" class="choice" aria-pressed="true" data-path="restore"><b>Restore my library</b><span class="small muted">You wiped this Mac or got a new one. Bring back your Core skills, choices, packs, tools and Try later from your last save.</span></button>
+          <button type="button" class="choice" aria-pressed="false" data-path="fresh"><b>Start a new library</b><span class="small muted">First time backing up. AFK creates a private GitHub repo and saves this machine's setup into it.</span></button>
+        </div>
+        <div class="row-actions" style="margin-top:14px"><button type="button" class="btn primary" data-next>Continue</button><button type="button" class="btn text">Skip for now, use AFK without a backup</button></div>
+      </div>
+
+      <div data-step="1" class="fr hidden">
+        <div class="path-restore">
+          <h2 style="font-size:17px;margin-bottom:8px">Which repository is your library?</h2>
+          <div class="box list">
+            <div class="repo"><span><b>leo/afk-library</b> <span class="chip solid">AFK library</span><br><span class="small muted">private · last saved today 14:02 · 43 Core skills</span></span><button type="button" class="btn primary" data-next>Restore</button></div>
+            <div class="repo dim"><span><b>leo/dotfiles</b><br><span class="small">private · not an AFK library</span></span><span class="small">—</span></div>
+            <div class="repo dim"><span><b>logbookfordevs/atlas-skills</b><br><span class="small">public · a skills repo, not a library. Add it to Try later instead.</span></span><span class="small">—</span></div>
+          </div>
+          <p class="small muted" style="margin-top:8px">Listed with your GitHub CLI sign-in. Not signed in? <button type="button" class="btn text small">Paste a repository URL</button></p>
+          <div class="note" style="margin-top:10px"><b>CLI:</b> <code>afk library connect leo/afk-library</code></div>
+        </div>
+        <div class="path-fresh hidden">
+          <h2 style="font-size:17px;margin-bottom:8px">Create your library</h2>
+          <div class="split">
+            <div class="box pad" style="display:flex;flex-direction:column;gap:10px">
+              <label class="small">Repository name<br><input value="afk-library" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:3px"></label>
+              <p class="small muted">Private, on your GitHub account. Skill files aren't scanned for secrets; keep it private.</p>
+              <button type="button" class="btn primary" data-next>Create and move my setup</button>
+            </div>
+            <div class="box pad small" style="display:flex;flex-direction:column;gap:6px">
+              <b>Goes into the library</b>
+              <span>43 Core skills · 8.7 MB</span><span>3 pack definitions</span><span>26 Try later bookmarks</span><span>8 tools</span><span>56 Manual/Automatic choices</span><span>AGENTS.md and references</span>
+              <b style="margin-top:6px">Stays on this machine</b>
+              <span class="muted">Machine-only skills · skills that are off · pack skill files</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div data-step="2" class="fr hidden">
+        <h2 style="font-size:17px;margin-bottom:8px">Restoring leo/afk-library</h2>
+        <div class="box progress" aria-live="polite">
+          <div class="pstep"><span class="ic">✓</span><span>Download library<div class="logline">9.1 MB · 4 s</div></span><span class="small muted">done</span></div>
+          <div class="pstep"><span class="ic">✓</span><span>Check for skills already here<div class="logline">3 match the library · 1 differs: kami (library copy used; yours moved to ~/.afk/restore-aside/2026-11-05)</div></span><span class="small muted">done</span></div>
+          <div class="pstep"><span class="ic">◐</span><span>Link 43 Core skills into ~/.agents/skills<div class="bar"><i style="width:62%"></i></div><div class="logline">27 of 43 · linking atlas-review</div></span><span class="small muted">6 s</span></div>
+          <div class="pstep muted"><span class="ic">○</span><span>Apply your Manual/Automatic choices to tool skills</span><span class="small">next</span></div>
+        </div>
+        <div class="row-actions" style="margin-top:12px"><button type="button" class="btn">Cancel</button><button type="button" class="btn primary" data-next>Continue (demo)</button></div>
+      </div>
+
+      <div data-step="3" class="fr hidden">
+        <h2 style="font-size:17px;margin-bottom:4px">Run your tools?</h2>
+        <p class="sub" style="margin-bottom:10px">These tools install their own skills. AFK runs only the ones you tick, then applies your choices to what they install.</p>
+        <div class="box">
+          <label class="check"><input type="checkbox" checked><span><b>Waypoint</b> · provides waypoint<br><code>npm i -g @logbook/waypoint &amp;&amp; waypoint skills install</code></span></label>
+          <label class="check"><input type="checkbox" checked><span><b>Impeccable</b> · provides impeccable<br><code>npx impeccable install</code></span></label>
+          <label class="check"><input type="checkbox"><span><b>Agent Desktop</b> · provides agent-desktop<br><code>brew install agent-desktop</code></span></label>
+          <div class="check muted small"><span style="padding-left:24px">+ 5 more: Plannotator Tot, Yggtree, Orchestrator, Agent Browser, Plannotator</span></div>
+        </div>
+        <div class="row-actions" style="margin-top:12px"><button type="button" class="btn primary" data-next>Run 2 tools</button><button type="button" class="btn text" data-next>Skip, I'll run them from Tools</button></div>
+        <p class="small muted" style="margin-top:6px">Commands shown are illustrative; AFK shows each tool's saved command.</p>
+      </div>
+
+      <div data-step="4" class="fr hidden">
+        <div class="box pad" style="display:flex;flex-direction:column;gap:8px">
+          <h2 style="font-size:18px">This machine matches your library</h2>
+          <p class="small">43 Core skills on · 56 choices applied · 2 tools ran · packs are off (turning one on downloads its skills)</p>
+          <p class="small muted">Backup is on: AFK saves 2 minutes after each change.</p>
+          <div class="row-actions"><button type="button" class="btn primary" data-goto="skills">Open Skills</button><button type="button" class="btn" data-goto="sync">See backup</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 2. SKILLS ============ -->
+    <section class="screen" id="s-skills" aria-labelledby="h-skills">
+
+      <!-- Direction A: Installed Skills page (Kit stays separate) -->
+      <div class="dir-a" style="display:flex;flex-direction:column;gap:16px">
+        <div class="head">
+          <div><h1 id="h-skills">Installed Skills</h1><p class="sub">Everything agents can see on this machine. What travels is decided in Kit.</p></div>
+          <div class="row-actions"><button type="button" class="btn" data-goto="install">Install skills</button><button type="button" class="btn">Update all</button></div>
+        </div>
+        <div class="row-actions small"><input placeholder="Search skills" style="padding:5px 8px;border:1px solid var(--line);border-radius:3px;min-width:0;flex:1 1 180px"><select class="inv"><option>All sources</option></select><select class="inv"><option>Any invocation</option></select><select class="inv"><option>Any backup state</option><option>Not pushed yet</option><option>Needs attention</option><option>Not in library</option></select></div>
+        <div class="box list">
+          <div class="item"><div><h4>wizard</h4><span class="meta">Core · mattpocock/skills</span></div><span class="c-src"><span class="switch"><i></i>Available</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for wizard"><option>Manual only</option><option>Automatic allowed</option></select></span><span class="row-actions"><span class="chip">Backed up</span><button type="button" class="btn text" data-edit>Edit</button></span></div>
+          <div class="item"><div><h4>kami</h4><span class="meta">Core · tw93/Kami</span></div><span class="c-src"><span class="switch"><i></i>Available</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for kami"><option>Manual only</option></select></span><span class="row-actions"><span class="chip warn">Edited outside AFK</span><button type="button" class="btn text" data-goto="sync">Review</button></span></div>
+          <div class="item"><div><h4>atlas-review</h4><span class="meta">Core · logbookfordevs/atlas-skills</span></div><span class="c-src"><span class="switch"><i></i>Available</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for atlas-review"><option>Automatic allowed</option></select></span><span class="row-actions"><span class="chip">Saved · not pushed yet</span><button type="button" class="btn text" data-edit>Edit</button></span></div>
+          <div class="item"><div><h4>waypoint</h4><span class="meta">Tool · Waypoint</span></div><span class="c-src"><span class="switch"><i></i>Available</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for waypoint"><option>Manual only</option></select></span><span class="row-actions"><span class="chip">Outside library</span><button type="button" class="btn text" data-edit data-readonly>View</button></span></div>
+          <div class="item"><div><h4>huashu-art-motion</h4><span class="meta">Pack · Video &amp; Motion</span></div><span class="c-src"><span class="switch off"><i></i>Off</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for huashu-art-motion"><option>Default · automatic allowed</option></select></span><span class="row-actions"><span class="chip">Cached here</span></span></div>
+          <div class="item"><div><h4>gsap-scroll</h4><span class="meta">This machine only · greensock/skills</span></div><span class="c-src"><span class="switch"><i></i>Available</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for gsap-scroll"><option>Default · automatic allowed</option></select></span><span class="row-actions"><span class="chip">Not in library</span><button type="button" class="btn text">Add to library</button></span></div>
+        </div>
+        <div class="note"><b>Direction A:</b> Kit keeps its tabs (This machine · Core · Packs · Try later) for deciding what travels. Installed Skills is the per-machine list. The chip on each row shows whether the skill is in your backup.</div>
+      </div>
+
+      <!-- Direction B: one Skills page -->
+      <div class="dir-b hidden" style="display:flex;flex-direction:column;gap:16px">
+        <div class="head">
+          <div><h1>Skills</h1><p class="sub">Your library and this machine in one place. Core is backed up in full; packs as definitions; machine-only stays out.</p></div>
+          <div class="row-actions"><button type="button" class="btn" data-goto="install">Install skills</button><button type="button" class="btn">Update all</button></div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Skill groups">
+          <button type="button" role="tab" aria-selected="true">Core · 43</button>
+          <button type="button" role="tab" aria-selected="false">Packs · 3</button>
+          <button type="button" role="tab" aria-selected="false">This machine only · 4</button>
+          <button type="button" role="tab" aria-selected="false">Try later · 26</button>
+          <button type="button" role="tab" aria-selected="false">To review · 1</button>
+        </div>
+        <div class="box list">
+          <div class="group-title"><span>mattpocock/skills <span class="muted">· 11 skills · follows new skills</span></span><button type="button" class="btn text small">Update source</button></div>
+          <div class="item"><div><h4>wizard</h4><span class="meta">updated Nov 5</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for wizard"><option>Manual only</option><option>Automatic allowed</option></select> <span class="small muted" title="Followed by Claude Code, Codex and Pi. Not read by Cursor or Gemini CLI.">ⓘ</span></span><span class="row-actions"><span class="chip">Backed up</span><button type="button" class="btn text" data-edit>Edit</button></span></div>
+          <div class="item"><div><h4>domain-modeling</h4><span class="meta">updated Nov 5</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for domain-modeling"><option>Automatic allowed</option></select></span><span class="row-actions"><span class="chip">Backed up</span><button type="button" class="btn text" data-edit>Edit</button></span></div>
+          <div class="group-title"><span>tw93/Kami <span class="muted">· 1 skill</span></span></div>
+          <div class="item"><div><h4>kami</h4><span class="meta">SKILL.md changed outside AFK</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for kami"><option>Manual only</option></select></span><span class="row-actions"><span class="chip warn">Edited outside AFK</span><button type="button" class="btn text" data-goto="sync">Review</button></span></div>
+          <div class="group-title"><span>logbookfordevs/atlas-skills <span class="muted">· 20 skills</span></span></div>
+          <div class="item"><div><h4>atlas-review</h4><span class="meta">edited in AFK · 1 min ago</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv"><select class="inv" aria-label="Invocation for atlas-review"><option>Automatic allowed</option></select></span><span class="row-actions"><span class="chip">Saved · not pushed yet</span><button type="button" class="btn text" data-edit>Edit</button></span></div>
+        </div>
+        <div class="note"><b>Direction B:</b> Kit and Installed Skills merge. Core is grouped by source, as in Kit today. Packs keep their on/off-per-machine switch. Tool skills appear under Tools. "To review" replaces Kit's "Not in your kit" list. One place per skill, but a bigger change from today.</div>
+      </div>
+
+      <!-- Editor (shared) -->
+      <div id="editorPanel" class="hidden" style="display:flex;flex-direction:column;gap:10px">
+        <div class="head"><div><h2 style="font-size:18px">Editing wizard</h2><p class="sub" id="edSub">Core · mattpocock/skills · auto-updates weekly</p></div><div class="row-actions"><button type="button" class="btn" data-close-editor>Close</button><button type="button" class="btn primary" id="edSave">Save</button></div></div>
+        <div class="note" id="edWarn"><b>This skill auto-updates.</b> On save, AFK asks: <em>Keep my version</em> (stop updates for wizard) or <em>Let updates replace my edits</em>.</div>
+        <div class="note hidden" id="edRO"><b>Read-only.</b> Waypoint installs and updates this skill, so edits would be overwritten. Change it in the tool's own repo.</div>
+        <div class="editor">
+          <div class="files" aria-label="Files"><div class="on">SKILL.md</div><div>template.sh</div><div>agents/openai.yaml</div></div>
+          <textarea aria-label="SKILL.md source" id="edText">---
+name: wizard
+description: Generate an interactive bash wizard that walks a human through steps only they can perform.
+disable-model-invocation: true
+---
+
+# Wizard
+
+A **wizard** is a bash script that walks a human, step by step, through a manual procedure…</textarea>
+          <div class="preview" aria-label="Preview"><span class="chip solid" style="align-self:flex-start">Manual only</span><h3>Wizard</h3><p>A <b>wizard</b> is a bash script that walks a human, step by step, through a manual procedure…</p><p class="small muted">Preview renders the body. The invocation line is managed by your Manual/Automatic choice, not by editing it here.</p></div>
+        </div>
+        <p class="small muted">Save makes one commit, "Edit wizard", reapplies your choice and is backed up with the next save.</p>
+      </div>
+    </section>
+
+    <!-- ============ 3. BACKUP ============ -->
+    <section class="screen" id="s-sync" aria-labelledby="h-sync">
+      <div class="head">
+        <div><h1 id="h-sync">Backup</h1><p class="sub">Settings → Backup. The sidebar box links here.</p></div>
+        <div class="row-actions"><button type="button" class="btn primary">Save now</button></div>
+      </div>
+      <div class="grid2">
+        <div class="box pad small" style="display:flex;flex-direction:column;gap:4px"><b style="font-size:15px">Saved 2 min ago · 1 change waiting</b><span class="muted">leo/afk-library · private</span><span class="muted">AFK saves 2 minutes after each change. If saving fails (offline), changes wait here and nothing is lost.</span><button type="button" class="btn text small" style="align-self:flex-start">Change repository or disconnect</button></div>
+        <div class="box pad small" style="display:flex;flex-direction:column;gap:4px"><b style="font-size:15px">In this backup</b><span class="muted">43 Core skills (8.7 MB) · 3 pack definitions · 8 tools · 26 Try later · 56 choices · AGENTS.md</span><span class="muted">Not saved: machine-only skills, skills that are off, pack skill files</span></div>
+      </div>
+
+      <h2 style="font-size:18px">Needs attention · 2</h2>
+      <div class="box">
+        <div class="attn">
+          <div><h4>kami <span class="chip warn">Edited outside AFK</span></h4><p class="small muted">SKILL.md changed at 14:02, not through AFK's editor. Not saved yet.</p><button type="button" class="btn text small">See the change</button></div>
+          <div class="row-actions"><button type="button" class="btn">Keep edit</button><button type="button" class="btn">Discard</button></div>
+        </div>
+        <div class="attn">
+          <div><h4>statechart <span class="chip warn">Replaced by Skills CLI</span></h4><p class="small muted"><code>npx skills update</code> swapped the link for a plain folder with a newer version.</p></div>
+          <div class="row-actions"><button type="button" class="btn primary">Take the update</button><button type="button" class="btn">Restore saved version</button></div>
+        </div>
+      </div>
+      <p class="small muted">"Take the update" moves the new files into the library, reapplies your choice, relinks and saves.</p>
+
+      <h2 style="font-size:18px">History</h2>
+      <div class="box feed">
+        <div><span class="muted">2 min ago</span><span>Edited <b>atlas-review</b> · <span class="muted">not pushed yet</span></span></div>
+        <div><span class="muted">Today 14:00</span><span>Updated 11 skills from mattpocock/skills <button type="button" class="btn text small">Go back to before this</button></span></div>
+        <div><span class="muted">Today 13:40</span><span>wizard set to Manual only <button type="button" class="btn text small">Go back to before this</button></span></div>
+        <div><span class="muted">Nov 3</span><span>Added <b>Genjutsu</b> to Try later <button type="button" class="btn text small">Go back to before this</button></span></div>
+      </div>
+      <p class="small muted">Going back is itself a new save, so it can be undone too.</p>
+    </section>
+
+    <!-- ============ 5. AGENT FOLDERS ============ -->
+    <section class="screen" id="s-folders" aria-labelledby="h-folders">
+      <div class="head"><div><h1 id="h-folders">Agent folders</h1><p class="sub">Settings → Agent folders. Every skill that is on gets a link in each folder below. Saved in your backup.</p></div><div class="row-actions"><button type="button" class="btn">Add a folder</button></div></div>
+      <div class="box list">
+        <div class="group-title"><span>Shared folder</span></div>
+        <div class="item"><div><h4><code>~/.agents/skills</code></h4><span class="meta">Read by Codex, Cline, Warp, Zed</span></div><span class="c-src"><span class="switch"><i></i>Always on</span></span><span class="c-inv small muted">43 links</span><span></span></div>
+        <div class="group-title"><span>Detected on this machine</span></div>
+        <div class="item"><div><h4>Claude Code</h4><span class="meta"><code>~/.claude/skills</code> · projects: <code>.claude/skills</code></span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv small muted">43 links · reads Manual/Automatic</span><span></span></div>
+        <div class="item"><div><h4>Cursor</h4><span class="meta"><code>~/.cursor/skills</code> · projects: <code>.agents/skills</code></span></div><span class="c-src"><span class="switch off"><i></i>Off</span></span><span class="c-inv small muted">Turning on adds 43 links</span><span></span></div>
+        <div class="item"><div><h4>Gemini CLI</h4><span class="meta"><code>~/.gemini/skills</code> · projects: <code>.agents/skills</code></span></div><span class="c-src"><span class="switch off"><i></i>Off</span></span><span class="c-inv small muted">Turning on adds 43 links</span><span></span></div>
+        <div class="group-title"><span>Your folders</span></div>
+        <div class="item"><div><h4>Team agent</h4><span class="meta"><code>~/.team-agent/skills</code> · added by you</span></div><span class="c-src"><span class="switch"><i></i>On</span></span><span class="c-inv small muted">43 links</span><span class="row-actions"><button type="button" class="btn text">Edit</button><button type="button" class="btn text">Remove</button></span></div>
+      </div>
+      <button type="button" class="btn text" style="align-self:flex-start">Show all 80 known agents</button>
+      <div class="note"><b>Turning a folder off</b> removes only AFK's links there; other files in it stay. Paths shown come from AFK's agent table, based on Skills CLI's.</div>
+    </section>
+
+    <!-- ============ 6. PROJECT SKILLS ============ -->
+    <section class="screen" id="s-project" aria-labelledby="h-project">
+      <div class="head"><div><h1 id="h-project">Projects</h1><p class="sub">Manage the skills a project keeps in its own repository. Changes edit the project's files, so they show up in its Git status. Not part of your backup.</p></div><div class="row-actions"><select class="inv" aria-label="Project"><option>lexamica-api · ~/Codes/lexamica/lexamica-api</option><option>ai-field-kit</option></select><button type="button" class="btn">Add project</button></div></div>
+      <div class="row-actions"><button type="button" class="btn" data-goto="install">Install into this project</button><button type="button" class="btn">Update all</button></div>
+      <div class="box list">
+        <div class="item"><div><h4>api-conventions</h4><span class="meta"><code>.agents/skills</code> · committed · from lexamica/skills</span></div><span class="c-src small muted">Also linked in <code>.claude/skills</code></span><span class="c-inv"><select class="inv" aria-label="Invocation for api-conventions"><option>Automatic allowed</option><option>Manual only</option></select></span><span class="row-actions"><button type="button" class="btn text">Update</button><button type="button" class="btn text" data-edit>Edit</button><button type="button" class="btn text">Delete</button></span></div>
+        <div class="item"><div><h4>release-checklist</h4><span class="meta"><code>.agents/skills</code> · committed · written by the team</span></div><span class="c-src small muted">Also linked in <code>.claude/skills</code></span><span class="c-inv"><select class="inv" aria-label="Invocation for release-checklist"><option>Manual only</option><option>Automatic allowed</option></select></span><span class="row-actions"><button type="button" class="btn text" disabled>Update</button><button type="button" class="btn text" data-edit>Edit</button><button type="button" class="btn text">Delete</button></span></div>
+      </div>
+      <div class="note"><b>No on/off and no packs here for now.</b> Global skills still reach agents working in this project; this list shows only the project's own.</div>
+    </section>
+
+    <!-- ============ 4. INSTALL ============ -->
+    <section class="screen" id="s-install" aria-labelledby="h-install">
+      <div class="head"><div><h1 id="h-install">Install skills</h1><p class="sub">One place to add skills, from a repository or from files on this computer.</p></div></div>
+      <div class="tabs" role="tablist" aria-label="Install from">
+        <button type="button" role="tab" aria-selected="true" data-src="repo">Repository</button>
+        <button type="button" role="tab" aria-selected="false" data-src="file">Zip or folder</button>
+      </div>
+
+      <div data-srcpane="repo" style="display:flex;flex-direction:column;gap:14px">
+        <div class="row-actions"><input value="tw93/Kami" aria-label="Repository" style="flex:1 1 240px;padding:6px 8px;border:1px solid var(--line);border-radius:3px"><button type="button" class="btn">Look inside</button></div>
+        <div class="note"><b>From a Try later bookmark:</b> opens here with the repository filled in and its saved skill selection ticked. The destination step is still asked; it no longer opens on "Try later".</div>
+        <div class="box">
+          <label class="check"><input type="checkbox" checked><span><b>kami</b> · Typeset professional documents with Kami templates… <button type="button" class="btn text small">Read SKILL.md</button></span></label>
+          <label class="check"><input type="checkbox"><span><b>kami-slides</b> · Slide decks in the Kami style <button type="button" class="btn text small">Read SKILL.md</button></span></label>
+        </div>
+      </div>
+
+      <div data-srcpane="file" class="hidden" style="display:flex;flex-direction:column;gap:14px">
+        <div class="drop"><b>Drop a .zip, a .skill file or a folder</b><span class="small muted">or</span><button type="button" class="btn">Choose file…</button></div>
+        <div class="box">
+          <div class="check"><span>✓</span><span><b>meeting-notes</b> · found SKILL.md in meeting-notes.zip<br><span class="small muted">48 KB · No source repository: it can't auto-update. In Core or a pack, its files are saved in your backup; in a pack, turning the pack on just links it.</span></span></div>
+        </div>
+      </div>
+
+      <h2 style="font-size:17px">Where should it go?</h2>
+      <div class="dest" role="radiogroup" aria-label="Destination">
+        <label><input type="radio" name="dest" checked> <b>Core</b><span class="muted">On everywhere, in the library</span></label>
+        <label><input type="radio" name="dest"> <b>A pack</b><span class="muted">Video &amp; Motion, PStack Potatos…</span></label>
+        <label><input type="radio" name="dest"> <b>This machine only</b><span class="muted">Not in the library</span></label>
+        <label class="src-repo-only"><input type="radio" name="dest"> <b>Try later</b><span class="muted">Bookmark only, installs nothing</span></label>
+      </div>
+      <div class="row-actions"><button type="button" class="btn primary">Install 1 skill</button><button type="button" class="btn text">Cancel</button></div>
+
+      <h2 style="font-size:17px">While it runs</h2>
+      <div class="box progress" aria-live="polite">
+        <div class="pstep"><span class="ic">✓</span><span>Download tw93/Kami<div class="logline">2.3 MB · 3 s</div></span><span class="small muted">done</span></div>
+        <div class="pstep"><span class="ic">◐</span><span>Prepare kami in an isolated folder<div class="logline">Skills CLI: Installing kami (universal)…</div></span><span class="small muted">12 s · stops at 2 min</span></div>
+        <div class="pstep muted"><span class="ic">○</span><span>Add to library, apply Manual only, link, commit</span><span class="small">next</span></div>
+      </div>
+      <div class="row-actions"><button type="button" class="btn">Cancel install</button><span class="small muted">Closing this window keeps it running; progress shows in the sidebar.</span></div>
+      <div class="note"><b>If a step stalls:</b> after its deadline AFK stops it, keeps the library unchanged and says which step failed, instead of freezing.</div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+let dir='b',step=0,path='restore';
+const notes={a:"A keeps today's two pages: Kit decides what travels, Installed Skills shows what this machine has. Familiar, but one skill appears in two places.",b:"B merges Kit and Installed Skills into one Skills page grouped Core / Packs / This machine only / Try later. One place per skill, but a bigger change from today."};
+function showScreen(id){
+  $$('#screenSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.screen===id));
+  $$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));
+  $('#editorPanel').classList.add('hidden');
+  window.scrollTo(0,0);
+}
+function setDir(d){
+  dir=d;
+  $$('#dirSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.dir===d));
+  $$('.dir-a').forEach(e=>e.classList.toggle('hidden',d!=='a'));
+  $$('.dir-b').forEach(e=>e.classList.toggle('hidden',d!=='b'));
+  $('#navSkills').textContent=d==='a'?'Installed Skills':'Skills';
+  $('#dirNote').textContent=notes[d];
+}
+function setStep(n){
+  step=n;
+  $$('#s-first [data-step]').forEach(e=>e.classList.toggle('hidden',Number(e.dataset.step)!==n));
+  $$('.stepper span').forEach(s=>{const i=Number(s.dataset.st);s.className=i===n?'on':i<n?'done':''});
+  $('.path-restore').classList.toggle('hidden',path!=='restore');
+  $('.path-fresh').classList.toggle('hidden',path!=='fresh');
+}
+$$('#screenSeg button').forEach(b=>b.addEventListener('click',()=>showScreen(b.dataset.screen)));
+$$('#dirSeg button').forEach(b=>b.addEventListener('click',()=>setDir(b.dataset.dir)));
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,a');if(!t)return;
+  if(t.matches('a'))e.preventDefault();
+  if(t.dataset.goto)showScreen(t.dataset.goto);
+  if(t.dataset.nav==='skills'||t.dataset.nav==='kit')showScreen('skills');
+  if(t.dataset.nav==='settings')showScreen('sync');
+  if(t.matches('[data-next]'))setStep(Math.min(step+1,4));
+  if(t.matches('.choice')){path=t.dataset.path;$$('.choice').forEach(c=>c.setAttribute('aria-pressed',c===t))}
+  if(t.matches('[data-edit]')){
+    const ro=t.hasAttribute('data-readonly');
+    $('#editorPanel').classList.remove('hidden');
+    $('#edRO').classList.toggle('hidden',!ro);$('#edWarn').classList.toggle('hidden',ro);
+    $('#edSave').disabled=ro;$('#edText').readOnly=ro;
+    $('#editorPanel').scrollIntoView({block:'start'});
+  }
+  if(t.matches('[data-close-editor]'))$('#editorPanel').classList.add('hidden');
+  if(t.dataset.src){
+    $$('[data-src]').forEach(b=>b.setAttribute('aria-selected',b===t));
+    $$('[data-srcpane]').forEach(p=>p.classList.toggle('hidden',p.dataset.srcpane!==t.dataset.src));
+    $$('.src-repo-only').forEach(x=>x.classList.toggle('hidden',t.dataset.src!=='repo'));
+  }
+});
+setDir('b');setStep(0);
+</script>
+</body>
+</html>

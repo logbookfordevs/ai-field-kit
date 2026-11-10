@@ -15,6 +15,7 @@ node_modules/
 dist/
 .release/
 /packages/afk/skills/afk-cli/
+/packages/afk/web/
 
 # Local environment overrides
 .env

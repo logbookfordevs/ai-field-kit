@@ -51,25 +51,15 @@ beforeEach(async () => {
 
 afterEach(() => vi.restoreAllMocks());
 
-describe("catching up one missing skill", () => {
-  it("installs only the chosen skill and leaves the rest of the plan", async () => {
+describe("catching up one missing Core skill", () => {
+  it("installs only the chosen skill and leaves the other one missing", async () => {
     await configure({ kit: { core: [{ source: "me/core", skills: ["one", "two"] }] } });
-    const { plan } = await operations.run("kit/state") as KitStatus;
 
-    const result = await operations.run("kit/sync", { expected: plan, only: ["one"] }) as { status: KitStatus };
+    await operations.run("kit/install", { source: "me/core", names: ["one"], to: "core" });
 
     expect(installed).toEqual([["me/core", "--skill", "one", "-g", "--agent", "universal", "--yes"]]);
-    expect(result.status.plan.install).toEqual([{ source: "me/core", skills: ["two"] }]);
-  });
-
-  it("does not run a tool's command because of another skill's row", async () => {
-    const marker = join(home, "ran");
-    await configure({ kit: { core: [{ source: "me/core", skills: ["one"] }] }, tools: [{ id: 1, name: "T", install: `touch ${marker}`, update: "", provides: ["t"] }] });
-    const { plan } = await operations.run("kit/state") as KitStatus;
-
-    await operations.run("kit/sync", { expected: plan, only: ["one"], runTools: [] });
-
-    await expect(lstat(marker)).rejects.toThrow();
+    const { core } = await operations.run("kit/state") as KitStatus;
+    expect(core.map(item => [item.name, item.status])).toEqual([["one", "on"], ["two", "missing"]]);
   });
 });
 
@@ -204,6 +194,14 @@ describe("installing with a destination", () => {
     await configure({ favoriteSources: [{ name: "Mine", source: "me/repo", skills: ["one"] }] });
     await operations.run("kit/install", { source: "https://github.com/me/repo.git", names: ["two"], to: "later" });
     expect((await store.read()).favoriteSources).toEqual([{ name: "Mine", source: "me/repo", skills: ["one", "two"] }]);
+  });
+
+  it("Try later saves the name you give a bookmark, and renames an existing one", async () => {
+    await operations.run("kit/install", { source: "mattpocock/skills", names: [], to: "later", name: "Matt Pocock" });
+    expect((await store.read()).favoriteSources).toEqual([{ name: "Matt Pocock", source: "mattpocock/skills" }]);
+
+    await operations.run("kit/install", { source: "https://github.com/mattpocock/skills", names: [], to: "later", name: "Matt's skills" });
+    expect((await store.read()).favoriteSources).toEqual([{ name: "Matt's skills", source: "mattpocock/skills" }]);
   });
 
   it("needs a known destination and at least one skill to install", async () => {

@@ -1,10 +1,11 @@
 import { installFromUrl } from "./install-cli.js";
-import { runAdd, runKit, runMigrate, runSync } from "./kit-cli.js";
+import { runAdd, runKit, runMigrate } from "./kit-cli.js";
 import { parseUiOptions } from "./ui-options.js";
 import { startBackground, backgroundStatus, stopBackground, restartBackground } from "./background.js";
 import { updateAfk } from "./update.js";
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
+import { createInterface } from "node:readline/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { doctor } from "./doctor.js";
@@ -14,24 +15,28 @@ import { SettingsStore, validateSettings } from "./settings.js";
 import { settingsSchema } from "./settings-schema.js";
 import { portableSettings } from "./local-state.js";
 import { SkillLibrary } from "./skills.js";
+import type { RestoreSummary } from "./library-restore.js";
+import { applyLibraryInit, confirmLibraryInit, planLibraryInit, type LibraryInitPlan } from "./library-init.js";
 import { startFieldwork } from "./server.js";
 
 const HELP = `AFK — local skills, tools, and agent rules
 
-  afk                               Open the local web app
-  afk ui --no-open                   Start without opening a browser
-  afk --background [--port <number>] Run the app in the background
-  afk --port <number>                Open the app on a fixed port
+  afk [start]                       Start the app in the background and open it
+  afk start --no-open                Start in the background without opening a browser
+  afk --foreground                  Run attached to this terminal; Ctrl+C closes it
+  afk start --port <number>          Use a fixed port
   afk status                         Show the background app URL and PID
-  afk stop                           Stop the background app
+  afk stop [--force]                 Stop the background app; --force also clears one that is not answering
   afk restart                        Restart the background app on its current port
   afk skills update [name] [-g | -p <project>]  Update skills, preserving availability
   afk add <repository>               Install skills and decide where they go
   afk kit                            Compare your kit with this machine
   afk kit add <skill>... [--pack <name>]  Make skills travel with you
   afk kit drop <skill> [--pack <name>]    Stop tracking a skill; its files stay
-  afk sync [--agent <agent>] [--yes] [--run-tools]  Make this machine match your kit
   afk migrate [--core <stack-id>] [--apply]  Move old stacks settings to the kit format
+  afk library init [--apply]         Move Core, pack and machine-only skills into AFK storage; dry run without --apply
+  afk library confirm                Delete the originals kept after library init
+  afk library connect <owner/repo | url> [--run-tools <id,id|all>]  Restore your library on this machine; tools run only when named
   afk install <url> [--agent <agent>] [-g | -p <folder>] [--yes]
   afk update [--dry-run]             Update AFK itself from the latest release
   afk guide                         Print the bundled agent skill path
@@ -44,8 +49,6 @@ const HELP = `AFK — local skills, tools, and agent rules
   afk settings schema                Print editor-oriented JSON Schema
   afk settings validate [file]       Validate JSON without importing it
   afk settings export <file>         Export without overwriting a file
-  afk settings backups               List automatic snapshots of settings.json
-  afk settings restore <name>        Restore a snapshot (the current file is snapshotted first)
   afk doctor [--json]                 Check configuration and local consistency
   afk manage describe [operation]    Describe headless operations as JSON
   afk manage <operation> [--input <file|->]
@@ -64,6 +67,11 @@ No browser or running web app is required. Use describe for supported fields.
 Tool commands run only through tool/run. Rule sync requires an exact preview.
 
 Operations: ${Object.keys(operationCatalog).join(", ")}`;
+
+async function confirmInTerminal(message: string): Promise<boolean> {
+  const terminal = createInterface({ input: process.stdin, output: process.stdout });
+  try { return /^y(es)?$/i.test((await terminal.question(`${message} [y/N] `)).trim()); } finally { terminal.close(); }
+}
 
 function json(value: unknown): void { console.log(JSON.stringify(value, null, 2)); }
 function hasErrors(value: unknown): boolean {
@@ -121,6 +129,58 @@ async function manage(argv: string[], store: SettingsStore): Promise<number> {
   } finally { process.removeListener("SIGINT", cancelUpdate); await operations.close(); }
 }
 
+function describeLibraryInit(plan: LibraryInitPlan, applied: boolean): string {
+  const lines = [applied ? `Library started at ${plan.library}.` : `Dry run: nothing changed. Run afk library init --apply to start the library at ${plan.library}.`];
+  for (const skill of plan.skills) lines.push(`  ${skill.name} (${skill.on ? "on" : "off"}${skill.record.invocation ? `, ${skill.record.invocation}` : ""}) from ${skill.from}`);
+  for (const skill of plan.packSkills) lines.push(`  ${skill.name} (pack${skill.on ? ", on" : ""}) to the pack cache from ${skill.from}`);
+  for (const skill of plan.machineSkills) lines.push(`  ${skill.name} (this machine${skill.on ? ", on" : ""}) to machine storage from ${skill.from}`);
+  for (const skill of plan.offToolSkills) lines.push(`  ${skill.name} (tool, off) to the off folder from ${skill.from}`);
+  if (plan.rules.length) lines.push(`Rules: ${plan.rules.join(", ")}`);
+  if (plan.missing.length) lines.push(`Not on this machine: ${plan.missing.join(", ")}`);
+  if (plan.toolSkills.length) lines.push(`Provided by tools, left in place: ${plan.toolSkills.join(", ")}`);
+  lines.push(applied ? `Originals kept in ${plan.backup}. Run afk library confirm to delete them.` : `Originals would be kept in ${plan.backup}.`);
+  return lines.join("\n");
+}
+
+async function libraryCommand(argv: string[], store: SettingsStore): Promise<number> {
+  const [action, option, extra] = argv;
+  await store.initialize();
+  if (action === "init" && extra === undefined && (option === undefined || option === "--apply")) {
+    const apply = option === "--apply";
+    console.log(describeLibraryInit(apply ? await applyLibraryInit(store) : await planLibraryInit(store), apply));
+    return 0;
+  }
+  if (action === "connect") return connectLibrary(argv.slice(1), store);
+  if (action === "confirm" && option === undefined) { console.log(`Deleted ${await confirmLibraryInit(store)}.`); return 0; }
+  throw new Error("Use afk library init [--apply], afk library confirm or afk library connect <owner/repo | url>.");
+}
+
+async function connectLibrary(argv: string[], store: SettingsStore): Promise<number> {
+  const [repository, flag, ids, ...rest] = argv;
+  if (!repository || repository.startsWith("-") || rest.length || (flag !== undefined && (flag !== "--run-tools" || !ids))) throw new Error("Use afk library connect <owner/repo | url> [--run-tools <id,id|all>].");
+  const operations = new FieldworkOperations(store);
+  try {
+    const summary = await operations.run("restore/start", { repository }) as RestoreSummary;
+    const lines = [`Restored ${summary.repository}.`, `  ${summary.linked.length} Core skill${summary.linked.length === 1 ? "" : "s"} linked into ${summary.folders.join(", ")}`, `  ${summary.choices} Manual/Automatic choice${summary.choices === 1 ? "" : "s"} kept in their files`];
+    if (summary.adopted.length) lines.push(`  Already here with identical files: ${summary.adopted.join(", ")}`);
+    for (const move of summary.movedAside) lines.push(`  ${move.name} differed; the library copy is used and yours moved to ${move.to}`);
+    if (summary.packs.length) lines.push(`  Packs are off: ${summary.packs.join(", ")}`);
+    const chosen = ids === "all" ? summary.tools.map(tool => tool.id) : (ids ?? "").split(",").filter(Boolean).map(Number);
+    const unknown = chosen.filter(id => !summary.tools.some(tool => tool.id === id));
+    for (const tool of summary.tools) lines.push(`  Tool ${tool.id}: ${tool.name}${tool.provides?.length ? ` (provides ${tool.provides.join(", ")})` : ""} — ${chosen.includes(tool.id) ? "running" : "not run"}`);
+    if (summary.tools.length && !chosen.length) lines.push("Tools did not run. Add --run-tools <id,id|all> to run the ones you want.");
+    console.log(lines.join("\n"));
+    if (unknown.length) throw new Error(`No saved tool has the ID ${unknown.join(", ")}.`);
+    let failed = false;
+    for (const id of chosen) {
+      const result = await operations.run("tool/run", { id }) as { code: number; output: string };
+      console.log(`Tool ${id} exited with ${result.code}.${result.code ? `\n${result.output.trim()}` : ""}`);
+      failed ||= result.code !== 0;
+    }
+    return failed ? 1 : 0;
+  } finally { await operations.close(); }
+}
+
 async function run(argv: string[], store: SettingsStore): Promise<number> {
   const [command, action, id, target, extra] = argv;
   if (["--help", "help", "-h"].includes(command ?? "")) { console.log(HELP); return 0; }
@@ -131,10 +191,10 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
   if (command === "install") return installFromUrl(argv.slice(1), store);
   if (command === "add") return runAdd(argv.slice(1), store);
   if (command === "kit") return runKit(argv.slice(1), store);
-  if (command === "sync") return runSync(argv.slice(1), store);
   if (command === "migrate") return runMigrate(argv.slice(1), store);
   if (command === "update") return updateAfk(argv.slice(1));
   if (command === "manage") return manage(argv.slice(1), store);
+  if (command === "library") return libraryCommand(argv.slice(1), store);
   if (command === "settings" && action === "schema") {
     if (id !== undefined) throw new Error("Use settings schema without additional arguments.");
     json(settingsSchema); return 0;
@@ -145,9 +205,10 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     console.log(fileURLToPath(new URL("../../skills/afk-cli/SKILL.md", import.meta.url))); return 0;
   }
   if (command === "status" || command === "stop" || command === "restart") {
-    if (action !== undefined) throw new Error(`Use afk ${command} without additional arguments.`);
-    if (command === "status") await backgroundStatus(store.home);
-    else if (command === "stop") await stopBackground(store.home);
+    const force = command === "stop" && action === "--force";
+    if ((action !== undefined && !force) || id !== undefined) throw new Error(command === "stop" ? "Use afk stop [--force]." : `Use afk ${command} without additional arguments.`);
+    if (command === "status") return backgroundStatus(store.home);
+    if (command === "stop") await stopBackground(store.home, { force, confirm: process.stdin.isTTY && process.stdout.isTTY ? confirmInTerminal : undefined });
     else await restartBackground(store.home);
     return 0;
   }
@@ -198,10 +259,8 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
       validateSettings(JSON.parse(await readFile(path, "utf8")));
       json({ ok: true, path }); return 0;
     }
-    if (action === "backups" && id === undefined) { json(await store.backups()); return 0; }
-    if (action === "restore" && id) { await store.restoreBackup(id); json({ ok: true, restored: id, path: store.path }); return 0; }
     if (action === "export" && id) { await writeFile(id, JSON.stringify(portableSettings(await store.read()), null, 2) + "\n", { flag: "wx", mode: 0o600 }); return 0; }
-    throw new Error("Choose settings path, show, schema, validate, export, backups, or restore.");
+    throw new Error("Choose settings path, show, schema, validate, or export.");
   }
   if (command === "doctor") {
     if ((action !== undefined && action !== "--json") || id !== undefined) throw new Error("Use doctor [--json].");
@@ -215,17 +274,23 @@ async function run(argv: string[], store: SettingsStore): Promise<number> {
     return report.ok ? 0 : 1;
   }
   const options = parseUiOptions(argv);
-  if (options.background) { await startBackground(store, options.port); return 0; }
+  if (options.background) {
+    const url = await startBackground(store, options.port);
+    if (options.open && url) openInBrowser(url);
+    return 0;
+  }
   const app = await startFieldwork(store, options.port);
   console.log(`AFK is running at ${app.url}\nPress Ctrl+C to close it.`);
-  if (options.open) {
-    const [opener, args] = process.platform === "darwin" ? ["open", [app.url]] : process.platform === "win32" ? ["cmd", ["/c", "start", "", app.url]] : ["xdg-open", [app.url]];
-    const child = spawn(opener!, args, { stdio: "ignore" });
-    child.on("error", () => console.error("Open the AFK URL in your browser."));
-  }
+  if (options.open) openInBrowser(app.url);
   const stop = (): void => { void app.close().then(() => { process.exitCode = 0; }); };
   process.once("SIGINT", stop); process.once("SIGTERM", stop);
   return 0;
+}
+
+function openInBrowser(url: string): void {
+  const [opener, args] = process.platform === "darwin" ? ["open", [url]] : process.platform === "win32" ? ["cmd", ["/c", "start", "", url]] : ["xdg-open", [url]];
+  const child = spawn(opener!, args, { stdio: "ignore" });
+  child.on("error", () => console.error("Open the AFK URL in your browser."));
 }
 
 export async function runFieldwork(argv: string[], store = new SettingsStore()): Promise<number> {

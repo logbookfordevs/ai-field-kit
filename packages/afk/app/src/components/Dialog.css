@@ -1,0 +1,27 @@
+dialog.dlg{max-width:none;border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:var(--radius-lg);padding:0;width:min(640px,calc(100vw - 32px));max-height:min(88dvh,860px);box-shadow:var(--shadow-dialog)}
+dialog.dlg[open]{display:flex;flex-direction:column;animation:dlg-rise .42s var(--ease)}
+dialog.dlg::backdrop{background:color-mix(in srgb,var(--fg) 38%,transparent);animation:dlg-fade .3s ease}
+dialog.dlg.small{width:min(480px,calc(100vw - 32px))}
+dialog.dlg.wide{width:min(900px,calc(100vw - 32px))}
+dialog.dlg.sheet{margin:0 0 0 auto;height:100dvh;max-height:100dvh;width:min(560px,100vw);border-radius:0;border-width:0 0 0 1px}
+dialog.dlg.sheet[open]{animation:dlg-slide .42s var(--ease)}
+dialog.dlg.sheet .dlg-foot{border-radius:0}
+@keyframes dlg-rise{from{opacity:0;transform:translateY(14px)}}
+@keyframes dlg-fade{from{opacity:0}}
+@keyframes dlg-slide{from{opacity:0;transform:translateX(28px)}}
+.dlg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 16px 18px 24px;border-bottom:1px solid var(--border)}
+.dlg-head h2{font-size:22px;letter-spacing:-.01em}
+.dlg-head .sub{margin-top:2px}
+.dlg-body{padding:24px;display:grid;gap:20px;overflow:auto;min-height:0;align-content:start;flex:1}
+.dlg-foot{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;padding:14px 24px;background:var(--bg);border-top:1px solid var(--border);border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+.dlg-foot .spacer{flex:1}
+@media (max-width:760px){
+  dialog.dlg,dialog.dlg.small,dialog.dlg.wide{width:calc(100vw - 16px);max-height:92dvh}
+  dialog.dlg.sheet{margin:auto;width:calc(100vw - 16px);height:fit-content;max-height:92dvh;border-radius:var(--radius-lg);border-width:1px}
+  dialog.dlg.sheet .dlg-foot{border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+  .dlg-head{padding:14px 8px 14px 18px}
+  .dlg-head h2{font-size:19px}
+  .dlg-body{padding:18px;gap:16px}
+  .dlg-foot{padding:12px 16px}
+  .dlg-foot .primary{flex:1}
+}

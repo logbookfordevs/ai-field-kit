@@ -1,0 +1,8 @@
+.toast{position:fixed;bottom:20px;right:20px;z-index:20;display:flex;align-items:center;gap:14px;max-width:min(460px,calc(100vw - 40px));min-height:48px;padding:10px 10px 10px 18px;background:var(--fg);color:var(--surface);border-radius:var(--radius-lg);font-size:14px;line-height:1.45;box-shadow:var(--shadow-toast);opacity:0;visibility:hidden;transform:translateY(12px);transition:opacity .25s,transform .42s var(--ease),visibility 0s .42s}
+.toast.show{opacity:1;visibility:visible;transform:none;transition:opacity .25s,transform .42s var(--ease)}
+.toast button{min-height:36px;background:transparent;color:var(--surface);border-color:color-mix(in srgb,var(--surface) 50%,transparent)}
+.toast button:hover{background:var(--accent-hover);border-color:var(--surface)}
+.toast .spin{border-color:color-mix(in srgb,var(--surface) 30%,transparent);border-top-color:var(--surface)}
+.spin{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--fg);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (max-width:760px){.toast{left:12px;right:12px;bottom:12px;max-width:none}}

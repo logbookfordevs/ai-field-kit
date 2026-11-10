@@ -1,6 +1,7 @@
 import { cp, lstat, mkdir, readFile, readlink, rm, symlink, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { parseDocument } from "yaml";
+import type { InvocationChoice } from "./library.js";
 import { SkillLibrary } from "./skills.js";
 import type { Settings, SettingsStore } from "./settings.js";
 
@@ -16,8 +17,73 @@ function frontmatter(skill: string) {
   return { document, body: skill.slice(match[0].length) };
 }
 
+// A project's files belong to the project, so AFK writes the two native settings in place and keeps no backup beside them.
+async function setProjectInvocation(store: SettingsStore, settings: Settings, name: string, scope: string, mode: string): Promise<void> {
+  const root = new SkillLibrary(store).root(settings, scope), path = join(root, name), project = resolve(root, "../..");
+  const guarded = [path, join(path, "SKILL.md"), join(path, "agents"), join(path, "agents/openai.yaml")];
+  for (let folder = root; folder !== project && folder.startsWith(project + sep); folder = dirname(folder)) guarded.push(folder);
+  for (const candidate of guarded) {
+    const info = await lstat(candidate).catch(() => undefined);
+    if (info?.isSymbolicLink()) throw new Error(`${candidate} is a link, so AFK won't write ${name}'s Manual/Automatic choice through it. Change it where the link points.`);
+  }
+  const skill = await readFile(join(path, "SKILL.md"), "utf8");
+  const metadata = await readOptional(join(path, "agents/openai.yaml"));
+  const parsed = frontmatter(skill);
+  const agent = parseDocument(metadata ?? "{}");
+  if (agent.errors.length) throw new Error("agents/openai.yaml is invalid YAML.");
+  if (mode) {
+    parsed.document.set("disable-model-invocation", mode === "Manual only");
+    agent.setIn(["policy", "allow_implicit_invocation"], mode !== "Manual only");
+  } else {
+    parsed.document.delete("disable-model-invocation");
+    agent.deleteIn(["policy", "allow_implicit_invocation"]);
+    if (agent.hasIn(["policy"]) && !(agent.getIn(["policy"]) as { items?: unknown[] }).items?.length) agent.deleteIn(["policy"]);
+  }
+  const emptiedMetadata = !mode && !(agent.contents as { items?: unknown[] } | null)?.items?.length;
+  const key = `${scope}|${name}`, original = settings.preferences[key];
+  try {
+    await writeFile(join(path, "SKILL.md"), `---\n${parsed.document.toString()}---\n${parsed.body}`);
+    if (emptiedMetadata) await rm(join(path, "agents/openai.yaml"), { force: true });
+    else { await mkdir(join(path, "agents"), { recursive: true }); await writeFile(join(path, "agents/openai.yaml"), agent.toString()); }
+    if (mode) settings.preferences[key] = mode; else delete settings.preferences[key];
+    await store.save(settings);
+  } catch (error) {
+    await writeFile(join(path, "SKILL.md"), skill);
+    if (metadata === null) await rm(join(path, "agents/openai.yaml"), { force: true }); else await writeFile(join(path, "agents/openai.yaml"), metadata);
+    if (original === undefined) delete settings.preferences[key]; else settings.preferences[key] = original;
+    throw error;
+  }
+}
+
+/** Writes a saved choice into a skill folder's files, keeping the one-time backup used to reset to the default. */
+export async function writeInvocationChoice(path: string, mode: "Manual only" | "Automatic allowed"): Promise<void> {
+  const skill = await readFile(join(path, "SKILL.md"), "utf8");
+  const metadata = await readOptional(join(path, "agents/openai.yaml"));
+  const parsed = frontmatter(skill);
+  const agent = parseDocument(metadata ?? "{}");
+  if (agent.errors.length) throw new Error("agents/openai.yaml is invalid YAML.");
+  parsed.document.set("disable-model-invocation", mode === "Manual only");
+  agent.setIn(["policy", "allow_implicit_invocation"], mode !== "Manual only");
+  if (await readOptional(join(path, ".afk-invocation-original.json")) === null) await writeFile(join(path, ".afk-invocation-original.json"), JSON.stringify({ skill, metadata }), { mode: 0o600 });
+  await mkdir(join(path, "agents"), { recursive: true });
+  await writeFile(join(path, "SKILL.md"), `---\n${parsed.document.toString()}---\n${parsed.body}`);
+  await writeFile(join(path, "agents/openai.yaml"), agent.toString());
+}
+
 export async function setInvocation(store: SettingsStore, settings: Settings, name: string, scope: string, mode: string): Promise<void> {
   if (!["", "Manual only", "Automatic allowed"].includes(mode)) throw new Error("Choose a supported invocation mode.");
+  if (scope !== "Global") return setProjectInvocation(store, settings, name, scope, mode);
+  const stored = new SkillLibrary(store).library;
+  const storage = scope === "Global" ? await stored.storage(name) : undefined;
+  if (storage !== "library" && storage !== "pack") return changeInvocation(store, settings, name, scope, mode);
+  const choice = mode as InvocationChoice;
+  await stored.change(`Set ${name} to ${choice || "its default invocation"}`, async () => {
+    await changeInvocation(store, settings, name, scope, choice);
+    await stored.writeRecord(name, { ...await stored.record(name), invocation: choice });
+  });
+}
+
+async function changeInvocation(store: SettingsStore, settings: Settings, name: string, scope: string, mode: string): Promise<void> {
   const library = new SkillLibrary(store);
   const originalPath = await library.locateLoaded(settings, name, scope);
   const source = scope !== "Global" ? (await library.inventory(settings, scope)).find(entry => entry.name === name)?.source : undefined;

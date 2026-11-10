@@ -1,12 +1,6 @@
 import { sourceIdentity } from "./migration.js";
-import type { KitSource, Settings } from "./settings.js";
+import { UPLOADED_SOURCE, type KitSource, type Settings } from "./settings.js";
 import type { SkillEntry } from "./skills.js";
-
-export interface SyncPlan {
-  install: { source: string; skills: string[] }[];
-  enable: string[];
-  tools: { id: number; name: string; command: string; skills: string[] }[];
-}
 
 export interface KitStatus {
   core: { name: string; source: string; sourceName?: string; follow: boolean; status: "on" | "off" | "missing" }[];
@@ -14,7 +8,6 @@ export interface KitStatus {
   tools: { id: number; name: string; provides: string[]; missing: string[] }[];
   undecided: { name: string; source?: string; description: string; installable: boolean }[];
   machineOnly: string[];
-  plan: SyncPlan;
 }
 
 export interface InstallCandidate {
@@ -28,7 +21,7 @@ export interface InstallCandidate {
 }
 
 export function isRepositorySource(source: string | undefined): source is string {
-  return Boolean(source) && !source!.startsWith("/") && !source!.startsWith("~") && !source!.startsWith(".") && !source!.startsWith("file:");
+  return Boolean(source) && source !== UPLOADED_SOURCE && !source!.startsWith("/") && !source!.startsWith("~") && !source!.startsWith(".") && !source!.startsWith("file:");
 }
 
 export function toolOwner(settings: Pick<Settings, "tools">, name: string): Settings["tools"][number] | undefined {
@@ -40,20 +33,14 @@ export function kitStatus(settings: Settings, inventory: SkillEntry[]): KitStatu
   const installed = new Map(inventory.map(entry => [entry.name, entry]));
   const core: KitStatus["core"] = [];
   const entries = settings.kit?.core ?? [];
-  const install: SyncPlan["install"] = [];
-  const enable: string[] = [];
 
   for (const entry of entries) {
-    const missing: string[] = [];
     for (const name of entry.skills) {
       if (toolOwner(settings, name)) continue;
       const found = installed.get(name);
       const status = !found ? "missing" : found.available ? "on" : "off";
       core.push({ name, source: entry.source, ...(entry.name ? { sourceName: entry.name } : {}), follow: Boolean(entry.follow), status });
-      if (status === "missing") missing.push(name);
-      if (status === "off") enable.push(name);
     }
-    if (missing.length) install.push({ source: entry.source, skills: missing });
   }
   core.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -73,11 +60,6 @@ export function kitStatus(settings: Settings, inventory: SkillEntry[]): KitStatu
     tools,
     undecided,
     machineOnly: [...machineOnly],
-    plan: {
-      install,
-      enable,
-      tools: tools.filter(tool => tool.missing.length).map(tool => ({ id: tool.id, name: tool.name, command: settings.tools.find(item => item.id === tool.id)!.install, skills: tool.missing })),
-    },
   };
 }
 
@@ -87,6 +69,7 @@ export function coreEntry(settings: Settings, source: string): KitSource | undef
 
 export function addToCore(settings: Settings, name: string, source: string): void {
   settings.kit ??= { core: [] };
+  settings.machineOnly = settings.machineOnly.filter(member => member !== name);
   const other = settings.kit.core.find(entry => entry.skills.includes(name));
   if (other) {
     if (sourceIdentity(other.source) === sourceIdentity(source)) return;

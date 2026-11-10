@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 import { lstat, mkdir, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
+import { Library, libraryRoot } from "./library.js";
 import { containsControl, expandPath, type AgentRulesSettings, type RulesDestination, type RulesReceipt, type Settings, SettingsStore, validateSettings } from "./settings.js";
 
 export const RULES_START = "<!-- AFK:RULES:START -->";
@@ -162,7 +164,10 @@ async function restoreOperations(operations: RulesReferenceOperation[]): Promise
 
 export class RulesWorkspace {
   constructor(readonly store: SettingsStore) {}
-  get folder(): string { return dirname(this.store.path); }
+  get folder(): string {
+    const library = libraryRoot(this.store.home);
+    return existsSync(join(library, ".afk/settings.json")) ? join(library, "rules") : dirname(this.store.path);
+  }
 
   configuration(settings: Settings): AgentRulesSettings {
     return settings.agentRules ?? {
@@ -191,6 +196,12 @@ export class RulesWorkspace {
   }
 
   async saveFiles(input: RulesFile[], expectedHash?: string): Promise<RulesState> {
+    const library = new Library(this.store.home);
+    if (this.folder !== join(library.root, "rules")) return this.writeFiles(input, expectedHash);
+    return library.change("Save Agent rules", () => this.writeFiles(input, expectedHash));
+  }
+
+  private async writeFiles(input: RulesFile[], expectedHash?: string): Promise<RulesState> {
     const files = validateRulesFiles(input);
     const existing = await this.files();
     if (expectedHash !== undefined && expectedHash !== digest(JSON.stringify(existing))) throw new Error("The rules files changed outside AFK. Reload before saving.");

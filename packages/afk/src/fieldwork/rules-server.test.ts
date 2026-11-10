@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startFieldwork } from "./server.js";
+import { fixtureWeb } from "./web.test-helper.js";
 import { emptySettings, SettingsStore } from "./settings.js";
 
 const cleanups: (() => Promise<void>)[] = [];
@@ -13,7 +14,7 @@ it("authenticates rule APIs and rechecks a reviewed destination before writing",
   cleanups.push(() => rm(home, { recursive: true, force: true }));
   const store = new SettingsStore(home);
   await store.save(emptySettings());
-  const app = await startFieldwork(store);
+  const app = await startFieldwork(store, 0, { web: await fixtureWeb(home) });
   cleanups.push(app.close);
   const html = await (await fetch(app.url)).text();
   const token = html.match(/window.afkToken="([^"]+)"/)?.[1];

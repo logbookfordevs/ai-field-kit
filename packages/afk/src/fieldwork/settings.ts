@@ -1,10 +1,11 @@
-import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { validateSavedStack, type SavedStack } from "./stacks.js";
 import { homedir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
 import { applyLocalState, localState, portableSettings, verifiedLegacyState, type LocalState } from "./local-state.js";
+import { Library } from "./library.js";
+import { librarySettingsActive, planLibrarySettings, readLibrarySettings, recordedInvocations } from "./library-settings.js";
 
 export interface SavedSkill {
   name: string;
@@ -79,6 +80,8 @@ export interface Tool {
 }
 
 export const LOCAL_PROFILE_SOURCE = "Local skill selection";
+/** Names the saved copy of uploaded skills in Core and pack definitions, which have no repository to point at. */
+export const UPLOADED_SOURCE = "Uploaded skill";
 
 export function profileGroups(profile: Pick<Profile, "source" | "skills" | "groups">): ProfileGroup[] {
   return profile.groups ?? [{ source: profile.source, skills: profile.skills }];
@@ -138,6 +141,11 @@ export function containsControl(value: string): boolean {
 
 export function skillName(value: unknown): value is string {
   return typeof value === "string" && /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(value) && value !== "." && value !== "..";
+}
+
+/** Skill names are folder names, and most agent machines fold letter case, so `Foo` and `foo` are one skill. */
+export function sameSkillName(left: string, right: string): boolean {
+  return left.toLowerCase() === right.toLowerCase();
 }
 
 function nonempty(value: unknown): value is string {
@@ -242,20 +250,7 @@ export function validateSettings(value: unknown): Settings {
   return data as unknown as Settings;
 }
 
-const BACKUP_LIMIT = 20;
-const BACKUP_NAME = /^settings-[0-9A-Za-z-]+\.json$/;
 const PERMANENT_BACKUP_NAME = /^pre-kit-[0-9A-Za-z-]+\.json$/;
-
-export interface BackupSummary {
-  name: string;
-  savedAt: string;
-  configurationId?: string | undefined;
-  profiles: number;
-  stacks: number;
-  sources: number;
-  projects: number;
-  tools: number;
-}
 
 export class SettingsStore {
   path: string;
@@ -280,6 +275,7 @@ export class SettingsStore {
   }
 
   async read(): Promise<Settings> {
+    if (await librarySettingsActive(this.home)) return this.readLibrary();
     try {
       const settings = validateSettings(JSON.parse(await this.readPortable()));
       if (settings.version === 1 && !requiresMigrationChoice(settings)) upgradeStackless(settings);
@@ -299,14 +295,71 @@ export class SettingsStore {
     catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptySettings(); throw error; }
   }
 
+  // After library init the portable settings come from the library's `.afk/` files and `settings.json` is left as it was.
+  private async readLibrary(): Promise<Settings> {
+    const settings = await readLibrarySettings(this.home);
+    settings.configurationId ??= this.identifier();
+    let state: LocalState | undefined;
+    try { state = JSON.parse(await readFile(this.localPath(settings.configurationId), "utf8")) as LocalState; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    settings.projects = state?.projects ?? [];
+    const result = applyLocalState(validateSettings(settings), state, this.home);
+    await this.dropStoredMachineOnly(result, state);
+    for (const [name, invocation] of Object.entries(await recordedInvocations(this.home))) {
+      if (invocation) result.preferences[`Global|${name}`] = invocation;
+      else delete result.preferences[`Global|${name}`];
+    }
+    return validateSettings(result);
+  }
+
+  // A skill is in Core or the library, or it is machine-only, never both; earlier versions left both marks behind.
+  private async dropStoredMachineOnly(settings: Settings, state: LocalState | undefined): Promise<void> {
+    const stored = new Set([...(settings.kit?.core ?? []).flatMap(entry => entry.skills), ...await new Library(this.home).names()]);
+    const kept = settings.machineOnly.filter(name => !stored.has(name));
+    if (kept.length === settings.machineOnly.length) return;
+    settings.machineOnly = kept;
+    if (!state || !settings.configurationId) return;
+    const local = this.localPath(settings.configurationId);
+    await mkdir(dirname(local), { recursive: true });
+    await writeFile(`${local}.${process.pid}.tmp`, `${JSON.stringify({ ...state, machineOnly: kept }, null, 2)}\n`, { mode: 0o600 });
+    await rename(`${local}.${process.pid}.tmp`, local);
+  }
+
+  private async saveLibrary(settings: Settings): Promise<void> {
+    const local = this.localPath(settings.configurationId!);
+    let previous: string | undefined;
+    try { previous = await readFile(local, "utf8"); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    const writeLocal = async (text: string): Promise<void> => {
+      await mkdir(dirname(local), { recursive: true });
+      await writeFile(`${local}.${process.pid}.tmp`, text, { mode: 0o600 });
+      await rename(`${local}.${process.pid}.tmp`, local);
+    };
+    const next = `${JSON.stringify(localState(settings, this.home), null, 2)}\n`;
+    const change = await planLibrarySettings(this.home, settings);
+    if (!change) return writeLocal(next);
+    try {
+      await new Library(this.home).change(change.message, async () => { await change.apply(); await writeLocal(next); });
+    } catch (error) {
+      if (previous === undefined) await rm(local, { force: true }); else await writeLocal(previous);
+      throw error;
+    }
+  }
+
+  // A sync can briefly remove the file; only a machine that saved settings before, or a custom location, can be in that gap.
   private async readPortable(): Promise<string> {
     for (let attempt = 0; ; attempt++) {
       try { return await readFile(this.path, "utf8"); }
       catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT" || attempt === 4) throw error;
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT" || attempt === 4 || !await this.mayBeSyncing()) throw error;
         await new Promise(done => setTimeout(done, 100));
       }
     }
+  }
+
+  private async mayBeSyncing(): Promise<boolean> {
+    if (this.path !== resolve(this.home, ".afk/settings.json")) return true;
+    try { await readdir(join(this.home, ".afk/local")); return true; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return false; throw error; }
   }
 
   private identifier(legacy = false): string {
@@ -321,23 +374,23 @@ export class SettingsStore {
     return join(this.home, ".afk/local", id + ".json");
   }
 
-  async save(settings: Settings, options: { replace?: boolean; migrating?: boolean } = {}): Promise<void> {
+  async save(settings: Settings, options: { migrating?: boolean } = {}): Promise<void> {
     settings.configurationId ??= this.identifier();
     if (settings.version === 1) {
       if (requiresMigrationChoice(settings)) throw new Error(MIGRATION_REQUIRED);
       upgradeStackless(settings);
     }
     const validated = validateSettings(settings);
+    if (await librarySettingsActive(this.home)) return this.saveLibrary(validated);
     await mkdir(dirname(this.path), { recursive: true });
     const serialized = `${JSON.stringify(portableSettings(validated), null, 2)}\n`;
     const existing = await this.existingPortable();
     if (existing?.legacy) {
-      if (existing.legacy === "stacks" && !options.migrating && !options.replace) throw new Error(MIGRATION_REQUIRED);
+      if (existing.legacy === "stacks" && !options.migrating) throw new Error(MIGRATION_REQUIRED);
       await this.preserveLegacy(existing.text);
     }
-    if (existing !== undefined && existing.text !== serialized) {
-      if (!options.replace && existing.configurationId !== undefined && existing.configurationId !== validated.configurationId) throw new Error("Refusing to overwrite a different AFK configuration. Restore a backup with `afk settings backups`, or import the configuration deliberately.");
-      await this.snapshot(existing.text);
+    if (existing !== undefined && existing.text !== serialized && existing.configurationId !== undefined && existing.configurationId !== validated.configurationId) {
+      throw new Error("Refusing to overwrite a different AFK configuration.");
     }
     const temporary = `${this.path}.${process.pid}.tmp`;
     const local = this.localPath(validated.configurationId!);
@@ -377,8 +430,8 @@ export class SettingsStore {
     return (await this.existingPortable())?.text;
   }
 
-  // Lives outside the rotation so a migration can always be undone, however many saves follow it.
-  private async preserveLegacy(text: string): Promise<string> {
+  /** Keeps a permanent copy of pre-kit settings so a migration can always be undone. */
+  async preserveLegacy(text: string): Promise<string> {
     const folder = this.backupFolder;
     await mkdir(folder, { recursive: true });
     for (const name of await readdir(folder)) {
@@ -388,195 +441,5 @@ export class SettingsStore {
     const path = join(folder, `pre-kit-${stamp}-${randomUUID().slice(0, 8)}.json`);
     await writeFile(path, text, { mode: 0o600, flag: "wx" });
     return path;
-  }
-
-  private async snapshot(text: string): Promise<void> {
-    const folder = this.backupFolder;
-    await mkdir(folder, { recursive: true });
-    const names = await this.backupNames();
-    const newest = names.at(-1);
-    if (newest && await readFile(join(folder, newest), "utf8") === text) return;
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    await writeFile(join(folder, `settings-${stamp}-${randomUUID().slice(0, 8)}.json`), text, { mode: 0o600 });
-    for (const old of names.slice(0, Math.max(0, names.length + 1 - BACKUP_LIMIT))) await rm(join(folder, old), { force: true });
-  }
-
-  private async backupNames(): Promise<string[]> {
-    try { return (await readdir(this.backupFolder)).filter(name => BACKUP_NAME.test(name)).sort(); }
-    catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return []; throw error; }
-  }
-
-  async backups(): Promise<BackupSummary[]> {
-    const summaries: BackupSummary[] = [];
-    const permanent = await readdir(this.backupFolder).then(names => names.filter(name => PERMANENT_BACKUP_NAME.test(name)).sort().reverse(), () => [] as string[]);
-    for (const name of [...permanent, ...(await this.backupNames()).reverse()]) {
-      try {
-        const settings = validateSettings(JSON.parse(await readFile(join(this.backupFolder, name), "utf8")));
-        summaries.push({ name, savedAt: (await lstat(join(this.backupFolder, name))).mtime.toISOString(), configurationId: settings.configurationId, profiles: settings.profiles.length, stacks: settings.stacks?.length ?? 0, sources: settings.favoriteSources.length, projects: settings.projects.length, tools: settings.tools.length });
-      } catch { /* unreadable snapshots stay on disk but are not offered */ }
-    }
-    return summaries;
-  }
-
-  async restoreBackup(name: string): Promise<void> {
-    if (!BACKUP_NAME.test(name) && !PERMANENT_BACKUP_NAME.test(name)) throw new Error("Choose a backup name from `afk settings backups`.");
-    let text: string;
-    try { text = await readFile(join(this.backupFolder, name), "utf8"); }
-    catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new Error("That backup no longer exists."); throw error; }
-    validateSettings(JSON.parse(text));
-    const existing = await this.existingPortable();
-    if (existing !== undefined && existing.text !== text) await this.snapshot(existing.text);
-    await mkdir(dirname(this.path), { recursive: true });
-    const temporary = `${this.path}.${process.pid}.tmp`;
-    try { await writeFile(temporary, text, { mode: 0o600 }); await rename(temporary, this.path); }
-    finally { await rm(temporary, { force: true }); }
-  }
-
-  async relocate(path: string, existingFolder?: string): Promise<void> {
-    const destination = expandPath(path, this.home);
-    if (destination === this.path) return;
-    try { await lstat(destination); throw new Error("That file already exists. Import it or choose another location."); }
-    catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-    const settings = await this.read();
-    const previous = this.path;
-    const files: { path: string; content: string }[] = [];
-    const checkedPath = async (root: string, path: string): Promise<void> => {
-      let ancestor = root;
-      while (ancestor !== dirname(ancestor)) {
-        try {
-          if ((await lstat(ancestor)).isSymbolicLink() && !["/var", "/tmp"].includes(ancestor)) throw new Error(`AFK folders cannot cross symbolic links: ${ancestor}`);
-        } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-        ancestor = dirname(ancestor);
-      }
-      let current = root;
-      const parts = path.slice(root.length).split("/").filter(Boolean);
-      for (const part of ["", ...parts]) {
-        if (part) current = join(current, part);
-        try { if ((await lstat(current)).isSymbolicLink()) throw new Error(`AFK files cannot cross symbolic links: ${current}`); }
-        catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-      }
-    };
-    const collect = async (folder: string, prefix: string, root: string): Promise<void> => {
-      await checkedPath(root, folder);
-      try {
-        for (const entry of await readdir(folder, { withFileTypes: true })) {
-          if (entry.isSymbolicLink()) throw new Error("Rules references cannot contain symbolic links.");
-          const path = `${prefix}${entry.name}`;
-          if (entry.isDirectory()) await collect(join(folder, entry.name), `${path}/`, root);
-          else if (entry.isFile()) files.push({ path, content: await readFile(join(folder, entry.name), "utf8") });
-        }
-      } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-    };
-    if (dirname(destination) !== dirname(previous)) {
-      const roots = [dirname(previous)];
-      if (existingFolder) roots.unshift(existingFolder);
-      for (const root of roots) {
-        await checkedPath(root, join(root, "AGENTS.md"));
-        try { files.push({ path: "AGENTS.md", content: await readFile(join(root, "AGENTS.md"), "utf8") }); }
-        catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-        await collect(join(root, "references"), "references/", root);
-      }
-      const preferred = new Map(files.map(file => [file.path, file]));
-      files.splice(0, files.length, ...preferred.values());
-      await checkedPath(dirname(destination), join(dirname(destination), "references"));
-      for (const file of files) {
-        const target = join(dirname(destination), file.path);
-        await checkedPath(dirname(destination), target);
-        try { await lstat(target); throw new Error(`Rules file already exists at the destination: ${file.path}`); }
-        catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-      }
-    }
-    const created: string[] = [];
-    this.path = destination;
-    try {
-      for (const file of files) {
-        const target = join(dirname(destination), file.path);
-        await mkdir(dirname(target), { recursive: true });
-        await writeFile(target, file.content, { mode: 0o600, flag: "wx" });
-        created.push(target);
-      }
-      await this.save(settings);
-      created.push(destination);
-      await mkdir(dirname(this.pointer), { recursive: true });
-      const temporaryPointer = `${this.pointer}.${process.pid}.tmp`;
-      try {
-        await writeFile(temporaryPointer, JSON.stringify({ path: destination }), { mode: 0o600 });
-        await rename(temporaryPointer, this.pointer);
-      } finally { await rm(temporaryPointer, { force: true }); }
-    } catch (error) {
-      this.path = previous;
-      await Promise.all(created.map(path => rm(path, { force: true })));
-      throw error;
-    }
-  }
-
-  async moveFolder(folder: string): Promise<string | undefined> {
-    const root = expandPath(folder, this.home);
-    const destination = join(root, "settings.json");
-    if (destination === this.path) return;
-
-    const withinReferences = relative(join(dirname(this.path), "references"), root);
-    if (withinReferences === "" || (!withinReferences.startsWith("../") && withinReferences !== "..")) throw new Error("Choose a folder outside the current AFK rule files.");
-
-    const entries: string[] = [];
-    for (const name of ["settings.json", "AGENTS.md", "references"]) {
-      const target = join(root, name);
-      const sourceWithinTarget = relative(target, this.path);
-      if (sourceWithinTarget === "" || (!sourceWithinTarget.startsWith("../") && sourceWithinTarget !== "..")) throw new Error("Choose a folder outside the current AFK rule files.");
-      try {
-        const info = await lstat(target);
-        if (info.isSymbolicLink() || (name === "references" ? !info.isDirectory() : !info.isFile())) throw new Error(`AFK destination has an unsupported file: ${name}`);
-        entries.push(name);
-      } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-    }
-    if (!entries.length) { await this.relocate(destination); return; }
-
-    let ancestor = root;
-    while (ancestor !== dirname(ancestor)) {
-      try {
-        if ((await lstat(ancestor)).isSymbolicLink() && !["/var", "/tmp"].includes(ancestor)) throw new Error(`AFK folders cannot cross symbolic links: ${ancestor}`);
-      } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-      ancestor = dirname(ancestor);
-    }
-    const backup = join(root, `.afk-backup-${randomUUID()}`);
-    await mkdir(backup);
-    const moved: string[] = [];
-    let relocationStarted = false;
-    try {
-      for (const name of entries) {
-        await rename(join(root, name), join(backup, name));
-        moved.push(name);
-      }
-      relocationStarted = true;
-      await this.relocate(destination, backup);
-      return backup;
-    } catch (error) {
-      if (relocationStarted) await rm(join(root, "references"), { recursive: true, force: true });
-      for (const name of moved.reverse()) await rename(join(backup, name), join(root, name));
-      await rm(backup, { recursive: true });
-      throw error;
-    }
-  }
-
-  async select(path: string): Promise<void> {
-    const destination = expandPath(path, this.home);
-    validateSettings(JSON.parse(await readFile(destination, "utf8")));
-    await mkdir(dirname(this.pointer), { recursive: true });
-    await writeFile(this.pointer, JSON.stringify({ path: destination }), { mode: 0o600 });
-    this.path = destination;
-  }
-
-  async selectFolder(folder: string): Promise<void> {
-    const destination = join(expandPath(folder, this.home), "settings.json");
-    if (destination === this.path) return;
-    const current = await this.read();
-    const selected = validateSettings(JSON.parse(await readFile(destination, "utf8")));
-    if (selected.version === 1 && !requiresMigrationChoice(selected)) upgradeStackless(selected);
-    const sameConfiguration = Boolean(current.configurationId) && isDeepStrictEqual(portableSettings(current), portableSettings(selected));
-    const hasActiveProfiles = current.profiles.some(profile => profile.enabled.length > 0);
-    const hasRulesReceipts = Object.keys(current.agentRules?.receipts ?? {}).length > 0;
-    const hasSkillOwnership = Object.keys(current.managedLinks).length > 0 || Object.values(current.independentSkills).some(skills => skills.length > 0);
-    if (!sameConfiguration && (hasActiveProfiles || hasRulesReceipts || hasSkillOwnership)) throw new Error("This folder contains a different configuration. Move your current AFK folder to a new location to keep active skills and synced rules, or disable them before loading a different configuration.");
-    await this.select(destination);
   }
 }

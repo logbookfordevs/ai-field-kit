@@ -8,7 +8,7 @@ For AFK brand or site work, read `PRODUCT.md` for strategy and `DESIGN.md` for t
 
 ## App Context
 
-For CLI and local-app changes, read `docs/specs/afk-pivot.md` and `docs/development.md`. For interface work, use `packages/afk/web/DESIGN.md`; root `DESIGN.md` retains the brand. Keep website work separate unless explicitly requested.
+For CLI and local-app changes, read `docs/specs/afk-pivot.md` and `docs/development.md`. For interface work, use `packages/afk/app/DESIGN.md`; root `DESIGN.md` retains the brand. Keep website work separate unless explicitly requested.
 
 ## Skill Design
 

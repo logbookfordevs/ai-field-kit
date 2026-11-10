@@ -1,0 +1,33 @@
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.need{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:4px 16px;padding:20px 0;align-items:start}
+.need>svg{margin-top:2px}
+.need .sub{margin-top:4px}
+.need .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.need.bad>svg,.need.bad h3{color:var(--danger)}
+.need-skills{grid-column:2/-1;list-style:none;margin:12px 0 0;padding:0}
+.need-skills>li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 20px;align-items:center;padding:12px 0;border-top:1px solid var(--border)}
+.need-skill{min-width:0}
+.need-skills .acts{justify-content:flex-end}
+.allset{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;align-items:center;padding:24px 0;border-top:1px solid var(--fg);border-bottom:1px solid var(--border)}
+.allset .tick{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-fg);grid-row:span 2}
+.ov-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,1fr);gap:24px 56px;margin-top:48px}
+.setup-row{display:grid;grid-template-columns:120px minmax(0,1fr) 20px;gap:12px;align-items:center;min-height:56px;padding:10px 4px;color:var(--fg);text-decoration:none}
+.setup-row:hover{background:var(--warm)}
+.setup-row b{font-weight:600}
+.setup-row .meta{overflow-wrap:anywhere}
+.quick{display:grid;gap:20px}
+.quick-row{display:flex;gap:8px;align-items:flex-end}
+.quick-row label{flex:1;min-width:0}
+.quick .acts{display:flex;gap:8px}
+@media (max-width:760px){
+  .need{grid-template-columns:24px minmax(0,1fr);padding:18px 0}
+  .need>.acts{grid-column:2;justify-content:flex-start;margin-top:8px}
+  .need-skills>li{grid-template-columns:minmax(0,1fr)}
+  .need-skills .acts{justify-content:flex-start}
+  .ov-grid{grid-template-columns:minmax(0,1fr);margin-top:36px}
+  .setup-row{grid-template-columns:96px minmax(0,1fr) 20px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .allset{animation:settle .52s var(--ease)}
+  @keyframes settle{from{opacity:0;transform:translateY(10px)}}
+}

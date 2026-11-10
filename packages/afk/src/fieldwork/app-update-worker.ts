@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { runCommand } from "./command-runner.js";
 import { mkdir, open, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,15 +27,18 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     writes = writes.then(async () => { await mkdir(directory, { recursive: true }); await writeFile(path + ".tmp", contents, { mode: 0o600 }); await rename(path + ".tmp", path); });
     return writes;
   };
-  const run = (command: string, args: string[], env: NodeJS.ProcessEnv): Promise<string> => new Promise((accept, reject) => {
+  const run = async (command: string, args: string[], env: NodeJS.ProcessEnv): Promise<string> => {
     let stdout = "";
-    const child = spawn(command, args, { env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
-    const timeout = setTimeout(() => { try { if (child.pid) process.kill(-child.pid, "SIGTERM"); else child.kill(); } catch { child.kill(); } reject(new Error("The command timed out. Review the update output.")); }, 10 * 60_000);
-    const append = (chunk: Buffer): void => { state.output = (state.output + chunk.toString()).slice(-30_000); void save().catch(() => {}); };
-    child.stdout.on("data", (chunk: Buffer) => { stdout = (stdout + chunk.toString()).slice(-30_000); append(chunk); }); child.stderr.on("data", append);
-    child.once("error", error => { clearTimeout(timeout); reject(error); });
-    child.once("close", code => { clearTimeout(timeout); if (code === 0) accept(stdout); else reject(new Error(`Update command failed (exit ${code ?? 1}).`)); });
-  });
+    const result = await runCommand({
+      command, args, env, step: "The update command", idleTimeoutMs: 3 * 60_000, timeoutMs: 10 * 60_000,
+      onOutput: (chunk, stream) => {
+        if (stream === "stdout") stdout = (stdout + chunk).slice(-30_000);
+        state.output = (state.output + chunk).slice(-30_000); void save().catch(() => {});
+      },
+    });
+    if (result.code !== 0) throw new Error(`Update command failed (exit ${result.code}).`);
+    return stdout;
+  };
   const stop = async (): Promise<void> => {
     const response = await fetch(target.url + "/api/exit", { method: "POST", headers: { "X-AFK-Token": target.token }, signal: AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error("Could not stop the current AFK app.");

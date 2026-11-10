@@ -10,13 +10,18 @@ const blockedPorts = new Set([
 
 export function parseUiOptions(argv: string[]): { port: number; background: boolean; open: boolean } {
   let port = 0;
-  let background = false;
+  let mode: "default" | "foreground" | "background" = "default";
   let open = true;
   let hasPort = false;
-  const args = argv[0] === "ui" ? argv.slice(1) : argv;
+  const usage = "Use afk [start] [--foreground] [--no-open] [--port <1-65535>].";
+  const args = argv[0] === "ui" || argv[0] === "start" ? argv.slice(1) : argv;
   for (let index = 0; index < args.length; index++) {
     const argument = args[index];
-    if (argument === "--background") { background = true; continue; }
+    if (argument === "--foreground" || argument === "--background") {
+      const requested = argument === "--foreground" ? "foreground" : "background";
+      if (mode !== "default" && mode !== requested) throw new Error(usage);
+      mode = requested; continue;
+    }
     if (argument === "--no-open") { open = false; continue; }
     if (argument === "--port" || argument?.startsWith("--port=")) {
       const value = argument === "--port" ? args[++index] : argument.slice("--port=".length);
@@ -24,7 +29,9 @@ export function parseUiOptions(argv: string[]): { port: number; background: bool
       if (blockedPorts.has(Number(value))) throw new Error(`Port ${value} is blocked by browsers and HTTP fetch. Choose a web port such as 4310 or 8080.`);
       port = Number(value); hasPort = true; continue;
     }
-    throw new Error("Use afk [ui] [--background] [--no-open] [--port <1-65535>].");
+    throw new Error(usage);
   }
-  return { port, background, open };
+  // --background predates start-by-default; scripts and the app's own restart use it and must not open a browser.
+  if (mode === "background") open = false;
+  return { port, background: mode !== "foreground", open };
 }
