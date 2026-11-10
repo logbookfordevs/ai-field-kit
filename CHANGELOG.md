@@ -11,6 +11,8 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.2.2 - 2026-11-10
+
 ### Fixed
 
 - **Updating a selection skips the skills that can't update, and the rest still update.** One uploaded skill, a tool skill or a skill you kept your own version of used to stop the whole update with a message that didn't name it. Those are now named under "Skipped" in the output; the update fails only when nothing selected can update.
