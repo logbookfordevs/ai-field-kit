@@ -12,7 +12,7 @@ import { BulkBar, SelectShown } from "@/screens/skills/BulkBar";
 import { SkillDialogs, type DialogRequest } from "@/screens/skills/SkillDialogs";
 import { DiscoveryEstimate } from "@/screens/skills/DiscoveryEstimate";
 import { InvocationInfo } from "@/screens/skills/InvocationInfo";
-import { filterSkills, fromOptions, globalSkills, isFiltered, noFilters, skillsDescription, type Filters, type Skill } from "@/screens/skills/model";
+import { dropTargets, filterSkills, fromOptions, globalSkills, isFiltered, noFilters, skillsDescription, type Filters, type Skill } from "@/screens/skills/model";
 import { plural } from "@/text/format";
 import { dailyBackupTime } from "@/screens/backup/format";
 import { SkillPanel } from "@/screens/skills/SkillPanel";
@@ -103,10 +103,12 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
       else setDialog({ kind: "update", names: [skill.name], title: `Update ${skill.name}` });
     },
     move: skill => setDialog({ kind: "move", skill }),
-    drop: async skill => {
-      const from = skill.place === "pack" ? String(skill.ownerId) : "core";
+    drop: async (skill, from) => {
+      const targets = dropTargets(skill);
+      const dropped = targets.find(target => target.from === from)?.name ?? "the kit";
+      const remaining = targets.filter(target => target.from !== from).map(target => target.name);
       const result = await attempt(skill, "kit/drop", { name: skill.name, from });
-      if (result.ok) toast.show(`${skill.name} dropped from ${skill.place === "pack" ? skill.owner : "Core"}. It stays on this machine, in To review.`);
+      if (result.ok) toast.show(`${skill.name} dropped from ${dropped}. ${remaining.length ? `It stays in ${remaining.join(", ")}.` : "It stays on this machine, in To review."}`);
     },
     askAgain: async skill => {
       const result = await attempt(skill, "kit/machine-only", { name: skill.name, enabled: false });

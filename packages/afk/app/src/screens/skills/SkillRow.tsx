@@ -4,7 +4,7 @@ import { Menu, MenuItem, MenuSeparator } from "@/components/Menu";
 import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import type { InvocationMode } from "@/screens/skills/api";
-import { fromLabel, moveLabel, type Skill } from "@/screens/skills/model";
+import { dropTargets, fromLabel, moveLabel, type Skill } from "@/screens/skills/model";
 import { hrefFor } from "@/shell/router";
 import { shortSource } from "@/text/format";
 
@@ -18,7 +18,8 @@ export interface RowActions {
   setMode: Act<[Skill, InvocationMode | ""]>;
   update: Act<[Skill]>;
   move: Act<[Skill]>;
-  drop: Act<[Skill]>;
+  /** Drops from "core" or a pack's id. */
+  drop: Act<[Skill, string]>;
   askAgain: Act<[Skill]>;
   install: Act<[Skill]>;
   resolveDuplicate: Act<[Skill]>;
@@ -76,8 +77,7 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
   const source = skill.source ? shortSource(skill.source) : "";
   const showSource = Boolean(source) && sourceLine;
   const canAskAgain = skill.keptHere === true;
-  const canDrop = skill.place === "core" || skill.place === "pack";
-  const dropLabel = skill.place === "pack" ? `Drop from ${skill.owner}` : "Drop from Core";
+  const drops = dropTargets(skill);
   const hasDuplicate = Boolean(skill.entry?.duplicate);
   const hasDrift = Boolean(skill.drift);
   const describedBy = [note ? noteId : "", failure ? failureId : ""].filter(Boolean).join(" ") || undefined;
@@ -138,7 +138,7 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
           {missing ? null : <MenuItem onSelect={() => actions.open(skill.name, "editor")}>{editLabel}</MenuItem>}
           {missing ? null : <MenuItem onSelect={() => actions.update(skill)} {...unavailable(updateBlocked(skill))}>Update</MenuItem>}
           {missing ? null : <MenuItem onSelect={() => actions.move(skill)} {...unavailable(tool ? `Installed by ${skill.owner}.` : undefined)}>{moveLabel(skill)}</MenuItem>}
-          {canDrop ? <MenuItem onSelect={() => actions.drop(skill)}>{dropLabel}</MenuItem> : null}
+          {drops.map(target => <MenuItem key={target.from} onSelect={() => actions.drop(skill, target.from)}>Drop from {target.name}</MenuItem>)}
           {canAskAgain ? <MenuItem onSelect={() => actions.askAgain(skill)}>Ask me again where it belongs</MenuItem> : null}
           {missing ? null : <MenuSeparator />}
           {missing ? null : <MenuItem danger onSelect={() => actions.remove(skill)} {...unavailable(tool ? "Remove it from the tool instead." : undefined)}>Delete…</MenuItem>}

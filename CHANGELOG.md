@@ -19,6 +19,7 @@ This changelog tracks meaningful updates by version and date.
 
 - **Moving a skill to Core now moves its files into your library, so it is backed up.** Moving a This machine only skill, or a pack skill, to Core used to update the Core list but leave the files outside the library. Moving a This machine only skill into a pack now moves its files into the pack's storage too.
 - **Installing to This machine only no longer marks a Core or pack skill as This machine only as well.**
+- **A skill in Core and a pack shows both, and can be dropped from either.** Skills read only "Core" for it and offered only **Drop from Core**, so it couldn't leave the pack. It now reads "Core · also in Creative Web Design", the menu offers a drop for each place, and **Also add to a pack…** lists only packs it isn't in yet.
 - **Dropping a skill from Core takes it out of your library.** Its files used to stay there, so the Skills list kept showing it as Core until you reloaded, and the backup kept it. It now stays on this machine and waits in To review. Dropping a skill left over this way again tidies it up.
 
 ## v2.2.0 - 2026-11-10

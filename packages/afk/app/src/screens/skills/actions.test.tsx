@@ -179,6 +179,20 @@ it("adds a Core skill to a pack and drops it from Core", async () => {
   await waitFor(() => expect(calls(client, "kit/drop")).toEqual([{ name: "kami", from: "core" }]));
 });
 
+it("shows a Core skill that is also in a pack, and drops it from either place", async () => {
+  const state = appState();
+  state.settings.profiles[0]!.skills.push("kami");
+  const client = setup(state);
+
+  expect(await row("kami")).toHaveTextContent("Core · also in Writing");
+  const menu = await openMenu("kami");
+  expect(menu.getByRole("button", { name: "Drop from Core" })).toBeInTheDocument();
+  await userEvent.click(menu.getByRole("button", { name: "Drop from Writing" }));
+
+  await waitFor(() => expect(calls(client, "kit/drop")).toEqual([{ name: "kami", from: "p-writing" }]));
+  expect(await screen.findByText("kami dropped from Writing. It stays in Core.")).toBeInTheDocument();
+});
+
 it("names Move by what it does: pack and Core skills keep their place", async () => {
   setup();
 

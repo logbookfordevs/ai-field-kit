@@ -29,7 +29,8 @@ export function MoveDialog({ skill, state, onClose }: { skill: Skill; state: App
   const run = useRun();
   const toast = useToast();
   const folders = useOperation("agent-folders/state");
-  const packs = [...state.settings.profiles].sort((a, b) => a.name.localeCompare(b.name));
+  const memberOf = new Set((skill.packs ?? []).map(pack => pack.id));
+  const packs = state.settings.profiles.filter(profile => !memberOf.has(profile.id)).sort((a, b) => a.name.localeCompare(b.name));
   const destinations = destinationsFor(skill, packs.length);
   const [to, setTo] = useState<Destination | null>(destinations.length === 1 ? destinations[0]! : null);
   const [pack, setPack] = useState(packs[0]?.id ?? "");

@@ -25,6 +25,14 @@ export interface Skill {
   folder?: string;
   /** Marked "keep on this machine", so the kit stops asking about it. */
   keptHere?: boolean;
+  /** Every pack that lists it; a Core skill can be in packs too. */
+  packs?: { id: string; name: string }[];
+}
+
+/** The places a skill can be dropped from: Core, and each pack that lists it. */
+export function dropTargets(skill: Skill): { from: string; name: string }[] {
+  const packs = (skill.packs ?? []).map(pack => ({ from: pack.id, name: pack.name }));
+  return skill.place === "core" ? [{ from: "core", name: "Core" }, ...packs] : skill.place === "pack" ? packs : [];
 }
 
 export type StateFilter = "on" | "all" | "off";
@@ -64,8 +72,9 @@ export function globalSkills(state: AppState): Skill[] {
   const review = new Map(state.kit.undecided.map(item => [item.name, item]));
   const skills: Skill[] = inventory.map(entry => {
     const tool = state.settings.tools.find(item => item.provides?.includes(entry.name));
-    const pack = state.settings.profiles.find(profile => profile.skills.includes(entry.name));
-    const base = { name: entry.name, description: entry.description, entry, on: entry.available, ...modeOf(state, "Global", entry), ...(entry.source ? { source: entry.source } : {}) };
+    const memberOf = state.settings.profiles.filter(profile => profile.skills.includes(entry.name)).map(profile => ({ id: profile.id, name: profile.name }));
+    const pack = memberOf[0];
+    const base = { name: entry.name, description: entry.description, entry, on: entry.available, ...modeOf(state, "Global", entry), ...(entry.source ? { source: entry.source } : {}), ...(memberOf.length ? { packs: memberOf } : {}) };
     if (tool) return { ...base, place: "tool", owner: tool.name, ownerId: tool.id, installable: false };
     if (core.has(entry.name) || entry.storage === "library") return { ...base, place: "core", installable: isRepositorySource(entry.source) };
     if (pack) return { ...base, place: "pack", owner: pack.name, ownerId: pack.id, installable: isRepositorySource(entry.source) };
@@ -105,7 +114,10 @@ export function moveLabel(skill: Skill): string {
 }
 
 export function fromLabel(skill: Skill): string {
-  return skill.owner ? `${skill.place === "pack" ? "Pack" : "Tool"} · ${skill.owner}` : placeLabels[skill.place as keyof typeof placeLabels];
+  const packNames = (skill.packs ?? []).map(pack => pack.name).join(", ");
+  if (skill.place === "core" && packNames) return `Core · also in ${packNames}`;
+  if (skill.place === "pack") return `Pack · ${packNames || skill.owner}`;
+  return skill.owner ? `Tool · ${skill.owner}` : placeLabels[skill.place as keyof typeof placeLabels];
 }
 
 function keyLabel(key: string): string {
