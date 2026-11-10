@@ -32,6 +32,8 @@ export interface DestinationFieldsProps {
   packRef: Ref<HTMLSelectElement>;
   packNameRef: Ref<HTMLInputElement>;
   bookmarkRef: Ref<HTMLInputElement>;
+  /** False when the repository is already in Try later. */
+  offerLater?: boolean;
 }
 
 const places: { id: Destination; label: string; definition: (upload: boolean) => string }[] = [
@@ -41,7 +43,8 @@ const places: { id: Destination; label: string; definition: (upload: boolean) =>
   { id: "later", label: "Try later", definition: () => placeDefinitions.later },
 ];
 
-export function DestinationFields({ value, onChange, packs, projects, upload, errors, groupRef, packRef, packNameRef, bookmarkRef }: DestinationFieldsProps) {
+export function DestinationFields({ value, onChange, packs, projects, upload, offerLater = true, errors, groupRef, packRef, packNameRef, bookmarkRef }: DestinationFieldsProps) {
+  const shown = offerLater ? places : places.filter(place => place.id !== "later");
   const errorId = useId();
   const sortedPacks = [...packs].sort((a, b) => a.name.localeCompare(b.name));
   return (
@@ -49,7 +52,7 @@ export function DestinationFields({ value, onChange, packs, projects, upload, er
       <fieldset ref={groupRef} aria-describedby={errors.destination ? errorId : undefined}>
         <legend>Where should they go?</legend>
         <div className="cards">
-          {places.map(place => {
+          {shown.map(place => {
             const unavailable = place.id === "later" && upload;
             return (
               <label key={place.id} className="card-radio">

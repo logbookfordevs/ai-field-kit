@@ -1,4 +1,4 @@
-dialog.dlg{max-width:none;border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:var(--radius-lg);padding:0;width:min(640px,calc(100vw - 32px));max-height:min(88dvh,860px);box-shadow:var(--shadow-dialog)}
+dialog.dlg{max-width:none;border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:var(--radius-lg);padding:0;width:min(640px,calc(100vw - 32px));max-height:min(88dvh,860px);overflow:hidden;box-shadow:var(--shadow-dialog)}
 dialog.dlg[open]{display:flex;flex-direction:column;animation:dlg-rise .42s var(--ease)}
 dialog.dlg::backdrop{background:color-mix(in srgb,var(--fg) 38%,transparent);animation:dlg-fade .3s ease}
 dialog.dlg.small{width:min(480px,calc(100vw - 32px))}

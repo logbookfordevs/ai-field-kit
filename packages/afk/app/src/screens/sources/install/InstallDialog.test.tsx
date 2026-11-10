@@ -182,7 +182,7 @@ it("saves a repository to Try later under a name it asks for, without installing
 });
 
 it("opened from a bookmark, prefills the repository and its saved skills and still asks for the destination", async () => {
-  const { client } = setup({ repository: "fieldnotes/agent-skills", skills: ["hairline"] });
+  const { client } = setup({ repository: "fieldnotes/agent-skills", skills: ["hairline"], fromBookmark: true });
 
   await screen.findByRole("group", { name: /Skills in/ });
   expect(screen.getByRole("textbox", { name: "Repository" })).toHaveValue("fieldnotes/agent-skills");
@@ -190,6 +190,7 @@ it("opened from a bookmark, prefills the repository and its saved skills and sti
   expect(screen.getByRole("checkbox", { name: /kami/ })).not.toBeChecked();
   const destinations = within(screen.getByRole("group", { name: "Where should they go?" })).getAllByRole("radio");
   expect(destinations.some(radio => (radio as HTMLInputElement).checked)).toBe(false);
+  expect(destinations.map(radio => (radio as HTMLInputElement).value)).toEqual(["core", "pack", "machine"]);
 
   await userEvent.click(screen.getByRole("button", { name: "Install" }));
   expect(screen.getByText("Choose where the skills go.")).toBeInTheDocument();

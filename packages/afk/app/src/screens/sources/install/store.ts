@@ -11,6 +11,8 @@ export interface InstallRequest {
   repository?: string;
   skills?: string[];
   destination?: Destination;
+  /** Opened from a Try later bookmark, so Try later is not offered again. */
+  fromBookmark?: boolean;
 }
 
 interface Opened { id: number; request: InstallRequest }

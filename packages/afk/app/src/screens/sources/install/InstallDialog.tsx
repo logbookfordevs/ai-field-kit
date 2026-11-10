@@ -413,6 +413,7 @@ function InstallForm({ request, onClose, onAgain }: InstallDialogProps & { onAga
             packs={packs}
             projects={projects}
             upload={uploading}
+            offerLater={!request.fromBookmark}
             errors={errors}
             groupRef={destinationGroup}
             packRef={packField}
