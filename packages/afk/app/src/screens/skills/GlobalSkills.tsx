@@ -106,7 +106,7 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
     drop: async skill => {
       const from = skill.place === "pack" ? String(skill.ownerId) : "core";
       const result = await attempt(skill, "kit/drop", { name: skill.name, from });
-      if (result.ok) toast.show(`${skill.name} dropped from ${skill.place === "pack" ? skill.owner : "Core"}. Its files stay on this machine.`);
+      if (result.ok) toast.show(`${skill.name} dropped from ${skill.place === "pack" ? skill.owner : "Core"}. It stays on this machine, in To review.`);
     },
     askAgain: async skill => {
       const result = await attempt(skill, "kit/machine-only", { name: skill.name, enabled: false });

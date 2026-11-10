@@ -59,6 +59,8 @@ export interface StoreOptions {
   packMember?: boolean;
   /** Replaces files in place: links, on/off state and the Core list stay as they are. */
   update?: boolean;
+  /** Names the library save instead of "Install …", for a move between storages. */
+  message?: string;
   /** Installs only: leaves the folder where Skills CLI put it, so the skill waits in To review. */
   unstored?: boolean;
   /** Edits the settings inside the same commit as the copied files. */
@@ -86,7 +88,7 @@ export async function storeSkills(store: SettingsStore, staged: StagedSkill[], o
   const shown = targets.some(target => target.to === "library") ? targets.filter(target => target.to === "library") : targets;
   const member = options.packMember === true;
   const reinstall = shown.every(target => target.from === target.to);
-  const message = `${options.update ? "Update" : reinstall ? "Reinstall" : "Install"} ${shown.map(target => target.skill.name).join(", ")}`;
+  const message = options.message ?? `${options.update ? "Update" : reinstall ? "Reinstall" : "Install"} ${shown.map(target => target.skill.name).join(", ")}`;
 
   const original = structuredClone(await store.read());
 

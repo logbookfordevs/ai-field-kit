@@ -214,6 +214,7 @@ describe("portable settings in the library", () => {
     expect(await json(join(library, "skills/gamma.json"))).toMatchObject({ invocation: "Automatic allowed" });
     expect(await commits()).toEqual([
       "Set gamma to Automatic allowed",
+      "Move alpha to this machine",
       "Update Core list",
       "Remove bookmark later",
       "Add tool Other",
@@ -276,6 +277,35 @@ describe("moving a stored skill to another place", () => {
     expect(text).toContain("disable-model-invocation: true");
     expect(await present(join(home, ".afk/packs-cache/gamma"))).toBe(false);
     expect((await store.read()).profiles.find(item => item.id === pack.id)?.skills).toContain("gamma");
+  });
+
+  it("moves a skill dropped from Core out of the library, so it waits in To review and is no longer backed up", async () => {
+    const operations = new FieldworkOperations(store);
+
+    await operations.run("kit/drop", { name: "alpha", from: "core" });
+    const state = await operations.run("state") as { kit: { undecided: { name: string }[] }; inventories: { Global: { name: string; storage?: string }[] } };
+    await operations.close();
+
+    expect(await present(join(home, ".afk/library/skills/alpha"))).toBe(false);
+    expect(await present(join(home, ".afk/machine/alpha/SKILL.md"))).toBe(true);
+    expect(await readlink(join(agents, "alpha"))).toBe(join(home, ".afk/machine/alpha"));
+    expect(state.inventories.Global.find(entry => entry.name === "alpha")?.storage).toBe("machine");
+    expect(state.kit.undecided.map(item => item.name)).toContain("alpha");
+    expect(await git("status", "--porcelain")).toBe("");
+  });
+
+  it("tidies up a skill dropped from Core before its files followed, when it is dropped again", async () => {
+    const settings = await store.read();
+    settings.kit = { core: [] };
+    await store.save(settings);
+    expect(await present(join(home, ".afk/library/skills/alpha"))).toBe(true);
+    const operations = new FieldworkOperations(store);
+
+    await operations.run("kit/drop", { name: "alpha", from: "core" });
+    await operations.close();
+
+    expect(await present(join(home, ".afk/library/skills/alpha"))).toBe(false);
+    expect(await present(join(home, ".afk/machine/alpha/SKILL.md"))).toBe(true);
   });
 
   it("moves a This machine only skill from a repository into the pack cache when it joins a pack", async () => {

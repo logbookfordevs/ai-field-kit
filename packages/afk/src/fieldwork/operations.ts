@@ -152,24 +152,31 @@ export class FieldworkOperations {
 
   // Off, swap, on: activation owns links by name, so reusing it preserves every other owner of a skill.
   /**
-   * Moves stored files to match a new place: Core keeps them in the library, so they are backed up;
-   * a pack keeps repository skills in the pack cache. A Core skill added to a pack stays in the library.
+   * Puts stored files where a skill's place says they belong: Core in the library, so they are backed up;
+   * a pack in the pack cache (an uploaded one stays in the library, as it can't be downloaded again);
+   * no place in machine storage, where it waits in To review.
    */
-  private async moveStoredFiles(names: string[], to: "core" | "pack"): Promise<void> {
+  private async placeStoredFiles(names: string[]): Promise<void> {
     const library = this.library.library;
     if (!await library.exists()) return;
-    const inventory = await this.library.inventory(await this.store.read(), "Global");
+    const settings = await this.store.read();
+    const inventory = await this.library.inventory(settings, "Global");
     const moves = new Map<Storage, StagedSkill[]>();
     for (const name of names) {
       const from = await library.storage(name);
       if (!from) continue;
       const source = inventory.find(entry => entry.name === name)?.source;
       const repository = isRepositorySource(source) ? source : undefined;
-      const target: Storage = to === "core" ? "library" : from === "machine" ? (repository ? "pack" : "library") : from;
+      const inCore = settings.kit?.core.some(item => item.skills.includes(name)) ?? false;
+      const inPack = settings.profiles.some(profile => profile.skills.includes(name));
+      const target: Storage = inCore ? "library" : inPack ? (repository ? "pack" : "library") : "machine";
       if (target === from) continue;
+      // A skill dropped from a pack that is off stays off in the pack cache rather than turning on here.
+      if (target === "machine" && from === "pack" && !await library.linked(name)) continue;
       moves.set(target, [...moves.get(target) ?? [], { name, path: library.storagePath(name, from), ...(repository ? { source: repository } : {}) }]);
     }
-    for (const [destination, staged] of moves) await storeSkills(this.store, staged, { destination });
+    const where: Record<Storage, string> = { library: "the library", pack: "the pack cache", machine: "this machine" };
+    for (const [destination, staged] of moves) await storeSkills(this.store, staged, { destination, message: `Move ${staged.map(skill => skill.name).join(", ")} to ${where[destination]}` });
   }
 
   private async replacePack(settings: Settings, next: Profile, groups: ProfileGroup[]): Promise<void> {
@@ -578,7 +585,7 @@ export class FieldworkOperations {
           addToCore(settings, name, source);
         }
         await store.save(settings);
-        await this.moveStoredFiles(names, "core");
+        await this.placeStoredFiles(names);
         return { ok: true };
       }
       const pack = settings.profiles.find(profile => profile.id === data.to);
@@ -592,7 +599,7 @@ export class FieldworkOperations {
         else groups.push({ source, skills: [name] });
       }
       await this.replacePack(settings, this.packFrom(pack, pack.id, pack.name, groups, {}), groups);
-      await this.moveStoredFiles(names, "pack");
+      await this.placeStoredFiles(names);
       return { ok: true };
     }
     if (operation === "kit/drop") {
@@ -607,7 +614,10 @@ export class FieldworkOperations {
         await this.replacePack(settings, this.packFrom(pack, pack.id, pack.name, groups, {}), groups);
         changed = true;
       }
-      if (!changed) throw new Error(`${name} is not in the kit.`);
+      // A skill dropped before files followed its place still sits in the library; dropping it again tidies it up.
+      const leftOver = !changed && (from === undefined || from === "core") && await this.library.library.storage(name) === "library";
+      if (!changed && !leftOver) throw new Error(`${name} is not in the kit.`);
+      await this.placeStoredFiles([name]);
       return { ok: true };
     }
     if (operation === "kit/install-preview") return { source: data.source, candidates: await this.installCandidates(settings, String(data.source)) };
