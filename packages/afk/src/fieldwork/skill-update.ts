@@ -153,12 +153,17 @@ async function updateStoredSkills(store: SettingsStore, settings: Settings, prog
     signal?.throwIfAborted(); report();
     if (selectedNames && (!selectedNames.length || !selectedNames.every(skillName) || new Set(selectedNames).size !== selectedNames.length)) throw new Error("Select unique skill names.");
     const toolOwned = new Map(settings.tools.flatMap(tool => (tool.provides ?? []).map(name => [name, tool.name] as const)));
-    for (const name of selectedNames ?? []) if (toolOwned.has(name)) throw new Error(`${name} is managed by ${toolOwned.get(name)}. Update it from Tools.`);
     const kept = new Set<string>();
     for (const name of await library.storedNames()) if ((await library.record(name))?.updates === "stopped") kept.add(name);
-    for (const name of selectedNames ?? []) if (kept.has(name)) throw new Error(`You kept your version of ${name}. Let updates replace your edits from its editor to update it again.`);
-    const stored = (await library.storedNames()).filter(name => selectedNames ? selectedNames.includes(name) : !toolOwned.has(name) && !kept.has(name));
-    if (selectedNames && stored.length !== selectedNames.length) throw new Error("A selected skill is missing from this scope.");
+    const storedNames = await library.storedNames();
+    for (const name of selectedNames ?? []) if (!storedNames.includes(name) && !toolOwned.has(name)) throw new Error(`${name} is missing from this scope.`);
+    // A selection can include skills that never update here; they are named and skipped so the rest still update.
+    const skipped: string[] = [];
+    for (const name of selectedNames ?? []) {
+      if (toolOwned.has(name)) skipped.push(`${name}: ${toolOwned.get(name)} updates it, from Tools`);
+      else if (kept.has(name)) skipped.push(`${name}: you kept your version; let updates replace your edits from its editor`);
+    }
+    const stored = storedNames.filter(name => selectedNames ? selectedNames.includes(name) && !toolOwned.has(name) && !kept.has(name) : !toolOwned.has(name) && !kept.has(name));
     await mkdir(stagedRoot, { recursive: true });
     const snapshots: { name: string; path: string; before: string; staged: string; source: string; skillPath?: string; revision?: string }[] = [];
     const lock: Record<string, unknown> = {};
@@ -166,7 +171,7 @@ async function updateStoredSkills(store: SettingsStore, settings: Settings, prog
       signal?.throwIfAborted();
       const storage = (await library.storage(name))!, path = library.storagePath(name, storage), origin = await sourceOf(library, name, path, storage);
       if (!origin.source) {
-        if (selectedNames) throw new Error("This skill has no recorded source. Reinstall it from its source first.");
+        if (selectedNames) skipped.push(`${name}: it has no repository to update from (an uploaded skill updates only when you upload it again)`);
         continue;
       }
       const staged = join(stagedRoot, name);
@@ -174,7 +179,8 @@ async function updateStoredSkills(store: SettingsStore, settings: Settings, prog
       lock[name] = lockEntry(origin.source, origin.skillPath, origin.revision);
       snapshots.push({ name, path, before: await digest(path), staged, source: origin.source, ...(origin.skillPath ? { skillPath: origin.skillPath } : {}), ...(origin.revision ? { revision: origin.revision } : {}) });
     }
-    if (!snapshots.length) throw new Error("No stored skill has a recorded source to update from. Install tracked skills from a repository first.");
+    if (skipped.length) append(`Skipped ${skipped.length === 1 ? "1 skill" : `${skipped.length} skills`}:\n${skipped.map(line => `  ${line}`).join("\n")}\n\n`);
+    if (!snapshots.length) throw new Error(skipped.length ? `None of the selected skills can update here.\n${skipped.join("\n")}` : "No stored skill has a recorded source to update from. Install tracked skills from a repository first.");
     await writeFile(stagedLockPath(home), JSON.stringify({ version: 3, skills: lock }));
     signal?.throwIfAborted();
     state.phase = "Updating through Skills CLI"; state.item = selectedNames?.join(", ") || "Global tracked skills"; report();

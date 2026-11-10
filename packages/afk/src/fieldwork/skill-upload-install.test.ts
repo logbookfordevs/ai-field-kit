@@ -11,6 +11,8 @@ import { makeZip } from "./zip.test-helper.js";
 import { Uploads } from "./upload-install.js";
 import { Library } from "./library.js";
 import { SkillLibrary } from "./skills.js";
+import { storeSkills } from "./library-install.js";
+import { updateSkills } from "./skill-update.js";
 
 let home: string;
 let store: SettingsStore;
@@ -252,12 +254,32 @@ describe("what an upload cannot do", () => {
     expect(state.core).toMatchObject([{ name: "wizard", status: "missing" }]);
   });
 
+  it("is skipped by name when selected with skills that do update, which still update", async () => {
+    const { upload } = await preview();
+    await operations.run("kit/upload-install", { upload, names: ["wizard"], to: "core" });
+    const tracked = join(home, "tracked-source");
+    await mkdir(join(tracked, "tracked"), { recursive: true });
+    await writeFile(join(tracked, "tracked/SKILL.md"), skill("tracked"));
+    await storeSkills(store, [{ name: "tracked", path: join(tracked, "tracked"), source: "owner/tracked" }], { destination: "library" });
+    const runner = async (_cwd: string, env: NodeJS.ProcessEnv): Promise<number> => {
+      await writeFile(join(env.HOME!, ".agents/skills/tracked/SKILL.md"), skill("tracked", "Newer."));
+      return 0;
+    };
+
+    const result = await updateSkills(store, await store.read(), "Global", () => {}, runner, undefined, ["wizard", "tracked"]);
+
+    expect(result.code).toBe(0);
+    expect(result.output).toContain("wizard: it has no repository to update from");
+    expect(await readFile(join(home, ".afk/library/skills/tracked/SKILL.md"), "utf8")).toContain("Newer.");
+    expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toBe(skill("wizard"));
+  });
+
   it("is never updated automatically, because it has no source", async () => {
     const { upload } = await preview();
     await operations.run("kit/upload-install", { upload, names: ["wizard"], to: "core" });
     const before = await commits();
 
-    await expect(operations.run("skills/update", { scope: "Global", names: ["wizard"] })).resolves.toMatchObject({ code: 1, output: expect.stringMatching(/no recorded source/i) });
+    await expect(operations.run("skills/update", { scope: "Global", names: ["wizard"] })).resolves.toMatchObject({ code: 1, output: expect.stringMatching(/wizard: it has no repository to update from/) });
     await expect(operations.run("skills/update", { scope: "Global" })).resolves.toMatchObject({ code: 1, output: expect.stringMatching(/no stored skill has a recorded source/i) });
 
     expect(await commits()).toEqual(before);

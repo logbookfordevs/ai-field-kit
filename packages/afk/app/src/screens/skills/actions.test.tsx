@@ -95,6 +95,20 @@ it("explains a switch a pack controls instead of letting it fight the pack", asy
   expect(control).toHaveAccessibleDescription("On through Writing. Turn the pack on or off in Packs.");
 });
 
+it("keeps a failed update on screen with its reason until it is closed", async () => {
+  const failed = { pending: false, phase: "Update failed; review the details", output: "Skills CLI exited\nkami: network unreachable", lastLine: "kami: network unreachable", code: 1, scope: "Global" };
+  setup(appState(), { "skills/update": () => failed, "skills/update-state": () => failed });
+
+  await userEvent.click(await menuItem("kami", "Update"));
+  const dialog = screen.getByRole("dialog", { name: "Update kami" });
+  await userEvent.click(within(dialog).getByRole("button", { name: "Update" }));
+
+  expect(await within(dialog).findByText("kami: network unreachable", { selector: ".field-error" })).toBeInTheDocument();
+  expect(within(dialog).getByText("Skills CLI output").closest("details")).toHaveAttribute("open");
+  expect(within(dialog).queryByRole("button", { name: "Update" })).not.toBeInTheDocument();
+  expect(within(dialog.querySelector("footer")!).getByRole("button", { name: "Close" })).toBeInTheDocument();
+});
+
 it("updates one skill through the protected update", async () => {
   const client = setup();
 

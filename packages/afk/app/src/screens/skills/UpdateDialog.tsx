@@ -17,11 +17,12 @@ export function UpdateDialog({ title, scope, names, onClose }: { title: string; 
   const toast = useToast();
   const [started, setStarted] = useState(false);
   const [polling, setPolling] = useState(false);
+  const [finished, setFinished] = useState(false);
   const job = useOperation("skills/update-state", undefined, { refetchInterval: started || polling ? 1000 : false });
   const progress = job.data;
   const running = progress?.pending === true;
   if (running !== polling) setPolling(running);
-  const showProgress = started || running;
+  const showProgress = started || running || finished;
   const listNames = names !== undefined && names.length > 1;
   const subject = names?.length === 1 ? names[0] : names ? `${names.length} selected skills` : "every skill that updates from a repository";
 
@@ -29,6 +30,7 @@ export function UpdateDialog({ title, scope, names, onClose }: { title: string; 
     setStarted(true);
     const result = await run("skills/update", { scope, ...(names ? { names } : {}) });
     setStarted(false);
+    setFinished(true);
     if (!result.ok) return;
     const value = result.value as { code?: number; cancelled?: boolean; updated?: number } | undefined;
     if (value?.cancelled) toast.show("Update cancelled. Your skills are unchanged.");
@@ -41,12 +43,15 @@ export function UpdateDialog({ title, scope, names, onClose }: { title: string; 
   const renderProgress = () => {
     if (!progress) return <Progress label="Preparing the update…" />;
     const done = !progress.pending;
+    const failed = done && Boolean(progress.code) && !progress.cancelled;
+    const reason = failed ? progress.lastLine ?? progress.output.trim().split("\n").at(-1) : undefined;
     return (
       <div role="status" className="update-status">
         {done ? <p><b>{progress.phase}</b></p> : <Progress label={progress.phase} />}
         {progress.item ? <p className="meta">{progress.item}</p> : null}
+        {reason ? <p className="field-error">{reason}</p> : null}
         {progress.output ? (
-          <details>
+          <details open={failed}>
             <summary>Skills CLI output</summary>
             <pre className="output">{progress.output}</pre>
           </details>
