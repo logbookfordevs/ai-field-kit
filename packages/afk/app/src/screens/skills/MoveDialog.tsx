@@ -65,6 +65,14 @@ export function MoveDialog({ skill, state, onClose }: { skill: Skill; state: App
     onClose();
   };
 
+  const renderTitle = () => {
+    const name = <span className="mono">{skill.name}</span>;
+    if (review) return <>Where does {name} belong?</>;
+    if (skill.place === "pack") return <>Also add {name} to Core</>;
+    if (skill.place === "core") return <>Also add {name} to a pack</>;
+    return <>Move {name}</>;
+  };
+
   const renderChoices = () => {
     if (!destinations.length) return <p>There is nowhere else to move it from here. {packs.length ? "" : "Create a pack in Packs first."}</p>;
     return (
@@ -88,7 +96,7 @@ export function MoveDialog({ skill, state, onClose }: { skill: Skill; state: App
       open
       onClose={onClose}
       variant="small"
-      title={review ? <>Where does <span className="mono">{skill.name}</span> belong?</> : <>Move <span className="mono">{skill.name}</span></>}
+      title={renderTitle()}
       description={`Now: ${fromLabel(skill)}`}
       footer={(
         <>

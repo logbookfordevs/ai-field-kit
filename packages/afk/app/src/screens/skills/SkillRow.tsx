@@ -4,7 +4,7 @@ import { Menu, MenuItem, MenuSeparator } from "@/components/Menu";
 import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import type { InvocationMode } from "@/screens/skills/api";
-import { fromLabel, type Skill } from "@/screens/skills/model";
+import { fromLabel, moveLabel, type Skill } from "@/screens/skills/model";
 import { hrefFor } from "@/shell/router";
 import { shortSource } from "@/text/format";
 
@@ -75,7 +75,6 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
   const heldByPack = Boolean(note);
   const source = skill.source ? shortSource(skill.source) : "";
   const showSource = Boolean(source) && sourceLine;
-  const moveLabel = review ? "Decide where it belongs…" : "Move to…";
   const canAskAgain = skill.keptHere === true;
   const canDrop = skill.place === "core" || skill.place === "pack";
   const dropLabel = skill.place === "pack" ? `Drop from ${skill.owner}` : "Drop from Core";
@@ -138,7 +137,7 @@ export function SkillRow({ skill, selected, onSelect, actions, busy, backupNote,
           {missing ? null : <MenuItem onSelect={() => actions.open(skill.name, "details")}>Inspect</MenuItem>}
           {missing ? null : <MenuItem onSelect={() => actions.open(skill.name, "editor")}>{editLabel}</MenuItem>}
           {missing ? null : <MenuItem onSelect={() => actions.update(skill)} {...unavailable(updateBlocked(skill))}>Update</MenuItem>}
-          {missing ? null : <MenuItem onSelect={() => actions.move(skill)} {...unavailable(tool ? `Installed by ${skill.owner}.` : undefined)}>{moveLabel}</MenuItem>}
+          {missing ? null : <MenuItem onSelect={() => actions.move(skill)} {...unavailable(tool ? `Installed by ${skill.owner}.` : undefined)}>{moveLabel(skill)}</MenuItem>}
           {canDrop ? <MenuItem onSelect={() => actions.drop(skill)}>{dropLabel}</MenuItem> : null}
           {canAskAgain ? <MenuItem onSelect={() => actions.askAgain(skill)}>Ask me again where it belongs</MenuItem> : null}
           {missing ? null : <MenuSeparator />}

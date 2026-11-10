@@ -6,7 +6,7 @@ import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import { FileViewer } from "@/screens/skills/FileViewer";
 import { useMechanismText } from "@/screens/skills/InvocationInfo";
-import { discoveryTokens, fromLabel, type Skill } from "@/screens/skills/model";
+import { discoveryTokens, fromLabel, moveLabel, type Skill } from "@/screens/skills/model";
 import { shortSource } from "@/text/format";
 import { SkillEditor } from "@/screens/skills/SkillEditor";
 import { FailureNote, modeOptions, updateBlocked, type RowActions, type RowFailure } from "@/screens/skills/SkillRow";
@@ -121,7 +121,7 @@ export function SkillPanel({ skill, scope, focus, actions, failure, onClose }: {
           {present ? <><dt>Discovery</dt><dd>About {discoveryTokens(skill).toLocaleString()} tokens for its name and description.</dd></> : null}
         </dl>
         {skill.entry ? <PathCard label="Folder" path={skill.entry.path} /> : null}
-        {canMove ? <div><button type="button" onClick={() => actions.move(skill)}>{skill.place === "review" ? "Decide where it belongs…" : "Move to…"}</button></div> : null}
+        {canMove ? <div><button type="button" onClick={() => actions.move(skill)}>{moveLabel(skill)}</button></div> : null}
       </section>
 
       {hasFiles ? <section className="blk" aria-label="Files">{renderFiles()}</section> : null}

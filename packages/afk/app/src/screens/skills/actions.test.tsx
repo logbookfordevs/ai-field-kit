@@ -171,12 +171,20 @@ it("keeps a skill to review on this machine, optionally bookmarking its reposito
 it("adds a Core skill to a pack and drops it from Core", async () => {
   const client = setup();
 
-  await userEvent.click(await menuItem("kami", "Move to…"));
+  await userEvent.click(await menuItem("kami", "Also add to a pack…"));
   await userEvent.click(screen.getByRole("button", { name: "Add to Writing" }));
   await waitFor(() => expect(calls(client, "kit/add")).toEqual([{ names: ["kami"], to: "p-writing" }]));
 
   await userEvent.click(await menuItem("kami", "Drop from Core"));
   await waitFor(() => expect(calls(client, "kit/drop")).toEqual([{ name: "kami", from: "core" }]));
+});
+
+it("names Move by what it does: pack and Core skills keep their place", async () => {
+  setup();
+
+  expect((await openMenu("hairline")).getByRole("button", { name: "Also add to Core…" })).toBeInTheDocument();
+  await userEvent.keyboard("{Escape}");
+  expect((await openMenu("local-notes")).getByRole("button", { name: "Move to…" })).toBeInTheDocument();
 });
 
 it("asks again about a skill kept on this machine", async () => {

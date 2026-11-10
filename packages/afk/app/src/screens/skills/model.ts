@@ -96,6 +96,14 @@ export function fromKey(skill: Skill): string {
   return skill.owner ? `${skill.place}:${skill.owner}` : skill.place;
 }
 
+/** The Move action's name: Core and packs add a place and keep the current one; This machine only moves. */
+export function moveLabel(skill: Skill): string {
+  if (skill.place === "review") return "Decide where it belongs…";
+  if (skill.place === "pack") return "Also add to Core…";
+  if (skill.place === "core") return "Also add to a pack…";
+  return "Move to…";
+}
+
 export function fromLabel(skill: Skill): string {
   return skill.owner ? `${skill.place === "pack" ? "Pack" : "Tool"} · ${skill.owner}` : placeLabels[skill.place as keyof typeof placeLabels];
 }
