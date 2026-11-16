@@ -11,6 +11,14 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.2.3 - 2026-11-16
+
+### Fixed
+
+- **Skills that moved or came from a pack can be checked for updates again.** AFK used to keep only a skill's repository when it moved between your library, a pack and this machine, so Skills CLI skipped it and it never updated. A skill now keeps its repository, its path in it and its version wherever it is stored, and adopting a skill to this machine records them too.
+- **Skills AFK couldn't check are named instead of skipped quietly.** The update result says `Updated; N could not be checked` and lists them. A skill with a known path but no known version is downloaded once and compared, and its real version is saved, so later updates stay quiet.
+- **Pack skills record where they sit in their repository** when they are downloaded. Pack skills downloaded before this update only have their repository on record; add them again from their repository, or turn their pack off and on after deleting them, to make them updatable.
+
 ## v2.2.2 - 2026-11-10
 
 ### Fixed
