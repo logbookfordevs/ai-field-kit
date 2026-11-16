@@ -9,6 +9,7 @@ import { FieldworkOperations } from "./operations.js";
 import { SourcePreparation } from "./preparation.js";
 import { emptySettings, SettingsStore } from "./settings.js";
 import { installSkills, type InstallProgress, type InstallRunner } from "./skill-install.js";
+import { UNVERIFIED_REVISION } from "./skill-origin.js";
 import { updateSkills, type UpdateRunner } from "./skill-update.js";
 
 let home: string;
@@ -425,6 +426,58 @@ describe("updating stored skills", () => {
     expect(result).toMatchObject({ cancelled: true, code: 130 });
     expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toContain("version 1");
     expect(await commits()).toEqual(before);
+  });
+
+  it("checks a skill whose revision AFK never recorded, and records the one Skills CLI reports", async () => {
+    const recordPath = join(home, ".afk/library/.afk/skills/other.json");
+    const { revision: _lost, ...untracked } = await json(recordPath) as { revision: string };
+    await new Library(home).change("Forget a revision", () => writeFile(recordPath, JSON.stringify(untracked)));
+    const before = await commits();
+    const checked: unknown[] = [];
+
+    const result = await run(async (_cwd, env) => {
+      const lockPath = join(String(env.HOME), ".agents/.skill-lock.json");
+      const lock = JSON.parse(await readFile(lockPath, "utf8")) as { skills: Record<string, { skillFolderHash: string }> };
+      checked.push(lock.skills.other!.skillFolderHash);
+      lock.skills.other!.skillFolderHash = "rev-9";
+      await writeFile(lockPath, JSON.stringify(lock));
+      return 0;
+    }, ["other"]);
+
+    expect(checked).toEqual([UNVERIFIED_REVISION]);
+    expect(result).toMatchObject({ code: 0, updated: 0 });
+    expect(await json(recordPath)).toMatchObject({ revision: "rev-9" });
+    expect(await readFile(join(home, ".afk/library/skills/other/SKILL.md"), "utf8")).toContain("version 1");
+    expect((await commits()).length).toBe(before.length + 1);
+  });
+
+  it("names a skill it cannot check instead of leaving it out quietly, and still updates the rest", async () => {
+    await writeFile(join(home, ".afk/machine/local/.afk-source.json"), JSON.stringify({ source: "owner/repo" }));
+
+    const result = await run(upstream("2", "rev-2"));
+
+    expect(result).toMatchObject({ code: 0, unchecked: ["local"], phase: "Updated; 1 could not be checked" });
+    expect(result.output).toContain("local");
+    expect(await readFile(join(home, ".afk/machine/local/SKILL.md"), "utf8")).toContain("version 1");
+    expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toContain("version 2");
+  });
+
+  it("reports every skill as unchecked, instead of failing, when none of them has a recorded path", async () => {
+    for (const name of ["wizard", "other"]) await new Library(home).change(`Forget ${name} path`, () => writeFile(join(home, `.afk/library/.afk/skills/${name}.json`), JSON.stringify({ source: "owner/repo", invocation: "" })));
+    await writeFile(join(home, ".afk/machine/local/.afk-source.json"), JSON.stringify({ source: "owner/repo" }));
+    const before = await commits();
+
+    const result = await run(upstream("2", "rev-2"));
+
+    expect(result).toMatchObject({ code: 0, updated: 0, unchecked: expect.arrayContaining(["wizard", "other", "local"]), phase: "Nothing to update; 3 could not be checked" });
+    expect(await readFile(join(home, ".afk/library/skills/wizard/SKILL.md"), "utf8")).toContain("version 1");
+    expect(await commits()).toEqual(before);
+  });
+
+  it("keeps a machine skill's repository path and revision up to date after an update", async () => {
+    await run(upstream("2", "rev-2"));
+
+    expect(await json(join(home, ".afk/machine/local/.afk-source.json"))).toEqual({ source: "owner/repo", skillPath: "skills/local/SKILL.md", revision: "rev-2" });
   });
 
   it("makes no commit when nothing changed upstream", async () => {

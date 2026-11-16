@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { addToCore, isRepositorySource, toolOwner } from "./kit.js";
 import type { InvocationChoice, SkillRecord } from "./library.js";
 import { sourceIdentity } from "./migration.js";
+import { writeSourceNote } from "./skill-origin.js";
 import { UPLOADED_SOURCE, type Settings } from "./settings.js";
 import { globalLockPath, sameSkillFiles, SkillLibrary } from "./skills.js";
 
@@ -49,19 +50,22 @@ export async function adoptSkill(skills: SkillLibrary, settings: Settings, name:
       await rename(path, aside);
       parked.push([path, aside]);
     }
+    const repository = isRepositorySource(source) ? source : undefined;
+    const receipt = repository ? await lockEntry(store.home, name) : {};
+    const skillPath = typeof receipt.skillPath === "string" ? receipt.skillPath : undefined;
+    const revision = typeof receipt.skillFolderHash === "string" ? receipt.skillFolderHash : undefined;
     if (to === "library") {
-      const repository = isRepositorySource(source) ? source : undefined;
-      const receipt = repository ? await lockEntry(store.home, name) : {};
       const record: SkillRecord = {
         ...(repository ? { source: repository } : {}),
-        ...(typeof receipt.skillPath === "string" ? { skillPath: receipt.skillPath } : {}),
-        ...(typeof receipt.skillFolderHash === "string" ? { revision: receipt.skillFolderHash } : {}),
+        ...(skillPath ? { skillPath } : {}),
+        ...(revision ? { revision } : {}),
         invocation: (settings.preferences[`Global|${name}`] ?? "") as InvocationChoice,
       };
       await library.writeRecord(name, record);
       addToCore(settings, name, repository ?? UPLOADED_SOURCE);
       settings.machineOnly = settings.machineOnly.filter(member => member !== name);
     } else {
+      if (repository) await writeSourceNote(stored, { source: repository, skillPath, revision });
       settings.machineOnly = [...new Set([...settings.machineOnly, name])];
       if (bookmark && isRepositorySource(source) && !settings.favoriteSources.some(item => sourceIdentity(item.source) === sourceIdentity(source))) settings.favoriteSources.push({ name, source });
     }

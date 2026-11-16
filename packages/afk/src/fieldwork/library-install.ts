@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { cp, lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, readFile, readdir, rename, rm } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { writeInvocationChoice } from "./invocation.js";
 import { Library, type InvocationChoice, type Storage } from "./library.js";
 import { sameSkillName, skillName, type Settings, type SettingsStore } from "./settings.js";
+import { writeSourceNote } from "./skill-origin.js";
 
 export interface StagedSkill {
   name: string;
@@ -105,7 +106,7 @@ export async function storeSkills(store: SettingsStore, staged: StagedSkill[], o
       undo(() => rm(fresh, { recursive: true, force: true }));
       const mode = choice(original.preferences[`Global|${skill.name}`]);
       if (mode) await writeInvocationChoice(fresh, mode);
-      if (to !== "library" && skill.source) await writeFile(join(fresh, ".afk-source.json"), JSON.stringify({ source: skill.source }), { mode: 0o600 });
+      if (to !== "library" && skill.source) await writeSourceNote(fresh, { source: skill.source, skillPath: skill.skillPath, revision: skill.revision });
 
       const wasOn = await library.linked(skill.name);
       const moved = from !== undefined && from !== to;

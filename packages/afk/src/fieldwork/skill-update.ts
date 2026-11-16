@@ -11,8 +11,9 @@ import { SkillLibrary } from "./skills.js";
 import { setInvocation } from "./invocation.js";
 import { Library } from "./library.js";
 import { readLock, stagedLockPath, storeSkills, type StagedSkill } from "./library-install.js";
+import { originOf, UNVERIFIED_REVISION, type SkillOrigin } from "./skill-origin.js";
 
-export interface UpdateProgress { pending: boolean; cancellable?: boolean; cancelled?: boolean; names?: string[]; phase: string; output: string; code?: number; updated?: number; scope: string; startedAt?: number; finishedAt?: number; item?: string; lastLine?: string }
+export interface UpdateProgress { pending: boolean; cancellable?: boolean; cancelled?: boolean; names?: string[]; phase: string; output: string; code?: number; updated?: number; scope: string; startedAt?: number; finishedAt?: number; item?: string; lastLine?: string; unchecked?: string[] }
 export type UpdateRunner = (cwd: string, env: NodeJS.ProcessEnv, args: string[], output: (text: string) => void, signal?: AbortSignal) => Promise<number>;
 const run: UpdateRunner = async (cwd, env, args, output, signal) => (await runCommand({
   command: "npx", args: ["--yes", "skills", "update", ...args], step: "Updating through Skills CLI",
@@ -125,18 +126,12 @@ export async function updateSkills(store: SettingsStore, settings: Settings, sco
   } finally { await rm(temporary, { recursive: true, force: true }).catch(() => undefined); }
 }
 
-function lockEntry(source: string, skillPath: string | undefined, revision: string | undefined): Record<string, unknown> {
-  const github = /^[\w.-]+\/[\w.-]+$/.test(source);
-  const url = github ? `https://github.com/${source}.git` : source;
+/** A skill Skills CLI can check needs its path in the repository; a missing revision becomes one that never matches, so the CLI downloads it and AFK compares the files. */
+function lockEntry(origin: SkillOrigin & { skillPath: string }): Record<string, unknown> {
+  const github = /^[\w.-]+\/[\w.-]+$/.test(origin.source);
+  const url = github ? `https://github.com/${origin.source}.git` : origin.source;
   const now = new Date().toISOString();
-  return { source, sourceType: github || /github\.com/.test(source) ? "github" : "git", sourceUrl: url, ...(skillPath ? { skillPath } : {}), ...(revision ? { skillFolderHash: revision } : {}), installedAt: now, updatedAt: now };
-}
-
-async function sourceOf(library: Library, name: string, path: string, storage: string): Promise<{ source?: string; skillPath?: string; revision?: string }> {
-  const record = storage === "machine" ? undefined : await library.record(name);
-  if (record?.source) return { source: record.source, ...(record.skillPath ? { skillPath: record.skillPath } : {}), ...(record.revision ? { revision: record.revision } : {}) };
-  try { const receipt = JSON.parse(await readFile(join(path, ".afk-source.json"), "utf8")) as { source?: unknown }; if (typeof receipt.source === "string") return { source: receipt.source }; } catch { /* A copy without a receipt has no source to update from. */ }
-  return {};
+  return { source: origin.source, sourceType: github || /github\.com/.test(origin.source) ? "github" : "git", sourceUrl: url, skillPath: origin.skillPath, skillFolderHash: origin.revision ?? UNVERIFIED_REVISION, installedAt: now, updatedAt: now };
 }
 
 /** Updates stored skills in an isolated home, then replaces their stored files and records the new revisions in one commit. */
@@ -165,21 +160,28 @@ async function updateStoredSkills(store: SettingsStore, settings: Settings, prog
     }
     const stored = storedNames.filter(name => selectedNames ? selectedNames.includes(name) && !toolOwned.has(name) && !kept.has(name) : !toolOwned.has(name) && !kept.has(name));
     await mkdir(stagedRoot, { recursive: true });
-    const snapshots: { name: string; path: string; before: string; staged: string; source: string; skillPath?: string; revision?: string }[] = [];
+    const snapshots: { name: string; path: string; before: string; staged: string; source: string; skillPath: string; revision?: string }[] = [];
+    const unchecked: string[] = [];
     const lock: Record<string, unknown> = {};
     for (const name of stored) {
       signal?.throwIfAborted();
-      const storage = (await library.storage(name))!, path = library.storagePath(name, storage), origin = await sourceOf(library, name, path, storage);
-      if (!origin.source) {
+      const storage = (await library.storage(name))!, path = library.storagePath(name, storage), origin = await originOf(library, name, path, storage);
+      if (!origin) {
         if (selectedNames) skipped.push(`${name}: it has no repository to update from (an uploaded skill updates only when you upload it again)`);
         continue;
       }
+      if (!origin.skillPath) { unchecked.push(name); continue; }
       const staged = join(stagedRoot, name);
       await cp(path, staged, { recursive: true, dereference: false });
-      lock[name] = lockEntry(origin.source, origin.skillPath, origin.revision);
-      snapshots.push({ name, path, before: await digest(path), staged, source: origin.source, ...(origin.skillPath ? { skillPath: origin.skillPath } : {}), ...(origin.revision ? { revision: origin.revision } : {}) });
+      lock[name] = lockEntry({ ...origin, skillPath: origin.skillPath });
+      snapshots.push({ name, path, before: await digest(path), staged, source: origin.source, skillPath: origin.skillPath, ...(origin.revision ? { revision: origin.revision } : {}) });
     }
     if (skipped.length) append(`Skipped ${skipped.length === 1 ? "1 skill" : `${skipped.length} skills`}:\n${skipped.map(line => `  ${line}`).join("\n")}\n\n`);
+    if (unchecked.length) {
+      state.unchecked = unchecked;
+      append(`Could not check ${unchecked.length === 1 ? "1 skill" : `${unchecked.length} skills`} for updates, because AFK has no record of where ${unchecked.length === 1 ? "it sits" : "they sit"} in the repository:\n${unchecked.map(name => `  ${name}`).join("\n")}\nAdd ${unchecked.length === 1 ? "it" : "them"} again from the repository to enable updates.\n\n`);
+    }
+    if (!snapshots.length && unchecked.length && !skipped.length) { state.code = 0; state.updated = 0; state.phase = `Nothing to update; ${unchecked.length} could not be checked`; return finished(); }
     if (!snapshots.length) throw new Error(skipped.length ? `None of the selected skills can update here.\n${skipped.join("\n")}` : "No stored skill has a recorded source to update from. Install tracked skills from a repository first.");
     await writeFile(stagedLockPath(home), JSON.stringify({ version: 3, skills: lock }));
     signal?.throwIfAborted();
@@ -191,20 +193,23 @@ async function updateStoredSkills(store: SettingsStore, settings: Settings, prog
     state.phase = "Checking and applying updates"; report();
     const updatedLock = await readLock(stagedLockPath(home));
     const changed: StagedSkill[] = [];
+    let updated = 0;
     for (const snapshot of snapshots) {
       if (await optional(join(snapshot.staged, "SKILL.md")) === null) throw new Error(`Updated source removed ${snapshot.name}. Original skills preserved; review upstream removal manually.`);
-      if (await digest(snapshot.staged) === snapshot.before) continue;
-      await rm(join(snapshot.staged, ".afk-invocation-original.json"), { force: true });
       const entry = updatedLock[snapshot.name] ?? {};
-      const revision = typeof entry.skillFolderHash === "string" ? entry.skillFolderHash : snapshot.revision;
-      changed.push({ name: snapshot.name, path: snapshot.staged, source: snapshot.source, ...(snapshot.skillPath ? { skillPath: snapshot.skillPath } : {}), ...(revision ? { revision } : {}) });
+      const reported = typeof entry.skillFolderHash === "string" && entry.skillFolderHash !== UNVERIFIED_REVISION ? entry.skillFolderHash : undefined;
+      const revision = reported ?? snapshot.revision;
+      const filesChanged = await digest(snapshot.staged) !== snapshot.before;
+      if (!filesChanged && revision === snapshot.revision) continue;
+      if (filesChanged) { await rm(join(snapshot.staged, ".afk-invocation-original.json"), { force: true }); updated++; }
+      changed.push({ name: snapshot.name, path: snapshot.staged, source: snapshot.source, skillPath: snapshot.skillPath, ...(revision ? { revision } : {}) });
     }
     for (const snapshot of snapshots) if (await digest(snapshot.path) !== snapshot.before) throw new Error("Skills changed during the update. Original files preserved; retry after other changes finish.");
     if (!isDeepStrictEqual(await store.read(), settings)) throw new Error("AFK settings changed during the update. Retry after other changes finish.");
     signal?.throwIfAborted();
     state.cancellable = false; report();
     await storeSkills(store, changed, { update: true });
-    state.updated = changed.length; state.code = 0; state.phase = "Updated; availability preserved";
+    state.updated = updated; state.code = 0; state.phase = unchecked.length ? `Updated; ${unchecked.length} could not be checked` : "Updated; availability preserved";
     return finished();
   } catch (error) {
     if (signal?.aborted) return finished({ cancelled: true, code: 130, phase: "Update cancelled; original skills unchanged" });

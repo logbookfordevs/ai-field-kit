@@ -265,6 +265,22 @@ describe("moving a stored skill to another place", () => {
     expect(await git("status", "--porcelain")).toBe("");
   });
 
+  it("keeps a skill's repository path and revision as it moves between the library and this machine", async () => {
+    const tracked = { source: "owner/loose", skillPath: "skills/loose/SKILL.md", revision: "rev-7" };
+    await writeFile(join(home, ".agents/.skill-lock.json"), JSON.stringify({ version: 3, skills: { loose: { source: tracked.source, skillPath: tracked.skillPath, skillFolderHash: tracked.revision } } }));
+    const operations = new FieldworkOperations(store);
+
+    await operations.run("skill/adopt", { name: "loose", to: "machine" });
+    expect(await json(join(home, ".afk/machine/loose/.afk-source.json"))).toEqual(tracked);
+
+    await operations.run("kit/add", { names: ["loose"], to: "core" });
+    expect(await json(join(home, ".afk/library/.afk/skills/loose.json"))).toMatchObject(tracked);
+
+    await operations.run("kit/drop", { name: "loose", from: "core" });
+    await operations.close();
+    expect(await json(join(home, ".afk/machine/loose/.afk-source.json"))).toEqual(tracked);
+  });
+
   it("moves a pack skill's files into the library when it joins Core, and keeps it in the pack", async () => {
     expect(await present(join(home, ".afk/packs-cache/gamma/SKILL.md"))).toBe(true);
     const operations = new FieldworkOperations(store);

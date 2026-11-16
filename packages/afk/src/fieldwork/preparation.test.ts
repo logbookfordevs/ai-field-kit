@@ -45,6 +45,19 @@ it("uses original repository directories from Skills CLI metadata independently 
   expect(options.env.XDG_STATE_HOME).toBe(join(options.cwd, "home/.local/state"));
 });
 
+it("returns each prepared skill's SKILL.md path only once its source has been prepared", async () => {
+  lockContents = JSON.stringify({ version: 1, skills: {
+    deploy: { sourceType: "github", skillPath: "agent-skills/release-toolkit/SKILL.md" },
+    guide: { sourceType: "github", skillPath: "SKILL.md" },
+  } });
+  expect(await preparation.skillPaths("owner/repository")).toEqual({});
+  expect(spawn).not.toHaveBeenCalled();
+
+  await preparation.discover("owner/repository");
+
+  expect(await preparation.skillPaths("owner/repository")).toEqual({ deploy: "agent-skills/release-toolkit/SKILL.md", guide: "SKILL.md" });
+});
+
 it("omits skills that live inside .agents or .claude folders of the repository", async () => {
   members = ["deploy", "guide", "internal", "mirror"];
   lockContents = JSON.stringify({ version: 1, skills: {

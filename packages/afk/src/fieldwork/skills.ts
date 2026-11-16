@@ -1,5 +1,5 @@
 import type { Dirent } from "node:fs";
-import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, readdir, readFile, readlink, realpath, rename, rm, stat, symlink } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, resolve, join, sep } from "node:path";
@@ -9,6 +9,7 @@ import { Library, machineRoot, packCacheRoot, type Storage } from "./library.js"
 import { toolOwner } from "./kit.js";
 import { offFolder, ToolSkills } from "./tool-skills.js";
 import { writeInvocationChoice } from "./invocation.js";
+import { readSourceNote, writeSourceNote } from "./skill-origin.js";
 import { withoutInvocationFields } from "./invocation-fields.js";
 import { readNativeMetadata, readOriginalInvocation, unknownInvocation, type SkillInvocation } from "./skill-metadata.js";
 
@@ -208,8 +209,7 @@ export class SkillLibrary {
         const defaultInvocation = resetsToGlobal
           ? globalPath ? (await readNativeMetadata(globalPath)).invocation : unknownInvocation()
           : await readOriginalInvocation(path, metadata.invocation);
-        let preparedSource: string | undefined;
-        try { const receipt = JSON.parse(await readFile(join(path, ".afk-source.json"), "utf8")) as { source?: unknown }; if (typeof receipt.source === "string") preparedSource = receipt.source; } catch { /* Older prepared copies have no provenance receipt. */ }
+        const preparedSource = (await readSourceNote(path))?.source;
         const source = librarySources[name] ?? preparedSource ?? sources[name] ?? (invocationInherited ? globalSources[name] : undefined);
         const tool = scope === "Global" ? toolOwner(settings, name) : undefined;
         const storage = scope === "Global" ? await this.library.storage(name) : undefined;
@@ -510,7 +510,7 @@ export class SkillLibrary {
     }
   }
 
-  async storePrepared(settings: Settings, source: string, names: string[], reference?: string): Promise<void> {
+  async storePrepared(settings: Settings, source: string, names: string[], reference?: string, skillPaths: Record<string, string> = {}): Promise<void> {
     const root = this.root(settings, "Global");
     const cached = await this.library.exists();
     for (const name of names) {
@@ -522,7 +522,7 @@ export class SkillLibrary {
       if (!(await exists(join(from, "SKILL.md")))) throw new Error(`Installer did not prepare ${name}${reference ? ` from ${reference}` : ""}.`);
       await mkdir(resolve(destination, ".."), { recursive: true });
       await cp(await realpath(from), destination, { recursive: true, dereference: true, errorOnExist: true, force: false });
-      if (reference) await writeFile(join(destination, ".afk-source.json"), JSON.stringify({ source: reference }), { mode: 0o600 });
+      if (reference) await writeSourceNote(destination, { source: reference, skillPath: skillPaths[name] });
       const mode = settings.preferences[`Global|${name}`];
       if (cached && (mode === "Manual only" || mode === "Automatic allowed")) await writeInvocationChoice(destination, mode);
     }

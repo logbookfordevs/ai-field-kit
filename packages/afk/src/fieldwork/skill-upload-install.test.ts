@@ -260,7 +260,7 @@ describe("what an upload cannot do", () => {
     const tracked = join(home, "tracked-source");
     await mkdir(join(tracked, "tracked"), { recursive: true });
     await writeFile(join(tracked, "tracked/SKILL.md"), skill("tracked"));
-    await storeSkills(store, [{ name: "tracked", path: join(tracked, "tracked"), source: "owner/tracked" }], { destination: "library" });
+    await storeSkills(store, [{ name: "tracked", path: join(tracked, "tracked"), source: "owner/tracked", skillPath: "skills/tracked/SKILL.md" }], { destination: "library" });
     const runner = async (_cwd: string, env: NodeJS.ProcessEnv): Promise<number> => {
       await writeFile(join(env.HOME!, ".agents/skills/tracked/SKILL.md"), skill("tracked", "Newer."));
       return 0;
