@@ -33,7 +33,7 @@ async function store1(name: string, options: { invocation?: InvocationChoice; so
     await mkdir(join(library.skillPath(name), "scripts"), { recursive: true });
     await writeFile(join(library.skillPath(name), "scripts/run.sh"), "echo hi\n");
     const source = options.source === undefined ? "owner/repo" : options.source;
-    await library.writeRecord(name, { ...(source ? { source } : {}), invocation: options.invocation ?? "", ...(options.updates ? { updates: options.updates } : {}) });
+    await library.writeRecord(name, { ...(source ? { source, skillPath: `skills/${name}/SKILL.md` } : {}), invocation: options.invocation ?? "", ...(options.updates ? { updates: options.updates } : {}) });
   });
   await library.link(name);
 }

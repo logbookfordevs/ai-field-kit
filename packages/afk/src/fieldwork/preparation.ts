@@ -114,6 +114,12 @@ export class SourcePreparation {
     return Object.fromEntries(paths);
   }
 
+  /** Each prepared skill's SKILL.md path in its repository, as Skills CLI recorded it; empty until the source has been prepared. */
+  async skillPaths(source: string): Promise<Record<string, string>> {
+    if (!this.sources.has(source)) return {};
+    return Object.fromEntries(Object.entries(await this.paths(source)).map(([name, directory]) => [name, directory === "." ? "SKILL.md" : `${directory}/SKILL.md`]));
+  }
+
   async close(): Promise<void> {
     await Promise.all([...this.sources.values()].map(path => rm(path, { recursive: true, force: true })));
     this.sources.clear();

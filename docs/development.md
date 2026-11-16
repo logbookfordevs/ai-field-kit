@@ -49,6 +49,8 @@ receipts to test update failures, skills that are off, agent folder links and
 intervening edits. The web app uses the same `skills/update` operation;
 `skills/update-state` exposes session progress without waiting for the mutation queue.
 
+Skills CLI can only check a skill that has a recorded `skillPath` and revision. AFK keeps it, with the `source` and `revision`, in the library record, or in `.afk-source.json` beside a pack or machine copy. A skill with a path but no revision is sent with a placeholder revision (`UNVERIFIED_REVISION`), so Skills CLI downloads it, AFK compares the files, and the real revision is recorded. A skill with no path is reported in the result (`unchecked`) rather than skipped quietly.
+
 ## The local app
 
 The React app ([ADR 0013](adr/0013-react-for-the-local-app.md)) lives in `packages/afk/app/`, with its design system in `packages/afk/app/DESIGN.md`. `pnpm afk:build` builds it into `packages/afk/web/` (generated, ignored by Git, published with the package), and the server serves it at `/` with the session token injected into `index.html`. Fonts, agent icons and the favicon live in `app/public/` and are copied into the build.

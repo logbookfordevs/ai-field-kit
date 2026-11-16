@@ -21,6 +21,7 @@ import { readNativeMetadata } from "./skill-metadata.js";
 import { RulesWorkspace, type RulesFile, type RulesPreview } from "./rules.js";
 import { Library, type GitRunner, type Storage } from "./library.js";
 import { storeSkills, type StagedSkill } from "./library-install.js";
+import { originOf } from "./skill-origin.js";
 import { applyLibraryInit, planLibraryInit } from "./library-init.js";
 import { Backup } from "./library-backup.js";
 import { Restore } from "./library-restore.js";
@@ -173,7 +174,10 @@ export class FieldworkOperations {
       if (target === from) continue;
       // A skill dropped from a pack that is off stays off in the pack cache rather than turning on here.
       if (target === "machine" && from === "pack" && !await library.linked(name)) continue;
-      moves.set(target, [...moves.get(target) ?? [], { name, path: library.storagePath(name, from), ...(repository ? { source: repository } : {}) }]);
+      const path = library.storagePath(name, from);
+      const origin = repository ? await originOf(library, name, path, from) : undefined;
+      const tracked = origin?.source === repository ? origin : undefined;
+      moves.set(target, [...moves.get(target) ?? [], { name, path, ...(repository ? { source: repository } : {}), ...(tracked?.skillPath ? { skillPath: tracked.skillPath } : {}), ...(tracked?.revision ? { revision: tracked.revision } : {}) }]);
     }
     const where: Record<Storage, string> = { library: "the library", pack: "the pack cache", machine: "this machine" };
     for (const [destination, staged] of moves) await storeSkills(this.store, staged, { destination, message: `Move ${staged.map(skill => skill.name).join(", ")} to ${where[destination]}` });
@@ -348,7 +352,8 @@ export class FieldworkOperations {
         signal.throwIfAborted();
         state.item = group.source; report();
         append(`\nSource: ${group.source}\n`);
-        await this.library.storePrepared(settings, await this.preparation.directory(group.source, { onOutput: append, signal }), absent, group.source);
+        const prepared = await this.preparation.directory(group.source, { onOutput: append, signal });
+        await this.library.storePrepared(settings, prepared, absent, group.source, await this.preparation.skillPaths(group.source));
         state.completed++; report();
       }
       state.code = 0; state.phase = `Downloaded skills for ${pack}`;
@@ -768,7 +773,10 @@ export class FieldworkOperations {
       const memberGroups = profileGroups(pack);
       for (const group of memberGroups) {
         if (hasNoRepository(group.source)) { for (const member of group.skills) await library.locate(settings, member); }
-        else if (data.prepare === true) await library.storePrepared(settings, await preparation.directory(group.source), group.skills, group.source);
+        else if (data.prepare === true) {
+          const prepared = await preparation.directory(group.source);
+          await library.storePrepared(settings, prepared, group.skills, group.source, await preparation.skillPaths(group.source));
+        }
       }
       let ready = true;
       for (const member of pack.skills) { try { await library.locate(settings, member); } catch { ready = false; } }

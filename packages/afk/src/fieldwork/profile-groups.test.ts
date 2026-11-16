@@ -67,6 +67,16 @@ describe("multi-source packs", () => {
     expect(JSON.parse(await readFile(join(stored, "review/.afk-source.json"), "utf8"))).toEqual({ source: "owner/qa" });
   });
 
+  it("records where each prepared skill sits in its repository, so it can be checked for updates later", async () => {
+    vi.spyOn(SourcePreparation.prototype, "skillPaths").mockImplementation(async source => source === "owner/qa" ? { review: "skills/review/SKILL.md" } : {});
+
+    await operations.run("pack/save", { ...creative, id: "stack-creative", prepare: true });
+
+    const stored = join(home, ".agents/skills/.disabled");
+    expect(JSON.parse(await readFile(join(stored, "review/.afk-source.json"), "utf8"))).toEqual({ source: "owner/qa", skillPath: "skills/review/SKILL.md" });
+    expect(JSON.parse(await readFile(join(stored, "draw/.afk-source.json"), "utf8"))).toEqual({ source: "owner/art" });
+  });
+
   it("downloads missing members from their own source when the profile is first enabled", async () => {
     await operations.run("pack/save", { ...creative, id: "stack-creative" });
     await operations.run("activation", { id: "stack-creative", scope: "Global", enabled: true });
