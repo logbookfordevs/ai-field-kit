@@ -10,3 +10,9 @@ overrides:
   esbuild: "^0.28.1"
   # GHSA-mrhx-c7xc-m3w5: Zod memory exhaustion on oversized constrained collections.
   zod: "^4.6.6"
+auditConfig:
+  ignoreGhsas:
+    # GHSA-fc5q-39xc-vjpf: picomatch ReDoS through repeated extglobs. No patched release is published
+    # (4.0.8 is not on the registry), and only build and lint tooling matches globs we write ourselves.
+    # Remove this once picomatch 4.0.8 or later is installable.
+    - GHSA-fc5q-39xc-vjpf
