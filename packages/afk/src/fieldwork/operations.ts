@@ -916,6 +916,10 @@ export class FieldworkOperations {
     }
     if (operation === "skill/adopt") {
       if (!skillName(data.name)) throw new Error("Choose a valid skill name.");
+      if (await library.library.storage(data.name)) {
+        // AFK already holds the files (for example after "Ask me again"), so deciding the place is a move, not an adoption.
+        return await this.apply(data.to === "library" ? "kit/add" : "kit/machine-only", data.to === "library" ? { names: [data.name], to: "core" } : { name: data.name, enabled: true });
+      }
       await adoptSkill(library, settings, data.name, data.to as AdoptDestination, data.bookmark === true); return { ok: true };
     }
     if (operation === "skill/toggle") {
