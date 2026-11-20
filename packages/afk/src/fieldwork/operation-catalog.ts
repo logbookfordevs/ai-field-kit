@@ -84,6 +84,7 @@ export const operationCatalog = {
   "restore/inspect": { description: "Check that a repository is an AFK library, without cloning it, and count what it holds. Changes nothing.", input: { repository: "owner/repo on GitHub, or any Git remote URL." } },
   "restore/start": { description: "Restore a saved library onto a machine that has none: clone it beside its final place and move it in only when complete, link Core skills, apply the saved agent folders, adopt identical local copies and move different ones to a dated folder. Runs no tool command; the result lists the tools to run with tool/run.", input: { repository: "owner/repo on GitHub, or any Git remote URL." } },
   "restore/cancel": { description: "Stop a running restore. Nothing is left half-written.", input: {} },
+  "discovery-window": { description: "Remember the context window of the model an agent uses, which sets its skill list cap in the Skills discovery estimate.", input: { agent: "claude or codex.", window: "200k, 400k or 1M tokens." } },
   welcome: { description: "Remember dismissal of the Welcome dialog.", input: {} },
 } satisfies Record<string, OperationDescription>;
 

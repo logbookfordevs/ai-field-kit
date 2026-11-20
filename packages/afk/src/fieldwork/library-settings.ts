@@ -1,7 +1,7 @@
 import { lstat, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Library, libraryRoot, type InvocationChoice, type LibrarySettings, type SkillRecord } from "./library.js";
-import { profileGroups, SETTINGS_VERSION, type FavoriteSource, type Profile, type Settings, type Tool } from "./settings.js";
+import { profileGroups, SETTINGS_VERSION, validDiscoveryWindows, type FavoriteSource, type Profile, type Settings, type Tool } from "./settings.js";
 
 type Files = Map<string, string>;
 
@@ -61,6 +61,7 @@ export async function readLibrarySettings(home: string): Promise<Settings> {
     independentSkills: {},
     ...(general.agentRules ? { agentRules: { destinations: general.agentRules.destinations, receipts: {} } } : {}),
     ...(general.welcomeDismissed ? { welcomeDismissed: true } : {}),
+    ...(general.discoveryWindows && validDiscoveryWindows(general.discoveryWindows) ? { discoveryWindows: general.discoveryWindows } : {}),
   };
 }
 
@@ -110,6 +111,7 @@ async function desiredFiles(library: Library, settings: Settings, current: Files
     core: settings.kit?.core ?? [],
     ...(settings.agentRules ? { agentRules: { destinations: settings.agentRules.destinations } } : {}),
     ...(settings.welcomeDismissed ? { welcomeDismissed: true } : {}),
+    ...(settings.discoveryWindows && Object.keys(settings.discoveryWindows).length ? { discoveryWindows: settings.discoveryWindows } : {}),
     ...(saved?.agentFolders ? { agentFolders: saved.agentFolders } : {}),
   };
   files.set(".afk/settings.json", text(general));
@@ -158,7 +160,8 @@ function describe(changes: { path: string; before?: string; after?: string }[]):
 function settingsSubject(before: string | undefined, after: string | undefined): string {
   if (!before || !after) return "settings";
   const [previous, next] = [JSON.parse(before) as LibrarySettings, JSON.parse(after) as LibrarySettings];
-  return JSON.stringify(previous.core) !== JSON.stringify(next.core) ? "Core list" : "settings";
+  if (JSON.stringify(previous.core) !== JSON.stringify(next.core)) return "Core list";
+  return JSON.stringify(previous.discoveryWindows) !== JSON.stringify(next.discoveryWindows) ? "discovery context windows" : "settings";
 }
 
 export interface LibrarySettingsChange {

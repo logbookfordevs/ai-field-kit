@@ -1,38 +1,64 @@
-import { useId } from "react";
-import { discoveryEstimate, type Skill } from "@/screens/skills/model";
+import { useId, useState } from "react";
+import { useMutation } from "@/api/hooks";
+import { Segmented } from "@/components/Segmented";
+import { DEFAULT_DISCOVERY_WINDOW, discoveryCap, discoveryEstimate, type Skill } from "@/screens/skills/model";
 import { plural } from "@/text/format";
+import type { DiscoveryAgent, DiscoveryWindow, DiscoveryWindows } from "../../../../src/fieldwork/settings.js";
 
 const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 
 const AGENTS = [
-  { key: "claude", label: "Claude", overCap: "Claude Code may shorten descriptions." },
-  { key: "codex", label: "Codex", overCap: "Codex may shorten descriptions, then drop them, then leave skills out." },
+  { key: "claude", label: "Claude", overCap: "Claude Code shortens descriptions." },
+  { key: "codex", label: "Codex", overCap: "Codex shortens descriptions, then drops them, then leaves skills out." },
 ] as const;
 
-/** How many characters Claude and Codex spend up front on the skills that may start automatically, against each skill list's cap. */
-export function DiscoveryEstimate({ skills }: { skills: Skill[] }) {
+const WINDOW_OPTIONS = [
+  { value: "200k", label: "200k" },
+  { value: "400k", label: "400k" },
+  { value: "1M", label: "1M" },
+] as const;
+
+/** Tokens Claude and Codex spend up front on the skills that may start automatically, and how much of each skill list's cap that uses. */
+export function DiscoveryEstimate({ skills, windows = {} }: { skills: Skill[]; windows?: DiscoveryWindows | undefined }) {
   const id = useId();
-  const estimates = AGENTS.map(agent => ({ ...agent, ...discoveryEstimate(skills, agent.key) }));
-  const summary = estimates.map(({ label, chars, cap }) => `${label} ${compact.format(chars)}/${compact.format(cap)}`).join(" · ");
+  const save = useMutation("discovery-window");
+  const [chosen, setChosen] = useState<DiscoveryWindows>(windows);
+
+  const estimates = AGENTS.map(agent => {
+    const window = chosen[agent.key] ?? windows[agent.key] ?? DEFAULT_DISCOVERY_WINDOW[agent.key];
+    const estimate = discoveryEstimate(skills, agent.key);
+    const cap = discoveryCap(agent.key, window);
+    return { ...agent, ...estimate, window, cap, isOverCap: estimate.chars > cap };
+  });
+  const summary = estimates.map(({ label, tokens, isOverCap }) => `${label} ~${compact.format(tokens)}${isOverCap ? " (over cap)" : ""}`).join(" · ");
+
+  async function choose(agent: DiscoveryAgent, window: DiscoveryWindow) {
+    const previous = chosen;
+    setChosen({ ...chosen, [agent]: window });
+    const result = await save.run({ agent, window });
+    if (!result.ok) setChosen(previous);
+  }
 
   return (
     <span className="inv-info">
       <button type="button" className="text" popoverTarget={id}>
-        Discovery: {summary} chars
+        Discovery: {summary} tokens
       </button>
-      <div id={id} className="inv-pop" popover="auto" role="note">
-        {estimates.map(({ key, label, overCap, count, chars, cap }) => {
-          const isOverCap = chars > cap;
-
-          return (
-            <div key={key} className="discovery-agent">
-              <p><b>{label}</b>: {chars.toLocaleString()} of {cap.toLocaleString()} characters (default cap) from {plural(count, "automatic skill")}.</p>
-              <meter min={0} max={cap} value={chars} aria-label={`${label} skill list`} />
-              {isOverCap ? <p className="meta">Over the default cap. With a small context window, {overCap}</p> : null}
+      <div id={id} className="inv-pop" popover="auto" role="group" aria-label="Discovery estimate">
+        {estimates.map(({ key, label, overCap, count, chars, tokens, window, cap, isOverCap }) => (
+          <div key={key} className="discovery-agent">
+            <p><b>{label}</b>: about {tokens.toLocaleString()} tokens, {chars.toLocaleString()} characters, from {plural(count, "automatic skill")}.</p>
+            <div className="discovery-window">
+              <span className="meta">Context window</span>
+              <Segmented legend={`${label} context window`} options={WINDOW_OPTIONS} value={window} onChange={next => void choose(key, next)} />
             </div>
-          );
-        })}
-        <p className="meta">Agents read the name and description of every skill that is on and may start automatically. Manual only skills, full instructions and supporting files are left out. The default cap fits Claude at a 200k-token context window and Codex when it doesn’t know the window. Claude allows 1% of the window and Codex 2%, so larger windows fit far more: about 40,000 characters for Claude at 1M tokens. Filters don’t change it.</p>
+            <meter min={0} max={cap} value={chars} aria-label={`${label} skill list`} />
+            <p className="meta">{chars.toLocaleString()} of {cap.toLocaleString()} characters ({Math.round((chars / cap) * 100)}%).</p>
+            {isOverCap ? <p className="s-note warn">Over the cap. {overCap}</p> : null}
+          </div>
+        ))}
+        {save.error ? <p className="s-note warn">{save.error.message}</p> : null}
+        <p className="meta">Agents read the name and description of every skill that is on and may start automatically. Manual only skills, full instructions and supporting files are left out. Claude’s skill list fits 1% of the context window and Codex’s 2%, up to 40,000 characters. Pick the window of the model you use; AFK remembers it. Filters don’t change it.</p>
       </div>
     </span>
   );

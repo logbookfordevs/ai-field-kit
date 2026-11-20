@@ -225,6 +225,17 @@ describe("portable settings in the library", () => {
     expect(await readFile(join(home, ".afk/settings.json"), "utf8")).toBe(before);
     expect((await store.read()).preferences["Global|gamma"]).toBe("Automatic allowed");
   });
+
+  it("remembers each agent's discovery context window in the library settings", async () => {
+    const operations = new FieldworkOperations(store);
+    await operations.run("discovery-window", { agent: "codex", window: "200k" });
+    await expect(operations.run("discovery-window", { agent: "cursor", window: "1M" })).rejects.toThrow(/claude or codex/);
+    await operations.close();
+
+    expect(await json(join(home, ".afk/library/.afk/settings.json"))).toMatchObject({ discoveryWindows: { codex: "200k" } });
+    expect((await store.read()).discoveryWindows).toEqual({ codex: "200k" });
+    expect((await commits())[0]).toBe("Update discovery context windows");
+  });
 });
 
 describe("Agent rules in the library", () => {

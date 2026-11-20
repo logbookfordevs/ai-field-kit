@@ -107,6 +107,17 @@ export interface FavoriteSource {
 
 export const SETTINGS_VERSION = 2;
 
+export const DISCOVERY_AGENTS = ["claude", "codex"] as const;
+export const DISCOVERY_WINDOWS = ["200k", "400k", "1M"] as const;
+export type DiscoveryAgent = typeof DISCOVERY_AGENTS[number];
+export type DiscoveryWindow = typeof DISCOVERY_WINDOWS[number];
+export type DiscoveryWindows = Partial<Record<DiscoveryAgent, DiscoveryWindow>>;
+
+export function validDiscoveryWindows(value: unknown): value is DiscoveryWindows {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return Object.entries(value).every(([agent, window]) => (DISCOVERY_AGENTS as readonly string[]).includes(agent) && (DISCOVERY_WINDOWS as readonly unknown[]).includes(window));
+}
+
 export interface Settings {
   version: 1 | 2;
   configurationId?: string;
@@ -125,6 +136,8 @@ export interface Settings {
   independentSkills: Record<string, string[]>;
   agentRules?: AgentRulesSettings | undefined;
   welcomeDismissed?: boolean;
+  /** Context window each agent's model uses, chosen in the Skills discovery estimate. */
+  discoveryWindows?: DiscoveryWindows;
 }
 
 export function emptySettings(): Settings {
@@ -236,6 +249,7 @@ export function validateSettings(value: unknown): Settings {
   const independent = data.independentSkills;
   if (!independent || typeof independent !== "object" || Array.isArray(independent) || !Object.values(independent).every(members => Array.isArray(members) && members.every(skillName))) throw new Error("Invalid individual activation state.");
   if (data.welcomeDismissed !== undefined && typeof data.welcomeDismissed !== "boolean") throw new Error("Invalid welcome dismissal state.");
+  if (data.discoveryWindows !== undefined && !validDiscoveryWindows(data.discoveryWindows)) throw new Error("Invalid discovery context windows.");
   if (data.configurationId !== undefined && !skillName(data.configurationId)) throw new Error("Invalid configuration identifier.");
   if (data.savedSkills !== undefined) {
     const snapshots = data.savedSkills as SavedSkills[];

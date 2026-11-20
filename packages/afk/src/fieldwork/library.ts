@@ -3,7 +3,7 @@ import { lstat, mkdir, readFile, readdir, readlink, realpath, rename, rm, symlin
 import { basename, dirname, join, resolve } from "node:path";
 import { runCommand, type CommandSpec } from "./command-runner.js";
 import { DEFAULT_ENABLED, expandHome, SHARED_FOLDER, type AgentFolderSettings } from "./agent-folders.js";
-import { sameSkillName, skillName, type KitSource, type RulesDestination } from "./settings.js";
+import { sameSkillName, skillName, type DiscoveryWindows, type KitSource, type RulesDestination } from "./settings.js";
 
 export type InvocationChoice = "" | "Manual only" | "Automatic allowed";
 
@@ -22,6 +22,7 @@ export interface LibrarySettings {
   core: KitSource[];
   agentRules?: { destinations: RulesDestination[] };
   welcomeDismissed?: true;
+  discoveryWindows?: DiscoveryWindows;
   agentFolders?: AgentFolderSettings;
 }
 
