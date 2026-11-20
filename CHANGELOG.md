@@ -11,6 +11,16 @@ This changelog tracks meaningful updates by version and date.
 
 ## Next Release
 
+## v2.2.4 - 2026-11-20
+
+### Added
+
+- **The Skills discovery estimate shows how close each agent is to its skill list cap.** The estimate still shows tokens; its details now also show characters for Claude and Codex, a meter, and what happens over the cap. Pick each agent's context window (200k, 400k or 1M) and the cap follows it: 1% of the window for Claude, 2% for Codex up to 40,000 characters. AFK remembers the choice and starts at 1M for Claude and 400k for Codex. Only skills that are on and may start automatically count.
+
+### Fixed
+
+- **A skill AFK already stores can be placed again after Ask me again,** in Core or on this machine, instead of failing.
+
 ## v2.2.3 - 2026-11-16
 
 ### Fixed
