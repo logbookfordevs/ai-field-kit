@@ -154,13 +154,23 @@ export function filterSkills(skills: Skill[], filters: Filters): Skill[] {
 
 /** Rough size of a skill's name and description, at four characters per token. */
 export function discoveryTokens(skill: Pick<Skill, "name" | "description">): number {
-  return Math.ceil(Array.from(`${skill.name}\n${skill.description}`).length / 4);
+  return Math.ceil(discoveryChars(skill) / 4);
 }
 
+export function discoveryChars(skill: Pick<Skill, "name" | "description">): number {
+  return Array.from(`${skill.name}\n${skill.description}`).length;
+}
+
+/**
+ * Characters each agent's skill list fits before it shortens descriptions, when the context window is unknown.
+ * Claude Code 2.1.316 and Codex 0.166.0, per SkillEvaluator's harness profiles (verified 2026-11-01).
+ */
+export const DISCOVERY_CAP_CHARS = 8_000;
+
 /** What agents load up front: names and descriptions of skills that are on and may start automatically. */
-export function discoveryEstimate(skills: Skill[], agent: "claude" | "codex"): { count: number; tokens: number } {
+export function discoveryEstimate(skills: Skill[], agent: "claude" | "codex"): { count: number; chars: number; cap: number } {
   const loaded = skills.filter(skill => skill.on && skill.entry?.invocation[agent] === "Automatic allowed");
-  return { count: loaded.length, tokens: loaded.reduce((total, skill) => total + discoveryTokens(skill), 0) };
+  return { count: loaded.length, chars: loaded.reduce((total, skill) => total + discoveryChars(skill), 0), cap: DISCOVERY_CAP_CHARS };
 }
 
 /** Read by the navigation on every screen, so it tolerates a partial state. */
