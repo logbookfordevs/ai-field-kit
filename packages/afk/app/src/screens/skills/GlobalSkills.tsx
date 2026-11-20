@@ -183,7 +183,7 @@ export function GlobalSkills({ state, params, scopePicker }: { state: AppState; 
         {filtered ? <button type="button" className="text" onClick={clear}>Clear filters</button> : null}
         <SelectShown selection={selection} shown={selectable} />
         <span className="spacer" />
-        <DiscoveryEstimate skills={all} />
+        <DiscoveryEstimate skills={all} windows={state.settings.discoveryWindows} />
         <InvocationInfo />
       </div>
       <BulkBar scope="Global" selection={selection} shown={selectable} onDialog={setDialog} />

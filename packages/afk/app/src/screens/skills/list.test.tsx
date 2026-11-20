@@ -13,7 +13,7 @@ import { narrow } from "@/test/viewport";
 const Screen = skills.Screen;
 
 function renderSkills(params = "", state = appState()) {
-  const client = fakeClient({ state: () => state, "agent-folders/state": () => agentFolders, "backup/state": () => ({ status: { state: "saved" }, attention: [], unpushed: [] }) });
+  const client = fakeClient({ state: () => state, "agent-folders/state": () => agentFolders, "backup/state": () => ({ status: { state: "saved" }, attention: [], unpushed: [] }), "discovery-window": () => ({ ok: true }) });
   renderWithApp(<Screen params={new URLSearchParams(params)} />, { client });
   return client;
 }
@@ -104,7 +104,7 @@ it("says when every skill is off and offers to include them", async () => {
   expect(await rows()).toHaveLength(1);
 });
 
-it("estimates the discovery tokens of skills that are on and may start automatically", async () => {
+it("estimates discovery tokens and characters of automatic skills against each agent's default context window", async () => {
   const global = [
     entry("abcd", { description: "x".repeat(11) }),
     entry("manual", { mode: "Manual only", description: "x".repeat(40) }),
@@ -116,8 +116,25 @@ it("estimates the discovery tokens of skills that are on and may start automatic
 
   await userEvent.click(screen.getByRole("button", { name: "Discovery: Claude ~4 · Codex ~8 tokens" }));
 
-  expect(screen.getByText(/about 4 tokens from 1 automatic skill/)).toBeVisible();
-  expect(screen.getByText(/about 8 tokens from 2 automatic skills/)).toBeVisible();
+  expect(screen.getByText(/about 4 tokens, 16 characters, from 1 automatic skill/)).toBeVisible();
+  expect(screen.getByText(/about 8 tokens, 32 characters, from 2 automatic skills/)).toBeVisible();
+  expect(screen.getByText("16 of 40,000 characters (0%).")).toBeVisible();
+  expect(screen.getByText("32 of 32,000 characters (0%).")).toBeVisible();
+  expect(screen.queryByText(/Over the cap/)).not.toBeInTheDocument();
+});
+
+it("recomputes the cap from the chosen context window and remembers the choice", async () => {
+  const global = [entry("long", { invocation: { claude: "Automatic allowed", codex: "Manual only" }, description: "x".repeat(9_000) })];
+  const client = renderSkills("", appState({ global }));
+  await rows();
+
+  await userEvent.click(screen.getByRole("button", { name: /^Discovery: Claude ~2.3K · Codex ~0 tokens$/ }));
+  await userEvent.click(within(screen.getByRole("group", { name: "Claude context window" })).getByRole("radio", { name: "200k" }));
+
+  expect(screen.getByText("9,005 of 8,000 characters (113%).")).toBeVisible();
+  expect(screen.getByText(/Over the cap. Claude Code shortens descriptions/)).toBeVisible();
+  expect(screen.getByRole("button", { name: /Claude ~2.3K \(over cap\)/ })).toBeInTheDocument();
+  expect(client.calls).toContainEqual({ operation: "discovery-window", input: { agent: "claude", window: "200k" } });
 });
 
 it("opens Add something new from the Skills page", async () => {

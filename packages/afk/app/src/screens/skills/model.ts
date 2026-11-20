@@ -1,5 +1,6 @@
 import type { AppState, InvocationMode, SkillEntry } from "@/screens/skills/api";
 import { isRepositorySource } from "@/text/format";
+import type { DiscoveryAgent, DiscoveryWindow } from "../../../../src/fieldwork/settings.js";
 
 export const skillsDescription = "Turn skills on or off and choose how they start.";
 
@@ -154,13 +155,36 @@ export function filterSkills(skills: Skill[], filters: Filters): Skill[] {
 
 /** Rough size of a skill's name and description, at four characters per token. */
 export function discoveryTokens(skill: Pick<Skill, "name" | "description">): number {
-  return Math.ceil(Array.from(`${skill.name}\n${skill.description}`).length / 4);
+  return Math.ceil(discoveryChars(skill) / 4);
+}
+
+export function discoveryChars(skill: Pick<Skill, "name" | "description">): number {
+  return Array.from(`${skill.name}\n${skill.description}`).length;
+}
+
+const WINDOW_TOKENS: Record<DiscoveryWindow, number> = { "200k": 200_000, "400k": 400_000, "1M": 1_000_000 };
+
+/** Window assumed until the user picks one: each agent's current default model. */
+export const DEFAULT_DISCOVERY_WINDOW: Record<DiscoveryAgent, DiscoveryWindow> = { claude: "1M", codex: "400k" };
+
+/**
+ * Characters each agent's skill list fits before it shortens descriptions. Claude Code allows 1% of the context window
+ * at 4 characters per token; Codex 2% at 4 bytes per token, at most 10,000 tokens. Per SkillEvaluator's harness profiles
+ * for Claude Code 2.1.316 and Codex 0.166.0 (verified 2026-11-01).
+ */
+export function discoveryCap(agent: DiscoveryAgent, window: DiscoveryWindow): number {
+  const tokens = WINDOW_TOKENS[window];
+  return agent === "claude" ? tokens * 0.04 : Math.min(tokens * 0.08, 40_000);
 }
 
 /** What agents load up front: names and descriptions of skills that are on and may start automatically. */
-export function discoveryEstimate(skills: Skill[], agent: "claude" | "codex"): { count: number; tokens: number } {
+export function discoveryEstimate(skills: Skill[], agent: DiscoveryAgent): { count: number; chars: number; tokens: number } {
   const loaded = skills.filter(skill => skill.on && skill.entry?.invocation[agent] === "Automatic allowed");
-  return { count: loaded.length, tokens: loaded.reduce((total, skill) => total + discoveryTokens(skill), 0) };
+  return {
+    count: loaded.length,
+    chars: loaded.reduce((total, skill) => total + discoveryChars(skill), 0),
+    tokens: loaded.reduce((total, skill) => total + discoveryTokens(skill), 0),
+  };
 }
 
 /** Read by the navigation on every screen, so it tolerates a partial state. */

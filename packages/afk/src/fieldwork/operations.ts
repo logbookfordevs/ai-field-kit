@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { runCommand as run, type CommandResult } from "./command-runner.js";
-import { containsControl, isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, UPLOADED_SOURCE, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
+import { containsControl, DISCOVERY_AGENTS, DISCOVERY_WINDOWS, isProfileGroup, LOCAL_PROFILE_SOURCE, profileGroups, SettingsStore, UPLOADED_SOURCE, validateSettings, skillName, type Profile, type ProfileGroup, type Settings } from "./settings.js";
 import { setInvocation } from "./invocation.js";
 import { openSkillEditor, saveSkillEdit, type UpdatesChoice } from "./skill-editor.js";
 import { adoptSkill, type AdoptDestination } from "./adopt.js";
@@ -50,7 +50,7 @@ function validateInput(operation: Operation, data: Record<string, unknown>): voi
     "skill/delete-preview": ["name", "scope"], "skill/delete": ["name", "scope"],
     "skill/availability": ["name", "scope"], "skill/read": ["name", "scope"], "skill/editor": ["name"], "skill/edit": ["name", "file"],
     "rules/existing": ["id"], "rules/adopt": ["id"], "rules/overwrite": ["id"],
-    "rules/disconnect": ["id"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"],
+    "rules/disconnect": ["id"], "discovery-window": ["agent", "window"], "agent-folders/enable": ["path"], "agent-folders/disable": ["path"], "agent-folders/remove": ["path"], "agent-folders/add": ["name", "global"],
     "migration/apply": ["fingerprint"],
     "backup/connect": ["url"], "backup/create": ["name"], "backup/restore": ["id"], "restore/inspect": ["repository"], "restore/start": ["repository"],
     "backup/keep": ["id"], "backup/discard": ["id"], "backup/take-update": ["name"], "backup/restore-saved": ["name"],
@@ -722,6 +722,14 @@ export class FieldworkOperations {
     if (operation === "rules/disconnect") {
       const updated = await rules.disconnect(settings, String(data.id), data.clean === true);
       return await rules.state(updated);
+    }
+    if (operation === "discovery-window") {
+      const agent = String(data.agent);
+      const window = String(data.window);
+      if (!(DISCOVERY_AGENTS as readonly string[]).includes(agent)) throw new Error("Choose claude or codex.");
+      if (!(DISCOVERY_WINDOWS as readonly string[]).includes(window)) throw new Error("Choose 200k, 400k or 1M.");
+      settings.discoveryWindows = { ...settings.discoveryWindows, [agent]: window };
+      await store.save(settings); return { ok: true };
     }
     if (operation === "welcome") {
       settings.welcomeDismissed = true;

@@ -95,6 +95,10 @@ export const settingsSchema = {
       additionalProperties: skillNames,
     },
     welcomeDismissed: { type: "boolean", readOnly: true, description: "AFK-managed local onboarding preference." },
+    discoveryWindows: {
+      type: "object", description: "Context window of the model each agent uses, which sets its skill list cap in the discovery estimate.",
+      properties: { claude: { type: "string", enum: ["200k", "400k", "1M"] }, codex: { type: "string", enum: ["200k", "400k", "1M"] } }, additionalProperties: false,
+    },
     agentRules: {
       type: "object", readOnly: true, description: "AFK-managed destination configuration and local sync receipts. Use rules operations to preview conflicts and sync explicitly.",
       required: ["destinations"],
