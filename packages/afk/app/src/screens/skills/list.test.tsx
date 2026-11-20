@@ -116,20 +116,20 @@ it("measures the discovery characters of skills that are on and may start automa
 
   await userEvent.click(screen.getByRole("button", { name: "Discovery: Claude 16/8K · Codex 32/8K chars" }));
 
-  expect(screen.getByText(/16 of 8,000 characters from 1 automatic skill/)).toBeVisible();
-  expect(screen.getByText(/32 of 8,000 characters from 2 automatic skills/)).toBeVisible();
+  expect(screen.getByText(/16 of 8,000 characters \(default cap\) from 1 automatic skill/)).toBeVisible();
+  expect(screen.getByText(/32 of 8,000 characters \(default cap\) from 2 automatic skills/)).toBeVisible();
   expect(screen.queryByText(/Over the cap/)).not.toBeInTheDocument();
 });
 
-it("warns when an agent's automatic skills exceed its skill list cap", async () => {
+it("notes when an agent's automatic skills exceed its default skill list cap", async () => {
   const global = [entry("long", { invocation: { claude: "Manual only", codex: "Automatic allowed" }, description: "x".repeat(8_000) })];
   renderSkills("", appState({ global }));
   await rows();
 
   await userEvent.click(screen.getByRole("button", { name: "Discovery: Claude 0/8K · Codex 8K/8K chars" }));
 
-  expect(screen.getByText(/Over the cap. Codex shortens descriptions/)).toBeVisible();
-  expect(screen.queryByText(/Claude Code shortens/)).not.toBeInTheDocument();
+  expect(screen.getByText(/Over the default cap. With a small context window, Codex may shorten/)).toBeVisible();
+  expect(screen.queryByText(/Claude Code may shorten/)).not.toBeInTheDocument();
 });
 
 it("opens Add something new from the Skills page", async () => {

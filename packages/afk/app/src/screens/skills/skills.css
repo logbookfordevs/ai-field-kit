@@ -139,7 +139,6 @@ section.blk+section.blk{margin-top:0}
   .kv{grid-template-columns:1fr;gap:2px}
   .kv dd{margin-bottom:8px}
 }
-.inv-info .text.warn{color:var(--danger)}
 .discovery-agent{display:grid;gap:4px}
 .discovery-agent p{margin:0}
 .discovery-agent meter{width:100%;height:8px}
