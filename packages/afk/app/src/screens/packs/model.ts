@@ -66,8 +66,18 @@ export interface Candidate {
   here: boolean;
 }
 
-/** Skills a pack can hold: everything on this machine except tool-written skills, plus members it already has that are not downloaded. */
-export function candidatesFor(inventory: readonly SkillEntry[], members: readonly Member[]): Candidate[] {
+export interface FoundRepository {
+  source: string;
+  name: string;
+  skills: { name: string; description: string }[];
+}
+
+/**
+ * Skills a pack can hold: everything on this machine except tool-written skills, members it already has
+ * that are not downloaded, and skills found in repositories. A name keeps its first match, so a pack never
+ * holds two skills with the same name.
+ */
+export function candidatesFor(inventory: readonly SkillEntry[], members: readonly Member[], found: readonly FoundRepository[] = []): Candidate[] {
   const byName = new Map<string, Candidate>();
   for (const entry of inventory) {
     if (entry.tool) continue;
@@ -75,6 +85,11 @@ export function candidatesFor(inventory: readonly SkillEntry[], members: readonl
   }
   for (const member of members) {
     if (!byName.has(member.name)) byName.set(member.name, { name: member.name, description: "", source: "", here: false });
+  }
+  for (const repository of found) {
+    for (const skill of repository.skills) {
+      if (!byName.has(skill.name)) byName.set(skill.name, { name: skill.name, description: skill.description, source: repository.source, here: false });
+    }
   }
   return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
 }

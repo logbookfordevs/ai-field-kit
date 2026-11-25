@@ -1,15 +1,19 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
+import { useClient } from "@/api/ClientProvider";
 import { useMutation } from "@/api/hooks";
 import { Dialog } from "@/components/Dialog";
 import { Icon } from "@/components/Icon";
-import { candidatesFor, groupsFor, type PackView } from "@/screens/packs/model";
-import { plural } from "@/text/format";
-import type { SkillEntry } from "@/screens/packs/types";
+import { candidatesFor, groupsFor, type FoundRepository, type PackView } from "@/screens/packs/model";
+import { defaultBookmarkName, isValidSource } from "@/screens/sources/format";
+import { plural, shortSource } from "@/text/format";
+import type { FavoriteSource, SkillEntry } from "@/screens/packs/types";
 
 export interface MembersDialogProps {
   /** The pack being edited, or null to create one. */
   pack: PackView | null;
   inventory: readonly SkillEntry[];
+  /** Bookmarked repositories, offered as shortcuts for finding skills that aren't on this machine. */
+  bookmarks?: readonly FavoriteSource[];
   existingNames: readonly string[];
   onClose: () => void;
   onSaved: (message: string) => void;
@@ -17,9 +21,16 @@ export interface MembersDialogProps {
 
 type Problem = { field: "name" | "members"; message: string };
 
-export function MembersDialog({ pack, inventory, existingNames, onClose, onSaved }: MembersDialogProps) {
+export function MembersDialog({ pack, inventory, bookmarks = [], existingNames, onClose, onSaved }: MembersDialogProps) {
+  const client = useClient();
   const save = useMutation("pack/save");
   const nameId = useId();
+  const repositoryId = useId();
+  const [repository, setRepository] = useState("");
+  const [finding, setFinding] = useState(false);
+  const [findProblem, setFindProblem] = useState<string | null>(null);
+  const [found, setFound] = useState<FoundRepository[]>([]);
+  const findVersion = useRef(0);
   const [name, setName] = useState("");
   const [query, setQuery] = useState("");
   const [selectedOnly, setSelectedOnly] = useState(false);
@@ -27,7 +38,9 @@ export function MembersDialog({ pack, inventory, existingNames, onClose, onSaved
   const [problem, setProblem] = useState<Problem | null>(null);
   const creating = pack === null;
 
-  const candidates = candidatesFor(inventory, pack?.members ?? []);
+  const candidates = candidatesFor(inventory, pack?.members ?? [], found);
+  const repositoryNames = new Map(found.map(item => [item.source, item.name]));
+  const lastFound = found.at(-1) ?? null;
   const needle = query.trim().toLowerCase();
   const shown = candidates.filter(candidate =>
     (!selectedOnly || selected.has(candidate.name)) && (!needle || `${candidate.name} ${candidate.description}`.toLowerCase().includes(needle)),
@@ -46,6 +59,37 @@ export function MembersDialog({ pack, inventory, existingNames, onClose, onSaved
     setProblem(null);
   }
 
+  function bookmarkName(source: string): string {
+    return bookmarks.find(bookmark => bookmark.source === source)?.name ?? defaultBookmarkName(source);
+  }
+
+  async function find(reference: string) {
+    const source = reference.trim();
+    if (!isValidSource(source)) return setFindProblem("Enter a repository, like owner/repository.");
+    const mine = ++findVersion.current;
+    setRepository(source);
+    setFindProblem(null);
+    setFinding(true);
+    const result = await client.run("discover", { source });
+    if (mine !== findVersion.current) return;
+    setFinding(false);
+    if (!result.ok) return setFindProblem(result.error.message);
+    const { names, descriptions = {} } = result.value;
+    if (!names.length) return setFindProblem(`No skills were found in ${shortSource(source)}.`);
+    const skills = names.map(name => ({ name, description: descriptions[name] ?? "" }));
+    setFound(current => [...current.filter(item => item.source !== source), { source, name: bookmarkName(source), skills }]);
+    setQuery("");
+    setSelectedOnly(false);
+  }
+
+  function noteFor(candidate: { here: boolean; source: string; description: string }): string {
+    if (candidate.here) return candidate.description;
+    const from = repositoryNames.get(candidate.source);
+    if (!from) return "Not on this machine. Downloads when the pack turns on.";
+    const note = `From ${from}. Downloads when the pack turns on.`;
+    return candidate.description ? `${candidate.description} · ${note}` : note;
+  }
+
   async function submit() {
     const trimmed = name.trim();
     if (creating && !trimmed) return setProblem({ field: "name", message: "Give the pack a name." });
@@ -56,7 +100,9 @@ export function MembersDialog({ pack, inventory, existingNames, onClose, onSaved
     setProblem(null);
     const groups = groupsFor(pack?.profile ?? null, selected, candidates);
     const packName = pack?.profile.name ?? trimmed;
-    const result = await save.run({ ...(pack ? { id: pack.profile.id } : {}), name: packName, groups });
+    const namedSources = Object.fromEntries(groups.filter(group => repositoryNames.has(group.source)).map(group => [group.source, repositoryNames.get(group.source)!]));
+    const sourceNames = Object.keys(namedSources).length ? { sourceNames: { ...pack?.profile.sourceNames, ...namedSources } } : {};
+    const result = await save.run({ ...(pack ? { id: pack.profile.id } : {}), name: packName, groups, ...sourceNames });
     if (!result.ok) return;
     onSaved(creating ? `Created ${packName} · ${plural(selected.size, "skill")}` : `${packName} · ${plural(selected.size, "skill")}`);
   }
@@ -67,7 +113,7 @@ export function MembersDialog({ pack, inventory, existingNames, onClose, onSaved
       onClose={onClose}
       canClose={!save.pending}
       title={creating ? "Create a pack" : `Edit ${pack.profile.name}`}
-      description={creating ? "Name it, then choose the skills it holds. Nothing downloads until you turn it on." : "Changes apply right away. If the pack is on, it stays on and picks them up."}
+      description={creating ? "Name it, then choose the skills it holds, from this machine or from a repository. Nothing downloads until you turn it on." : "Changes apply right away. If the pack is on, it stays on and picks them up."}
       footer={
         <>
           <button type="button" className="text" onClick={onClose} disabled={save.pending}>Cancel</button>
@@ -82,6 +128,37 @@ export function MembersDialog({ pack, inventory, existingNames, onClose, onSaved
           {nameProblem ? <p className="field-error" id={`${nameId}-error`} role="alert">{nameProblem}</p> : null}
         </div>
       ) : null}
+      <div className="field">
+        <label htmlFor={repositoryId}>Find skills in a repository</label>
+        <div className="repo-find">
+          <input
+            id={repositoryId}
+            value={repository}
+            placeholder="owner/repository or URL"
+            autoComplete="off"
+            aria-invalid={findProblem ? true : undefined}
+            aria-describedby={`${repositoryId}-hint`}
+            onChange={event => { setRepository(event.target.value); setFindProblem(null); }}
+            onKeyDown={event => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              void find(repository);
+            }}
+          />
+          <button type="button" disabled={finding} onClick={() => void find(repository)}>{finding ? "Finding…" : "Find skills"}</button>
+        </div>
+        {bookmarks.length ? (
+          <div className="bookmark-picks" role="group" aria-label="Bookmarked repositories">
+            {bookmarks.map(bookmark => (
+              <button key={bookmark.source} type="button" className="toggle-pill" disabled={finding} onClick={() => void find(bookmark.source)}>{bookmark.name}</button>
+            ))}
+          </div>
+        ) : null}
+        <p className="hint" id={`${repositoryId}-hint`}>Add skills you don’t have yet. Nothing downloads until the pack turns on.</p>
+        {finding ? <p className="meta" role="status">Looking for skills in {shortSource(repository)}…</p> : null}
+        {!finding && lastFound ? <p className="meta" role="status">Found {plural(lastFound.skills.length, "skill")} in {lastFound.name}. They’re in the list below.</p> : null}
+        {findProblem ? <p className="field-error" role="alert">{findProblem}</p> : null}
+      </div>
       <div className="picker-tools">
         <label className="search-wrap">
           <span className="vh">Search skills</span>
@@ -100,7 +177,7 @@ export function MembersDialog({ pack, inventory, existingNames, onClose, onSaved
               <label className="pick">
                 <input type="checkbox" checked={selected.has(candidate.name)} onChange={event => toggle(candidate.name, event.target.checked)} />
                 <span className="sname">{candidate.name}</span>
-                <span className="meta clamp2">{candidate.here ? candidate.description : "Not on this machine. Downloads when the pack turns on."}</span>
+                <span className="meta clamp2">{noteFor(candidate)}</span>
               </label>
             </li>
           ))}
