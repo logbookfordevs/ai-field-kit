@@ -41,3 +41,10 @@
 .review-group{display:grid;gap:6px;padding-top:8px;border-top:1px solid var(--border)}
 .member-names{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 .member-names .tag{font:12px/1 var(--font-mono);padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-compact);background:var(--surface);overflow-wrap:anywhere}
+.repo-find{display:flex;align-items:center;gap:8px}
+.repo-find input{flex:1;min-width:0}
+.bookmark-picks{display:flex;flex-wrap:wrap;gap:6px}
+.bookmark-picks .toggle-pill{font-size:13px}
+@media (max-width:520px){
+  .repo-find{flex-direction:column;align-items:stretch}
+}

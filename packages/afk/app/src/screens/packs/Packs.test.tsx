@@ -186,6 +186,61 @@ it("creates a pack from a name and chosen skills, keeping each skill with its ow
   expect(await screen.findByText("Created Studio · 3 skills")).toBeInTheDocument();
 });
 
+it("adds skills that aren't on this machine yet by finding them in a repository", async () => {
+  const bookmarked = { ...packState([], library), settings: { profiles: [], favoriteSources: [{ name: "Media kit", source: "acme/media" }] } };
+  const { client } = renderPacks({
+    ...saveHandlers(),
+    state: () => bookmarked,
+    discover: input => input.source === "acme/media"
+      ? { names: ["video", "kami"], descriptions: { video: "Cut footage.", kami: "Another kami." } }
+      : { names: ["deck"], descriptions: { deck: "Build slides." } },
+  });
+
+  await userEvent.click(await screen.findByRole("button", { name: "Create pack" }));
+  const dialog = await screen.findByRole("dialog", { name: "Create a pack" });
+  await userEvent.type(within(dialog).getByRole("textbox", { name: "Pack name" }), "Studio");
+
+  await userEvent.click(within(dialog).getByRole("button", { name: "Media kit" }));
+  expect(await within(dialog).findByText("Found 2 skills in Media kit. They’re in the list below.")).toBeInTheDocument();
+  expect(within(dialog).getByText("Cut footage. · From Media kit. Downloads when the pack turns on.")).toBeInTheDocument();
+  expect(within(dialog).getAllByRole("checkbox", { name: /^kami/ })).toHaveLength(1);
+
+  const repository = within(dialog).getByRole("textbox", { name: "Find skills in a repository" });
+  await userEvent.clear(repository);
+  await userEvent.type(repository, "https://github.com/acme/slides{enter}");
+  expect(await within(dialog).findByText(/From slides\./)).toBeInTheDocument();
+
+  await userEvent.click(within(dialog).getByRole("checkbox", { name: /video/ }));
+  await userEvent.click(within(dialog).getByRole("checkbox", { name: /deck/ }));
+  await userEvent.click(within(dialog).getByRole("checkbox", { name: /^kami/ }));
+  await userEvent.click(within(dialog).getByRole("button", { name: "Create pack" }));
+
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(client.calls.find(call => call.operation === "pack/save")?.input).toEqual({
+    name: "Studio",
+    groups: expect.arrayContaining([
+      { source: "acme/skills", skills: ["kami"] },
+      { source: "acme/media", skills: ["video"] },
+      { source: "https://github.com/acme/slides", skills: ["deck"] },
+    ]),
+    sourceNames: { "acme/media": "Media kit", "https://github.com/acme/slides": "slides" },
+  });
+});
+
+it("says why a repository can't be searched and keeps the dialog usable", async () => {
+  renderPacks({ ...saveHandlers(), discover: () => fail("Could not reach acme/missing.") });
+  await screen.findByRole("heading", { name: "Writing" });
+  await userEvent.click(screen.getByRole("button", { name: "Create pack" }));
+  const dialog = await screen.findByRole("dialog", { name: "Create a pack" });
+
+  await userEvent.click(within(dialog).getByRole("button", { name: "Find skills" }));
+  expect(within(dialog).getByRole("alert")).toHaveTextContent("Enter a repository, like owner/repository.");
+
+  await userEvent.type(within(dialog).getByRole("textbox", { name: "Find skills in a repository" }), "acme/missing{enter}");
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("Could not reach acme/missing.");
+  expect(within(dialog).getByRole("checkbox", { name: /kami/ })).toBeInTheDocument();
+});
+
 it("asks for a name, a unique name and at least one skill before creating", async () => {
   const { client } = renderPacks(saveHandlers());
   await screen.findByRole("heading", { name: "Writing" });

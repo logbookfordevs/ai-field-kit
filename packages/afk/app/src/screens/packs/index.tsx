@@ -138,6 +138,7 @@ function PacksScreen() {
         <MembersDialog
           pack={editor.pack}
           inventory={state.data.inventories[GLOBAL] ?? []}
+          bookmarks={state.data.settings.favoriteSources ?? []}
           existingNames={packs.map(item => item.profile.name)}
           onClose={() => setEditor(null)}
           onSaved={message => { setEditor(null); toast.show(message); }}
