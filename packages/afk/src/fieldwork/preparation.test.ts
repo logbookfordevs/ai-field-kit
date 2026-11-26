@@ -161,3 +161,17 @@ it("explains an empty source without inventing skipped files", async () => {
   expect(message).not.toContain("skipped");
   expect(message).toContain("valid frontmatter");
 });
+
+it("reads a source again once its prepared copy is a minute old, so newly added skills appear", async () => {
+  let now = 0;
+  preparation = new SourcePreparation(undefined, () => now);
+  expect(await preparation.discover("owner/repository")).toEqual(["deploy", "guide"]);
+
+  members = ["deploy", "guide", "fresh"];
+  now = 30_000;
+  expect(await preparation.discover("owner/repository")).toEqual(["deploy", "guide"]);
+
+  now = 61_000;
+  expect((await preparation.discover("owner/repository")).sort()).toEqual(["deploy", "fresh", "guide"]);
+  expect(spawn).toHaveBeenCalledTimes(2);
+});

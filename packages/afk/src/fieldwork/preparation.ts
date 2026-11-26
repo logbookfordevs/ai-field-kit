@@ -59,13 +59,27 @@ function preparationFailure(source: string, output: string): Error {
 
 export interface PrepareRun { onOutput?: (text: string) => void; signal?: AbortSignal }
 
+const freshMs = 60_000;
+
 export class SourcePreparation {
   private readonly sources = new Map<string, string>();
+  private readonly preparedAt = new Map<string, number>();
+  private readonly retired: string[] = [];
 
-  constructor(private readonly signal?: AbortSignal) {}
+  constructor(private readonly signal?: AbortSignal, private readonly now: () => number = Date.now) {}
+
+  // An expired copy is retired rather than deleted, because an install may still be copying from it.
+  private expire(source: string): void {
+    const directory = this.sources.get(source);
+    if (!directory || this.now() - (this.preparedAt.get(source) ?? 0) < freshMs) return;
+    this.retired.push(directory);
+    this.sources.delete(source);
+    this.preparedAt.delete(source);
+  }
 
   async discover(source: string, run: PrepareRun = {}): Promise<string[]> {
     if (!source.trim() || source.startsWith("-") || containsControl(source)) throw new Error("Enter a repository URL or owner/repository.");
+    this.expire(source);
     let directory = this.sources.get(source);
     if (!directory) {
       directory = await mkdtemp(join(tmpdir(), "afk-prepare-"));
@@ -77,6 +91,7 @@ export class SourcePreparation {
       }).catch(async error => { await rm(directory!, { recursive: true, force: true }); throw error; });
       if (result.code !== 0) { await rm(directory, { recursive: true, force: true }); throw preparationFailure(source, result.output); }
       this.sources.set(source, directory);
+      this.preparedAt.set(source, this.now());
     }
     const members = await readdir(join(directory, ".agents/skills"));
     const lock = await this.lock(directory);
@@ -121,7 +136,8 @@ export class SourcePreparation {
   }
 
   async close(): Promise<void> {
-    await Promise.all([...this.sources.values()].map(path => rm(path, { recursive: true, force: true })));
+    await Promise.all([...this.sources.values(), ...this.retired.splice(0)].map(path => rm(path, { recursive: true, force: true })));
     this.sources.clear();
+    this.preparedAt.clear();
   }
 }
